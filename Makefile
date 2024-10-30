@@ -1,3 +1,6 @@
+.PHONY: all
+all: cli
+
 .PHONY: cli
 cli: cli.prepare
 	go build -o rill cli/main.go 

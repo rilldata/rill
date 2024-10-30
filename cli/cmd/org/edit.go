@@ -11,7 +11,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, description string
+	var orgName, description, billingEmail string
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -57,18 +57,36 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name: org.Name,
 			}
 
-			promptFlagValues := ch.Interactive
 			if cmd.Flags().Changed("description") {
-				promptFlagValues = false
 				req.Description = &description
-			}
-
-			if promptFlagValues {
-				description, err = cmdutil.InputPrompt("Enter the description", org.Description)
+			} else if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to update the description", "", false)
 				if err != nil {
 					return err
 				}
-				req.Description = &description
+				if ok {
+					description, err = cmdutil.InputPrompt("Enter the description", org.Description)
+					if err != nil {
+						return err
+					}
+					req.Description = &description
+				}
+			}
+
+			if cmd.Flags().Changed("billing-email") {
+				req.BillingEmail = &billingEmail
+			} else if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to update the billing email", "", false)
+				if err != nil {
+					return err
+				}
+				if ok {
+					billingEmail, err = cmdutil.InputPrompt("Enter the billing email", org.BillingEmail)
+					if err != nil {
+						return err
+					}
+					req.BillingEmail = &billingEmail
+				}
 			}
 
 			updatedOrg, err := client.UpdateOrganization(ctx, req)
@@ -85,6 +103,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
+	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
 
 	return editCmd
 }

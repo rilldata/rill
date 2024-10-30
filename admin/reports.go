@@ -10,14 +10,7 @@ import (
 
 // TriggerReport triggers an ad-hoc run of a report
 func (s *Service) TriggerReport(ctx context.Context, depl *database.Deployment, report string) (err error) {
-	names := []*runtimev1.ResourceName{
-		{
-			Kind: runtime.ResourceKindReport,
-			Name: report,
-		},
-	}
-
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
@@ -25,8 +18,8 @@ func (s *Service) TriggerReport(ctx context.Context, depl *database.Deployment, 
 
 	_, err = rt.CreateTrigger(ctx, &runtimev1.CreateTriggerRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		Trigger: &runtimev1.CreateTriggerRequest_RefreshTriggerSpec{
-			RefreshTriggerSpec: &runtimev1.RefreshTriggerSpec{OnlyNames: names},
+		Resources: []*runtimev1.ResourceName{
+			{Kind: runtime.ResourceKindReport, Name: report},
 		},
 	})
 	return err
@@ -34,7 +27,7 @@ func (s *Service) TriggerReport(ctx context.Context, depl *database.Deployment, 
 
 // LookupReport fetches a report's spec from a runtime deployment.
 func (s *Service) LookupReport(ctx context.Context, depl *database.Deployment, reportName string) (*runtimev1.ReportSpec, error) {
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return nil, err
 	}

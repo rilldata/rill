@@ -4,20 +4,19 @@ import {
   createInExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1Expression,
-  V1MetricsViewAggregationDimension,
-  V1MetricsViewAggregationMeasure,
-  V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewAggregationSort,
+  type V1Expression,
+  type V1MetricsViewAggregationDimension,
+  type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, readable } from "svelte/store";
+import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   getFilterForMeasuresTotalsAxesQuery,
@@ -36,6 +35,7 @@ import {
  */
 export function createPivotAggregationRowQuery(
   ctx: StateManagers,
+  config: PivotDataStoreConfig,
   measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
@@ -54,6 +54,7 @@ export function createPivotAggregationRowQuery(
   }
 
   let hasComparison = false;
+  const comparisonTime = config.comparisonTime;
   if (
     measures.some(
       (m) =>
@@ -65,32 +66,34 @@ export function createPivotAggregationRowQuery(
   }
 
   return derived(
-    [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
-    ([runtime, metricViewName, timeControls], set) =>
+    [ctx.runtime, ctx.metricsViewName],
+    ([runtime, metricsViewName], set) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measures: [],
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
+          whereSql: config.pivot?.whereSql,
           timeRange: {
-            start: timeRange?.start ? timeRange.start : timeControls.timeStart,
-            end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
+            start: timeRange?.start ? timeRange.start : config.time.timeStart,
+            end: timeRange?.end ? timeRange.end : config.time.timeEnd,
           },
-          comparisonTimeRange: hasComparison
-            ? {
-                start: timeControls.comparisonTimeStart,
-                end: timeControls.comparisonTimeEnd,
-              }
-            : undefined,
+          comparisonTimeRange:
+            hasComparison && comparisonTime
+              ? {
+                  start: comparisonTime.start,
+                  end: comparisonTime.end,
+                }
+              : undefined,
           sort,
           limit,
           offset,
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled: !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
@@ -155,6 +158,7 @@ export function getAxisForDimensions(
       }
       return createPivotAggregationRowQuery(
         ctx,
+        config,
         measures,
         [dimension],
         whereFilter,
@@ -274,6 +278,7 @@ export function getTotalsRowQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
+    config,
     measureBody,
     dimensionBody,
     mergedFilter,

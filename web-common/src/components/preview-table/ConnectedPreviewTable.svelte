@@ -1,7 +1,7 @@
 <script lang="ts">
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
-    V1TableRowsResponseDataItem,
+    type V1TableRowsResponseDataItem,
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
@@ -29,6 +29,11 @@
       databaseSchema,
     },
   );
+  $: ({
+    data: columnsData,
+    isLoading: columnsIsLoading,
+    error: columnsError,
+  } = $columnsQuery);
 
   $: rowsQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
     connector,
@@ -36,19 +41,22 @@
     databaseSchema,
     limit,
   });
+  $: ({
+    data: rowsData,
+    isLoading: rowsIsLoading,
+    error: rowsError,
+  } = $rowsQuery);
 
   $: columns =
-    ($columnsQuery?.data?.profileColumns as VirtualizedTableColumns[]) ??
-    columns; // Retain old profileColumns
-
-  $: rows = $rowsQuery?.data?.data ?? rows;
+    (columnsData?.profileColumns as VirtualizedTableColumns[]) ?? columns; // Retain old profileColumns
+  $: rows = rowsData?.data ?? rows; // Retain old rows
 </script>
 
-{#if loading || $rowsQuery.isLoading || $columnsQuery.isLoading}
+{#if loading || rowsIsLoading || columnsIsLoading}
   <ReconcilingSpinner />
-{:else if $rowsQuery.isError || $columnsQuery.isError}
+{:else if rowsError || columnsError}
   <WorkspaceError
-    message={`Error loading table: ${$rowsQuery.error?.response.data.message || $columnsQuery.error?.response.data.message}`}
+    message={`Error loading table: ${rowsError?.response.data?.message || columnsError?.response.data?.message}`}
   />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />

@@ -2,6 +2,8 @@ package file
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -14,16 +16,14 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var limit = 1000
-
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
-	return "file"
+	return c.driverName
 }
 
 // Root implements drivers.RepoStore.
-func (c *connection) Root() string {
-	return c.root
+func (c *connection) Root(ctx context.Context) (string, error) {
+	return c.root, nil
 }
 
 // CommitHash implements drivers.RepoStore.
@@ -39,7 +39,7 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 	}
 
 	fsRoot := os.DirFS(c.root)
-	glob = filepath.Clean(filepath.Join("./", glob))
+	glob = filepath.Clean(filepath.Join(".", glob))
 
 	var entries []drivers.DirEntry
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -48,12 +48,12 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 		}
 
 		// Exit if we reached the limit
-		if len(entries) == limit {
-			return fmt.Errorf("glob exceeded limit of %d matched files", limit)
+		if len(entries) == drivers.RepoListLimit {
+			return drivers.ErrRepoListLimitExceeded
 		}
 
 		// Track file (p is already relative to the FS root)
-		p = filepath.Join("/", p)
+		p = filepath.Join(string(filepath.Separator), p)
 		// Do not send files for ignored paths
 		if drivers.IsIgnored(p, c.ignorePaths) {
 			return nil
@@ -101,6 +101,27 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.RepoOb
 		LastUpdated: info.ModTime(),
 		IsDir:       info.IsDir(),
 	}, nil
+}
+
+func (c *connection) FileHash(ctx context.Context, paths []string) (string, error) {
+	hasher := md5.New()
+	for _, path := range paths {
+		path = filepath.Join(c.root, path)
+		file, err := os.Open(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return "", err
+		}
+
+		if _, err := io.Copy(hasher, file); err != nil {
+			file.Close()
+			return "", err
+		}
+		file.Close()
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // Put implements drivers.RepoStore.

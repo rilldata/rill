@@ -33,15 +33,12 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaBodyAnnotations = {
-  [key: string]: string;
-};
-
 export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  annotations?: AdminServiceGetReportMetaBodyAnnotations;
+  ownerId?: string;
   executionTime?: string;
+  emailRecipients?: string[];
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -68,19 +65,12 @@ export type AdminServiceUpdateServiceBody = {
 
 export type AdminServiceCreateServiceParams = { name?: string };
 
-export type AdminServiceUpdateProjectVariablesBodyVariables = {
-  [key: string]: string;
-};
-
-export type AdminServiceUpdateProjectVariablesBody = {
-  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
-};
-
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
@@ -89,9 +79,10 @@ export type AdminServiceUpdateProjectBody = {
   prodVersion?: string;
 };
 
-export type AdminServiceGetProjectParams = { accessTokenTtlSeconds?: number };
-
-export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
+export type AdminServiceGetProjectParams = {
+  accessTokenTtlSeconds?: number;
+  issueSuperuserToken?: boolean;
+};
 
 export type AdminServiceCreateProjectBody = {
   name?: string;
@@ -108,7 +99,6 @@ Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
   /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
   archiveAssetId?: string;
-  variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
 
@@ -142,6 +132,30 @@ export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageToken?: string;
 };
 
+/**
+ * New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+ */
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+export type AdminServiceUpdateProjectVariablesBody = {
+  /** Environment to set the variables for.
+If empty, the variable(s) will be used as defaults for all environments. */
+  environment?: string;
+  /** New variable values.
+It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged. */
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+  /** Variables to delete. */
+  unsetVariables?: string[];
+};
+
+export type AdminServiceGetProjectVariablesParams = {
+  environment?: string;
+  forAllEnvironments?: boolean;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -151,17 +165,28 @@ export type AdminServiceSearchProjectUsersParams = {
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
-  /** Metrics view the token will provide access to. */
-  metricsView?: string;
-  metricsViewFilter?: V1Expression;
-  /** Optional list of names of dimensions and measures to limit access to.
-If empty, all dimensions and measures are accessible. */
-  metricsViewFields?: string[];
+  /** Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore". */
+  resourceType?: string;
+  /** Name of the resource to grant access to. */
+  resourceName?: string;
+  filter?: V1Expression;
+  /** Optional list of fields to limit access to. If empty, no field access rule will be added.
+This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views. */
+  fields?: string[];
+  /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
+  state?: string;
+  /** Optional display name to store with the token. */
+  displayName?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceAddProjectMemberUserBody = {
+  email?: string;
+  role?: string;
 };
 
 export type AdminServiceListProjectMemberUsersParams = {
@@ -198,7 +223,9 @@ export type AdminServiceGetIFrameBody = {
   userEmail?: string;
   /** If set, will use the provided attributes outright. */
   attributes?: AdminServiceGetIFrameBodyAttributes;
-  /** Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView". */
+  /** Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore". */
+  type?: string;
+  /** Deprecated: Alias for `type`. */
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
@@ -224,6 +251,13 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
+export type AdminServiceConnectProjectToGithubBody = {
+  repo?: string;
+  branch?: string;
+  subpath?: string;
+  force?: boolean;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -231,6 +265,12 @@ export type AdminServiceListProjectMemberUsergroupsParams = {
 
 export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
+};
+
+export type AdminServiceAddOrganizationMemberUserBody = {
+  email?: string;
+  role?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceListOrganizationMemberUsersParams = {
@@ -243,13 +283,13 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
-  planName?: string;
-};
+export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  displayName?: string;
+  billingEmail?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -275,11 +315,6 @@ export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
 };
 
-export type AdminServiceAddOrganizationMemberUserBodyBody = {
-  email?: string;
-  role?: string;
-};
-
 export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
   domain?: string;
   role?: string;
@@ -290,6 +325,11 @@ export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
 };
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
+
+export type AdminServiceUpdateBillingSubscriptionBodyBody = {
+  planName?: string;
+  superuserForceAccess?: boolean;
+};
 
 export interface V1WhitelistedDomain {
   domain?: string;
@@ -313,6 +353,7 @@ export interface V1Usergroup {
 
 export interface V1UserQuotas {
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1UserPreferences {
@@ -335,6 +376,10 @@ export interface V1User {
   updatedOn?: string;
 }
 
+export interface V1UploadProjectAssetsResponse {
+  [key: string]: any;
+}
+
 export interface V1UpdateUserPreferencesResponse {
   preferences?: V1UserPreferences;
 }
@@ -347,12 +392,9 @@ export interface V1UpdateServiceResponse {
   service?: V1Service;
 }
 
-export type V1UpdateProjectVariablesResponseVariables = {
-  [key: string]: string;
-};
-
 export interface V1UpdateProjectVariablesResponse {
-  variables?: V1UpdateProjectVariablesResponseVariables;
+  /** Variables that were created or updated by the request. */
+  variables?: V1ProjectVariable[];
 }
 
 export interface V1UpdateProjectResponse {
@@ -361,11 +403,6 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
-}
-
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1UpdateBookmarkResponse {
@@ -379,6 +416,11 @@ export interface V1UpdateBookmarkRequest {
   data?: string;
   default?: boolean;
   shared?: boolean;
+}
+
+export interface V1UpdateBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -418,6 +460,7 @@ export interface V1SudoUpdateUserQuotasResponse {
 export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
   singleuserOrgs?: number;
+  trialOrgs?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -425,7 +468,7 @@ export interface V1SudoUpdateOrganizationQuotasResponse {
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
-  orgName?: string;
+  organization?: string;
   projects?: number;
   deployments?: number;
   slotsTotal?: number;
@@ -434,14 +477,24 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationCustomDomainResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationCustomDomainRequest {
+  name?: string;
+  customDomain?: string;
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
-  subscriptions?: V1Subscription[];
+  subscription?: V1Subscription;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
-  orgName?: string;
+  organization?: string;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -458,6 +511,22 @@ export interface V1SudoUpdateAnnotationsRequest {
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
 
+export interface V1SudoTriggerBillingRepairResponse {
+  [key: string]: any;
+}
+
+export interface V1SudoTriggerBillingRepairRequest {
+  [key: string]: any;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -466,11 +535,22 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoExtendTrialResponse {
+  trialEnd?: string;
+}
+
+export interface V1SudoExtendTrialRequest {
+  organization?: string;
+  days?: number;
+}
+
+export interface V1SudoDeleteOrganizationBillingIssueResponse {
+  [key: string]: any;
+}
+
 export interface V1Subscription {
   id?: string;
-  planId?: string;
-  planName?: string;
-  planDisplayName?: string;
+  plan?: V1BillingPlan;
   startDate?: string;
   endDate?: string;
   currentBillingCycleStartDate?: string;
@@ -552,8 +632,12 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1RequestProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1ReportOptions {
-  title?: string;
+  displayName?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
   intervalDuration?: string;
@@ -561,12 +645,19 @@ export interface V1ReportOptions {
   queryArgsJson?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  openProjectSubpath?: string;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+}
+
+export interface V1RenewBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1RenameUsergroupResponse {
@@ -605,6 +696,10 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
+export interface V1RedeployProjectResponse {
+  [key: string]: any;
+}
+
 export interface V1RecordEventsResponse {
   [key: string]: any;
 }
@@ -627,6 +722,24 @@ export interface V1Quotas {
 export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   nextPageToken?: string;
+}
+
+export interface V1ProjectVariable {
+  /** Internal ID. */
+  id?: string;
+  /** Variable name (case insensitive). */
+  name?: string;
+  /** Variable value. */
+  value?: string;
+  /** Environment the variable is set for.
+If empty, the variable is shared for all environments. */
+  environment?: string;
+  /** User ID that most recently updated the variable. May be empty. */
+  updatedByUserId?: string;
+  /** Timestamp when the variable was created. */
+  createdOn?: string;
+  /** Timestamp when the variable was last updated. */
+  updatedOn?: string;
 }
 
 export interface V1ProjectPermissions {
@@ -669,6 +782,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  /** Note: Does NOT incorporate the parent org's custom domain. */
   frontendUrl?: string;
   prodTtlSeconds?: string;
   annotations?: V1ProjectAnnotations;
@@ -704,9 +818,13 @@ export interface V1OrganizationPermissions {
 export interface V1Organization {
   id?: string;
   name?: string;
+  displayName?: string;
   description?: string;
+  customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
+  billingEmail?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -742,6 +860,7 @@ export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
+  userPhotoUrl?: string;
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -752,15 +871,20 @@ export type V1MagicAuthTokenAttributes = { [key: string]: any };
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
+  url?: string;
+  token?: string;
   createdOn?: string;
   expiresOn?: string;
   usedOn?: string;
   createdByUserId?: string;
   createdByUserEmail?: string;
   attributes?: V1MagicAuthTokenAttributes;
-  metricsView?: string;
-  metricsViewFilter?: V1Expression;
-  metricsViewFields?: string[];
+  resourceType?: string;
+  resourceName?: string;
+  filter?: V1Expression;
+  fields?: string[];
+  state?: string;
+  displayName?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -832,9 +956,17 @@ export interface V1ListOrganizationInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListOrganizationBillingIssuesResponse {
+  issues?: V1BillingIssue[];
+}
+
 export interface V1ListMagicAuthTokensResponse {
   tokens?: V1MagicAuthToken[];
   nextPageToken?: string;
+}
+
+export interface V1ListGithubUserReposResponse {
+  repos?: ListGithubUserReposResponseRepo[];
 }
 
 export interface V1ListBookmarksResponse {
@@ -863,6 +995,10 @@ export interface V1IssueMagicAuthTokenResponse {
   url?: string;
 }
 
+export interface V1HibernateProjectResponse {
+  [key: string]: any;
+}
+
 export type V1GithubPermission =
   (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
 
@@ -882,10 +1018,13 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export type V1GetReportMetaResponseRecipientUrls = {
+  [key: string]: GetReportMetaResponseURLs;
+};
+
 export interface V1GetReportMetaResponse {
-  openUrl?: string;
-  exportUrl?: string;
-  editUrl?: string;
+  baseUrls?: GetReportMetaResponseURLs;
+  recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
 export interface V1GetRepoMetaResponse {
@@ -895,10 +1034,19 @@ export interface V1GetRepoMetaResponse {
   archiveDownloadUrl?: string;
 }
 
-export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
+/**
+ * Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map").
+ */
+export type V1GetProjectVariablesResponseVariablesMap = {
+  [key: string]: string;
+};
 
 export interface V1GetProjectVariablesResponse {
-  variables?: V1GetProjectVariablesResponseVariables;
+  variables?: V1ProjectVariable[];
+  /** Deprecated: Populated for backwards compatibility.
+(Renamed from "variables" to "variables_map"). */
+  variablesMap?: V1GetProjectVariablesResponseVariablesMap;
 }
 
 export interface V1GetProjectResponse {
@@ -912,14 +1060,21 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectAccessRequestResponse {
+  email?: string;
+}
+
+export interface V1GetPaymentsPortalURLResponse {
+  url?: string;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
 }
 
-export interface V1GetOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscription?: V1Subscription;
+export interface V1GetOrganizationNameForDomainResponse {
+  name?: string;
 }
 
 export interface V1GetIFrameResponse {
@@ -963,6 +1118,10 @@ export interface V1GetCurrentUserResponse {
   preferences?: V1UserPreferences;
 }
 
+export interface V1GetCurrentMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
+}
+
 export interface V1GetCloneCredentialsResponse {
   gitRepoUrl?: string;
   gitUsername?: string;
@@ -974,6 +1133,23 @@ export interface V1GetCloneCredentialsResponse {
 
 export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
+}
+
+export interface V1GetBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+  billingPortalUrl?: string;
+}
+
+export interface V1GetBillingProjectCredentialsResponse {
+  runtimeHost?: string;
+  instanceId?: string;
+  accessToken?: string;
+  ttlSeconds?: number;
+}
+
+export interface V1GetBillingProjectCredentialsRequest {
+  organization?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -1048,6 +1224,10 @@ export interface V1Deployment {
   statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1DenyProjectAccessResponse {
+  [key: string]: any;
 }
 
 export interface V1DeleteUsergroupResponse {
@@ -1134,6 +1314,10 @@ export interface V1CreateAlertResponse {
   name?: string;
 }
 
+export interface V1ConnectProjectToGithubResponse {
+  [key: string]: any;
+}
+
 export interface V1Condition {
   op?: V1Operation;
   exprs?: V1Expression[];
@@ -1150,6 +1334,10 @@ export interface V1CompleteResponse {
 
 export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
+}
+
+export interface V1CancelBillingSubscriptionResponse {
+  [key: string]: any;
 }
 
 export interface V1Bookmark {
@@ -1175,12 +1363,110 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+  public?: boolean;
 }
 
+export type V1BillingIssueType =
+  (typeof V1BillingIssueType)[keyof typeof V1BillingIssueType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueType = {
+  BILLING_ISSUE_TYPE_UNSPECIFIED: "BILLING_ISSUE_TYPE_UNSPECIFIED",
+  BILLING_ISSUE_TYPE_ON_TRIAL: "BILLING_ISSUE_TYPE_ON_TRIAL",
+  BILLING_ISSUE_TYPE_TRIAL_ENDED: "BILLING_ISSUE_TYPE_TRIAL_ENDED",
+  BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD: "BILLING_ISSUE_TYPE_NO_PAYMENT_METHOD",
+  BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS:
+    "BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS",
+  BILLING_ISSUE_TYPE_PAYMENT_FAILED: "BILLING_ISSUE_TYPE_PAYMENT_FAILED",
+  BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED:
+    "BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED",
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED: "BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED",
+} as const;
+
+export interface V1BillingIssueMetadataTrialEnded {
+  endDate?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataSubscriptionCancelled {
+  endDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailedMeta {
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoiceUrl?: string;
+  amountDue?: string;
+  currency?: string;
+  dueDate?: string;
+  failedOn?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataPaymentFailed {
+  invoices?: V1BillingIssueMetadataPaymentFailedMeta[];
+}
+
+export interface V1BillingIssueMetadataOnTrial {
+  endDate?: string;
+  gracePeriodEndDate?: string;
+}
+
+export interface V1BillingIssueMetadataNoPaymentMethod {
+  [key: string]: any;
+}
+
+export interface V1BillingIssueMetadataNoBillableAddress {
+  [key: string]: any;
+}
+
+export interface V1BillingIssueMetadataNeverSubscribed {
+  [key: string]: any;
+}
+
+export interface V1BillingIssueMetadata {
+  onTrial?: V1BillingIssueMetadataOnTrial;
+  trialEnded?: V1BillingIssueMetadataTrialEnded;
+  noPaymentMethod?: V1BillingIssueMetadataNoPaymentMethod;
+  noBillableAddress?: V1BillingIssueMetadataNoBillableAddress;
+  paymentFailed?: V1BillingIssueMetadataPaymentFailed;
+  subscriptionCancelled?: V1BillingIssueMetadataSubscriptionCancelled;
+  neverSubscribed?: V1BillingIssueMetadataNeverSubscribed;
+}
+
+export type V1BillingIssueLevel =
+  (typeof V1BillingIssueLevel)[keyof typeof V1BillingIssueLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingIssueLevel = {
+  BILLING_ISSUE_LEVEL_UNSPECIFIED: "BILLING_ISSUE_LEVEL_UNSPECIFIED",
+  BILLING_ISSUE_LEVEL_WARNING: "BILLING_ISSUE_LEVEL_WARNING",
+  BILLING_ISSUE_LEVEL_ERROR: "BILLING_ISSUE_LEVEL_ERROR",
+} as const;
+
+export interface V1BillingIssue {
+  organization?: string;
+  type?: V1BillingIssueType;
+  level?: V1BillingIssueLevel;
+  metadata?: V1BillingIssueMetadata;
+  eventTime?: string;
+  createdOn?: string;
+}
+
+export interface V1ApproveProjectAccessResponse {
+  [key: string]: any;
+}
+
+export type V1AlertOptionsResolverProperties = { [key: string]: any };
+
 export interface V1AlertOptions {
-  title?: string;
+  displayName?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertOptionsResolverProperties;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryName?: string;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
   metricsViewName?: string;
   renotify?: boolean;
@@ -1189,6 +1475,9 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  /** Annotation for the subpath of <UI host>/org/project to open for the report. */
+  webOpenPath?: string;
+  /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
 }
 
@@ -1222,7 +1511,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -1237,4 +1526,18 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export interface ListGithubUserReposResponseRepo {
+  name?: string;
+  owner?: string;
+  description?: string;
+  url?: string;
+  defaultBranch?: string;
+}
+
+export interface GetReportMetaResponseURLs {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
 }

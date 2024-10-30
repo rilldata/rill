@@ -14,7 +14,8 @@ import type { DashboardDataSources } from "./types";
 
 export const timeControlsState = (dashData: DashboardDataSources) =>
   timeControlStateSelector([
-    dashData.metricsSpecQueryResult,
+    dashData.validMetricsView,
+    dashData.validExplore,
     dashData.timeRangeSummary,
     dashData.dashboard,
   ]);
@@ -24,18 +25,20 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
 
 export const isTimeComparisonActive = (
   dashData: DashboardDataSources,
-): boolean => timeControlsState(dashData).showComparison === true;
+): boolean => timeControlsState(dashData).showTimeComparison === true;
 
 export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
   timeRangeSelectionsSelector([
-    dashData.metricsSpecQueryResult,
+    dashData.validMetricsView,
+    dashData.validExplore,
     dashData.timeRangeSummary,
     dashData.dashboard,
   ]);
 
 export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
   timeComparisonOptionsSelector([
-    dashData.metricsSpecQueryResult,
+    dashData.validMetricsView,
+    dashData.validExplore,
     dashData.timeRangeSummary,
     dashData.dashboard,
     selectedTimeRangeState(dashData),
@@ -44,7 +47,7 @@ export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
 // TODO: use this in place of timeControlStore
 export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
   selectedTimeRangeSelector([
-    dashData.metricsSpecQueryResult,
+    dashData.validExplore,
     dashData.timeRangeSummary,
     dashData.dashboard,
   ]);

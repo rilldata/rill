@@ -13,7 +13,7 @@ Running in development creates a (gitignored) empty project in `dev-project`. Pa
 
 ## Testing
 
-1. Build the application and the rill cli for E2E tests: `make cli`
+1. Build the application and the Rill CLI for E2E tests: `make`
 2. Run all the tests `npm run test`
 
 ## Production builds

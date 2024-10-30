@@ -1,14 +1,13 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import GithubRepoInline from "../../../../features/projects/GithubRepoInline.svelte";
+  import GithubRepoInline from "@rilldata/web-admin/features/projects/github/GithubRepoInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
@@ -19,7 +18,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+          redirectToLogin();
         }
       },
     },
@@ -27,16 +26,16 @@
 </script>
 
 <svelte:head>
-  <title>Connect to Github</title>
+  <title>Connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <Github className="w-10 h-10 text-gray-900" />
-      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaHeader>Connect to GitHub</CtaHeader>
       <CtaMessage>
-        Rill projects deploy continuously when you push changes to Github.
+        Rill projects deploy continuously when you push changes to GitHub.
       </CtaMessage>
       {#if remote}
         <CtaMessage>
@@ -46,8 +45,8 @@
         </CtaMessage>
       {/if}
       <div class="mt-4 w-full flex justify-center">
-        <CtaButton variant="primary" href={redirectURL}>
-          Connect to Github
+        <CtaButton variant="primary" href={redirectURL} rel="external">
+          Connect to GitHub
         </CtaButton>
       </div>
     </CtaContentContainer>

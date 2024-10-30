@@ -46,8 +46,12 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "path",
-			Type: drivers.StringPropertyType,
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to external DuckDB database.",
+			Placeholder: "/path/to/main.db",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -56,8 +60,24 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "DB",
-			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
-			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+			Description: "Path to DuckDB database",
+			Placeholder: "/path/to/duckdb.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from DuckDB.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 	ImplementsCatalog: true,
@@ -75,7 +95,40 @@ var motherduckSpec = drivers.Spec{
 			Secret: true,
 		},
 	},
-	ImplementsOLAP: true,
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:motherduck.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Access token",
+			Description: "MotherDuck access token",
+			Placeholder: "your.access_token.here",
+			Secret:      true,
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+	},
 }
 
 type Driver struct {
@@ -267,7 +320,9 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	instanceID string
-	db         *sqlx.DB
+	// do not use directly it can also be nil or closed
+	// use acquireOLAPConn/acquireMetaConn
+	db *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -313,7 +368,12 @@ var _ drivers.OLAPStore = &connection{}
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	err := c.db.PingContext(ctx)
+	conn, rel, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	err = conn.PingContext(ctx)
+	_ = rel()
 	c.connTimesMu.Lock()
 	defer c.connTimesMu.Unlock()
 	return errors.Join(err, c.hangingConnErr)
@@ -380,21 +440,24 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
 	}
 	if opts.OutputHandle == c {
-		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
-			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		if w, ok := opts.InputHandle.AsWarehouse(); ok {
+			return &warehouseToSelfExecutor{c, w}, true
+		}
+		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
+			return &localFileToSelfExecutor{c, f}, true
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
-			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
 			if supportsExportFormat(outputProps.Format) {
-				return &selfToFileExecutor{c, opts}, true
+				return &selfToFileExecutor{c}, true
 			}
 		}
 	}
@@ -419,6 +482,9 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 		if store, ok := from.AsSQLStore(); ok {
 			return NewSQLStoreToDuckDB(store, olap, c.logger), true
 		}
+		if store, ok := from.AsWarehouse(); ok {
+			return NewWarehouseToDuckDB(store, olap, c.logger), true
+		}
 		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
 			return NewObjectStoreToDuckDB(store, olap, c.logger), true
 		}
@@ -430,6 +496,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
@@ -478,6 +549,11 @@ func (c *connection) reopenDB() error {
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+	}
+
+	// Add init SQL if provided
+	if c.config.InitSQL != "" {
+		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
@@ -772,7 +848,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
-			estimatedDBSize, _ := c.EstimateSize()
+			estimatedDBSize := c.estimateSize(false)
 			c.activity.RecordMetric(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.

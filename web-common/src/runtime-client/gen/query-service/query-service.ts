@@ -19,6 +19,8 @@ import type {
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
+  V1ResolveComponentResponse,
+  QueryServiceResolveComponentBody,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
   V1ExportResponse,
@@ -65,6 +67,8 @@ import type {
   QueryServiceQueryBody,
   QueryServiceQueryBatch200,
   QueryServiceQueryBatchBody,
+  V1ExportReportResponse,
+  QueryServiceExportReportBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
@@ -217,6 +221,93 @@ export const createQueryServiceTableColumns = <
     queryKey,
     queryFn,
     enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ */
+export const queryServiceResolveComponent = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveComponentResponse>({
+    url: `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveComponentBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveComponentQueryKey = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+) => [
+  `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+  queryServiceResolveComponentBody,
+];
+
+export type QueryServiceResolveComponentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveComponent>>
+>;
+export type QueryServiceResolveComponentQueryError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveComponent = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveComponentQueryKey(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>
+  > = ({ signal }) =>
+    queryServiceResolveComponent(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+      signal,
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && component),
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -2100,6 +2191,69 @@ export const createQueryServiceQueryBatch = <
     {
       instanceId: string;
       data: QueryServiceQueryBatchBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ExportReport builds a URL to download the results of a query as a file.
+ */
+export const queryServiceExportReport = (
+  instanceId: string,
+  report: string,
+  queryServiceExportReportBody: QueryServiceExportReportBody,
+) => {
+  return httpClient<V1ExportReportResponse>({
+    url: `/v1/instances/${instanceId}/reports/${report}/export`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceExportReportBody,
+  });
+};
+
+export type QueryServiceExportReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceExportReport>>
+>;
+export type QueryServiceExportReportMutationBody = QueryServiceExportReportBody;
+export type QueryServiceExportReportMutationError = ErrorType<RpcStatus>;
+
+export const createQueryServiceExportReport = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    TError,
+    {
+      instanceId: string;
+      report: string;
+      data: QueryServiceExportReportBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    {
+      instanceId: string;
+      report: string;
+      data: QueryServiceExportReportBody;
+    }
+  > = (props) => {
+    const { instanceId, report, data } = props ?? {};
+
+    return queryServiceExportReport(instanceId, report, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceExportReport>>,
+    TError,
+    {
+      instanceId: string;
+      report: string;
+      data: QueryServiceExportReportBody;
     },
     TContext
   >(mutationFn, mutationOptions);

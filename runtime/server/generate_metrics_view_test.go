@@ -26,7 +26,7 @@ func TestGenerateMetricsView(t *testing.T) {
 	_, err = server.GenerateMetricsViewFile(ctx, &runtimev1.GenerateMetricsViewFileRequest{
 		InstanceId: instanceID,
 		Table:      "ad_bids",
-		Path:       "/dashboards/ad_bids_metrics_view.yaml",
+		Path:       "/metrics/ad_bids_metrics_view.yaml",
 		UseAi:      false,
 	})
 	require.NoError(t, err)
@@ -35,10 +35,10 @@ func TestGenerateMetricsView(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 
-	data, err := repo.Get(ctx, "/dashboards/ad_bids_metrics_view.yaml")
+	data, err := repo.Get(ctx, "/metrics/ad_bids_metrics_view.yaml")
 	require.NoError(t, err)
 
 	require.Contains(t, data, "model: ad_bids")
-	require.Contains(t, data, "valid_percent_of_total:")
 	require.Contains(t, data, "measures:")
+	require.Contains(t, data, "format_preset: humanize")
 }

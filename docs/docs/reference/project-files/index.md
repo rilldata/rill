@@ -11,7 +11,7 @@ When you create sources, models, and dashboards, these objects are represented a
 
 :::info Working with resources outside their native folders
 
-It is possible to define resources (such as [sources](sources.md), [models](models.md), [dashboards](dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
+It is possible to define resources (such as [sources](sources.md), [models](models.md), [metrics-views](metrics-view.md), [dashboards](explore-dashboards.md), [custom APIs](apis.md), or [themes](themes.md)) within <u>any</u> nested folder within your Rill project directory. However, for any YAML configuration file, it is then imperative that the `type` property is then appropriately defined within the underlying resource configuration or Rill will not able to resolve the resource type correctly!
 
 :::
 
@@ -21,6 +21,6 @@ You can see a few different example projects by visiting our [example github rep
 
 :::tip
 
-For more information about using Git or cloning projects locally, please see our page on [Github Basics](/deploy/existing-project/github-101).
+For more information about using Git or cloning projects locally, please see our page on [Github Basics](/deploy/deploy-dashboard/github-101).
 
 :::

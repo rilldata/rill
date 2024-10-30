@@ -5,16 +5,16 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { Duration } from "luxon";
+import type { Duration, DurationUnit } from "luxon";
 import {
-  AvailableTimeGrain,
+  type AvailableTimeGrain,
   Period,
   RangePresetType,
   ReferencePoint,
   TimeComparisonOption,
-  TimeGrain,
+  type TimeGrain,
   TimeOffsetType,
-  TimeRangeMeta,
+  type TimeRangeMeta,
   TimeRangePreset,
   TimeTruncationType,
 } from "./types";
@@ -114,7 +114,7 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_14_DAYS]: {
     label: "Last 14 Days",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
-    defaultComparison: TimeComparisonOption.WEEK,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -632,7 +632,7 @@ export const TIME_COMPARISON = {
   },
 };
 
-export const NO_COMPARISON_LABEL = "No comparison";
+export const NO_COMPARISON_LABEL = "No comparison dimension";
 
 export const DEFAULT_TIMEZONES = [
   "America/Los_Angeles",
@@ -653,7 +653,7 @@ export const DEFAULT_TIMEZONES = [
  */
 export const PeriodAndUnits: Array<{
   period: Period;
-  unit: keyof Duration;
+  unit: DurationUnit;
   grain: V1TimeGrain;
 }> = [
   {

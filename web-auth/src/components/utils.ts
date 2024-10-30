@@ -1,4 +1,4 @@
-export function validateEmail(email) {
+export function validateEmail(email: string) {
   const emailRegex =
     //eslint-disable-next-line
     /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -6,7 +6,10 @@ export function validateEmail(email) {
   return emailRegex.test(email);
 }
 
-export function getConnectionFromEmail(email, mapping) {
+export function getConnectionFromEmail(
+  email: string,
+  mapping: Record<string, string[]>,
+) {
   const domain = email.split("@")[1];
 
   for (const connection in mapping) {

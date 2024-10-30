@@ -36,3 +36,6 @@ export const ScrubBoxColor = "var(--color-primary-200)";
 export const ScrubArea0Color = "var(--color-primary-200)";
 export const ScrubArea1Color = "var(--color-primary-100)";
 export const ScrubArea2Color = "var(--color-primary-50)";
+export const ScrubMutedColor = "var(--color-muted-300)";
+
+export const BarColor = "var(--color-primary-400)";

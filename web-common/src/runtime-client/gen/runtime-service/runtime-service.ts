@@ -61,14 +61,19 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceWatchLogs200,
   RuntimeServiceWatchLogsParams,
+  V1GetModelSplitsResponse,
+  RuntimeServiceGetModelSplitsParams,
   V1GetResourceResponse,
   RuntimeServiceGetResourceParams,
   V1ListResourcesResponse,
   RuntimeServiceListResourcesParams,
   RuntimeServiceWatchResources200,
   RuntimeServiceWatchResourcesParams,
+  V1GetExploreResponse,
+  RuntimeServiceGetExploreParams,
   V1CreateTriggerResponse,
   RuntimeServiceCreateTriggerBody,
+  V1AnalyzeVariablesResponse,
   V1PingResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
@@ -1709,6 +1714,83 @@ export const createRuntimeServiceWatchLogs = <
 };
 
 /**
+ * @summary GetModelSplits returns the splits of a model
+ */
+export const runtimeServiceGetModelSplits = (
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetModelSplitsResponse>({
+    url: `/v1/instances/${instanceId}/models/${model}/splits`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetModelSplitsQueryKey = (
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+) => [
+  `/v1/instances/${instanceId}/models/${model}/splits`,
+  ...(params ? [params] : []),
+];
+
+export type RuntimeServiceGetModelSplitsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+>;
+export type RuntimeServiceGetModelSplitsQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGetModelSplits = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  model: string,
+  params?: RuntimeServiceGetModelSplitsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetModelSplitsQueryKey(instanceId, model, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+  > = ({ signal }) =>
+    runtimeServiceGetModelSplits(instanceId, model, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && model),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary GetResource looks up a specific catalog resource
  */
 export const runtimeServiceGetResource = (
@@ -1922,7 +2004,80 @@ export const createRuntimeServiceWatchResources = <
 };
 
 /**
- * @summary CreateTrigger creates a trigger in the catalog.
+ * @summary GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+ */
+export const runtimeServiceGetExplore = (
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetExploreResponse>({
+    url: `/v1/instances/${instanceId}/resources/explore`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetExploreQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+) => [
+  `/v1/instances/${instanceId}/resources/explore`,
+  ...(params ? [params] : []),
+];
+
+export type RuntimeServiceGetExploreQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetExplore>>
+>;
+export type RuntimeServiceGetExploreQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceGetExplore = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  params?: RuntimeServiceGetExploreParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetExploreQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetExplore>>
+  > = ({ signal }) => runtimeServiceGetExplore(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetExplore>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const runtimeServiceCreateTrigger = (
@@ -1982,6 +2137,72 @@ export const createRuntimeServiceCreateTrigger = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+ */
+export const runtimeServiceAnalyzeVariables = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1AnalyzeVariablesResponse>({
+    url: `/v1/instances/${instanceId}/variables/analyze`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceAnalyzeVariablesQueryKey = (
+  instanceId: string,
+) => [`/v1/instances/${instanceId}/variables/analyze`];
+
+export type RuntimeServiceAnalyzeVariablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>
+>;
+export type RuntimeServiceAnalyzeVariablesQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceAnalyzeVariables = <
+  TData = Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceAnalyzeVariablesQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>
+  > = ({ signal }) => runtimeServiceAnalyzeVariables(instanceId, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceAnalyzeVariables>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Ping returns information about the runtime
  */

@@ -25,8 +25,8 @@ For the most part, templating should be used in [SQL models](../build/models/mod
 Templating can be used in conjunction with variables to apply more advanced logic to your sources and models. 
 
 Variables can be set in Rill through one of the following methods:
-1. Defining the corresponding key-value pair under the top-level `vars` key in `rill.yaml`
-2. Manually passing in the variable when starting Rill (i.e. `rill start --var <var_name>=<value>`)
+1. Defining the corresponding key-value pair under the top-level `env` key in `rill.yaml`
+2. Manually passing in the variable when starting Rill (i.e. `rill start --env <var_name>=<value>`)
 3. Specifying the key-value pair for your variable in your `<RILL_PROJECT_HOME>/.env` file and/or using `rill env set` to set the variable via the CLI (and then [pushing / pulling as appropriate](../build/credentials/credentials.md#variables))
 
 For more information, please check our [reference documentation](/reference/project-files/rill-yaml.md#setting-variables).
@@ -45,7 +45,7 @@ To avoid this scenario, whenever you use templating in a model's SQL, it is <u>s
 # models/my_model.sql
 SELECT *
 FROM {{ ref "my_source" }}
-WHERE my_value = '{{ .vars.my_value }}'
+WHERE my_value = '{{ .env.my_value }}'
 ```
 
 In this example, the `ref` tag ensures that the model `my_model` will not be created until **after** a source named `my_source` has finished ingesting.
@@ -127,7 +127,7 @@ Our last example will highlight how the same templating concepts can be applied 
 Let's say that we wanted to apply a filter on the resulting model based on the `original_language` of the movie and also limit the number of records that we retrieve, which will be based on the `language` and `local_limit` variables we have defined. Taking a quick look at our project's `rill.yaml` file, we can see the following configuration (to return only English movies and apply a limit of 5):
 
 ```yaml
-vars:
+env:
   local_limit: 5
   language: "en"
 ```
@@ -136,8 +136,8 @@ Furthermore, our `model.sql` file contains the following SQL:
 
 ```sql
 SELECT * FROM {{ ref "data_source" }}
-WHERE original_language = '{{ .vars.language }}'
-{{if dev}} LIMIT {{ .vars.local_limit }} {{end}}
+WHERE original_language = '{{ .env.language }}'
+{{if dev}} LIMIT {{ .env.local_limit }} {{end}}
 ```
 
 :::warning When applying templated logic to model SQL, make sure to leverage the `ref` function
@@ -146,13 +146,13 @@ If you use templating in SQL models, you must replace references to tables / mod
 
 :::
 
-If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to Github](./existing-project/existing-project.md)):
+If we simply run Rill Developer using `rill start`, our model will look like the following (this will also reflect our data model in production, i.e. Rill Cloud, after we've [pushed the changes for the project to Github](./deploy-dashboard/)):
 
 ![Using templating logic with variables to create custom SQL](/img/deploy/templating/vars-example.png)
 
 **Now**, just to illustrate what a local override might look like, let's say we stop Rill Developer and then restart Rill via the CLI with the following command:
 ```bash
-rill start --var language="es" --var local_limit=100
+rill start --env language="es" --env local_limit=100
 ```
 
 Even though we have defaults set in `rill.yaml` (and this will be used by any downstream models and dashboards on Rill Cloud), we will instead see these local overrides come into effect with our templated logic to return Spanish movies and the model limit is now 100 rows.

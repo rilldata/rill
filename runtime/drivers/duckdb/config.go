@@ -37,14 +37,14 @@ type config struct {
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// StorageLimitBytes is the amount of disk storage available for the DB
-	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
 	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
 	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
 	ThreadsOverride int `mapstructure:"threads_override"`
-	// BootQueries is queries to run on boot. Use ; to separate multiple queries. Common use case is to provide project specific memory and threads ratios.
+	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
+	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.
+	InitSQL string `mapstructure:"init_sql"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 	// DBStoragePath is the path where the database files are stored. It is inferred from the DSN (can't be provided by user).
@@ -54,7 +54,9 @@ type config struct {
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
-	cfg := &config{}
+	cfg := &config{
+		ExtTableStorage: true,
+	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
@@ -64,6 +66,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if strings.HasPrefix(cfg.DSN, ":memory:") {
 		inMemory = true
 		cfg.DSN = strings.Replace(cfg.DSN, ":memory:", "", 1)
+		cfg.ExtTableStorage = false
 	}
 
 	// Parse DSN as URL
@@ -150,18 +153,4 @@ func generateDSN(path, encodedQuery string) string {
 		return path
 	}
 	return path + "?" + encodedQuery
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

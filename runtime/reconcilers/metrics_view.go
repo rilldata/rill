@@ -65,6 +65,19 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
+	// If the spec references a model, try resolving it to a table before validating it.
+	// For backwards compatibility, the model may actually be a source or external table.
+	// So if a model is not found, we optimistically use the model name as the table and proceed to validation
+	if mv.Spec.Model != "" {
+		res, err := r.C.Get(ctx, &runtimev1.ResourceName{Name: mv.Spec.Model, Kind: runtime.ResourceKindModel}, false)
+		if err == nil && res.GetModel().State.ResultTable != "" {
+			mv.Spec.Table = res.GetModel().State.ResultTable
+			mv.Spec.Connector = res.GetModel().State.ResultConnector
+		} else {
+			mv.Spec.Table = mv.Spec.Model
+		}
+	}
+
 	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
 	// We don't do that here because none of the operations below are particularly expensive.
 	// So it doesn't really matter if they run a bit more often than necessary ¯\_(ツ)_/¯.

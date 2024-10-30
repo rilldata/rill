@@ -179,8 +179,18 @@ service RuntimeService {
   rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
   }
+
+  // GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
+  rpc GetExplore(GetExploreRequest) returns (GetExploreResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
+  }
+
+  // GetModelSplits returns the splits of a model
+  rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
+  }
   
-  // CreateTrigger creates a trigger in the catalog.
+  // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
   // Triggers are ephemeral resources that will be cleaned up by the controller.
   rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
     option (google.api.http) = {
@@ -216,6 +226,13 @@ service RuntimeService {
       post: "/v1/dev-jwt",
       body: "*"
     };
+  }
+
+  // Variables
+
+  // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+  rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
   }
 }
 
@@ -253,6 +270,9 @@ message InstanceHealth {
   string controller_error = 1;
   string olap_error = 2;
   string repo_error = 3;
+  map<string, string> metrics_view_errors = 4;
+  int32 parse_error_count = 5;
+  int32 reconcile_error_count = 6;
 }
 
 // **********
@@ -291,13 +311,15 @@ message Connector {
   string name = 2;
   // Config for the connector
   map<string, string> config = 3;
-  // config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+  // Properties in config that use templating
+  repeated string templated_properties = 5;
+  // DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   map<string, string> config_from_variables = 4;
 }
 
 // Request message for RuntimeService.ListInstances
 message ListInstancesRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1; 
   string page_token = 2;
 }
 
@@ -472,7 +494,7 @@ message RenameFileResponse {}
 // Example contains metadata about an example project that is available for unpacking.
 message Example {
   string name = 1;
-  string title = 2;
+  string display_name = 2;
   string description = 3;
 }
 
@@ -497,7 +519,7 @@ message UnpackExampleResponse {}
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string title = 2;
+  string display_name = 2;
   bool force = 3;
 }
 
@@ -573,6 +595,15 @@ enum ResourceEvent {
   RESOURCE_EVENT_DELETE = 2;
 }
 
+message ModelSplit {
+  string key = 1;
+  google.protobuf.Struct data = 2;
+  google.protobuf.Timestamp watermark = 3;
+  google.protobuf.Timestamp executed_on = 4;
+  string error = 5;
+  uint32 elapsed_ms = 6;
+}
+
 message GetLogsRequest {
   string instance_id = 1;
   bool ascending = 2;
@@ -630,12 +661,45 @@ message GetResourceResponse {
   Resource resource = 1;
 }
 
-message CreateTriggerRequest {
+message GetExploreRequest {
   string instance_id = 1;
-  oneof trigger {
-    PullTriggerSpec pull_trigger_spec = 2;
-    RefreshTriggerSpec refresh_trigger_spec = 3;
-  }
+  string name = 2;
+}
+
+message GetExploreResponse {
+  Resource explore = 1;
+  Resource metrics_view = 2;
+}
+
+message GetModelSplitsRequest {
+  string instance_id = 1;
+  string model = 2;
+  bool pending = 5;
+  bool errored = 6;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
+  string page_token = 4;
+}
+
+message GetModelSplitsResponse {
+  repeated ModelSplit splits = 1;
+  string next_page_token = 2;
+}
+
+message CreateTriggerRequest {
+  // Instance to target.
+  string instance_id = 1;
+  // Resources to trigger. See RefreshTriggerSpec for details.
+  repeated ResourceName resources = 4;
+  // Models to trigger. Unlike resources, this supports advanced configuration of the refresh trigger.
+  repeated RefreshModelTrigger models = 5;
+  // Parser is a convenience flag to trigger the global project parser.
+  // Triggering the project parser ensures a pull of the repository and a full parse of all files.
+  bool parser = 6;
+  // Convenience flag to trigger all sources and models.
+  bool all_sources_models = 7;
+  // Convenience flag to trigger all sources and models.
+  // Will trigger models with RefreshModelTrigger.full set to true.
+  bool all_sources_models_full = 8;
 }
 
 message CreateTriggerResponse {}
@@ -677,6 +741,8 @@ message ConnectorDriver {
     string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
     bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;
@@ -699,6 +765,7 @@ message ConnectorDriver {
   bool implements_object_store = 17;
   bool implements_file_store = 18;
   bool implements_notifier = 19;
+  bool implements_warehouse = 20;
 }
 
 // AnalyzedConnector contains information about a connector that is referenced in the project files.
@@ -763,4 +830,23 @@ message IssueDevJWTRequest {
 // Response message for RuntimeService.IssueDevJWT
 message IssueDevJWTResponse {
   string jwt = 1;
+}
+
+// Request message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesResponse {
+  repeated AnalyzedVariable variables = 1;
+}
+
+message AnalyzedVariable {
+  // Name of the variable.
+  string name = 1;
+  // Default value set for the variable in rill.yaml, if any.
+  string default_value = 2;
+  // List of resources that appear to use the connector.
+  repeated ResourceName used_by = 8;
 }

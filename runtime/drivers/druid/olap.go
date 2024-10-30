@@ -126,6 +126,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -166,8 +170,15 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	q := `
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+	var likeClause string
+	var args []any
+	if like != "" {
+		likeClause = "AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
+		args = []any{like}
+	}
+
+	q := fmt.Sprintf(`
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
@@ -178,10 +189,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid'
+		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`
+	`, likeClause)
 
-	rows, err := i.c.db.QueryxContext(ctx, q)
+	rows, err := i.c.db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +208,24 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	q := `
+	// Ensure Coordinator is ready.
+	// The issues is that the request
+	//	SELECT ...
+	//	FROM INFORMATION_SCHEMA.TABLES T
+	//	JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
+	//	WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
+	//	ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+	// returns false-negative if the Coordinator is being restarted. Retrier is a more abstract component and it doesn't check
+	// if SQL tries to retrieve the dynamic schema and the will be no error from Druid Router
+	// (because if the dynamic schema is empty - it's considered OK by the Druid cluster).
+	q := "SELECT * FROM sys.segments LIMIT 1"
+	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	if err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	q = `
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
@@ -210,7 +239,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	rows, err = i.c.db.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
 	}

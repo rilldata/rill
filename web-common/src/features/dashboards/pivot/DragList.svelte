@@ -3,7 +3,7 @@
   import PivotDragItem from "./PivotDragItem.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { createEventDispatcher } from "svelte";
-  import { PivotChipData, PivotChipType } from "./types";
+  import { type PivotChipData, PivotChipType } from "./types";
   import { writable } from "svelte/store";
   import { swapListener } from "./swapListener";
 

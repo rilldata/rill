@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"gopkg.in/yaml.v2"
 )
 
 //go:embed all:embed
@@ -17,7 +17,7 @@ var ErrExampleNotFound = errors.New("example not found")
 
 type Example struct {
 	Name        string
-	Title       string
+	DisplayName string
 	Description string
 }
 
@@ -33,20 +33,27 @@ func List() ([]Example, error) {
 			continue
 		}
 
-		rillYamlContents, err := examplesFS.ReadFile(filepath.Join("embed/dist", entry.Name(), "rill.yaml"))
+		rillYamlContents, err := examplesFS.ReadFile(filepath.Join("embed", "dist", entry.Name(), "rill.yaml"))
 		if err != nil {
 			return nil, err
 		}
 
-		rillYaml, err := rillv1beta.ParseProjectConfig(rillYamlContents)
-		if err != nil {
+		contents := struct {
+			DisplayName string
+			Title       string
+			Description string
+		}{}
+		if err := yaml.Unmarshal(rillYamlContents, &contents); err != nil {
 			return nil, err
+		}
+		if contents.DisplayName == "" { // Backwards compatibility
+			contents.DisplayName = contents.Title
 		}
 
 		exampleList = append(exampleList, Example{
 			Name:        entry.Name(),
-			Title:       rillYaml.Title,
-			Description: rillYaml.Description,
+			DisplayName: contents.DisplayName,
+			Description: contents.Description,
 		})
 	}
 

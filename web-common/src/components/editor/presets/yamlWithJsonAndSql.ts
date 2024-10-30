@@ -1,6 +1,5 @@
 import { jsonLanguage } from "@codemirror/lang-json";
 import { yamlLanguage } from "@codemirror/lang-yaml";
-import { LRLanguage } from "@codemirror/language";
 import { parseMixed } from "@lezer/common";
 import { DuckDBSQL } from "./duckDBDialect";
 
@@ -60,18 +59,10 @@ const metricsParsing = parseMixed(({ name, from, to }, input) => {
   return null;
 });
 
-const customYAMLandSQLParser = yamlLanguage.parser.configure({
+export const customYAMLwithJSONandSQL = yamlLanguage.configure({
   wrap,
 });
 
-const metricsPlusSQLParser = yamlLanguage.parser.configure({
+export const metricsPlusSQL = yamlLanguage.configure({
   wrap: metricsParsing,
-});
-
-export const metricsPlusSQL = LRLanguage.define({
-  parser: metricsPlusSQLParser,
-});
-
-export const customYAMLwithJSONandSQL = LRLanguage.define({
-  parser: customYAMLandSQLParser,
 });

@@ -1,5 +1,5 @@
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -87,7 +87,7 @@ export function getMeasureFilterForDimension(
     filteredMeasures.push({
       dimensionName: name,
       name: filter.measure,
-      label: measure.label || measure.expression || filter.measure,
+      label: measure.displayName || measure.expression || filter.measure,
       filter,
     });
   });

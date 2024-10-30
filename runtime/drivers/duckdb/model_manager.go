@@ -28,10 +28,10 @@ type ModelOutputProperties struct {
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 }
 
-func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {
-	if opts.Incremental {
+func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
+	if opts.Incremental || opts.SplitRun {
 		if p.Materialize != nil && !*p.Materialize {
-			return fmt.Errorf("incremental models must be materialized")
+			return fmt.Errorf("incremental or split models must be materialized")
 		}
 		p.Materialize = boolPtr(true)
 	}
@@ -131,6 +131,13 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	}
 
 	return olap.DropTable(ctx, table.Name, table.View)
+}
+
+func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+	if a.Table != b.Table {
+		return nil, fmt.Errorf("cannot merge split results that output to different table names (table %q is not %q)", a.Table, b.Table)
+	}
+	return a, nil
 }
 
 // stagingTableName returns a stable temporary table name for a destination table.

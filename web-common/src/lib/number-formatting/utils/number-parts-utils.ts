@@ -10,7 +10,7 @@ export const numberPartsToString = (parts: NumberParts): string =>
   (parts.percent || "");
 
 export function numStrToParts(numStr: string): NumberParts {
-  const nonNumReMatch = numStr.match(/[a-zA-z ]/);
+  const nonNumReMatch = numStr.match(/[a-zA-Z ]/);
   let int = "";
   const dot: "" | "." = numStr.includes(".") ? "." : "";
   let frac = "";

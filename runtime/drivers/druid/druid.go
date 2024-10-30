@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	// Load Druid database/sql driver
@@ -34,41 +36,8 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "8888",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -143,26 +112,31 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	dsn, err := dnsFromConfig(conf)
+	dsn, err := dsnFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := sqlx.Open("druid", dsn)
+	db, err := otelsql.Open("druid", dsn)
 	if err != nil {
 		return nil, err
 	}
-
 	// very roughly approximating num queries required for a typical page load
 	db.SetMaxOpenConns(20)
 
-	err = db.Ping()
+	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
+	if err != nil {
+		return nil, fmt.Errorf("druid: failed to register db stats metrics: %w", err)
+	}
+
+	dbx := sqlx.NewDb(db, "druid")
+	err = dbx.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("druid: %w", err)
 	}
 
 	conn := &connection{
-		db:     db,
+		db:     dbx,
 		config: conf,
 		logger: logger,
 	}
@@ -274,6 +248,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
@@ -285,25 +264,11 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 	return nil, drivers.ErrNotNotifier
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
-}
-
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
 }
 
-func GetDSN(config map[string]string) (string, error) {
-	conf := &configProperties{}
-	err := mapstructure.WeakDecode(config, conf)
-	if err != nil {
-		return "", err
-	}
-
-	return dnsFromConfig(conf)
-}
-
-func dnsFromConfig(conf *configProperties) (string, error) {
+func dsnFromConfig(conf *configProperties) (string, error) {
 	var dsn string
 	var err error
 	if conf.DSN != "" {
@@ -346,6 +311,9 @@ func dnsFromConfig(conf *configProperties) (string, error) {
 func correctURL(dsn string) (string, error) {
 	u, err := url.Parse(dsn)
 	if err != nil {
+		if strings.Contains(err.Error(), dsn) { // avoid returning the actual DSN with the password which will be logged
+			return "", fmt.Errorf("%s", strings.ReplaceAll(err.Error(), dsn, "<masked>"))
+		}
 		return "", err
 	}
 

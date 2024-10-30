@@ -16,7 +16,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	setRoleCmd := &cobra.Command{
 		Use:   "set-role",
-		Short: "Set Role",
+		Short: "Change a user's role",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
 			if err != nil {

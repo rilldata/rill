@@ -69,7 +69,7 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender func(st
 	}
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.Mkdir(dir, fs.ModePerm); err != nil {
+		if err := os.MkdirAll(dir, fs.ModePerm); err != nil {
 			return err
 		}
 	}

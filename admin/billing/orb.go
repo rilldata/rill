@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
@@ -11,23 +12,37 @@ import (
 	"github.com/orbcorp/orb-go"
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
+	"go.uber.org/zap"
 )
 
 const (
 	requestMaxLimit = 500
 	requestTimeout  = 10 * time.Second
+
+	avalaraTaxProvider = "avalara"
+	taxJarTaxProvider  = "taxjar"
+	noneTaxProvider    = "none"
+
+	avalaraTaxExemptionCode = "R" // code for NON-RESIDENT
 )
+
+var ErrCustomerIDRequired = errors.New("customer id is required")
 
 var _ Biller = &Orb{}
 
 type Orb struct {
-	client *orb.Client
+	client        *orb.Client
+	logger        *zap.Logger
+	webhookSecret string
+	taxProvider   string
 }
 
-func NewOrb(orbKey string) Biller {
+func NewOrb(logger *zap.Logger, orbKey, webhookSecret, taxProvider string) Biller {
 	c := orb.NewClient(option.WithAPIKey(orbKey), option.WithRequestTimeout(requestTimeout))
 
-	return &Orb{client: c}
+	return &Orb{client: c, logger: logger, webhookSecret: webhookSecret, taxProvider: taxProvider}
 }
 
 func (o *Orb) Name() string {
@@ -94,72 +109,105 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, ErrNotFound
 }
 
-func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
+func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
+	var paymentProviderType orb.CustomerNewParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerNewParamsPaymentProviderStripeCharge
+	default:
+		return nil, fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
-		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
+		Email:              orb.String(Email(organization)),
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
+		PaymentProvider:    orb.F(paymentProviderType),
+		PaymentProviderID:  orb.String(organization.PaymentCustomerID),
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return customer.ExternalCustomerID, nil
+	return getBillingCustomerFromOrbCustomer(customer), nil
+}
+
+func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
+	customer, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) {
+			if orbErr.Status == orb.ErrorStatus404 {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, err
+	}
+
+	return getBillingCustomerFromOrbCustomer(customer), nil
+}
+
+func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
+	var paymentProviderType orb.CustomerUpdateByExternalIDParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerUpdateByExternalIDParamsPaymentProviderStripeCharge
+	default:
+		return fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		PaymentProvider:   orb.F(paymentProviderType),
+		PaymentProviderID: orb.String(paymentProviderID),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		Email: orb.String(email),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
+	c, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		return err
+	}
+
+	err = o.client.Customers.Delete(ctx, c.ID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-		ExternalCustomerID: orb.String(customerID),
-		PlanID:             orb.String(plan.ID),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &Subscription{
-		ID:                           sub.ID,
-		CustomerID:                   sub.Customer.ExternalCustomerID,
-		Plan:                         plan,
-		StartDate:                    sub.StartDate,
-		EndDate:                      sub.EndDate,
-		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
-		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
-		TrialEndDate:                 sub.TrialInfo.EndDate,
-		Metadata:                     sub.Metadata,
-	}, nil
+	return o.createSubscription(ctx, customerID, plan)
 }
 
-func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
-	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
-		ExternalCustomerID: orb.String(customerID),
-		Status:             orb.F(orb.SubscriptionListParamsStatusActive),
-	})
+func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error) {
+	subs, err := o.getActiveSubscriptions(ctx, customerID)
 	if err != nil {
 		return nil, err
 	}
 
-	var subscriptions []*Subscription
-	for i := 0; i < len(sub.Data); i++ {
-		s := sub.Data[i]
-		plan, err := getBillingPlanFromOrbPlan(&s.Plan)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, &Subscription{
-			ID:                           s.ID,
-			CustomerID:                   s.Customer.ExternalCustomerID,
-			Plan:                         plan,
-			StartDate:                    s.StartDate,
-			EndDate:                      s.EndDate,
-			CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
-			CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
-			TrialEndDate:                 s.TrialInfo.EndDate,
-			Metadata:                     s.Metadata,
-		})
+	if len(subs) == 0 {
+		return nil, ErrNotFound
 	}
-	return subscriptions, nil
+
+	if len(subs) > 1 {
+		return nil, fmt.Errorf("multiple active subscriptions (%d) found for customer %s", len(subs), customerID)
+	}
+
+	return subs[0], nil
 }
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
@@ -172,7 +220,7 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	}
 	return &Subscription{
 		ID:                           s.ID,
-		CustomerID:                   s.Customer.ExternalCustomerID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,
@@ -183,27 +231,15 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	}, nil
 }
 
-func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
-	var cancelParams orb.SubscriptionCancelParams
-	switch cancelOption {
-	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionEndOfSubscriptionTerm),
-		}
-	case SubscriptionCancellationOptionImmediate:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
-		}
-	}
-
-	_, err := o.client.Subscriptions.Cancel(ctx, subscriptionID, cancelParams)
+func (o *Orb) UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error) {
+	sub, err := o.client.Subscriptions.UnscheduleCancellation(ctx, subscriptionID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return o.getBillingSubscriptionFromOrbSubscription(ctx, sub)
 }
 
-func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
+func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error) {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
 	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
@@ -216,16 +252,116 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 		}
 	}
 
-	subs, err := o.GetSubscriptionsForCustomer(ctx, customerID)
+	// cancel all upcoming subscriptions for the customer immediately, there shouldn't be any but just in case
+	upcomingSubs, err := o.getUpcomingSubscriptionsForCustomer(ctx, customerID)
 	if err != nil {
-		return err
+		return time.Time{}, err
 	}
+	for _, s := range upcomingSubs {
+		_, err := o.client.Subscriptions.Cancel(ctx, s.ID, orb.SubscriptionCancelParams{
+			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
+		})
+		if err != nil {
+			return time.Time{}, err
+		}
+	}
+
+	// cancel all active subscriptions for the customer as per the cancel option
+	subs, err := o.getActiveSubscriptions(ctx, customerID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	cancelDate := time.Time{}
 	for _, s := range subs {
-		_, err := o.client.Subscriptions.Cancel(ctx, s.ID, cancelParams)
+		sub, err := o.client.Subscriptions.Cancel(ctx, s.ID, cancelParams)
+		if err != nil {
+			return time.Time{}, err
+		}
+		if sub.EndDate.After(cancelDate) {
+			cancelDate = sub.EndDate
+		}
+	}
+	return cancelDate, nil
+}
+
+func (o *Orb) GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error) {
+	invoice, err := o.client.Invoices.Fetch(ctx, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	return getBillingInvoiceFromOrbInvoice(invoice), nil
+}
+
+func (o *Orb) IsInvoiceValid(ctx context.Context, invoice *Invoice) bool {
+	return !strings.EqualFold(invoice.Status, "void")
+}
+
+func (o *Orb) IsInvoicePaid(ctx context.Context, invoice *Invoice) bool {
+	return strings.EqualFold(invoice.Status, "paid")
+}
+
+func (o *Orb) MarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	switch o.taxProvider {
+	case avalaraTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+				TaxExempt:        orb.F(true),
+				TaxProvider:      orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+				TaxExemptionCode: orb.F(avalaraTaxExemptionCode), // code for NON-RESIDENT
+			}),
+		})
 		if err != nil {
 			return err
 		}
+	case taxJarTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+				TaxExempt:   orb.F(true),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+				// category option not available in TaxJar config
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case noneTaxProvider:
+		o.logger.Named("billing").Warn("no tax provider is set, cannot mark customer tax exempt", zap.String("customer_id", customerID))
+	default:
+		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
 	}
+
+	return nil
+}
+
+func (o *Orb) UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error {
+	switch o.taxProvider {
+	case avalaraTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewAvalaraTaxConfigurationTaxProviderAvalara),
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case taxJarTaxProvider:
+		_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+			TaxConfiguration: orb.F[orb.CustomerUpdateByExternalIDParamsTaxConfigurationUnion](orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfiguration{
+				TaxExempt:   orb.F(false),
+				TaxProvider: orb.F(orb.CustomerUpdateByExternalIDParamsTaxConfigurationNewTaxJarConfigurationTaxProviderTaxjar),
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	case noneTaxProvider:
+		o.logger.Named("billing").Warn("no tax provider is set, cannot unmark customer tax exempt", zap.String("customer_id", customerID))
+	default:
+		o.logger.Error("unsupported tax provider", zap.String("tax_provider", o.taxProvider))
+	}
+
 	return nil
 }
 
@@ -271,6 +407,107 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }
 
+func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
+	return UsageReportingGranularityHour
+}
+
+func (o *Orb) GetReportingWorkerCron() string {
+	// run every hour at around end of the hour
+	return "55 * * * *"
+}
+
+func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
+	if o.webhookSecret == "" {
+		return nil
+	}
+	ow := &orbWebhook{orb: o, jobs: jc}
+	return ow.handleWebhook
+}
+
+func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
+	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
+		ExternalCustomerID: orb.String(customerID),
+		PlanID:             orb.String(plan.ID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Subscription{
+		ID:                           sub.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&sub.Customer),
+		Plan:                         plan,
+		StartDate:                    sub.StartDate,
+		EndDate:                      sub.EndDate,
+		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 sub.TrialInfo.EndDate,
+		Metadata:                     sub.Metadata,
+	}, nil
+}
+
+func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status orb.SubscriptionListParamsStatus) ([]*Subscription, error) {
+	if customerID == "" { // weird behaviour but empty external customer id returns all active subscriptions
+		return nil, ErrCustomerIDRequired
+	}
+
+	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
+		ExternalCustomerID: orb.String(customerID),
+		Status:             orb.F(status),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var subscriptions []*Subscription
+	for i := 0; i < len(sub.Data); i++ {
+		s := sub.Data[i]
+		billingSub, err := o.getBillingSubscriptionFromOrbSubscription(ctx, &s)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions = append(subscriptions, billingSub)
+	}
+	return subscriptions, nil
+}
+
+func (o *Orb) getActiveSubscriptions(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusActive)
+	if err != nil {
+		return nil, err
+	}
+	return subs, nil
+}
+
+func (o *Orb) getUpcomingSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
+	subs, err := o.getSubscriptions(ctx, customerID, orb.SubscriptionListParamsStatusUpcoming)
+	if err != nil {
+		return nil, err
+	}
+	return subs, nil
+}
+
+func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
+	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
+		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
+		Status: orb.F(orb.PlanListParamsStatusActive),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var billingPlans []*Plan
+	for i := 0; i < len(plans.Data); i++ {
+		billingPlan, err := o.getBillingPlanFromOrbPlan(ctx, &plans.Data[i])
+		if err != nil {
+			return nil, err
+		}
+		billingPlans = append(billingPlans, billingPlan)
+	}
+	return billingPlans, nil
+}
+
 func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent) error {
 	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
 	err := re.RunCtx(ctx, func(ctx context.Context) error {
@@ -295,36 +532,16 @@ func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent
 	return nil
 }
 
-func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
-	return UsageReportingGranularityHour
-}
-
-func (o *Orb) GetReportingWorkerCron() string {
-	// run every hour at around end of the hour
-	return "55 * * * *"
-}
-
-func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
-	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
-		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
-		Status: orb.F(orb.PlanListParamsStatusActive),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var billingPlans []*Plan
-	for i := 0; i < len(plans.Data); i++ {
-		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
+func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan, error) {
+	if p.BasePlanID != "" {
+		// fetch base plan metadata, child plans are auto-created by Orb in case of overrides so will be only one level deep
+		basePlan, err := o.client.Plans.Fetch(ctx, p.BasePlanID)
 		if err != nil {
 			return nil, err
 		}
-		billingPlans = append(billingPlans, billingPlan)
+		p.Metadata = basePlan.Metadata
 	}
-	return billingPlans, nil
-}
 
-func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 	metadata := &planMetadata{}
 	err := mapstructure.WeakDecode(p.Metadata, metadata)
 	if err != nil {
@@ -357,6 +574,48 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 		Metadata:        p.Metadata,
 	}
 	return billingPlan, nil
+}
+
+func (o *Orb) getBillingSubscriptionFromOrbSubscription(ctx context.Context, s *orb.Subscription) (*Subscription, error) {
+	plan, err := o.getBillingPlanFromOrbPlan(ctx, &s.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID:                           s.ID,
+		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
+		Plan:                         plan,
+		StartDate:                    s.StartDate,
+		EndDate:                      s.EndDate,
+		CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 s.TrialInfo.EndDate,
+		Metadata:                     s.Metadata,
+	}, nil
+}
+
+func getBillingCustomerFromOrbCustomer(c *orb.Customer) *Customer {
+	return &Customer{
+		ID:                c.ExternalCustomerID,
+		Email:             c.Email,
+		Name:              c.Name,
+		PaymentProviderID: c.PaymentProviderID,
+		PortalURL:         c.PortalURL,
+	}
+}
+
+func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
+	return &Invoice{
+		ID:             i.ID,
+		Status:         string(i.Status),
+		CustomerID:     i.Customer.ExternalCustomerID,
+		Amount:         i.AmountDue,
+		Currency:       i.Currency,
+		DueDate:        i.DueDate,
+		CreatedAt:      i.CreatedAt,
+		SubscriptionID: i.Subscription.ID,
+		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
+	}
 }
 
 // retryErrClassifier classifies 429 and 500 errors as retryable and all other errors as non retryable

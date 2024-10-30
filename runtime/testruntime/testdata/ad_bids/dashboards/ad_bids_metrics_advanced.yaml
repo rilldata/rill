@@ -1,0 +1,57 @@
+model: ad_bids
+display_name: Ad bids
+description:
+
+timeseries: timestamp
+smallest_time_grain: ""
+
+dimensions:
+  - name: pub
+    display_name: Publisher
+    property: publisher
+    description: ""
+  - name: dom
+    display_name: Domain
+    property: domain
+    description: ""
+  - name: nolabel_pub
+    property: publisher
+  - name: space_label
+    display_name: Space Label
+    expression: "publisher"
+  - name: domain_parts
+    display_name: Domain Parts
+    expression: "string_split(domain, '.')"
+    unnest: true
+  - name: tld
+    display_name: TLD
+    expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
+  - name: null_publisher
+    display_name: Null Publisher
+    expression: case when publisher is null then true else false end
+
+measures:
+  - name: bids
+    display_name: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - display_name: "Average bid price"
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: m1 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: bid_price 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: bids_1day_rolling_avg
+    expression: AVG(bids)
+    requires: [bids]
+    window:
+      order: timestamp
+      frame: RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW
+

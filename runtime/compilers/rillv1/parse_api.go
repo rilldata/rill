@@ -3,12 +3,25 @@ package rillv1
 import (
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"gopkg.in/yaml.v3"
 )
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
 	DataYAML `yaml:",inline" mapstructure:",squash"`
+	OpenAPI  *OpenAPIYAML `yaml:"openapi"`
+}
+
+type OpenAPIYAML struct {
+	Summary string `yaml:"summary"`
+	Request struct {
+		Parameters []map[string]any `yaml:"parameters"`
+	} `yaml:"request"`
+	Response struct {
+		Schema map[string]any `yaml:"schema"`
+	} `yaml:"response"`
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -18,6 +31,35 @@ func (p *Parser) parseAPI(node *Node) error {
 	err := p.decodeNodeYAML(node, false, tmp)
 	if err != nil {
 		return err
+	}
+
+	// Validate
+	var openapiSummary string
+	var openapiParams []*structpb.Struct
+	var openapiSchema *structpb.Struct
+	if tmp.OpenAPI != nil {
+		openapiSummary = tmp.OpenAPI.Summary
+
+		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
+		if err != nil {
+			return fmt.Errorf("encountered invalid parameter type: %w", err)
+		}
+		for _, param := range tmp.OpenAPI.Request.Parameters {
+			paramPB, err := structpb.NewStruct(param)
+			if err != nil {
+				return fmt.Errorf("encountered invalid parameter type: %w", err)
+			}
+			openapiParams = append(openapiParams, paramPB)
+		}
+
+		_, err = openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
+		if err != nil {
+			return fmt.Errorf("encountered invalid schema type: %w", err)
+		}
+		openapiSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
+		if err != nil {
+			return fmt.Errorf("encountered invalid schema type: %w", err)
+		}
 	}
 
 	// Map common node properties to DataYAML
@@ -43,6 +85,9 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
+	r.APISpec.OpenapiSummary = openapiSummary
+	r.APISpec.OpenapiParameters = openapiParams
+	r.APISpec.OpenapiResponseSchema = openapiSchema
 
 	return nil
 }
@@ -50,11 +95,13 @@ func (p *Parser) parseAPI(node *Node) error {
 // DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
 // It is used across multiple resources, usually under "data:", but inlined for APIs.
 type DataYAML struct {
-	Connector  string         `yaml:"connector"`
-	SQL        string         `yaml:"sql"`
-	MetricsSQL string         `yaml:"metrics_sql"`
-	API        string         `yaml:"api"`
-	Args       map[string]any `yaml:"args"`
+	Connector      string         `yaml:"connector"`
+	SQL            string         `yaml:"sql"`
+	MetricsSQL     string         `yaml:"metrics_sql"`
+	API            string         `yaml:"api"`
+	Args           map[string]any `yaml:"args"`
+	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
+	ResourceStatus map[string]any `yaml:"resource_status"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -90,6 +137,32 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 		if raw.Args != nil {
 			resolverProps["args"] = raw.Args
 		}
+	}
+
+	// Handle glob resolver
+	if !raw.Glob.IsZero() {
+		var props map[string]any
+		switch raw.Glob.Kind {
+		case yaml.ScalarNode:
+			props = map[string]any{"path": raw.Glob.Value}
+		default:
+			props = make(map[string]any)
+			err := raw.Glob.Decode(props)
+			if err != nil {
+				return "", nil, nil, fmt.Errorf("failed to parse glob properties: %w", err)
+			}
+		}
+
+		count++
+		resolver = "glob"
+		resolverProps = props
+	}
+
+	// Handle resource_status resolver
+	if raw.ResourceStatus != nil {
+		count++
+		resolver = "resource_status"
+		resolverProps = raw.ResourceStatus
 	}
 
 	// Validate there was exactly one resolver

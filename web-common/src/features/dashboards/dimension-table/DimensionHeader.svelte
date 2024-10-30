@@ -12,24 +12,29 @@
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import exportToplist from "./export-toplist";
+  import {
+    createQueryServiceExport,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
 
   export let dimensionName: string;
   export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
-  export let enableSearch = true;
 
   const dispatch = createEventDispatcher();
+  const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
   const {
@@ -50,7 +55,7 @@
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
+    exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
@@ -59,6 +64,8 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  $: metricsViewProto = $dashboardStore.proto;
 
   let searchBarOpen = false;
 
@@ -127,13 +134,13 @@
       .map((m) => {
         return {
           id: m.name as string,
-          title: m.label || (m.name as string),
+          title: m.displayName || (m.name as string),
           type: PivotChipType.Measure,
         };
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
@@ -145,19 +152,27 @@
   onDestroy(() => {
     clearDimensionTableSearchString();
   });
+
+  const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
+
+  const handleExportTopList = async (format: V1ExportFormat) => {
+    await exportToplist({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+    });
+  };
 </script>
 
-<div class="flex justify-between items-center p-1 pr-5">
+<div class="flex justify-between items-center p-1 pr-5 h-7">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
-      <div>
-        <Spinner size="16px" status={EntityStatus.Running} />
-      </div>
+      <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
       <span class="ui-copy-icon">
         <Back size="16px" />
       </span>
-      <span> All Dimensions </span>
+      <span>All Dimensions</span>
     {/if}
   </button>
 
@@ -180,7 +195,7 @@
           <Close />
         </button>
       </div>
-    {:else if enableSearch}
+    {:else}
       <button
         class="flex items-center gap-x-2 p-1.5 text-gray-700"
         in:fly|global={{ x: 10, duration: 300 }}
@@ -211,7 +226,14 @@
     </Tooltip>
 
     {#if $exports}
-      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+      <ExportMenu
+        label="Export dimension table data"
+        onExport={handleExportTopList}
+        includeScheduledReport={$adminServer}
+        queryArgs={$scheduledReportsQueryArgs}
+        {metricsViewProto}
+        exploreName={$exploreName}
+      />
     {/if}
     <button
       class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
@@ -226,8 +248,8 @@
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
-  on:close={() => {
+  onCancel={() => {
     showReplacePivotModal = false;
   }}
-  on:replace={() => createPivot()}
+  onReplace={createPivot}
 />

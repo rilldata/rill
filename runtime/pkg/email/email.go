@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"net/url"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -30,40 +29,44 @@ func New(sender Sender) *Client {
 type ScheduledReport struct {
 	ToEmail        string
 	ToName         string
-	Title          string
+	DisplayName    string
 	ReportTime     time.Time
 	DownloadFormat string
 	OpenLink       string
 	DownloadLink   string
 	EditLink       string
+	External       bool
 }
 
 type scheduledReportData struct {
-	Title            string
+	DisplayName      string
 	ReportTimeString string // Will be inferred from ReportTime
 	DownloadFormat   string
 	OpenLink         template.URL
 	DownloadLink     template.URL
 	EditLink         template.URL
+	External         bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		Title:            opts.Title,
+		DisplayName:      opts.DisplayName,
 		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
 		DownloadFormat:   opts.DownloadFormat,
 		OpenLink:         template.URL(opts.OpenLink),
 		DownloadLink:     template.URL(opts.DownloadLink),
 		EditLink:         template.URL(opts.EditLink),
+		External:         opts.External,
 	}
 
 	// Build subject
-	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
+	subject := fmt.Sprintf("%s (%s)", opts.DisplayName, data.ReportTimeString)
 
+	var err error
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	err = c.templates.Lookup("scheduled_report.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
@@ -76,7 +79,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return c.sendAlertStatus(opts, &alertStatusData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			IsPass:              true,
 			IsRecover:           opts.IsRecover,
@@ -85,7 +88,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 		return c.sendAlertFail(opts, &alertFailData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			FailRow:             opts.FailRow,
 			OpenLink:            template.URL(opts.OpenLink),
@@ -93,7 +96,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
-			Title:               opts.Title,
+			DisplayName:         opts.DisplayName,
 			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
 			IsError:             true,
 			ErrorMessage:        opts.ExecutionError,
@@ -106,7 +109,7 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 }
 
 type alertFailData struct {
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
 	OpenLink            template.URL
@@ -114,7 +117,7 @@ type alertFailData struct {
 }
 
 func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
 	err := c.templates.Lookup("alert_fail.html").Execute(buf, data)
@@ -127,7 +130,7 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 }
 
 type alertStatusData struct {
-	Title               string
+	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	IsPass              bool
 	IsRecover           bool
@@ -138,7 +141,7 @@ type alertStatusData struct {
 }
 
 func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
-	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
 	}
@@ -173,11 +176,28 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
+type Informational struct {
+	ToEmail string
+	ToName  string
+	Subject string
+	Title   string
+	Body    template.HTML
+}
+
+func (c *Client) SendInformational(opts *Informational) error {
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("informational.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+}
+
 type OrganizationInvite struct {
 	ToEmail       string
 	ToName        string
-	AdminURL      string
-	FrontendURL   string
+	AcceptURL     string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -188,11 +208,6 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
-	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
-	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
-	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
-
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -200,14 +215,14 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		Title:      "Accept your invitation to Rill",
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: finalURL,
+		ButtonLink: opts.AcceptURL,
 	})
 }
 
 type OrganizationAddition struct {
 	ToEmail       string
 	ToName        string
-	FrontendURL   string
+	OpenURL       string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -225,15 +240,14 @@ func (c *Client) SendOrganizationAddition(opts *OrganizationAddition) error {
 		Title:      fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
 		Body:       template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName),
+		ButtonLink: opts.OpenURL,
 	})
 }
 
 type ProjectInvite struct {
 	ToEmail       string
 	ToName        string
-	AdminURL      string
-	FrontendURL   string
+	AcceptURL     string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -245,11 +259,6 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
-	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
-	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName))
-	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
-
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -257,14 +266,14 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		Title:      fmt.Sprintf("You have been invited to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s/%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.ProjectName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: finalURL,
+		ButtonLink: opts.AcceptURL,
 	})
 }
 
 type ProjectAddition struct {
 	ToEmail       string
 	ToName        string
-	FrontendURL   string
+	OpenURL       string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -283,14 +292,258 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 		Title:      fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
+		ButtonLink: opts.OpenURL,
 	})
 }
 
-func mustJoinURLPath(base string, elem ...string) string {
-	res, err := url.JoinPath(base, elem...)
-	if err != nil {
-		panic(err)
+type ProjectAccessRequest struct {
+	Title       string
+	Body        template.HTML
+	ToEmail     string
+	ToName      string
+	Email       string
+	OrgName     string
+	ProjectName string
+	ApproveLink string
+	DenyLink    string
+}
+
+func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
+	subject := fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
+	if opts.Body == "" {
+		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like to view <b>%s/%s</b>", opts.Email, opts.OrgName, opts.ProjectName))
 	}
-	return res
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("project_access_request.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+type ProjectAccessGranted struct {
+	ToEmail     string
+	ToName      string
+	OpenURL     string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your request to %s/%s has been approved", opts.OrgName, opts.ProjectName),
+		Title:      "",
+		Body:       template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
+		ButtonText: "View project in Rill",
+		ButtonLink: opts.OpenURL,
+	})
+}
+
+type ProjectAccessRejected struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your request to %s/%s has been denied", opts.OrgName, opts.ProjectName),
+		Title:   "",
+		Body:    template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
+	})
+}
+
+type InvoicePaymentFailed struct {
+	ToEmail            string
+	ToName             string
+	OrgName            string
+	Currency           string
+	Amount             string
+	PaymentURL         string
+	GracePeriodEndDate time.Time
+}
+
+func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Payment for %s has failed", opts.OrgName),
+		Title:      fmt.Sprintf("Payment for %s has failed", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+		ButtonText: "Update Payment Info",
+		ButtonLink: opts.PaymentURL,
+	})
+}
+
+type InvoicePaymentSuccess struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	Currency string
+	Amount   string
+}
+
+// SendInvoicePaymentSuccess Currently Used only when a previously failed invoice payment succeeds
+func (c *Client) SendInvoicePaymentSuccess(opts *InvoicePaymentSuccess) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Payment for %s has succeeded", opts.OrgName),
+		Title:   fmt.Sprintf("Payment for %s has succeeded", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has succeeded.", opts.Currency, opts.Amount, opts.OrgName)),
+	})
+}
+
+type InvoiceUnpaid struct {
+	ToEmail    string
+	ToName     string
+	OrgName    string
+	PaymentURL string
+}
+
+// SendInvoiceUnpaid sent after the payment grace period has ended
+func (c *Client) SendInvoiceUnpaid(opts *InvoiceUnpaid) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
+		Title:      fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("The payment for your Rill subscription on %q is overdue. Your projects have been hibernated.", opts.OrgName)),
+		ButtonText: "Update Payment Info",
+		ButtonLink: opts.PaymentURL,
+	})
+}
+
+type SubscriptionCancelled struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	PlanName string
+	EndDate  time.Time
+}
+
+func (c *Client) SendSubscriptionCancelled(opts *SubscriptionCancelled) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
+		Title:   fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("You’ve successfully canceled your plan. Your access will continue until %s", opts.EndDate.Format("January 2, 2006"))),
+	})
+}
+
+type SubscriptionEnded struct {
+	ToEmail string
+	ToName  string
+	OrgName string
+}
+
+func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Subscription ended for %s", opts.OrgName),
+		Title:   fmt.Sprintf("Subscription ended for %s", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Thank you for using Rill, all your projects have been hibernated as subscription has ended for %q.", opts.OrgName)),
+	})
+}
+
+type TrialStarted struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialStarted(opts *TrialStarted) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has started", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	})
+}
+
+type TrialEndingSoon struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	UpgradeURL   string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
+		Title:      fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Your trial for %q is ending on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+		ButtonText: "Upgrade Now",
+		ButtonLink: opts.UpgradeURL,
+	})
+}
+
+type TrialEnded struct {
+	ToEmail            string
+	ToName             string
+	OrgName            string
+	UpgradeURL         string
+	GracePeriodEndDate time.Time
+}
+
+func (c *Client) SendTrialEnded(opts *TrialEnded) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
+		Title:      fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Your trial for %q has ended. Your projects will be hibernated on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+		ButtonText: "Upgrade to Team Plan",
+		ButtonLink: opts.UpgradeURL,
+	})
+}
+
+type TrialGracePeriodEnded struct {
+	ToEmail    string
+	ToName     string
+	OrgName    string
+	UpgradeURL string
+}
+
+func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
+		Title:      fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
+		Body:       template.HTML(fmt.Sprintf("Your trial grace period has ended for %q. Your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.", opts.OrgName)),
+		ButtonText: "Upgrade to Team Plan",
+		ButtonLink: opts.UpgradeURL,
+	})
+}
+
+type TrialExtended struct {
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	TrialEndDate time.Time
+}
+
+func (c *Client) SendTrialExtended(opts *TrialExtended) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
+		Title:   fmt.Sprintf("Your trial for %s has been extened", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Your trial for %q has been extended and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	})
 }

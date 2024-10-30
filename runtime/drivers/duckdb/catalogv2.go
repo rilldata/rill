@@ -188,3 +188,43 @@ func (c *connection) DeleteResources(ctx context.Context) error {
 
 	return nil
 }
+
+func (c *connection) FindModelSplits(ctx context.Context, opts *drivers.FindModelSplitsOptions) ([]drivers.ModelSplit, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+	return false, drivers.ErrNotImplemented
+}
+
+func (c *connection) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) DeleteModelSplits(ctx context.Context, modelID string) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
+	return drivers.ErrNotImplemented
+}

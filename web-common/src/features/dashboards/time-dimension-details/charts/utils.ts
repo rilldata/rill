@@ -1,11 +1,11 @@
-import { TDDChartMap } from "@rilldata/web-common/features/charts/types";
+import { TDDChartMap } from "@rilldata/web-common/features/canvas-components/types";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
-  ChartField,
+  type ChartField,
   buildVegaLiteSpec,
 } from "@rilldata/web-common/features/templates/charts/build-template";
-import { View, VisualizationSpec } from "svelte-vega";
-import { TDDAlternateCharts, TDDChart } from "../types";
+import type { View, VisualizationSpec } from "svelte-vega";
+import { type TDDAlternateCharts, TDDChart } from "../types";
 
 export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
   return dimensionData
@@ -18,7 +18,7 @@ export function reduceDimensionData(dimensionData: DimensionDataItem[]) {
     .flat();
 }
 
-export function getVegaSpecForTDD(
+export function getVegaLiteSpecForTDD(
   chartType: TDDAlternateCharts,
   expandedMeasureName: string,
   measureLabel: string,
@@ -74,6 +74,10 @@ export function getVegaSpecForTDD(
 }
 
 function isSignalEqual(currentValues: unknown[], newValues: unknown[]) {
+  if (!Array.isArray(currentValues) || !Array.isArray(newValues)) {
+    return false;
+  }
+
   if (currentValues.length !== newValues.length) {
     return false;
   }
@@ -83,6 +87,7 @@ function isSignalEqual(currentValues: unknown[], newValues: unknown[]) {
       return false;
     }
   }
+
   return true;
 }
 
@@ -99,7 +104,7 @@ function hasChartDimensionParam(
   return true;
 }
 
-export function updateVegaOnTableHover(
+export function updateChartOnTableCellHover(
   viewVL: View | undefined,
   chartType: TDDAlternateCharts,
   isTimeComparison: boolean,
@@ -132,11 +137,46 @@ export function updateVegaOnTableHover(
         values,
       }
     : null;
+
   const currentValues = (viewVL.signal("hover_tuple") || { values: [] }).values;
   const newValues = values || [];
+
   if (isSignalEqual(currentValues, newValues)) {
     return;
   }
   viewVL.signal("hover_tuple", newValue);
   viewVL.runAsync();
+}
+
+function checkLayerForBrush(layer) {
+  if (layer.params && Array.isArray(layer.params)) {
+    for (const param of layer.params) {
+      if (param.name === "brush") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Check if vega lite spec has brush params
+// If so, we need to compile vega lite spec to vega spec
+export function hasBrushParam(spec) {
+  if (spec && spec.layer && Array.isArray(spec.layer)) {
+    // Layered and Multi-view
+    // https://vega.github.io/vega-lite/docs/spec.html#layered-and-multi-view-specifications
+    for (const layer of spec.layer) {
+      if (checkLayerForBrush(layer)) {
+        return true;
+      }
+    }
+  } else if (spec && spec.params && Array.isArray(spec.params)) {
+    // Single view
+    // https://vega.github.io/vega-lite/docs/spec.html#single
+    if (checkLayerForBrush(spec)) {
+      return true;
+    }
+  }
+
+  return false;
 }

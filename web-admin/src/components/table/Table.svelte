@@ -1,13 +1,13 @@
 <script lang="ts">
+  import type { ColumnDef, TableOptions } from "@tanstack/svelte-table";
   import {
-    type Row,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getSortedRowModel,
+    type Row,
   } from "@tanstack/svelte-table";
-  import type { ColumnDef, TableOptions } from "@tanstack/svelte-table";
   import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
 
@@ -72,6 +72,8 @@
   // Whenever the input data changes, rerender the table
   $: data && rerender();
 </script>
+
+<slot name="toolbar" />
 
 <table class="w-full {maxWidth}">
   <slot name="header" />

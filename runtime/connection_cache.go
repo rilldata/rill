@@ -51,7 +51,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 		},
 		HangingFunc: func(cfg any, open bool) {
 			x := cfg.(cachedConnectionConfig)
-			r.logger.Error("connection cache: connection has been working for too long", zap.String("instance_id", x.instanceID), zap.String("driver", x.driver), zap.Bool("open", open))
+			r.Logger.Error("connection cache: connection has been working for too long", zap.String("instance_id", x.instanceID), zap.String("driver", x.driver), zap.Bool("open", open))
 		},
 		Metrics: conncache.Metrics{
 			Opens:          connCacheOpens,
@@ -91,7 +91,7 @@ func (r *Runtime) evictInstanceConnections(instanceID string) {
 
 // openAndMigrate opens a connection and migrates it.
 func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, error) {
-	logger := r.logger
+	logger := r.Logger
 	activityClient := r.activity
 	if cfg.instanceID != "" { // Not shared across multiple instances
 		inst, err := r.Instance(ctx, cfg.instanceID)

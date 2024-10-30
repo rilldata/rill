@@ -6,6 +6,7 @@
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { usePivotDataStore } from "./pivot-data-store";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
 
@@ -13,20 +14,31 @@
 
   $: pivotDataStore = usePivotDataStore(stateManagers);
 
-  $: isFetching = $pivotDataStore.isFetching;
-  $: assembled = $pivotDataStore.assembled;
+  $: ({ isFetching, assembled } = $pivotDataStore);
+
+  $: ({ exploreName, dashboardStore } = stateManagers);
+
+  function removeActiveCell() {
+    if (!$dashboardStore.pivot.activeCell) return;
+    metricsExplorerStore.removePivotActiveCell($exploreName);
+  }
 </script>
 
 <div class="layout">
   {#if showPanels}
     <PivotSidebar />
   {/if}
-  <div class="content">
+  <div class="flex flex-col size-full overflow-hidden">
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <PivotToolbar {isFetching} bind:showPanels />
-    <div class="table-view">
+    <div
+      class="content"
+      role="presentation"
+      on:mousedown|self={removeActiveCell}
+    >
+      <PivotToolbar {isFetching} bind:showPanels />
+
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty {assembled} {isFetching} />
       {:else}
@@ -42,12 +54,7 @@
   }
 
   .content {
-    @apply flex w-full flex-col bg-slate-100 overflow-hidden;
-  }
-
-  .table-view {
-    @apply p-2 w-full h-full;
-    @apply flex items-start;
-    @apply overflow-hidden;
+    @apply flex w-full flex-col bg-slate-100 overflow-hidden size-full;
+    @apply p-2 gap-y-2;
   }
 </style>

@@ -278,7 +278,7 @@ func createGenericValue(key string, val any) (astNode, error) {
 		}
 	case string:
 		t = "VARCHAR"
-		val = fmt.Sprintf(`"%s"`, vt)
+		val = fmt.Sprintf(`%q`, vt)
 	// TODO: others
 	default:
 		return nil, nil
@@ -343,7 +343,7 @@ func createStandaloneValue(val any) (astNode, error) {
 		return nil, err
 	case string:
 		t = "VARCHAR"
-		val = fmt.Sprintf(`"%s"`, vt)
+		val = fmt.Sprintf(`%q`, vt)
 	// TODO: others
 	default:
 		return nil, nil

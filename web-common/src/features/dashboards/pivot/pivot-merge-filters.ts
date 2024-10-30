@@ -37,7 +37,7 @@ export function mergeFilters(
       if (likeExprMap.has(ident)) return;
       likeExprMap.set(ident, e);
     } else {
-      if (inExprMap.has(ident) || !!e.cond?.exprs?.[1].subquery) return;
+      if (inExprMap.has(ident) || !!e.cond?.exprs?.[1]?.subquery) return;
       inExprMap.set(ident, e);
     }
   });
@@ -51,7 +51,7 @@ export function mergeFilters(
       e.cond?.op === V1Operation.OPERATION_NLIKE
     )
       return;
-    if (!inExprMap.has(ident) || !!e.cond?.exprs?.[1].subquery) return;
+    if (!inExprMap.has(ident) || !!e.cond?.exprs?.[1]?.subquery) return;
 
     /**
      * We take an intersection of the values in the IN expressions.

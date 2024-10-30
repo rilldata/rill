@@ -3,7 +3,7 @@ import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
-import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
+import { compileLocalFileSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import {
   runtimeServiceCreateTrigger,
   runtimeServicePutFile,
@@ -17,9 +17,7 @@ export async function refreshSource(
 ) {
   if (connector !== "local_file") {
     return runtimeServiceCreateTrigger(instanceId, {
-      refreshTriggerSpec: {
-        onlyNames: [{ kind: ResourceKind.Source, name: sourceName }],
-      },
+      resources: [{ kind: ResourceKind.Source, name: sourceName }],
     });
   }
 
@@ -35,16 +33,11 @@ export async function replaceSourceWithUploadedFile(
   if (!files.length) return Promise.reject();
 
   const dataFilePath = await uploadFile(instanceId, files[0]);
-  if (dataFilePath === null) {
+  if (dataFilePath === null || dataFilePath === undefined) {
     return Promise.reject();
   }
 
-  const yaml = compileCreateSourceYAML(
-    {
-      path: dataFilePath,
-    },
-    "local_file",
-  );
+  const yaml = compileLocalFileSourceYAML(dataFilePath);
 
   // Create source
   return runtimeServicePutFile(instanceId, {

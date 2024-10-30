@@ -6,21 +6,23 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
+import { type CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useKPITotals(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   measure: string,
   timeRange: string,
+  whereSql: string | undefined,
 ) {
   return createQueryServiceMetricsViewAggregation(
     instanceId,
-    metricViewName,
+    metricsViewName,
     {
       measures: [{ name: measure }],
       timeRange: { isoDuration: timeRange },
+      whereSql,
     },
     {
       query: {
@@ -34,13 +36,18 @@ export function useKPITotals(
 
 export function useKPIComparisonTotal(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   measure: string,
   comparisonRange: string | undefined,
   timeRange: string,
+  whereSql: string | undefined,
   queryClient: QueryClient,
 ): CreateQueryResult<number | undefined> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
@@ -59,13 +66,14 @@ export function useKPIComparisonTotal(
 
     return createQueryServiceMetricsViewAggregation(
       instanceId,
-      metricViewName,
+      metricsViewName,
       {
         measures: [{ name: measure }],
         timeRange: {
           start: comparisonStartTime.toISOString(),
           end: comparisonEndTime.toISOString(),
         },
+        whereSql,
       },
       {
         query: {
@@ -82,12 +90,12 @@ export function useKPIComparisonTotal(
 
 export function useStartEndTime(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   timeRange: string,
 ) {
   return createQueryServiceMetricsViewTimeRange(
     instanceId,
-    metricViewName,
+    metricsViewName,
     {},
     {
       query: {
@@ -107,12 +115,17 @@ export function useStartEndTime(
 
 export function useKPISparkline(
   instanceId: string,
-  metricViewName: string,
+  metricsViewName: string,
   measure: string,
   timeRange: string,
+  whereSql: string | undefined,
   queryClient: QueryClient,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
@@ -124,12 +137,13 @@ export function useKPISparkline(
     const defaultGrain = getDefaultTimeGrain(startTime, endTime);
     return createQueryServiceMetricsViewTimeSeries(
       instanceId,
-      metricViewName,
+      metricsViewName,
       {
         measureNames: [measure],
         timeStart: startTime.toISOString(),
         timeEnd: endTime.toISOString(),
         timeGranularity: defaultGrain,
+        whereSql,
       },
       {
         query: {

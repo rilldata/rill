@@ -1,10 +1,13 @@
 import {
   createQueryServiceExport,
-  RpcStatus,
+  type RpcStatus,
   V1ExportFormat,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { createMutation, CreateMutationOptions } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  type CreateMutationOptions,
+} from "@tanstack/svelte-query";
 import type { MutationFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 

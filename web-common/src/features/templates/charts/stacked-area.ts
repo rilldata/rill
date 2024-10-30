@@ -1,9 +1,10 @@
-import { ChartField } from "./build-template";
+import type { ChartField } from "./build-template";
 import {
   multiLayerBaseSpec,
   sanitizeValueForVega,
   sanitizeValuesForSpec,
 } from "./utils";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
 /** Temporary solution for the lack of vega lite type exports */
 interface TooltipValue {
@@ -57,13 +58,20 @@ export function buildStackedArea(
   }
 
   baseSpec.encoding = {
-    x: { field: timeField.name, type: "temporal" },
+    x: {
+      field: timeField.name,
+      type: "temporal",
+    },
     y: {
       field: quantitativeField.name,
       type: "quantitative",
       stack: "zero",
     },
-    color: { field: nominalField?.name, type: "nominal", legend: null },
+    color: {
+      field: nominalField?.name,
+      type: "nominal",
+      legend: null,
+    },
   };
 
   if (nominalField?.values?.length) {
@@ -82,10 +90,27 @@ export function buildStackedArea(
 
   baseSpec.layer = [
     {
-      mark: { type: "area", clip: true, opacity: 0.7 },
+      mark: {
+        type: "area",
+        clip: true,
+      },
+      encoding: {
+        opacity: {
+          condition: {
+            param: "brush",
+            empty: false,
+            value: 1,
+          },
+          value: 0.7,
+        },
+      },
     },
     {
-      mark: { type: "line", strokeWidth: 1, clip: true },
+      mark: {
+        type: "line",
+        strokeWidth: 1,
+        clip: true,
+      },
     },
     {
       transform: multiValueTooltipChannel?.length
@@ -97,22 +122,22 @@ export function buildStackedArea(
             },
           ]
         : [],
-
       mark: {
         type: "rule",
         clip: true,
       },
       encoding: {
         color: {
-          condition: {
-            param: "hover",
-            empty: false,
-            value: "var(--color-primary-300)",
-          },
+          condition: [
+            {
+              param: "hover",
+              empty: false,
+              value: "var(--color-primary-300)",
+            },
+          ],
           value: "transparent",
         },
         y: { value: -400 },
-
         tooltip: multiValueTooltipChannel?.length
           ? multiValueTooltipChannel
           : defaultTooltipChannel,
@@ -126,6 +151,20 @@ export function buildStackedArea(
             nearest: true,
             on: "pointerover",
             clear: "pointerout",
+          },
+        },
+        {
+          name: "brush",
+          select: {
+            type: "interval",
+            encodings: ["x"],
+            mark: {
+              fill: ScrubBoxColor,
+              fillOpacity: 0.2,
+              stroke: ScrubBoxColor,
+              strokeWidth: 1,
+              strokeOpacity: 0.8,
+            },
           },
         },
       ],

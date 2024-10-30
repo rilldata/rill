@@ -22,7 +22,7 @@ type Query struct {
 	Limit               *int64      `mapstructure:"limit"`
 	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
-	Label               bool        `mapstructure:"label"`
+	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 }
 
 type Dimension struct {
@@ -50,6 +50,8 @@ type MeasureCompute struct {
 	ComparisonValue *MeasureComputeComparisonValue `mapstructure:"comparison_value"`
 	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
+	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
+	URI             *MeasureComputeURI             `mapstructure:"uri"`
 }
 
 func (m *MeasureCompute) Validate() error {
@@ -67,6 +69,12 @@ func (m *MeasureCompute) Validate() error {
 		n++
 	}
 	if m.ComparisonRatio != nil {
+		n++
+	}
+	if m.PercentOfTotal != nil {
+		n++
+	}
+	if m.URI != nil {
 		n++
 	}
 	if n == 0 {
@@ -92,6 +100,15 @@ type MeasureComputeComparisonDelta struct {
 
 type MeasureComputeComparisonRatio struct {
 	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputePercentOfTotal struct {
+	Measure string   `mapstructure:"measure"`
+	Total   *float64 `mapstructure:"total"`
+}
+
+type MeasureComputeURI struct {
+	Dimension string `mapstructure:"dimension"`
 }
 
 type Spine struct {

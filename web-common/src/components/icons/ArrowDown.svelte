@@ -1,7 +1,7 @@
 <script>
   export let size = "1em";
   export let color = "currentColor";
-  export let transform = "";
+  export let flip = false;
 </script>
 
 <svg
@@ -9,7 +9,7 @@
   height={size}
   viewBox="0 0 24 24"
   fill={color}
-  {transform}
+  class:rotate-180={flip}
   xmlns="http://www.w3.org/2000/svg"
 >
   <path

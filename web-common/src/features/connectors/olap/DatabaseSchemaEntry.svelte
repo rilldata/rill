@@ -1,18 +1,21 @@
 <script lang="ts">
   import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
   import { useTables } from "./selectors";
+  import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
   export let databaseSchema: string;
-
-  let showTables = true;
+  export let store: ConnectorExplorerStore;
 
   $: connectorName = connector?.name as string;
+
+  $: expandedStore = store.getItem(connectorName, database, databaseSchema);
+  $: expanded = $expandedStore;
   $: tablesQuery = useTables(
     instanceId,
     connectorName,
@@ -34,11 +37,11 @@
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
     class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
-    class:open={showTables}
-    on:click={() => (showTables = !showTables)}
+    class:open={expanded}
+    on:click={() => store.toggleItem(connectorName, database, databaseSchema)}
   >
     <CaretDownIcon
-      className="transform transition-transform text-gray-400 {showTables
+      className="transform transition-transform text-gray-400 {expanded
         ? 'rotate-0'
         : '-rotate-90'}"
       size="14px"
@@ -56,7 +59,7 @@
     </span>
   </button>
 
-  {#if showTables}
+  {#if expanded}
     {#if connector?.errorMessage}
       <div class="message">{connector.errorMessage}</div>
     {:else if !connector.driver || !connector.driver.name}
@@ -74,6 +77,7 @@
             {databaseSchema}
             table={tableInfo.name}
             hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes}
+            {store}
           />
         {/each}
       </ol>

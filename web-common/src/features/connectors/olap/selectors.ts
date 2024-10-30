@@ -1,8 +1,8 @@
-import { CreateQueryResult } from "@tanstack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import { TableInfo } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 import {
-  V1TableInfo,
+  type V1TableInfo,
   createConnectorServiceOLAPListTables,
   createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,
@@ -10,7 +10,30 @@ import {
 import { featureFlags } from "../../feature-flags";
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
-export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
+export function useIsModelingSupportedForOlapDriver(
+  instanceId: string,
+  driver: string,
+) {
+  const { clickhouseModeling } = featureFlags;
+  return derived(
+    [createRuntimeServiceAnalyzeConnectors(instanceId), clickhouseModeling],
+    ([$connectorsQuery, $clickhouseModeling]) => {
+      const { connectors = [] } = $connectorsQuery.data || {};
+      const olapConnector = connectors.find(
+        (connector) => connector.name === driver,
+      );
+      const olapDriverName = olapConnector?.driver?.name ?? "";
+
+      if (olapDriverName === "clickhouse") {
+        return $clickhouseModeling;
+      }
+
+      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
+    },
+  );
+}
+
+export function useIsModelingSupportedForDefaultOlapDriver(instanceId: string) {
   const { clickhouseModeling } = featureFlags;
   return derived(
     [
@@ -28,10 +51,12 @@ export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
       );
 
       const olapDriverName = olapConnector?.driver?.name ?? "";
-      return (
-        !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName) ||
-        $clickhouseModeling
-      );
+
+      if (olapDriverName === "clickhouse") {
+        return $clickhouseModeling;
+      }
+
+      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
     },
   );
 }

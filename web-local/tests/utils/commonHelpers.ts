@@ -1,15 +1,5 @@
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
-import type {
-  V1GetResourceResponse,
-  V1ListResourcesResponse,
-} from "@rilldata/web-common/runtime-client";
 import type { Page } from "playwright";
-
-export enum TestEntityType {
-  Source = "source",
-  Model = "model",
-  Dashboard = "dashboard",
-}
 
 export async function openFileNavEntryContextMenu(
   page: Page,
@@ -24,8 +14,12 @@ export async function clickModalButton(page: Page, text: string) {
   return page.getByText(text).click();
 }
 
-export async function clickMenuButton(page: Page, text: string) {
-  await page.getByRole("menuitem", { name: text }).click();
+export async function clickMenuButton(
+  page: Page,
+  text: string,
+  role: "menuitem" | "option" = "menuitem",
+) {
+  await page.getByRole(role, { name: text }).click();
 }
 
 export async function waitForProfiling(
@@ -97,7 +91,7 @@ export async function renameFileUsingMenu(
 
   // wait for rename modal to open
   await page
-    .locator("#rill-portal h1", {
+    .locator("#rill-portal h2", {
       hasText: "Rename",
     })
     .waitFor();
@@ -110,7 +104,14 @@ export async function renameFileUsingMenu(
   ]);
 }
 
-export async function renameFileUsingTitle(page: Page, toName: string) {
+export async function renameFileUsingTitle(
+  page: Page,
+  originalName: string,
+  toName: string,
+) {
+  await page.getByRole("heading", { name: originalName, exact: true }).hover();
+  await page.getByRole("button", { name: "File title actions" }).click();
+  await page.getByRole("menuitem", { name: "Rename" }).click();
   await page.locator("#model-title-input").fill(toName);
   await page.keyboard.press("Enter");
 }
@@ -129,7 +130,7 @@ export async function deleteFile(page: Page, filePath: string) {
 }
 
 export async function updateCodeEditor(page: Page, code: string) {
-  await page.locator(".cm-line").first().click();
+  await page.getByRole("textbox", { name: "Code editor" }).click();
   if (process.platform === "darwin") {
     await page.keyboard.press("Meta+A");
   } else {
@@ -137,41 +138,4 @@ export async function updateCodeEditor(page: Page, code: string) {
   }
   await page.keyboard.insertText(code);
   await page.waitForTimeout(500);
-}
-
-export async function waitForValidResource(
-  page: Page,
-  name: string,
-  kind: string,
-) {
-  await page.waitForResponse(async (response) => {
-    const responseUrl = response.url();
-    const getResourceRequest = responseUrl.includes(
-      `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
-    );
-
-    const listResourceRequest = responseUrl.includes(
-      `/v1/instances/default/resource?name.kind=${kind}`,
-    );
-
-    if (getResourceRequest) {
-      try {
-        const resp = (await response.json()) as V1GetResourceResponse;
-        return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-      } catch (err) {
-        return false;
-      }
-    } else if (listResourceRequest) {
-      try {
-        const resp = (await response.json()) as V1ListResourcesResponse;
-        return (
-          resp.resources?.find((r) => r.meta?.name === name)?.meta
-            ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
-        );
-      } catch (err) {
-        return false;
-      }
-    }
-    return false;
-  });
 }

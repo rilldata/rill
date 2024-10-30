@@ -54,3 +54,47 @@ func TestValidity(t *testing.T) {
 		require.Equal(t, ErrMalformed, err)
 	}
 }
+
+func TestNull(t *testing.T) {
+	tkn := Token{
+		Type:   TypeUser,
+		ID:     uuid.UUID{},
+		Secret: [24]byte{},
+	}
+
+	str := tkn.String()
+
+	parsed, err := FromString(str)
+	require.NoError(t, err)
+	require.Equal(t, tkn.Type, parsed.Type)
+	require.Equal(t, tkn.ID, parsed.ID)
+	require.Equal(t, tkn.Secret, parsed.Secret)
+}
+
+func TestPartiallyNull(t *testing.T) {
+	secret := [24]byte{}
+	secret[23] = 0x01
+
+	tkn := Token{
+		Type:   TypeUser,
+		ID:     uuid.MustParse("00000000-0000-0000-0000-000000000001"),
+		Secret: secret,
+	}
+
+	str := tkn.String()
+
+	parsed, err := FromString(str)
+	require.NoError(t, err)
+	require.Equal(t, tkn.Type, parsed.Type)
+	require.Equal(t, tkn.ID, parsed.ID)
+	require.Equal(t, tkn.Secret, parsed.Secret)
+}
+
+func TestMany(t *testing.T) {
+	for i := 0; i < 100000; i++ {
+		tkn := NewRandom(TypeDeployment)
+		str := tkn.String()
+		_, err := FromString(str)
+		require.NoError(t, err)
+	}
+}

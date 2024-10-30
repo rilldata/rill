@@ -35,6 +35,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		Dimensions:          qry.Dimensions,
 		Measures:            nil,
 		PivotOn:             nil,
+		Spine:               nil,
 		Sort:                qry.Sort,
 		TimeRange:           qry.TimeRange,
 		ComparisonTimeRange: qry.ComparisonTimeRange,
@@ -43,8 +44,8 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		Limit:               qry.Limit,
 		Offset:              qry.Offset,
 		TimeZone:            qry.TimeZone,
-		Label:               false,
-	}
+		UseDisplayNames:     false,
+	} //exhaustruct:enforce
 
 	// A TopN query can sort by a dimension or a measure.
 	// If sorting by a measure, we also include that in the inner query.
@@ -63,9 +64,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
-		return fmt.Errorf("druid exactify: %w", err)
-	}
+	e.rewriteApproxComparisons(ast)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()
@@ -135,6 +134,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 
 	// Remove the limit from the outer query (the IN filter automatically limits the result size).
 	qry.Limit = nil
+	qry.Offset = nil
 
 	return nil
 }

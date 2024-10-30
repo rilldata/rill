@@ -29,7 +29,9 @@ type MetricsViewComparison struct {
 	Offset              int64                                          `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
 	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	WhereSQL            string                                         `json:"where_sql,omitempty"`
 	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	HavingSQL           string                                         `json:"having_sql,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
@@ -100,7 +102,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -359,8 +361,10 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	if q.Where != nil {
-		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, q.WhereSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
 	// If a measure-level filter is present, we set qry.Where as the spine, and use (qry.Where AND measuresFilter) as the new where clause
@@ -382,11 +386,12 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		}
 	}
 
-	if q.Having != nil {
-		qry.Having = metricsview.NewExpressionFromProto(q.Having)
+	qry.Having, err = metricViewExpression(q.Having, q.HavingSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting having clause: %w", err)
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
 }

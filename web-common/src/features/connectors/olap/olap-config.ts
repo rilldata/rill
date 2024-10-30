@@ -32,14 +32,14 @@ export function makeSufficientlyQualifiedTableName(
 ) {
   switch (driver) {
     case "clickhouse":
-      if (databaseSchema === "default") return table;
+      if (databaseSchema === "default" || databaseSchema === "") return table;
       return `${databaseSchema}.${table}`;
     case "druid":
       // TODO
       return table;
     case "duckdb":
-      if (database === "main_db") {
-        if (databaseSchema === "main") return table;
+      if (database === "main_db" || database === "") {
+        if (databaseSchema === "main" || databaseSchema === "") return table;
         return `${databaseSchema}.${table}`;
       }
       return `${database}.${databaseSchema}.${table}`;

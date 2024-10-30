@@ -23,28 +23,28 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			// Fetch the original token
 			originalToken, err := dotrill.GetBackupToken()
 			if err != nil {
 				return err
 			}
-
 			if originalToken == "" {
 				return fmt.Errorf("Original token is not available, you are not assuming any user")
 			}
 
-			// Revoke current token if have original token
+			// Revoke current token
 			_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 			if err != nil {
 				fmt.Printf("Failed to revoke token (it may have expired). Clearing local token anyway.\n")
 			}
 
+			// Restore the original token as the access token
 			err = dotrill.SetAccessToken(originalToken)
 			if err != nil {
 				return err
 			}
-			ch.AdminTokenDefault = originalToken
 
-			// Set original_token as empty
+			// Clear backup token
 			err = dotrill.SetBackupToken("")
 			if err != nil {
 				return err
@@ -52,6 +52,12 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Set email for representing user as empty
 			err = dotrill.SetRepresentingUser("")
+			if err != nil {
+				return err
+			}
+
+			// Reload access tokens
+			err = ch.ReloadAdminConfig()
 			if err != nil {
 				return err
 			}

@@ -5,8 +5,8 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import CreateScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -36,9 +36,9 @@
 
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
-  $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
+  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
   $: dashboardTitle =
-    $dashboard.data?.metricsView.spec.title || $dashboardName.data;
+    $dashboard.data?.explore?.displayName || $dashboardName.data;
 
   // Get human-readable frequency
   $: humanReadableFrequency =
@@ -110,7 +110,7 @@
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {$reportQuery.data.resource.report.spec.title}
+          {$reportQuery.data.resource.report.spec.displayName}
         </h1>
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
@@ -140,7 +140,7 @@
       <div class="flex flex-col gap-y-3">
         <MetadataLabel>Dashboard</MetadataLabel>
         <MetadataValue>
-          <a href={`/${organization}/${project}/${$dashboardName.data}`}
+          <a href={`/${organization}/${project}/explore/${$dashboardName.data}`}
             >{dashboardTitle}</a
           >
         </MetadataValue>
@@ -174,9 +174,9 @@
 {/if}
 
 {#if $reportQuery.data}
-  <EditScheduledReportDialog
-    open={showEditReportDialog}
+  <CreateScheduledReportDialog
+    bind:open={showEditReportDialog}
     reportSpec={$reportQuery.data.resource.report.spec}
-    on:close={() => (showEditReportDialog = false)}
+    exploreName={$dashboardName.data}
   />
 {/if}

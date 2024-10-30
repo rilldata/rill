@@ -3,21 +3,25 @@
   import { slide } from "svelte/transition";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { LIST_SLIDE_DURATION as duration } from "../../../layout/config";
-  import { V1AnalyzedConnector } from "../../../runtime-client";
+  import type { V1AnalyzedConnector } from "../../../runtime-client";
   import DatabaseSchemaEntry from "./DatabaseSchemaEntry.svelte";
   import { useDatabaseSchemas } from "./selectors";
+  import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
   export let database: string;
+  export let store: ConnectorExplorerStore;
 
-  let showDatabaseSchemas = true;
-
+  $: connectorName = connector?.name as string;
+  $: expandedStore = store.getItem(connectorName, database);
+  $: expanded = $expandedStore;
   $: databaseSchemasQuery = useDatabaseSchemas(
     instanceId,
     connector?.name as string,
     database,
   );
+
   $: ({ data, error, isLoading } = $databaseSchemasQuery);
 </script>
 
@@ -25,11 +29,11 @@
   {#if database}
     <button
       class="database-entry-header"
-      class:open={showDatabaseSchemas}
-      on:click={() => (showDatabaseSchemas = !showDatabaseSchemas)}
+      class:open={expanded}
+      on:click={() => store.toggleItem(connectorName, database)}
     >
       <CaretDownIcon
-        className="transform transition-transform text-gray-400 {showDatabaseSchemas
+        className="transform transition-transform text-gray-400 {expanded
           ? 'rotate-0'
           : '-rotate-90'}"
         size="14px"
@@ -42,9 +46,9 @@
   {/if}
 
   <ol transition:slide={{ duration }}>
-    {#if showDatabaseSchemas}
+    {#if expanded}
       {#if error}
-        <span class="message">Error: {error.response.data.message}</span>
+        <span class="message">Error: {error.response.data?.message}</span>
       {:else if isLoading}
         <span class="message">Loading schemas...</span>
       {:else if data}
@@ -56,6 +60,7 @@
               {instanceId}
               {connector}
               {database}
+              {store}
               databaseSchema={schema ?? ""}
             />
           {/each}

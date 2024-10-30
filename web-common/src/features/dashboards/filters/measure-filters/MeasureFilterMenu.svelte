@@ -3,7 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     MeasureFilterOperation,
     MeasureFilterOperationOptions,
@@ -105,9 +105,7 @@
   >
     <Select
       bind:value={$form["dimension"]}
-      detach
       id="dimension"
-      itemsClass="absolute left-4.5"
       label="By Dimension"
       on:change={handleSubmit}
       options={dimensionOptions}
@@ -115,9 +113,7 @@
     />
     <Select
       bind:value={$form["operation"]}
-      detach
       id="operation"
-      itemsClass="absolute left-4.5"
       label="Threshold"
       on:change={handleSubmit}
       options={MeasureFilterOperationOptions}
@@ -126,7 +122,7 @@
       bind:value={$form["value1"]}
       errors={$errors["value1"]}
       id="value1"
-      onChange={handleSubmit}
+      onBlur={handleSubmit}
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
     {#if isBetweenExpression}
@@ -135,7 +131,7 @@
         errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
-        onChange={handleSubmit}
+        onBlur={handleSubmit}
       />
     {/if}
   </form>

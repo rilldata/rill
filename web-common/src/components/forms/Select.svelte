@@ -1,39 +1,42 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { InfoIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
-  import Menu from "../menu-v2/Menu.svelte";
-  import MenuButton from "../menu-v2/MenuButton.svelte";
-  import MenuItem from "../menu-v2/MenuItem.svelte";
-  import MenuItems from "../menu-v2/MenuItems.svelte";
-
-  export let value: string;
-  export let id: string;
-  export let label: string;
-  export let options: { value: string; label?: string }[];
-  export let placeholder: string = "";
-  export let optional: boolean = false;
-  export let tooltip: string = "";
-  export let className = "";
-
-  // temporary till we figure out the menus
-  export let detach = false;
-  export let itemsClass = "";
+  import * as Select from "@rilldata/web-common/components/select";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
+  import Search from "../search/Search.svelte";
 
   const dispatch = createEventDispatcher();
 
-  let displayValue: string;
-  let hasNoValue = false;
-  $: {
-    const foundOption = options.find((option) => option.value === value);
-    displayValue = foundOption?.label ?? value;
-    hasNoValue = !foundOption;
-  }
+  export let value: string = "";
+  export let id: string;
+  export let label: string = "";
+  export let options: { value: string; label: string; type?: string }[];
+  export let placeholder: string = "";
+  export let optional: boolean = false;
+  export let tooltip: string = "";
+  export let width: number | null = null;
+  export let disabled = false;
+  export let selectElement: HTMLButtonElement | undefined = undefined;
+  export let full = false;
+  export let fontSize = 12;
+  export let sameWidth = false;
+  export let ringFocus = true;
+  export let truncate = false;
+  export let enableSearch = false;
+  export let onChange: (value: string) => void = () => {};
+
+  let searchText = "";
+
+  $: selected = options.find((option) => option.value === value);
+  $: filteredOptions = enableSearch
+    ? options.filter((option) =>
+        option.label.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : options;
 </script>
 
-<div class="flex flex-col gap-y-2 {className}">
+<div class="flex flex-col gap-y-2 max-w-full" class:w-full={full}>
   {#if label?.length}
     <label for={id} class="text-sm flex items-center gap-x-1">
       <span class="text-gray-800 font-medium">
@@ -43,45 +46,67 @@
         <span class="text-gray-500">(optional)</span>
       {/if}
       {#if tooltip}
-        <Tooltip distance={8}>
-          <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
-          <TooltipContent
-            slot="tooltip-content"
-            maxWidth="600px"
-            class="whitespace-pre-line"
-          >
+        <Tooltip.Root portal="body">
+          <Tooltip.Trigger>
+            <InfoIcon class="text-gray-500" size="14px" strokeWidth={2} />
+          </Tooltip.Trigger>
+          <Tooltip.Content side="right">
             {tooltip}
-          </TooltipContent>
-        </Tooltip>
+          </Tooltip.Content>
+        </Tooltip.Root>
       {/if}
     </label>
   {/if}
-  <Menu {detach}>
-    <MenuButton
-      className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center {hasNoValue
-        ? 'text-gray-400'
+
+  <Select.Root
+    {disabled}
+    {selected}
+    onSelectedChange={(newSelection) => {
+      if (!newSelection) return;
+      value = newSelection.value;
+      dispatch("change", newSelection.value);
+      onChange(newSelection.value);
+    }}
+    onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        searchText = "";
+      }
+    }}
+    items={options}
+  >
+    <Select.Trigger
+      {id}
+      bind:el={selectElement}
+      class="flex px-3 gap-x-2 max-w-full {width &&
+        `w-[${width}px]`} {ringFocus &&
+        'focus:ring-2 focus:ring-primary-100'} {truncate
+        ? 'break-all overflow-hidden'
         : ''}"
     >
-      <div class="text-ellipsis overflow-hidden whitespace-nowrap">
-        {#if hasNoValue}
-          {placeholder}
-        {:else}
-          {displayValue}
-        {/if}
-      </div>
-      <CaretDownIcon />
-    </MenuButton>
-    <MenuItems positioningOverride={itemsClass}>
-      {#each options as option}
-        <MenuItem
-          on:click={() => {
-            value = option.value;
-            dispatch("change", value);
-          }}
-        >
-          {option?.label ?? option.value}
-        </MenuItem>
+      <Select.Value
+        {placeholder}
+        class="text-[{fontSize}px] {!selected
+          ? 'text-gray-400'
+          : ''} w-full  text-left"
+      />
+    </Select.Trigger>
+
+    <Select.Content {sameWidth} align="start" class="max-h-80 overflow-y-auto">
+      {#if enableSearch}
+        <div class="px-2 py-1.5">
+          <Search bind:value={searchText} showBorderOnFocus={false} />
+        </div>
+      {/if}
+      {#each filteredOptions as { type, value, label } (value)}
+        <Select.Item {value} {label} class="text-[{fontSize}px] gap-x-2">
+          {#if type}
+            <DataTypeIcon {type} />
+          {/if}
+          {label ?? value}
+        </Select.Item>
+      {:else}
+        <div class="px-2.5 py-1.5 text-gray-600">No results found</div>
       {/each}
-    </MenuItems>
-  </Menu>
+    </Select.Content>
+  </Select.Root>
 </div>

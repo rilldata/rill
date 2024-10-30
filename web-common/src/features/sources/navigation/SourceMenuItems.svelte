@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import Import from "@rilldata/web-common/components/icons/Import.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
@@ -23,10 +23,10 @@
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
+  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../createModel";
+  import { createModelFromTable } from "../../connectors/olap/createModel";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
@@ -40,9 +40,7 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  const dispatch = createEventDispatcher();
-
-  const { customDashboards, ai } = featureFlags;
+  const { ai } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
@@ -53,18 +51,31 @@
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
-  $: tableName = source?.state?.table ?? "";
-  $: sourceName = $sourceQuery.data?.meta?.name?.name ?? "";
+  $: connector = source?.state?.connector as string;
+  const database = ""; // Sources are ingested into the default database
+  const databaseSchema = ""; // Sources are ingested into the default database schema
+  $: tableName = source?.state?.table as string;
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     sinkConnector as string,
-    "",
-    "",
+    database,
+    databaseSchema,
     tableName,
-    "dashboards",
+    false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    sinkConnector as string,
+    database,
+    databaseSchema,
+    tableName,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -72,11 +83,14 @@
   const handleCreateModel = async () => {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromSource(
-        sourceName,
+      const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
+      const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
         tableName,
-        "models",
-        true,
+        addDevLimit,
       );
       await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
@@ -106,10 +120,9 @@
         $sourceQuery.data?.meta?.name?.name ?? "",
         runtimeInstanceId,
       );
-    } catch (err) {
+    } catch {
       // no-op
     }
-    overlay.set(null);
   };
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
@@ -131,9 +144,29 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createDashboardFromTable}
+  on:click={createMetricsViewFromTable}
 >
-  <Explore slot="icon" />
+  <MetricsViewIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $sourceHasError}
+      Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreFromTable}
+>
+  <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate dashboard
     {#if $ai}
@@ -149,30 +182,6 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if $customDashboards}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={() => {
-      dispatch("generate-chart", {
-        table: source?.state?.table,
-        connector: source?.state?.connector,
-      });
-    }}
-  >
-    <Explore slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate chart with AI
-      <WandIcon class="w-3 h-3" />
-    </div>
-    <svelte:fragment slot="description">
-      {#if $sourceHasError}
-        Source has errors
-      {:else if !sourceIsIdle}
-        Source is being ingested
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}
 
 <NavigationMenuItem on:click={onRefreshSource}>
   <RefreshIcon slot="icon" />

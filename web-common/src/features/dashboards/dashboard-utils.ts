@@ -1,3 +1,4 @@
+import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -8,22 +9,24 @@ import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/g
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
-  V1MetricsViewAggregationMeasure,
-  V1Expression,
   QueryServiceMetricsViewAggregationBody,
-  V1TimeRange,
+  V1Expression,
+  V1MetricsViewAggregationMeasure,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
-import type { TimeControlState } from "./time-controls/time-control-store";
 import { SortType } from "./proto-state/derived-types";
+import type { TimeControlState } from "./time-controls/time-control-store";
 
 const countRegex = /count(?=[^(]*\()/i;
 const sumRegex = /sum(?=[^(]*\()/i;
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
   const expression = measure.expression?.toLowerCase();
-  return !!(expression?.match(countRegex) || expression?.match(sumRegex));
+  return (
+    !!(expression?.match(countRegex) || expression?.match(sumRegex)) ||
+    Boolean(measure.validPercentOfTotal)
+  );
 }
-
 /**
  * Returns a sanitized column name appropriate for use in e.g. filters.
  *
@@ -48,11 +51,6 @@ export function prepareSortedQueryBody(
   whereFilterForDimension: V1Expression,
   limit: number,
 ): QueryServiceMetricsViewAggregationBody {
-  let comparisonTimeRange: V1TimeRange | undefined = {
-    start: timeControls.comparisonTimeStart,
-    end: timeControls.comparisonTimeEnd,
-  };
-
   const measures = measureNames.map(
     (n) =>
       <V1MetricsViewAggregationMeasure>{
@@ -60,31 +58,32 @@ export function prepareSortedQueryBody(
       },
   );
 
-  // FIXME: As a temporary way of enabling sorting by dimension values,
-  // Benjamin and Egor put in a patch that will allow us to use the
-  // dimension name as the measure name. This will need to be updated
-  // once they have stabilized the API.
+  let apiSortName = sortMeasureName;
   if (sortType === SortType.DIMENSION || sortMeasureName === null) {
-    sortMeasureName = dimensionName;
-    // note also that we need to remove the comparison time range
-    // when sorting by dimension values, or the query errors
-    comparisonTimeRange = undefined;
+    apiSortName = dimensionName;
   }
 
-  let apiSortName = sortMeasureName;
   if (
-    !!comparisonTimeRange?.start &&
-    !!comparisonTimeRange?.end &&
-    !!timeControls.selectedComparisonTimeRange
+    timeControls.showTimeComparison &&
+    !!timeControls.selectedComparisonTimeRange &&
+    sortMeasureName
   ) {
-    measures.push(...getComparisonRequestMeasures(sortMeasureName));
-    switch (sortType) {
-      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
-        apiSortName += ComparisonDeltaAbsoluteSuffix;
-        break;
-      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
-        apiSortName += ComparisonDeltaRelativeSuffix;
-        break;
+    // insert beside the correct measure
+    measures.splice(
+      measures.findIndex((m) => m.name === sortMeasureName),
+      0,
+      ...getComparisonRequestMeasures(sortMeasureName),
+    );
+    if (apiSortName === sortMeasureName) {
+      // only update if the sort was on measure
+      switch (sortType) {
+        case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+          apiSortName += ComparisonDeltaAbsoluteSuffix;
+          break;
+        case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+          apiSortName += ComparisonDeltaRelativeSuffix;
+          break;
+      }
     }
   }
 
@@ -99,13 +98,23 @@ export function prepareSortedQueryBody(
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    comparisonTimeRange,
-    sort: [
-      {
-        desc: !sortAscending,
-        name: apiSortName,
-      },
-    ],
+    ...(timeControls.selectedComparisonTimeRange &&
+    timeControls.showTimeComparison
+      ? {
+          comparisonTimeRange: {
+            start: timeControls.comparisonTimeStart,
+            end: timeControls.comparisonTimeEnd,
+          },
+        }
+      : {}),
+    sort: apiSortName
+      ? [
+          {
+            desc: !sortAscending,
+            name: apiSortName,
+          },
+        ]
+      : [],
     where: sanitiseExpression(whereFilterForDimension, undefined),
     limit: limit.toString(),
     offset: "0",
@@ -138,4 +147,32 @@ export function getComparisonRequestMeasures(
       },
     },
   ];
+}
+
+export function getBreadcrumbOptions(
+  exploreResources: V1Resource[],
+  canvasResources: V1Resource[],
+): Map<string, PathOption> {
+  const exploreOptions = exploreResources.reduce((map, exploreResource) => {
+    const name = exploreResource.meta?.name?.name ?? "";
+    const label =
+      exploreResource.explore?.state?.validSpec?.displayName || name;
+
+    if (label && name)
+      map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
+
+    return map;
+  }, new Map<string, PathOption>());
+
+  const canvasOptions = canvasResources.reduce((map, canvasResource) => {
+    const name = canvasResource.meta?.name?.name ?? "";
+    const label = canvasResource?.canvas?.spec?.displayName || name;
+
+    if (label && name)
+      map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });
+
+    return map;
+  }, new Map<string, PathOption>());
+
+  return new Map([...exploreOptions, ...canvasOptions]);
 }

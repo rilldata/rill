@@ -7,6 +7,8 @@ sidebar_position: 00
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+<img src = '/img/tutorials/102/Adding-Data.gif' class='rounded-gif' />
+<br />
 
 Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 
@@ -131,7 +133,7 @@ For more details about configuring and/or changing the OLAP engine used by Rill,
 
 ## Rill Developer vs Rill Cloud
 
-_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models.md) and [dashboard](../dashboards/dashboards.md) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/existing-project/existing-project.md) against the full range of data and dashboards can be [explored](../../explore/dashboard-101.md) by other end users.
+_There is a difference_ between Rill Developer and Rill Cloud and they work hand-in-hand to provide a shared experience. For distributed teams, Rill Developer is primarily meant for local development and modeling purposes while Rill Cloud is where the primary dashboard consumption occurs and helps to enable shared collaboration at scale. For Rill Developer, as the size or volume of source data continues to grow (or reaches a certain size), it is strongly recommended to [work with a segment of the data for modeling purposes](../../deploy/performance.md#work-with-a-subset-of-your-source-data-for-local-development-and-modeling) instead of the full dataset (i.e. think of it as a "dev partition"), which is meant to help the developer validate the model logic and verify that the correct results are being produced. Then, after the [model](../models/models.md) and [dashboard](../dashboards/dashboards.md) configurations have been finalized, the project can be [deployed to Rill Cloud](../../deploy/deploy-dashboard/) against the full range of data and dashboards can be [explored](../../explore/dashboard-101.md) by other end users.
 
 :::info Have questions?
 

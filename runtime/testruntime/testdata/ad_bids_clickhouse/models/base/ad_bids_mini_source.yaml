@@ -1,0 +1,6 @@
+sql: SELECT assumeNotNull(parseDateTimeBestEffort(timestamp)) AS timestamp, * except timestamp FROM file('AdBids_mini.csv') 
+
+output:
+  type: table
+  order_by: timestamp
+  primary_key: timestamp

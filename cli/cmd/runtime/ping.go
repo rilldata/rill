@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -21,6 +22,8 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
+			ch.Printf("Ping: %s\n", time.Now().UTC().String())
 
 			pong, err := client.Ping(cmd.Context(), &runtimev1.PingRequest{})
 			if err != nil {

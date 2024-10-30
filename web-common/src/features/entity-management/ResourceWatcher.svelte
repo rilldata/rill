@@ -5,11 +5,14 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import Banner from "@rilldata/web-common/components/banner/Banner.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
-  const fileAttempts = fileWatcher.retryAttempts;
-  const resourceAttempts = resourceWatcher.retryAttempts;
+  const { retryAttempts: fileAttempts, closed: fileWatcherClosed } =
+    fileWatcher;
+  const { retryAttempts: resourceAttempts, closed: resourceWatcherClosed } =
+    fileWatcher;
 
   export let host: string;
   export let instanceId: string;
@@ -33,16 +36,34 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileWatcher.reconnect().catch(console.error);
-      resourceWatcher.reconnect().catch(console.error);
+      fileWatcher.heartbeat();
+      resourceWatcher.heartbeat();
     } else {
-      fileWatcher.throttle();
-      resourceWatcher.throttle();
+      fileWatcher.throttle(true);
+      resourceWatcher.throttle(true);
     }
   }
 </script>
 
-<svelte:window on:visibilitychange={handleVisibilityChange} />
+<svelte:window
+  on:visibilitychange={handleVisibilityChange}
+  on:blur={() => {
+    fileWatcher.throttle();
+    resourceWatcher.throttle();
+  }}
+  on:click={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+  on:keydown={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+  on:focus={() => {
+    fileWatcher.heartbeat();
+    resourceWatcher.heartbeat();
+  }}
+/>
 
 {#if failed}
   <ErrorPage
@@ -52,5 +73,15 @@
     body="Try restarting the server"
   />
 {:else}
+  {#if $fileWatcherClosed || $resourceWatcherClosed}
+    <Banner
+      banner={{
+        message:
+          "Connection closed due to inactivity. Interact with the page to reconnect.",
+        type: "warning",
+        iconType: "alert",
+      }}
+    />
+  {/if}
   <slot />
 {/if}

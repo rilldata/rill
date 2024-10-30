@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -19,8 +18,7 @@ import (
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
-	var redeploy bool
+	var projectPath, projectName, environment string
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -42,7 +40,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
+			if !cmdutil.HasRillProject(projectPath) {
 				ch.PrintfWarn("Directory at %q doesn't contain a valid Rill project.\n", projectPath)
 				ch.PrintfWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
@@ -62,42 +60,17 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to get variables: %w", err)
 			}
 
-			// get existing variables
-			varResp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to list existing variables %w", err)
-			}
-
-			if varResp.Variables == nil {
-				varResp.Variables = make(map[string]string)
-			}
-
-			// update with new variables
-			for key, value := range variables {
-				varResp.Variables[key] = value
-			}
-
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-				Variables:        varResp.Variables,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
+				Variables:    variables,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
 			ch.PrintfSuccess("Updated project variables\n")
 
-			if redeploy {
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: projectName})
-				if err != nil {
-					ch.PrintfWarn("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n")
-					return err
-				}
-				ch.PrintfSuccess("Redeploy triggered successfully.\n")
-			}
 			return nil
 		},
 	}
@@ -105,7 +78,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().BoolVar(&redeploy, "redeploy", false, "Redeploy project")
+	configureCommand.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return configureCommand
 }
@@ -123,7 +96,7 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	connectors := parser.AnalyzeConnectors(ctx)
 	for _, c := range connectors {
 		if c.Err != nil {
-			return nil, fmt.Errorf("failed to extract connectors: %w", err)
+			return nil, fmt.Errorf("failed to extract connectors: %w", c.Err)
 		}
 	}
 
@@ -181,6 +154,9 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 
 		for i := range c.Spec.ConfigProperties {
 			prop := c.Spec.ConfigProperties[i] // TODO: Move into range and turn into pointer
+			if prop.NoPrompt {
+				continue
+			}
 
 			key := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
 			msg := key

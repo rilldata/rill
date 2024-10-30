@@ -124,6 +124,10 @@ type Handle interface {
 	// NOTE: The file store can probably be merged with the ObjectStore interface.
 	AsFileStore() (FileStore, bool)
 
+	// AsWarehouse returns a Warehouse if the driver can serve as such, otherwise returns false.
+	// A Warehouse represents a service that can execute SQL statements on cloud warehouses and return the result rows typically as files.
+	AsWarehouse() (Warehouse, bool)
+
 	// AsModelExecutor returns a ModelExecutor capable of building a model.
 	// Since models may move data between connectors, the model executor can be seem as a "meta driver" that uses handles on other connectors.
 	// The provided options provides both an input connector and an output connector. One or both of these will be the receiver itself.

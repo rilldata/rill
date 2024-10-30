@@ -1,7 +1,7 @@
 ---
-title: "Access Policies"
+title: "Dashboard Access Policies"
 description: Granular, row-level security for dashboards
-sidebar_label: "Access Policies"
+sidebar_label: "Dashboard Access Policies"
 sidebar_position: 40
 ---
 
@@ -28,7 +28,7 @@ You define access policies for dashboards under the `security` key in a dashboar
 
 ![access](../../static/img/manage/security/access.png)
 
-See the [Dashboard YAML](/reference/project-files/dashboards) reference docs for all the available fields.
+See the [Dashboard YAML](/reference/project-files/explore-dashboards) reference docs for all the available fields.
 
 See the [Examples](#examples) below for how to set up each type of configuration.
 
@@ -40,8 +40,7 @@ When developing access policies, you can leverage a fixed set of user attributes
 - `.user.domain` – the domain of the current user's email address, for example `example.com` (string)
 - `.user.name` - the current user's name, for example `John Doe` (string)
 - `.user.admin` – a boolean value indicating whether the current user is an org or project admin, for example `true` (bool)
-<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
-<!-- - `.user.groups` - a list of usergroups the user belongs to in the project's org. Custom usergroups are not currently supported, so this will always be `["all"]`. -->
+- `.user.groups` - a list of user groups the user belongs to in the project's org (list of strings), e.g. `["marketing","sales","finance"]`
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
@@ -68,6 +67,8 @@ mock_users:
   name: John Doe
   admin: true
 - email: jane@partnercompany.com
+  groups:
+    - partners
 - email: anon@unknown.com
 ```
 
@@ -86,6 +87,15 @@ security:
 :::note DEFAULT SECURITY IS FALSE
 If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to invited individually.
 :::
+
+### Restrict dashboard access to specific user groups
+
+Group membership can be utilized to specify which users have access to a specific dashboard (using the templating function `has`). For example:
+```yaml
+security:
+  access: '{{ has "partners" .user.groups }}'
+```
+
 
 ### Show only data from the user's own domain
 
@@ -115,19 +125,46 @@ security:
         - id
 ```
 
-Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/dashboards) reference for details.
+Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/explore-dashboards) reference for details.
 
-<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
-<!--
+### Use wildcards to select all dimensions and measures
+
+When defining inclusion policies, you can easily and automatically select all columns by using `names: '*'` as a wildcard. For example:
+```yaml
+security:
+  access: true
+  include:
+    - if: true
+      names:
+        - ssn
+        - id
+    - if: "{{ .user.admin }}"
+      names: '*'
+```
+
+Note that the `'*'` must be quoted (using single or double quotes), and **must** be provided as a scalar value, not as an entry in a list.
+
 ### Filter queries based on the user's groups
 
-Let's say additionally we want to filter queries based on user's groups and there exist a `group` dimension in the model:
+You can directly inject the groups that a user belongs to into the row filter itself, such as:
 ```yaml 
 security:
   access: true
   row_filter: "groups IN ('{{ .user.groups | join \"', '\" }}')"
 ```
--->
+
+### Hide dimensions or measures for members of a certain group
+
+You can check group membership using the templating function `has`. For example:
+```yaml
+security:
+  access: true
+  exclude:
+    - if: '{{ has "partners" .user.groups }}'
+      names:
+        - cost
+        - profit
+```
 
 ### Advanced Example: Custom attributes
 

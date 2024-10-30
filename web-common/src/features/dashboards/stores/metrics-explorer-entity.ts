@@ -1,11 +1,11 @@
-import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { type TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -128,7 +128,7 @@ export interface MetricsExplorerEntity {
    * the line charts and bignums.
    * It does NOT affect the leaderboard context column.
    */
-  showTimeComparison?: boolean;
+  showTimeComparison: boolean;
 
   /**
    * state of context column in the leaderboard

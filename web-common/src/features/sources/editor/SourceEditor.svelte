@@ -29,8 +29,8 @@
     );
 </script>
 
-<div class="editor flex flex-col border border-gray-200 rounded h-full">
-  <div class="grow flex bg-white overflow-y-auto rounded">
+<div class="editor flex flex-col h-full">
+  <div class="grow flex bg-white overflow-y-auto">
     <Editor
       {fileArtifact}
       extensions={FileExtensionToEditorExtension[".yaml"]}

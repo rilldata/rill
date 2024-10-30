@@ -125,7 +125,11 @@ func (p *StaticProvisioner) AwaitReady(ctx context.Context, provisionID string) 
 	return nil
 }
 
-func (p *StaticProvisioner) Update(ctx context.Context, provisionID, newVersion string) error {
+func (p *StaticProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
 	// No-op
-	return nil
+	return true, nil
+}
+
+func (p *StaticProvisioner) Type() string {
+	return "static"
 }

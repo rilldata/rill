@@ -4,13 +4,16 @@
   export let message: string;
 </script>
 
-<div class="max-w-2xl">
-  <div
-    class="mb-2 p-2 flex bg-red-100 border-red-300 border-2 rounded text-red-800"
-  >
-    <AlertTriangle size="16px" />
-    <p class="ml-2">
-      {@html message}
-    </p>
-  </div>
+<div>
+  <AlertTriangle size="16px" />
+  <p class="ml-2">
+    {message}
+  </p>
 </div>
+
+<style lang="postcss">
+  div {
+    @apply text-red-800 bg-red-100 border-red-300;
+    @apply p-2 flex border-2 rounded-md;
+  }
+</style>

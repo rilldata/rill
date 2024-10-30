@@ -167,29 +167,25 @@ export class DashboardState extends Message<DashboardState> {
   pivotIsActive?: boolean;
 
   /**
-   * List of time dimensions selected for rows
+   *
+   * These pivot fields are preserved to support backward
+   * compatibility with existing URLs
    *
    * @generated from field: repeated rill.runtime.v1.TimeGrain pivot_row_time_dimensions = 23;
    */
   pivotRowTimeDimensions: TimeGrain[] = [];
 
   /**
-   * List of dimensions selected for rows
-   *
    * @generated from field: repeated string pivot_row_dimensions = 24;
    */
   pivotRowDimensions: string[] = [];
 
   /**
-   * List of time dimensions selected for columns
-   *
    * @generated from field: repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 25;
    */
   pivotColumnTimeDimensions: TimeGrain[] = [];
 
   /**
-   * List of time dimensions selected for columns
-   *
    * @generated from field: repeated string pivot_column_dimensions = 26;
    */
   pivotColumnDimensions: string[] = [];
@@ -234,6 +230,20 @@ export class DashboardState extends Message<DashboardState> {
    */
   pivotEnableComparison?: boolean;
 
+  /**
+   * List of all dimensions selected for rows
+   *
+   * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_all_dimensions = 35;
+   */
+  pivotRowAllDimensions: PivotElement[] = [];
+
+  /**
+   * List of all dimensions selected for columns
+   *
+   * @generated from field: repeated rill.ui.v1.PivotElement pivot_column_all_dimensions = 36;
+   */
+  pivotColumnAllDimensions: PivotElement[] = [];
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -276,6 +286,8 @@ export class DashboardState extends Message<DashboardState> {
     { no: 30, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 31, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -621,6 +633,56 @@ export class PivotColumnSort extends Message<PivotColumnSort> {
 
   static equals(a: PivotColumnSort | PlainMessage<PivotColumnSort> | undefined, b: PivotColumnSort | PlainMessage<PivotColumnSort> | undefined): boolean {
     return proto3.util.equals(PivotColumnSort, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ui.v1.PivotElement
+ */
+export class PivotElement extends Message<PivotElement> {
+  /**
+   * @generated from oneof rill.ui.v1.PivotElement.element
+   */
+  element: {
+    /**
+     * @generated from field: rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
+     */
+    value: TimeGrain;
+    case: "pivotTimeDimension";
+  } | {
+    /**
+     * @generated from field: string pivot_dimension = 2;
+     */
+    value: string;
+    case: "pivotDimension";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<PivotElement>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotElement";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pivot_time_dimension", kind: "enum", T: proto3.getEnumType(TimeGrain), oneof: "element" },
+    { no: 2, name: "pivot_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "element" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotElement {
+    return new PivotElement().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotElement {
+    return new PivotElement().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotElement {
+    return new PivotElement().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotElement | PlainMessage<PivotElement> | undefined, b: PivotElement | PlainMessage<PivotElement> | undefined): boolean {
+    return proto3.util.equals(PivotElement, a, b);
   }
 }
 

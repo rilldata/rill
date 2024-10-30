@@ -13,7 +13,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	showCmd := &cobra.Command{
 		Use:   "show <name>",
-		Short: "Show a user group",
+		Short: "Show group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

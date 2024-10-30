@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -15,10 +16,11 @@ import (
 type RepoStore interface {
 	Driver() string
 	// Root returns directory where artifacts are stored.
-	Root() string
+	Root(ctx context.Context) (string, error)
 	CommitHash(ctx context.Context) (string, error)
 	ListRecursive(ctx context.Context, glob string, skipDirs bool) ([]DirEntry, error)
 	Get(ctx context.Context, path string) (string, error)
+	FileHash(ctx context.Context, paths []string) (string, error)
 	Stat(ctx context.Context, path string) (*RepoObjectStat, error)
 	Put(ctx context.Context, path string, reader io.Reader) error
 	MakeDir(ctx context.Context, path string) error
@@ -48,6 +50,13 @@ type DirEntry struct {
 	IsDir bool
 }
 
+// RepoListLimit is the maximum number of files that can be listed in a call to RepoStore.ListRecursive.
+// This limit is effectively a cap on the number of files in a project because `rill start` lists the project directory using a "**" glob.
+const RepoListLimit = 2000
+
+// ErrRepoListLimitExceeded should be returned when RepoListLimit is exceeded.
+var ErrRepoListLimitExceeded = fmt.Errorf("glob exceeded limit of %d matched files", RepoListLimit)
+
 // ignoredPaths is a list of paths that are ignored by the parser.
 var ignoredPaths = []string{
 	"/tmp",
@@ -56,6 +65,7 @@ var ignoredPaths = []string{
 	"/.DS_Store",
 	"/.vscode",
 	"/.idea",
+	"/.rillcloud",
 }
 
 // IsIgnored returns true if the path (and any files in nested directories) should be ignored.

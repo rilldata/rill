@@ -1,5 +1,6 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
 /**
@@ -9,47 +10,49 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
  * @param dashboard
  * @param filtersOnly Only dimension/measure filters and the selected time range is stored.
  * @param absoluteTimeRange Time ranges is treated as absolute.
+ * @param timeControlState Time control state to derive the time range from.
  */
 export function getBookmarkDataForDashboard(
   dashboard: MetricsExplorerEntity,
-  filtersOnly: boolean,
-  absoluteTimeRange: boolean,
+  filtersOnly?: boolean,
+  absoluteTimeRange?: boolean,
+  timeControlState?: TimeControlState,
 ): string {
-  if (absoluteTimeRange) {
-    dashboard = {
-      ...dashboard,
-    };
+  const newDashboard = structuredClone(dashboard);
+
+  if (absoluteTimeRange && timeControlState) {
     if (
-      dashboard.selectedTimeRange?.start &&
-      dashboard.selectedTimeRange?.end
+      timeControlState.selectedTimeRange?.start &&
+      timeControlState.selectedTimeRange?.end
     ) {
-      dashboard.selectedTimeRange = {
+      newDashboard.selectedTimeRange = {
         name: TimeRangePreset.CUSTOM,
-        interval: dashboard.selectedTimeRange.interval,
-        start: dashboard.selectedTimeRange.start,
-        end: dashboard.selectedTimeRange.end,
+        interval: timeControlState.selectedTimeRange.interval,
+        start: timeControlState.selectedTimeRange.start,
+        end: timeControlState.selectedTimeRange.end,
       };
     }
+
     if (
-      dashboard.selectedComparisonTimeRange?.start &&
-      dashboard.selectedComparisonTimeRange?.end
+      timeControlState.selectedComparisonTimeRange?.start &&
+      timeControlState.selectedComparisonTimeRange?.end
     ) {
-      dashboard.selectedComparisonTimeRange = {
+      newDashboard.selectedComparisonTimeRange = {
         name: TimeRangePreset.CUSTOM,
-        interval: dashboard.selectedComparisonTimeRange.interval,
-        start: dashboard.selectedComparisonTimeRange.start,
-        end: dashboard.selectedComparisonTimeRange.end,
+        interval: timeControlState.selectedComparisonTimeRange.interval,
+        start: timeControlState.selectedComparisonTimeRange.start,
+        end: timeControlState.selectedComparisonTimeRange.end,
       };
     }
   }
 
   if (filtersOnly) {
     return getProtoFromDashboardState({
-      whereFilter: dashboard.whereFilter,
-      dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
-      selectedTimeRange: dashboard.selectedTimeRange,
+      whereFilter: newDashboard.whereFilter,
+      dimensionThresholdFilters: newDashboard.dimensionThresholdFilters,
+      selectedTimeRange: newDashboard.selectedTimeRange,
     } as MetricsExplorerEntity);
+  } else {
+    return getProtoFromDashboardState(newDashboard);
   }
-
-  return getProtoFromDashboardState(dashboard);
 }

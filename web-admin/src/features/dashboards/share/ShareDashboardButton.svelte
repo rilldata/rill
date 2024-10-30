@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CreateShareableURLForm from "@rilldata/web-admin/features/shareable-urls/CreateShareableURLForm.svelte";
+  import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import {
@@ -16,23 +16,29 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let createMagicAuthTokens: boolean;
+
+  let isOpen = false;
 </script>
 
-<Popover>
+<Popover bind:open={isOpen}>
   <PopoverTrigger asChild let:builder>
-    <Button type="secondary" builders={[builder]}>Share</Button>
+    <Button type="secondary" builders={[builder]} selected={isOpen}
+      >Share</Button
+    >
   </PopoverTrigger>
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>
       <TabsList>
-        <TabsTrigger value="tab1">Copy link</TabsTrigger>
+        <TabsTrigger value="tab1">Copy URL</TabsTrigger>
         {#if createMagicAuthTokens}
-          <TabsTrigger value="tab2">Create public link</TabsTrigger>
+          <TabsTrigger value="tab2">Create public URL</TabsTrigger>
         {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
-        <div class="flex flex-col gap-y-2">
-          <h3>Share your current view with another project member.</h3>
+        <div class="flex flex-col gap-y-4">
+          <h3 class="text-xs text-gray-800 font-normal">
+            Share your current view with another project member.
+          </h3>
           <Button
             type="secondary"
             on:click={() => {
@@ -40,13 +46,19 @@
             }}
           >
             <Link size="16px" className="text-primary-500" />
-            Copy link
+            Copy URL
           </Button>
         </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
-        <CreateShareableURLForm />
+        <CreatePublicURLForm />
       </TabsContent>
     </Tabs>
   </PopoverContent>
 </Popover>
+
+<style lang="postcss">
+  h3 {
+    @apply font-semibold;
+  }
+</style>

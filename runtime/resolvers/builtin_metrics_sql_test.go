@@ -15,7 +15,9 @@ func TestBuiltinMetricsSQL(t *testing.T) {
 		Files: map[string]string{
 			`rill.yaml`:      ``,
 			`models/foo.sql`: `SELECT 10 AS a`,
-			`dashboards/bar.yaml`: `
+			`metrics/bar.yaml`: `
+version: 1
+type: metrics_view
 model: foo
 dimensions:
 - column: a
@@ -66,7 +68,8 @@ measures:
 			require.Equal(t, tc.wantErr, err.Error())
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, []byte(tc.want), res.Data)
+			defer res.Close()
+			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
 		}
 	}
 }

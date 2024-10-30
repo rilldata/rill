@@ -7,11 +7,14 @@ import (
 	"fmt"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -32,43 +35,8 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-			Placeholder: "localhost",
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "default",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -109,6 +77,13 @@ var spec = drivers.Spec{
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",
 		},
+		{
+			Key:         "database",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Database",
+			Description: "Specify the database within the ClickHouse server",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -124,14 +99,24 @@ type configProperties struct {
 	Password string `mapstructure:"password"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
+	// Database specifies the name of the ClickHouse database within the cluster.
+	Database string `mapstructure:"database"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
+	// Cluster name. Required for running distributed queries.
+	Cluster string `mapstructure:"cluster"`
 	// EnableCache controls whether to enable cache for Clickhouse queries.
 	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
+	// EmbedPort is the port to run Clickhouse locally (0 is random port).
+	EmbedPort int `mapstructure:"embed_port"`
+	// DataDir is the path to directory where db files will be created.
+	DataDir        string `mapstructure:"data_dir"`
+	TempDir        string `mapstructure:"temp_dir"`
+	CanScaleToZero bool   `mapstructure:"can_scale_to_zero"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -141,7 +126,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
 
-	conf := &configProperties{}
+	conf := &configProperties{
+		CanScaleToZero: true,
+	}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
@@ -149,6 +136,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 
 	// build clickhouse options
 	var opts *clickhouse.Options
+	var embed *embedClickHouse
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -180,14 +168,29 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		} else if conf.Username != "" {
 			opts.Auth.Username = conf.Username
 		}
+
+		// database
+		if conf.Database != "" {
+			opts.Auth.Database = conf.Database
+		}
 	} else {
-		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
+		// run clickhouse locally
+		embed = newEmbedClickHouse(conf.EmbedPort, conf.DataDir, conf.TempDir, logger)
+		opts, err = embed.start()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	db := sqlx.NewDb(clickhouse.OpenDB(opts), "clickhouse")
+	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
+
+	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
+	if err != nil {
+		return nil, fmt.Errorf("registering db stats metrics: %w", err)
+	}
 
 	err = db.Ping()
 	if err != nil {
@@ -217,6 +220,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
 		opts:    opts,
+		embed:   embed,
 	}
 	return conn, nil
 }
@@ -252,6 +256,8 @@ type connection struct {
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options
+	// embed is embedded clickhouse server for local run
+	embed *embedClickHouse
 }
 
 // Ping implements drivers.Handle.
@@ -273,7 +279,14 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	errDB := c.db.Close()
+
+	var errEmbed error
+	if c.embed != nil {
+		errEmbed = c.embed.stop()
+	}
+
+	return errors.Join(errDB, errEmbed)
 }
 
 // Registry implements drivers.Connection.
@@ -324,8 +337,17 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+	if opts.OutputHandle != c {
+		return nil, false
+	}
+	if opts.InputHandle == c {
+		return &selfToSelfExecutor{c}, true
+	}
+	if opts.InputHandle.Driver() == "s3" {
+		return &s3ToSelfExecutor{opts.InputHandle, c}, true
+	}
+	if opts.InputHandle.Driver() == "local_file" {
+		return &localFileToSelfExecutor{opts.InputHandle, c}, true
 	}
 	return nil, false
 }
@@ -345,6 +367,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
@@ -354,10 +381,6 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
-}
-
-func (c *connection) EstimateSize() (int64, bool) {
-	return 0, false
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {

@@ -1,16 +1,18 @@
 <!-- This page is for cases when user authorised the github app on another github account which doesn't have access to the repo  -->
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import {
+    redirectToGithubLogin,
+    redirectToLogin,
+  } from "@rilldata/web-admin/client/redirect-utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
-  import GithubRepoInline from "../../../../../features/projects/GithubRepoInline.svelte";
-  import GithubUserInline from "../../../../../features/projects/GithubUserInline.svelte";
+  import GithubRepoInline from "@rilldata/web-admin/features/projects/github/GithubRepoInline.svelte";
+  import GithubUserInline from "@rilldata/web-admin/features/projects/github/GithubUserInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -20,7 +22,7 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+          redirectToLogin();
         }
       },
     },
@@ -28,16 +30,16 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to Github</title>
+  <title>Could not connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <GithubFail />
-      <CtaHeader>Could not connect to Github</CtaHeader>
+      <CtaHeader>Could not connect to GitHub</CtaHeader>
       <CtaMessage>
-        Your authorized Github account <GithubUserInline {githubUsername} />
+        Your authorized GitHub account <GithubUserInline {githubUsername} />
         does not have access to <GithubRepoInline githubUrl={remote} />.
       </CtaMessage>
       <CtaMessage>
@@ -45,9 +47,9 @@
       </CtaMessage>
       <CtaButton
         variant="primary"
-        href={encodeURI(ADMIN_URL + "/github/auth/login?remote=" + remote)}
+        on:click={() => redirectToGithubLogin(remote)}
       >
-        Connect to Github
+        Connect to GitHub
       </CtaButton>
     </CtaContentContainer>
   </CtaLayoutContainer>

@@ -11,8 +11,8 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, readable, writable } from "svelte/store";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { type Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -43,12 +43,12 @@ import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
  * following the path defined by the key (split into indices) and extracts
  * the dimension values at each level.
  */
-function getValuesForExpandedKey(
+export function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
   hasTotalsRow = true,
-) {
+): string[] {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
   if (hasTotalsRow) {
@@ -125,6 +125,7 @@ export function createSubTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
+    config,
     measureBody,
     dimensionBody,
     filterForSubTable,

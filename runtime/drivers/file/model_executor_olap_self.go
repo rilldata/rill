@@ -27,18 +27,24 @@ const maxParquetRowGroupSize = 512 * int64(datasize.MB)
 type olapToSelfExecutor struct {
 	c    *connection
 	olap drivers.OLAPStore
-	opts *drivers.ModelExecutorOptions
 }
 
 var _ drivers.ModelExecutor = &olapToSelfExecutor{}
 
-func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *olapToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return 0, false
+	}
+	return 1, true
+}
+
+func (e *olapToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	// Parse SQL from input properties
 	inputProps := &struct {
 		SQL  string `mapstructure:"sql"`
 		Args []any  `mapstructure:"args"`
 	}{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if inputProps.SQL == "" {
@@ -47,7 +53,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	// Parse output properties
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	if err := outputProps.Validate(); err != nil {
@@ -58,7 +64,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:    inputProps.SQL,
 		Args:     inputProps.Args,
-		Priority: e.opts.Priority,
+		Priority: opts.Priority,
 	})
 	if err != nil {
 		return nil, err
@@ -105,7 +111,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, fmt.Errorf("failed to encode result properties: %w", err)
 	}
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 	}, nil
 }

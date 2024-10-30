@@ -1,0 +1,36 @@
+model: ad_bids_mini
+display_name: Ad bids
+display_name: ""
+
+timeseries: timestamp
+
+dimensions:
+  - display_name: Publisher
+    name: publisher
+    expression: upper(publisher)
+    description: ""
+  - display_name: Domain
+    property: domain
+    description: ""
+
+measures:
+  - display_name: "Number of bids"
+    name: bid's number
+    expression: count(*)
+  - display_name: "Total volume"
+    name: total volume
+    expression: sum(volume)
+  - display_name: "Total impressions"
+    name: total impressions
+    expression: sum(impressions)
+  - display_name: "Total clicks"
+    name: total click"s
+    expression: sum(clicks)
+
+security:
+  access: true
+  row_filter: "domain = '{{ .user.domain }}'"  
+  exclude:
+    - if: "'{{ .user.domain }}' != 'msn.com'"
+      names: 
+        - total volume

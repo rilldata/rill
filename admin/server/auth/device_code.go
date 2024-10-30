@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/oauth"
-	"github.com/rilldata/rill/admin/pkg/urlutil"
 )
 
 const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
@@ -76,12 +75,6 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/device")
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
-		return
-	}
-
 	// add a "-" after the 4th character
 	readableUserCode := authCode.UserCode[:4] + "-" + authCode.UserCode[4:]
 
@@ -89,20 +82,14 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 	if values.Get("redirect") != "" {
 		qry["redirect"] = values.Get("redirect")
 	} else {
-		qry["redirect"] = urlutil.MustJoinURL(a.opts.FrontendURL, "/-/auth/cli/success")
-	}
-
-	verificationCompleteURI, err := urlutil.WithQuery(verificationURI, qry)
-	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
-		return
+		qry["redirect"] = a.admin.URLs.AuthCLISuccessUI()
 	}
 
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                readableUserCode,
-		VerificationURI:         verificationURI,
-		VerificationCompleteURI: verificationCompleteURI,
+		VerificationURI:         a.admin.URLs.AuthVerifyDeviceUI(nil),
+		VerificationCompleteURI: a.admin.URLs.AuthVerifyDeviceUI(qry),
 		ExpiresIn:               int(admin.DeviceAuthCodeTTL.Seconds()),
 		PollingInterval:         5,
 	}

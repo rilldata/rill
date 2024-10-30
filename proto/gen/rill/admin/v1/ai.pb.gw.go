@@ -61,6 +61,7 @@ func local_request_AIService_Complete_0(ctx context.Context, marshaler runtime.M
 // UnaryRPC     :call AIServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAIServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterAIServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AIServiceServer) error {
 
 	mux.Handle("POST", pattern_AIService_Complete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -126,7 +127,7 @@ func RegisterAIServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "AIServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "AIServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "AIServiceClient" to call the correct interceptors.
+// "AIServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterAIServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AIServiceClient) error {
 
 	mux.Handle("POST", pattern_AIService_Complete_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

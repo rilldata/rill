@@ -7,19 +7,20 @@
     COMPARIONS_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
+
   export let selectionIndex: number;
   export let excluded = false;
   export let isBeingCompared = false;
 
   $: selected = selectionIndex >= 0;
 
-  function getColor(i) {
+  function getColor(i: number) {
     if (i >= 7) return SELECTED_NOT_COMPARED_COLOR;
     return COMPARIONS_COLORS[i];
   }
 </script>
 
-<div style:width="22px" class="grid place-items-center">
+<div class="size-full flex items-center justify-center">
   {#if selected && !excluded && isBeingCompared}
     <CheckCircle color={getColor(selectionIndex)} size="18px" />
   {:else if selected && !excluded}

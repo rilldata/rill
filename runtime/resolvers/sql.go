@@ -82,46 +82,16 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}, nil
 }
 
-// newSQLSimple is a simplified version of newSQL that does not do any template resolution
-func newSQLSimple(ctx context.Context, opts *runtime.ResolverOptions, refs []*runtimev1.ResourceName) (runtime.Resolver, error) {
-	props := &sqlProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
-		return nil, err
-	}
-
-	args := &sqlArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
-		return nil, err
-	}
-
-	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := inst.Config()
-	if err != nil {
-		return nil, err
-	}
-
-	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sqlResolver{
-		sql:                 props.SQL,
-		refs:                refs,
-		olap:                olap,
-		olapRelease:         release,
-		interactiveRowLimit: cfg.InteractiveSQLRowLimit,
-		priority:            args.Priority,
-	}, nil
-}
-
 func (r *sqlResolver) Close() error {
 	r.olapRelease()
 	return nil
+}
+
+func (r *sqlResolver) Cacheable() bool {
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		return len(r.refs) != 0
+	}
+	return false
 }
 
 func (r *sqlResolver) Key() string {
@@ -154,14 +124,10 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	}
 
 	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
-	var cache bool
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		cache = len(r.refs) != 0
-	}
 	if r.interactiveRowLimit != 0 {
 		res.SetCap(r.interactiveRowLimit)
 	}
-	return runtime.NewResolverResult(res, cache), nil
+	return runtime.NewDriverResolverResult(res), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
@@ -271,7 +237,7 @@ func resolveTemplate(sqlTemplate string, args map[string]any, inst *drivers.Inst
 	sql, err := compilerv1.ResolveTemplate(sqlTemplate, compilerv1.TemplateData{
 		Environment: inst.Environment,
 		User:        userAttributes,
-		Variables:   inst.ResolveVariables(),
+		Variables:   inst.ResolveVariables(false),
 		ExtraProps: map[string]any{
 			"args":   args,
 			"export": forExport,

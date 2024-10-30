@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodVersion, prodBranch, path, provisioner string
+	var name, description, prodVersion, prodBranch, subpath, path, provisioner string
 	var public bool
 	var slots int
 	var prodTTL int64
@@ -72,6 +72,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				promptFlagValues = false
 				req.ProdBranch = &prodBranch
 			}
+			if cmd.Flags().Changed("subpath") {
+				promptFlagValues = false
+				req.Subpath = &subpath
+			}
 			if cmd.Flags().Changed("public") {
 				promptFlagValues = false
 				req.Public = &public
@@ -108,8 +112,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				req.Public = &public
 			}
 
-			// Todo: Need to add prompt for repo_path <path_for_monorepo>
-
 			updatedProj, err := client.UpdateProject(ctx, req)
 			if err != nil {
 				return err
@@ -128,6 +130,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version (default: current version)")

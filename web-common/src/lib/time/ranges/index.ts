@@ -31,9 +31,9 @@ import {
   RangePresetType,
   TimeComparisonOption,
   TimeOffsetType,
-  TimeRange,
-  TimeRangeMeta,
-  TimeRangeOption,
+  type TimeRange,
+  type TimeRangeMeta,
+  type TimeRangeOption,
   TimeRangePreset,
 } from "../types";
 
@@ -110,7 +110,7 @@ export function getChildTimeRanges(
 // TODO: investigate whether we need this after we've removed the need
 // for the config's default_time_Range to be an ISO duration.
 export function ISODurationToTimePreset(
-  isoDuration: string,
+  isoDuration: string | undefined,
   defaultToAllTime = true,
 ): TimeRangePreset | undefined {
   switch (isoDuration) {
@@ -137,7 +137,7 @@ export function ISODurationToTimePreset(
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
-  timeRangePreset: TimeRangePreset,
+  timeRangePreset: TimeRangePreset | TimeComparisonOption,
   start: Date,
   end: Date,
   zone: string,
@@ -331,9 +331,9 @@ export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
   zone: string,
-  interval: V1TimeGrain,
+  interval: V1TimeGrain | undefined,
 ) {
-  if (!startTime || !endTime)
+  if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
   const offsetedStartTime = getOffset(
     startTime,

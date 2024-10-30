@@ -18,6 +18,7 @@ rill project edit [<project-name>] [flags]
       --prod-branch string     Production branch name
       --public                 Make dashboards publicly accessible
       --path string            Project directory (default ".")
+      --subpath string         Relative path to project in the repository (for monorepos)
       --provisioner string     Project provisioner (default: current provisioner)
       --prod-ttl-seconds int   Prod deployment TTL in seconds
       --prod-version string    Rill version (default: current version)

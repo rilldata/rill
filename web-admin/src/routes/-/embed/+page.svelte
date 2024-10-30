@@ -2,54 +2,71 @@
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import DashboardsTable from "@rilldata/web-admin/features/dashboards/listing/DashboardsTable.svelte";
-  import DashboardEmbed from "@rilldata/web-admin/features/embeds/DashboardEmbed.svelte";
+  import CanvasEmbed from "@rilldata/web-admin/features/embeds/CanvasEmbed.svelte";
+  import ExploreEmbed from "@rilldata/web-admin/features/embeds/ExploreEmbed.svelte";
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
+  import UnsupportedKind from "@rilldata/web-admin/features/embeds/UnsupportedKind.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 
   const instanceId = $page.url.searchParams.get("instance_id");
   const initialResourceName = $page.url.searchParams.get("resource");
-  const resourceKind = $page.url.searchParams.get("kind");
+  const initialResourceType =
+    $page.url.searchParams.get("type") ?? $page.url.searchParams.get("kind"); // "kind" is for backwards compatibility
   const navigation = $page.url.searchParams.get("navigation");
   // Ignoring state and theme params for now
   // const state = $page.url.searchParams.get("state");
   // const theme = $page.url.searchParams.get("theme");
 
   // Manage active resource
-  let activeResourceName = initialResourceName;
+  let activeResource: V1ResourceName | null = null;
+  if (initialResourceName && initialResourceType) {
+    activeResource = {
+      name: initialResourceName,
+      kind: initialResourceType,
+    };
+  }
 
-  function handleSelectDashboard(event: CustomEvent<string>) {
-    activeResourceName = event.detail;
+  function handleSelectResource(event: CustomEvent<V1ResourceName>) {
+    activeResource = event.detail;
   }
 
   function handleGoHome() {
-    activeResourceName = "";
+    activeResource = null;
   }
 </script>
 
 <svelte:head>
-  <title>{activeResourceName} - Rill</title>
+  {#if activeResource}
+    <title>{activeResource.name} - Rill</title>
+  {:else}
+    <title>Rill</title>
+  {/if}
 </svelte:head>
 
 {#if navigation}
   <TopNavigationBarEmbed
     {instanceId}
-    {activeResourceName}
-    on:select-dashboard={handleSelectDashboard}
+    {activeResource}
+    on:select-resource={handleSelectResource}
     on:go-home={handleGoHome}
   />
-{/if}
-<!-- Metrics Explorers -->
-{#if resourceKind === ResourceKind.MetricsView.toString()}
-  {#if !activeResourceName}
+
+  {#if !activeResource}
     <ContentContainer>
-      <div class="flex flex-col items-center">
-        <DashboardsTable
-          isEmbedded
-          on:select-dashboard={handleSelectDashboard}
-        />
+      <div class="flex flex-col items-center gap-y-4">
+        <DashboardsTable isEmbedded on:select-resource={handleSelectResource} />
       </div>
     </ContentContainer>
+  {/if}
+{/if}
+
+{#if activeResource}
+  {#if activeResource?.kind === ResourceKind.Explore.toString()}
+    <ExploreEmbed {instanceId} exploreName={activeResource.name} />
+  {:else if activeResource?.kind === ResourceKind.Canvas.toString()}
+    <CanvasEmbed {instanceId} canvasName={activeResource.name} />
   {:else}
-    <DashboardEmbed {instanceId} dashboardName={activeResourceName} />
+    <UnsupportedKind />
   {/if}
 {/if}

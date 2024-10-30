@@ -13,14 +13,14 @@ func TestAcquireHandle(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:
 - name: my-s3
   type: s3
   defaults:
-    aws_access_key_id: us-east-1
+    AWS_ACCESS_KEY_ID: us-east-1
     aws_secret_access_key: xxxx
 
 variables:

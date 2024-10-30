@@ -39,7 +39,8 @@ Step.prototype = {
     }
   },
   point: function (x, y) {
-    (x = +x), (y = +y);
+    x = +x;
+    y = +y;
     switch (this._point) {
       case 0:
         this._point = 1;
@@ -63,7 +64,9 @@ Step.prototype = {
         break;
       }
     }
-    (this._x = x), (this._y = y);
+    this._x = x;
+
+    this._y = y;
   },
 };
 

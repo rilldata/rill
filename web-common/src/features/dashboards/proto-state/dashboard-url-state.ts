@@ -1,17 +1,13 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import {
-  createTimeRangeSummary,
-  useMetricsView,
-} from "@rilldata/web-common/features/dashboards/selectors/index";
+import { createTimeRangeSummary } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, get } from "svelte/store";
+import { type Readable, derived, get } from "svelte/store";
 
 export type DashboardUrlState = {
   isReady: boolean;
@@ -19,6 +15,7 @@ export type DashboardUrlState = {
   defaultProto?: string;
   urlName?: string;
   urlProto?: string;
+  isPublicUrl?: boolean;
 };
 export type DashboardUrlStore = Readable<DashboardUrlState>;
 
@@ -28,25 +25,27 @@ export type DashboardUrlStore = Readable<DashboardUrlState>;
 export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
   return derived(
     [useDashboardProto(ctx), useDashboardDefaultProto(ctx), page],
-    ([proto, defaultProtoState, page]) => {
-      if (defaultProtoState.isFetching)
-        return {
-          isReady: false,
-        };
+    ([proto, defaultProtoState, page], set) => {
+      if (defaultProtoState.isFetching) {
+        set({ isReady: false });
+        return;
+      }
 
       const defaultProto = defaultProtoState.proto;
+      const urlProto = page.url.searchParams.get("state");
+      const decodedUrlProto = urlProto
+        ? decodeURIComponent(urlProto)
+        : defaultProto;
 
-      let urlProto = page.url.searchParams.get("state");
-      if (urlProto) urlProto = decodeURIComponent(urlProto);
-      else urlProto = defaultProto;
-
-      return {
+      const urlName = getMetricsViewNameFromParams(page.params);
+      set({
         isReady: true,
         proto,
         defaultProto,
-        urlName: getNameFromFile(page.url.pathname),
-        urlProto,
-      };
+        urlName,
+        urlProto: decodedUrlProto,
+        isPublicUrl: !urlName,
+      });
     },
   );
 }
@@ -71,28 +70,33 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
  */
 export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   const dashboardUrlState = useDashboardUrlState(ctx);
-  const metricsView = useMetricsView(ctx);
 
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
-    const metricViewName = get(ctx.metricsViewName);
-    if (state.urlName !== metricViewName) {
+    const exploreName = get(ctx.exploreName);
+
+    // Avoid a race condition when switching between metrics views
+    // (It's not necessary for Public URLs because there's no UI flow for switching from one Public URL to another)
+    if (
+      !state.isPublicUrl &&
+      state?.urlName?.toLowerCase() !== exploreName.toLowerCase()
+    )
       return;
-    }
 
     if (!state.isReady || !state.proto) return;
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
-      gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto);
+      gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto!);
 
       lastKnownProto = state.proto;
     } else if (state.urlProto !== lastKnownProto) {
       // changed when user updated the url manually
       metricsExplorerStore.syncFromUrl(
-        metricViewName,
-        state.urlProto,
-        get(metricsView).data,
+        exploreName,
+        state.urlProto!,
+        get(ctx.validSpecStore).data?.metricsView ?? {},
+        get(ctx.validSpecStore).data?.explore ?? {},
         schema,
       );
       lastKnownProto = state.urlProto;
@@ -134,10 +138,14 @@ export function useDashboardProto(ctx: StateManagers) {
 // TODO: we need to update the architecture to perhaps recreate all derived stores when the metricsViewName changes
 export function useDashboardDefaultProto(ctx: StateManagers) {
   return derived(
-    [useMetricsView(ctx), createTimeRangeSummary(ctx)],
-    ([metricsView, timeRangeSummary]) => {
-      const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-      if (!metricsView.data || (hasTimeSeries && !timeRangeSummary.data))
+    [ctx.validSpecStore, createTimeRangeSummary(ctx)],
+    ([validSpec, timeRangeSummary]) => {
+      const hasTimeSeries = Boolean(validSpec.data?.metricsView?.timeDimension);
+      if (
+        !validSpec.data?.metricsView ||
+        !validSpec.data?.explore ||
+        (hasTimeSeries && !timeRangeSummary.data)
+      )
         return {
           isFetching: true,
           proto: "",
@@ -145,7 +153,8 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
 
       const metricsExplorer = getDefaultMetricsExplorerEntity(
         get(ctx.metricsViewName),
-        metricsView.data,
+        validSpec.data.metricsView,
+        validSpec.data.explore,
         timeRangeSummary.data,
       );
       return {
@@ -154,4 +163,21 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
       };
     },
   );
+}
+/**
+ * We have different ways of getting the metrics view name, depending on the context:
+ * - The `dashboard` URL param is used in Cloud
+ * - The `name` URL param is used in Ril Developer
+ * - The `token` URL param is used in Public URLs. The metrics view name is embedded in the token.
+ */
+function getMetricsViewNameFromParams(
+  params: Record<string, string>,
+): string | undefined {
+  const { dashboard, name } = params;
+
+  if (dashboard) return dashboard;
+  if (name) return name;
+  // TODO: Add support for public urls' `token` param
+
+  return undefined;
 }

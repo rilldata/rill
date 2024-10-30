@@ -1,39 +1,40 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useQueryClient } from "@rilldata/svelte-query";
   import type { BookmarkFormValues } from "@rilldata/web-admin/features/bookmarks/form-utils";
   import { getPrettySelectedTimeRange } from "@rilldata/web-admin/features/bookmarks/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { createForm } from "svelte-forms-lib";
   import { InfoIcon } from "lucide-svelte";
+  import type { createForm } from "svelte-forms-lib";
 
   export let metricsViewName: string;
+  export let exploreName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
 
-  const queryClient = useQueryClient();
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: exploreStore = useExploreStore(exploreName);
 
   let timeRange: V1TimeRange;
   $: timeRange = {
-    isoDuration: $dashboardStore.selectedTimeRange?.name,
-    start: $dashboardStore.selectedTimeRange?.start?.toISOString() ?? "",
-    end: $dashboardStore.selectedTimeRange?.end?.toISOString() ?? "",
+    isoDuration: $exploreStore.selectedTimeRange?.name,
+    start: $exploreStore.selectedTimeRange?.start?.toISOString() ?? "",
+    end: $exploreStore.selectedTimeRange?.end?.toISOString() ?? "",
   };
 
   $: selectedTimeRange = getPrettySelectedTimeRange(
     queryClient,
     $runtime?.instanceId,
     metricsViewName,
+    exploreName,
   );
 
   const { form, errors } = formState;
@@ -54,7 +55,7 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     bind:value={$form["displayName"]}
     errors={$errors["displayName"]}
     id="displayName"
-    label="Name"
+    label="Label"
   />
   <Input
     bind:value={$form["description"]}
@@ -69,9 +70,9 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       <div class="text-gray-500">Inherited from underlying dashboard view.</div>
     </Label>
     <FilterChipsReadOnly
-      dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-      filters={$dashboardStore.whereFilter}
-      {metricsViewName}
+      dimensionThresholdFilters={$exploreStore.dimensionThresholdFilters}
+      filters={$exploreStore.whereFilter}
+      {exploreName}
       {timeRange}
     />
   </div>

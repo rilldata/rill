@@ -1,20 +1,32 @@
 <script lang="ts">
-  import { RillTheme } from "@rilldata/web-common/layout";
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
+  import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
+  import { RillTheme } from "@rilldata/web-common/layout";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
+  import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import {
+    errorEventHandler,
+    initMetrics,
+  } from "@rilldata/web-common/metrics/initMetrics";
+  import { localServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
-  import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
-  import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
-  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
+  import { page } from "$app/stores";
+  import type { LayoutData } from "./$types";
+
+  export let data: LayoutData;
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
    */
@@ -27,11 +39,11 @@
     error: AxiosError,
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
+  initPylonWidget();
 
   let removeJavascriptListeners: () => void;
-
   onMount(async () => {
-    const config = await runtimeServiceGetConfig();
+    const config = await localServiceGetMetadata();
     await initMetrics(config);
     removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
 
@@ -40,7 +52,7 @@
 
     appBuildMetaStore.set({
       version: config.version,
-      commitHash: config.build_commit,
+      commitHash: config.buildCommit,
     });
   });
 
@@ -53,17 +65,47 @@
   });
 
   $: ({ host, instanceId } = $runtime);
+
+  $: ({ route } = $page);
+
+  $: mode = route.id?.includes("(viz)") ? "Preview" : "Developer";
 </script>
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <ResourceWatcher {host} {instanceId}>
-      <div class="body h-screen w-screen overflow-hidden absolute">
+      <div
+        class="body h-screen w-screen overflow-hidden absolute flex flex-col"
+      >
+        {#if data.initialized}
+          <BannerCenter />
+          <RepresentingUserBanner />
+          <ApplicationHeader {mode} />
+        {/if}
+
         <slot />
       </div>
     </ResourceWatcher>
   </QueryClientProvider>
 </RillTheme>
+
+{#if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
 
 <NotificationCenter />
 

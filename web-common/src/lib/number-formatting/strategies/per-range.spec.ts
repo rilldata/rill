@@ -1,4 +1,4 @@
-import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
+import { type FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { PerRangeFormatter } from "./per-range";
 import { describe, it, expect } from "vitest";
 

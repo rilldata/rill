@@ -5,6 +5,7 @@
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
 
   export let metricsViewName: string;
+  export let exploreName: string;
 
   $: orgName = $page.params.organization;
   $: projectName = $page.params.project;
@@ -13,15 +14,11 @@
   const stateManagers = createStateManagers({
     queryClient,
     metricsViewName,
+    exploreName,
     extraKeyPrefix:
       orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
-
-  $: {
-    // update metrics view name
-    stateManagers.setMetricsViewName(metricsViewName);
-  }
 </script>
 
 <slot />

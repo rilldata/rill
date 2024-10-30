@@ -2,9 +2,12 @@ package database
 
 import (
 	"context"
-	"errors"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Drivers is a registry of drivers
@@ -19,13 +22,19 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new database connection.
-func Open(driver, dsn string) (DB, error) {
+// See ParseEncryptionKeyring for the expected format for encKeyringConfig.
+func Open(driver, dsn, encKeyringConfig string) (DB, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown database driver: %s", driver)
 	}
 
-	db, err := d.Open(dsn)
+	encKeyring, err := ParseEncryptionKeyring(encKeyringConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing encryption keyring: %w", err)
+	}
+
+	db, err := d.Open(dsn, encKeyring)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +44,7 @@ func Open(driver, dsn string) (DB, error) {
 
 // Driver is the interface for DB drivers.
 type Driver interface {
-	Open(dsn string) (DB, error)
+	Open(dsn string, encKeyring []*EncryptionKey) (DB, error)
 }
 
 // DB is the interface for a database connection.
@@ -50,6 +59,7 @@ type DB interface {
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
@@ -114,6 +124,8 @@ type DB interface {
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
 	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
+	GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error)
+	IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
@@ -125,6 +137,7 @@ type DB interface {
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
+	CheckUsergroupExists(ctx context.Context, groupID string) (bool, error)
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -154,11 +167,18 @@ type DB interface {
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
-	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
+	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
+	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
+	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
+	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -183,6 +203,7 @@ type DB interface {
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -204,6 +225,7 @@ type DB interface {
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
+	UpdateOrganizationInviteUsergroups(ctx context.Context, id string, groupIDs []string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -214,6 +236,12 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
@@ -236,10 +264,28 @@ type DB interface {
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
+	FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error)
+
 	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
+
+	FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*Organization, error)
+	FindOrganizationForBillingCustomerID(ctx context.Context, customerID string) (*Organization, error)
+
+	FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*BillingIssue, error)
+	FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) (*BillingIssue, error)
+	FindBillingIssueByType(ctx context.Context, errorType BillingIssueType) ([]*BillingIssue, error)
+	FindBillingIssueByTypeAndOverdueProcessed(ctx context.Context, errorType BillingIssueType, overdueProcessed bool) ([]*BillingIssue, error)
+	UpsertBillingIssue(ctx context.Context, opts *UpsertBillingIssueOptions) (*BillingIssue, error)
+	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
+	DeleteBillingIssue(ctx context.Context, id string) error
+	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
+	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
+	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -253,17 +299,13 @@ type Tx interface {
 	Rollback() error
 }
 
-// ErrNotFound is returned for single row queries that return no values.
-var ErrNotFound = errors.New("database: not found")
-
-// ErrNotUnique is returned when a unique constraint is violated
-var ErrNotUnique = errors.New("database: violates unique constraint")
-
 // Organization represents a tenant.
 type Organization struct {
 	ID                                  string
 	Name                                string
+	DisplayName                         string `db:"display_name"`
 	Description                         string
+	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
@@ -274,12 +316,17 @@ type Organization struct {
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
+	PaymentCustomerID                   string    `db:"payment_customer_id"`
+	BillingEmail                        string    `db:"billing_email"`
+	CreatedByUserID                     *string   `db:"created_by_user_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -287,12 +334,17 @@ type InsertOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
+	BillingEmail                        string
+	CreatedByUserID                     *string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
+	DisplayName                         string
 	Description                         string
+	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -300,6 +352,9 @@ type UpdateOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
+	BillingEmail                        string
+	CreatedByUserID                     *string
 }
 
 // Project represents one Git connection.
@@ -314,21 +369,22 @@ type Project struct {
 	Provisioner     string
 	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
-	ArchiveAssetID       *string           `db:"archive_asset_id"`
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ArchiveAssetID               *string           `db:"archive_asset_id"`
+	GithubURL                    *string           `db:"github_url"`
+	GithubInstallationID         *int64            `db:"github_installation_id"`
+	Subpath                      string            `db:"subpath"`
+	ProdVersion                  string            `db:"prod_version"`
+	ProdBranch                   string            `db:"prod_branch"`
+	ProdVariables                map[string]string `db:"prod_variables"`
+	ProdVariablesEncryptionKeyID string            `db:"prod_variables_encryption_key_id"`
+	ProdOLAPDriver               string            `db:"prod_olap_driver"`
+	ProdOLAPDSN                  string            `db:"prod_olap_dsn"`
+	ProdSlots                    int               `db:"prod_slots"`
+	ProdTTLSeconds               *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID             *string           `db:"prod_deployment_id"`
+	Annotations                  map[string]string `db:"annotations"`
+	CreatedOn                    time.Time         `db:"created_on"`
+	UpdatedOn                    time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -345,7 +401,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
@@ -361,9 +416,9 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
@@ -437,18 +492,20 @@ type RuntimeSlotsUsed struct {
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID                  string
-	Email               string
-	DisplayName         string    `db:"display_name"`
-	PhotoURL            string    `db:"photo_url"`
-	GithubUsername      string    `db:"github_username"`
-	GithubRefreshToken  string    `db:"github_refresh_token"`
-	CreatedOn           time.Time `db:"created_on"`
-	UpdatedOn           time.Time `db:"updated_on"`
-	ActiveOn            time.Time `db:"active_on"`
-	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
-	PreferenceTimeZone  string    `db:"preference_time_zone"`
-	Superuser           bool      `db:"superuser"`
+	ID                    string
+	Email                 string
+	DisplayName           string    `db:"display_name"`
+	PhotoURL              string    `db:"photo_url"`
+	GithubUsername        string    `db:"github_username"`
+	GithubRefreshToken    string    `db:"github_refresh_token"`
+	CreatedOn             time.Time `db:"created_on"`
+	UpdatedOn             time.Time `db:"updated_on"`
+	ActiveOn              time.Time `db:"active_on"`
+	QuotaSingleuserOrgs   int       `db:"quota_singleuser_orgs"`
+	QuotaTrialOrgs        int       `db:"quota_trial_orgs"`
+	CurrentTrialOrgsCount int       `db:"current_trial_orgs_count"`
+	PreferenceTimeZone    string    `db:"preference_time_zone"`
+	Superuser             bool      `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -457,6 +514,7 @@ type InsertUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	QuotaSingleuserOrgs int
+	QuotaTrialOrgs      int
 	Superuser           bool
 }
 
@@ -467,6 +525,7 @@ type UpdateUserOptions struct {
 	GithubUsername      string
 	GithubRefreshToken  string
 	QuotaSingleuserOrgs int
+	QuotaTrialOrgs      int
 	PreferenceTimeZone  string
 }
 
@@ -572,15 +631,21 @@ type InsertDeploymentAuthTokenOptions struct {
 type MagicAuthToken struct {
 	ID                    string
 	SecretHash            []byte         `db:"secret_hash"`
+	Secret                []byte         `db:"secret"`
+	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
 	ProjectID             string         `db:"project_id"`
 	CreatedOn             time.Time      `db:"created_on"`
 	ExpiresOn             *time.Time     `db:"expires_on"`
 	UsedOn                time.Time      `db:"used_on"`
 	CreatedByUserID       *string        `db:"created_by_user_id"`
 	Attributes            map[string]any `db:"attributes"`
-	MetricsView           string         `db:"metrics_view"`
-	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
-	MetricsViewFields     []string       `db:"metrics_view_fields"`
+	ResourceType          string         `db:"resource_type"`
+	ResourceName          string         `db:"resource_name"`
+	FilterJSON            string         `db:"filter_json"`
+	Fields                []string       `db:"fields"`
+	State                 string         `db:"state"`
+	DisplayName           string         `db:"display_name"`
+	Internal              bool           `db:"internal"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -591,15 +656,41 @@ type MagicAuthTokenWithUser struct {
 
 // InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
 type InsertMagicAuthTokenOptions struct {
-	ID                    string
-	SecretHash            []byte
-	ProjectID             string `validate:"required"`
-	ExpiresOn             *time.Time
-	CreatedByUserID       *string
-	Attributes            map[string]any
-	MetricsView           string `validate:"required"`
-	MetricsViewFilterJSON string
-	MetricsViewFields     []string
+	ID              string
+	SecretHash      []byte
+	Secret          []byte
+	ProjectID       string `validate:"required"`
+	ExpiresOn       *time.Time
+	CreatedByUserID *string
+	Attributes      map[string]any
+	ResourceType    string `validate:"required"`
+	ResourceName    string `validate:"required"`
+	FilterJSON      string
+	Fields          []string
+	State           string
+	DisplayName     string
+	Internal        bool
+}
+
+type ReportToken struct {
+	ID               string
+	ReportName       string `db:"report_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type ReportTokenWithSecret struct {
+	ID                   string
+	ReportName           string `db:"report_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
+}
+
+type InsertReportTokenOptions struct {
+	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -707,6 +798,7 @@ type MemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
+	PhotoURL    string    `db:"photo_url"`
 	RoleName    string    `db:"name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
@@ -726,6 +818,7 @@ type OrganizationInvite struct {
 	Email           string
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
+	UsergroupIDs    []string  `db:"usergroup_ids"`
 	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
@@ -764,7 +857,7 @@ type OrganizationWhitelistedDomain struct {
 type InsertOrganizationWhitelistedDomainOptions struct {
 	OrgID     string `validate:"required"`
 	OrgRoleID string `validate:"required"`
-	Domain    string `validate:"domain"`
+	Domain    string `validate:"fqdn"`
 }
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
@@ -785,7 +878,7 @@ type ProjectWhitelistedDomain struct {
 type InsertProjectWhitelistedDomainOptions struct {
 	ProjectID     string `validate:"required"`
 	ProjectRoleID string `validate:"required"`
-	Domain        string `validate:"domain"`
+	Domain        string `validate:"fqdn"`
 }
 
 type ProjectWhitelistedDomainWithJoinedRoleNames struct {
@@ -794,13 +887,14 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 const (
-	DefaultQuotaProjects                       = 5
-	DefaultQuotaDeployments                    = 10
-	DefaultQuotaSlotsTotal                     = 20
-	DefaultQuotaSlotsPerDeployment             = 5
+	DefaultQuotaProjects                       = 1
+	DefaultQuotaDeployments                    = 2
+	DefaultQuotaSlotsTotal                     = 4
+	DefaultQuotaSlotsPerDeployment             = 2
 	DefaultQuotaOutstandingInvites             = 200
-	DefaultQuotaSingleuserOrgs                 = 3
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
+	DefaultQuotaSingleuserOrgs                 = 100
+	DefaultQuotaTrialOrgs                      = 2
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
 type InsertOrganizationInviteOptions struct {
@@ -815,6 +909,18 @@ type InsertProjectInviteOptions struct {
 	InviterID string
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
+}
+
+type ProjectAccessRequest struct {
+	ID        string
+	UserID    string    `db:"user_id"`
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	UserID    string `validate:"required"`
+	ProjectID string `validate:"required"`
 }
 
 type Bookmark struct {
@@ -872,8 +978,140 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string    `db:"org_id"`
+	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+type ProjectVariable struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Environment          string    `db:"environment"`
+	Name                 string    `db:"name"`
+	Value                string    `db:"value"`
+	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
+	UpdatedByUserID      *string   `db:"updated_by_user_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+// EncryptionKey represents an encryption key for column-level encryption/decryption.
+// Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
+// It is implemented on the application side before writes to and after reads from the database.
+type EncryptionKey struct {
+	ID     string `json:"key_id"`
+	Secret []byte `json:"key"`
+}
+
+// ParseEncryptionKeyring parses a JSON string containing an array of EncryptionKey objects.
+// If the provided string is empty, an empty keyring is returned.
+// When using an empty keyring, columns will be read and written without applying encryption/decryption.
+func ParseEncryptionKeyring(keyring string) ([]*EncryptionKey, error) {
+	if keyring == "" {
+		return nil, nil
+	}
+
+	var encKeyring []*EncryptionKey
+	err := json.Unmarshal([]byte(keyring), &encKeyring)
+	if err != nil {
+		return nil, err
+	}
+
+	return encKeyring, nil
+}
+
+func NewRandomKeyring() ([]*EncryptionKey, error) {
+	secret := make([]byte, 32) // 32 bytes for AES-256
+	_, err := rand.Read(secret)
+	if err != nil {
+		return nil, err
+	}
+
+	encKeyRing := []*EncryptionKey{
+		{ID: uuid.New().String(), Secret: secret},
+	}
+
+	return encKeyRing, nil
+}
+
+const BillingGracePeriodDays = 9
+
+type BillingIssueType int
+
+const (
+	BillingIssueTypeUnspecified           BillingIssueType = iota
+	BillingIssueTypeOnTrial                                = 1
+	BillingIssueTypeTrialEnded                             = 2
+	BillingIssueTypeNoPaymentMethod                        = 3
+	BillingIssueTypeNoBillableAddress                      = 4
+	BillingIssueTypePaymentFailed                          = 5
+	BillingIssueTypeSubscriptionCancelled                  = 6
+	BillingIssueTypeNeverSubscribed                        = 7
+)
+
+type BillingIssueLevel int
+
+const (
+	BillingIssueLevelUnspecified BillingIssueLevel = iota
+	BillingIssueLevelWarning                       = 1
+	BillingIssueLevelError                         = 2
+)
+
+type BillingIssue struct {
+	ID        string
+	OrgID     string
+	Type      BillingIssueType
+	Level     BillingIssueLevel
+	Metadata  BillingIssueMetadata
+	EventTime time.Time
+	CreatedOn time.Time
+}
+
+type BillingIssueMetadata interface{}
+
+type BillingIssueMetadataOnTrial struct {
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	EndDate            time.Time `json:"end_date"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataTrialEnded struct {
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	EndDate            time.Time `json:"end_date"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataNoPaymentMethod struct{}
+
+type BillingIssueMetadataNoBillableAddress struct{}
+
+type BillingIssueMetadataPaymentFailed struct {
+	Invoices map[string]*BillingIssueMetadataPaymentFailedMeta `json:"invoices"`
+}
+
+type BillingIssueMetadataPaymentFailedMeta struct {
+	ID                 string    `json:"id"`
+	Number             string    `json:"invoice_number"`
+	URL                string    `json:"invoice_url"`
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	DueDate            time.Time `json:"due_date"`
+	FailedOn           time.Time `json:"failed_on"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
+}
+
+type BillingIssueMetadataSubscriptionCancelled struct {
+	EndDate time.Time `json:"end_date"`
+}
+
+type BillingIssueMetadataNeverSubscribed struct{}
+
+type UpsertBillingIssueOptions struct {
+	OrgID     string           `validate:"required"`
+	Type      BillingIssueType `validate:"required"`
+	Metadata  BillingIssueMetadata
+	EventTime time.Time `validate:"required"`
 }

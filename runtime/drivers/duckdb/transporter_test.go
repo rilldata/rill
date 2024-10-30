@@ -19,6 +19,10 @@ type mockObjectStore struct {
 	mockIterator drivers.FileIterator
 }
 
+func (m *mockObjectStore) ListObjects(ctx context.Context, propsMap map[string]any) ([]drivers.ObjectStoreEntry, error) {
+	return nil, nil
+}
+
 func (m *mockObjectStore) DownloadFiles(ctx context.Context, srcProps map[string]any) (drivers.FileIterator, error) {
 	return m.mockIterator, nil
 }
@@ -598,7 +602,6 @@ func runOLAPStore(t *testing.T) drivers.OLAPStore {
 func mockTransferOptions() *drivers.TransferOptions {
 	return &drivers.TransferOptions{
 		AllowHostAccess: true,
-		Progress:        drivers.NoOpProgress{},
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return nil, nil, fmt.Errorf("not found")
 		},

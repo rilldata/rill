@@ -1,12 +1,16 @@
 <script lang="ts">
+  import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import PivotDrag from "./PivotDrag.svelte";
-  import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
-  import { PivotChipType } from "./types";
-  import type { PivotChipData } from "./types";
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
+  import {
+    getAllowedTimeGrains,
+    isGrainBigger,
+  } from "@rilldata/web-common/lib/time/grains";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
+  import PivotDrag from "./PivotDrag.svelte";
+  import type { PivotChipData } from "./types";
+  import { PivotChipType } from "./types";
 
   const CHIP_HEIGHT = 34;
 
@@ -38,9 +42,15 @@
     .filter((m) => m.type === PivotChipType.Time)
     .concat($rows.dimension.filter((d) => d.type === PivotChipType.Time));
 
-  $: timeGrainOptions = allTimeGrains.filter(
-    (tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id),
-  );
+  $: timeGrainOptions = allTimeGrains
+    .filter((tgo) => !usedTimeGrains.some((utg) => utg.id === tgo.id))
+    .filter(
+      (tgo) =>
+        $timeControlsStore.minTimeGrain === undefined ||
+        $timeControlsStore.minTimeGrain ===
+          V1TimeGrain.TIME_GRAIN_UNSPECIFIED ||
+        !isGrainBigger($timeControlsStore.minTimeGrain, tgo.id),
+    );
 
   $: filteredMeasures = filterBasedOnSearch($measures, searchText);
   $: filteredDimensions = filterBasedOnSearch($dimensions, searchText);
@@ -78,7 +88,7 @@
     <input
       type="text"
       placeholder="Search"
-      class="w-full h-full"
+      class="w-full h-full select-none"
       bind:value={searchText}
       bind:this={inputEl}
     />
@@ -115,6 +125,7 @@
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;
+    @apply select-none;
   }
 
   .input-wrapper {

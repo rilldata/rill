@@ -6,6 +6,9 @@ on:
       - ".golangci.yml"
       - "go.mod"
       - "**.go"
+permissions:
+  contents: read
+  checks: write # For code annotations
 jobs:
   golangci:
     name: lint
@@ -19,35 +22,6 @@ jobs:
       - name: Go report card
         uses: creekorful/goreportcard-action@v1.0
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v5
+        uses: golangci/golangci-lint-action@v6
         with:
-          # Require: The version of golangci-lint to use.
-          # When `install-mode` is `binary` (default) the value can be v1.2 or v1.2.3 or `latest` to use the latest version.
-          # When `install-mode` is `goinstall` the value can be v1.2.3, `latest`, or the hash of a commit.
-          version: v1.57.2
-
-          # Optional: working directory, useful for monorepos
-          # working-directory: somedir
-
-          # Optional: golangci-lint command line arguments.
-          # args: --issues-exit-code=
-          args: --timeout=10m --config=.golangci.yml --verbose
-
-          # Optional: Show only new issues.
-          # If you are using `merge_group` event (merge queue) you should add the option `fetch-depth: 0` to `actions/checkout` step.
-          # The default value is `false`.
-          # only-new-issues: true
-
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          # skip-cache: true
-
-          # Optional: if set to true, caches will not be saved, but they may still be restored,
-          #           subject to other options
-          # skip-save-cache: true
-
-          # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
-          install-mode: "binary"
-        env:
-          # GitHub token for annotations (optional)
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version: v1.59

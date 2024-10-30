@@ -15,8 +15,8 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	var groupName string
 
 	setRoleCmd := &cobra.Command{
-		Use:   "set",
-		Short: "Set role to a user group in an organization or project",
+		Use:   "set-role",
+		Short: "Change a group's role on a project or organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", usergroupRoles, "")
 			if err != nil {

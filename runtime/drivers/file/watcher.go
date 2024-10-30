@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -202,27 +203,27 @@ func (w *watcher) runInner() error {
 			}
 			we.isCreate = e.Has(fsnotify.Create)
 
-			path, err := filepath.Rel(w.root, e.Name)
+			p, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
 				w.logger.Warn("ignoring watcher event: failed to get relative path", zap.String("root", w.root), zap.String("event_name", e.Name), zap.String("event_op", e.Op.String()))
 				continue
 			}
 
-			path = filepath.Join("/", path)
-			we.relPath = path
+			p = path.Join("/", p)
+			we.relPath = p
 			we.path = e.Name
 
 			// Do not send files for ignored paths
-			if drivers.IsIgnored(path, w.ignorePaths) {
+			if drivers.IsIgnored(p, w.ignorePaths) {
 				continue
 			}
 
-			existing, ok := w.buffer[path]
+			existing, ok := w.buffer[p]
 			if ok && existing.isCreate && we.eventType == runtimev1.FileEvent_FILE_EVENT_WRITE {
 				// copy over `IsCreate` within the batch for a path
 				we.isCreate = existing.isCreate
 			}
-			w.buffer[path] = we
+			w.buffer[p] = we
 
 			// Reset the timer so we only flush when no events have been observed for batchInterval.
 			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
@@ -236,8 +237,8 @@ func (w *watcher) runInner() error {
 	}
 }
 
-func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
-	err := w.watcher.Add(path)
+func (w *watcher) addDir(p string, replay, errIfNotExist bool) error {
+	err := w.watcher.Add(p)
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
 		if !errIfNotExist && isNotExists(err) {
@@ -246,7 +247,7 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 		return err
 	}
 
-	entries, err := os.ReadDir(path)
+	entries, err := os.ReadDir(p)
 	if err != nil {
 		if !errIfNotExist && isNotExists(err) {
 			return nil
@@ -255,14 +256,14 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	}
 
 	for _, e := range entries {
-		fullPath := filepath.Join(path, e.Name())
+		fullPath := filepath.Join(p, e.Name())
 
 		if replay {
 			ep, err := filepath.Rel(w.root, fullPath)
 			if err != nil {
 				return err
 			}
-			ep = filepath.Join("/", ep)
+			ep = path.Join("/", ep)
 
 			w.buffer[ep] = watchEvent{
 				path:      fullPath,

@@ -1,13 +1,10 @@
 ---
 title: How to install Rill
-sidebar_label: Install  
-sidebar_position: 01
+sidebar_label: Install Rill
+sidebar_position: 15
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-## Install
+## Install Rill
 
 You can install `rill` using our installation script:
 
@@ -21,9 +18,30 @@ rill --help
 ```
 
 :::tip sharing dashboards in Rill cloud? clone your git repo first
-If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#install) in your cloned location locally to make deployment easier. 
+If you plan to share your dashboards, it is helpful to start by creating a repo in Git. Go to https://github.com/new to create a new repo. Then, run the [Rill install script](#install-rill) in your cloned location locally to make deployment easier. 
 
-More details on deploying Rill via Git in our [Deploy section](../deploy/existing-project//existing-project.md).
+More details on deploying Rill via Git in our [Deploy section](../deploy/deploy-dashboard/).
+:::
+
+### Rill Version
+
+You can check the current version of rill from the CLI by running:
+```bash
+rill version
+```
+
+### Upgrade to the newest version
+
+To ensure you're on the latest version of Rill, you can upgrade Rill Developer easily via the command line.
+
+```bash
+rill upgrade
+```
+
+:::info What about Rill Cloud?
+
+Rill Cloud is always on the latest and stable version of Rill Cloud. To check the latest version available, please see our [Releases](https://github.com/rilldata/rill/releases) page.
+
 :::
 
 ## Nightly Releases
@@ -38,6 +56,10 @@ curl https://rill.sh | sh -s -- --nightly
 If you previously installed Rill using `brew`, *the brew-managed binary will take precedent*. You can remove it by running `brew uninstall rill`.
 
 :::
+
+### What is nightly release?
+The nightly release will give you the most up-to-date version of Rill without having to wait for the official release. As these releases are not fully ready for production, you may encounter some issues.
+
 
 ## Installing a specific version of Rill
 
@@ -82,20 +104,3 @@ On macOS, you can also install Rill using Homebrew. To avoid conflicts, don't mi
 ```bash
 brew install rilldata/tap/rill 
 ```
-
-## Frequently Asked Questions
-
-### How do I upgrade Rill to the latest version?
-If you installed Rill using the installation script described above, you can upgrade by running `rill upgrade` or by re-running the installation script.
-
-### Rill cannot be opened because it is from an unidentified developer.
-This occurs when Rill binary is downloaded via the browser. You need to change the permissions to make it executable and remove it from Apple Developer identification quarantine. 
-Below CLI commands will help you to do that: 
-```bash
-chmod a+x rill
-xattr -d com.apple.quarantine ./rill
-```
-
-### Error - This macOS version is not supported. Please upgrade.
-Rill uses duckDB internally which requires a newer [macOS version](https://github.com/duckdb/duckdb/issues/3824). 
-Please upgrade your macOS version to 10.14 or higher.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"path/filepath"
+	"path"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -25,7 +25,7 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 	for i, example := range list {
 		resp[i] = &runtimev1.Example{
 			Name:        example.Name,
-			Title:       example.Title,
+			DisplayName: example.DisplayName,
 			Description: example.Description,
 		}
 	}
@@ -73,7 +73,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	paths := make([]string, 0)
-	err = fs.WalkDir(exampleFS, ".", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(exampleFS, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -82,11 +82,11 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 			return nil
 		}
 
-		if _, ok := existingPaths[filepath.Join("/", path)]; ok {
-			return fmt.Errorf("path %q already exists", path)
+		if _, ok := existingPaths[path.Join("/", p)]; ok {
+			return fmt.Errorf("path %q already exists", p)
 		}
 
-		paths = append(paths, path)
+		paths = append(paths, p)
 		return nil
 	})
 	if err != nil {
@@ -114,7 +114,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.title", req.Title),
+		attribute.String("args.display_name", req.DisplayName),
 		attribute.Bool("args.force", req.Force),
 	)
 
@@ -135,7 +135,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.Title)
+	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.DisplayName)
 	if err != nil {
 		return nil, err
 	}

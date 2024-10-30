@@ -8,35 +8,29 @@
   import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  $: parserErrors = createRuntimeServiceGetResource(
-    $runtime.instanceId,
-    {
-      "name.kind": ResourceKind.ProjectParser,
-      "name.name": SingletonProjectParserName,
-    },
-    {
-      query: {
-        select: (data) => data.resource.projectParser.state.parseErrors,
-      },
-    },
-  );
+  $: projectParserQuery = createRuntimeServiceGetResource($runtime.instanceId, {
+    "name.kind": ResourceKind.ProjectParser,
+    "name.name": SingletonProjectParserName,
+  });
+  $: ({ isLoading, isSuccess, data, error } = $projectParserQuery);
+
+  $: parseErrors = data?.resource?.projectParser.state.parseErrors;
+  $: parserReconcileError = data?.resource?.meta?.reconcileError;
 </script>
 
 <section class="flex flex-col gap-y-4">
   <h2 class="text-lg font-medium">Parse errors</h2>
 
-  {#if $parserErrors.isLoading}
+  {#if isLoading}
     <Spinner status={EntityStatus.Running} size={"16px"} />
-  {:else if $parserErrors.error}
+  {:else if error}
     <div class="text-red-500">
-      Error loading parse errors: {$parserErrors.error?.message}
+      Error loading parse errors: {error.message}
     </div>
-  {:else if $parserErrors.isSuccess}
-    {#if !$parserErrors.data || $parserErrors.data.length === 0}
-      <div class="text-gray-600">None!</div>
-    {:else}
+  {:else if isSuccess}
+    {#if parseErrors && parseErrors.length > 0}
       <ul class="border rounded-sm">
-        {#each $parserErrors.data as error}
+        {#each parseErrors as error}
           <li
             class="flex gap-x-5 justify-between py-1 px-9 border-b border-gray-200 bg-red-50 font-mono last:border-b-0"
           >
@@ -51,6 +45,12 @@
           </li>
         {/each}
       </ul>
+    {:else if parserReconcileError}
+      <div class="text-red-500">
+        {parserReconcileError}
+      </div>
+    {:else}
+      <div class="text-gray-600">None!</div>
     {/if}
   {/if}
 </section>

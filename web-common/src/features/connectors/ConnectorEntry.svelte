@@ -2,17 +2,20 @@
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../components/tag";
   import {
-    V1AnalyzedConnector,
+    type V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import type { ConnectorExplorerStore } from "./connector-explorer-store";
   import { connectorIconMapping } from "./connector-icon-mapping";
   import DatabaseExplorer from "./olap/DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
+  export let store: ConnectorExplorerStore;
 
-  let showDatabases = true;
-
+  $: connectorName = connector?.name as string;
+  $: expandedStore = store.getItem(connectorName);
+  $: expanded = $expandedStore;
   $: ({ instanceId } = $runtime);
   $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
@@ -28,30 +31,34 @@
     <li aria-label={connector.name} class="connector-entry">
       <button
         class="connector-entry-header"
-        on:click={() => (showDatabases = !showDatabases)}
+        on:click={() => {
+          store.toggleItem(connectorName);
+        }}
       >
         <CaretDownIcon
-          className="transform transition-transform text-gray-400 {showDatabases
+          className="transform transition-transform text-gray-400 {expanded
             ? 'rotate-0'
             : '-rotate-90'}"
           size="14px"
         />
-        <div class="flex-none">
+        <span class="flex-none">
           {#if connector.driver?.name}
             <svelte:component
               this={connectorIconMapping[connector.driver.name]}
               size="16px"
             />
           {/if}
-        </div>
+        </span>
+
         <h4>{connector.name}</h4>
-        <div class="flex-grow" />
+
         {#if isOlapConnector}
-          <Tag height={16}>OLAP</Tag>
+          <Tag height={16} class="ml-auto">OLAP</Tag>
         {/if}
       </button>
-      {#if showDatabases}
-        <DatabaseExplorer {instanceId} {connector} />
+
+      {#if expanded}
+        <DatabaseExplorer {instanceId} {connector} {store} />
       {/if}
     </li>
   {/if}
@@ -59,13 +66,13 @@
 
 <style lang="postcss">
   .connector-entry {
-    @apply flex flex-col;
+    @apply flex flex-col flex-none;
   }
 
   .connector-entry-header {
-    @apply flex gap-x-1 items-center;
-    @apply w-full p-1;
-    @apply sticky top-0 z-10 bg-white;
+    @apply flex gap-x-1 items-center flex-none;
+    @apply w-full px-2 h-6 outline-none;
+    @apply z-10 bg-white;
   }
 
   button:hover {

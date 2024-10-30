@@ -1,12 +1,14 @@
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
   mapMeasureFilterToExpr,
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { mergeDimensionAndMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
@@ -31,6 +33,7 @@ export type AlertFormValues = {
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
+  exploreName: string;
   whereFilter: V1Expression;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;
@@ -55,6 +58,16 @@ export function getAlertQueryArgsFromFormValues(
             {
               name: formValues.measure + ComparisonDeltaRelativeSuffix,
               comparisonRatio: { measure: formValues.measure },
+            },
+          ]
+        : []),
+      ...(formValues.criteria.some(
+        (c) => c.type === MeasureFilterType.PercentOfTotal,
+      )
+        ? [
+            {
+              name: formValues.measure + ComparisonPercentOfTotal,
+              percentOfTotal: { measure: formValues.measure },
             },
           ]
         : []),
@@ -106,7 +119,22 @@ export const alertFormValidationSchema = yup.object({
     yup.object().shape({
       measure: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value1: yup.number().required("Required"),
+      type: yup.string().required("Required"),
+      value1: yup
+        .number()
+        .required("Required")
+        .test((value, context) => {
+          const criteria = context.parent as MeasureFilterEntry;
+          if (
+            criteria.type === MeasureFilterType.PercentOfTotal &&
+            (value < 0 || value > 100)
+          ) {
+            return context.createError({
+              message: `${context.path} must be a value between 0 and 100.`,
+            });
+          }
+          return true;
+        }),
     }),
   ),
   criteriaOperation: yup.string().required("Required"),

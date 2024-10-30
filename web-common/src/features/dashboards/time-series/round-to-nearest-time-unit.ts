@@ -1,4 +1,4 @@
-import { DateTime, DateTimeUnit } from "luxon";
+import { DateTime, type DateTimeUnit } from "luxon";
 
 export function roundToNearestTimeUnit(date: Date, unit: DateTimeUnit): Date {
   const dateTime = DateTime.fromJSDate(date);

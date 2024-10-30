@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/admin/jobs"
 	"net"
 	"strconv"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -34,7 +36,12 @@ func TestAdmin_RBAC(t *testing.T) {
 	defer pg.Terminate(t)
 
 	ctx := context.Background()
-	logger := zap.NewNop()
+
+	// Setup an error logger
+	cfg := zap.NewProductionConfig()
+	cfg.Level.SetLevel(zap.ErrorLevel)
+	logger, err := cfg.Build()
+	require.NoError(t, err)
 
 	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
@@ -54,7 +61,8 @@ func TestAdmin_RBAC(t *testing.T) {
 			ProvisionerSetJSON: provisionerSetJSON,
 			DefaultProvisioner: "static",
 			ExternalURL:        "http://localhost:9090",
-			VersionNumber:      ""},
+			VersionNumber:      "",
+		},
 		logger,
 		issuer,
 		emailClient,
@@ -62,8 +70,11 @@ func TestAdmin_RBAC(t *testing.T) {
 		ai.NewNoop(),
 		nil,
 		billing.NewNoop(),
+		payment.NewNoop(),
 	)
 	require.NoError(t, err)
+
+	service.Jobs = jobs.NewNoopClient()
 
 	db := service.DB
 
@@ -398,15 +409,15 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// test add duplicate member
 	t.Run("test add duplicate member", func(t *testing.T) {
-		_, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+		resp, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
 		})
 
-		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "user is already a member of the org")
+		// this wont error out, since it re-sends an email
+		require.NoError(t, err)
+		require.NotNil(t, resp)
 	})
 
 	// remove user tests
@@ -480,9 +491,36 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("test remove admin same as billing email", func(t *testing.T) {
+		_, err := adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+			Organization: adminOrg.Organization.Name,
+			Email:        adminUser.Email,
+		})
+
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.ErrorContains(t, err, "this user is the billing email for the organization")
+	})
+
+	t.Run("test leave admin same as billing email", func(t *testing.T) {
+		_, err := adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
+			Organization: adminOrg.Organization.Name,
+		})
+
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		require.ErrorContains(t, err, "this user is the billing email for the organization")
+	})
+
 	// remove last admin tests
 	t.Run("test remove last admin", func(t *testing.T) {
-		_, err := adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
+		testEmail := "test@example.com"
+		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Name:         adminOrg.Organization.Name,
+			BillingEmail: &testEmail,
+		})
+		require.NoError(t, err)
+		_, err = adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        adminUser.Email,
 		})
@@ -491,8 +529,14 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 		require.ErrorContains(t, err, "cannot remove the last admin member")
 	})
+
 	t.Run("test leave last admin", func(t *testing.T) {
-		_, err := adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
+		testEmail := "test@example.com"
+		_, err := adminClient.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+			Name:         adminOrg.Organization.Name,
+			BillingEmail: &testEmail,
+		})
+		_, err = adminClient.LeaveOrganization(ctx, &adminv1.LeaveOrganizationRequest{
 			Organization: adminOrg.Organization.Name,
 		})
 

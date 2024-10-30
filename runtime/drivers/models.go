@@ -2,16 +2,81 @@ package drivers
 
 import "context"
 
+// ModelExecutor executes models.
+// A ModelExecutor may either be the a model's input or output connector.
 type ModelExecutor interface {
-	Execute(ctx context.Context) (*ModelResult, error)
+	// Execute runs the model. The execution may be a full, incremental, or split run.
+	// For split runs, Execute may be called concurrently by multiple workers.
+	Execute(ctx context.Context, opts *ModelExecuteOptions) (*ModelResult, error)
+
+	// Concurrency returns the number of concurrent calls that may be made to Execute given a user-provided desired concurrency.
+	// If the desired concurrency is 0, it should return the recommended default concurrency.
+	// If the desired concurrency is too high, it should return false.
+	Concurrency(desired int) (int, bool)
 }
 
+// ModelManager manages model results returned by ModelExecutor.
+// Unlike ModelExecutor, the result connector will always be used as the ModelManager.
 type ModelManager interface {
+	// Rename is called when a model is renamed, giving the ModelManager a chance to update state derived from the model's name (such as a table name).
 	Rename(ctx context.Context, res *ModelResult, newName string, env *ModelEnv) (*ModelResult, error)
+
+	// Exists returns whether the result still exists in the connector (for integrity checks).
 	Exists(ctx context.Context, res *ModelResult) (bool, error)
+
+	// Delete removes the result from the connector.
 	Delete(ctx context.Context, res *ModelResult) error
+
+	// MergeSplitResults merges two results produced by concurrent incremental split runs.
+	MergeSplitResults(a, b *ModelResult) (*ModelResult, error)
 }
 
+// ModelExecutorOptions are options passed when acquiring a ModelExecutor.
+type ModelExecutorOptions struct {
+	// Env contains contextual info about the model's instance.
+	Env *ModelEnv
+	// ModelName is the name of the model.
+	ModelName string
+	// InputHandle is the handle of the model's input connector.
+	InputHandle Handle
+	// InputConnector is the name of the model's input connector.
+	InputConnector string
+	// PreliminaryInputProperties are the preliminary properties of the model's input connector.
+	// It may not always be available and may contain templating variables that have not yet been resolved.
+	PreliminaryInputProperties map[string]any
+	// OutputHandle is the handle of the model's output connector.
+	OutputHandle Handle
+	// OutputConnector is the name of the model's output connector.
+	OutputConnector string
+	// PreliminaryOutputProperties are the preliminary properties of the model's output connector.
+	// It may not always be available and may contain templating variables that have not yet been resolved.
+	PreliminaryOutputProperties map[string]any
+}
+
+// ModelExecuteOptions are options passed to a model executor's Execute function.
+// They embed the ModelExecutorOptions that were used to initialize the ModelExecutor, plus additional options for the current execution step.
+type ModelExecuteOptions struct {
+	*ModelExecutorOptions
+	// InputProperties are the resolved properties of the model's input connector.
+	InputProperties map[string]any
+	// OutputProperties are the resolved properties of the model's output connector.
+	OutputProperties map[string]any
+	// Priority is the priority of the model execution.
+	Priority int
+	// Incremental is true if the model is an incremental model.
+	Incremental bool
+	// IncrementalRun is true if the execution is an incremental run.
+	IncrementalRun bool
+	// SplitRun is true if the execution is a split run.
+	SplitRun bool
+	// PreviousResult is the result of a previous execution.
+	// For concurrent split execution, it may not be the most recent previous result.
+	PreviousResult *ModelResult
+	// TempDir is a temporary directory for storing intermediate data.
+	TempDir string
+}
+
+// ModelEnv contains contextual info about the model's instance.
 type ModelEnv struct {
 	AllowHostAccess    bool
 	RepoRoot           string
@@ -20,25 +85,11 @@ type ModelEnv struct {
 	AcquireConnector   func(ctx context.Context, name string) (Handle, func(), error)
 }
 
+// ModelResult contains metadata about the result of a model execution.
 type ModelResult struct {
 	Connector  string
 	Properties map[string]any
 	Table      string
-}
-
-type ModelExecutorOptions struct {
-	Env              *ModelEnv
-	ModelName        string
-	InputHandle      Handle
-	InputConnector   string
-	InputProperties  map[string]any
-	OutputHandle     Handle
-	OutputConnector  string
-	OutputProperties map[string]any
-	Priority         int
-	Incremental      bool
-	IncrementalRun   bool
-	PreviousResult   *ModelResult
 }
 
 type FileFormat string

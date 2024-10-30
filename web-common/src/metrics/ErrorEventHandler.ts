@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import type { RpcStatus } from "@rilldata/web-admin/client";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
@@ -7,6 +8,7 @@ import type {
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
+import { get } from "svelte/store";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
@@ -28,18 +30,20 @@ export class ErrorEventHandler {
     if (!error.response) {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
-        error.status ?? "",
+        error.status?.toString() ?? "",
         error.message ?? "unknown error",
         screenName,
-      );
+        get(page).url.toString(),
+      )?.catch(console.error);
       return;
     } else {
       this.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
-        error.response?.status + "" ?? error.status,
+        error.response?.status?.toString() ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
-      );
+        get(page).url.toString(),
+      )?.catch(console.error);
     }
   }
 
@@ -49,7 +53,8 @@ export class ErrorEventHandler {
         errorEvt.error?.stack ?? "",
         errorEvt.message,
         this.screenNameGetter(),
-      );
+        get(page).url.toString(),
+      )?.catch(console.error);
     };
     const unhandledRejectionHandler = (
       rejectionEvent: PromiseRejectionEvent,
@@ -68,7 +73,8 @@ export class ErrorEventHandler {
         stack,
         message,
         this.screenNameGetter(),
-      );
+        get(page).url.toString(),
+      )?.catch(console.error);
     };
 
     window.addEventListener("error", errorHandler);
@@ -107,6 +113,7 @@ export class ErrorEventHandler {
     status: string,
     message: string,
     screenName: MetricsEventScreenName,
+    pageUrl: string,
   ) {
     if (this.isDev) return;
 
@@ -116,6 +123,7 @@ export class ErrorEventHandler {
       api,
       status,
       message,
+      pageUrl,
     ]);
   }
 
@@ -123,6 +131,7 @@ export class ErrorEventHandler {
     stack: string,
     message: string,
     screenName: MetricsEventScreenName,
+    pageUrl: string,
   ) {
     if (this.isDev) {
       console.log("javascriptErrorEvent", screenName, stack, message);
@@ -133,6 +142,7 @@ export class ErrorEventHandler {
       screenName,
       stack,
       message,
+      pageUrl,
     ]);
   }
 }

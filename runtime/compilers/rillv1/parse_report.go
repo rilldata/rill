@@ -16,11 +16,12 @@ import (
 
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
 type ReportYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Refresh    *ScheduleYAML    `yaml:"refresh"`
-	Watermark  string           `yaml:"watermark"` // options: "trigger_time", "inherit"
-	Intervals  struct {
+	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName string           `yaml:"display_name"`
+	Title       string           `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML    `yaml:"refresh"`
+	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
@@ -68,8 +69,13 @@ func (p *Parser) parseReport(node *Node) error {
 		return fmt.Errorf("reports cannot have a connector")
 	}
 
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
 	// Parse refresh schedule
-	schedule, err := parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
 	}
@@ -177,7 +183,7 @@ func (p *Parser) parseReport(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.ReportSpec.Title = tmp.Title
+	r.ReportSpec.DisplayName = tmp.DisplayName
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule
 	}

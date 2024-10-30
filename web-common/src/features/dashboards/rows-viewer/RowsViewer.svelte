@@ -1,38 +1,44 @@
 <script lang="ts">
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { createQueryServiceMetricsViewRows } from "@rilldata/web-common/runtime-client";
+  import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+  import {
+    createQueryServiceMetricsViewRows,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { writable } from "svelte/store";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
   import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
-  export let metricViewName = "";
+  export let metricsViewName = "";
+  export let exploreName: string;
   export let height: number;
+  export let filters: V1Expression | undefined;
+  export let timeRange: TimeRangeString;
 
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: exploreStore = useExploreStore(exploreName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let limit = writable(SAMPLE_SIZE);
 
   $: tableQuery = createQueryServiceMetricsViewRows(
     $runtime?.instanceId,
-    metricViewName,
+    metricsViewName,
     {
       limit: $limit,
-      where: sanitiseExpression($dashboardStore.whereFilter, undefined),
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
+      where: filters,
+      timeStart: timeRange.start,
+      timeEnd: timeRange.end,
     },
     {
       query: {
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
+        enabled: $timeControlsStore.ready && !!$exploreStore?.whereFilter,
       },
     },
   );
@@ -65,7 +71,7 @@
       {rows}
       columnNames={tableColumns}
       rowHeight={32}
-      name={metricViewName}
+      name={exploreName}
     />
   {:else}
     <ReconcilingSpinner />

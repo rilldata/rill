@@ -3,9 +3,12 @@ package provisioner
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -15,16 +18,15 @@ import (
 	"github.com/c2h5oh/datasize"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/multierr"
-	appsv1 "k8s.io/api/apps/v1"
-	apiv1 "k8s.io/api/core/v1"
-	netv1 "k8s.io/api/networking/v1"
 	k8serrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	appsv1ac "k8s.io/client-go/applyconfigurations/apps/v1"
+	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
+	netv1ac "k8s.io/client-go/applyconfigurations/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/retry"
 )
 
 type KubernetesSpec struct {
@@ -40,13 +42,15 @@ type KubernetesTemplatePaths struct {
 	HTTPIngress string `json:"http_ingress"`
 	GRPCIngress string `json:"grpc_ingress"`
 	Service     string `json:"service"`
-	StatefulSet string `json:"statefulset"`
+	Deployment  string `json:"deployment"`
+	PVC         string `json:"pvc"`
 }
 
 type KubernetesProvisioner struct {
-	Spec      *KubernetesSpec
-	clientset *kubernetes.Clientset
-	templates *template.Template
+	Spec              *KubernetesSpec
+	clientset         *kubernetes.Clientset
+	templates         *template.Template
+	templatesChecksum string
 }
 
 type TemplateData struct {
@@ -65,7 +69,8 @@ type ResourceNames struct {
 	HTTPIngress string
 	GRPCIngress string
 	Service     string
-	StatefulSet string
+	Deployment  string
+	PVC         string
 }
 
 func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
@@ -94,18 +99,34 @@ func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
 
-	// Parse the template definitions
-	templates := template.Must(template.New("").Funcs(funcMap).ParseFiles(
+	// Define template files
+	templateFiles := []string{
 		ksp.TemplatePaths.HTTPIngress,
 		ksp.TemplatePaths.GRPCIngress,
 		ksp.TemplatePaths.Service,
-		ksp.TemplatePaths.StatefulSet,
-	))
+		ksp.TemplatePaths.Deployment,
+		ksp.TemplatePaths.PVC,
+	}
+
+	// Parse the template definitions
+	templates := template.Must(template.New("").Funcs(funcMap).ParseFiles(templateFiles...))
+
+	// Calculate the combined sha256 sum of all the template files
+	h := sha256.New()
+	for _, f := range templateFiles {
+		d, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		h.Write(d)
+	}
+	templatesChecksum := hex.EncodeToString(h.Sum(nil))
 
 	return &KubernetesProvisioner{
-		Spec:      ksp,
-		clientset: clientset,
-		templates: templates,
+		Spec:              ksp,
+		clientset:         clientset,
+		templates:         templates,
+		templatesChecksum: templatesChecksum,
 	}, nil
 }
 
@@ -130,17 +151,19 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 	}
 
 	// Define the structured Kubernetes API resources
-	httpIng := &netv1.Ingress{}
-	grpcIng := &netv1.Ingress{}
-	svc := &apiv1.Service{}
-	sts := &appsv1.StatefulSet{}
+	httpIng := &netv1ac.IngressApplyConfiguration{}
+	grpcIng := &netv1ac.IngressApplyConfiguration{}
+	svc := &corev1ac.ServiceApplyConfiguration{}
+	pvc := &corev1ac.PersistentVolumeClaimApplyConfiguration{}
+	depl := &appsv1ac.DeploymentApplyConfiguration{}
 
 	// Resolve the templates and decode into Kubernetes API resources
 	for k, v := range map[string]any{
 		p.Spec.TemplatePaths.HTTPIngress: httpIng,
 		p.Spec.TemplatePaths.GRPCIngress: grpcIng,
 		p.Spec.TemplatePaths.Service:     svc,
-		p.Spec.TemplatePaths.StatefulSet: sts,
+		p.Spec.TemplatePaths.PVC:         pvc,
+		p.Spec.TemplatePaths.Deployment:  depl,
 	} {
 		// Resolve template
 		buf := &bytes.Buffer{}
@@ -157,46 +180,52 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		}
 	}
 
-	// We start by deprovisioning any previous attempt, we do this as a simple way to achieve idempotency
-	err := p.Deprovision(ctx, opts.ProvisionID)
+	applyOptions := metav1.ApplyOptions{FieldManager: "rill-cloud-admin", Force: true}
+	labels := map[string]string{
+		"app.kubernetes.io/managed-by": "rill-cloud-admin",
+		"app.kubernetes.io/instance":   opts.ProvisionID,
+	}
+	annotations := map[string]string{
+		"checksum/templates": p.templatesChecksum,
+	}
+
+	// If the PVC already exists we need to make sure the volume is not decreased, since the Kubernetes storage drivers in general only supports volume expansion
+	oldPvc, err := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Get(ctx, names.PVC, metav1.GetOptions{})
+	if err != nil && !k8serrs.IsNotFound(err) {
+		return nil, err
+	}
+	if !k8serrs.IsNotFound(err) {
+		if oldPvc.Spec.Resources.Requests.Storage().Cmp(*pvc.Spec.Resources.Requests.Storage()) == 1 {
+			pvc.Spec.WithResources(&corev1ac.VolumeResourceRequirementsApplyConfiguration{
+				Requests: &oldPvc.Spec.Resources.Requests,
+			})
+		}
+	}
+
+	// Server-Side apply all the Kubernetes resources, for more info on this methodology see https://kubernetes.io/docs/reference/using-api/server-side-apply/
+	_, err = p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Apply(ctx, pvc.WithName(names.PVC).WithLabels(labels).WithAnnotations(annotations), applyOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create statefulset
-	sts.ObjectMeta.Name = names.StatefulSet
-	p.addCommonLabels(opts.ProvisionID, sts.ObjectMeta.Labels)
-	_, err = p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Create(ctx, sts, metav1.CreateOptions{})
+	_, err = p.clientset.AppsV1().Deployments(p.Spec.Namespace).Apply(ctx, depl.WithName(names.Deployment).WithLabels(labels).WithAnnotations(annotations), applyOptions)
 	if err != nil {
-		err2 := p.Deprovision(ctx, opts.ProvisionID)
-		return nil, multierr.Combine(err, err2)
+		return nil, err
 	}
 
-	// Create service
-	svc.ObjectMeta.Name = names.Service
-	p.addCommonLabels(opts.ProvisionID, svc.ObjectMeta.Labels)
-	_, err = p.clientset.CoreV1().Services(p.Spec.Namespace).Create(ctx, svc, metav1.CreateOptions{})
+	_, err = p.clientset.CoreV1().Services(p.Spec.Namespace).Apply(ctx, svc.WithName(names.Service).WithLabels(labels).WithAnnotations(annotations), applyOptions)
 	if err != nil {
-		err2 := p.Deprovision(ctx, opts.ProvisionID)
-		return nil, multierr.Combine(err, err2)
+		return nil, err
 	}
 
-	// Create HTTP ingress
-	httpIng.ObjectMeta.Name = names.HTTPIngress
-	p.addCommonLabels(opts.ProvisionID, httpIng.ObjectMeta.Labels)
-	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Create(ctx, httpIng, metav1.CreateOptions{})
+	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Apply(ctx, httpIng.WithName(names.HTTPIngress).WithLabels(labels).WithAnnotations(annotations), applyOptions)
 	if err != nil {
-		err2 := p.Deprovision(ctx, opts.ProvisionID)
-		return nil, multierr.Combine(err, err2)
+		return nil, err
 	}
 
-	// Create GRPC ingress
-	grpcIng.ObjectMeta.Name = names.GRPCIngress
-	p.addCommonLabels(opts.ProvisionID, grpcIng.ObjectMeta.Labels)
-	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Create(ctx, grpcIng, metav1.CreateOptions{})
+	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Apply(ctx, grpcIng.WithName(names.GRPCIngress).WithLabels(labels).WithAnnotations(annotations), applyOptions)
 	if err != nil {
-		err2 := p.Deprovision(ctx, opts.ProvisionID)
-		return nil, multierr.Combine(err, err2)
+		return nil, err
 	}
 
 	return &Allocation{
@@ -227,11 +256,14 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID str
 	// Delete service
 	err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Delete(ctx, names.Service, delOptions)
 
-	// Delete statefulset
-	err4 := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Delete(ctx, names.StatefulSet, delOptions)
+	// Delete deployment
+	err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Delete(ctx, names.Deployment, delOptions)
+
+	// Delete PVC
+	err5 := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Delete(ctx, names.PVC, delOptions)
 
 	// We ignore not found errors for idempotency
-	errs := []error{err1, err2, err3, err4}
+	errs := []error{err1, err2, err3, err4, err5}
 	for i := 0; i < len(errs); i++ {
 		if k8serrs.IsNotFound(errs[i]) {
 			errs[i] = nil
@@ -246,13 +278,13 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	// Get Kubernetes resource names
 	names := p.getResourceNames(provisionID)
 
-	// Wait for the statefulset to be ready (with timeout)
+	// Wait for the deployment to be ready (with timeout)
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Duration(p.Spec.TimeoutSeconds)*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		sts, err := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Get(ctx, names.StatefulSet, metav1.GetOptions{})
+		depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}
-		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas && sts.Generation == sts.Status.ObservedGeneration, nil
+		return depl.Status.AvailableReplicas > 0 && depl.Status.AvailableReplicas == depl.Status.Replicas && depl.Generation == depl.Status.ObservedGeneration, nil
 	})
 	if err != nil {
 		return err
@@ -277,40 +309,37 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	return nil
 }
 
-func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID, newVersion string) error {
-	// Get Kubernetes resource names
-	names := p.getResourceNames(provisionID)
-
-	// Update the statefulset with retry on conflict to resolve conflicting updates by other clients.
-	// More info on this best practice: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		// Retrieve the latest version
-		sts, err := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Get(ctx, names.StatefulSet, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		// NOTE: this assumes only one container is defined in the statefulset template
-		sts.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("%s:%s", p.Spec.Image, newVersion)
-
-		// Attempt update
-		_, err = p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Update(ctx, sts, metav1.UpdateOptions{})
-		return err
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (p *KubernetesProvisioner) CheckCapacity(ctx context.Context) error {
 	// No-op
 	return nil
 }
 
+func (p *KubernetesProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
+	// Get Kubernetes resource names
+	names := p.getResourceNames(provisionID)
+
+	// Get the deployment
+	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	// Compare the provisioned templates checksum with the current one
+	if depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (p *KubernetesProvisioner) Type() string {
+	return "kubernetes"
+}
+
 func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNames {
 	return ResourceNames{
-		StatefulSet: fmt.Sprintf("runtime-%s", provisionID),
+		Deployment:  fmt.Sprintf("runtime-%s", provisionID),
+		PVC:         fmt.Sprintf("runtime-%s", provisionID),
 		Service:     fmt.Sprintf("runtime-%s", provisionID),
 		HTTPIngress: fmt.Sprintf("http-runtime-%s", provisionID),
 		GRPCIngress: fmt.Sprintf("grpc-runtime-%s", provisionID),
@@ -319,9 +348,4 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 
 func (p *KubernetesProvisioner) getHost(provisionID string) string {
 	return strings.ReplaceAll(p.Spec.Host, "*", provisionID)
-}
-
-func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabels map[string]string) {
-	resourceLabels["app.kubernetes.io/instance"] = provisionID
-	resourceLabels["app.kubernetes.io/managed-by"] = "rill-cloud-admin"
 }

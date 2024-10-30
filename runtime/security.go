@@ -297,9 +297,17 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 	// Everyone can access a component.
 	case ResourceKindComponent:
 		rules = append(rules, allowAccessRule)
-	// Everyone can access a dashboard.
-	case ResourceKindDashboard:
-		rules = append(rules, allowAccessRule)
+	// Determine access using the canvas' security rules. If there are none, then everyone can access it.
+	case ResourceKindCanvas:
+		spec := r.GetCanvas().State.ValidSpec
+		if spec == nil {
+			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
+		}
+		if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
 	// Determine access using the metrics view's security rules. If there are none, then everyone can access it.
 	case ResourceKindMetricsView:
 		spec := r.GetMetricsView().State.ValidSpec
@@ -307,6 +315,21 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resou
 			spec = r.GetMetricsView().Spec // Not ideal, but better than giving access to the full resource
 		}
 		if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
+	// Determine access using the explore's security rules. If there are none, then everyone can access it.
+	case ResourceKindExplore:
+		spec := r.GetExplore().State.ValidSpec
+		if spec == nil {
+			// Tricky, since security rules on an explore are usually derived from its metrics view and added to ValidSpec during reconciliation.
+			// So we don't want to just fallback to r.GetExplore().Spec here.
+			// Instead, we give access to admins and not to others.
+			if claims.Admin() {
+				rules = append(rules, allowAccessRule)
+			}
+		} else if len(spec.SecurityRules) == 0 {
 			rules = append(rules, allowAccessRule)
 		} else {
 			rules = append(rules, spec.SecurityRules...)
@@ -373,6 +396,10 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 				if user == email {
 					return allowAccessRule
 				}
+			}
+			// Note - A hack to allow slack channel users to access the alert. This also means that any alert configured with a slack channel will be viewable by any user part of the project and will appear in their alert list.
+			if len(props.Channels) > 0 {
+				return allowAccessRule
 			}
 		}
 	}
@@ -460,13 +487,31 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, _ *runti
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
 func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td rillv1.TemplateData) error {
-	// This rule currently only applies to metrics views.
+	// This rule currently only applies to metrics views and explores.
 	// Skip it for other resource types.
-	if r.Meta.Name.Kind != ResourceKindMetricsView {
-		return nil
-	}
-	mv := r.GetMetricsView().State.ValidSpec
-	if mv == nil {
+	var availableFields []string
+	switch r.Meta.Name.Kind {
+	case ResourceKindMetricsView:
+		mv := r.GetMetricsView().State.ValidSpec
+		if mv == nil {
+			return nil
+		}
+		availableFields = make([]string, 0, len(mv.Dimensions)+len(mv.Measures))
+		for _, f := range mv.Dimensions {
+			availableFields = append(availableFields, f.Name)
+		}
+		for _, f := range mv.Measures {
+			availableFields = append(availableFields, f.Name)
+		}
+	case ResourceKindExplore:
+		exp := r.GetExplore().State.ValidSpec
+		if exp == nil {
+			return nil
+		}
+		availableFields = make([]string, 0, len(exp.Dimensions)+len(exp.Measures))
+		availableFields = append(availableFields, exp.Dimensions...)
+		availableFields = append(availableFields, exp.Measures...)
+	default:
 		return nil
 	}
 
@@ -493,16 +538,10 @@ func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *
 
 	// Set if the field should be allowed or denied
 	if rule.AllFields {
-		for _, f := range mv.Dimensions {
-			v, ok := res.fieldAccess[f.Name]
+		for _, f := range availableFields {
+			v, ok := res.fieldAccess[f]
 			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f.Name] = rule.Allow
-			}
-		}
-		for _, f := range mv.Measures {
-			v, ok := res.fieldAccess[f.Name]
-			if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
-				res.fieldAccess[f.Name] = rule.Allow
+				res.fieldAccess[f] = rule.Allow
 			}
 		}
 	} else {

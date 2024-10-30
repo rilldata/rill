@@ -22,6 +22,14 @@ const (
 	maxFileSize = 1 << 17 // 128kb
 )
 
+// ignorePathPrefixes are prefixes of paths that should be ignored by the parser.
+// Note: Generally these ignores should be applied at the repo level (through the defaults for ignore_paths in rill.yaml).
+// This is only for files we DO want to list and show in the UI, but don't want to parse.
+var ignorePathPrefixes = []string{
+	"/.rillcloud/",
+	"/.github/",
+}
+
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
@@ -35,12 +43,13 @@ type Resource struct {
 	SourceSpec      *runtimev1.SourceSpec
 	ModelSpec       *runtimev1.ModelSpec
 	MetricsViewSpec *runtimev1.MetricsViewSpec
+	ExploreSpec     *runtimev1.ExploreSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
 	ComponentSpec   *runtimev1.ComponentSpec
-	DashboardSpec   *runtimev1.DashboardSpec
+	CanvasSpec      *runtimev1.CanvasSpec
 	APISpec         *runtimev1.APISpec
 	ConnectorSpec   *runtimev1.ConnectorSpec
 }
@@ -70,12 +79,13 @@ const (
 	ResourceKindSource
 	ResourceKindModel
 	ResourceKindMetricsView
+	ResourceKindExplore
 	ResourceKindMigration
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
 	ResourceKindComponent
-	ResourceKindDashboard
+	ResourceKindCanvas
 	ResourceKindAPI
 	ResourceKindConnector
 )
@@ -92,6 +102,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindModel, nil
 	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
+	case "explore":
+		return ResourceKindExplore, nil
 	case "migration":
 		return ResourceKindMigration, nil
 	case "report":
@@ -102,8 +114,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindTheme, nil
 	case "component":
 		return ResourceKindComponent, nil
-	case "dashboard":
-		return ResourceKindDashboard, nil
+	case "canvas":
+		return ResourceKindCanvas, nil
 	case "api":
 		return ResourceKindAPI, nil
 	case "connector":
@@ -123,6 +135,8 @@ func (k ResourceKind) String() string {
 		return "Model"
 	case ResourceKindMetricsView:
 		return "MetricsView"
+	case ResourceKindExplore:
+		return "Explore"
 	case ResourceKindMigration:
 		return "Migration"
 	case ResourceKindReport:
@@ -133,8 +147,8 @@ func (k ResourceKind) String() string {
 		return "Theme"
 	case ResourceKindComponent:
 		return "Component"
-	case ResourceKindDashboard:
-		return "Dashboard"
+	case ResourceKindCanvas:
+		return "Canvas"
 	case ResourceKindAPI:
 		return "API"
 	case ResourceKindConnector:
@@ -171,8 +185,9 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
-	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourcesForPath           map[string][]*Resource    // Reverse index of Resource.Paths
+	resourcesForUnspecifiedRef map[string][]*Resource    // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	resourceNamesForDataPaths  map[string][]ResourceName // Index of local data files to resources that depend on them
 	insertedResources          []*Resource
 	updatedResources           []*Resource
 	deletedResources           []*Resource
@@ -261,6 +276,13 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // IsSkippable returns true if the path will be skipped by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsSkippable(path string) bool {
+	if pathIsIgnored(path) {
+		return true
+	}
+	_, ok := p.resourceNamesForDataPaths[path]
+	if ok {
+		return false
+	}
 	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
@@ -287,6 +309,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.DotEnv = nil
 	p.Resources = make(map[ResourceName]*Resource)
 	p.Errors = nil
+	p.resourceNamesForDataPaths = make(map[string][]ResourceName)
 	p.resourcesForPath = make(map[string][]*Resource)
 	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
 	p.insertedResources = nil
@@ -360,6 +383,22 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 		seenPaths[path] = true
+
+		// Skip ignored paths
+		if pathIsIgnored(path) {
+			continue
+		}
+
+		// add resources corresponding to local data files
+		resources, ok := p.resourceNamesForDataPaths[path]
+		if ok {
+			for _, resource := range resources {
+				if res, ok := p.Resources[resource]; ok {
+					checkPaths = append(checkPaths, res.Paths...)
+				}
+			}
+			continue
+		}
 
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
@@ -654,7 +693,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
 	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(node)
+		err = p.parseNode(ctx, node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)
@@ -795,6 +834,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.ModelSpec = &runtimev1.ModelSpec{}
 	case ResourceKindMetricsView:
 		r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
+	case ResourceKindExplore:
+		r.ExploreSpec = &runtimev1.ExploreSpec{}
 	case ResourceKindMigration:
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
@@ -805,8 +846,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	case ResourceKindComponent:
 		r.ComponentSpec = &runtimev1.ComponentSpec{}
-	case ResourceKindDashboard:
-		r.DashboardSpec = &runtimev1.DashboardSpec{}
+	case ResourceKindCanvas:
+		r.CanvasSpec = &runtimev1.CanvasSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	case ResourceKindConnector:
@@ -885,6 +926,19 @@ func (p *Parser) deleteResource(r *Resource) {
 			delete(p.resourcesForUnspecifiedRef, n)
 		} else {
 			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
+		}
+	}
+
+	// Remove from p.resourceNamesForDataPaths
+	for path, resources := range p.resourceNamesForDataPaths {
+		idx := slices.Index(resources, r.Name.Normalized())
+		if idx < 0 {
+			continue
+		}
+		if len(resources) == 1 {
+			delete(p.resourceNamesForDataPaths, path)
+		} else {
+			p.resourceNamesForDataPaths[path] = slices.Delete(resources, idx, idx+1)
 		}
 	}
 
@@ -970,6 +1024,12 @@ func (p *Parser) defaultOLAPConnector() string {
 	return p.DefaultOLAPConnector
 }
 
+// isDev returns true if the parser's instance's environment is "dev".
+// Usually this means it's running on localhost with "rill start".
+func (p *Parser) isDev() bool {
+	return strings.EqualFold(p.Environment, "dev")
+}
+
 // pathIsSQL returns true if the path is a SQL file
 func pathIsSQL(path string) bool {
 	return strings.HasSuffix(path, ".sql")
@@ -988,6 +1048,16 @@ func pathIsRillYAML(path string) bool {
 // pathIsDotEnv returns true if the path is .env
 func pathIsDotEnv(path string) bool {
 	return path == "/.env"
+}
+
+// pathIsIgnored returns true if the path should be ignored by the parser.
+func pathIsIgnored(p string) bool {
+	for _, prefix := range ignorePathPrefixes {
+		if strings.HasPrefix(p, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
@@ -1061,7 +1131,7 @@ func newYAMLError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}
@@ -1084,7 +1154,7 @@ func newDuckDBError(err error) error {
 		return err
 	}
 
-	line, err2 := strconv.Atoi(res[1])
+	line, err2 := strconv.ParseUint(res[1], 10, 32)
 	if err2 != nil {
 		return err
 	}

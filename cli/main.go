@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 )
 
-// Version details are set using -ldflags
+// Version details are set using -ldflags (...)
 var (
 	Version   string
 	Commit    string

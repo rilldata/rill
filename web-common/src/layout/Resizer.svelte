@@ -16,10 +16,15 @@
   export let absolute = true;
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
+  export let onMouseUp: (() => void) | null = null;
   export let disabled = false;
+  export let justify: "center" | "start" | "end" = "center";
+  export let hang = true;
 
   let start = 0;
   let startingDimension = dimension;
+  let hover = false;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   function handleMousedown(e: Event) {
     startingDimension = dimension;
@@ -33,7 +38,7 @@
 
     if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mouseup", handleMouseUp);
   }
 
   function onMouseMove(e: MouseEvent) {
@@ -59,10 +64,12 @@
     });
   }
 
-  function onMouseUp() {
+  function handleMouseUp() {
     resizing = false;
+    hover = false;
+    if (onMouseUp) onMouseUp();
     window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("mouseup", handleMouseUp);
   }
 
   function handleDoubleClick() {
@@ -74,17 +81,31 @@
 <button
   {disabled}
   class:absolute
-  class="{direction} {side}"
+  class="{direction} {side} justify-{justify}"
+  class:hang
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
-  on:dblclick={handleDoubleClick}
+  on:dblclick|stopPropagation={handleDoubleClick}
+  on:mouseenter={() => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => (hover = true), 150);
+  }}
+  on:mouseleave={() => {
+    if (timeout) clearTimeout(timeout);
+    timeout = null;
+    hover = false;
+  }}
 >
-  <slot />
+  {#if hover || resizing}
+    <slot />
+  {/if}
 </button>
 
 <style lang="postcss">
   button {
     @apply z-50 flex-none;
-    /* @apply bg-red-400; */
+    @apply pointer-events-auto;
+    @apply flex items-center;
+    /* @apply bg-red-500 opacity-50; */
   }
 
   button:disabled {
@@ -92,12 +113,12 @@
   }
 
   .NS {
-    @apply w-full h-3 pr-8;
+    @apply w-full h-2 pr-8;
     @apply cursor-row-resize;
   }
 
   .EW {
-    @apply w-3 h-full;
+    @apply w-2 h-full;
     @apply cursor-col-resize;
   }
 
@@ -117,19 +138,35 @@
     @apply cursor-w-resize;
   }
 
-  .left {
+  .left.hang {
     @apply -left-1;
   }
 
-  .right {
+  .right.hang {
     @apply -right-1;
   }
 
-  .top {
+  .top.hang {
     @apply -top-1;
   }
 
-  .bottom {
+  .bottom.hang {
     @apply -bottom-1;
+  }
+
+  .left {
+    @apply left-0;
+  }
+
+  .right {
+    @apply right-0;
+  }
+
+  .top {
+    @apply top-0;
+  }
+
+  .bottom {
+    @apply bottom-0;
   }
 </style>

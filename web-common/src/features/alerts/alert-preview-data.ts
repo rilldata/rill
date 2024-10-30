@@ -1,6 +1,6 @@
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 import {
-  AlertFormValues,
+  type AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
 import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
@@ -8,12 +8,13 @@ import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
-  StructTypeField,
+  type StructTypeField,
   TypeCode,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
@@ -37,7 +38,12 @@ export function getAlertPreviewData(
   formValues: AlertFormValues,
 ): CreateQueryResult<AlertPreviewResponse> {
   return derived(
-    [useMetricsView(get(runtime).instanceId, formValues.metricsViewName)],
+    [
+      useMetricsViewValidSpec(
+        get(runtime).instanceId,
+        formValues.metricsViewName,
+      ),
+    ],
     ([metricsViewResp], set) =>
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
@@ -105,7 +111,7 @@ function getSchemaEntryForField(
         return {
           name: field.name as string,
           type: field.type?.code ?? TypeCode.CODE_STRING,
-          label: dimension.label ?? field.name,
+          label: dimension.displayName ?? field.name,
           enableResize: false,
           enableSorting: false,
         };
@@ -118,12 +124,14 @@ function getSchemaEntryForField(
       if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
         return undefined;
 
-      let label: VirtualizedTableColumns["label"] = measure.label ?? field.name;
+      let label: VirtualizedTableColumns["label"] =
+        measure.displayName ?? field.name;
       let format = measure.formatPreset;
       let type: string = field.type?.code ?? TypeCode.CODE_STRING;
       if (
         measure.name + ComparisonDeltaAbsoluteSuffix === field.name ||
-        measure.name + ComparisonDeltaRelativeSuffix === field.name
+        measure.name + ComparisonDeltaRelativeSuffix === field.name ||
+        measure.name + ComparisonPercentOfTotal === field.name
       ) {
         const comparisonProps = getComparisonProperties(field.name, measure);
         label = comparisonProps.component;

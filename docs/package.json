@@ -17,7 +17,7 @@
     "@docusaurus/tsconfig": "3.1.1",
     "@mdx-js/react": "^3.0.0",
     "@types/react": "^18.2.29",
-    "clsx": "^1.1.1",
+    "clsx": "^2.0.0",
     "docusaurus-gtm-plugin": "^0.0.2",
     "docusaurus-plugin-sass": "^0.2.5",
     "prism-react-renderer": "^2.1.0",
@@ -25,7 +25,7 @@
     "react-dom": "^18.2.0",
     "redocusaurus": "^2.0.0",
     "sass": "^1.71.1",
-    "tailwindcss": "^3.0.23"
+    "tailwindcss": "^3.4.13"
   },
   "engines": {
     "node": ">=18.0"
@@ -42,5 +42,8 @@
       "last 1 safari version"
     ]
   },
-  "main": "babel.config.js"
+  "main": "babel.config.js",
+  "dependencies": {
+    "sidebar": "^1.0.2"
+  }
 }

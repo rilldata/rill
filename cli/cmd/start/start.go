@@ -1,8 +1,8 @@
 package start
 
 import (
+	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,15 +11,9 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
-
-// maxProjectFiles is the maximum number of files that can be in a project directory.
-// It corresponds to the file watcher limit in runtime/drivers/file/repo.go.
-const maxProjectFiles = 1000
 
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -34,8 +28,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var logFormat string
-	var env []string
-	var vars []string
+	var envVars, envVarsOld []string
+	var environment string
+	var allowedOrigins []string
 	var tlsCertPath string
 	var tlsKeyPath string
 
@@ -55,7 +50,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					projectPath = repoName
 				}
-			} else if !rillv1beta.HasRillProject("") {
+			} else if !cmdutil.HasRillProject(".") {
 				if !ch.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
@@ -65,7 +60,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				projectPath = currentDir
 				homeDir, err := os.UserHomeDir()
 				if err != nil {
 					return err
@@ -73,12 +67,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				displayPath := currentDir
 				defval := true
-				if strings.HasPrefix(currentDir, homeDir) {
+				if currentDir == homeDir {
+					defval = false
+					displayPath = "~/"
+				} else if strings.HasPrefix(currentDir, homeDir) {
 					displayPath = strings.Replace(currentDir, homeDir, "~", 1)
-					if currentDir == homeDir {
-						defval = false
-						displayPath = "~/"
-					}
 				}
 
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
@@ -92,33 +85,37 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// Check that projectPath doesn't have an excessive number of files
-			n, err := countFilesInDirectory(projectPath)
-			if err != nil {
-				return err
-			}
-			if n > maxProjectFiles {
-				ch.PrintfError("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.\n", maxProjectFiles, n)
-				return nil
+			// Default to the current directory if no path is provided
+			if projectPath == "" {
+				projectPath = "."
 			}
 
+			// Check that projectPath doesn't have an excessive number of files.
+			// Note: Relies on ListRecursive enforcing drivers.RepoListLimit.
+			if _, err := os.Stat(projectPath); err == nil {
+				repo, _, err := cmdutil.RepoForProjectPath(projectPath)
+				if err != nil {
+					return err
+				}
+				_, err = repo.ListRecursive(cmd.Context(), "**", false)
+				if err != nil {
+					if errors.Is(err, drivers.ErrRepoListLimitExceeded) {
+						ch.PrintfError("The project directory exceeds the limit of %d files. Please open Rill against a directory with fewer files or set \"ignore_paths\" in rill.yaml.\n", drivers.RepoListLimit)
+						return nil
+					}
+					return fmt.Errorf("failed to list project files: %w", err)
+				}
+			}
+
+			// Parse log format
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			// Backwards compatibility for --env (see comment on the flag definition for details)
-			environment := "dev"
-			for _, v := range env {
-				if strings.Contains(v, "=") {
-					vars = append(vars, v)
-				} else {
-					environment = v
-				}
-			}
-
 			// Parser variables from "a=b" format to map
-			varsMap, err := parseVariables(vars)
+			envVars = append(envVars, envVarsOld...)
+			envVarsMap, err := parseVariables(envVars)
 			if err != nil {
 				return err
 			}
@@ -143,22 +140,21 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
+			allowedOrigins = append(allowedOrigins, localURL)
+
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
-				Version:     ch.Version,
-				Verbose:     verbose,
-				Debug:       debug,
-				Reset:       reset,
-				Environment: environment,
-				OlapDriver:  olapDriver,
-				OlapDSN:     olapDSN,
-				ProjectPath: projectPath,
-				LogFormat:   parsedLogFormat,
-				Variables:   varsMap,
-				Activity:    ch.Telemetry(cmd.Context()),
-				AdminURL:    ch.AdminURL,
-				AdminToken:  ch.AdminToken(),
-				CMDHelper:   ch,
-				LocalURL:    localURL,
+				Ch:             ch,
+				Verbose:        verbose,
+				Debug:          debug,
+				Reset:          reset,
+				Environment:    environment,
+				OlapDriver:     olapDriver,
+				OlapDSN:        olapDSN,
+				ProjectPath:    projectPath,
+				LogFormat:      parsedLogFormat,
+				Variables:      envVarsMap,
+				LocalURL:       localURL,
+				AllowedOrigins: allowedOrigins,
 			})
 			if err != nil {
 				return err
@@ -177,21 +173,26 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
+	startCmd.Flags().StringSliceVarP(&envVars, "env", "e", []string{}, "Set environment variables")
+	startCmd.Flags().StringVar(&environment, "environment", "dev", `Environment name`)
+	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
+	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
-	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
-	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
-	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringVar(&tlsCertPath, "tls-cert", "", "Path to TLS certificate")
 	startCmd.Flags().StringVar(&tlsKeyPath, "tls-key", "", "Path to TLS key file")
+	startCmd.Flags().StringSliceVarP(&allowedOrigins, "allowed-origins", "", []string{}, "Override allowed origins for CORS")
 
-	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
-	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, `Environment name (default "dev")`)
-	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
+	// Deprecated support for "--var": replaced by "--env".
+	startCmd.Flags().StringSliceVarP(&envVarsOld, "var", "v", []string{}, "Set environment variables")
+	if err := startCmd.Flags().MarkHidden("var"); err != nil {
+		panic(err)
+	}
 
 	// We have deprecated the ability configure the OLAP database via the CLI. This should now be done via rill.yaml.
 	// Keeping these for backwards compatibility for a while.
@@ -205,56 +206,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	return startCmd
-}
-
-// a smaller subset of relevant parts of rill.yaml
-type rillYAML struct {
-	IgnorePaths []string `yaml:"ignore_paths"`
-}
-
-func countFilesInDirectory(projectPath string) (int, error) {
-	var fileCount int
-
-	if projectPath == "" {
-		projectPath = "."
-	}
-
-	var ignorePaths []string
-	// Read rill.yaml and get `ignore_paths`
-	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "/rill.yaml"))
-	if err == nil {
-		yml := &rillYAML{}
-		err = yaml.Unmarshal(rawYaml, yml)
-		if err == nil {
-			ignorePaths = yml.IgnorePaths
-		}
-	}
-
-	err = filepath.WalkDir(projectPath, func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		path = strings.TrimPrefix(path, projectPath)
-
-		if drivers.IsIgnored(path, ignorePaths) {
-			if info.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if !info.IsDir() {
-			fileCount++
-		}
-		return nil
-	})
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
-
-	return fileCount, nil
 }
 
 func parseVariables(vals []string) (map[string]string, error) {

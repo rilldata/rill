@@ -445,6 +445,11 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 		// Rename if possible
 		renamed := false
 		for idx, rr := range deleteResources {
+			if rr == nil {
+				// Already renamed
+				continue
+			}
+
 			var err error
 			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
@@ -508,6 +513,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
 		}
+	case compilerv1.ResourceKindExplore:
+		if existing == nil || !equalExploreSpec(existing.GetExplore().Spec, def.ExploreSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{Spec: def.ExploreSpec}}}
+		}
 	case compilerv1.ResourceKindMigration:
 		if existing == nil || !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Migration{Migration: &runtimev1.Migration{Spec: def.MigrationSpec}}}
@@ -528,9 +537,9 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
 		}
-	case compilerv1.ResourceKindDashboard:
-		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Dashboard{Dashboard: &runtimev1.Dashboard{Spec: def.DashboardSpec}}}
+	case compilerv1.ResourceKindCanvas:
+		if existing == nil || !equalCanvasSpec(existing.GetCanvas().Spec, def.CanvasSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Canvas{Canvas: &runtimev1.Canvas{Spec: def.CanvasSpec}}}
 		}
 	case compilerv1.ResourceKindAPI:
 		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
@@ -692,6 +701,10 @@ func equalMetricsViewSpec(a, b *runtimev1.MetricsViewSpec) bool {
 	return proto.Equal(a, b)
 }
 
+func equalExploreSpec(a, b *runtimev1.ExploreSpec) bool {
+	return proto.Equal(a, b)
+}
+
 func equalMigrationSpec(a, b *runtimev1.MigrationSpec) bool {
 	return proto.Equal(a, b)
 }
@@ -712,7 +725,7 @@ func equalComponentSpec(a, b *runtimev1.ComponentSpec) bool {
 	return proto.Equal(a, b)
 }
 
-func equalDashboardSpec(a, b *runtimev1.DashboardSpec) bool {
+func equalCanvasSpec(a, b *runtimev1.CanvasSpec) bool {
 	return proto.Equal(a, b)
 }
 

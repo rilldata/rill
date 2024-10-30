@@ -330,17 +330,17 @@ export type ThemeColorKind = "primary" | "secondary" | "muted";
  * Rill primary brand colors.
  */
 export const defaultPrimaryColors: LightnessMap = {
-  50: "#ecf0ff",
-  100: "#dde4ff",
-  200: "#c2cdff",
-  300: "#9cabff",
-  400: "#757eff",
-  500: "#5655ff",
-  600: "#4735f5",
-  700: "#3542c7",
-  800: "#3125ae",
-  900: "#2c2689",
-  950: "#1c1650",
+  50: "227 100% 96%",
+  100: "228 100% 93%",
+  200: "229 100% 88%",
+  300: "231 100% 81%",
+  400: "236 100% 73%",
+  500: "240 100% 67%",
+  600: "246 91% 58%",
+  700: "235 58% 49%",
+  800: "245 65% 41%",
+  900: "244 57% 34%",
+  950: "246 57% 20%",
 };
 
 // backup pallette of primary colors
@@ -356,20 +356,20 @@ export const defaultPrimaryColors: LightnessMap = {
  * Rill secondary brand colors.
  */
 export const defaultSecondaryColors = {
-  50: "#effaff",
-  100: "#def3ff",
-  200: "#b6e9ff",
-  300: "#75daff",
-  400: "#2cc9ff",
-  500: "#00b8ff",
-  600: "#008fd4",
-  700: "#0071ab",
-  800: "#00608d",
-  900: "#065074",
-  950: "#04324d",
+  50: "199 100% 97%",
+  100: "202 100% 94%",
+  200: "198 100% 86%",
+  300: "196 100% 73%",
+  400: "195 100% 59%",
+  500: "197 100% 50%",
+  600: "200 100% 42%",
+  700: "200 100% 34%",
+  800: "199 100% 28%",
+  900: "200 90% 24%",
+  950: "202 90% 16%",
 };
 
-// backup pallette of secondary colors (red spectrum),
+// backup pallette of secondary colors (red spectrum)",
 // useful for testing application of colors
 // export const defaultSecondaryColors = Object.fromEntries(
 //   [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [
@@ -391,15 +391,49 @@ export const defaultSecondaryColors = {
  *
  */
 export const mutedColors = {
-  50: "hsl(210, 20%, 98%)",
-  100: "hsl(220, 14.3%, 95.9%)",
-  200: "hsl(220, 13%, 91%)",
-  300: "hsl(216, 12.2%, 83.9%)",
-  400: "hsl(217.9, 10.6%, 64.9%)",
-  500: "hsl(220, 8.9%, 46.1%)",
-  600: "hsl(215, 13.8%, 34.1%)",
-  700: "hsl(216.9, 19.1%, 26.7%)",
-  800: "hsl(215, 27.9%, 16.9%)",
-  900: "hsl(220.9, 39.3%, 11%)",
-  950: "hsl(224, 71.4%, 4.1%);",
+  50: "210 20% 98%",
+  100: "220 14.3% 95.9%",
+  200: "220 13% 91%",
+  300: "216 12.2% 83.9%",
+  400: "217.9 10.6% 64.9%",
+  500: "220 8.9% 46.1%",
+  600: "215 13.8% 34.1%",
+  700: "216.9 19.1% 26.7%",
+  800: "215 27.9% 16.9%",
+  900: "220.9 39.3% 11%",
+  950: "224 71.4% 4.1%;",
 };
+
+export function getRandomBgColor(name: string): string {
+  const colorList = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-red-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-amber-500",
+    "bg-pink-500",
+    "bg-lime-500",
+    "bg-emerald-500",
+    "bg-teal-500",
+    "bg-cyan-500",
+    "bg-sky-500",
+    "bg-indigo-500",
+    "bg-violet-500",
+    "bg-purple-500",
+    "bg-fuchsia-500",
+    "bg-rose-500",
+  ];
+
+  if (!name) {
+    return colorList[Math.floor(Math.random() * colorList.length)];
+  }
+
+  const hash = Array.from(name).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  const index = hash % colorList.length;
+
+  return colorList[index];
+}

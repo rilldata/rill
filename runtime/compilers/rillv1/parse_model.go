@@ -1,25 +1,35 @@
 package rillv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
 type ModelYAML struct {
-	commonYAML      `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
-	Refresh         *ScheduleYAML                           `yaml:"refresh"`
-	Timeout         string                                  `yaml:"timeout"`
-	Incremental     bool                                    `yaml:"incremental"`
-	State           *DataYAML                               `yaml:"state"`
-	InputProperties map[string]any                          `yaml:",inline" mapstructure:",remain"`
-	Output          struct {
+	commonYAML        `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
+	Refresh           *ScheduleYAML                           `yaml:"refresh"`
+	Timeout           string                                  `yaml:"timeout"`
+	Incremental       bool                                    `yaml:"incremental"`
+	State             *DataYAML                               `yaml:"state"`
+	Splits            *DataYAML                               `yaml:"splits"`
+	SplitsWatermark   string                                  `yaml:"splits_watermark"`
+	SplitsConcurrency uint                                    `yaml:"splits_concurrency"`
+	InputProperties   map[string]any                          `yaml:",inline" mapstructure:",remain"`
+	Stage             struct {
+		Connector  string         `yaml:"connector"`
+		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+	} `yaml:"stage"`
+	Output struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"output"`
@@ -27,7 +37,7 @@ type ModelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(node *Node) error {
+func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ModelYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -36,7 +46,7 @@ func (p *Parser) parseModel(node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
 	}
@@ -62,6 +72,25 @@ func (p *Parser) parseModel(node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
+	// Parse splits resolver
+	var splitsResolver string
+	var splitsResolverProps *structpb.Struct
+	if tmp.Splits != nil {
+		var refs []ResourceName
+		splitsResolver, splitsResolverProps, refs, err = p.parseDataYAML(tmp.Splits)
+		if err != nil {
+			return fmt.Errorf(`failed to parse "splits": %w`, err)
+		}
+		node.Refs = append(node.Refs, refs...)
+
+		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
+		if tmp.SplitsWatermark == "" {
+			if splitsResolver == "glob" {
+				tmp.SplitsWatermark = "updated_on"
+			}
+		}
+	}
+
 	// Build input details
 	inputConnector := node.Connector
 	inputProps := tmp.InputProperties
@@ -80,13 +109,26 @@ func (p *Parser) parseModel(node *Node) error {
 		inputProps["sql"] = sql
 	}
 
-	// Validate input details
-	if len(inputProps) == 0 {
-		return errors.New(`model does not identify any input properties (try entering a SQL query)`)
+	// special handling to mark model as updated when local file changes
+	if inputConnector == "local_file" {
+		err = p.trackResourceNamesForDataPaths(ctx, ResourceName{Name: node.Name, Kind: ResourceKindModel}.Normalized(), inputProps)
+		if err != nil {
+			return err
+		}
 	}
+
 	inputPropsPB, err := structpb.NewStruct(inputProps)
 	if err != nil {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
+	}
+
+	// Stage details are optional
+	var stagePropsPB *structpb.Struct
+	if len(tmp.Stage.Properties) > 0 {
+		stagePropsPB, err = structpb.NewStruct(tmp.Stage.Properties)
+		if err != nil {
+			return fmt.Errorf(`found invalid input property type: %w`, err)
+		}
 	}
 
 	// Build output details
@@ -133,8 +175,16 @@ func (p *Parser) parseModel(node *Node) error {
 	r.ModelSpec.IncrementalStateResolver = incrementalStateResolver
 	r.ModelSpec.IncrementalStateResolverProperties = incrementalStateResolverProps
 
+	r.ModelSpec.SplitsResolver = splitsResolver
+	r.ModelSpec.SplitsResolverProperties = splitsResolverProps
+	r.ModelSpec.SplitsWatermarkField = tmp.SplitsWatermark
+	r.ModelSpec.SplitsConcurrencyLimit = uint32(tmp.SplitsConcurrency)
+
 	r.ModelSpec.InputConnector = inputConnector
 	r.ModelSpec.InputProperties = inputPropsPB
+
+	r.ModelSpec.StageConnector = tmp.Stage.Connector
+	r.ModelSpec.StageProperties = stagePropsPB
 
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
@@ -188,6 +238,50 @@ func (p *Parser) inferSQLRefs(node *Node) ([]ResourceName, error) {
 	}
 
 	return refs, nil
+}
+
+func (p *Parser) trackResourceNamesForDataPaths(ctx context.Context, name ResourceName, inputProps map[string]any) error {
+	c, ok := inputProps["invalidate_on_change"].(bool)
+	if ok && !c {
+		return nil
+	}
+	path, ok := inputProps["path"].(string)
+	if !ok {
+		return nil
+	}
+
+	var localPaths []string
+	if fileutil.IsGlob(path) {
+		entries, err := p.Repo.ListRecursive(ctx, path, true)
+		if err != nil || len(entries) == 0 {
+			// The actual error will be returned by the model reconciler
+			return nil
+		}
+
+		for _, entry := range entries {
+			localPaths = append(localPaths, entry.Path)
+		}
+	} else {
+		localPaths = []string{normalizePath(path)}
+	}
+
+	// Update parser's resourceNamesForDataPaths map to track which resources depend on the local file
+	for _, path := range localPaths {
+		resources := p.resourceNamesForDataPaths[path]
+		if !slices.Contains(resources, name) {
+			resources = append(resources, name)
+			p.resourceNamesForDataPaths[path] = resources
+		}
+	}
+
+	// Calculate hash of local files
+	hash, err := p.Repo.FileHash(ctx, localPaths)
+	if err != nil {
+		return err
+	}
+	// Add hash to input properties so that the model spec is considered updated when the local file changes
+	inputProps["local_files_hash"] = hash
+	return nil
 }
 
 // findLineNumber returns the line number of the pos in the given text.

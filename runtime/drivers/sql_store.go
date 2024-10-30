@@ -18,13 +18,6 @@ var ErrNoRows = errors.New("no rows found for the query")
 type SQLStore interface {
 	// Query returns driver.RowIterator to iterate over results row by row
 	Query(ctx context.Context, props map[string]any) (RowIterator, error)
-	// QueryAsFiles downloads results into files and returns an iterator to iterate over them
-	QueryAsFiles(ctx context.Context, props map[string]any, opt *QueryOption, p Progress) (FileIterator, error)
-}
-
-type QueryOption struct {
-	// TotalLimitInBytes rerpresent the max limit on the bytes that should be downloaded in a file
-	TotalLimitInBytes int64
 }
 
 // RowIterator returns an iterator to iterate over result of a sql query

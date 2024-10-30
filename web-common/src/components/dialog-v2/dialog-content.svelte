@@ -4,7 +4,7 @@
   import Cross2 from "svelte-radix/Cross2.svelte";
   import * as Dialog from "web-common/src/components/dialog-v2/index.js";
 
-  type $$Props = DialogPrimitive.ContentProps & { noClose: boolean };
+  type $$Props = DialogPrimitive.ContentProps & { noClose?: boolean };
 
   let className: $$Props["class"] = undefined;
   export let transition: $$Props["transition"] = flyAndScale;
@@ -21,7 +21,7 @@
     {transition}
     {transitionConfig}
     class={cn(
-      "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg md:w-full",
+      "fixed left-[50%] top-[50%] z-50 grid w-full max-w-xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg sm:rounded-lg md:w-full",
       className,
     )}
     {...$$restProps}

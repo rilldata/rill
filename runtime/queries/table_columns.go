@@ -74,7 +74,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{
-				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
+				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE %s AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 				Priority:         priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 			})

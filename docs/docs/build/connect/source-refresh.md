@@ -11,8 +11,7 @@ When creating or updating a source in Rill Cloud, you also have the option to co
 
 :::tip Configuring source refreshes for Cloud deployments
 
-It is generally strongly recommended to configure source refreshes when [deploying a project](/deploy/existing-project/existing-project.md) to Rill Cloud to ensure that your production data (and dashboards) _remains up-to-date_. The interval that you should set really depends on how often your own source data is refreshed. Furthermore, while it is technically possible to configure source refreshes for Rill Developer as well, Rill Developer is primarily used for local development and thus typically does not require working with the most up-to-date data (local source refreshes that occur too often as well could also lead to resource constraints on your local machine). For more details, please see our pages on [environments](/build/models/environments#default-dev-and-prod-environments), [templating](/deploy/templating#environments-and-rill), and [performance optimization](/deploy/performance#configure-source-refresh-schedules-in-production-only).
-
+It is generally strongly recommended to configure source refreshes when [deploying a project](/deploy/deploy-dashboard/) to Rill Cloud to ensure that your production data (and dashboards) _remains up-to-date_. The interval that you should set really depends on how often your own source data is refreshed. Furthermore, while it is technically possible to configure source refreshes for Rill Developer as well, Rill Developer is primarily used for local development and thus typically does not require working with the most up-to-date data (local source refreshes that occur too often as well could also lead to resource constraints on your local machine). For more details, please see our pages on [environments](/build/models/environments#default-dev-and-prod-environments), [templating](/deploy/templating#environments-and-rill), and [performance optimization](/deploy/performance).
 :::
 
 ## Configuring source refresh individually
@@ -60,3 +59,12 @@ sources:
 If you have both a project-wide default and source specific refresh schedule _configured in the same project_, the source specific refresh will **override** the project default based on how [inheritance](/build/models/environments#specifying-environment-specific-yaml-overrides) works in Rill. Otherwise, if not specified, the project-wide default will be used instead!
 
 :::
+
+## Running scheduled refreshes in development
+
+By default, scheduled refreshes are **not** applied in Rill Developer. If you want to run or test scheduled refreshes in local development, you can override this behavior using the `run_in_dev` property:
+```yaml
+refresh:
+  cron: 0 * * * *
+  run_in_dev: true
+```

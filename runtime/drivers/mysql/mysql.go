@@ -41,7 +41,15 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
-			Hint:        "Either set this or pass --var connector.mysql.dsn=... to rill start",
+			Hint:        "Either set this or pass --env connector.mysql.dsn=... to rill start",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 	ImplementsSQLStore: true,
@@ -157,6 +165,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

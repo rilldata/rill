@@ -21,6 +21,7 @@
 </script>
 
 <IconButton
+  ariaLabel="Toggle breakdown for {dimensionName} dimension"
   on:click={(e) => {
     if (isBeingCompared) {
       setComparisonDimension(undefined);

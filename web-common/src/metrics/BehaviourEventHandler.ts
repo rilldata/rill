@@ -2,6 +2,7 @@ import type {
   BehaviourEventAction,
   BehaviourEventMedium,
 } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+import type { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
@@ -90,9 +91,21 @@ export class BehaviourEventHandler {
     ]);
   }
 
-  public fireDeployIntentEvent() {
-    return this.metricsService.dispatch("deployIntent", [
+  public fireDeployEvent(action: BehaviourEventAction) {
+    return this.metricsService.dispatch("deployEvent", [
       this.commonUserMetrics,
+      action,
+    ]);
+  }
+
+  public fireGithubIntentEvent(
+    action: BehaviourEventAction,
+    githubFields?: GithubEventFields,
+  ) {
+    return this.metricsService.dispatch("githubIntent", [
+      this.commonUserMetrics,
+      action,
+      githubFields,
     ]);
   }
 }

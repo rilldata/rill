@@ -31,7 +31,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 ## Cloud deployment
 
-When deploying a project to Rill Cloud (i.e. `rill deploy`), Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. 
+When deploying a project to Rill Cloud, Rill requires you to explicitly provide a JSON key file for a Google Cloud service account with access to BigQuery used in your project. 
 
 When you first deploy a project using `rill deploy`, you will be prompted to provide credentials for the remote sources in your project that require authentication.
 

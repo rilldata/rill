@@ -1,14 +1,14 @@
 package subscription
 
 import (
-	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, plan string
+	var plan string
+	var force bool
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -22,34 +22,23 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if !cmd.Flags().Changed("org") && ch.Interactive {
-				orgNames, err := org.OrgNames(ctx, ch)
-				if err != nil {
-					return err
-				}
-
-				orgName, err = cmdutil.SelectPrompt("Select org to change plan", orgNames, ch.Org)
-				if err != nil {
-					return err
-				}
-			}
-
-			subResp, err := client.GetOrganizationBillingSubscription(ctx, &adminv1.GetOrganizationBillingSubscriptionRequest{
-				OrgName: orgName,
+			subResp, err := client.GetBillingSubscription(ctx, &adminv1.GetBillingSubscriptionRequest{
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err
 			}
 
 			if subResp.Subscription == nil {
-				ch.PrintfWarn("No subscriptions found for organization %q\n", orgName)
-				return nil
+				ch.PrintfWarn("Organization %q has no subscription\n", ch.Org)
+			} else {
+				ch.PrintfBold("Organization %q has the following subscription\n", ch.Org)
+				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 			}
 
-			ch.PrintfBold("Organization has following subscription\n")
-			ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
-
-			ok, err := cmdutil.ConfirmPrompt("\nPlan changes will take place immediately, Do you want to Continue ?\n", "", false)
+			ch.PrintfWarn("\nEditing plan for organization %q. Plan change will take place immediately.\n", ch.Org)
+			ch.PrintfWarn("\nTo renew a cancelled subscription, please use `rill billing subscription renew` command.\n")
+			ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", false)
 			if err != nil {
 				return err
 			}
@@ -58,22 +47,23 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.UpdateOrganizationBillingSubscription(cmd.Context(), &adminv1.UpdateOrganizationBillingSubscriptionRequest{
-				OrgName:  orgName,
-				PlanName: plan,
+			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
+				Organization:         ch.Org,
+				PlanName:             plan,
+				SuperuserForceAccess: force,
 			})
 			if err != nil {
 				return err
 			}
 
-			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q\n", plan, orgName)
-			ch.PrintSubscriptions(resp.Subscriptions)
+			ch.PrintfSuccess("Successfully subscribed to plan %q for org %q\n", plan, ch.Org)
+			ch.PrintSubscriptions([]*adminv1.Subscription{resp.Subscription})
 			return nil
 		},
 	}
-	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to change subscription to")
+	editCmd.Flags().BoolVar(&force, "force", false, "Allows superusers to bypass certain checks")
+	_ = editCmd.Flags().MarkHidden("force")
 
 	return editCmd
 }

@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(10000);
+  private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -47,7 +47,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["response", []],
     ["reconnect", []],
   ]);
-  private closed = false;
+  public closed = writable(false);
 
   public on<K extends keyof EventMap<Res>>(
     event: K,
@@ -56,25 +56,33 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listeners.get(event)?.push(listener);
   }
 
+  public heartbeat = () => {
+    if (get(this.closed)) {
+      this.reconnect().catch(console.error);
+    }
+    this.throttle();
+  };
+
   public watch(url: string) {
     this.cancel();
     this.url = url;
+
     this.listen().catch(console.error);
+
+    // Start throttling after the first connection
+    this.throttle();
   }
 
-  public close() {
-    this.closed = true;
+  public close = () => {
     this.cancel();
+    this.closed.set(true);
+  };
+
+  public throttle(prioritize: boolean = false) {
+    this.outOfFocusThrottler.throttle(this.close, prioritize);
   }
 
-  public throttle() {
-    this.outOfFocusThrottler.throttle(() => {
-      this.close();
-    });
-  }
-
-  public async reconnect() {
-    this.closed = false;
+  private async reconnect() {
     clearTimeout(this.reconnectTimeout);
 
     if (this.outOfFocusThrottler.isThrottling()) {
@@ -121,6 +129,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         }, RECONNECT_CALLBACK_DELAY);
       }
 
+      this.closed.set(false);
       for await (const res of this.stream) {
         if (this.controller?.signal.aborted) break;
         if (res.error) throw new Error(res.error.message);
@@ -128,11 +137,12 @@ export class WatchRequestClient<Res extends WatchResponse> {
         if (res.result)
           this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
-    } catch (err) {
+    } catch {
       clearTimeout(this.retryTimeout);
 
-      if (this.controller) this.cancel();
-      if (this.closed) return;
+      this.cancel();
+      if (get(this.closed)) return;
+
       this.reconnect().catch((e) => {
         throw new Error(e);
       });

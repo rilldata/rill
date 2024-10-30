@@ -360,7 +360,10 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 	if err != nil {
 		return fmt.Errorf("failed to access repo: %w", err)
 	}
-	repoRoot := repo.Root()
+	repoRoot, err := repo.Root(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get repo root: %w", err)
+	}
 	release()
 
 	// Execute the data transfer
@@ -370,7 +373,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return r.C.AcquireConn(ctx, name)
 		},
-		Progress: drivers.NoOpProgress{},
 	}
 
 	transferStart := time.Now()

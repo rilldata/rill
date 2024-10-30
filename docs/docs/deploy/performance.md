@@ -53,9 +53,8 @@ There are different ways this can be achieved and the method also depends heavil
 type: source
 connector: s3
 path: s3://bucket/path/**/*.parquet
-env:
-  dev:
-    path: s3://bucket/path/year=2023/month=12/**/*.parquet
+dev:
+  path: s3://bucket/path/year=2023/month=12/**/*.parquet
 ```
 
 By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
@@ -101,16 +100,6 @@ If you use templating in SQL models, you must replace references to tables / mod
 #### Use data from a dev / staging environment
 
 Some organizations might have both a development and production version of source data. In these cases, your sources should be configured to use the "dev" bucket or database for local development (in Rill Developer) and pointed to the "prod" bucket or database when in production (when deployed to Rill Cloud). Please refer to [this example](templating.md#changing-the-database-user-based-on-dev--prod) and [this example](templating.md#changing-the-bucket-location-based-on-dev--prod) for a complete walkthrough of how this can be configured.
-
-### Configure source refresh schedules in production only
-
-As [source refreshes](/build/connect/source-refresh.md) are generally aimed to help with ensuring data freshness in a [production environment](/build/models/environments.md) and can also take time to reconcile when a source refresh does end up triggering, they are not necessarily needed for model development and testing purposes. If you're using both Rill Developer and Cloud, it is recommended to configure source refreshes only in `prod`. This can be done by adding the following to your `rill.yaml`:
-
-```yaml
-prod:
-  refresh:
-    cron: '<cron_syntax>'
-```
 
 ## Query Optimization
 

@@ -50,18 +50,21 @@ jobs:
         run: |-
           echo "NETLIFY_SITE_ID=afb26917-7a60-47d9-81dc-c0babbb0d9a9" >> $GITHUB_ENV
           echo "DOMAIN=rilldata.com" >> $GITHUB_ENV
+          echo "RILL_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
         
       - name: Setup Env variables from Inputs for Stage
         if: ( (github.event_name == 'push' || github.event_name == 'create') && startsWith(github.ref_name, 'release') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'stage' )
         run: |-
           echo "NETLIFY_SITE_ID=e73ac785-882e-425a-8fc8-5432528bb374" >> $GITHUB_ENV
           echo "DOMAIN=rilldata.io" >> $GITHUB_ENV
+          echo "RILL_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
 
       - name: Setup Env variables from Inputs for Test
         if: ( github.event_name == 'push' && startsWith(github.ref_name, 'main') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'test' )
         run: |-
           echo "NETLIFY_SITE_ID=ad7b8d67-9b24-4b2a-8985-1a80b7b0ab11" >> $GITHUB_ENV
           echo "DOMAIN=rilldata.in" >> $GITHUB_ENV
+          echo "RILL_VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
 
       - name: Build Cloud UI
         run: |-
@@ -70,8 +73,9 @@ jobs:
         env:
           RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
           RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
+          RILL_UI_PUBLIC_VERSION: ${{ env.RILL_VERSION }}
 
-      - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }}
+      - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }} - version ${{ env.RILL_VERSION }}
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: ./web-admin/build
@@ -83,3 +87,15 @@ jobs:
           overwrites-pull-request-comment: true
           netlify-config-path: ./netlify.toml
         timeout-minutes: 1
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

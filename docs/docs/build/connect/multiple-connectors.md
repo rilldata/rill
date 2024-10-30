@@ -5,7 +5,7 @@ sidebar_label: Multiple Connectors
 sidebar_position: 20
 ---
 
-Sometimes, you will need to set up multiple connectors of the same type in one project with different connection strings (DSN) or configurations for sources. A common example would be that you have a need for multiple [Snowflake](/reference/connectors/snowflake.md) sources that point to different databases and schemas. Therefore, when [deploying your project to Rill Cloud](/deploy/existing-project/#deploy-to-rill-cloud), you will want to specify multiple `snowflake.connector.dsn` connection strings, one corresponding to each unique "connection" you desire (with different connection parameters).
+Sometimes, you will need to set up multiple connectors of the same type in one project with different connection strings (DSN) or configurations for sources. A common example would be that you have a need for multiple [Snowflake](/reference/connectors/snowflake.md) sources that point to different databases and schemas. Therefore, when [deploying your project to Rill Cloud](/deploy/deploy-dashboard/#deploying-a-project-via-the-ui), you will want to specify multiple `snowflake.connector.dsn` connection strings, one corresponding to each unique "connection" you desire (with different connection parameters).
 
 ## Defining multiple connectors in `rill.yaml`
 

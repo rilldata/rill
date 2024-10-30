@@ -1,3 +1,4 @@
+import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 import {
@@ -5,7 +6,7 @@ import {
   DATES,
   FLOATS,
   INTEGERS,
-  Interval,
+  type Interval,
   INTERVALS,
   isList,
   isNested,
@@ -13,7 +14,6 @@ import {
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "./duckdb-data-types";
-import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
 import { formatDuckdbIntervalLossless } from "./number-formatting/strategies/intervals";
 
 /** This heuristic is courtesy Dominik Moritz.
@@ -154,7 +154,7 @@ export function formatCompactInteger(n: number) {
 
 export function formatDataType(value: unknown, type: string) {
   if (value === undefined) return "";
-  if (INTEGERS.has(type) || type.startsWith("DECIMAL")) {
+  if (INTEGERS.has(type) || type?.startsWith("DECIMAL")) {
     return value;
   } else if (FLOATS.has(type)) {
     return value;
@@ -205,7 +205,7 @@ export function formatDataTypeAsDuckDbQueryString(
   if (value === null) return "null";
   if (
     INTEGERS.has(type) ||
-    type.startsWith("DECIMAL") ||
+    type?.startsWith("DECIMAL") ||
     CATEGORICALS.has(type) ||
     FLOATS.has(type)
   ) {

@@ -32,6 +32,14 @@ var spec = drivers.Spec{
 			Placeholder: "https://example.com/file.csv",
 			Required:    true,
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsFileStore: true,
 }
@@ -171,6 +179,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
 }
 
 // AsSQLStore implements drivers.Connection.

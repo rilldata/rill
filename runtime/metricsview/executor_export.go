@@ -39,6 +39,12 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	}
 	defer or()
 
+	outputProps := map[string]any{
+		"path":                  path,
+		"format":                format,
+		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
+	}
+
 	opts := &drivers.ModelExecutorOptions{
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: e.rt.AllowHostAccess(),
@@ -46,18 +52,13 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 				return e.rt.AcquireHandle(ctx, e.instanceID, name)
 			},
 		},
-		ModelName:       "metrics_export", // This isn't a real model; just setting for nicer log messages
-		InputHandle:     ic,
-		InputConnector:  inputConnector,
-		InputProperties: inputProps,
-		OutputHandle:    oc,
-		OutputConnector: "file",
-		OutputProperties: map[string]any{
-			"path":                  path,
-			"format":                format,
-			"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
-		},
-		Priority: e.priority,
+		ModelName:                   "metrics_export", // This isn't a real model; just setting for nicer log messages
+		InputHandle:                 ic,
+		InputConnector:              inputConnector,
+		PreliminaryInputProperties:  inputProps,
+		OutputHandle:                oc,
+		OutputConnector:             "file",
+		PreliminaryOutputProperties: outputProps,
 	}
 
 	me, ok := ic.AsModelExecutor(e.instanceID, opts)
@@ -68,7 +69,13 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		}
 	}
 
-	_, err = me.Execute(ctx)
+	_, err = me.Execute(ctx, &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      inputProps,
+		OutputProperties:     outputProps,
+		Priority:             e.priority,
+		TempDir:              e.rt.TempDir(e.instanceID),
+	})
 	if err != nil {
 		_ = os.Remove(path)
 		return "", fmt.Errorf("failed to execute export: %w", err)

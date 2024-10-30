@@ -82,8 +82,10 @@ func FromString(s string) (*Token, error) {
 		return nil, ErrMalformed
 	}
 
-	if len(payload) != 40 {
+	if len(payload) > 40 {
 		return nil, ErrMalformed
+	} else if len(payload) < 40 {
+		payload = padLeft(payload, 40)
 	}
 
 	var id [16]byte
@@ -96,6 +98,22 @@ func FromString(s string) (*Token, error) {
 		Type:   typ,
 		ID:     uuid.UUID(id),
 		Secret: secret,
+	}, nil
+}
+
+func FromParts(typ Type, id uuid.UUID, secret []byte) (*Token, error) {
+	if !typ.Validate() {
+		return nil, errors.New("invalid token type")
+	}
+
+	if len(secret) != 24 {
+		return nil, errors.New("secret must be 24 bytes")
+	}
+
+	return &Token{
+		Type:   typ,
+		ID:     id,
+		Secret: [24]byte(secret),
 	}, nil
 }
 
@@ -128,4 +146,16 @@ func unmarshalBase62(s string) ([]byte, bool) {
 		return nil, false
 	}
 	return i.Bytes(), true
+}
+
+// padLeft pads a byte slice with zeros on the left such that its length is n.
+// If the slice is already longer than n, it is returned as is.
+func padLeft(b []byte, n int) []byte {
+	if len(b) >= n {
+		return b
+	}
+
+	padded := make([]byte, n)
+	copy(padded[n-len(b):], b)
+	return padded
 }

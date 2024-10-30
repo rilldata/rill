@@ -115,8 +115,9 @@ type projectStatusTableRow struct {
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
 	proj, err := c.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: org,
-		Name:             project,
+		OrganizationName:    org,
+		Name:                project,
+		IssueSuperuserToken: true,
 	})
 	if err != nil {
 		return nil, err
@@ -173,7 +174,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		}, nil
 	}
 
-	var parser *runtimev1.ProjectParser
+	var parser *runtimev1.Resource
 	var parseErrorsCount int
 	var idleCount int
 	var reconcileErrorsCount int
@@ -182,7 +183,7 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 
 	for _, r := range res.Resources {
 		if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
-			parser = r.GetProjectParser()
+			parser = r
 		}
 		if r.Meta.Hidden {
 			continue
@@ -202,7 +203,17 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	// check if there are any parser errors
-	if parser.State != nil && len(parser.State.ParseErrors) != 0 {
+	if parser == nil {
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: "Parser not found (corrupted)",
+		}, nil
+	}
+	if parser.GetProjectParser().State != nil {
+		parseErrorsCount = len(parser.GetProjectParser().State.ParseErrors)
+	}
+	if parser.Meta.ReconcileError != "" {
 		parseErrorsCount++
 	}
 

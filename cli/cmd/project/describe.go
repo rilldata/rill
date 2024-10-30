@@ -99,6 +99,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindModel
 	case "metricsview", "metrics_view":
 		return runtime.ResourceKindMetricsView
+	case "explore":
+		return runtime.ResourceKindExplore
 	case "migration":
 		return runtime.ResourceKindMigration
 	case "report":
@@ -109,8 +111,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindTheme
 	case "component":
 		return runtime.ResourceKindComponent
-	case "dashboard":
-		return runtime.ResourceKindDashboard
+	case "canvas":
+		return runtime.ResourceKindCanvas
 	case "api":
 		return runtime.ResourceKindAPI
 	case "connector":

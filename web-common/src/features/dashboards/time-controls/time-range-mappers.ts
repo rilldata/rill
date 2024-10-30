@@ -5,9 +5,9 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewSpec,
+  type V1ExploreSpec,
   V1TimeGrain,
-  V1TimeRange,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
@@ -42,14 +42,14 @@ export const PreviousCompleteRangeMap: Partial<
  */
 export function mapTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
   const timeRange: V1TimeRange = {};
   switch (timeControlState.selectedTimeRange.name) {
     case TimeRangePreset.DEFAULT:
-      timeRange.isoDuration = metricsView.defaultTimeRange;
+      timeRange.isoDuration = explore?.defaultPreset?.timeRange;
       break;
 
     case TimeRangePreset.CUSTOM:
@@ -86,7 +86,7 @@ export function mapComparisonTimeRange(
   if (
     !timeRange ||
     dashboardState.selectedComparisonDimension ||
-    !timeControlState.showComparison ||
+    !timeControlState.showTimeComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {
     return undefined;

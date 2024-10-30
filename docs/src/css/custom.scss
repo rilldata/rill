@@ -164,8 +164,12 @@ li.theme-doc-sidebar-item-category-level-1 {
 
   /* This is a very hacky way to hide references from the main sidebar */
   &:last-of-type {
-    display: none;
+    display: block;
   }
+}
+
+.hidden-page {
+  display: none;
 }
 
 li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
@@ -245,4 +249,70 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
 .center-content {
   display: flex;
   justify-content: center;
+}
+
+.docsRating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.docsRating button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.docsRating button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+
+// CSS for GIFS, make it look better
+
+.rounded-gif {
+  border-radius:10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+// CSS changes to CustomCard Component
+
+.custom-doc-card {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px; // Adjust the height of the card
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+  color: #fff; // Text color (can be adjusted)
+  text-decoration: none; // Remove underline from the title link
+
+  &__header {
+    z-index: 1;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  // Optional: Add overlay for better readability of text over the background
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5); // Add a dark overlay
+    border-radius: 8px;
+    z-index: 0;
+  }
 }

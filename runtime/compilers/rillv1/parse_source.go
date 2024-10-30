@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ type SourceYAML struct {
 }
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseSource(node *Node) error {
+func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &SourceYAML{}
 	err := p.decodeNodeYAML(node, false, tmp)
@@ -43,7 +44,7 @@ func (p *Parser) parseSource(node *Node) error {
 
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
 	if node.SQL != "" && node.ConnectorInferred {
-		return p.parseModel(node)
+		return p.parseModel(ctx, node)
 	}
 
 	// Add SQL as a property
@@ -64,7 +65,7 @@ func (p *Parser) parseSource(node *Node) error {
 	}
 
 	// Parse refresh schedule
-	schedule, err := parseScheduleYAML(tmp.Refresh)
+	schedule, err := p.parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
 	}
@@ -114,9 +115,10 @@ type ScheduleYAML struct {
 	Every     string `yaml:"every" mapstructure:"every"`
 	TimeZone  string `yaml:"time_zone" mapstructure:"time_zone"`
 	Disable   bool   `yaml:"disable" mapstructure:"disable"`
+	RunInDev  bool   `yaml:"run_in_dev" mapstructure:"run_in_dev"`
 }
 
-func parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
+func (p *Parser) parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
 	s := &runtimev1.Schedule{
 		RefUpdate: true, // By default, refresh on updates to refs
 	}
@@ -131,11 +133,14 @@ func parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
 		return s, nil
 	}
 
+	// Enforce run_in_dev only for scheduled refreshes. We always honor ref_update even in dev.
+	skipScheduledRefresh := !raw.RunInDev && p.isDev()
+
 	if raw.RefUpdate != nil {
 		s.RefUpdate = *raw.RefUpdate
 	}
 
-	if raw.Cron != "" {
+	if !skipScheduledRefresh && raw.Cron != "" {
 		_, err := cron.ParseStandard(raw.Cron)
 		if err != nil {
 			return nil, fmt.Errorf("invalid cron schedule: %w", err)
@@ -143,7 +148,7 @@ func parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
 		s.Cron = raw.Cron
 	}
 
-	if raw.Every != "" {
+	if !skipScheduledRefresh && raw.Every != "" {
 		d, err := parseDuration(raw.Every)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ticker: %w", err)

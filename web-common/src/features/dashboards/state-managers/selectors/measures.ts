@@ -1,63 +1,76 @@
 import {
-  MetricsViewSpecDimensionSelector,
+  type MetricsViewSpecDimensionSelector,
   MetricsViewSpecMeasureType,
-  MetricsViewSpecMeasureV2,
-  V1MetricsViewSpec,
+  type MetricsViewSpecMeasureV2,
+  type V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
 export const allMeasures = ({
-  metricsSpecQueryResult,
-}: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
-  const measures = metricsSpecQueryResult.data?.measures;
-  return measures === undefined ? [] : measures;
+  validMetricsView,
+  validExplore,
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecMeasureV2[] => {
+  return (
+    validMetricsView?.measures?.filter((m) =>
+      validExplore?.measures?.includes(m.name ?? ""),
+    ) ?? []
+  );
+};
+
+export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
+  return dashboard.leaderboardMeasureName;
 };
 
 export const visibleMeasures = ({
-  metricsSpecQueryResult,
+  validMetricsView,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
-  const measures = metricsSpecQueryResult.data?.measures?.filter(
-    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name),
+  return (
+    validMetricsView?.measures?.filter(
+      (m) => m.name && dashboard.visibleMeasureKeys.has(m.name),
+    ) ?? []
   );
-  return measures === undefined ? [] : measures;
 };
 
 export const getMeasureByName = (
   dashData: DashboardDataSources,
-): ((name: string) => MetricsViewSpecMeasureV2 | undefined) => {
-  return (name: string) => {
+): ((name: string | undefined) => MetricsViewSpecMeasureV2 | undefined) => {
+  return (name: string | undefined) => {
     return allMeasures(dashData)?.find((measure) => measure.name === name);
   };
 };
 
 export const measureLabel = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources): ((m: string) => string) => {
   return (measureName) => {
-    const measure = metricsSpecQueryResult.data?.measures?.find(
+    const measure = validMetricsView?.measures?.find(
       (d) => d.name === measureName,
     );
-    return measure?.label ?? measureName;
+    return measure?.displayName ?? measureName;
   };
 };
 export const isMeasureValidPercentOfTotal = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
   return (measureName: string) => {
-    const measures = metricsSpecQueryResult.data?.measures;
-    const selectedMeasure = measures?.find((m) => m.name === measureName);
+    const selectedMeasure = validMetricsView?.measures?.find(
+      (m) => m.name === measureName,
+    );
     return selectedMeasure?.validPercentOfTotal ?? false;
   };
 };
 
 export const filteredSimpleMeasures = ({
-  metricsSpecQueryResult,
+  validMetricsView,
 }: DashboardDataSources) => {
   return () => {
     return (
-      metricsSpecQueryResult.data?.measures?.filter(
+      validMetricsView?.measures?.filter(
         (m) =>
           !m.window &&
           m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
@@ -188,4 +201,5 @@ export const measureSelectors = {
   filteredSimpleMeasures,
 
   getFilteredMeasuresAndDimensions,
+  leaderboardMeasureName,
 };

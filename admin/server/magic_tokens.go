@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -20,21 +22,25 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const magicAuthTokenMetricsViewFilterMaxSize = 1024
+const magicAuthTokenFilterMaxSize = 1024
 
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
-		attribute.String("args.metrics_view", req.MetricsView),
+		attribute.String("args.display_name", req.DisplayName),
+		attribute.String("args.resource_type", req.ResourceType),
+		attribute.String("args.resource_name", req.ResourceName),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project %q not found", req.Project))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -44,9 +50,12 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	}
 
 	opts := &admin.IssueMagicAuthTokenOptions{
-		ProjectID:         proj.ID,
-		MetricsView:       req.MetricsView,
-		MetricsViewFields: req.MetricsViewFields,
+		ProjectID:    proj.ID,
+		ResourceType: req.ResourceType,
+		ResourceName: req.ResourceName,
+		Fields:       req.Fields,
+		State:        req.State,
+		DisplayName:  req.DisplayName,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -70,17 +79,17 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.MetricsViewFilter != nil {
-		val, err := protojson.Marshal(req.MetricsViewFilter)
+	if req.Filter != nil {
+		val, err := protojson.Marshal(req.Filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if len(val) > magicAuthTokenMetricsViewFilterMaxSize {
-			return nil, status.Errorf(codes.InvalidArgument, "metrics view filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenMetricsViewFilterMaxSize)
+		if len(val) > magicAuthTokenFilterMaxSize {
+			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
-		opts.MetricsViewFilterJSON = string(val)
+		opts.FilterJSON = string(val)
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -91,7 +100,41 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
 		Token: tokenStr,
-		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+		Url:   s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(req.Organization, req.Project, tokenStr),
+	}, nil
+}
+
+func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetCurrentMagicAuthTokenRequest) (*adminv1.GetCurrentMagicAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
+		return nil, status.Error(codes.PermissionDenied, "request was not made with a magic auth token")
+	}
+
+	tkn, err := s.admin.DB.FindMagicAuthTokenWithUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("project with id %s not found", tkn.ProjectID))
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
+	}
+
+	pb, err := s.magicAuthTokenToPB(tkn, org, proj)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.GetCurrentMagicAuthTokenResponse{
+		Token: pb,
 	}, nil
 }
 
@@ -109,16 +152,18 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, fmt.Sprintf("project %q not found", req.Project))
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
 	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !projPerms.CreateMagicAuthTokens && !projPerms.ManageMagicAuthTokens {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage magic auth tokens")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization for project: %v", err.Error())
 	}
 
 	var createdByUserID *string
@@ -141,7 +186,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 		nextPageToken = marshalPageToken(tokens[len(tokens)-1].ID)
 	}
 
-	pbs, err := magicAuthTokensToPB(tokens)
+	pbs, err := s.magicAuthTokensToPB(tokens, org, proj)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -157,7 +202,7 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 		attribute.String("args.token_id", req.TokenId),
 	)
 
-	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId)
+	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId, false)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -185,10 +230,10 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }
 
-func magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser) ([]*adminv1.MagicAuthToken, error) {
+func (s *Server) magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser, org *database.Organization, proj *database.Project) ([]*adminv1.MagicAuthToken, error) {
 	var pbs []*adminv1.MagicAuthToken
 	for _, tkn := range tkns {
-		pb, err := magicAuthTokenToPB(tkn)
+		pb, err := s.magicAuthTokenToPB(tkn, org, proj)
 		if err != nil {
 			return nil, err
 		}
@@ -197,33 +242,54 @@ func magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser) ([]*adminv1.Ma
 	return pbs, nil
 }
 
-func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAuthToken, error) {
+func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *database.Organization, proj *database.Project) (*adminv1.MagicAuthToken, error) {
 	attrs, err := structpb.NewStruct(tkn.Attributes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
 	}
 
-	var metricsViewFilter *runtimev1.Expression
-	if tkn.MetricsViewFilterJSON != "" {
-		metricsViewFilter = &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(tkn.MetricsViewFilterJSON), metricsViewFilter)
+	var filter *runtimev1.Expression
+	if tkn.FilterJSON != "" {
+		filter = &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(tkn.FilterJSON), filter)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal metrics view filter: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
 		}
+	}
+
+	// backwards compatibility
+	tokenStr := ""
+	url := ""
+	if len(tkn.Secret) != 0 {
+		id, err := uuid.Parse(tkn.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse token ID: %w", err)
+		}
+		token, err := authtoken.FromParts(authtoken.TypeMagic, id, tkn.Secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create magic auth token from parts: %w", err)
+		}
+		tokenStr = token.String()
+		url = s.admin.URLs.WithCustomDomain(org.CustomDomain).MagicAuthTokenOpen(org.Name, proj.Name, tokenStr)
 	}
 
 	res := &adminv1.MagicAuthToken{
 		Id:                 tkn.ID,
 		ProjectId:          tkn.ProjectID,
+		Url:                url,
+		Token:              tokenStr,
 		CreatedOn:          timestamppb.New(tkn.CreatedOn),
 		ExpiresOn:          nil,
 		UsedOn:             timestamppb.New(tkn.UsedOn),
 		CreatedByUserId:    safeStr(tkn.CreatedByUserID),
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
-		MetricsView:        tkn.MetricsView,
-		MetricsViewFilter:  metricsViewFilter,
-		MetricsViewFields:  tkn.MetricsViewFields,
+		ResourceType:       tkn.ResourceType,
+		ResourceName:       tkn.ResourceName,
+		Filter:             filter,
+		Fields:             tkn.Fields,
+		State:              tkn.State,
+		DisplayName:        tkn.DisplayName,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)

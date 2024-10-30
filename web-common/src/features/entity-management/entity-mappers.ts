@@ -33,8 +33,8 @@ export function getFilePathFromNameAndType(
       return `/dashboards/${name}.yaml`;
     case EntityType.Chart:
       return `/charts/${name}.yaml`;
-    case EntityType.Dashboard:
-      return `/custom-dashboards/${name}.yaml`;
+    case EntityType.Canvas:
+      return `/canvas/${name}.yaml`;
     default:
       throw new Error("Unrecognized EntityType");
   }
@@ -56,8 +56,8 @@ export function getFileAPIPathFromNameAndType(
       return `dashboards/${name}.yaml`;
     case EntityType.Chart:
       return `charts/${name}.yaml`;
-    case EntityType.Dashboard:
-      return `custom-dashboards/${name}.yaml`;
+    case EntityType.Canvas:
+      return `canvas/${name}.yaml`;
     default:
       throw new Error("Unrecognized EntityType");
   }
@@ -81,8 +81,8 @@ export function getRouteFromName(name: string, type: EntityType): string {
       return `/files/dashboard/${name}`;
     case EntityType.Chart:
       return `/files/chart/${name}`;
-    case EntityType.Dashboard:
-      return `/files/custom-dashboard/${name}`;
+    case EntityType.Canvas:
+      return `/files/canvas/${name}`;
     default:
       throw new Error("Unrecognized EntityType");
   }
@@ -98,8 +98,8 @@ export function getLabel(entityType: EntityType) {
       return "dashboard";
     case EntityType.Chart:
       return "chart";
-    case EntityType.Dashboard:
-      return "custom dashboard";
+    case EntityType.Canvas:
+      return "canvas";
     case EntityType.Unknown:
       return "";
     default:
@@ -121,10 +121,26 @@ export function addLeadingSlash(path: string): string {
   return "/" + path;
 }
 
-export const FolderToResourceKind: Record<string, ResourceKind> = {
+export const FolderNameToResourceKind: Record<string, ResourceKind> = {
   sources: ResourceKind.Source,
   models: ResourceKind.Model,
-  dashboards: ResourceKind.MetricsView,
+  // dashboards: ResourceKind.MetricsView,
+  metrics: ResourceKind.MetricsView,
+  // explores: ResourceKind.Explore, // This does not happen on backend
   charts: ResourceKind.Component,
-  "custom-dashboards": ResourceKind.Dashboard,
+  canvas: ResourceKind.Canvas,
+};
+
+export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {
+  alert: ResourceKind.Alert,
+  api: ResourceKind.API,
+  component: ResourceKind.Component,
+  canvas: ResourceKind.Canvas,
+  metrics_view: ResourceKind.MetricsView,
+  metricsview: ResourceKind.MetricsView,
+  explore: ResourceKind.Explore,
+  model: ResourceKind.Model,
+  report: ResourceKind.Report,
+  source: ResourceKind.Source,
+  theme: ResourceKind.Theme,
 };

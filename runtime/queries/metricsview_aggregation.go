@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
+	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 )
 
 type MetricsViewAggregation struct {
@@ -22,7 +23,9 @@ type MetricsViewAggregation struct {
 	TimeRange           *runtimev1.TimeRange                           `json:"time_range,omitempty"`
 	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
 	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	WhereSQL            string                                         `json:"where_sql,omitempty"`
 	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	HavingSQL           string                                         `json:"having_sql,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter                   `json:"filter,omitempty"` // Backwards compatibility
 	Priority            int32                                          `json:"priority,omitempty"`
 	Limit               *int64                                         `json:"limit,omitempty"`
@@ -85,7 +88,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -105,7 +108,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
+	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil || q.WhereSQL != "" || q.HavingSQL != "" {
 		filename += "_filtered"
 	}
 
@@ -166,7 +169,6 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
-
 	for _, d := range q.Dimensions {
 		res := metricsview.Dimension{Name: d.Name}
 		if d.Alias != "" {
@@ -220,6 +222,14 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 				res.Compute = &metricsview.MeasureCompute{ComparisonRatio: &metricsview.MeasureComputeComparisonRatio{
 					Measure: c.ComparisonRatio.Measure,
 				}}
+			case *runtimev1.MetricsViewAggregationMeasure_PercentOfTotal:
+				res.Compute = &metricsview.MeasureCompute{PercentOfTotal: &metricsview.MeasureComputePercentOfTotal{
+					Measure: c.PercentOfTotal.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_Uri:
+				res.Compute = &metricsview.MeasureCompute{URI: &metricsview.MeasureComputeURI{
+					Dimension: c.Uri.Dimension,
+				}}
 			}
 		}
 
@@ -270,8 +280,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	if q.Where != nil {
-		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, q.WhereSQL)
+	if err != nil {
+		return nil, err
 	}
 
 	// If a measure-level filter is present, we set qry.Where as the spine, and use (qry.Where AND measuresFilter) as the new where clause
@@ -293,8 +305,9 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		}
 	}
 
-	if q.Having != nil {
-		qry.Having = metricsview.NewExpressionFromProto(q.Having)
+	qry.Having, err = metricViewExpression(q.Having, q.HavingSQL)
+	if err != nil {
+		return nil, err
 	}
 
 	if q.Limit != nil {
@@ -313,7 +326,32 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		qry.PivotOn = q.PivotOn
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
+}
+
+func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
+	if expr != nil && sql != "" {
+		sqlExpr, err := metricssqlparser.ParseSQLFilter(sql)
+		if err != nil {
+			return nil, err
+		}
+		return &metricsview.Expression{
+			Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorAnd,
+				Expressions: []*metricsview.Expression{
+					metricsview.NewExpressionFromProto(expr),
+					sqlExpr,
+				},
+			},
+		}, nil
+	}
+	if expr != nil {
+		return metricsview.NewExpressionFromProto(expr), nil
+	}
+	if sql != "" {
+		return metricssqlparser.ParseSQLFilter(sql)
+	}
+	return nil, nil
 }

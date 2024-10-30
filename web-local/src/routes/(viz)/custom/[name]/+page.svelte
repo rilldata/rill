@@ -1,10 +1,16 @@
 <script lang="ts">
-  import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import CanvasDashboardEmbed from "@rilldata/web-common/features/canvas/CanvasDashboardEmbed.svelte";
   import type { PageData } from "./$types";
 
   export let data: PageData;
 
-  $: ({ items = [], columns, gap } = data.dashboard);
+  $: ({ items = [], columns, gap, variables } = data.dashboard);
 </script>
 
-<CustomDashboardEmbed {items} {columns} {gap} />
+<CanvasDashboardEmbed
+  canvasName={data.dashboardName}
+  {items}
+  {columns}
+  {gap}
+  {variables}
+/>

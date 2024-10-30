@@ -1,5 +1,5 @@
 import {
-  V1Condition,
+  type V1Condition,
   V1Operation,
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -51,7 +51,7 @@ export function createOrExpression(exprs: V1Expression[]): V1Expression {
 export function createBinaryExpression(
   ident: string,
   op: V1Operation,
-  val: number,
+  val: any,
 ): V1Expression {
   return {
     cond: {
@@ -86,6 +86,28 @@ export function createBetweenExpression(
   } else {
     return createAndExpression(exprs);
   }
+}
+
+export function createSubQueryExpression(
+  dimension: string,
+  measures: string[],
+  having: V1Expression | undefined,
+): V1Expression {
+  return {
+    cond: {
+      op: V1Operation.OPERATION_IN,
+      exprs: [
+        { ident: dimension },
+        {
+          subquery: {
+            dimension,
+            measures,
+            having,
+          },
+        },
+      ],
+    },
+  };
 }
 
 const conditionOperationComplement: Partial<Record<V1Operation, V1Operation>> =
@@ -215,7 +237,7 @@ export function getValueIndexInExpression(expr: V1Expression, value: string) {
 }
 
 export function getValuesInExpression(expr?: V1Expression): any[] {
-  return expr ? expr.cond?.exprs?.slice(1).map((e) => e.val) ?? [] : [];
+  return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) ?? []) : [];
 }
 
 export const matchExpressionByName = (e: V1Expression, name: string) => {

@@ -2,7 +2,7 @@
 node_modules
 /build
 /dist
-/.svelte-kit
+.svelte-kit
 /package
 .env
 .env.*
@@ -25,6 +25,7 @@ tsc-tmp/
 !/runtime/drivers/duckdb/extensions/embed/**/.gitkeep
 /dev-project*
 /dev-cloud-state*
+/playwright-report
 
 # data files
 *.duckdb
@@ -78,3 +79,4 @@ rill-binary-sa.json
 sysroot/
 latest.txt
 /web-common/coverage
+

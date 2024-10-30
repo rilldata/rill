@@ -38,6 +38,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("Slots total: %d\n", orgQuotas.SlotsTotal)
 				fmt.Printf("Slots per deployment: %d\n", orgQuotas.SlotsPerDeployment)
 				fmt.Printf("Outstanding invites: %d\n", orgQuotas.OutstandingInvites)
+				fmt.Printf("Storage limit bytes per deployment: %d\n", orgQuotas.StorageLimitBytesPerDeployment)
 			} else if email != "" {
 				res, err := client.GetUser(ctx, &adminv1.GetUserRequest{
 					Email: email,
@@ -49,6 +50,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				userQuotas := res.User.Quotas
 				fmt.Printf("User: %s\n", email)
 				fmt.Printf("Projects: %d\n", userQuotas.SingleuserOrgs)
+				fmt.Printf("Trial Orgs: %d\n", userQuotas.TrialOrgs)
 			} else {
 				return fmt.Errorf("Please set --org or --user")
 			}

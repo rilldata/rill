@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -182,15 +181,16 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-func (c *connection) EstimateSize() (int64, bool) {
+func (c *connection) estimateSize(includeTemp bool) int64 {
 	path := c.config.DBFilePath
 	if path == "" {
-		return 0, true
+		return 0
 	}
 
-	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
-	dbWalPath := fmt.Sprintf("%s.wal", path)
-	paths := []string{path, dbWalPath}
+	paths := []string{path}
+	if includeTemp {
+		paths = append(paths, fmt.Sprintf("%s.wal", path))
+	}
 	if c.config.ExtTableStorage {
 		entries, err := os.ReadDir(c.config.DBStoragePath)
 		if err == nil { // ignore error
@@ -198,16 +198,24 @@ func (c *connection) EstimateSize() (int64, bool) {
 				if !entry.IsDir() {
 					continue
 				}
+				// this is to avoid counting temp tables during source ingestion
+				// in certain cases we only want to compute the size of the serving db files
+				if strings.HasPrefix(entry.Name(), "__rill_tmp_") && !includeTemp {
+					continue
+				}
 				path := filepath.Join(c.config.DBStoragePath, entry.Name())
 				version, exist, err := c.tableVersion(entry.Name())
 				if err != nil || !exist {
 					continue
 				}
-				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)), filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
+				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)))
+				if includeTemp {
+					paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
+				}
 			}
 		}
 	}
-	return fileSize(paths), true
+	return fileSize(paths)
 }
 
 // AddTableColumn implements drivers.OLAPStore.
@@ -283,7 +291,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	}
 	if !c.config.ExtTableStorage {
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
@@ -315,7 +323,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		}
 
 		// Enforce storage limits
-		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
 			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
 			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
 		}
@@ -360,7 +368,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	c.logger.Debug("insert table", zap.String("name", name), zap.Bool("byName", byName), zap.String("strategy", string(strategy)), zap.Strings("uniqueKey", uniqueKey))
 
 	if !c.config.ExtTableStorage {
-		return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
+		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+			return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
+		})
 	}
 
 	if inPlace {
@@ -375,7 +385,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		db := dbName(name, version)
 		safeName := fmt.Sprintf("%s.default", safeSQLName(db))
 
-		return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+			return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+		})
 	}
 
 	var cleanupFunc func()
@@ -609,6 +621,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	return err
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	var byNameClause string
 	if byName {
@@ -616,7 +632,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 	}
 
 	if strategy == drivers.IncrementalStrategyAppend {
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeName, byNameClause, sql),
 			Priority:    1,
 			LongRunning: true,
@@ -626,13 +642,35 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 	if strategy == drivers.IncrementalStrategyMerge {
 		// Create a temporary table with the new data
 		tmp := uuid.New().String()
-		err := c.execWithLimits(ctx, &drivers.Statement{
+		err := c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
 		if err != nil {
 			return err
+		}
+
+		// check the count of the new data
+		// skip if the count is 0
+		// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp)),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		var empty bool
+		for res.Next() {
+			if err := res.Scan(&empty); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if empty {
+			return nil
 		}
 
 		// Drop the rows from the target table where the unique key is present in the temporary table
@@ -642,9 +680,9 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 			if i != 0 {
 				where += " AND "
 			}
-			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
+			where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
 		}
-		err = c.execWithLimits(ctx, &drivers.Statement{
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where),
 			Priority:    1,
 			LongRunning: true,
@@ -654,7 +692,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		}
 
 		// Insert the new data into the target table
-		return c.execWithLimits(ctx, &drivers.Statement{
+		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)),
 			Priority:    1,
 			LongRunning: true,
@@ -693,7 +731,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 			existingTyp = "TABLE"
 		}
 
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, newName)})
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(newName))})
 		if err != nil {
 			return err
 		}
@@ -734,47 +772,6 @@ func (c *connection) updateVersion(name, version string) error {
 	defer file.Close()
 
 	_, err = file.WriteString(version)
-	return err
-}
-
-func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Statement) error {
-	storageLimit := c.config.StorageLimitBytes
-	if storageLimit <= 0 { // no limit
-		return c.Exec(parentCtx, stmt)
-	}
-
-	// check current size
-	sz, _ := c.EstimateSize()
-	// current size already exceeds limit
-	if sz >= storageLimit {
-		return drivers.ErrStorageLimitExceeded
-	}
-
-	ctx, cancel := context.WithCancel(parentCtx)
-	defer cancel()
-	limitExceeded := atomic.Bool{}
-	// Start background goroutine to check size is not exceeded during query execution
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if size, ok := c.EstimateSize(); ok && size > storageLimit {
-					limitExceeded.Store(true)
-					cancel()
-					return
-				}
-			}
-		}
-	}()
-
-	err := c.Exec(ctx, stmt)
-	if limitExceeded.Load() {
-		return drivers.ErrStorageLimitExceeded
-	}
 	return err
 }
 
@@ -976,17 +973,11 @@ func removeDBFile(dbFile string) {
 
 // safeSQLName returns a quoted SQL identifier.
 func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return safeName(name)
 }
 
 func safeSQLString(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(name, "'", "''"))
+	return drivers.DialectDuckDB.EscapeStringValue(name)
 }
 
 func copyFile(src, dst string) error {

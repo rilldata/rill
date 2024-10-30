@@ -24,6 +24,7 @@ message Resource {
     SourceV2 source = 3;
     ModelV2 model = 4;
     MetricsViewV2 metrics_view = 5;
+    Explore explore = 17;
     Migration migration = 9;
     Report report = 10;
     Alert alert = 12;
@@ -32,7 +33,7 @@ message Resource {
     BucketPlanner bucket_planner = 8;
     Theme theme = 11;
     Component component = 13;
-    Dashboard dashboard = 14;
+    Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
   }
@@ -110,24 +111,45 @@ message ModelSpec {
   bool incremental = 13;
   string incremental_state_resolver = 14;
   google.protobuf.Struct incremental_state_resolver_properties = 15;
+  string splits_resolver = 18;
+  google.protobuf.Struct splits_resolver_properties = 19;
+  string splits_watermark_field = 20;
+  uint32 splits_concurrency_limit = 21;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
+  // stage_connector is optional.
+  string stage_connector = 16;
+  google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
+  bool trigger_full = 22;
   reserved 2, 3, 6, 7, 8;
 }
 
 message ModelState {
+  // executor_connector is the ModelExecutor that produced the model's result.
   string executor_connector = 6;
+  // result_connector is the connector where the model's result is stored.
   string result_connector = 1;
+  // result_properties are returned by the executor and contains metadata about the result.
   google.protobuf.Struct result_properties = 5;
+  // result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
   string result_table = 2;
+  // spec_hash is a hash of those parts of the spec that affect the model's result.
   string spec_hash = 3;
+  // refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
   string refs_hash = 9;
+  // refreshed_on is the time the model was last executed.
   google.protobuf.Timestamp refreshed_on = 4;
+  // incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
   google.protobuf.Struct incremental_state = 7;
+  // incremental_state_schema contains a schema for the data in incremental_state.
   StructType incremental_state_schema = 8;
+  // splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+  string splits_model_id = 10;
+  // splits_have_errors is true if one or more splits failed to execute.
+  bool splits_have_errors = 11;
 }
 
 message MetricsViewV2 {
@@ -139,11 +161,12 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message DimensionV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string column = 2;
     string expression = 6;
-    string label = 3;
-    string description = 4;
     bool unnest = 5;
+    string uri = 7;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -170,33 +193,17 @@ message MetricsViewSpec {
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;
     repeated DimensionSelector per_dimensions = 10;
     repeated DimensionSelector required_dimensions = 11;
     repeated string referenced_measures = 12;
-    string label = 3;
-    string description = 4;
     string format_preset = 5;
     string format_d3 = 7;
     bool valid_percent_of_total = 6;
-  }
-  enum ComparisonMode {
-    COMPARISON_MODE_UNSPECIFIED = 0;
-    COMPARISON_MODE_NONE = 1;
-    COMPARISON_MODE_TIME = 2;
-    COMPARISON_MODE_DIMENSION = 3;
-  }
-  message AvailableComparisonOffset {
-    string offset = 1;
-    // Used to override the range for the comparison with something other than the selected range.
-    string range = 2;
-  }
-  message AvailableTimeRange {
-    string range = 1;
-    // Available comparison offsets for this time range.
-    repeated AvailableComparisonOffset comparison_offsets = 2;
   }
   // Connector containing the table
   string connector = 1;
@@ -206,42 +213,74 @@ message MetricsViewSpec {
   string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
-  // User friendly label for the dashboard
-  string title = 3;
-  // Description of the dashboard
+  // Name of the model the metrics view is based on. Either table or model should be set.
+  string model = 24;
+  // User-facing name
+  string display_name = 3;
+  // User-facing description
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
+  // The smallest time grain that can be queried for.
+  // This can be useful to set if the time_dimension is not available below a certain granularity.
+  TimeGrain smallest_time_grain = 8;
   // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
   string watermark_expression = 20;
   // Dimensions in the metrics view
   repeated DimensionV2 dimensions = 6;
-  // List of selected dimensions by defaults
-  repeated string default_dimensions = 18;
   // Measures in the metrics view
   repeated MeasureV2 measures = 7;
-  // List of selected measures by defaults
-  repeated string default_measures = 19;
-  // Smallest time grain to show in the dashboard
-  TimeGrain smallest_time_grain = 8;
-  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-  string default_time_range = 9;
-  // Available time zones list preferred time zones using IANA location identifiers
-  repeated string available_time_zones = 10;
-  // Security for the dashboard
+  // Security for the metrics view
   repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
+  
+  // DEPRECATED FIELDS
+  // Deprecated: Now defined in the Explore resource.
+  enum ComparisonMode {
+    COMPARISON_MODE_UNSPECIFIED = 0;
+    COMPARISON_MODE_NONE = 1;
+    COMPARISON_MODE_TIME = 2;
+    COMPARISON_MODE_DIMENSION = 3;
+  }
+  // Deprecated: Now defined in the Explore resource.
+  message AvailableComparisonOffset {
+    string offset = 1;
+    // Used to override the range for the comparison with something other than the selected range.
+    string range = 2;
+  }
+  // Deprecated: Now defined in the Explore resource.
+  message AvailableTimeRange {
+    string range = 1;
+    // Available comparison offsets for this time range.
+    repeated AvailableComparisonOffset comparison_offsets = 2;
+  }
+  // List of selected dimensions by defaults.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string default_dimensions = 18;
+  // List of selected measures by defaults.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string default_measures = 19;
+  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+  // Deprecated: Now defined in the Explore resource.
+  string default_time_range = 9;
   // Selected default comparison mode.
+  // Deprecated: Now defined in the Explore resource.
   ComparisonMode default_comparison_mode = 14;
-  // If comparison mode is dimension then this determines which is the default dimension
+  // If comparison mode is dimension then this determines which is the default dimension.
+  // Deprecated: Now defined in the Explore resource.
   string default_comparison_dimension = 15;
-  // List of available time ranges with comparison ranges that would replace the default list.
-  repeated AvailableTimeRange available_time_ranges = 16;
-  // Default theme to apply
+  // Default theme to apply.
+  // Deprecated: Now defined in the Explore resource.
   string default_theme = 17;
+  // List of available time ranges with comparison ranges that would replace the default list.
+  // Deprecated: Now defined in the Explore resource.
+  repeated AvailableTimeRange available_time_ranges = 16;
+  // Available time zones list preferred time zones using IANA location identifiers.
+  // Deprecated: Now defined in the Explore resource.
+  repeated string available_time_zones = 10;
 }
 
 message SecurityRule {
@@ -278,6 +317,110 @@ message MetricsViewState {
   bool streaming = 2;
 }
 
+message Explore {
+  ExploreSpec spec = 1;
+  ExploreState state = 2;
+}
+
+message ExploreSpec {
+  // User-facing name
+  string display_name = 1;
+  // User-facing description
+  string description = 2;
+  // The metrics view the explore is based on
+  string metrics_view = 3;
+  // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+  repeated string dimensions = 4;
+  // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector dimensions_selector = 13;
+  // Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+  repeated string measures = 6;
+  // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector measures_selector = 14;
+  // Theme to use
+  string theme = 8;
+  // List of selectable time ranges with comparison time ranges.
+  // If the list is empty, a default list should be shown.
+  repeated ExploreTimeRange time_ranges = 9;
+  // List of selectable time zones.
+  // If the list is empty, a default list should be shown.
+  // The values should be valid IANA location identifiers.
+  repeated string time_zones = 10;
+  // Preset UI state to show by default.
+  ExplorePreset default_preset = 15;
+  // If true, the pivot tab will be hidden when the explore is embedded.
+  bool embeds_hide_pivot = 16;
+  // Security for the explore dashboard.
+  // These are not currently parsed from YAML, but will be derived from the parent metrics view.
+  repeated SecurityRule security_rules = 12;
+}
+
+message ExploreState {
+  ExploreSpec valid_spec = 1;
+}
+
+message ExploreTimeRange {
+  // ISO 8601 duration string for the time range
+  string range = 1;
+  // Comparison time ranges available for this time range
+  repeated ExploreComparisonTimeRange comparison_time_ranges = 2;
+}
+
+message ExploreComparisonTimeRange {
+  // ISO 8601 duration string to use as an offset from the base time range.
+  string offset = 1;
+  // ISO 8601 duration string for the duration of the comparison time range.
+  // If not specified, it should fallback to the range of the base time range.
+  string range = 2;
+}
+
+message ExplorePreset {
+  // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+  repeated string dimensions = 2;
+  // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector dimensions_selector = 9;
+  // Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+  repeated string measures = 4;
+  // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector measures_selector = 10;
+  // Time range for the explore.
+  // It corresponds to the `range` property of the explore's `time_ranges`.
+  // If not found in `time_ranges`, it should be added to the list.
+  string time_range = 6;
+  // Comparison mode.
+  ExploreComparisonMode comparison_mode = 7;
+  // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+  string comparison_dimension = 8;
+}
+
+enum ExploreComparisonMode {
+  EXPLORE_COMPARISON_MODE_UNSPECIFIED = 0;
+  EXPLORE_COMPARISON_MODE_NONE = 1;
+  EXPLORE_COMPARISON_MODE_TIME = 2;
+  EXPLORE_COMPARISON_MODE_DIMENSION = 3;
+}
+
+// FieldSelector describes logic for selecting a list of fields.
+// It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
+message FieldSelector {
+  // Invert the result such that all fields *except* the selected fields are returned.
+  bool invert = 1;
+  oneof selector {
+    // Select all fields.
+    bool all = 2;
+    // Select specific fields by name.
+    StringListValue fields = 3;
+    // Select fields by a regular expression.
+    string regex = 4;
+    // Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)".
+    string duckdb_expression = 5;
+  }
+}
+
+message StringListValue {
+  repeated string values = 1;
+}
+
 message Migration {
   MigrationSpec spec = 1;
   MigrationState state = 2;
@@ -299,8 +442,8 @@ message Report {
 }
 
 message ReportSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
   string query_name = 5;
@@ -336,16 +479,19 @@ message Alert {
 }
 
 message AlertSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
   string intervals_iso_duration = 5;
   int32 intervals_limit = 6;
   bool intervals_check_unclosed = 7;
   uint32 timeout_seconds = 8;
+  // for alerts that have not been edited since resolver and resolver_properties have been added
   string query_name = 9;
   string query_args_json = 10;
+  string resolver = 22;
+  google.protobuf.Struct resolver_properties = 23;
   oneof query_for {
     string query_for_user_id = 11;
     string query_for_user_email = 12;
@@ -381,6 +527,8 @@ message AlertExecution {
   google.protobuf.Timestamp execution_time = 4;
   google.protobuf.Timestamp started_on = 5;
   google.protobuf.Timestamp finished_on = 6;
+  // Stores the last notification time in suppressed alerts
+  google.protobuf.Timestamp suppressed_since = 7;
 }
 
 message AssertionResult {
@@ -396,6 +544,7 @@ enum AssertionStatus {
   ASSERTION_STATUS_ERROR = 3;
 }
 
+// DEPRECATED (2024-08-28): Use a RefreshTrigger that targets the project parser instead.
 message PullTrigger {
   PullTriggerSpec spec = 1;
   PullTriggerState state = 2;
@@ -411,10 +560,26 @@ message RefreshTrigger {
 }
 
 message RefreshTriggerSpec {
-  repeated ResourceName only_names = 1;
+  // Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+  // If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes.
+  repeated ResourceName resources = 1;
+  // Models to refresh. These are specified separately to enable more fine-grained configuration.
+  repeated RefreshModelTrigger models = 2;
 }
 
 message RefreshTriggerState {}
+
+message RefreshModelTrigger {
+  // The model to refresh.
+  string model = 1;
+  // If true, the current table and state will be dropped before refreshing.
+  // For non-incremental models, this is equivalent to a normal refresh.
+  bool full = 2;
+  // Keys of specific splits to refresh.
+  repeated string splits = 3;
+  // If true, it will refresh all splits that errored on their last execution.
+  bool all_errored_splits = 4;
+}
 
 message BucketPlanner {
   BucketPlannerSpec spec = 1;
@@ -459,34 +624,49 @@ message Component {
 }
 
 message ComponentSpec {
-  string title = 1;
+  string display_name = 1;
+  string description = 7;
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
-  bool defined_in_dashboard = 6;
-  string subtitle = 7;
+  repeated ComponentVariable input = 8;
+  ComponentVariable output = 9;
+  string show = 10; // Templated string that should evaluate to a boolean.
+  bool defined_in_canvas = 6;
 }
 
-message ComponentState {}
-
-message Dashboard {
-  DashboardSpec spec = 1;
-  DashboardState state = 2;
+message ComponentState {
+  ComponentSpec valid_spec = 1;
 }
 
-message DashboardSpec {
-  string title = 1;
+message ComponentVariable {
+  string name = 1;
+  string type = 2;
+  google.protobuf.Value default_value = 3;
+}
+
+message Canvas {
+  CanvasSpec spec = 1;
+  CanvasState state = 2;
+}
+
+message CanvasSpec {
+  string display_name = 1;
   uint32 columns = 2;
   uint32 gap = 3;
-  repeated DashboardItem items = 4;
+  repeated ComponentVariable variables = 5;
+  repeated CanvasItem items = 4;
+  repeated SecurityRule security_rules = 6;
 }
 
-message DashboardState {}
+message CanvasState {
+  CanvasSpec valid_spec = 1;
+}
 
-message DashboardItem {
+message CanvasItem {
   string component = 1;
-  bool defined_in_dashboard = 8;
+  bool defined_in_canvas = 8;
   optional uint32 x = 2;
   optional uint32 y = 3;
   optional uint32 width = 4;
@@ -502,6 +682,9 @@ message API {
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
+  string openapi_summary = 3;
+  repeated google.protobuf.Struct openapi_parameters = 4;
+  google.protobuf.Struct openapi_response_schema = 5;
 }
 
 message APIState {}
@@ -542,7 +725,8 @@ message CharLocation {
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
-  // properties_from_variables stores properties whose value is a variable.
+  repeated string templated_properties = 4;
+  // DEPRECATED: properties_from_variables stores properties whose value is a variable.
   // NOTE : properties_from_variables and properties both should be used to get all properties.
   map<string, string> properties_from_variables = 3;
 }

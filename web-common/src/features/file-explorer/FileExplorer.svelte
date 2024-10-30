@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
+  import GenerateChartYAMLPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
@@ -10,7 +10,7 @@
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     getTopLevelFolder,
-    splitFolderAndName,
+    splitFolderAndFileName,
   } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
@@ -20,9 +20,9 @@
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { eventBus } from "../../lib/event-bus/event-bus";
+  import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
-  import { fileArtifacts } from "../entity-management/file-artifacts";
 
   export let hasUnsaved: boolean;
 
@@ -123,7 +123,7 @@
     const isCurrentFile =
       $page.params.file && // handle case when user is on home page
       removeLeadingSlash(fromPath) === removeLeadingSlash($page.params.file);
-    const [, srcFile] = splitFolderAndName(fromPath);
+    const [, srcFile] = splitFolderAndFileName(fromPath);
     const newFilePath = `${toDir === "/" ? toDir : toDir + "/"}${srcFile}`;
 
     if (fromPath !== newFilePath) {
@@ -164,21 +164,19 @@
   on:keydown={saveAll}
 />
 
-<div class="flex flex-col items-start gap-y-2">
-  <!-- File tree -->
-  <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-    {#if fileTree}
-      <NavDirectory
-        directory={fileTree}
-        {onRename}
-        {onDelete}
-        {onGenerateChart}
-        onMouseDown={(e, dragData) =>
-          navEntryDragDropStore.onMouseDown(e, dragData)}
-      />
-    {/if}
-  </ul>
-</div>
+<!-- File tree -->
+<ul class="flex flex-col w-full items-start justify-start overflow-auto">
+  {#if fileTree}
+    <NavDirectory
+      directory={fileTree}
+      {onRename}
+      {onDelete}
+      {onGenerateChart}
+      onMouseDown={(e, dragData) =>
+        navEntryDragDropStore.onMouseDown(e, dragData)}
+    />
+  {/if}
+</ul>
 
 {#if showRenameModelModal}
   <RenameAssetModal

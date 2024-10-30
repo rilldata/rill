@@ -2,19 +2,18 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createDashboardStateSync } from "@rilldata/web-common/features/dashboards/stores/syncDashboardState";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import { EntityStatus } from "../../entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   const dashboardStoreReady = createDashboardStateSync(getStateManagers());
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: initLocalUserPreferenceStore(exploreName);
 </script>
 
 {#if $dashboardStoreReady.isFetching}
   <div class="grid place-items-center size-full">
-    <Spinner status={EntityStatus.Running} size="40px" />
+    <DelayedSpinner isLoading={$dashboardStoreReady.isFetching} size="40px" />
   </div>
 {:else}
   <slot />

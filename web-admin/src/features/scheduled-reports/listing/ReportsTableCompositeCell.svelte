@@ -20,7 +20,7 @@
   const humanReadableFrequency = cronstrue.toString(frequency);
 </script>
 
-<a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
+<a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-2">
   <div class="flex gap-x-2 items-center">
     <ReportIcon size={"14px"} className="text-slate-500" />
     <div

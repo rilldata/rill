@@ -39,7 +39,15 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
-			Hint:        "Either set this or pass --var connector.postgres.database_url=... to rill start",
+			Hint:        "Either set this or pass --env connector.postgres.database_url=... to rill start",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 	ImplementsSQLStore: true,
@@ -155,6 +163,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

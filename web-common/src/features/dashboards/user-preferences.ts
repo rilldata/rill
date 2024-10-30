@@ -13,9 +13,9 @@ export interface LocalUserPreferences {
 }
 let localUserPreferences: Writable<LocalUserPreferences>;
 
-export function initLocalUserPreferenceStore(metricViewName: string) {
+export function initLocalUserPreferenceStore(metricsViewName: string) {
   localUserPreferences = localStorageStore<LocalUserPreferences>(
-    `${metricViewName}-userPreference`,
+    `${metricsViewName}-userPreference`,
     {
       timeZone: getLocalIANA(),
     },

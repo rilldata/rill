@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 func init() {
@@ -68,76 +70,146 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
-	r.C.Lock(ctx)
-	defer r.C.Unlock(ctx)
-
-	resources, err := r.C.List(ctx, "", "", false)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
-	for _, res := range resources {
-		// Check sources and models always; also check reports and alerts if OnlyNames is not empty (i.e. explicitly specified).
-		switch res.Meta.Name.Kind {
-		case runtime.ResourceKindSource, runtime.ResourceKindModel:
-			// nothing to do
-		case runtime.ResourceKindReport, runtime.ResourceKindAlert:
-			if len(trigger.Spec.OnlyNames) == 0 {
-				// skip
-				continue
-			}
-		default:
-			// skip
+	// As a special case, triggers for the global project parser should actually be handled just by triggering a reconcile on it.
+	// We do this here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
+	for i, rn := range trigger.Spec.Resources {
+		if !equalResourceName(rn, runtime.GlobalProjectParserName) {
 			continue
 		}
 
-		// Check if it's in OnlyNames
-		if len(trigger.Spec.OnlyNames) > 0 {
-			found := false
-			for _, n := range trigger.Spec.OnlyNames {
-				if strings.EqualFold(n.Name, res.Meta.Name.Name) {
-					// If Kind is empty, match any kind
-					if n.Kind == "" || n.Kind == res.Meta.Name.Kind {
-						found = true
-						break
-					}
+		err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+
+		trigger.Spec.Resources = slices.Delete(trigger.Spec.Resources, i, i+1)
+		break
+	}
+
+	// Get the catalog in case we need to update model splits
+	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer release()
+
+	// Lock the catalog, so we delay any reconciles from starting until we've set all the triggers.
+	// This will remove the chance of fast cancellations if resources that are connected in the DAG are getting triggered.
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	// Handle model triggers
+	for _, mt := range trigger.Spec.Models {
+		mr, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: mt.Model}, true)
+		if err != nil {
+			// Skip triggers for non-existent models
+			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				return runtime.ReconcileResult{Err: err}
+			}
+			r.C.Logger.Warn("Skipped trigger for non-existent model", zap.String("model", mt.Model))
+			continue
+		}
+
+		if len(mt.Splits) > 0 || mt.AllErroredSplits {
+			mdl := mr.GetModel()
+			modelID := mdl.State.SplitsModelId
+			if !mdl.Spec.Incremental {
+				r.C.Logger.Warn("Skipped splits trigger for model because it is not incremental", zap.String("model", mt.Model))
+				continue
+			}
+			if modelID == "" {
+				r.C.Logger.Warn("Skipped splits trigger for model because no splits have been ingested yet", zap.String("model", mt.Model))
+				continue
+			}
+
+			if mt.AllErroredSplits {
+				err := catalog.UpdateModelSplitsPendingIfError(ctx, modelID)
+				if err != nil {
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update splits for model %s: %w", mt.Model, err)}
 				}
 			}
-			if !found {
-				continue
+
+			for _, split := range mt.Splits {
+				err := catalog.UpdateModelSplitPending(ctx, modelID, split)
+				if err != nil {
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark split %q pending for model %q: %w", split, mt.Model, err)}
+				}
 			}
 		}
 
-		// Set Trigger=true
-		updated := true
-		switch res.Meta.Name.Kind {
-		case runtime.ResourceKindSource:
-			source := res.GetSource()
-			source.Spec.Trigger = true
-		case runtime.ResourceKindModel:
-			model := res.GetModel()
-			model.Spec.Trigger = true
-		case runtime.ResourceKindReport:
-			report := res.GetReport()
-			report.Spec.Trigger = true
-		case runtime.ResourceKindAlert:
-			alert := res.GetAlert()
-			alert.Spec.Trigger = true
-		default:
-			updated = false
-		}
-		if updated {
-			err = r.C.UpdateSpec(ctx, res.Meta.Name, res)
-			if err != nil {
-				return runtime.ReconcileResult{Err: err}
-			}
+		err = r.UpdateTriggerTrue(ctx, mr, mt.Full)
+		if err != nil {
+			// Not handling deletion race conditions because we hold a lock.
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for model %q: %w", mt.Model, err)}
 		}
 	}
 
+	// Handle generic resource triggers
+	for _, rn := range trigger.Spec.Resources {
+		res, err := r.C.Get(ctx, rn, false)
+		if err != nil {
+			// Skip triggers for non-existent resources
+			if !errors.Is(err, drivers.ErrResourceNotFound) {
+				return runtime.ReconcileResult{Err: err}
+			}
+			r.C.Logger.Warn("Skipped trigger for non-existent resource", zap.String("kind", rn.Kind), zap.String("name", rn.Name))
+			continue
+		}
+
+		err = r.UpdateTriggerTrue(ctx, res, false)
+		if err != nil {
+			// Not handling deletion race conditions because we hold a lock.
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to update trigger for resource %q: %w", rn.Name, err)}
+		}
+	}
+
+	// Delete self now that all triggers have been set
 	err = r.C.Delete(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	return runtime.ReconcileResult{}
+}
+
+func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *runtimev1.Resource, full bool) error {
+	switch res.Meta.Name.Kind {
+	case runtime.ResourceKindSource:
+		source := res.GetSource()
+		if source.Spec.Trigger {
+			return nil
+		}
+		source.Spec.Trigger = true
+	case runtime.ResourceKindModel:
+		model := res.GetModel()
+		if full {
+			if model.Spec.TriggerFull {
+				return nil
+			}
+			model.Spec.TriggerFull = true
+		} else {
+			if model.Spec.Trigger || model.Spec.TriggerFull {
+				return nil
+			}
+			model.Spec.Trigger = true
+		}
+	case runtime.ResourceKindAlert:
+		alert := res.GetAlert()
+		if alert.Spec.Trigger {
+			return nil
+		}
+		alert.Spec.Trigger = true
+	case runtime.ResourceKindReport:
+		report := res.GetReport()
+		if report.Spec.Trigger {
+			return nil
+		}
+		report.Spec.Trigger = true
+	default:
+		// Nothing to do
+		r.C.Logger.Warn("Attempted to trigger a resource type that is not triggerable", zap.String("kind", res.Meta.Name.Kind), zap.String("name", res.Meta.Name.Name))
+		return nil
+	}
+
+	return r.C.UpdateSpec(ctx, res.Meta.Name, res)
 }

@@ -1,24 +1,20 @@
 <script lang="ts">
-  /**
-   * Leaderboard.svelte
-   * -------------------------
-   * This is the "implemented" feature of the leaderboard, meant to be used
-   * in the application itself.
-   */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardListItem from "./LeaderboardListItem.svelte";
+  import { onMount } from "svelte";
   import {
-    LeaderboardItemData,
+    type LeaderboardItemData,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { onMount } from "svelte";
+  import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
+  import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
+  const columnWidth = 66;
+  const gutterWidth = 24;
 
   export let parentElement: HTMLElement;
   export let dimensionName: string;
@@ -36,6 +32,7 @@
 
   let container: HTMLElement;
   let visible = false;
+  let hovered: boolean;
 
   /** The reference value is the one that the bar in the LeaderboardListItem
    * gets scaled with. For a summable metric, the total is a reference value,
@@ -48,7 +45,12 @@
 
   const {
     selectors: {
-      activeMeasure: { activeMeasureName },
+      dimensions: {
+        getDimensionDisplayName,
+        getDimensionDescription,
+        getDimensionByName,
+      },
+      activeMeasure: { activeMeasureName, isValidPercentOfTotal },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
         leaderboardSortedQueryBody,
@@ -56,13 +58,19 @@
         leaderboardDimensionTotalQueryBody,
         leaderboardDimensionTotalQueryOptions,
       },
+      sorting: { sortedAscending, sortType },
+      timeRangeSelectors: { isTimeComparisonActive },
+      comparison: { isBeingCompared: isBeingComparedReadable },
     },
     actions: {
       dimensions: { setPrimaryDimension },
+      sorting: { toggleSort },
     },
     metricsViewName,
     runtime,
   } = getStateManagers();
+
+  $: dimension = $getDimensionByName(dimensionName);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -71,13 +79,7 @@
     $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
-  $: ({
-    isLoading,
-    isError,
-    data: sortedData,
-    refetch,
-    isFetching,
-  } = $sortedQuery);
+  $: ({ data: sortedData, isFetching } = $sortedQuery);
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -90,8 +92,9 @@
 
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
-  let noAvailableValues = true;
   let showExpandTable = false;
+  let noAvailableValues = true;
+
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       sortedData?.data ?? [],
@@ -108,71 +111,118 @@
     showExpandTable = leaderboardData.showExpandTable;
   }
 
-  let hovered: boolean;
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+
+  $: dimensionDescription = $getDimensionDescription(dimensionName);
+
+  $: firstColumnWidth =
+    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 164;
+
+  $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
+
+  $: tableWidth = columnCount * columnWidth + firstColumnWidth;
 </script>
 
 <div
-  bind:this={container}
-  role="grid"
+  class="flex flex-col"
   aria-label="{dimensionName} leaderboard"
-  tabindex="0"
+  role="table"
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
+  bind:this={container}
 >
-  <LeaderboardHeader {isFetching} {dimensionName} {hovered} />
-  {#if isError}
-    <div class="ml-[22px] flex p-2 gap-x-1 items-center">
-      <div class="text-gray-500">Unable to load leaderboard.</div>
-      <button
-        class="text-primary-500 hover:text-primary-600 font-medium"
-        disabled={isLoading}
-        on:click={() => refetch()}>Try again</button
-      >
-    </div>
-  {:else if isLoading}
-    <div class="pl-6 pr-0.5 w-full flex flex-col items-center">
-      {#each { length: 7 } as _, i (i)}
-        <div class="size-full flex h-[22px] py-1.5 gap-x-1">
-          <div
-            class="h-full w-10/12 flex-none bg-gray-100 animate-pulse rounded-full"
+  <table style:width="{tableWidth + gutterWidth}px">
+    <colgroup>
+      <col style:width="{gutterWidth}px" />
+      <col style:width="{firstColumnWidth}px" />
+      <col style:width="{columnWidth}px" />
+      {#if $isTimeComparisonActive}
+        <col style:width="{columnWidth}px" />
+        <col style:width="{columnWidth}px" />
+      {/if}
+    </colgroup>
+
+    <LeaderboardHeader
+      {hovered}
+      displayName={$getDimensionDisplayName(dimensionName)}
+      {dimensionDescription}
+      {dimensionName}
+      {isBeingCompared}
+      {isFetching}
+      sortType={$sortType}
+      {toggleSort}
+      {setPrimaryDimension}
+      isValidPercentOfTotal={$isValidPercentOfTotal}
+      sortedAscending={$sortedAscending}
+      isTimeComparisonActive={$isTimeComparisonActive}
+    />
+
+    <tbody>
+      {#if isFetching}
+        <LoadingRows columns={columnCount + 1} />
+      {:else}
+        {#each aboveTheFold as itemData (itemData.dimensionValue)}
+          <LeaderboardRow
+            {tableWidth}
+            {dimensionName}
+            uri={dimension?.uri}
+            {itemData}
+            isValidPercentOfTotal={$isValidPercentOfTotal}
+            isTimeComparisonActive={$isTimeComparisonActive}
+            {columnWidth}
+            {gutterWidth}
+            {firstColumnWidth}
           />
-          <div class="size-full bg-gray-100 animate-pulse rounded-full" />
-        </div>
-      {/each}
-    </div>
-  {:else if aboveTheFold || selectedBelowTheFold}
-    <div class="rounded-b border-gray-200 surface text-gray-800">
-      <!-- place the leaderboard entries that are above the fold here -->
-      {#each aboveTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
-      {/each}
-      <!-- place the selected values that are not above the fold here -->
-      {#if selectedBelowTheFold?.length}
-        <hr />
-        {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
-          <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
         {/each}
-        <hr />
       {/if}
-      {#if noAvailableValues}
-        <div style:padding-left="30px" class="p-1 ui-copy-disabled">
-          No available values
-        </div>
-      {/if}
-      {#if showExpandTable}
-        <Tooltip location="right">
-          <button
-            on:click={() => setPrimaryDimension(dimensionName)}
-            class="block flex-row w-full text-left transition-color ui-copy-muted"
-            style:padding-left="30px"
-          >
-            (Expand Table)
-          </button>
-          <TooltipContent slot="tooltip-content"
-            >Expand dimension to see more values</TooltipContent
-          >
-        </Tooltip>
-      {/if}
-    </div>
+
+      {#each selectedBelowTheFold as itemData, i (itemData.dimensionValue)}
+        <LeaderboardRow
+          {itemData}
+          {tableWidth}
+          {dimensionName}
+          uri={dimension?.uri}
+          isValidPercentOfTotal={$isValidPercentOfTotal}
+          isTimeComparisonActive={$isTimeComparisonActive}
+          borderTop={i === 0}
+          borderBottom={i === selectedBelowTheFold.length - 1}
+          {columnWidth}
+          {gutterWidth}
+          {firstColumnWidth}
+        />
+      {/each}
+    </tbody>
+  </table>
+
+  {#if showExpandTable}
+    <Tooltip location="right">
+      <button
+        class="transition-color ui-copy-muted table-message"
+        on:click={() => setPrimaryDimension(dimensionName)}
+      >
+        (Expand Table)
+      </button>
+      <TooltipContent slot="tooltip-content">
+        Expand dimension to see more values
+      </TooltipContent>
+    </Tooltip>
+  {:else if noAvailableValues}
+    <div class="table-message ui-copy-muted">(No available values)</div>
   {/if}
 </div>
+
+<style lang="postcss">
+  table {
+    @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
+    @apply font-normal cursor-pointer select-none;
+    @apply table-fixed;
+  }
+
+  tbody {
+    /* @apply bg-gray-50; */
+  }
+
+  .table-message {
+    @apply h-[22px] p-1 flex-row w-full text-left pl-7;
+  }
+</style>

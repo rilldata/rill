@@ -1,5 +1,4 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import {
   getFilteredMeasuresAndDimensions,
   getIndependentMeasures,
@@ -15,17 +14,17 @@ import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { Period } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewTimeSeriesResponse,
+  type V1MetricsViewAggregationResponse,
+  type V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewTimeSeriesResponse,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { Writable, derived, writable, type Readable } from "svelte/store";
+import { type Writable, derived, writable, type Readable } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
-  DimensionDataItem,
+  type DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
 
@@ -64,10 +63,10 @@ export function createMetricsViewTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
     ],
-    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
+    ([runtime, metricsViewName, dashboardStore, timeControls], set) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
-        metricViewName,
+        metricsViewName,
         {
           measureNames: measures,
           where: sanitiseExpression(
@@ -104,9 +103,9 @@ export function createTimeSeriesDataStore(
   ctx: StateManagers,
 ): TimeSeriesDataStore {
   return derived(
-    [useMetricsView(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
-    ([metricsView, timeControls, dashboardStore], set) => {
-      if (!timeControls.ready || timeControls.isFetching) {
+    [ctx.validSpecStore, useTimeControlStore(ctx), ctx.dashboardStore],
+    ([validSpec, timeControls, dashboardStore], set) => {
+      if (!validSpec.data || !timeControls.ready || timeControls.isFetching) {
         set({
           isFetching: true,
           isError: false,
@@ -115,13 +114,13 @@ export function createTimeSeriesDataStore(
         return;
       }
 
-      const showComparison = timeControls.showComparison;
+      const showComparison = timeControls.showTimeComparison;
       const interval =
         timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
 
-      const allMeasures =
-        metricsView.data?.measures?.map((measure) => measure.name as string) ||
-        [];
+      const { metricsView, explore } = validSpec.data;
+
+      const allMeasures = explore?.measures ?? [];
       let measures = allMeasures;
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
       if (expandedMeasuerName) {
@@ -133,24 +132,34 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
+
       const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
         dashboard: dashboardStore,
-      })(metricsView.data ?? {}, measures);
+      })(metricsView ?? {}, measures);
       const independentMeasures = getIndependentMeasures(
-        metricsView.data ?? {},
+        metricsView ?? {},
         measures,
       );
 
-      const primaryTimeSeries = createMetricsViewTimeSeries(
-        ctx,
-        filteredMeasures,
-        false,
-      );
-      const primaryTotals = createTotalsForMeasure(
-        ctx,
-        independentMeasures,
-        false,
-      );
+      const primaryTimeSeries =
+        measures.length > 0
+          ? createMetricsViewTimeSeries(ctx, filteredMeasures, false)
+          : writable({
+              isFetching: false,
+              isError: false,
+              data: null,
+              error: {},
+            });
+
+      const primaryTotals =
+        measures.length > 0
+          ? createTotalsForMeasure(ctx, independentMeasures, false)
+          : writable({
+              isFetching: false,
+              isError: false,
+              data: null,
+              error: {},
+            });
 
       let unfilteredTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
@@ -227,11 +236,15 @@ export function createTimeSeriesDataStore(
           const error = {};
           if (primary.error) {
             isError = true;
-            error["timeseries"] = primary.error.response.data.message;
+            error["timeseries"] = (
+              primary.error as HTTPError
+            ).response?.data?.message;
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = primaryTotal.error.response.data.message;
+            error["totals"] = (
+              primaryTotal.error as HTTPError
+            ).response?.data?.message;
           }
 
           return {

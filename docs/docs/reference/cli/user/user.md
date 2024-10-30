@@ -18,9 +18,9 @@ Manage users
 ### SEE ALSO
 
 * [rill](../cli.md)	 - Rill CLI
-* [rill user add](add.md)	 - Add
-* [rill user list](list.md)	 - List
-* [rill user remove](remove.md)	 - Remove
-* [rill user set-role](set-role.md)	 - Set Role
+* [rill user add](add.md)	 - Add user to a project, organization or group
+* [rill user list](list.md)	 - List users
+* [rill user remove](remove.md)	 - Remove a user
+* [rill user set-role](set-role.md)	 - Change a user's role
 * [rill user whitelist](whitelist/whitelist.md)	 - Whitelist access by email domain
 

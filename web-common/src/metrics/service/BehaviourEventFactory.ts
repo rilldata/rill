@@ -1,12 +1,13 @@
+import type { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
 import {
-  BehaviourEvent,
+  type BehaviourEvent,
   BehaviourEventAction,
   BehaviourEventMedium,
 } from "./BehaviourEventTypes";
 import { MetricsEventFactory } from "./MetricsEventFactory";
 import {
-  CommonFields,
-  CommonUserFields,
+  type CommonFields,
+  type CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "./MetricsTypes";
@@ -106,13 +107,14 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     return event;
   }
 
-  public deployIntent(
+  public deployEvent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,
+    action: BehaviourEventAction,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
-      BehaviourEventAction.DeployIntent,
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;
@@ -120,6 +122,30 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.medium = BehaviourEventMedium.Button;
     event.space = MetricsEventSpace.Workspace;
     event.screen_name = MetricsEventScreenName.Dashboard;
+    return event;
+  }
+
+  public githubIntent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    action: BehaviourEventAction,
+    githubFields?: GithubEventFields,
+  ): BehaviourEvent {
+    const event = this.getBaseMetricsEvent(
+      "behavioral",
+      BehaviourEventAction.DeployIntent,
+      commonFields,
+      commonUserFields,
+    ) as BehaviourEvent;
+    event.action = action;
+    event.medium = BehaviourEventMedium.Button;
+    event.space = MetricsEventSpace.Workspace;
+    event.screen_name = MetricsEventScreenName.Project;
+    if (githubFields) {
+      for (const key in githubFields) {
+        event[key] = githubFields[key];
+      }
+    }
     return event;
   }
 }

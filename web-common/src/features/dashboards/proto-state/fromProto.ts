@@ -1,7 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import {
+  type MeasureFilterEntry,
   mapExprToMeasureFilter,
-  MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -44,10 +44,12 @@ import {
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
+  PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
   StructTypeField,
+  V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,
   V1StructType,
@@ -80,6 +82,7 @@ const TDDChartTypeReverseMap: Record<string, TDDChart> = {
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   // backwards compatibility for older urls that had encoded state
@@ -87,6 +90,7 @@ export function getDashboardStateFromUrl(
   return getDashboardStateFromProto(
     base64ToProto(urlState),
     metricsView,
+    explore,
     schema,
   );
 }
@@ -94,6 +98,7 @@ export function getDashboardStateFromUrl(
 export function getDashboardStateFromProto(
   binary: Uint8Array,
   metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
@@ -169,15 +174,19 @@ export function getDashboardStateFromProto(
       chartType: chartTypeMap(dashboard.chartType),
       expandedMeasureName: dashboard.expandedMeasure,
     };
+  } else if (dashboard.activePage !== undefined) {
+    entity.tdd = {
+      pinIndex: -1,
+      chartType: TDDChart.DEFAULT,
+      expandedMeasureName: "",
+    };
   }
 
   entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
-    entity.visibleMeasureKeys = new Set(
-      metricsView.measures?.map((measure) => measure.name) ?? [],
-    ) as Set<string>;
+    entity.visibleMeasureKeys = new Set(explore.measures);
   } else if (dashboard.visibleMeasures?.length) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
@@ -185,9 +194,7 @@ export function getDashboardStateFromProto(
 
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
-    entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions?.map((measure) => measure.name) ?? [],
-    ) as Set<string>;
+    entity.visibleDimensionKeys = new Set(explore.dimensions);
   } else if (dashboard.visibleDimensions?.length) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
@@ -205,9 +212,7 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
-  if (dashboard.pivotIsActive !== undefined) {
-    entity.pivot = fromPivotProto(dashboard, metricsView);
-  }
+  entity.pivot = fromPivotProto(dashboard, metricsView);
 
   Object.assign(entity, fromActivePageProto(dashboard));
 
@@ -327,11 +332,14 @@ function fromPivotProto(
     metricsView.dimensions ?? [],
     (d) => d.name,
   );
-  const mapDimension: (name: string) => PivotChipData = (name: string) => ({
-    id: name,
-    title: dimensionsMap.get(name)?.label || "Unknown",
-    type: PivotChipType.Dimension,
-  });
+  const mapDimension: (name: string) => PivotChipData = (name: string) => {
+    const dim = dimensionsMap.get(name);
+    return {
+      id: name,
+      title: dim?.displayName || dim?.name || "Unknown",
+      type: PivotChipType.Dimension,
+    };
+  };
   const mapTimeDimension: (grain: TimeGrain) => PivotChipData = (
     grain: TimeGrain,
   ) => ({
@@ -339,29 +347,66 @@ function fromPivotProto(
     title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
     type: PivotChipType.Time,
   });
+  const mapAllDimension: (dimension: PivotElement) => PivotChipData = (
+    dimension: PivotElement,
+  ) => {
+    if (dimension?.element.case === "pivotTimeDimension") {
+      const grain = dimension?.element.value;
+      return {
+        id: FromProtoTimeGrainMap[grain],
+        title: TIME_GRAIN[FromProtoTimeGrainMap[grain]].label,
+        type: PivotChipType.Time,
+      };
+    } else {
+      return mapDimension(dimension?.element.value as string);
+    }
+  };
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
   );
-  const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
-    id: name,
-    title: measuresMap.get(name)?.label || "Unknown",
-    type: PivotChipType.Measure,
-  });
+  const mapMeasure: (name: string) => PivotChipData = (name: string) => {
+    const mes = measuresMap.get(name);
+    return {
+      id: name,
+      title: mes?.displayName || mes?.name || "Unknown",
+      type: PivotChipType.Measure,
+    };
+  };
+
+  let rowDimensions: PivotChipData[] = [];
+  let colDimensions: PivotChipData[] = [];
+  if (
+    dashboard.pivotRowAllDimensions?.length ||
+    dashboard.pivotColumnAllDimensions?.length
+  ) {
+    rowDimensions = dashboard.pivotRowAllDimensions.map(mapAllDimension);
+    colDimensions = dashboard.pivotColumnAllDimensions.map(mapAllDimension);
+  } else if (
+    // backwards compatibility for old URLs
+    dashboard.pivotRowDimensions?.length ||
+    dashboard.pivotRowTimeDimensions?.length ||
+    dashboard.pivotColumnDimensions?.length ||
+    dashboard.pivotColumnTimeDimensions?.length
+  ) {
+    rowDimensions = [
+      ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotRowDimensions.map(mapDimension),
+    ];
+    colDimensions = [
+      ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
+      ...dashboard.pivotColumnDimensions.map(mapDimension),
+    ];
+  }
 
   return {
     active: dashboard.pivotIsActive ?? false,
     rows: {
-      dimension: [
-        ...dashboard.pivotRowTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotRowDimensions.map(mapDimension),
-      ],
+      dimension: rowDimensions,
     },
     columns: {
-      dimension: [
-        ...dashboard.pivotColumnTimeDimensions.map(mapTimeDimension),
-        ...dashboard.pivotColumnDimensions.map(mapDimension),
-      ],
+      dimension: colDimensions,
       measure: dashboard.pivotColumnMeasures.map(mapMeasure),
     },
     expanded: dashboard.pivotExpanded,
@@ -369,9 +414,10 @@ function fromPivotProto(
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
+    activeCell: null,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
-        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+        dashboard.pivotRowJoinType || DashboardState_PivotRowJoinType.NEST
       ],
   };
 }

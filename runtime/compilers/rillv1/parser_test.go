@@ -23,7 +23,7 @@ func TestRillYAML(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:
@@ -32,7 +32,7 @@ connectors:
   defaults:
     region: us-east-1
 
-vars:
+env:
   foo: bar
 `,
 	})
@@ -40,7 +40,7 @@ vars:
 	res, err := ParseRillYAML(ctx, repo, "")
 	require.NoError(t, err)
 
-	require.Equal(t, res.Title, "Hello world")
+	require.Equal(t, res.DisplayName, "Hello world")
 	require.Equal(t, res.Description, "This project says hello to the world")
 
 	require.Len(t, res.Connectors, 1)
@@ -119,7 +119,7 @@ func TestComplete(t *testing.T) {
 		`rill.yaml`: ``,
 		// init.sql
 		`init.sql`: `
-{{ configure "version" 2 }}
+{{ configure "max_version" 2 }}
 INSTALL 'hello';
 `,
 		// source s1
@@ -145,7 +145,9 @@ SELECT * FROM m1
 materialize: true
 `,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 model: m2
 dimensions:
   - name: a
@@ -155,7 +157,15 @@ measures:
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
-available_time_ranges:
+`,
+		// explore e1
+		`explores/e1.yaml`: `
+type: explore
+display_name: E1
+metrics_view: d1
+measures:
+  - b
+time_ranges:
   - P2W
   - range: P4W
   - range: P2M
@@ -163,11 +173,13 @@ available_time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+defaults:
+  time_range: P4W
 `,
 		// migration c1
 		`custom/c1.yml`: `
 type: migration
-version: 3
+max_version: 3
 sql: |
   CREATE TABLE a(a integer);
 `,
@@ -256,10 +268,10 @@ schema: default
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
-				Table:     "m2",
+				Model:     "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 					{Name: "a", Column: "a"},
 				},
@@ -268,16 +280,31 @@ schema: default
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
-				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+			},
+		},
+		// explore e1
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
+			Paths: []string{"/explores/e1.yaml"},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "E1",
+				MetricsView:        "d1",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Measures:           []string{"b"},
+				TimeRanges: []*runtimev1.ExploreTimeRange{
 					{Range: "P2W"},
 					{Range: "P4W"},
 					{
 						Range: "P2M",
-						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
 							{Offset: "P1M"},
 							{Offset: "P4M", Range: "P2M"},
 						},
 					},
+				},
+				DefaultPreset: &runtimev1.ExplorePreset{
+					TimeRange: "P4W",
 				},
 			},
 		},
@@ -982,20 +1009,20 @@ SELECT * FROM t2
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func TestProjectDashboardDefaults(t *testing.T) {
+func TestProjectMetricsViewDefaults(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
-		// Provide dashboard defaults in rill.yaml
+		// Provide metrics view defaults in rill.yaml
 		`rill.yaml`: `
-dashboards:
+metrics_views:
   first_day_of_week: 7
-  available_time_zones:
-    - America/New_York
   security:
     access: true
 `,
-		// Dashboard that inherits defaults
-		`dashboards/d1.yaml`: `
+		// Metrics that inherits defaults
+		`mv1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1004,8 +1031,10 @@ measures:
   - name: b
     expression: count(*)
 `,
-		// Dashboard that overrides defaults
-		`dashboards/d2.yaml`: `
+		// Metrics that overrides defaults
+		`mv2.yaml`: `
+version: 1
+type: metrics_view
 table: t2
 dimensions:
   - name: a
@@ -1014,17 +1043,16 @@ measures:
   - name: b
     expression: count(*)
 first_day_of_week: 1
-available_time_zones: []
 security:
   row_filter: true
 `,
 	})
 
 	resources := []*Resource{
-		// dashboard d1
+		// metrics view mv1
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
+			Paths: []string{"/mv1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1034,8 +1062,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     7,
-				AvailableTimeZones: []string{"America/New_York"},
+				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",
@@ -1044,10 +1071,10 @@ security:
 				},
 			},
 		},
-		// dashboard d2
+		// metrics view mv2
 		{
-			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
-			Paths: []string{"/dashboards/d2.yaml"},
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
+			Paths: []string{"/mv2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t2",
@@ -1057,8 +1084,7 @@ security:
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
-				FirstDayOfWeek:     1,
-				AvailableTimeZones: []string{},
+				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "true",
@@ -1082,22 +1108,21 @@ func TestEnvironmentOverrides(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: `
-env:
-  test:
-    sources:
-      limit: 10000
+dev:
+  sources:
+    limit: 10000
 `,
 		// source s1
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
 sql: SELECT 10
-env:
-  test:
-    path: world
-    sql: SELECT 20 # Override a property from commonYAML
-    refresh:
-      cron: "0 0 * * *"
+dev:
+  path: world
+  sql: SELECT 20 # Override a property from commonYAML
+  refresh:
+    cron: "0 0 * * *"
+    run_in_dev: true
 `,
 	})
 
@@ -1128,8 +1153,8 @@ env:
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
 
-	// Parse in environment "test"
-	p, err = Parse(ctx, repo, "", "test", "duckdb")
+	// Parse in environment "dev"
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
@@ -1138,7 +1163,9 @@ func TestMetricsViewSecurity(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 dimensions:
   - name: a
@@ -1165,7 +1192,7 @@ security:
 	resources := []*Resource{
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "t1",
@@ -1219,7 +1246,7 @@ func TestReport(t *testing.T) {
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1249,7 +1276,7 @@ annotations:
 `,
 		`reports/r2.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1291,7 +1318,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
 			Paths: []string{"/reports/r1.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1315,7 +1342,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
 			Paths: []string{"/reports/r2.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1350,7 +1377,7 @@ func TestAlert(t *testing.T) {
 		`models/m1.sql`: `SELECT 1`,
 		`alerts/a1.yaml`: `
 type: alert
-title: My Alert
+display_name: My Alert
 
 refs:
   - model/m1
@@ -1402,7 +1429,7 @@ annotations:
 			Paths: []string{"/alerts/a1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			AlertSpec: &runtimev1.AlertSpec{
-				Title: "My Alert",
+				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
 					Cron:      "0 * * * *",
 					RefUpdate: false,
@@ -1410,8 +1437,11 @@ annotations:
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
 				IntervalsLimit:       10,
-				QueryName:            "MetricsViewToplist",
-				QueryArgsJson:        `{"metrics_view":"mv1"}`,
+				Resolver:             "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
@@ -1433,8 +1463,10 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
-model: d1
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
+table: d1
 dimensions:
   - name: a
     column: a
@@ -1448,7 +1480,7 @@ measures:
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector: "duckdb",
 				Table:     "d1",
@@ -1506,7 +1538,7 @@ colors:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
-func TestComponentsAndDashboard(t *testing.T) {
+func TestComponentsAndCanvas(t *testing.T) {
 	vegaLiteSpec := `
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -1547,8 +1579,8 @@ line_chart:
   x: time
   y: total_sales
 `,
-		`dashboards/d1.yaml`: `
-type: dashboard
+		`canvases/d1.yaml`: `
+type: canvas
 columns: 4
 gap: 3
 items:
@@ -1597,25 +1629,25 @@ items:
 		},
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/canvases/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
-				DefinedInDashboard: true,
+				DefinedInCanvas:    true,
 			},
 		},
 		{
-			Name:  ResourceName{Kind: ResourceKindDashboard, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
 			Refs: []ResourceName{
 				{Kind: ResourceKindComponent, Name: "c1"},
 				{Kind: ResourceKindComponent, Name: "c2"},
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
-			DashboardSpec: &runtimev1.DashboardSpec{
+			CanvasSpec: &runtimev1.CanvasSpec{
 				Columns: 4,
 				Gap:     3,
-				Items: []*runtimev1.DashboardItem{
+				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2"},
@@ -1765,7 +1797,9 @@ func TestAdvancedMeasures(t *testing.T) {
 		// rill.yaml
 		`rill.yaml`: ``,
 		// dashboard d1
-		`dashboards/d1.yaml`: `
+		`metrics/d1.yaml`: `
+version: 1
+type: metrics_view
 table: t1
 timeseries: t
 dimensions:
@@ -1799,7 +1833,7 @@ measures:
 		// dashboard d1
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Paths: []string{"/dashboards/d1.yaml"},
+			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         "t1",
@@ -1848,6 +1882,63 @@ measures:
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestRefreshInDev(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`m1.yaml`: `
+type: model
+sql: SELECT 1
+refresh:
+  cron: 0 0 * * *
+`,
+		// model m2
+		`m2.yaml`: `
+type: model
+sql: SELECT 1
+refresh:
+  cron: 0 0 * * *
+  run_in_dev: true
+`,
+	})
+
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/m1.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector: "duckdb",
+		},
+	}
+
+	m2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/m2.yaml"},
+		ModelSpec: &runtimev1.ModelSpec{
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+			OutputConnector: "duckdb",
+		},
+	}
+
+	// Parse for prod and check
+	p, err := Parse(ctx, repo, "", "prod", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+
+	// Clear the cron refresh only for m1
+	m1.ModelSpec.RefreshSchedule.Cron = ""
+
+	// Parse for dev and check
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {

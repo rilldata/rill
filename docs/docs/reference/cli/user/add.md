@@ -4,7 +4,7 @@ title: rill user add
 ---
 ## rill user add
 
-Add
+Add user to a project, organization or group
 
 ```
 rill user add [flags]
@@ -14,6 +14,7 @@ rill user add [flags]
 
 ```
       --email string     Email of the user
+      --group string     User group
       --org string       Organization
       --project string   Project
       --role string      Role of the user (options: admin, viewer)

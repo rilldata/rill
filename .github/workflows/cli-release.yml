@@ -51,6 +51,10 @@ jobs:
 
       - name: Build and embed static UI
         run: make cli.prepare
+        env:
+          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
+          RILL_UI_PUBLIC_INTAKE_USER: "data-modeler"
+          RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
 
       - name: Build Rill using Goreleaser
         run: |-
@@ -139,3 +143,15 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/nightly/*" --async
           fi
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

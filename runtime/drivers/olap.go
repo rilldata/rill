@@ -33,7 +33,6 @@ type OLAPStore interface {
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
-	EstimateSize() (int64, bool)
 
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
 	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
@@ -41,6 +40,8 @@ type OLAPStore interface {
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
+
+	MayBeScaledToZero(ctx context.Context) bool
 }
 
 // Statement wraps a query to execute against an OLAP driver.
@@ -134,7 +135,7 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
-	All(ctx context.Context) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
@@ -201,7 +202,7 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\"")) // nolint:gocritic // Because SQL escaping is different
 }
 
 func (d Dialect) EscapeStringValue(s string) string {
@@ -241,6 +242,11 @@ func (d Dialect) SupportsILike() bool {
 	return d != DialectDruid && d != DialectPinot
 }
 
+// RequiresCastForLike returns true if the dialect requires an expression used in a LIKE or ILIKE condition to explicitly be cast to type TEXT.
+func (d Dialect) RequiresCastForLike() bool {
+	return d == DialectClickHouse
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	var sb strings.Builder
@@ -260,6 +266,9 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {
 		return fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
+	}
+	if dim.Unnest && d == DialectClickHouse {
+		return fmt.Sprintf(`arrayJoin(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName), ""
 	}
 
 	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
@@ -290,11 +299,18 @@ func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.
 }
 
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
-	if d == DialectDruid || d == DialectPinot {
+	if d == DialectDruid || d == DialectPinot || d == DialectClickHouse {
 		return "", true, nil
 	}
 
 	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+}
+
+func (d Dialect) AutoUnnest(expr string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("arrayJoin(%s)", expr)
+	}
+	return expr
 }
 
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
@@ -304,8 +320,8 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	if dimension.Column != "" {
 		return d.EscapeIdentifier(dimension.Column)
 	}
-	// backwards compatibility for older projects that have not run reconcile on this dashboard
-	// in that case `column` will not be present
+	// Backwards compatibility for older projects that have not run reconcile on this metrics view.
+	// In that case `column` will not be present.
 	return d.EscapeIdentifier(dimension.Name)
 }
 
@@ -427,20 +443,33 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 
 		if tz == "" {
 			if shift == "" {
-				return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+				return fmt.Sprintf("date_trunc('%s', %s)::DateTime64", specifier, expr), nil
 			}
-			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s) - INTERVAL %s", specifier, expr, shift, shift), nil
+			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s)::DateTime64 - INTERVAL %s", specifier, expr, shift, shift), nil
 		}
 
-		// TODO: Should this use date_trunc(grain, expr, tz) instead?
 		if shift == "" {
-			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s'))::TIMESTAMP, '%s')", specifier, expr, tz, tz), nil
+			return fmt.Sprintf("date_trunc('%s', %s::DateTime64(6, '%s'))::DateTime64(6, '%s')", specifier, expr, tz, tz), nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s)::TIMESTAMP - INTERVAL %s, '%s')", specifier, expr, tz, shift, shift, tz), nil
+		return fmt.Sprintf("date_trunc('%s', %s::DateTime64(6, '%s') + INTERVAL %s)::DateTime64(6, '%s') - INTERVAL %s", specifier, expr, tz, shift, tz, shift), nil
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
 		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', '%s'), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", specifier, expr, tz), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, error) {
+	unit := d.ConvertToDateTruncSpecifier(grain)
+	switch d {
+	case DialectClickHouse:
+		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+	case DialectDruid:
+		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+	case DialectDuckDB:
+		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

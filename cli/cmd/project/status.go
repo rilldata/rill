@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -94,12 +93,12 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to list resources: %w", err)
 			}
 
-			var parser *runtimev1.ProjectParser
+			var parser *runtimev1.Resource
 			var table []*resourceTableRow
 
 			for _, r := range res.Resources {
 				if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
-					parser = r.GetProjectParser()
+					parser = r
 				}
 				if r.Meta.Hidden {
 					continue
@@ -111,14 +110,29 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("\nResources\n\n")
 			ch.PrintData(table)
 
-			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
+			if parser != nil {
+				state := parser.GetProjectParser().State
+
 				var table []*parseErrorTableRow
-				for _, e := range parser.State.ParseErrors {
-					table = append(table, newParseErrorTableRow(e))
+				if parser.Meta.ReconcileError != "" {
+					table = append(table, &parseErrorTableRow{
+						Path:  "<meta>",
+						Error: parser.Meta.ReconcileError,
+					})
+				}
+				if state != nil {
+					for _, e := range state.ParseErrors {
+						table = append(table, &parseErrorTableRow{
+							Path:  e.FilePath,
+							Error: e.Message,
+						})
+					}
 				}
 
-				ch.PrintfSuccess("\nParse errors\n\n")
-				ch.PrintData(table)
+				if len(table) > 0 {
+					ch.PrintfSuccess("\nParse errors\n\n")
+					ch.PrintData(table)
+				}
 			}
 
 			return nil
@@ -145,42 +159,14 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 	}
 
 	return &resourceTableRow{
-		Type:   formatResourceKind(r.Meta.Name.Kind),
+		Type:   runtime.PrettifyResourceKind(r.Meta.Name.Kind),
 		Name:   r.Meta.Name.Name,
-		Status: formatReconcileStatus(r.Meta.ReconcileStatus),
+		Status: runtime.PrettifyReconcileStatus(r.Meta.ReconcileStatus),
 		Error:  truncErr,
-	}
-}
-
-func formatResourceKind(k string) string {
-	k = strings.TrimPrefix(k, "rill.runtime.v1.")
-	k = strings.TrimSuffix(k, "V2")
-	return k
-}
-
-func formatReconcileStatus(s runtimev1.ReconcileStatus) string {
-	switch s {
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_UNSPECIFIED:
-		return "Unknown"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-		return "Idle"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
-		return "Pending"
-	case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
-		return "Running"
-	default:
-		panic(fmt.Errorf("unknown reconcile status: %s", s.String()))
 	}
 }
 
 type parseErrorTableRow struct {
 	Path  string `header:"path"`
 	Error string `header:"error"`
-}
-
-func newParseErrorTableRow(e *runtimev1.ParseError) *parseErrorTableRow {
-	return &parseErrorTableRow{
-		Path:  e.FilePath,
-		Error: e.Message,
-	}
 }

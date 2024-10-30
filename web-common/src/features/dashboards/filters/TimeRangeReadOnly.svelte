@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
-  import { timeChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
@@ -12,7 +11,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
 </script>
 
-<Chip {...timeChipColors} outline readOnly>
+<Chip type="time" readOnly>
   <svelte:fragment slot="body">
     <div class="font-bold text-xs text-slate-800 px-2">
       {#if timeRange.isoDuration && timeRange.isoDuration !== TimeRangePreset.CUSTOM}
@@ -36,10 +35,10 @@
 </Chip>
 
 {#if comparisonTimeRange}
-  <Chip {...timeChipColors} outline readOnly>
+  <Chip type="time" readOnly>
     <svelte:fragment slot="body">
-      <div class="font-bold text-xs text-slate-800 px-2">
-        Comparing with {getComparisonLabel(comparisonTimeRange)}
+      <div class=" text-xs text-slate-800 px-2">
+        vs <b>{getComparisonLabel(comparisonTimeRange)}</b>
       </div>
     </svelte:fragment>
   </Chip>

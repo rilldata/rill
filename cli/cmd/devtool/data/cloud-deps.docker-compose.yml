@@ -28,6 +28,14 @@ services:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9412:9090"
+  riverui:
+    container_name: riverui
+    image: ghcr.io/riverqueue/riverui:latest
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
+    ports:
+      - 7070:8080
   otel-collector:
     image: otel/opentelemetry-collector:latest
     restart: always
@@ -42,3 +50,8 @@ services:
       - "55679:55679" # zpages extension
     depends_on:
       - zipkin
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
+    volumes:
+      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml

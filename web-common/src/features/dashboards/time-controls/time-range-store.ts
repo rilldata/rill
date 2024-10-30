@@ -5,13 +5,11 @@ import {
   getTimeComparisonParametersForComponent,
 } from "@rilldata/web-common/lib/time/comparisons";
 import {
-  PREVIOUS_COMPLETE_DATE_RANGES,
-  type TimeRangeMetaSet,
-} from "@rilldata/web-common/lib/time/config";
-import {
   DEFAULT_TIME_RANGES,
   LATEST_WINDOW_TIME_RANGES,
   PERIOD_TO_DATE_RANGES,
+  PREVIOUS_COMPLETE_DATE_RANGES,
+  type TimeRangeMetaSet,
 } from "@rilldata/web-common/lib/time/config";
 import { getChildTimeRanges } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToTimeRangeMeta } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -21,13 +19,13 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
-  TimeRange,
+  type TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  RpcStatus,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -41,14 +39,16 @@ export type TimeRangeControlsState = {
 
 export function timeRangeSelectionsSelector([
   metricsView,
+  explore,
   timeRangeResponse,
   explorer,
 ]: [
-  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  V1MetricsViewSpec | undefined,
+  V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]): TimeRangeControlsState {
-  if (!metricsView.data || !timeRangeResponse?.data?.timeRangeSummary)
+  if (!metricsView || !explore || !timeRangeResponse?.data?.timeRangeSummary)
     return {
       latestWindowTimeRanges: [],
       periodToDateRanges: [],
@@ -62,7 +62,7 @@ export function timeRangeSelectionsSelector([
     end: new Date(timeRangeResponse.data.timeRangeSummary.max ?? 0),
   };
   const minTimeGrain =
-    (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
+    (metricsView.smallestTimeGrain as V1TimeGrain) ||
     V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   let latestWindowTimeRanges: TimeRangeMetaSet = {};
@@ -70,13 +70,14 @@ export function timeRangeSelectionsSelector([
   let previousCompleteDateRanges: TimeRangeMetaSet = {};
   let hasDefaultInRanges = false;
 
-  if (metricsView.data.availableTimeRanges?.length) {
-    for (const availableTimeRange of metricsView.data.availableTimeRanges) {
+  const defaultTimeRange = explore?.defaultPreset?.timeRange;
+  if (explore.timeRanges?.length) {
+    for (const availableTimeRange of explore.timeRanges) {
       if (!availableTimeRange.range) continue;
 
       // default time range is part of availableTimeRanges.
       // this is used to not show a separate selection for the default
-      if (metricsView.data.defaultTimeRange === availableTimeRange.range) {
+      if (defaultTimeRange === availableTimeRange.range) {
         hasDefaultInRanges = true;
       }
       if (availableTimeRange.range in LATEST_WINDOW_TIME_RANGES) {
@@ -92,7 +93,7 @@ export function timeRangeSelectionsSelector([
         latestWindowTimeRanges[availableTimeRange.range] =
           isoDurationToTimeRangeMeta(
             availableTimeRange.range,
-            availableTimeRange.comparisonOffsets?.[0]
+            availableTimeRange.comparisonTimeRanges?.[0]
               ?.offset as TimeComparisonOption,
           );
       }
@@ -102,10 +103,10 @@ export function timeRangeSelectionsSelector([
     periodToDateRanges = PERIOD_TO_DATE_RANGES;
     previousCompleteDateRanges = PREVIOUS_COMPLETE_DATE_RANGES;
     hasDefaultInRanges =
-      !!metricsView.data.defaultTimeRange &&
-      (metricsView.data.defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
-        metricsView.data.defaultTimeRange in PERIOD_TO_DATE_RANGES ||
-        metricsView.data.defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
+      !!defaultTimeRange &&
+      (defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
+        defaultTimeRange in PERIOD_TO_DATE_RANGES ||
+        defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
   }
 
   return {
@@ -130,17 +131,19 @@ export function timeRangeSelectionsSelector([
       minTimeGrain,
       explorer.selectedTimezone,
     ),
-    showDefaultItem: !!metricsView.data.defaultTimeRange && !hasDefaultInRanges,
+    showDefaultItem: !!defaultTimeRange && !hasDefaultInRanges,
   };
 }
 
 export function timeComparisonOptionsSelector([
   metricsView,
+  explore,
   timeRangeResponse,
   explorer,
   selectedTimeRange,
 ]: [
-  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  V1MetricsViewSpec | undefined,
+  V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
   DashboardTimeControls | undefined,
@@ -151,32 +154,38 @@ export function timeComparisonOptionsSelector([
   end: Date;
 }> {
   if (
-    !metricsView.data ||
+    !metricsView ||
+    !explore ||
     !timeRangeResponse?.data?.timeRangeSummary ||
     !explorer.selectedTimeRange ||
-    !selectedTimeRange
-  )
+    !selectedTimeRange ||
+    !timeRangeResponse.data.timeRangeSummary.min ||
+    !timeRangeResponse.data.timeRangeSummary.max
+  ) {
     return [];
+  }
 
   const allTimeRange = {
     name: TimeRangePreset.ALL_TIME,
-    start: new Date(timeRangeResponse.data.timeRangeSummary.min ?? 0),
-    end: new Date(timeRangeResponse.data.timeRangeSummary.max ?? 0),
+    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
+    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
   };
 
   let allOptions = [...Object.values(TimeComparisonOption)];
-  if (metricsView.data.availableTimeRanges?.length) {
-    const timeRange = metricsView.data.availableTimeRanges.find(
+
+  if (explore.timeRanges?.length) {
+    const timeRange = explore.timeRanges.find(
       (tr) => tr.range === explorer.selectedTimeRange?.name,
     );
-    if (timeRange?.comparisonOffsets?.length) {
+    if (timeRange?.comparisonTimeRanges?.length) {
       allOptions =
-        timeRange.comparisonOffsets?.map(
+        timeRange.comparisonTimeRanges?.map(
           (co) => co.offset as TimeComparisonOption,
         ) ?? [];
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
   } else if (
+    explorer.selectedTimeRange?.name &&
     explorer.selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
   ) {
     // Previous complete ranges should only have previous period.
@@ -190,7 +199,6 @@ export function timeComparisonOptionsSelector([
     selectedTimeRange.start,
     selectedTimeRange.end,
     allOptions,
-    [explorer.selectedComparisonTimeRange?.name as TimeComparisonOption],
   );
 
   return timeComparisonOptions.map((co, i) => {
@@ -209,30 +217,31 @@ export function timeComparisonOptionsSelector([
 }
 
 export function getValidComparisonOption(
-  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
 ) {
-  if (!metricsView.availableTimeRanges?.length) {
+  if (!explore.timeRanges?.length) {
     return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
   }
 
-  const timeRange = metricsView.availableTimeRanges.find(
+  const timeRange = explore.timeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
   );
   if (!timeRange) return undefined;
 
   // If comparisonOffsets are not defined get default from presets.
-  if (!timeRange.comparisonOffsets?.length) {
+  if (!timeRange.comparisonTimeRanges?.length) {
     return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
       ?.defaultComparison as TimeComparisonOption;
   }
 
-  const existing = timeRange.comparisonOffsets?.find(
+  const existing = timeRange.comparisonTimeRanges?.find(
     (co) => co.offset === prevComparisonOption,
   );
+
   const existingComparison = getTimeComparisonParametersForComponent(
     prevComparisonOption,
     allTimeRange.start,
@@ -245,5 +254,5 @@ export function getValidComparisonOption(
     return prevComparisonOption;
   }
 
-  return timeRange.comparisonOffsets[0].offset as TimeComparisonOption;
+  return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
 }

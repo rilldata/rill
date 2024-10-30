@@ -153,6 +153,12 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	// Track the input connector
 	a.trackConnector(spec.InputConnector, r, anonAccess)
 
+	if spec.StageConnector != "" {
+		// Track the staging connector
+		// We need write access to the stage connector so tracking without analysis
+		a.trackConnector(spec.StageConnector, r, false)
+	}
+
 	// Track any tertiary connectors (like a DuckDB source referencing S3 in its SQL).
 	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
 	// TODO: Can we solve that issue?
@@ -160,12 +166,17 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	for _, connector := range otherConnectors {
 		a.trackConnector(connector, r, false)
 	}
+
+	// Track the incremental state connector
+	if spec.IncrementalStateResolver != "" && spec.IncrementalStateResolverProperties != nil {
+		a.analyzeResourceWithResolver(r, spec.IncrementalStateResolver, spec.IncrementalStateResolverProperties)
+	}
 }
 
 // analyzeResourceWithResolver extracts connector metadata for a resource that uses a resolver.
 func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver string, resolverProps *structpb.Struct) {
-	// The "sql" resolver takes an optional "connector" property
-	if resolver == "sql" {
+	// The "sql" and "glob" resolvers take an optional "connector" property
+	if resolver == "sql" || resolver == "glob" {
 		for k, v := range resolverProps.Fields {
 			if k == "connector" {
 				connector := v.GetStringValue()
@@ -181,22 +192,23 @@ func (a *connectorAnalyzer) analyzeResourceWithResolver(r *Resource, resolver st
 // analyzeResourceNotifiers extracts connector metadata for a resource that uses notifiers (email, slack, etc).
 func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*runtimev1.Notifier) {
 	for _, n := range notifiers {
+		if n.Connector == "email" {
+			// NOTE: email is not implemented as a real driver yet, so we skip it.
+			continue
+		}
+
+		// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
 		anonAccess := false
-		var decodeErr error
 		if n.Connector == "slack" {
-			// Slack notifier can be used anonymously if no users and no channels are specified (only webhooks)
 			props, err := slack.DecodeProps(n.Properties.AsMap())
-			decodeErr = err
-			if decodeErr == nil {
+			if err == nil {
 				if len(props.Users) == 0 && len(props.Channels) == 0 {
 					anonAccess = true
 				}
 			}
 		}
+
 		a.trackConnector(n.Connector, r, anonAccess)
-		if decodeErr != nil {
-			a.result[n.Connector].Err = decodeErr
-		}
 	}
 }
 
@@ -237,7 +249,6 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 				Spec:            &driverSpec,
 				DefaultConfig:   defaultConfig,
 				AnonymousAccess: true,
-				Err:             driverErr,
 			}
 		}
 

@@ -73,6 +73,8 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	}
 
 	// The table may have been created by a model. Search for a model with the same name in the same connector.
+	// NOTE: If it's a source, we will also mark it as a model. The metrics view YAML supports that, and we'll anyway deprecate sources soon.
+	var isModel bool
 	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -82,10 +84,22 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 		return nil, err
 	}
 	if model != nil {
+		// Check model is for this table.
 		modelState := model.GetModel().State
-		if modelState.ResultConnector != req.Connector || modelState.ResultTable != tbl.Name {
-			// The model is not for this table. Ignore it.
-			model = nil
+		if modelState.ResultConnector == req.Connector && strings.EqualFold(modelState.ResultTable, tbl.Name) {
+			isModel = true
+		}
+	} else {
+		// Check if it's a source
+		source, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: tbl.Name}, false)
+		if err != nil && !errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, err
+		}
+		if source != nil {
+			sourceState := source.GetSource().State
+			if sourceState.Connector == req.Connector && strings.EqualFold(sourceState.Table, tbl.Name) {
+				isModel = true
+			}
 		}
 	}
 
@@ -95,7 +109,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	if req.UseAi {
 		// Generate
 		start := time.Now()
-		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, model != nil)
+		res, err := s.generateMetricsViewYAMLWithAI(ctx, req.InstanceId, olap.Dialect().String(), req.Connector, tbl, isDefaultConnector, isModel)
 		if err != nil {
 			s.logger.Warn("failed to generate metrics view YAML using AI", zap.Error(err))
 		} else {
@@ -123,7 +137,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 
 	// If we didn't manage to generate the YAML using AI, we fall back to the simple generator
 	if data == "" {
-		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, model != nil, tbl.Schema)
+		data, err = generateMetricsViewYAMLSimple(req.Connector, tbl, isDefaultConnector, isModel)
 		if err != nil {
 			return nil, err
 		}
@@ -188,22 +202,33 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
+	doc.Version = 1
 	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
+	for _, measure := range doc.Measures {
+		// Apply the default format preset to measures (the AI doesn't set the format preset).
+		measure.FormatPreset = "humanize"
+	}
 	if isModel {
 		doc.Model = tbl.Name
 	} else {
 		if !isDefaultConnector {
 			doc.Connector = connector
 		}
-		doc.Table = tbl.Name
+		doc.Model = tbl.Name // Note: We also reference externally managed tables with `model:`. This is supported in the metrics view YAML.
 		if tbl.Database != "" && !tbl.IsDefaultDatabase {
 			doc.Database = tbl.Database
 		}
 		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
 			doc.DatabaseSchema = tbl.DatabaseSchema
 		}
+	}
+
+	// Create a map of column names, which are used to ensure the generated measure names do not collide with column names.
+	columns := make(map[string]struct{})
+	for _, f := range tbl.Schema.Fields {
+		columns[f.Name] = struct{}{}
 	}
 
 	// Validate the generated measures (not validating other parts since those are not AI-generated)
@@ -214,9 +239,14 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		Table:          tbl.Name,
 	}
 	for _, measure := range doc.Measures {
+		// Prevent measure name collisions with column names
+		if _, ok := columns[measure.Name]; !ok {
+			measure.Name += "_measure"
+		}
+
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:         measure.Name,
-			Label:        measure.Label,
+			DisplayName:  measure.DisplayName,
 			Expression:   measure.Expression,
 			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			FormatPreset: measure.FormatPreset,
@@ -266,15 +296,13 @@ func metricsViewYAMLSystemPrompt() string {
 	// We use the metricsViewYAML to generate a template of the YAML to guide the AI
 	// NOTE: The YAML fields have omitempty, so the AI will only know about (and populate) the fields below. We will populate the rest manually after inference.
 	template := metricsViewYAML{
-		Title: "<human-friendly title based on the table name and column names>",
+		DisplayName: "<human-friendly display name based on the table name and column names>",
 		Measures: []*metricsViewMeasureYAML{
 			{
-				Name:                "<unique name for the metric in snake case, such as average_sales>",
-				Label:               "<short descriptive label for the metric>",
-				Expression:          "<SQL expression to calculate the KPI in the requested SQL dialect>",
-				Description:         "<short description of the metric>",
-				FormatPreset:        "<should always be 'humanize'>",
-				ValidPercentOfTotal: "<true if the metric is summable otherwise false>",
+				Name:        "<unique name for the metric in snake case, such as average_sales>",
+				DisplayName: "<short descriptive display name for the metric>",
+				Expression:  "<SQL expression to calculate the KPI in the requested SQL dialect>",
+				Description: "<short description of the metric>",
 			},
 		},
 	}
@@ -307,13 +335,14 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 }
 
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
-func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
+func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool) (string, error) {
 	doc := &metricsViewYAML{
+		Version:       1,
 		Type:          "metrics_view",
-		Title:         identifierToTitle(tbl.Name),
-		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
-		Dimensions:    generateMetricsViewYAMLSimpleDimensions(schema),
-		Measures:      generateMetricsViewYAMLSimpleMeasures(schema),
+		DisplayName:   identifierToDisplayName(tbl.Name),
+		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
+		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
+		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
 	}
 
 	if isModel {
@@ -328,7 +357,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefau
 		if tbl.DatabaseSchema != "" && !tbl.IsDefaultDatabaseSchema {
 			doc.DatabaseSchema = tbl.DatabaseSchema
 		}
-		doc.Table = tbl.Name
+		doc.Model = tbl.Name // Note: We also reference externally managed tables with `model:`. This is supported in the metrics view YAML.
 	}
 
 	return marshalMetricsViewYAML(doc, false)
@@ -350,122 +379,114 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
 			dims = append(dims, &metricsViewDimensionYAML{
-				Label:       identifierToTitle(f.Name),
+				DisplayName: identifierToDisplayName(f.Name),
 				Column:      f.Name,
-				Description: "",
 			})
 		}
 	}
 	return dims
 }
 
-func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metricsViewMeasureYAML {
+func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMeasureYAML {
+	// Add a count measure
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
-		Name:                "total_records",
-		Label:               "Total records",
-		Expression:          "COUNT(*)",
-		Description:         "",
-		FormatPreset:        "humanize",
-		ValidPercentOfTotal: true,
+		Name:         "total_records",
+		DisplayName:  "Total records",
+		Expression:   "COUNT(*)",
+		Description:  "",
+		FormatPreset: "humanize",
 	})
-	for _, f := range schema.Fields {
+
+	// Add sum measures for float columns
+	for _, f := range tbl.Schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
-				Name:                f.Name,
-				Label:               fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
-				Expression:          fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
-				Description:         "",
-				FormatPreset:        "humanize",
-				ValidPercentOfTotal: true,
+				Name:         fmt.Sprintf("%s_sum", f.Name),
+				DisplayName:  fmt.Sprintf("Sum of %s", identifierToDisplayName(f.Name)),
+				Expression:   fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
+				Description:  "",
+				FormatPreset: "humanize",
 			})
 		}
 	}
+
+	// Create a map of column names, which are used to ensure the generated measure names do not collide with column names.
+	columns := make(map[string]struct{})
+	for _, f := range tbl.Schema.Fields {
+		columns[f.Name] = struct{}{}
+	}
+
+	// If a measure name collides with a table column name, append `_measure` until it's unique
+	for _, m := range measures {
+		for i := 0; i < 10; i++ {
+			if _, ok := columns[m.Name]; !ok {
+				break
+			}
+			m.Name += "_measure"
+		}
+	}
+
 	return measures
 }
 
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
-	Type                string                      `yaml:"type,omitempty"`
-	Title               string                      `yaml:"title,omitempty"`
-	Connector           string                      `yaml:"connector,omitempty"`
-	Database            string                      `yaml:"database,omitempty"`
-	DatabaseSchema      string                      `yaml:"database_schema,omitempty"`
-	Table               string                      `yaml:"table,omitempty"`
-	Model               string                      `yaml:"model,omitempty"`
-	TimeDimension       string                      `yaml:"timeseries,omitempty"`
-	Dimensions          []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
-	Measures            []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
-	AvailableTimeZones  []string                    `yaml:"available_time_zones,omitempty"`
-	AvailableTimeRanges []string                    `yaml:"available_time_ranges,omitempty"`
+	Version        int                         `yaml:"version,omitempty"`
+	Type           string                      `yaml:"type,omitempty"`
+	DisplayName    string                      `yaml:"display_name,omitempty"`
+	Connector      string                      `yaml:"connector,omitempty"`
+	Database       string                      `yaml:"database,omitempty"`
+	DatabaseSchema string                      `yaml:"database_schema,omitempty"`
+	Model          string                      `yaml:"model,omitempty"`
+	TimeDimension  string                      `yaml:"timeseries,omitempty"`
+	Dimensions     []*metricsViewDimensionYAML `yaml:"dimensions,omitempty"`
+	Measures       []*metricsViewMeasureYAML   `yaml:"measures,omitempty"`
 }
 
 type metricsViewDimensionYAML struct {
-	Label       string
-	Column      string
-	Description string
+	DisplayName string `yaml:"display_name"`
+	Column      string `yaml:"column"`
 }
 
 type metricsViewMeasureYAML struct {
-	Name                string
-	Label               string
-	Expression          string
-	Description         string
-	FormatPreset        string `yaml:"format_preset"`
-	ValidPercentOfTotal any    `yaml:"valid_percent_of_total"`
+	Name         string `yaml:"name"`
+	DisplayName  string `yaml:"display_name"`
+	Expression   string `yaml:"expression"`
+	Description  string `yaml:"description"`
+	FormatPreset string `yaml:"format_preset,omitempty"`
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {
-	doc.AvailableTimeZones = []string{
-		"America/Los_Angeles",
-		"America/Chicago",
-		"America/New_York",
-		"Europe/London",
-		"Europe/Paris",
-		"Asia/Jerusalem",
-		"Europe/Moscow",
-		"Asia/Kolkata",
-		"Asia/Shanghai",
-		"Asia/Tokyo",
-		"Australia/Sydney",
-	}
-
-	doc.AvailableTimeRanges = []string{
-		"PT6H",
-		"PT24H",
-		"P7D",
-		"P14D",
-		"P4W",
-		"P3M",
-		"P12M",
-		"rill-TD",
-		"rill-WTD",
-		"rill-MTD",
-		"rill-QTD",
-		"rill-YTD",
-		"rill-PDC",
-		"rill-PWC",
-		"rill-PMC",
-		"rill-PQC",
-		"rill-PYC",
-	}
-
 	buf := new(bytes.Buffer)
 
-	buf.WriteString("# Dashboard YAML\n")
+	buf.WriteString("# Metrics view YAML\n")
 	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
 	}
 	buf.WriteString("\n")
 
-	enc := yaml.NewEncoder(buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(doc); err != nil {
+	yamlBytes, err := yaml.Marshal(doc)
+	if err != nil {
 		return "", err
 	}
+
+	var rootNode yaml.Node
+	if err := yaml.Unmarshal(yamlBytes, &rootNode); err != nil {
+		return "", err
+	}
+
+	insertEmptyLinesInYaml(&rootNode)
+
+	enc := yaml.NewEncoder(buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&rootNode); err != nil {
+		return "", err
+	}
+
 	if err := enc.Close(); err != nil {
 		return "", err
 	}
@@ -473,7 +494,29 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 	return buf.String(), nil
 }
 
-func identifierToTitle(s string) string {
+func insertEmptyLinesInYaml(node *yaml.Node) {
+	for i := 0; i < len(node.Content); i++ {
+		if node.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(node.Content[i].Content); j += 2 {
+				keyNode := node.Content[i].Content[j]
+				valueNode := node.Content[i].Content[j+1]
+
+				if keyNode.Value == "display_name" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+					keyNode.HeadComment = "\n"
+				}
+				insertEmptyLinesInYaml(valueNode)
+			}
+		} else if node.Content[i].Kind == yaml.SequenceNode {
+			for j := 0; j < len(node.Content[i].Content); j++ {
+				if node.Content[i].Content[j].Kind == yaml.MappingNode {
+					node.Content[i].Content[j].HeadComment = "\n"
+				}
+			}
+		}
+	}
+}
+
+func identifierToDisplayName(s string) string {
 	return cases.Title(language.English).String(strings.ReplaceAll(s, "_", " "))
 }
 
@@ -489,5 +532,5 @@ func safeSQLName(name string) string {
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return drivers.DialectDuckDB.EscapeIdentifier(name)
 }

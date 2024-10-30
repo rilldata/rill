@@ -6,21 +6,11 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"io"
-	"math"
-	"time"
 
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
-)
-
-const (
-	_sqlStoreIteratorBatchSize = 32
-	_batchSize                 = 10000
 )
 
 type sqlStoreToDuckDB struct {
@@ -49,73 +39,18 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 
 	rowIter, err := s.from.Query(ctx, srcProps)
 	if err != nil {
-		if !errors.Is(err, drivers.ErrNotImplemented) {
-			return err
-		}
-	} else { // no error consume rowIterator
-		defer func() {
-			err := rowIter.Close()
-			if err != nil {
-				s.logger.Error("error in closing row iterator", zap.Error(err))
-			}
-		}()
-		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
-	}
-	limitInBytes, _ := s.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
-	if limitInBytes == 0 {
-		limitInBytes = math.MaxInt64
-	}
-	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: limitInBytes}, opts.Progress)
-	if err != nil {
 		return err
 	}
-	defer iter.Close()
-
-	start := time.Now()
-	s.logger.Debug("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.Table), observability.ZapCtx(ctx))
 	defer func() {
-		s.logger.Debug("transfer finished",
-			zap.Duration("duration", time.Since(start)),
-			zap.Bool("success", transferErr == nil),
-			observability.ZapCtx(ctx))
+		err := rowIter.Close()
+		if err != nil && !errors.Is(err, ctx.Err()) {
+			s.logger.Error("error in closing row iterator", zap.Error(err))
+		}
 	}()
-	create := true
-	// TODO :: iteration over fileiterator is similar(apart from no schema changes possible here)
-	// to consuming fileIterator in objectStore_to_duckDB
-	// both can be refactored to follow same path
-	for {
-		files, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return err
-		}
-
-		format := fileutil.FullExt(files[0])
-		if iter.Format() != "" {
-			format += "." + iter.Format()
-		}
-
-		from, err := sourceReader(files, format, make(map[string]any))
-		if err != nil {
-			return err
-		}
-
-		if create {
-			err = s.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
-			create = false
-		} else {
-			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), false, true, drivers.IncrementalStrategyAppend, nil)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table)
 }
 
-func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter drivers.RowIterator, table string, p drivers.Progress) error {
+func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter drivers.RowIterator, table string) error {
 	schema, err := iter.Schema(ctx)
 	if err != nil {
 		if errors.Is(err, drivers.ErrIteratorDone) {
@@ -126,14 +61,13 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 
 	if total, ok := iter.Size(drivers.ProgressUnitRecord); ok {
 		s.logger.Debug("records to be ingested", zap.Uint64("rows", total))
-		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
 	// we first ingest data in a temporary table in the main db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
 	// whether table goes in main db or in separate table specific db
 	tmpTable := fmt.Sprintf("__%s_tmp_sqlstore", table)
 	// generate create table query
-	qry, err := CreateTableQuery(schema, tmpTable)
+	qry, err := createTableQuery(schema, tmpTable)
 	if err != nil {
 		return err
 	}
@@ -175,8 +109,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 				case <-ctx.Done():
 					return ctx.Err()
 				default:
-					if num == _batchSize {
-						p.Observe(_batchSize, drivers.ProgressUnitRecord)
+					if num == 10000 {
 						num = 0
 						if err := a.Flush(); err != nil {
 							return err
@@ -186,7 +119,6 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 					row, err := iter.Next(ctx)
 					if err != nil {
 						if errors.Is(err, drivers.ErrIteratorDone) {
-							p.Observe(int64(num), drivers.ProgressUnitRecord)
 							return nil
 						}
 						return err
@@ -210,7 +142,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 }
 
-func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
 		i++
@@ -229,6 +161,9 @@ func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error)
 
 func convert(row []driver.Value, schema *runtimev1.StructType) error {
 	for i, v := range row {
+		if v == nil {
+			continue
+		}
 		if schema.Fields[i].Type.Code == runtimev1.Type_CODE_UUID {
 			val, ok := v.([16]byte)
 			if !ok {

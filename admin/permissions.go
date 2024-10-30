@@ -19,6 +19,30 @@ func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, use
 		composite = unionOrgRoles(composite, role)
 	}
 
+	// If the org has a public project, all users get read access to it.
+	if !composite.ReadOrg {
+		ok, err := s.DB.CheckOrganizationHasPublicProjects(ctx, orgID)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			composite.ReadOrg = true
+			composite.ReadProjects = true
+		}
+	}
+
+	// If the user is an outside member of one of the org's projects, they get read access to org as well.
+	if !composite.ReadOrg {
+		ok, err := s.DB.CheckOrganizationHasOutsideUser(ctx, orgID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			composite.ReadOrg = true
+			composite.ReadProjects = true
+		}
+	}
+
 	return composite, nil
 }
 

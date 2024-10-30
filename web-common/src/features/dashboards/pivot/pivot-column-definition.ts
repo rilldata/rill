@@ -20,7 +20,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  MeasureType,
+  type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
@@ -166,7 +166,7 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
   const { measureNames } = config;
   return measureNames.map((m) => {
     let measureName = m;
-    let label;
+    let label: string | undefined;
     let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
       label = "Δ";
@@ -186,7 +186,7 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
     }
 
     return {
-      label: label || measure?.label || measureName,
+      label: label || measure?.displayName || measureName,
       formatter: createMeasureValueFormatter<null | undefined>(measure),
       name: m,
       type,
@@ -202,7 +202,7 @@ function getDimensionColumnProps(
     let label =
       config.allDimensions.find(
         (dimension) => dimension.name === d || dimension.column === d,
-      )?.label || d;
+      )?.displayName || d;
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
@@ -257,29 +257,31 @@ export function getColumnDefForPivot(
       };
     });
 
-  const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
-    return {
-      accessorKey: m.name,
-      header: m.label || m.name,
-      cell: (info) => {
-        const measureValue = info.getValue() as number | null | undefined;
-        if (m.type === "comparison_percent") {
-          return cellComponent(PercentageChange, {
-            isNull: measureValue == null,
-            value:
-              measureValue !== null && measureValue !== undefined
-                ? formatMeasurePercentageDifference(measureValue)
-                : null,
-            inTable: true,
-          });
-        }
-        const value = m.formatter(measureValue);
+  const leafColumns: (ColumnDef<PivotDataRow> & { name: string })[] =
+    measures.map((m) => {
+      return {
+        accessorKey: m.name,
+        header: m.label || m.name,
+        name: m.name,
+        cell: (info) => {
+          const measureValue = info.getValue() as number | null | undefined;
+          if (m.type === "comparison_percent") {
+            return cellComponent(PercentageChange, {
+              isNull: measureValue == null,
+              value:
+                measureValue !== null && measureValue !== undefined
+                  ? formatMeasurePercentageDifference(measureValue)
+                  : null,
+              inTable: true,
+            });
+          }
+          const value = m.formatter(measureValue);
 
-        if (value == null) return cellComponent(PivotMeasureCell, {});
-        return value;
-      },
-    };
-  });
+          if (value == null) return cellComponent(PivotMeasureCell, {});
+          return value;
+        },
+      };
+    });
 
   const groupedColDef = createColumnDefinitionForDimensions(
     config,

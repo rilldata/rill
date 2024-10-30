@@ -8,10 +8,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import { isProjectInitialized } from "../../welcome/is-project-initialized";
+  import { compileLocalFileSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
-  import { isProjectInitialized } from "../../welcome/is-project-initialized";
 
   export let showDropOverlay: boolean;
 
@@ -39,18 +39,12 @@
           $unpackEmptyProject.mutate({
             instanceId,
             data: {
-              title: EMPTY_PROJECT_TITLE,
+              displayName: EMPTY_PROJECT_TITLE,
             },
           });
         }
 
-        const yaml = compileCreateSourceYAML(
-          {
-            sourceName: tableName,
-            path: filePath,
-          },
-          "local_file",
-        );
+        const yaml = compileLocalFileSourceYAML(filePath);
         await createSource(instanceId, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,

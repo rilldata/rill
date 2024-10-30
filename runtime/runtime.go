@@ -34,7 +34,7 @@ type Options struct {
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
-	logger         *zap.Logger
+	Logger         *zap.Logger
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
@@ -51,7 +51,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
-		logger:         logger,
+		Logger:         logger,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
@@ -144,6 +144,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 				Name:                r.Name.Name,
 				Type:                r.ConnectorSpec.Driver,
 				Config:              r.ConnectorSpec.Properties,
+				TemplatedProperties: r.ConnectorSpec.TemplatedProperties,
 				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
@@ -194,6 +195,7 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		Name:                name,
 		Type:                connector.Driver,
 		Config:              connector.Properties,
+		TemplatedProperties: connector.TemplatedProperties,
 		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 

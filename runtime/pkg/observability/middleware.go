@@ -139,7 +139,7 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 				zap.Duration("duration", time.Since(start)),
 				zap.Error(logErr),
 			)
-			logger.Log(lvl, "grpc finished call")
+			logger.Log(lvl, "grpc finished call", fields...)
 		}()
 
 		// Add log fields to context

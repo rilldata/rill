@@ -9,7 +9,7 @@ sidebar_position: 4
 
 [Apache Pinot](https://docs.pinot.apache.org/) is a real-time distributed OLAP datastore purpose-built for low-latency, high-throughput analytics, and perfect for user-facing analytical workloads.
 
-Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../build/olap/olap.md#external-olap-tables).
+Rill supports connecting to an existing Pinot cluster and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables).
 
 ## Connection string (DSN)
 
@@ -54,7 +54,7 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 When using Rill for local development, there are two options to configure Rill to enable Pinot as an OLAP engine:
 - You can set `connector.pinot.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --var connector.pinot.dsn=...`)
+- You can pass in `connector.pinot.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.pinot.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -83,9 +83,8 @@ Multi-Valued dimensions needed to be defined in the dashboard yaml as expression
   expression: arrayToMv(RandomAirports)
   name: RandomAirports
   description: "Random Airports"
-  ignore: false
 ```
-Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
+Refer to the [Dashboard YAML](../project-files/explore-dashboards) reference page for all dimension properties detail. 
 
 :::note
 
@@ -96,4 +95,4 @@ Pinot does not support unnest function so don't set `unnest` property to true in
 ## Additional Notes
 
 - At the moment, we do not support modeling with Pinot. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by Pinot, [measure definitions](../../build/dashboards/dashboards.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.
+- For dashboards powered by Pinot, [measure definitions](../../build/metrics-view/metrics-view.md#measures) are required to follow [Pinot SQL](https://docs.pinot.apache.org/users/user-guide-query/querying-pinot) syntax.

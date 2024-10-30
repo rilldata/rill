@@ -119,7 +119,7 @@ func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.List
 
 	// Connectors may be implicitly defined just by adding variables in the format "connector.<name>.<property>".
 	// NOTE: We can remove this if we move to explicitly defined connectors.
-	for k := range inst.ResolveVariables() {
+	for k := range inst.ResolveVariables(true) {
 		if !strings.HasPrefix(k, "connector.") {
 			continue
 		}
@@ -161,6 +161,7 @@ func driverSpecToPB(name string, spec *drivers.Spec) *runtimev1.ConnectorDriver 
 		ImplementsObjectStore: spec.ImplementsObjectStore,
 		ImplementsFileStore:   spec.ImplementsFileStore,
 		ImplementsNotifier:    spec.ImplementsNotifier,
+		ImplementsWarehouse:   spec.ImplementsWarehouse,
 	}
 
 	for _, prop := range spec.ConfigProperties {
@@ -200,6 +201,7 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		Default:     spec.Default,
 		Placeholder: spec.Placeholder,
 		Secret:      spec.Secret,
+		NoPrompt:    spec.NoPrompt,
 	}
 }
 

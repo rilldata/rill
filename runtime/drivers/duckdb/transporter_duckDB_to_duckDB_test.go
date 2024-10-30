@@ -14,7 +14,7 @@ import (
 
 func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	tempDir := t.TempDir()
-	conn, err := Driver{}.Open("default", map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser"))}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser")), "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -31,7 +31,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	to, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
+	to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db"), "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, _ = to.AsOLAP("")
@@ -39,7 +39,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	tr := NewDuckDBToDuckDB(olap, zap.NewNop())
 
 	// transfer once
-	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
+	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
@@ -52,7 +52,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, rows.Close())
 
 	// transfer again
-	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
+	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 
 	rows, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})

@@ -64,26 +64,26 @@ export const TIMESTAMPS = new Set([
 export const INTERVALS = new Set(["INTERVAL"]);
 export const NESTED = new Set(["STRUCT", "MAP", "LIST"]);
 
-export function isList(type) {
-  return type.includes("[]");
+export function isList(type: string) {
+  return type?.includes("[]");
 }
 
 // decimal values don't quite match a simple FLOATS.has(type) function,
 // so we need this one.
-export function isFloat(type) {
-  return FLOATS.has(type) || type.startsWith("DECIMAL");
+export function isFloat(type: string) {
+  return FLOATS.has(type) || type?.startsWith("DECIMAL");
 }
 
-export function isStruct(type) {
-  return type.startsWith("STRUCT");
+export function isStruct(type: string) {
+  return type?.startsWith("STRUCT");
 }
 
-export function isNested(type) {
+export function isNested(type: string) {
   return (
     type === "JSON" ||
     isList(type) ||
     isStruct(type) ||
-    [...NESTED].some((typeDef) => type.startsWith(typeDef))
+    [...NESTED].some((typeDef) => type?.startsWith(typeDef))
   );
 }
 

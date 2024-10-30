@@ -99,7 +99,7 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 				}
 
 				prompt := &survey.Confirm{
-					Message: fmt.Sprintf("Confirm \"%s\"?", f.Usage),
+					Message: fmt.Sprintf("Confirm %q?", f.Usage),
 					Default: defVal,
 				}
 

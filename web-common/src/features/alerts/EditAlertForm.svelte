@@ -1,21 +1,22 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
+  import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
     extractAlertNotification,
   } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
-    useMetricsView,
     useMetricsViewTimeRange,
+    useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
-    V1AlertSpec,
-    V1MetricsViewAggregationRequest,
+    type V1AlertSpec,
+    type V1MetricsViewAggregationRequest,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
   } from "../../runtime-client";
@@ -25,7 +26,7 @@
   import { getSnoozeValueFromAlertSpec } from "./delivery-tab/snooze";
   import {
     alertFormValidationSchema,
-    AlertFormValues,
+    type AlertFormValues,
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
@@ -40,19 +41,26 @@
   $: project = $page.params.project;
   $: alertName = $page.params.alert;
   const queryArgsJson = JSON.parse(
-    alertSpec.queryArgsJson as string,
+    (alertSpec.resolverProperties?.query_args_json ??
+      alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
-  $: metricsViewSpec = useMetricsView($runtime?.instanceId, metricsViewName);
+  $: metricsViewSpec = useMetricsViewValidSpec(
+    $runtime?.instanceId,
+    metricsViewName,
+  );
   $: timeRange = useMetricsViewTimeRange(
     $runtime?.instanceId,
     metricsViewName,
     { query: { queryClient } },
   );
 
+  $: exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
-      name: alertSpec.title as string,
+      name: alertSpec.displayName as string,
+      exploreName: exploreName ?? metricsViewName,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertNotification(alertSpec),
@@ -71,7 +79,7 @@
           name: alertName,
           data: {
             options: {
-              title: values.name,
+              displayName: values.name,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
@@ -88,6 +96,7 @@
                 : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
+              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
             },
           },
         });
@@ -105,7 +114,7 @@
           message: "Alert edited",
           type: "success",
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },

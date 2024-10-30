@@ -5,7 +5,7 @@ sidebar_label: Roles and Permissions
 sidebar_position: 30
 ---
 
-Access permissions in Rill Cloud are organized into roles at the organization and project level. It is usually sufficient to grant access at the organization-level because those permissions are inherited for projects by default. 
+Access permissions in Rill Cloud are organized into roles at the project and organization level. In most cases, it should be sufficient to grant access at the organization level because those permissions are _inherited_ for projects by default. 
 
 ## Role inheritance
 
@@ -55,3 +55,29 @@ There are two roles available at the project-level: **Viewer** and **Admin**.
 | `manage_dev`               | Trigger actions on non-production deployments              |        |     ✔ |
  -->
 
+## User group-level permissions
+
+There are two roles available at the user group-level: **Viewer** and **Admin**.
+
+| Permission                 | Description                                                | Viewer | Admin |
+| :------------------------- | :--------------------------------------------------------- | -----: | ----: |
+| `read_project`             | View basic info about the project                          |      ✔ |     ✔ |
+| `manage_project`           | Change project settings                                    |        |     ✔ |
+| `read_prod`                | View dashboards deployed from the production (main) branch |      ✔ |     ✔ |
+| `read_prod_status`         | View logs for the production deployment                    |        |     ✔ |
+| `manage_prod`              | Trigger actions on the production deployment               |        |     ✔ |
+| `read_project_members`     | View members of the project                                |        |     ✔ |
+| `manage_project_members`   | Add, remove or change roles of project members             |        |     ✔ |
+| `create_magic_auth_tokens` | Create shareable URLs                                      |        |     ✔ |
+| `manage_magic_auth_tokens` | Remove shareable URLs created by others                    |        |     ✔ |
+| `create_reports`           | Create and edit new scheduled reports                      |      ✔ |     ✔ |
+| `manage_reports`           | Edit and change scheduled reports created by others        |        |     ✔ |
+| `create_alerts`            | Create and edit new alerts                                 |      ✔ |     ✔ |
+| `manage_alerts`            | Edit and change alerts created by others                   |        |     ✔ |
+| `create_bookmarks`         | Create and edit new bookmarks                              |      ✔ |     ✔ |
+| `manage_bookmarks`         | Edit and change bookmarks created by others                |        |     ✔ |
+<!--
+| `read_dev`                 | View dashboards deployed from non-production branches      |        |     ✔ |
+| `read_dev_status`          | View logs for non-production deployments                   |        |     ✔ |
+| `manage_dev`               | Trigger actions on non-production deployments              |        |     ✔ |
+ -->

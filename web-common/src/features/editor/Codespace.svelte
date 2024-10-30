@@ -6,9 +6,8 @@
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { get } from "svelte/store";
-  import Dialog from "@rilldata/web-common/components/modal/dialog/Dialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { underlineSelection } from "./highlight-field";
 
@@ -66,7 +65,7 @@
           const local = get(localContent);
           if (editor.state.doc.toString() === newRemoteContent) return;
 
-          if (!get(localContent)) {
+          if (local === null) {
             updateEditorContent(newRemoteContent);
           } else if (local !== newRemoteContent) {
             showWarning = true;
@@ -148,43 +147,50 @@
     /** no op for now */
   }}
   role="textbox"
+  aria-label="Code editor"
   tabindex="0"
 />
 
-{#if showWarning}
-  <Dialog
-    on:cancel={() => (showWarning = false)}
-    size="sm"
-    useContentForMinSize
-    focusTriggerOnClose={false}
-    showCancel={false}
-  >
-    <svelte:fragment slot="title">
-      File update received remotely
-    </svelte:fragment>
-    <DialogFooter slot="footer">
-      <Button
-        type="secondary"
-        loading={saving}
-        on:click={async () => {
-          saving = true;
-          await saveLocalContent();
-          saving = false;
-          showWarning = false;
-        }}
-      >
-        Save local changes
-      </Button>
-      <Button
-        type="primary"
-        on:click={() => {
-          showWarning = false;
-          revert();
-          if ($remoteContent !== null) updateEditorContent($remoteContent);
-        }}
-      >
-        Accept remote changes
-      </Button>
-    </DialogFooter>
-  </Dialog>
-{/if}
+<AlertDialog.Root bind:open={showWarning}>
+  <AlertDialog.Content>
+    <AlertDialog.Title>File update received remotely</AlertDialog.Title>
+    <AlertDialog.Description>
+      You have unsaved changes. Do you want to save them before accepting the
+      remote changes?
+    </AlertDialog.Description>
+
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel asChild let:builder>
+        <Button
+          builders={[builder]}
+          type="secondary"
+          loading={saving}
+          large
+          on:click={async () => {
+            saving = true;
+            await saveLocalContent();
+            saving = false;
+            showWarning = false;
+          }}
+        >
+          Save local changes
+        </Button>
+      </AlertDialog.Cancel>
+
+      <AlertDialog.Action asChild let:builder>
+        <Button
+          builders={[builder]}
+          type="primary"
+          large
+          on:click={() => {
+            showWarning = false;
+            revert();
+            if ($remoteContent !== null) updateEditorContent($remoteContent);
+          }}
+        >
+          Accept remote changes
+        </Button>
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

@@ -25,8 +25,10 @@ type MetricsViewToplist struct {
 	Offset          int64                        `json:"offset,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	WhereSQL        string                       `json:"where_sql,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
 	Having          *runtimev1.Expression        `json:"having,omitempty"`
+	HavingSQL       string                       `json:"having_sql,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
@@ -81,7 +83,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -196,15 +198,18 @@ func (q *MetricsViewToplist) rewriteToMetricsViewQuery(export bool) (*metricsvie
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	if q.Where != nil {
-		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, q.WhereSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
-	if q.Having != nil {
-		qry.Having = metricsview.NewExpressionFromProto(q.Having)
+	qry.Having, err = metricViewExpression(q.Having, q.HavingSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting having clause: %w", err)
 	}
 
-	qry.Label = export
+	qry.UseDisplayNames = export
 
 	return qry, nil
 }

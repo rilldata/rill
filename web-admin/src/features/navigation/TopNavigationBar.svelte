@@ -1,15 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
+  import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
+  import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
-  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
+  import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
-  import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
+    createAdminServiceGetBillingSubscription,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
@@ -21,17 +24,20 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
-  import ShareProjectButton from "../projects/ShareProjectButton.svelte";
+  import { useDashboardsV2 } from "../dashboards/listing/selectors";
+  import PageTitle from "../public-urls/PageTitle.svelte";
+  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
+  import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
-  import PageTitle from "../shareable-urls/PageTitle.svelte";
   import {
-    isMagicLinkPage,
     isMetricsExplorerPage,
     isProjectPage,
+    isPublicURLPage,
   } from "./nav-utils";
 
+  export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
+  export let manageProjectMembers: boolean;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -44,13 +50,14 @@
     dashboard: dashboardParam,
     alert,
     report,
+    token,
   } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
-  $: onMagicLinkPage = isMagicLinkPage($page);
+  $: onPublicURLPage = isPublicURLPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -70,7 +77,7 @@
     },
   });
 
-  $: visualizationsQuery = useValidVisualizations(instanceId);
+  $: visualizationsQuery = useDashboardsV2(instanceId);
 
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
@@ -84,8 +91,18 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = createAdminServiceGetBillingSubscription(organization, {
+    query: {
+      enabled: !!organization && manageOrganization && !onPublicURLPage,
+      select: (data) => data.subscription?.plan,
+    },
+  });
   $: organizationPaths = organizations.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name, displayName }) =>
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+      }),
     new Map<string, PathOption>(),
   );
 
@@ -94,25 +111,22 @@
     new Map<string, PathOption>(),
   );
 
-  $: visualizationPaths = visualizations.reduce(
-    (map, { meta, metricsView, dashboard }) => {
-      const name = meta.name.name;
-      const isMetricsExplorer = !!metricsView;
-      return map.set(name.toLowerCase(), {
-        label:
-          (isMetricsExplorer
-            ? metricsView?.state?.validSpec?.title
-            : dashboard?.spec?.title) || name,
-        section: isMetricsExplorer ? undefined : "-/dashboards",
-      });
-    },
-    new Map<string, PathOption>(),
-  );
+  $: visualizationPaths = visualizations.reduce((map, { resource }) => {
+    const name = resource.meta.name.name;
+    const isMetricsExplorer = !!resource?.explore;
+    return map.set(name.toLowerCase(), {
+      label:
+        (isMetricsExplorer
+          ? resource?.explore?.spec?.displayName
+          : resource?.canvas?.spec?.displayName) || name,
+      section: isMetricsExplorer ? "explore" : "-/dashboards",
+    });
+  }, new Map<string, PathOption>());
 
   $: alertPaths = alerts.reduce((map, alert) => {
     const name = alert.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.title || name,
+      label: alert.alert.spec.displayName || name,
       section: "-/alerts",
     });
   }, new Map<string, PathOption>());
@@ -120,7 +134,7 @@
   $: reportPaths = reports.reduce((map, report) => {
     const name = report.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: report.report.spec.title || name,
+      label: report.report.spec.displayName || name,
       section: "-/reports",
     });
   }, new Map<string, PathOption>());
@@ -132,23 +146,31 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
-  // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId, onMagicLinkPage);
-  $: dashboard = onMagicLinkPage
-    ? $metricsViewQuery.data?.meta?.name?.name
+  $: dashboardQuery = useExplore(instanceId, dashboardParam, {
+    enabled: !!instanceId && onMetricsExplorerPage,
+  });
+  $: exploreSpec = $dashboardQuery.data?.explore?.explore?.state?.validSpec;
+  $: isDashboardValid = !!exploreSpec;
+
+  // Public URLs do not have the resource name in the URL. However, the magic token's metadata includes the resource name.
+  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
+  $: dashboard = onPublicURLPage
+    ? $tokenQuery?.data?.token?.resourceName
     : dashboardParam;
 
-  $: magicLinkDashboardTitle =
-    $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
+  // If on a Public URL, get the dashboard title
+  $: exploreQuery = usePublicURLExplore(
+    instanceId,
+    $tokenQuery?.data?.token?.resourceName,
+    onPublicURLPage,
+  );
+  $: publicURLDashboardTitle =
+    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div
-  class="flex items-center w-full pr-4 pl-2 py-1"
-  class:border-b={!onProjectPage}
->
+<div class="flex items-center w-full pr-4 pl-2 py-1">
   <!-- Left side -->
   <a
     href={rillLogoHref}
@@ -156,8 +178,8 @@
   >
     <Rill />
   </a>
-  {#if onMagicLinkPage}
-    <PageTitle title={magicLinkDashboardTitle} />
+  {#if onPublicURLPage}
+    <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath} />
   {/if}
@@ -167,19 +189,29 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage}
-      <ShareProjectButton {organization} {project} />
+    {#if onProjectPage && manageProjectMembers}
+      <ShareProjectPopover {organization} {project} />
     {/if}
-    {#if onMetricsExplorerPage || onMagicLinkPage}
-      <StateManagersProvider metricsViewName={dashboard}>
-        <LastRefreshedDate {dashboard} />
-        <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
-          <CreateAlert />
-          <Bookmarks />
-          <ShareDashboardButton {createMagicAuthTokens} />
-        {/if}
-      </StateManagersProvider>
+    {#if (onMetricsExplorerPage && isDashboardValid) || onPublicURLPage}
+      {#if exploreSpec}
+        {#key dashboard}
+          <StateManagersProvider
+            metricsViewName={exploreSpec.metricsView}
+            exploreName={dashboard}
+          >
+            <LastRefreshedDate {dashboard} />
+            <GlobalDimensionSearch />
+            {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
+              <CreateAlert />
+              <Bookmarks
+                metricsViewName={exploreSpec.metricsView}
+                exploreName={dashboard}
+              />
+              <ShareDashboardButton {createMagicAuthTokens} />
+            {/if}
+          </StateManagersProvider>
+        {/key}
+      {/if}
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

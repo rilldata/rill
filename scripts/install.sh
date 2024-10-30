@@ -10,6 +10,8 @@ initPlatform() {
         PLATFORM="darwin_amd64"
     elif [ "$OS" = "linux" ] && [ "$ARCH" = "x86_64" ]; then
         PLATFORM="linux_amd64"
+    elif [ "$OS" = "linux" ] && { [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; }; then
+        PLATFORM="linux_arm64"
     else
         printf "Platform not supported: os=%s arch=%s\n" "$OS" "$ARCH"
         exit 1

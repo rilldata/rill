@@ -19,12 +19,13 @@ export class FileArtifacts {
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
-        case ResourceKind.Source:
         case ResourceKind.Connector:
+        case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
+        case ResourceKind.Explore:
         case ResourceKind.Component:
-        case ResourceKind.Dashboard:
+        case ResourceKind.Canvas:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
             getRuntimeServiceGetResourceQueryKey(instanceId, {
@@ -45,40 +46,19 @@ export class FileArtifacts {
     this.artifacts.delete(filePath);
   }
 
-  resourceDeleted(name: V1ResourceName) {
+  deleteResource(name: V1ResourceName) {
     const artifact = this.findFileArtifact(
       (name.kind ?? "") as ResourceKind,
       name.name ?? "",
     );
     if (!artifact) return;
 
-    this.removeFile(artifact.path);
+    this.getFileArtifact(artifact.path)?.hardDeleteResource();
   }
 
   updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateAll(resource);
-    });
-  }
-
-  updateReconciling(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateReconciling(resource);
-    });
-  }
-
-  updateLastUpdated(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateLastUpdated(resource);
-    });
-  }
-
-  /**
-   * This is called when a resource is deleted either because file was deleted or it errored out.
-   */
-  softDeleteResource(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.softDeleteResource();
+      this.getFileArtifact(filePath)?.updateResource(resource);
     });
   }
 
@@ -94,12 +74,11 @@ export class FileArtifacts {
   };
 
   findFileArtifact(resKind: ResourceKind, resName: string) {
-    for (const filePath in this.artifacts) {
-      const artifact = this.artifacts.get(filePath);
+    for (const [, artifact] of this.artifacts.entries()) {
       if (!artifact) continue;
-      const name = get(artifact.name);
+      const name = get(artifact.resourceName);
       if (name?.kind === resKind && name?.name === resName) {
-        return this.artifacts.get(filePath);
+        return artifact;
       }
     }
     return undefined;
@@ -116,7 +95,9 @@ export class FileArtifacts {
         const currentlyReconciling = new Array<V1ResourceName>();
         reconcilingArtifacts.forEach((reconcilingArtifact, i) => {
           if (reconcilingArtifact) {
-            currentlyReconciling.push(get(artifacts[i].name) as V1ResourceName);
+            currentlyReconciling.push(
+              get(artifacts[i].resourceName) as V1ResourceName,
+            );
           }
         });
         return currentlyReconciling;
@@ -131,8 +112,8 @@ export class FileArtifacts {
    */
   getNamesForKind(kind: ResourceKind): string[] {
     return Array.from(this.artifacts.values())
-      .filter((artifact) => get(artifact.name)?.kind === kind)
-      .map((artifact) => get(artifact.name)?.name ?? "");
+      .filter((artifact) => get(artifact.resourceName)?.kind === kind)
+      .map((artifact) => get(artifact.resourceName)?.name ?? "");
   }
 
   async saveAll() {

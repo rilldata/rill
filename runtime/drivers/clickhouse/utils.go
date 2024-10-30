@@ -1,13 +1,9 @@
 package clickhouse
 
 import (
-	"fmt"
-	"strings"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 func safeSQLName(name string) string {
-	if name == "" {
-		return name
-	}
-	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+	return drivers.DialectClickHouse.EscapeIdentifier(name)
 }

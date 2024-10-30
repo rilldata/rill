@@ -18,6 +18,7 @@ type MetricsViewTotals struct {
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	WhereSQL        string                       `json:"where_sql,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 
@@ -73,7 +74,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -125,11 +126,13 @@ func (q *MetricsViewTotals) rewriteToMetricsViewQuery(exporting bool) (*metricsv
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	if q.Where != nil {
-		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	var err error
+	qry.Where, err = metricViewExpression(q.Where, q.WhereSQL)
+	if err != nil {
+		return nil, fmt.Errorf("error converting where clause: %w", err)
 	}
 
-	qry.Label = exporting
+	qry.UseDisplayNames = exporting
 
 	return qry, nil
 }

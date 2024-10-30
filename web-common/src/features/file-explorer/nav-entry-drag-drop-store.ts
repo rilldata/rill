@@ -1,4 +1,4 @@
-import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
 import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
@@ -39,7 +39,7 @@ export class NavEntryDragDropStore {
 
     this.offset = { x, y };
 
-    const [, fileName] = splitFolderAndName(dragData.filePath);
+    const [, fileName] = splitFolderAndFileName(dragData.filePath);
     this.newDragData = {
       ...dragData,
       fileName,
@@ -60,8 +60,7 @@ export class NavEntryDragDropStore {
       await dropSuccess(curDragData.filePath, toDir);
     }
 
-    this.newDragData = null;
-    this.dragData.set(null);
+    this.resetDrag();
   }
 
   public onMouseMove(e: MouseEvent) {
@@ -96,6 +95,11 @@ export class NavEntryDragDropStore {
       d.pop();
       return d;
     });
+  }
+
+  public resetDrag() {
+    this.newDragData = null;
+    this.dragData.set(null);
   }
 
   private getOffsets(e: MouseEvent, dragData: NavDragData) {

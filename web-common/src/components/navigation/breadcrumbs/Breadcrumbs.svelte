@@ -1,17 +1,7 @@
 <script context="module" lang="ts">
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import Slash from "./Slash.svelte";
-
-  type Param = string;
-
-  export type PathOption = {
-    label: string;
-    depth?: number;
-    href?: string;
-    section?: string;
-  };
-
-  export type PathOptions = Map<Param, PathOption>;
+  import type { PathOptions } from "./types";
 </script>
 
 <script lang="ts">

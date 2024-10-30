@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -30,43 +32,8 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "http(s)://username:password@localhost:9000",
 			Secret:      true,
+			NoPrompt:    true,
 		},
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "username",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-			Default:     "true",
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
@@ -168,15 +135,20 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, fmt.Errorf("pinot connection parameters not set. Set `dsn` or individual properties")
 	}
 
-	db, err := sqlx.Open("pinot", dsn)
+	db, err := otelsql.Open("pinot", dsn)
 	if err != nil {
 		return nil, err
 	}
-
 	// very roughly approximating num queries required for a typical page load
 	db.SetMaxOpenConns(20)
 
-	err = db.Ping()
+	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(attribute.String("instance_id", instanceID)))
+	if err != nil {
+		return nil, fmt.Errorf("pinot: failed to register db stats metrics: %w", err)
+	}
+
+	dbx := sqlx.NewDb(db, "pinot")
+	err = dbx.Ping()
 	if err != nil {
 		return nil, fmt.Errorf("pinot: %w", err)
 	}
@@ -187,7 +159,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	}
 
 	conn := &connection{
-		db:      db,
+		db:      dbx,
 		config:  config,
 		baseURL: controller,
 		headers: headers,
@@ -284,6 +256,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

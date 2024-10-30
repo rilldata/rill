@@ -373,7 +373,8 @@ export class ExportRequest extends Message<ExportRequest> {
   query?: Query;
 
   /**
-   * @generated from field: string baked_query = 5;
+   * @generated from field: string baked_query = 5 [deprecated = true];
+   * @deprecated
    */
   bakedQuery = "";
 
@@ -443,6 +444,104 @@ export class ExportResponse extends Message<ExportResponse> {
 
   static equals(a: ExportResponse | PlainMessage<ExportResponse> | undefined, b: ExportResponse | PlainMessage<ExportResponse> | undefined): boolean {
     return proto3.util.equals(ExportResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExportReportRequest
+ */
+export class ExportReportRequest extends Message<ExportReportRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string report = 2;
+   */
+  report = "";
+
+  /**
+   * @generated from field: int64 limit = 3;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat format = 4;
+   */
+  format = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp execution_time = 5;
+   */
+  executionTime?: Timestamp;
+
+  constructor(data?: PartialMessage<ExportReportRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportReportRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportReportRequest | PlainMessage<ExportReportRequest> | undefined, b: ExportReportRequest | PlainMessage<ExportReportRequest> | undefined): boolean {
+    return proto3.util.equals(ExportReportRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExportReportResponse
+ */
+export class ExportReportResponse extends Message<ExportReportResponse> {
+  /**
+   * @generated from field: string download_url_path = 1;
+   */
+  downloadUrlPath = "";
+
+  constructor(data?: PartialMessage<ExportReportResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportReportResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "download_url_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined, b: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined): boolean {
+    return proto3.util.equals(ExportReportResponse, a, b);
   }
 }
 
@@ -871,11 +970,25 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   where?: Expression;
 
   /**
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string where_sql = 19;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 13;
    */
   having?: Expression;
+
+  /**
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string having_sql = 20;
+   */
+  havingSql = "";
 
   /**
    * Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
@@ -932,7 +1045,9 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 15, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 18, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 19, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "having", kind: "message", T: Expression },
+    { no: 20, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1130,6 +1245,18 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonRatio;
     case: "comparisonRatio";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
+     */
+    value: MetricsViewAggregationMeasureComputePercentOfTotal;
+    case: "percentOfTotal";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeURI uri = 11;
+     */
+    value: MetricsViewAggregationMeasureComputeURI;
+    case: "uri";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1149,6 +1276,8 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 7, name: "comparison_value", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonValue, oneof: "compute" },
     { no: 8, name: "comparison_delta", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonDelta, oneof: "compute" },
     { no: 9, name: "comparison_ratio", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonRatio, oneof: "compute" },
+    { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
+    { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1348,6 +1477,80 @@ export class MetricsViewAggregationMeasureComputeComparisonRatio extends Message
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal
+ */
+export class MetricsViewAggregationMeasureComputePercentOfTotal extends Message<MetricsViewAggregationMeasureComputePercentOfTotal> {
+  /**
+   * @generated from field: string measure = 1;
+   */
+  measure = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputePercentOfTotal>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputePercentOfTotal";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputePercentOfTotal {
+    return new MetricsViewAggregationMeasureComputePercentOfTotal().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined, b: MetricsViewAggregationMeasureComputePercentOfTotal | PlainMessage<MetricsViewAggregationMeasureComputePercentOfTotal> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputePercentOfTotal, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeURI
+ */
+export class MetricsViewAggregationMeasureComputeURI extends Message<MetricsViewAggregationMeasureComputeURI> {
+  /**
+   * @generated from field: string dimension = 1;
+   */
+  dimension = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeURI>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeURI";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeURI {
+    return new MetricsViewAggregationMeasureComputeURI().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined, b: MetricsViewAggregationMeasureComputeURI | PlainMessage<MetricsViewAggregationMeasureComputeURI> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeURI, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.MetricsViewAggregationSort
  */
 export class MetricsViewAggregationSort extends Message<MetricsViewAggregationSort> {
@@ -1451,9 +1654,19 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   where?: Expression;
 
   /**
+   * @generated from field: string where_sql = 15;
+   */
+  whereSql = "";
+
+  /**
    * @generated from field: rill.runtime.v1.Expression having = 13;
    */
   having?: Expression;
+
+  /**
+   * @generated from field: string having_sql = 16;
+   */
+  havingSql = "";
 
   /**
    * @generated from field: int32 priority = 11;
@@ -1485,7 +1698,9 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 10, name: "where", kind: "message", T: Expression },
+    { no: 15, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "having", kind: "message", T: Expression },
+    { no: 16, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
@@ -1621,11 +1836,25 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   where?: Expression;
 
   /**
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string where_sql = 17;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 12;
    */
   having?: Expression;
+
+  /**
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string having_sql = 18;
+   */
+  havingSql = "";
 
   /**
    * Optional
@@ -1688,7 +1917,9 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 6, name: "time_range", kind: "message", T: TimeRange },
     { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
     { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 17, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "having", kind: "message", T: Expression },
+    { no: 18, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -2110,11 +2341,25 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   where?: Expression;
 
   /**
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string where_sql = 13;
+   */
+  whereSql = "";
+
+  /**
    * Optional
    *
    * @generated from field: rill.runtime.v1.Expression having = 11;
    */
   having?: Expression;
+
+  /**
+   * Optional. If both having and having_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string having_sql = 14;
+   */
+  havingSql = "";
 
   /**
    * Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
@@ -2150,7 +2395,9 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 13, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "having", kind: "message", T: Expression },
+    { no: 14, name: "having_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
@@ -2261,6 +2508,13 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   where?: Expression;
 
   /**
+   * Optional. If both where and where_sql are set, both will be applied with an AND between them.
+   *
+   * @generated from field: string where_sql = 11;
+   */
+  whereSql = "";
+
+  /**
    * @generated from field: int32 priority = 8;
    */
   priority = 0;
@@ -2286,6 +2540,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "where", kind: "message", T: Expression },
+    { no: 11, name: "where_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
@@ -3107,6 +3362,125 @@ export class MetricsViewSearchResponse_SearchResult extends Message<MetricsViewS
 
   static equals(a: MetricsViewSearchResponse_SearchResult | PlainMessage<MetricsViewSearchResponse_SearchResult> | undefined, b: MetricsViewSearchResponse_SearchResult | PlainMessage<MetricsViewSearchResponse_SearchResult> | undefined): boolean {
     return proto3.util.equals(MetricsViewSearchResponse_SearchResult, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveComponentRequest
+ */
+export class ResolveComponentRequest extends Message<ResolveComponentRequest> {
+  /**
+   * Instance ID
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Component name
+   *
+   * @generated from field: string component = 2;
+   */
+  component = "";
+
+  /**
+   * Optional args to pass to the data resolver and for resolving templating in the renderer properties
+   *
+   * @generated from field: google.protobuf.Struct args = 3;
+   */
+  args?: Struct;
+
+  constructor(data?: PartialMessage<ResolveComponentRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveComponentRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "args", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveComponentRequest {
+    return new ResolveComponentRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveComponentRequest | PlainMessage<ResolveComponentRequest> | undefined, b: ResolveComponentRequest | PlainMessage<ResolveComponentRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveComponentRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveComponentResponse
+ */
+export class ResolveComponentResponse extends Message<ResolveComponentResponse> {
+  /**
+   * Show property with templating resolved for the provided args.
+   * If it resolves to false, the other fields are not set.
+   *
+   * @generated from field: bool show = 1;
+   */
+  show = false;
+
+  /**
+   * Schema of the resolved component data
+   *
+   * @generated from field: rill.runtime.v1.StructType schema = 2;
+   */
+  schema?: StructType;
+
+  /**
+   * Resolved component data
+   *
+   * @generated from field: repeated google.protobuf.Struct data = 3;
+   */
+  data: Struct[] = [];
+
+  /**
+   * Renderer properties with templating resolved for the provided args
+   *
+   * @generated from field: google.protobuf.Struct renderer_properties = 4;
+   */
+  rendererProperties?: Struct;
+
+  constructor(data?: PartialMessage<ResolveComponentResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "schema", kind: "message", T: StructType },
+    { no: 3, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 4, name: "renderer_properties", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveComponentResponse {
+    return new ResolveComponentResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined, b: ResolveComponentResponse | PlainMessage<ResolveComponentResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveComponentResponse, a, b);
   }
 }
 

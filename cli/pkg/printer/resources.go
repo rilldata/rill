@@ -1,12 +1,15 @@
 package printer
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
@@ -136,20 +139,16 @@ func toMemberTable(members []*adminv1.MemberUser) []*memberUser {
 
 func toMemberRow(m *adminv1.MemberUser) *memberUser {
 	return &memberUser{
-		Name:      m.UserName,
-		Email:     m.UserEmail,
-		RoleName:  m.RoleName,
-		CreatedOn: m.CreatedOn.AsTime().Local().Format(time.DateTime),
-		UpdatedOn: m.UpdatedOn.AsTime().Local().Format(time.DateTime),
+		Email:    m.UserEmail,
+		Name:     m.UserName,
+		RoleName: m.RoleName,
 	}
 }
 
 type memberUser struct {
-	Name      string `header:"name" json:"display_name"`
-	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role" json:"role_name"`
-	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
-	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+	Email    string `header:"email" json:"email"`
+	Name     string `header:"name" json:"display_name"`
+	RoleName string `header:"role" json:"role_name"`
 }
 
 func (p *Printer) PrintInvites(invites []*adminv1.UserInvite) {
@@ -269,7 +268,7 @@ func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
 }
 
 func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
-	expr := metricsview.NewExpressionFromProto(t.MetricsViewFilter)
+	expr := metricsview.NewExpressionFromProto(t.Filter)
 	filter, err := metricsview.ExpressionToString(expr)
 	if err != nil {
 		panic(err)
@@ -277,7 +276,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 	row := &magicAuthToken{
 		ID:        t.Id,
-		Dashboard: t.MetricsView,
+		Resource:  t.ResourceName,
 		Filter:    filter,
 		CreatedBy: t.CreatedByUserEmail,
 		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
@@ -291,7 +290,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 
 type magicAuthToken struct {
 	ID        string `header:"id" json:"id"`
-	Dashboard string `header:"dashboard" json:"dashboard"`
+	Resource  string `header:"resource" json:"resource"`
 	Filter    string `header:"filter" json:"filter"`
 	CreatedBy string `header:"created by" json:"created_by"`
 	CreatedOn string `header:"created on" json:"created_on"`
@@ -319,8 +318,8 @@ func toSubscriptionsTable(subs []*adminv1.Subscription) []*subscription {
 func toSubscriptionRow(s *adminv1.Subscription) *subscription {
 	return &subscription{
 		ID:                           s.Id,
-		PlanName:                     s.PlanName,
-		PlanDisplayName:              s.PlanDisplayName,
+		PlanName:                     s.Plan.Name,
+		PlanDisplayName:              s.Plan.DisplayName,
 		StartDate:                    s.StartDate.AsTime().Local().Format(time.DateTime),
 		EndDate:                      s.EndDate.AsTime().Local().Format(time.DateTime),
 		CurrentBillingCycleStartDate: s.CurrentBillingCycleStartDate.AsTime().Local().Format(time.DateTime),
@@ -365,6 +364,7 @@ func toPlanRow(p *adminv1.BillingPlan) *plan {
 		Description:                         p.Description,
 		TrialDays:                           strconv.Itoa(int(p.TrialPeriodDays)),
 		Default:                             p.Default,
+		Public:                              p.Public,
 		QuotaNumProjects:                    p.Quotas.Projects,
 		QuotaNumDeployments:                 p.Quotas.Deployments,
 		QuotaNumSlotsTotal:                  p.Quotas.SlotsTotal,
@@ -381,6 +381,7 @@ type plan struct {
 	Description                         string `header:"description" json:"description"`
 	TrialDays                           string `header:"trial_days" json:"trial_days"`
 	Default                             bool   `header:"default" json:"default"`
+	Public                              bool   `header:"public" json:"public"`
 	QuotaNumProjects                    string `header:"quota_num_projects" json:"quota_num_projects"`
 	QuotaNumDeployments                 string `header:"quota_num_deployments" json:"quota_num_deployments"`
 	QuotaNumSlotsTotal                  string `header:"quota_num_slots_total" json:"quota_num_slots_total"`
@@ -455,4 +456,87 @@ func toUsergroupMemberRow(m *adminv1.MemberUser) *usergroupMember {
 type usergroupMember struct {
 	Name  string `header:"name" json:"name"`
 	Email string `header:"email" json:"email"`
+}
+
+func (p *Printer) PrintModelSplits(splits []*runtimev1.ModelSplit) {
+	if len(splits) == 0 {
+		p.PrintfWarn("No splits found\n")
+		return
+	}
+
+	p.PrintData(toModelSplitsTable(splits))
+}
+
+func toModelSplitsTable(splits []*runtimev1.ModelSplit) []*modelSplit {
+	res := make([]*modelSplit, 0, len(splits))
+	for _, s := range splits {
+		res = append(res, toModelSplitRow(s))
+	}
+	return res
+}
+
+func toModelSplitRow(s *runtimev1.ModelSplit) *modelSplit {
+	data, err := json.Marshal(s.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	var executedOn string
+	if s.ExecutedOn != nil {
+		executedOn = s.ExecutedOn.AsTime().Format(time.RFC3339)
+	}
+
+	return &modelSplit{
+		Key:        s.Key,
+		DataJSON:   string(data),
+		ExecutedOn: executedOn,
+		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
+		Error:      s.Error,
+	}
+}
+
+type modelSplit struct {
+	Key        string `header:"key" json:"key"`
+	DataJSON   string `header:"data" json:"data"`
+	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
+	Elapsed    string `header:"elapsed" json:"elapsed"`
+	Error      string `header:"error" json:"error"`
+}
+
+func (p *Printer) PrintBillingIssues(errs []*adminv1.BillingIssue) {
+	if len(errs) == 0 {
+		return
+	}
+
+	p.PrintData(toBillingIssuesTable(errs))
+}
+
+func toBillingIssuesTable(errs []*adminv1.BillingIssue) []*billingIssue {
+	res := make([]*billingIssue, 0, len(errs))
+	for _, e := range errs {
+		res = append(res, toBillingIssueRow(e))
+	}
+	return res
+}
+
+func toBillingIssueRow(e *adminv1.BillingIssue) *billingIssue {
+	meta, err := json.Marshal(e.Metadata)
+	if err != nil || !utf8.Valid(meta) {
+		meta = []byte("{\"error\": \"failed to marshal metadata\"}")
+	}
+	return &billingIssue{
+		Organization: e.Organization,
+		Type:         e.Type.String(),
+		Level:        e.Level.String(),
+		Metadata:     string(meta), // TODO pretty print
+		EventTime:    e.EventTime.AsTime().Local().Format(time.DateTime),
+	}
+}
+
+type billingIssue struct {
+	Organization string `header:"organization" json:"organization"`
+	Type         string `header:"type" json:"type"`
+	Level        string `header:"level" json:"level"`
+	Metadata     string `header:"metadata" json:"metadata"`
+	EventTime    string `header:"event_time,timestamp(ms|utc|human)" json:"event_time"`
 }

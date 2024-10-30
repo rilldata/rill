@@ -61,35 +61,30 @@ type App struct {
 	Instance              *drivers.Instance
 	Logger                *zap.SugaredLogger
 	BaseLogger            *zap.Logger
-	Version               cmdutil.Version
 	Verbose               bool
 	Debug                 bool
 	ProjectPath           string
+	ch                    *cmdutil.Helper
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
-	activity              *activity.Client
-	adminURL              string
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
-	ch                    *cmdutil.Helper
 	localURL              string
+	allowedOrigins        []string
 }
 
 type AppOptions struct {
-	Version     cmdutil.Version
-	Verbose     bool
-	Debug       bool
-	Reset       bool
-	Environment string
-	OlapDriver  string
-	OlapDSN     string
-	ProjectPath string
-	LogFormat   LogFormat
-	Variables   map[string]string
-	Activity    *activity.Client
-	AdminURL    string
-	AdminToken  string
-	CMDHelper   *cmdutil.Helper
-	LocalURL    string
+	Ch             *cmdutil.Helper
+	Verbose        bool
+	Debug          bool
+	Reset          bool
+	Environment    string
+	OlapDriver     string
+	OlapDSN        string
+	ProjectPath    string
+	LogFormat      LogFormat
+	Variables      map[string]string
+	LocalURL       string
+	AllowedOrigins []string
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -102,7 +97,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		MetricsExporter: observability.PrometheusExporter,
 		TracesExporter:  observability.NoopExporter,
 		ServiceName:     "rill-local",
-		ServiceVersion:  opts.Version.String(),
+		ServiceVersion:  opts.Ch.Version.String(),
 	})
 	if err != nil {
 		return nil, err
@@ -173,7 +168,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, opts.Activity, email.New(sender))
+	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender))
 	if err != nil {
 		return nil, err
 	}
@@ -250,8 +245,8 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		Name: "admin",
 		Type: "admin",
 		Config: map[string]string{
-			"admin_url":    opts.AdminURL,
-			"access_token": opts.AdminToken,
+			"admin_url":    opts.Ch.AdminURL(),
+			"access_token": opts.Ch.AdminToken(),
 		},
 	}
 	connectors = append(connectors, aiConnector)
@@ -289,17 +284,15 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		Instance:              inst,
 		Logger:                sugarLogger,
 		BaseLogger:            logger,
-		Version:               opts.Version,
 		Verbose:               opts.Verbose,
 		Debug:                 opts.Debug,
 		ProjectPath:           projectPath,
+		ch:                    opts.Ch,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
-		activity:              opts.Activity,
-		adminURL:              opts.AdminURL,
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
-		ch:                    opts.CMDHelper,
 		localURL:              opts.LocalURL,
+		allowedOrigins:        opts.AllowedOrigins,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -345,10 +338,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
 		UserID:           userID,
-		Version:          a.Version.Number,
-		BuildCommit:      a.Version.Commit,
-		BuildTime:        a.Version.Timestamp,
-		IsDev:            a.Version.IsDev(),
+		Version:          a.ch.Version.Number,
+		BuildCommit:      a.ch.Version.Commit,
+		BuildTime:        a.ch.Version.Timestamp,
+		IsDev:            a.ch.Version.IsDev(),
 		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
 	}
@@ -377,10 +370,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		GRPCPort:        grpcPort,
 		TLSCertPath:     tlsCertPath,
 		TLSKeyPath:      tlsKeyPath,
-		AllowedOrigins:  []string{"*"},
+		AllowedOrigins:  a.allowedOrigins,
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.activity)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.ch.Telemetry(ctx))
 	if err != nil {
 		return err
 	}
@@ -407,7 +400,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	// Open the browser when health check succeeds
-	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
+	go a.PollServer(ctx, httpPort, enableUI && openBrowser, secure)
 
 	// Run the server
 	err = group.Wait()
@@ -418,7 +411,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	return nil
 }
 
-func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
+func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secure bool) {
 	client := &http.Client{Timeout: time.Second}
 
 	scheme := "http"
@@ -485,7 +478,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		connectorNames = append(connectorNames, connector.Name)
 	}
 
-	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
+	a.ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
 }

@@ -177,7 +177,7 @@ func (j *bulkJob) getBatches(ctx context.Context) error {
 		return fmt.Errorf("%s %w", errorMessage+"batch status failed with ", err)
 	}
 	for _, b := range batches {
-		results, err := getBatchResults(ctx, j.session, j.job, b)
+		results, err := getBatchResults(ctx, j.session, &j.job, b)
 		if err != nil {
 			return fmt.Errorf("%s %w", errorMessage+"batch results failed with ", err)
 		}
@@ -252,7 +252,7 @@ func readAndWriteBody(ctx context.Context, j *bulkJob, httpBody io.Reader, w io.
 
 // Get all of the results for a batch.  Most batches have one results, but
 // large batches can be split into multiple result files.
-func getBatchResults(ctx context.Context, session *force.Force, job force.JobInfo, batch force.BatchInfo) ([]batchResult, error) {
+func getBatchResults(ctx context.Context, session *force.Force, job *force.JobInfo, batch force.BatchInfo) ([]batchResult, error) {
 	var resultIDs []string
 	var results []batchResult
 	jobInfo, err := session.RetrieveBulkQueryWithContext(ctx, job.Id, batch.Id)

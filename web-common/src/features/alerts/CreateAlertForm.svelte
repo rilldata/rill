@@ -7,7 +7,7 @@
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
-    AlertFormValues,
+    type AlertFormValues,
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
@@ -38,6 +38,7 @@
 
   const {
     metricsViewName,
+    exploreName,
     dashboardStore,
     selectors: {
       timeRangeSelectors: { timeControlsState },
@@ -98,6 +99,7 @@
       // The remaining fields are not editable in the form, but it's helpful to have access to them throughout the alert dialog
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
+      exploreName: $exploreName,
       whereFilter: $dashboardStore.whereFilter,
       dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: timeRange
@@ -121,7 +123,7 @@
           project,
           data: {
             options: {
-              title: values.name,
+              displayName: values.name,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
@@ -138,6 +140,7 @@
                 : undefined,
               renotify: !!values.snooze,
               renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
+              webOpenPath: `/explore/${$exploreName}`,
             },
           },
         });
@@ -152,7 +155,7 @@
             text: "Go to alerts",
           },
         });
-      } catch (e) {
+      } catch {
         // showing error below
       }
     },

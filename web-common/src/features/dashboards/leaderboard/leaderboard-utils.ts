@@ -4,7 +4,7 @@ import {
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
-  V1MetricsViewAggregationResponseDataItem,
+  type V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";

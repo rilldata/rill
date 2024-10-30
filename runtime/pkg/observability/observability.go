@@ -52,13 +52,14 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 	}))
 
 	// Create resource representing the currently running service
-	res, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
+	res, err := resource.New(ctx,
+		resource.WithContainer(),
+		resource.WithSchemaURL(semconv.SchemaURL),
+		resource.WithAttributes(
 			semconv.ServiceName(opts.ServiceName),
 			semconv.ServiceVersion(opts.ServiceVersion),
 		),
+		resource.WithFromEnv(),
 	)
 	if err != nil {
 		return nil, err

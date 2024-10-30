@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/jobs"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 )
 
 const (
@@ -27,22 +29,38 @@ type Biller interface {
 	GetPlanByName(ctx context.Context, name string) (*Plan, error)
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
-	CreateCustomer(ctx context.Context, organization *database.Organization) (string, error)
+	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
+	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
+	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
+	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
+	DeleteCustomer(ctx context.Context, customerID string) error
 
-	// CreateSubscription creates a subscription for the given organization.
-	// The subscription starts immediately.
+	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
-	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
-	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
+	// GetActiveSubscription returns the active subscription for the given organization
+	GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error)
+	// CancelSubscriptionsForCustomer cancels all the subscriptions for the given organization and returns the end date of the subscription
+	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) (time.Time, error)
+
+	// ChangeSubscriptionPlan changes the plan of the given subscription immediately and returns the updated subscription
 	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
-	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
-	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
-	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
+	// UnscheduleCancellation cancels the scheduled cancellation for the given subscription and returns the updated subscription
+	UnscheduleCancellation(ctx context.Context, subscriptionID string) (*Subscription, error)
+
+	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
+	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
+	IsInvoicePaid(ctx context.Context, invoice *Invoice) bool
+
+	MarkCustomerTaxExempt(ctx context.Context, customerID string) error
+	UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error
 
 	ReportUsage(ctx context.Context, usage []*Usage) error
 
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
+
+	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
+	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
 type Plan struct {
@@ -81,7 +99,7 @@ type planMetadata struct {
 
 type Subscription struct {
 	ID                           string
-	CustomerID                   string
+	Customer                     *Customer
 	Plan                         *Plan
 	StartDate                    time.Time
 	EndDate                      time.Time
@@ -91,6 +109,14 @@ type Subscription struct {
 	Metadata                     map[string]string
 }
 
+type Customer struct {
+	ID                string
+	Email             string
+	Name              string
+	PaymentProviderID string
+	PortalURL         string
+}
+
 type Usage struct {
 	CustomerID     string
 	MetricName     string
@@ -98,6 +124,18 @@ type Usage struct {
 	ReportingGrain UsageReportingGranularity
 	StartTime      time.Time // Start time of the usage period
 	EndTime        time.Time // End time of the usage period
+	Metadata       map[string]interface{}
+}
+
+type Invoice struct {
+	ID             string
+	Status         string
+	CustomerID     string
+	Amount         string
+	Currency       string
+	DueDate        time.Time
+	CreatedAt      time.Time
+	SubscriptionID string
 	Metadata       map[string]interface{}
 }
 
@@ -114,3 +152,16 @@ const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
 )
+
+type PaymentProvider string
+
+const (
+	PaymentProviderStripe PaymentProvider = "stripe"
+)
+
+func Email(organization *database.Organization) string {
+	if organization.BillingEmail != "" {
+		return organization.BillingEmail
+	}
+	return SupportEmail
+}

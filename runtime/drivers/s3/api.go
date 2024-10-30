@@ -17,7 +17,7 @@ import (
 )
 
 func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
-	creds, err := c.getCredentials()
+	creds, err := c.newCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 	return buckets, nil
 }
 
-func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
-	creds, err := c.getCredentials()
+func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
+	creds, err := c.newCredentials()
 	if err != nil {
 		return nil, "", err
 	}
@@ -116,12 +116,12 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjec
 }
 
 func (c *Connection) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (string, error) {
-	creds, err := c.getCredentials()
+	creds, err := c.newCredentials()
 	if err != nil {
 		return "", err
 	}
 
-	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, req.Bucket, creds)
+	sess, err := c.newSessionForBucket(ctx, req.Bucket, "", "", creds)
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +133,7 @@ func (c *Connection) GetBucketMetadata(ctx context.Context, req *runtimev1.S3Get
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
-	creds, err := c.getCredentials()
+	creds, err := c.newCredentials()
 	if creds == credentials.AnonymousCredentials {
 		return "", false, nil
 	}

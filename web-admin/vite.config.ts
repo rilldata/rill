@@ -1,11 +1,12 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
-import type { UserConfig } from "vite";
+import { defineConfig } from "vitest/config";
+import { readPublicEmailDomains } from "./src/features/projects/user-management/readPublicEmailDomains";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
-const config: UserConfig = {
+export default defineConfig({
   resolve: {
     alias: {
       "@rilldata/web-admin": "/src",
@@ -16,9 +17,10 @@ const config: UserConfig = {
     port: 3000,
     strictPort: true,
   },
+  define: {
+    RillPublicEmailDomains: readPublicEmailDomains(),
+  },
   plugins: [sveltekit()],
   envDir: "../",
   envPrefix: "RILL_UI_PUBLIC_",
-};
-
-export default config;
+});

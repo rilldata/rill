@@ -29,7 +29,7 @@ export const test = base.extend({
       'compiler: rill-beta\ntitle: "Test Project"',
     );
 
-    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
+    const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY} --env connector.duckdb.external_table_storage=false`;
 
     const childProcess = spawn("../rill", cmd.split(" "), {
       stdio: "inherit",
@@ -45,7 +45,7 @@ export const test = base.extend({
           `http://localhost:${TEST_PORT}/v1/ping`,
         );
         return response.status === 200;
-      } catch (err) {
+      } catch {
         return false;
       }
     });

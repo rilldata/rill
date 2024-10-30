@@ -1,8 +1,6 @@
 import type { SvelteComponent } from "svelte";
 import { writable } from "svelte/store";
 
-export const importOverlayVisible = writable(false);
-
 interface Overlay {
   title: string;
   detail?: {
@@ -11,4 +9,31 @@ interface Overlay {
   };
 }
 
-export const overlay = writable<Overlay | null>(null);
+class OverlayStore {
+  private timeout: NodeJS.Timeout;
+  private isCleared: boolean = false;
+  private overlayStore = writable<Overlay | null>(null);
+  public subscribe = this.overlayStore.subscribe;
+
+  public set(overlay: Overlay | null) {
+    this.isCleared = false;
+    this.overlayStore.set(overlay);
+  }
+
+  public setDebounced(overlay: Overlay | null, delay: number = 300) {
+    this.isCleared = false;
+    clearTimeout(this.timeout);
+    this.timeout = setTimeout(() => {
+      if (!this.isCleared) {
+        this.overlayStore.set(overlay);
+      }
+    }, delay);
+  }
+
+  public clear() {
+    this.isCleared = true;
+    this.overlayStore.set(null);
+  }
+}
+
+export const overlay = new OverlayStore();

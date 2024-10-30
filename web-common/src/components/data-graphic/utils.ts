@@ -306,8 +306,8 @@ export function bisectData<T>(
   data: ArrayLike<T>,
 ): { position: number; entry: T } {
   const bisect = bisector<T, unknown>((d) => d[accessor])[direction];
-
   const position = bisect(data, value);
+
   return {
     position,
     entry: data[position],

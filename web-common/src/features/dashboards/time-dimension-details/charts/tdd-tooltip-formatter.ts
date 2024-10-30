@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { TDDAlternateCharts, TDDChart } from "../types";
+import { type TDDAlternateCharts, TDDChart } from "../types";
 
 export function escapeHTML(value: any): string {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;");

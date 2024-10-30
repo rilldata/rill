@@ -16,7 +16,7 @@ import (
 var extensions = []string{"json", "icu", "parquet", "httpfs", "sqlite_scanner", "motherduck"}
 
 // DuckDB platforms to download extensions for
-var platforms = []string{"linux_amd64", "osx_amd64", "osx_arm64"}
+var platforms = []string{"linux_amd64", "linux_arm64", "osx_amd64", "osx_arm64"}
 
 // Embed directory to store the extensions
 var embedDirRoot = "runtime/drivers/duckdb/extensions/embed/"
@@ -57,7 +57,13 @@ func main() {
 			url := fmt.Sprintf("http://extensions.duckdb.org/%s/%s/%s.duckdb_extension.gz", duckdbVersion, platform, extension)
 			destPath := filepath.Join(destDir, fmt.Sprintf("%s.duckdb_extension.gz", extension))
 
-			// Download the extension (silently overwrite if it exists)
+			// Check if the extension already exists and skip downloading
+			if _, err := os.Stat(destPath); err == nil {
+				log.Printf("Extension %s already exists at %s", extension, destPath)
+				continue
+			}
+
+			// Download the extension
 			err = downloadFile(url, destPath)
 			if err != nil {
 				log.Fatalf("Failed to download %s: %v", url, err)

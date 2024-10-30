@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
@@ -24,6 +26,8 @@ type Resolver interface {
 	// Close is called when done with the resolver.
 	// Note that the Resolve method may not have been called when Close is called (in case of cache hits or validation failures).
 	Close() error
+	// Cacheable indicates whether the resolver's results can be cached.
+	Cacheable() bool
 	// Key that can be used for caching. It can be a large string since the value will be hashed.
 	// The key should include all the properties and args that affect the output.
 	// It does not need to include the instance ID or resolver name, as those are added separately to the cache key.
@@ -41,70 +45,14 @@ type Resolver interface {
 
 // ResolverResult is the result of a resolver's execution.
 type ResolverResult interface {
-	// Schema is the schema for the Data
-	Schema() *runtimev1.StructType
-	// Cache indicates whether the result can be cached
-	Cache() bool
-	// MarshalJSON is a convenience method to serialize the result to JSON.
-	MarshalJSON() ([]byte, error)
 	// Close should be called to release resources
 	Close() error
-}
-
-func NewResolverResult(result *drivers.Result, cache bool) ResolverResult {
-	return &resolverResult{
-		rows:  result,
-		cache: cache,
-	}
-}
-
-type resolverResult struct {
-	rows  *drivers.Result
-	cache bool
-}
-
-var _ ResolverResult = &resolverResult{}
-
-// Cache implements ResolverResult.
-func (r *resolverResult) Cache() bool {
-	return r.cache
-}
-
-// Close implements ResolverResult.
-func (r *resolverResult) Close() error {
-	return r.rows.Close()
-}
-
-// MarshalJSON implements ResolverResult.
-func (r *resolverResult) MarshalJSON() ([]byte, error) {
-	var out []map[string]any
-	for r.rows.Next() {
-		row := make(map[string]any)
-		err := r.rows.MapScan(row)
-		if err != nil {
-			return nil, err
-		}
-
-		ret, err := jsonval.ToValue(row, &runtimev1.Type{StructType: r.rows.Schema})
-		if err != nil {
-			return nil, err
-		}
-		row, ok := ret.(map[string]any)
-		if !ok {
-			// this should never happen
-			return nil, fmt.Errorf("Resolver.MarshalJSON unexpected type %T", ret)
-		}
-		out = append(out, row)
-	}
-	if r.rows.Err() != nil {
-		return nil, r.rows.Err()
-	}
-	return json.Marshal(out)
-}
-
-// Schema implements ResolverResult.
-func (r *resolverResult) Schema() *runtimev1.StructType {
-	return r.rows.Schema
+	// Schema is the schema for the Data
+	Schema() *runtimev1.StructType
+	// Next returns the next row of data. It returns io.EOF when there are no more rows.
+	Next() (map[string]any, error)
+	// MarshalJSON is a convenience method to serialize the result to JSON.
+	MarshalJSON() ([]byte, error)
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
@@ -148,18 +96,19 @@ type ResolveOptions struct {
 	Claims             *SecurityClaims
 }
 
-// ResolveResult is subset of ResolverResult that is cached
-type ResolveResult struct {
-	Data   []byte
-	Schema *runtimev1.StructType
-}
-
 // Resolve resolves a query using the given options.
-func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
+// The caller must call Close on the result when done consuming it.
+func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverResult, error) {
+	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
+	// Adding an early panic to catch this.
+	if opts.Claims == nil {
+		panic("received nil claims")
+	}
+
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
-		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
+		return nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
 		Runtime:    r,
@@ -170,18 +119,31 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		ForExport:  false,
 	})
 	if err != nil {
-		return ResolveResult{}, err
+		return nil, err
 	}
 	defer resolver.Close()
 
+	// If not cacheable, just resolve and return
+	if !resolver.Cacheable() {
+		return resolver.ResolveInteractive(ctx)
+	}
 	// Build cache key based on the resolver's key and refs
 	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {
-		return ResolveResult{}, err
+		return nil, err
 	}
 	hash := md5.New()
 	if _, err := hash.Write([]byte(resolver.Key())); err != nil {
-		return ResolveResult{}, err
+		return nil, err
+	}
+	if opts.Claims.UserAttributes != nil {
+		h, err := hashstructure.Hash(opts.Claims.UserAttributes, hashstructure.FormatV2, nil)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = hash.Write([]byte(strconv.FormatUint(h, 16))); err != nil {
+			return nil, err
+		}
 	}
 	for _, ref := range resolver.Refs() {
 		res, err := ctrl.Get(ctx, ref, false)
@@ -191,16 +153,16 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		}
 
 		if _, err := hash.Write([]byte(res.Meta.Name.Kind)); err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
 		if _, err := hash.Write([]byte(res.Meta.Name.Name)); err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Seconds); err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Nanos); err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
 	}
 	sum := hex.EncodeToString(hash.Sum(nil))
@@ -208,38 +170,211 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
-		return val.(ResolveResult), nil
+		return val.(*cachedResolverResult).copy(), nil
 	}
 
 	// Load with singleflight
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
 		if val, ok := r.queryCache.cache.Get(key); ok {
-			return val, nil
+			return val.(*cachedResolverResult), nil
 		}
 
+		// Resolve
+		// NOTE: We can under no circumstances return the res directly since we're in a singleflight and results can have iterator state.
 		res, err := resolver.ResolveInteractive(ctx)
 		if err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
 		defer res.Close()
 
-		data, err := res.MarshalJSON()
+		// Cache the result
+		cRes, err := newCachedResolverResult(res)
 		if err != nil {
-			return ResolveResult{}, err
+			return nil, err
 		}
-
-		cRes := ResolveResult{
-			Data:   data,
-			Schema: res.Schema(),
-		}
-		if res.Cache() {
-			r.queryCache.cache.Set(key, cRes, int64(len(data)))
-		}
+		r.queryCache.cache.Set(key, cRes, int64(len(cRes.data)))
 		return cRes, nil
 	})
 	if err != nil {
-		return ResolveResult{}, err
+		return nil, err
 	}
-	return val.(ResolveResult), nil
+
+	// Need to call copy() even on the first result to prevent the parsed rows staying in memory for a long time.
+	return val.(*cachedResolverResult).copy(), nil
+}
+
+// NewDriverResolverResult creates a ResolverResult from a drivers.Result.
+func NewDriverResolverResult(result *drivers.Result) ResolverResult {
+	return &driverResolverResult{
+		rows: result,
+	}
+}
+
+type driverResolverResult struct {
+	rows *drivers.Result
+}
+
+var _ ResolverResult = &driverResolverResult{}
+
+// Close implements ResolverResult.
+func (r *driverResolverResult) Close() error {
+	return r.rows.Close()
+}
+
+// Schema implements ResolverResult.
+func (r *driverResolverResult) Schema() *runtimev1.StructType {
+	return r.rows.Schema
+}
+
+// Next implements ResolverResult.
+func (r *driverResolverResult) Next() (map[string]any, error) {
+	if !r.rows.Next() {
+		return nil, io.EOF
+	}
+	row := make(map[string]any)
+	err := r.rows.MapScan(row)
+	if err != nil {
+		return nil, err
+	}
+	return row, nil
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
+	var out []map[string]any
+	for r.rows.Next() {
+		row := make(map[string]any)
+		err := r.rows.MapScan(row)
+		if err != nil {
+			return nil, err
+		}
+
+		ret, err := jsonval.ToValue(row, &runtimev1.Type{StructType: r.rows.Schema})
+		if err != nil {
+			return nil, err
+		}
+		row, ok := ret.(map[string]any)
+		if !ok {
+			// this should never happen
+			return nil, fmt.Errorf("Resolver.MarshalJSON unexpected type %T", ret)
+		}
+		out = append(out, row)
+	}
+	if r.rows.Err() != nil {
+		return nil, r.rows.Err()
+	}
+	if out == nil { // fixes 'null' output when there are no rows
+		out = []map[string]any{}
+	}
+	return json.Marshal(out)
+}
+
+// NewMapsResolverResult creates a ResolverResult from a slice of maps.
+func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType) ResolverResult {
+	return &mapsResolverResult{
+		rows:   result,
+		schema: schema,
+	}
+}
+
+type mapsResolverResult struct {
+	rows   []map[string]any
+	schema *runtimev1.StructType
+	idx    int
+}
+
+var _ ResolverResult = &mapsResolverResult{}
+
+// Close implements ResolverResult.
+func (r *mapsResolverResult) Close() error {
+	return nil
+}
+
+// Schema implements ResolverResult.
+func (r *mapsResolverResult) Schema() *runtimev1.StructType {
+	return r.schema
+}
+
+// Next implements ResolverResult.
+func (r *mapsResolverResult) Next() (map[string]any, error) {
+	if r.idx >= len(r.rows) {
+		return nil, io.EOF
+	}
+	row := r.rows[r.idx]
+	r.idx++
+	return row, nil
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.rows)
+}
+
+// newCachedResolverResult wraps a ResolverResult such that it is cacheable.
+// Unlike other ResolverResult implementations, it can be kept in memory for a long time and read multiple times.
+// When used multiple times, call .copy() to get a copy with a reset iteration cursor.
+func newCachedResolverResult(res ResolverResult) (*cachedResolverResult, error) {
+	data, err := res.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return &cachedResolverResult{
+		data:   data,
+		schema: res.Schema(),
+	}, nil
+}
+
+type cachedResolverResult struct {
+	data   []byte
+	schema *runtimev1.StructType
+
+	// Iterator fields. Should only be populated on short-lived copies obtained via copy().
+	rows []map[string]any
+	idx  int
+}
+
+var _ ResolverResult = &cachedResolverResult{}
+
+// Close implements ResolverResult.
+func (r *cachedResolverResult) Close() error {
+	return nil
+}
+
+// Schema implements ResolverResult.
+func (r *cachedResolverResult) Schema() *runtimev1.StructType {
+	return r.schema
+}
+
+// Next implements ResolverResult.
+func (r *cachedResolverResult) Next() (map[string]any, error) {
+	if r.rows == nil {
+		var rows []map[string]any
+		err := json.Unmarshal(r.data, &rows)
+		if err != nil {
+			return nil, err
+		}
+		r.rows = rows
+	}
+	if r.idx >= len(r.rows) {
+		return nil, io.EOF
+	}
+	row := r.rows[r.idx]
+	r.idx++
+	return row, nil
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *cachedResolverResult) MarshalJSON() ([]byte, error) {
+	return r.data, nil
+}
+
+func (r *cachedResolverResult) copy() *cachedResolverResult {
+	return &cachedResolverResult{
+		data:   r.data,
+		schema: r.schema,
+		rows:   nil,
+		idx:    0,
+	}
 }

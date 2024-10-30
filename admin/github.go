@@ -224,7 +224,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 				continue
 			}
 
-			err = s.TriggerReconcile(ctx, depl)
+			err = s.TriggerParser(ctx, depl)
 			if err != nil {
 				return err
 			}

@@ -44,10 +44,6 @@ type Options struct {
 	GlobPageSize          int
 	ExtractPolicy         *ExtractPolicy
 	GlobPattern           string
-	// Although at this point GlobMaxTotalSize and StorageLimitInBytes have same impl but
-	// this is total size the source should consume on disk and is calculated upstream basis how much data one instance has already consumed
-	// across other sources and the instance level limits
-	StorageLimitInBytes int64
 	// Retain files and only delete during close
 	KeepFilesUntilClose bool
 	// Retainfiles retains files for debugging purposes
@@ -197,26 +193,6 @@ func (it *blobIterator) Close() error {
 	}
 
 	return closeErr
-}
-
-func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
-	switch unit {
-	case drivers.ProgressUnitByte:
-		var size int64
-		for _, obj := range it.objects {
-			if obj.full {
-				size += obj.obj.Size
-			} else {
-				// TODO: Make it more accurate considering more data can be downloaded
-				size += int64(obj.extractOption.limitInBytes)
-			}
-		}
-		return size, true
-	case drivers.ProgressUnitFile:
-		return int64(len(it.objects)), true
-	default:
-		return 0, false
-	}
 }
 
 func (it *blobIterator) Next() ([]string, error) {
@@ -453,10 +429,6 @@ type prefetchedIterator struct {
 
 func (it *prefetchedIterator) Close() error {
 	return it.underlying.Close()
-}
-
-func (it *prefetchedIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
-	return it.underlying.Size(unit)
 }
 
 func (it *prefetchedIterator) Next() ([]string, error) {

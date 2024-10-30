@@ -7,15 +7,15 @@
     selectors: {
       dimensions: { visibleDimensions },
     },
-    metricsViewName,
+    exploreName,
   } = getStateManagers();
 
   let parentElement: HTMLDivElement;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
-  <div class="pl-1 pb-3">
-    <LeaderboardControls metricViewName={$metricsViewName} />
+  <div class="pl-2.5 pb-3">
+    <LeaderboardControls exploreName={$exploreName} />
   </div>
   <div bind:this={parentElement} class="overflow-y-auto leaderboard-display">
     {#if parentElement}
@@ -32,9 +32,6 @@
 
 <style lang="postcss">
   .leaderboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 315px);
-    gap: 1.5rem;
-    @apply h-fit overflow-hidden;
+    @apply flex flex-row flex-wrap gap-4;
   }
 </style>

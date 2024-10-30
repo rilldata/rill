@@ -1,4 +1,4 @@
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -26,9 +26,15 @@ export interface PivotDataState {
   totalColumns: number; // total columns excluding row and group totals columns
   reachedEndForRowData?: boolean;
   totalsRowData?: PivotDataRow;
+  activeCellFilters?: PivotFilter;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
+
+export interface PivotCell {
+  rowId: string;
+  columnId: string;
+}
 
 export interface PivotState {
   active: boolean;
@@ -40,6 +46,8 @@ export interface PivotState {
   rowPage: number;
   enableComparison: boolean;
   rowJoinType: PivotRowJoinType;
+  activeCell: PivotCell | null;
+  whereSql?: string;
 }
 
 export type PivotRowJoinType = "flat" | "nest";
@@ -97,6 +105,11 @@ export interface PivotAxesData {
     | undefined;
 }
 
+export interface PivotFilter {
+  filters: V1Expression | undefined;
+  timeRange: TimeRangeString;
+}
+
 // OLD PIVOT TYPES
 export type PivotMeasure = {
   def: string;
@@ -143,6 +156,7 @@ export type PivotChipData = {
   id: string;
   title: string;
   type: PivotChipType;
+  description?: string;
 };
 
 export enum PivotChipType {

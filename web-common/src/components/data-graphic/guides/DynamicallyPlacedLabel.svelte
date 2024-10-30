@@ -65,8 +65,8 @@
     mutation.disconnect();
   });
 
-  $: trueX = rx || $xScale(x);
-  $: trueY = ry || $yScale(y);
+  $: trueX = rx || $xScale(x as number);
+  $: trueY = ry || $yScale(y as number);
 </script>
 
 <g transform="translate({$xOffset} 0)">

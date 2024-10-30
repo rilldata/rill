@@ -1,33 +1,29 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
+  import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    ResourceKind,
-    resourceIsLoading,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
-  import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
-  import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
+  import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
+  import MetricsEditor from "@rilldata/web-common/features/metrics-views/editor/MetricsEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-
-  const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
+  import {
+    useIsModelingSupportedForDefaultOlapDriver,
+    useIsModelingSupportedForOlapDriver,
+  } from "../connectors/olap/selectors";
+  import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import VisualMetrics from "./VisualMetrics.svelte";
+  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
-
-  let showDeployModal = false;
-  let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
   $: ({
@@ -38,90 +34,102 @@
     fileName,
   } = fileArtifact);
 
-  $: metricViewName = getNameFromFile(filePath);
+  $: workspace = workspaces.get(filePath);
 
-  $: initLocalUserPreferenceStore(metricViewName);
-  $: isModelingSupportedQuery = canModel(instanceId);
-  $: isModelingSupported = $isModelingSupportedQuery;
+  $: metricsViewName = getNameFromFile(filePath);
+
+  $: initLocalUserPreferenceStore(metricsViewName);
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: ({ data: resourceData, isFetching } = $resourceQuery);
-  $: isResourceLoading = resourceIsLoading(resourceData);
+  $: ({ data: resource } = $resourceQuery);
 
-  $: previewDisabled =
-    !$remoteContent?.length ||
-    !!allErrors?.length ||
-    isResourceLoading ||
-    isFetching;
+  $: isOldMetricsView = !$remoteContent?.includes("version: 1");
+  $: connector = resource?.metricsView?.state?.validSpec?.connector ?? "";
+  $: database = resource?.metricsView?.state?.validSpec?.database ?? "";
+  $: databaseSchema =
+    resource?.metricsView?.state?.validSpec?.databaseSchema ?? "";
+  $: table = resource?.metricsView?.state?.validSpec?.table ?? "";
 
-  $: if (!$remoteContent?.length) {
-    previewStatus = [
-      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
-    ];
-  } else if (allErrors?.length && allErrors[0].message) {
-    // content & errors
-    previewStatus = [allErrors[0].message, TOOLTIP_CTA];
-  } else {
-    // preview is available
-    previewStatus = ["Explore your metrics dashboard"];
-  }
+  $: isModelingSupportedForDefaultOlapDriver =
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+    instanceId,
+    connector,
+  );
+  $: isModelingSupported = connector
+    ? $isModelingSupportedForOlapDriver
+    : $isModelingSupportedForDefaultOlapDriver;
 
-  async function onChangeCallback(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     if (newRoute) await goto(newRoute);
   }
+
+  $: selectedView = workspace.view;
+
+  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported}>
+<WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
-    slot="header"
-    showInspectorToggle={isModelingSupported}
-    titleInput={fileName}
+    {filePath}
+    resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={onChangeCallback}
+    onTitleChange={onChangeCallback}
+    showInspectorToggle={$selectedView === "code" && isModelingSupported}
+    slot="header"
+    titleInput={fileName}
   >
-    <div slot="cta" class="flex gap-x-2">
-      <Tooltip distance={8}>
-        <Button on:click={() => (showDeployModal = true)} type="secondary">
-          Deploy
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Deploy this dashboard to Rill Cloud
-        </TooltipContent>
-      </Tooltip>
-      <PreviewButton
-        dashboardName={metricViewName}
-        status={previewStatus}
-        disabled={previewDisabled}
-      />
+    <div class="flex gap-x-2" slot="cta">
+      {#if isOldMetricsView}
+        <PreviewButton
+          href="/explore/{metricsViewName}"
+          disabled={errors.length > 0}
+        />
+      {:else}
+        <GoToDashboardButton {resource} />
+      {/if}
+
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditor
-    slot="body"
-    bind:autoSave={$autoSave}
-    {fileArtifact}
+  <svelte:fragment slot="body">
+    {#if $selectedView === "code"}
+      <MetricsEditor
+        bind:autoSave={$autoSave}
+        {fileArtifact}
+        {filePath}
+        {errors}
+        {metricsViewName}
+      />
+    {:else}
+      {#key fileArtifact}
+        <VisualMetrics
+          {errors}
+          {fileArtifact}
+          switchView={() => {
+            $selectedView = "code";
+          }}
+        />
+      {/key}
+    {/if}
+  </svelte:fragment>
+
+  <MetricsInspector
     {filePath}
-    {allErrors}
-    {metricViewName}
+    {connector}
+    {database}
+    {databaseSchema}
+    {table}
+    slot="inspector"
   />
-
-  <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
 </WorkspaceContainer>
-
-<DeployDashboardCta
-  on:close={() => (showDeployModal = false)}
-  open={showDeployModal}
-/>

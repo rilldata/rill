@@ -1,3 +1,5 @@
 <p class="text-sm text-gray-500 text-center">
-  Need help? Reach out to us on <a href="http://bit.ly/3jg4IsF">Discord</a>
+  Need help? Reach out to us on <a href="http://bit.ly/3jg4IsF" target="_blank"
+    >Discord</a
+  >
 </p>

@@ -9,20 +9,26 @@ import (
 )
 
 type selfToSelfExecutor struct {
-	c    *connection
-	opts *drivers.ModelExecutorOptions
+	c *connection
 }
 
 var _ drivers.ModelExecutor = &selfToSelfExecutor{}
 
-func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *selfToSelfExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 1 {
+		return 0, false
+	}
+	return 1, true
+}
+
+func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
 		return nil, fmt.Errorf("output connector is not OLAP")
 	}
 
 	inputProps := &ModelInputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if err := inputProps.Validate(); err != nil {
@@ -30,20 +36,20 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	}
 
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse output properties: %w", err)
 	}
-	if err := outputProps.Validate(e.opts); err != nil {
+	if err := outputProps.Validate(opts); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
 	usedModelName := false
 	if outputProps.Table == "" {
-		outputProps.Table = e.opts.ModelName
+		outputProps.Table = opts.ModelName
 		usedModelName = true
 	}
 
-	materialize := e.opts.Env.DefaultMaterialize
+	materialize := opts.Env.DefaultMaterialize
 	if outputProps.Materialize != nil {
 		materialize = *outputProps.Materialize
 	}
@@ -51,11 +57,11 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	asView := !materialize
 	tableName := outputProps.Table
 
-	if !e.opts.IncrementalRun {
+	if !opts.IncrementalRun {
 		// Prepare for ingesting into the staging view/table.
 		// NOTE: This intentionally drops the end table if not staging changes.
 		stagingTableName := tableName
-		if e.opts.Env.StageChanges {
+		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
 		if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
@@ -78,7 +84,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		}
 	} else {
 		// Insert into the table
-		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, false, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
@@ -98,7 +104,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	// Done
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: resultPropsMap,
 		Table:      tableName,
 	}, nil

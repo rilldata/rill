@@ -1,7 +1,5 @@
-<script lang="ts">
-  import { fly } from "svelte/transition";
-
-  let zigZag =
+<script context="module" lang="ts">
+  const zigZag =
     "M" +
     Array.from({ length: 7 })
       .map((_, i) => {
@@ -10,16 +8,6 @@
       .join(" L");
 </script>
 
-<div style="position: relative" transition:fly={{ duration: 200, x: 20 }}>
-  <svg
-    style="
-    position:absolute;
-    right: 0px;
-    transform: translateY(-22px);
-  "
-    width="15"
-    height="22"
-  >
-    <path d={zigZag} fill="white" />
-  </svg>
-</div>
+<svg class="absolute right-0 top-0 z-50" width="15" height="22">
+  <path d={zigZag} class="fill-background" />
+</svg>

@@ -1,22 +1,16 @@
 package admin
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/c2h5oh/datasize"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -25,6 +19,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -220,6 +215,11 @@ func (h *Handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (h *Handle) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsModelExecutor implements drivers.Handle.
 func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false
@@ -299,7 +299,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
-		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "/rill.yaml"))
+		rawYaml, err := os.ReadFile(filepath.Join(h.projPath, "rill.yaml"))
 		if err == nil {
 			yml := &rillYAML{}
 			err = yaml.Unmarshal(rawYaml, yml)
@@ -621,45 +621,13 @@ func (h *Handle) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.downloadURL, http.NoBody)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		// return ghinstallation.HTTPError for outer retry to not retry on 404
-		return &ghinstallation.HTTPError{Response: resp}
-	}
-	defer resp.Body.Close()
-
 	// generate a temporary file to copy repo tar directory
 	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}
-	defer os.Remove(downloadDst)
-	out, err := os.Create(downloadDst)
-	if err != nil {
-		return err
-	}
 
-	// Writer the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		out.Close()
-		return err
-	}
-	out.Close()
-
-	// clean the projPath first to remove any files from previous download
-	_ = os.RemoveAll(h.projPath)
-
-	// untar to the project path
-	err = untar(downloadDst, filepath.Clean(h.projPath))
+	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true)
 	if err != nil {
 		return err
 	}
@@ -694,63 +662,6 @@ func generateTmpPath(dir, base, ext string) (string, error) {
 	return p, nil
 }
 
-func untar(src, dest string) error {
-	file, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	gz, err := gzip.NewReader(file)
-	if err != nil {
-		return err
-	}
-	defer gz.Close()
-	tarReader := tar.NewReader(gz)
-	for {
-		header, err := tarReader.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break // End of tar archive
-			}
-			return err
-		}
-
-		// Determine the proper path for the item
-		target, err := sanitizeArchivePath(dest, header.Name)
-		if err != nil {
-			return err
-		}
-		switch header.Typeflag {
-		case tar.TypeDir:
-			// Handle directory
-			if err := os.MkdirAll(target, header.FileInfo().Mode()); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			// Handle regular file
-			if err := os.MkdirAll(filepath.Dir(target), header.FileInfo().Mode()); err != nil {
-				return err
-			}
-			outFile, err := os.Create(target)
-			if err != nil {
-				return err
-			}
-			// Setting a limit of 1GB to avoid G110: Potential DoS vulnerability via decompression bomb
-			// The max file size allowed via upload path is 100MB. Assume that 100MB tar file can't be decompressed to more than 1GB.
-			_, err = io.CopyN(outFile, tarReader, int64(datasize.GB))
-			if err != nil && !errors.Is(err, io.EOF) {
-				outFile.Close()
-				return err
-			}
-			outFile.Close()
-		default:
-			return fmt.Errorf("unsupported header type: %c", header.Typeflag)
-		}
-	}
-	return nil
-}
-
 // retryErrClassifier classifies Github request errors as retryable or not.
 type retryErrClassifier struct{}
 
@@ -773,13 +684,4 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Retry
-}
-
-func sanitizeArchivePath(dest, tarPath string) (v string, err error) {
-	v = filepath.Join(dest, tarPath)
-	if strings.HasPrefix(v, dest) {
-		return v, nil
-	}
-
-	return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
 }

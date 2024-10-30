@@ -111,10 +111,11 @@ export function isGrainBigger(
 }
 
 export function checkValidTimeGrain(
-  timeGrain: V1TimeGrain,
+  timeGrain: V1TimeGrain | undefined,
   timeGrainOptions: TimeGrain[],
   minTimeGrain: V1TimeGrain,
 ): boolean {
+  if (!timeGrain) return false;
   if (!timeGrainOptions.find((t) => t.grain === timeGrain)) return false;
 
   // If minTimeGrain is not specified, then all available timeGrains are valid

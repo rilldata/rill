@@ -1,0 +1,88 @@
+project:
+  sources: {}
+  "models/ad_bids_mini.yaml":
+      type: model
+      sql: SELECT * FROM url('https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv', CSV)
+      output:
+        columns: (id UInt32,timestamp DateTime64,publisher varchar,domain varchar,bid_price Float32,volume UInt8,impressions UInt8,"ad words" varchar,clicks Float32,device varchar)
+        materialize: true
+        incremental_strategy: append
+  "dashboards/ad_bids_mini_metrics_with_policy.yaml":
+      model: ad_bids_mini
+      display_name: Ad bids
+      description:
+      timeseries: timestamp
+      smallest_time_grain: ""
+      dimensions:
+        - name: publisher
+          display_name: Publisher
+          expression: publisher
+          description: ""
+        - property: domain
+          display_name: Domain
+          description: ""
+      measures:
+        - name: bid's number
+          display_name: "Number of bids"
+          expression: count(*)
+        - name: total volume
+          display_name: "Total volume"
+          expression: sum(volume)
+        - name: total impressions
+          display_name: "Total impressions"
+          expression: sum(impressions)
+        - name: total click"s
+          display_name: "Total clicks"
+          expression: sum(clicks)
+      security:
+        access: true
+        row_filter: "domain = '{{ .user.domain }}'"
+        exclude:
+          - if: "'{{ .user.domain }}' != 'msn.com'"
+            names:
+              - total volume
+connectors:
+  clickhouse: null
+tests:
+  empty:
+    resolver: mv_sql_policy_api
+    options:
+      resolver: "metrics_sql"
+      resolver_properties: 
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: google.com
+          email: user@google.com
+    result: []
+  msn:
+    resolver: mv_sql_policy_api
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: msn.com
+          email: user@msn.com
+    result:
+      - domain: msn.com
+        publisher: ""
+        total impressions: 3.00
+  simple:
+    resolver: mv_sql_policy_api
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\"\nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: yahoo.com
+          email: user@yahoo.com
+    result:
+      - domain: yahoo.com
+        publisher: Yahoo
+        total impressions: 3.00

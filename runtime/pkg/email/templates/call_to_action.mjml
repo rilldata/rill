@@ -16,11 +16,11 @@
 
         <mj-spacer height="35px" />
         
-        <mj-text font-size="20px" font-weight="bold">
+        <mj-text align="center" font-size="20px" font-weight="bold">
           {{ .Title }}
         </mj-text>
 
-        <mj-text padding-bottom="0px">
+        <mj-text align="center" padding-bottom="0px">
           {{ .Body }}
         </mj-text>
 
@@ -37,7 +37,7 @@
         <mj-spacer height="20px" />
 
         <mj-text align="center" font-size="12px" line-height="1.5">
-          © 2023 Rill Data, Inc<br />
+          © 2024 Rill Data, Inc<br />
           18 Bartol St. • San Francisco • CA<br />
           <a href="https://www.rilldata.com/contact">Contact us</a> •
           <a href="https://bit.ly/3unvA05">Community</a> •

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -18,7 +19,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// timeLayoutUnseparated formats an absolute timestamp as a string with millisecond precision without any separators.
+// E.g. for "2006-01-02T15:04:05.999Z" it outputs "200601021504059999".
+const timeLayoutUnseparated = "200601021504059999"
 
 // ListResources implements runtimev1.RuntimeServiceServer
 func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest) (*runtimev1.ListResourcesResponse, error) {
@@ -178,14 +185,15 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
 }
 
-// CreateTrigger implements runtimev1.RuntimeServiceServer
-func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+// GetExplore implements runtimev1.RuntimeServiceServer
+func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreRequest) (*runtimev1.GetExploreResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.name", req.Name),
 	)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
@@ -194,23 +202,189 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var kind string
-	r := &runtimev1.Resource{}
-
-	switch trg := req.Trigger.(type) {
-	case *runtimev1.CreateTriggerRequest_PullTriggerSpec:
-		kind = runtime.ResourceKindPullTrigger
-		r.Resource = &runtimev1.Resource_PullTrigger{PullTrigger: &runtimev1.PullTrigger{Spec: trg.PullTriggerSpec}}
-	case *runtimev1.CreateTriggerRequest_RefreshTriggerSpec:
-		kind = runtime.ResourceKindRefreshTrigger
-		r.Resource = &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: trg.RefreshTriggerSpec}}
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: req.Name}
+	e, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	n := &runtimev1.ResourceName{
-		Kind: kind,
-		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
+	e, access, err := s.applySecurityPolicy(ctx, req.InstanceId, e)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
+	validSpec := e.GetExplore().State.ValidSpec
+	if validSpec == nil {
+		return &runtimev1.GetExploreResponse{
+			Explore: e,
+		}, nil
+	}
+
+	n = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: validSpec.MetricsView}
+	m, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "metrics view not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	m, access, err = s.applySecurityPolicy(ctx, req.InstanceId, m)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "metrics view not found")
+	}
+
+	return &runtimev1.GetExploreResponse{
+		Explore:     e,
+		MetricsView: m,
+	}, nil
+}
+
+// GetModelSplits implements runtimev1.RuntimeServiceServer
+func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSplitsRequest) (*runtimev1.GetModelSplitsResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
+	}
+
+	splitsModelID := r.GetModel().State.SplitsModelId
+	if splitsModelID == "" {
+		return &runtimev1.GetModelSplitsResponse{}, nil
+	}
+
+	afterIdx := 0
+	afterKey := ""
+	if req.PageToken != "" {
+		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
+		}
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	defer release()
+
+	opts := &drivers.FindModelSplitsOptions{
+		ModelID:      splitsModelID,
+		WherePending: req.Pending,
+		WhereErrored: req.Errored,
+		AfterIndex:   afterIdx,
+		AfterKey:     afterKey,
+		Limit:        validPageSize(req.PageSize),
+	}
+
+	splits, err := catalog.FindModelSplits(ctx, opts)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var nextPageToken string
+	if len(splits) == validPageSize(req.PageSize) {
+		last := splits[len(splits)-1]
+		nextPageToken = marshalPageToken(last.Index, last.Key)
+	}
+
+	return &runtimev1.GetModelSplitsResponse{
+		Splits:        modelSplitsToPB(splits),
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
+// CreateTrigger implements runtimev1.RuntimeServiceServer
+func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditTrigger) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Build refresh trigger spec
+	spec := &runtimev1.RefreshTriggerSpec{
+		Resources: req.Resources,
+		Models:    req.Models,
+	}
+
+	// Handle the convenience flag for the project parser.
+	if req.Parser {
+		spec.Resources = append(spec.Resources, runtime.GlobalProjectParserName)
+	}
+
+	// Handle the convenience flags for all sources and models.
+	if req.AllSourcesModels || req.AllSourcesModelsFull {
+		// Add all sources.
+		// Note: Don't need to handle "full" here since source refreshes are always full refreshes.
+		rs, err := ctrl.List(ctx, runtime.ResourceKindSource, "", false)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list sources: %w", err).Error())
+		}
+		for _, r := range rs {
+			spec.Resources = append(spec.Resources, r.Meta.Name)
+		}
+
+		// Add all models.
+		rs, err = ctrl.List(ctx, runtime.ResourceKindModel, "", false)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to list models: %w", err).Error())
+		}
+		for _, r := range rs {
+			spec.Models = append(spec.Models, &runtimev1.RefreshModelTrigger{
+				Model: r.Meta.Name.Name,
+				Full:  req.AllSourcesModelsFull,
+			})
+		}
+	}
+
+	// Create the trigger resource
+	name := fmt.Sprintf("trigger_adhoc_%s", time.Now().Format(timeLayoutUnseparated))
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: name}
+	r := &runtimev1.Resource{Resource: &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: spec}}}
 	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
@@ -240,6 +414,9 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	case *runtimev1.Resource_MetricsView:
 		// For metrics views, we need to remove fields excluded by the field access rules.
 		return s.applyMetricsViewSecurity(r, security), true, nil
+	case *runtimev1.Resource_Explore:
+		// For explores, we need to remove fields excluded by the field access rules.
+		return s.applyExploreSecurity(r, security), true, nil
 	default:
 		// The resource can be returned as is.
 		return r, true, nil
@@ -304,4 +481,116 @@ func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, p
 	}
 
 	return dims, ms, true
+}
+
+// applyExploreSecurity rewrites an explore based on the field access conditions of a security policy.
+func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.ResolvedSecurity) *runtimev1.Resource {
+	if security.CanAccessAllFields() {
+		return r
+	}
+
+	// We only rewrite the ValidSpec at the moment.
+	// In the future, to avoid leaking field names in the main spec (which is not really used outside of the reconciler),
+	// we might consider not returning the spec at all for non-admins.
+	spec := r.GetExplore().State.ValidSpec
+	if spec == nil {
+		return r
+	}
+	if spec.DimensionsSelector != nil || spec.MeasuresSelector != nil {
+		// If the ValidSpec has dynamic selectors, we don't know what the available fields, so we can't filter it correctly.
+		// This should never happen because the Explore reconciler should have resolved the fields and removed the exclude flags.
+		panic(fmt.Errorf("the ValidSpec for an explore should not have exclude flags set"))
+	}
+
+	// Clone the spec so we can edit it in-place
+	spec = proto.Clone(spec).(*runtimev1.ExploreSpec)
+
+	// Filter the dimensions
+	var dims []string
+	for _, dim := range spec.Dimensions {
+		if security.CanAccessField(dim) {
+			dims = append(dims, dim)
+		}
+	}
+	spec.Dimensions = dims
+
+	// Filter the measures
+	var ms []string
+	for _, m := range spec.Measures {
+		if security.CanAccessField(m) {
+			ms = append(ms, m)
+		}
+	}
+	spec.Measures = ms
+
+	// Filter the dimensions and measures in the presets
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
+		var dims []string
+		for _, dim := range p.Dimensions {
+			if security.CanAccessField(dim) {
+				dims = append(dims, dim)
+			}
+		}
+		p.Dimensions = dims
+
+		var ms []string
+		for _, m := range p.Measures {
+			if security.CanAccessField(m) {
+				ms = append(ms, m)
+			}
+		}
+		p.Measures = ms
+	}
+
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta: r.Meta,
+		Resource: &runtimev1.Resource_Explore{Explore: &runtimev1.Explore{
+			Spec:  r.GetExplore().Spec,
+			State: &runtimev1.ExploreState{ValidSpec: spec},
+		}},
+	}
+}
+
+// modelSplitsToPB converts a slice of drivers.ModelSplit to a slice of runtimev1.ModelSplit.
+func modelSplitsToPB(splits []drivers.ModelSplit) []*runtimev1.ModelSplit {
+	pbs := make([]*runtimev1.ModelSplit, len(splits))
+	for i, split := range splits {
+		pbs[i] = modelSplitToPB(split)
+	}
+	return pbs
+}
+
+// modelSplitToPB converts a drivers.ModelSplit to a runtimev1.ModelSplit.
+func modelSplitToPB(split drivers.ModelSplit) *runtimev1.ModelSplit {
+	var data map[string]interface{}
+	if err := json.Unmarshal(split.DataJSON, &data); err != nil {
+		panic(err)
+	}
+
+	var watermark, executedOn *timestamppb.Timestamp
+	if split.Watermark != nil {
+		watermark = timestamppb.New(*split.Watermark)
+	}
+	if split.ExecutedOn != nil {
+		executedOn = timestamppb.New(*split.ExecutedOn)
+	}
+
+	return &runtimev1.ModelSplit{
+		Key:        split.Key,
+		Data:       must(structpb.NewStruct(data)),
+		Watermark:  watermark,
+		ExecutedOn: executedOn,
+		Error:      split.Error,
+		ElapsedMs:  uint32(split.Elapsed.Milliseconds()),
+	}
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

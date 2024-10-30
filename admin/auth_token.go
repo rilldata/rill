@@ -167,13 +167,17 @@ func (t *magicAuthToken) OwnerID() string {
 
 // IssueMagicAuthTokenOptions provides options for IssueMagicAuthToken.
 type IssueMagicAuthTokenOptions struct {
-	ProjectID             string
-	TTL                   *time.Duration
-	CreatedByUserID       *string
-	Attributes            map[string]any
-	MetricsView           string
-	MetricsViewFilterJSON string
-	MetricsViewFields     []string
+	ProjectID       string
+	TTL             *time.Duration
+	CreatedByUserID *string
+	Attributes      map[string]any
+	ResourceType    string
+	ResourceName    string
+	FilterJSON      string
+	Fields          []string
+	State           string
+	DisplayName     string
+	Internal        bool
 }
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
@@ -187,15 +191,20 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	}
 
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
-		ID:                    tkn.ID.String(),
-		SecretHash:            tkn.SecretHash(),
-		ProjectID:             opts.ProjectID,
-		ExpiresOn:             expiresOn,
-		CreatedByUserID:       opts.CreatedByUserID,
-		Attributes:            opts.Attributes,
-		MetricsView:           opts.MetricsView,
-		MetricsViewFilterJSON: opts.MetricsViewFilterJSON,
-		MetricsViewFields:     opts.MetricsViewFields,
+		ID:              tkn.ID.String(),
+		SecretHash:      tkn.SecretHash(),
+		Secret:          tkn.Secret[:],
+		ProjectID:       opts.ProjectID,
+		ExpiresOn:       expiresOn,
+		CreatedByUserID: opts.CreatedByUserID,
+		Attributes:      opts.Attributes,
+		ResourceType:    opts.ResourceType,
+		ResourceName:    opts.ResourceName,
+		FilterJSON:      opts.FilterJSON,
+		Fields:          opts.Fields,
+		State:           opts.State,
+		DisplayName:     opts.DisplayName,
+		Internal:        opts.Internal,
 	})
 	if err != nil {
 		return nil, err
@@ -263,11 +272,10 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		}
 
 		s.Used.DeploymentToken(dat.ID)
-		s.Used.Deployment(dat.DeploymentID)
 
 		return &deploymentAuthToken{model: dat, token: parsed}, nil
 	case authtoken.TypeMagic:
-		mat, err := s.DB.FindMagicAuthToken(ctx, parsed.ID.String())
+		mat, err := s.DB.FindMagicAuthToken(ctx, parsed.ID.String(), false)
 		if err != nil {
 			return nil, err
 		}

@@ -31,7 +31,9 @@ path: data/foo.csv
 		"/models/bar.sql": `
 SELECT * FROM foo
 `,
-		"/dashboards/foobar.yaml": `
+		"/metrics/foobar.yaml": `
+version: 1
+type: metrics_view
 model: bar
 dimensions:
 - name: a
@@ -100,7 +102,7 @@ measures:
 	// Verify the metrics view
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:  "duckdb",
-		Table:      "bar",
+		Model:      "bar",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
 		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 	}
@@ -109,13 +111,19 @@ measures:
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "foobar"},
 			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/dashboards/foobar.yaml"},
+			FilePaths: []string{"/metrics/foobar.yaml"},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: &runtimev1.MetricsViewV2{
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
-					ValidSpec: mvSpec,
+					ValidSpec: &runtimev1.MetricsViewSpec{
+						Connector:  "duckdb",
+						Model:      "bar",
+						Table:      "bar",
+						Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
+						Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+					},
 				},
 			},
 		},
@@ -159,7 +167,7 @@ path
 			Name:           &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "foobar"},
 			Refs:           []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
 			Owner:          runtime.GlobalProjectParserName,
-			FilePaths:      []string{"/dashboards/foobar.yaml"},
+			FilePaths:      []string{"/metrics/foobar.yaml"},
 			ReconcileError: "does not exist",
 		},
 		Resource: &runtimev1.Resource_MetricsView{
@@ -685,8 +693,10 @@ path: data/foo.csv
 		"/models/bar1.sql": `SELECT * FROM foo`,
 		"/models/bar2.sql": `SELECT * FROM bar1`,
 		"/models/bar3.sql": `SELECT * FROM bar2`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar3
 dimensions:
 - column: b
@@ -834,8 +844,10 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -853,8 +865,10 @@ measures:
 
 	// ignore invalid measure and dimension
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -873,8 +887,10 @@ measures:
 
 	// no measure, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -889,12 +905,14 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "must define at least one measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "must define at least one measure"})
 
 	// no dimension. valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -914,8 +932,10 @@ measures:
 
 	// duplicate measure name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -929,12 +949,14 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// duplicate dimension name, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -948,12 +970,14 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// duplicate cross name between measures and dimensions, invalid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -967,12 +991,14 @@ measures:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
-	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/metrics/dash.yaml": "found duplicate dimension or measure"})
 
 	// reset to valid dashboard
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1015,8 +1041,10 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1105,8 +1133,10 @@ path: data/foo.csv
 	testruntime.RequireResource(t, rt, id, modelRes)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1122,7 +1152,7 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func TestDashboardTheme(t *testing.T) {
+func TestExploreTheme(t *testing.T) {
 	// Create source and model
 	rt, id := testruntime.NewInstance(t)
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1132,20 +1162,27 @@ func TestDashboardTheme(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
+type: source
 connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/m1.yaml": `
+version: 1
+type: metrics_view
 model: bar
-default_theme: t1
 dimensions:
 - column: b
 measures:
 - expression: count(*)
 `,
-		`themes/t1.yaml`: `
+		"explores/e1.yaml": `
+type: explore
+metrics_view: m1
+display_name: Hello
+theme: t1
+`,
+		"themes/t1.yaml": `
 type: theme
 colors:
   primary: red
@@ -1178,14 +1215,17 @@ colors:
 			},
 		},
 	}
-	mv, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
-	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
-	mv.GetSpec().DefaultTheme = "t1"
-	mv.GetState().ValidSpec.DefaultTheme = "t1"
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireResource(t, rt, id, theme)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	exp := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Equal(t, exp.GetExplore().State.ValidSpec.Theme, "t1")
+	require.ElementsMatch(t, exp.Meta.Refs, []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindTheme, Name: "t1"},
+		{Kind: runtime.ResourceKindMetricsView, Name: "m1"},
+	})
 
 	// make the theme invalid
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1196,11 +1236,12 @@ colors:
   secondary: xxx
 `,
 	})
-	mv.State = &runtimev1.MetricsViewState{}
-	metricsRes.Meta.ReconcileError = `could not find theme "t1"`
+
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 4, 2, 1)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+	testruntime.RequireReconcileState(t, rt, id, 5, 2, 1)
+
+	exp = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1")
+	require.Nil(t, exp.GetExplore().State.ValidSpec)
 
 	// make the theme valid
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -1211,13 +1252,8 @@ colors:
   secondary: grey
 `,
 	})
-	mv, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
-	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
-	mv.GetSpec().DefaultTheme = "t1"
-	mv.GetState().ValidSpec.DefaultTheme = "t1"
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
-	testruntime.RequireResource(t, rt, id, metricsRes)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 }
 
 func TestAlert(t *testing.T) {
@@ -1231,8 +1267,10 @@ connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
-		"/dashboards/dash.yaml": `
-title: dash
+		"/metrics/dash.yaml": `
+version: 1
+type: metrics_view
+display_name: dash
 model: bar
 dimensions:
 - column: country
@@ -1245,6 +1283,106 @@ measures:
 
 	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
 	testruntime.RequireResource(t, rt, id, metricsRes)
+}
+
+func TestExplores(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 'bar' as bar, 'int' as internal, 1 as x, 2 as y`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+- column: bar
+- column: internal
+measures:
+- name: x
+  expression: sum(x)
+- name: y
+  expression: sum(y)
+security:
+  access: true
+  row_filter: true
+  exclude:
+    - if: "{{ not .user.admin }}"
+      names: ['internal']
+`,
+		"explores/e1.yaml": `
+type: explore
+display_name: Hello
+metrics_view: mv1
+dimensions:
+  exclude: ['internal']
+measures: '*'
+time_zones: ['UTC', 'America/Los_Angeles']
+defaults:
+  measures: ['x']
+  comparison_mode: time
+`,
+	})
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: "e1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "mv1"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/explores/e1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Explore{
+			Explore: &runtimev1.Explore{
+				Spec: &runtimev1.ExploreSpec{
+					DisplayName: "Hello",
+					MetricsView: "mv1",
+					Dimensions:  nil,
+					DimensionsSelector: &runtimev1.FieldSelector{
+						Invert:   true,
+						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
+					},
+					Measures:         nil,
+					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					DefaultPreset: &runtimev1.ExplorePreset{
+						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+						Measures:           []string{"x"},
+						ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+					},
+				},
+				State: &runtimev1.ExploreState{
+					ValidSpec: &runtimev1.ExploreSpec{
+						DisplayName: "Hello",
+						MetricsView: "mv1",
+						Dimensions:  []string{"foo", "bar"},
+						Measures:    []string{"x", "y"},
+						TimeZones:   []string{"UTC", "America/Los_Angeles"},
+						DefaultPreset: &runtimev1.ExplorePreset{
+							Dimensions:     []string{"foo", "bar"},
+							Measures:       []string{"x"},
+							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
+						},
+						SecurityRules: []*runtimev1.SecurityRule{
+							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+								Condition: "true",
+								Allow:     true,
+							}}},
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Allow:     true,
+								AllFields: true,
+							}}},
+							{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+								Condition: "{{ not .user.admin }}",
+								Allow:     false,
+								Fields:    []string{"internal"},
+							}}},
+						},
+					},
+				},
+			},
+		},
+	})
 }
 
 func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
@@ -1302,25 +1440,27 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	return model, modelRes
 }
 
-func newMetricsView(name, table string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
+func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsViewV2{
 		Spec: &runtimev1.MetricsViewSpec{
-			Connector:  "duckdb",
-			Table:      table,
-			Title:      name,
-			Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Connector:   "duckdb",
+			Model:       model,
+			DisplayName: name,
+			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
-				Connector:  "duckdb",
-				Table:      table,
-				Title:      name,
-				Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Connector:   "duckdb",
+				Table:       model,
+				Model:       model,
+				DisplayName: name,
+				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 			},
 		},
 	}
+
 	for i, measure := range measures {
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
@@ -1346,9 +1486,9 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 	metricsRes := &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: table}},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: model}},
 			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
+			FilePaths: []string{fmt.Sprintf("/metrics/%s.yaml", name)},
 		},
 		Resource: &runtimev1.Resource_MetricsView{
 			MetricsView: metrics,

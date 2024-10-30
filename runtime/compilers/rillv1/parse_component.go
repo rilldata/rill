@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -12,23 +11,23 @@ import (
 	_ "embed"
 )
 
-//go:embed data/vega-lite-v5.json
-var vegaLiteSpec string
-
-var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
-
 //go:embed data/component-template-v1.json
 var componentTemplateSpec string
 
 var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
-	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string                    `yaml:"title"`
-	Subtitle   string                    `yaml:"subtitle"`
-	Data       *DataYAML                 `yaml:"data"`
-	VegaLite   *string                   `yaml:"vega_lite"`
-	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
+	commonYAML  `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName string                    `yaml:"display_name"`
+	Title       string                    `yaml:"title"` // Deprecated: use display_name
+	Description string                    `yaml:"description"`
+	Subtitle    string                    `yaml:"subtitle"` // Deprecated: use description
+	Input       []*ComponentVariableYAML  `yaml:"input"`
+	Output      *ComponentVariableYAML    `yaml:"output"`
+	Data        *DataYAML                 `yaml:"data"`
+	Show        string                    `yaml:"show"`
+	VegaLite    *string                   `yaml:"vega_lite"`
+	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -67,8 +66,18 @@ func (p *Parser) parseComponent(node *Node) error {
 }
 
 // parseComponentYAML parses and validates a ComponentYAML.
-// It is separated from parseComponent to allow inline creation of components from a dashboard YAML file.
+// It is separated from parseComponent to allow inline creation of components from a canvas YAML file.
 func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpec, []ResourceName, error) {
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
+	// Description backwards compatibility
+	if tmp.Subtitle != "" && tmp.Description == "" {
+		tmp.Description = tmp.Subtitle
+	}
+
 	// Parse the data YAML
 	var refs []ResourceName
 	var resolver string
@@ -87,14 +96,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	var rendererProps *structpb.Struct
 	if tmp.VegaLite != nil {
 		n++
-
-		var vegaLiteSpec interface{}
-		if err := json.Unmarshal([]byte(*tmp.VegaLite), &vegaLiteSpec); err != nil {
-			return nil, nil, errors.New(`failed to parse "vega_lite" as JSON`)
-		}
-		if err := vegaLiteSchema.Validate(vegaLiteSpec); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate "vega_lite": %w`, err)
-		}
 
 		renderer = "vega_lite"
 		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
@@ -128,17 +129,61 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		return nil, nil, errors.New(`multiple renderers are not allowed`)
 	}
 
+	// Parse input variables
+	input := make([]*runtimev1.ComponentVariable, len(tmp.Input))
+	for i, v := range tmp.Input {
+		var err error
+		input[i], err = v.Proto()
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid input variable at index %d: %w", i, err)
+		}
+	}
+
+	// Parse the output variable
+	var output *runtimev1.ComponentVariable
+	if tmp.Output != nil {
+		var err error
+		output, err = tmp.Output.Proto()
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid output variable: %w", err)
+		}
+	}
+
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
-		Title:              tmp.Title,
-		Subtitle:           tmp.Subtitle,
+		DisplayName:        tmp.DisplayName,
+		Description:        tmp.Description,
 		Resolver:           resolver,
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,
 		RendererProperties: rendererProps,
+		Input:              input,
+		Output:             output,
+		Show:               tmp.Show,
 	}
 
 	return spec, refs, nil
+}
+
+type ComponentVariableYAML struct {
+	Name  string `yaml:"name"`
+	Type  string `yaml:"type"`
+	Value any    `yaml:"value"`
+}
+
+func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
+	if y == nil {
+		return nil, fmt.Errorf("is empty")
+	}
+	val, err := structpb.NewValue(y.Value)
+	if err != nil {
+		panic(fmt.Errorf("invalid default value: %w", err))
+	}
+	return &runtimev1.ComponentVariable{
+		Name:         y.Name,
+		Type:         y.Type,
+		DefaultValue: val,
+	}, nil
 }
 
 func must[T any](v T, err error) T {

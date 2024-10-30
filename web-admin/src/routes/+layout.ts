@@ -5,22 +5,62 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
-import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
-import { adminServiceGetProject } from "@rilldata/web-admin/client/index.js";
-import { getAdminServiceGetProjectQueryKey } from "@rilldata/web-admin/client/index.js";
+import {
+  adminServiceGetProject,
+  getAdminServiceGetProjectQueryKey,
+  type V1OrganizationPermissions,
+  type V1ProjectPermissions,
+} from "@rilldata/web-admin/client";
+import {
+  redirectToLoginIfNotLoggedIn,
+  redirectToLoginOrRequestAccess,
+} from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error } from "@sveltejs/kit";
+import { error, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProjectWithBearerToken,
   getAdminServiceGetProjectWithBearerTokenQueryKey,
-} from "../features/shareable-urls/get-project-with-bearer-token.js";
+} from "../features/public-urls/get-project-with-bearer-token.js";
 
-export const load = async ({ params }) => {
-  const { organization, project, token } = params;
+export const load = async ({ params, url, route }) => {
+  const { organization, project, token: routeToken } = params;
+  const pageState = {
+    url,
+    route,
+    params,
+  } as Page;
+
+  let searchParamToken: string | undefined;
+  if (url.searchParams.has("token")) {
+    searchParamToken = url.searchParams.get("token");
+  }
+  const token = searchParamToken ?? routeToken;
+
+  let organizationPermissions: V1OrganizationPermissions = {};
+  if (organization && !token) {
+    try {
+      organizationPermissions =
+        await fetchOrganizationPermissions(organization);
+    } catch (e) {
+      if (e.response?.status !== 403) {
+        throw error(e.response.status, "Error fetching organization");
+      }
+      // Use without access to anything withing the org will hit this, so redirect to access page here.
+      const didRedirect = await redirectToLoginIfNotLoggedIn();
+      if (!didRedirect) {
+        return {
+          organizationPermissions,
+          projectPermissions: <V1ProjectPermissions>{},
+        };
+      }
+    }
+  }
 
   if (!organization || !project) {
     return {
+      organizationPermissions,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -62,10 +102,16 @@ export const load = async ({ params }) => {
     const { projectPermissions } = response;
 
     return {
+      organizationPermissions,
       projectPermissions,
     };
   } catch (e) {
-    console.error(e);
-    throw error(e.response.status, "Error fetching deployment");
+    if (e.response?.status !== 403) {
+      throw error(e.response.status, "Error fetching deployment");
+    }
+    const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+    if (!didRedirect) {
+      throw error(e.response.status, "Error fetching organization");
+    }
   }
 };

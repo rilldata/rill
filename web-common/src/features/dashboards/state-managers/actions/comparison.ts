@@ -1,15 +1,11 @@
-import { setDisplayComparison } from "../../stores/dashboard-stores";
 import type { DashboardMutables } from "./types";
 
 export const setComparisonDimension = (
   { dashboard }: DashboardMutables,
   dimensionName: string | undefined,
 ) => {
-  if (dimensionName === undefined) {
-    setDisplayComparison(dashboard, true);
-  } else {
-    setDisplayComparison(dashboard, false);
-  }
+  // Temporary until we make these not mutually exclusive
+  dashboard.showTimeComparison = false;
   dashboard.selectedComparisonDimension = dimensionName;
 };
 

@@ -13,7 +13,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List user groups",
+		Short: "List groups",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectName != "" {
 				err := listProjectMemberUsergroups(cmd, ch, ch.Org, projectName, pageToken, pageSize)

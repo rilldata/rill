@@ -1,131 +1,115 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { IconButton } from "@rilldata/web-common/components/button";
-  import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
+  import HideSidebar from "@rilldata/web-common/components/icons/HideSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { workspaces } from "./workspace-stores";
   import { navigationOpen } from "../navigation/Navigation.svelte";
-  import { scale } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "@rilldata/web-common/features/entity-management/resource-icon-mapping";
+  import InputWithConfirm from "@rilldata/web-common/components/forms/InputWithConfirm.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { Settings } from "lucide-svelte";
+  import File from "@rilldata/web-common/components/icons/File.svelte";
 
+  export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
   export let showTableToggle = false;
   export let hasUnsavedChanges: boolean;
+  export let filePath: string;
+  export let onTitleChange: (title: string) => void = () => {};
 
   let width: number;
-  let titleWidth: number;
 
   $: value = titleInput;
-  $: context = $page.url.pathname;
-  $: workspaceLayout = workspaces.get(context);
-  $: visible = workspaceLayout.inspector.visible;
+  $: workspaceLayout = workspaces.get(filePath);
+  $: inspectorVisible = workspaceLayout.inspector.visible;
   $: tableVisible = workspaceLayout.table.visible;
 </script>
 
-<header class="slide" bind:clientWidth={width}>
-  <div class="wrapper slide" class:pl-4={!$navigationOpen}>
-    <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
-      {value}
-    </label>
-    <input
-      id="model-title-input"
-      name="title"
-      type="text"
-      autocomplete="off"
-      spellcheck="false"
-      disabled={!editable}
-      style:width="{titleWidth}px"
-      bind:value
-      on:change
-      on:keydown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.currentTarget.blur();
-        }
-      }}
-      on:blur={() => {
-        if (value.length === 0) {
-          value = titleInput;
-        }
-      }}
+<header class="slide" bind:clientWidth={width} class:!pl-10={!$navigationOpen}>
+  <div class="flex gap-x-0 items-center">
+    <svelte:component
+      this={resourceKind
+        ? resourceIconMapping[resourceKind]
+        : filePath === "/.env" || filePath === "/rill.yaml"
+          ? Settings
+          : File}
+      size="19px"
+      color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
     />
 
-    {#if hasUnsavedChanges}
-      <span
-        class="w-1.5 h-1.5 bg-gray-300 rounded flex-none"
-        transition:scale={{ duration: 200, easing: cubicOut }}
-      />
-    {/if}
+    <InputWithConfirm
+      size="md"
+      {editable}
+      id="model-title-input"
+      textClass="text-xl font-semibold"
+      {value}
+      onConfirm={onTitleChange}
+      showIndicator={hasUnsavedChanges}
+    />
   </div>
 
-  <div class="flex items-center mr-4 flex-none">
+  <div class="flex items-center gap-x-2 w-fit">
     <slot name="workspace-controls" {width} />
 
+    <div class="flex-none">
+      <slot name="cta" {width} />
+    </div>
+
     {#if showTableToggle}
-      <IconButton on:click={workspaceLayout.table.toggle}>
-        <span class="text-gray-500">
-          <HideBottomPane size="18px" />
-        </span>
-        <svelte:fragment slot="tooltip-content">
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          square
+          selected={$tableVisible}
+          on:click={workspaceLayout.table.toggle}
+        >
+          <HideBottomPane size="18px" open={$tableVisible} />
+        </Button>
+        <TooltipContent slot="tooltip-content">
           <SlidingWords active={$tableVisible} reverse>
             results preview
           </SlidingWords>
-        </svelte:fragment>
-      </IconButton>
+        </TooltipContent>
+      </Tooltip>
     {/if}
 
     {#if showInspectorToggle}
-      <IconButton on:click={workspaceLayout.inspector.toggle}>
-        <span class="text-gray-500">
-          <HideRightSidebar size="18px" />
-        </span>
-        <svelte:fragment slot="tooltip-content">
-          <SlidingWords active={$visible} direction="horizontal" reverse>
+      <Tooltip distance={8}>
+        <Button
+          type="secondary"
+          square
+          selected={$inspectorVisible}
+          on:click={workspaceLayout.inspector.toggle}
+        >
+          <HideSidebar open={$inspectorVisible} size="18px" />
+        </Button>
+
+        <TooltipContent slot="tooltip-content">
+          <SlidingWords
+            active={$inspectorVisible}
+            direction="horizontal"
+            reverse
+          >
             inspector
           </SlidingWords>
-        </svelte:fragment>
-      </IconButton>
+        </TooltipContent>
+      </Tooltip>
     {/if}
-
-    <div class="pl-4 flex-none">
-      <slot name="cta" {width} />
-    </div>
   </div>
 </header>
 
 <style lang="postcss">
-  input:focus,
-  input:not(:disabled):hover {
-    @apply border-2 border-gray-400 outline-none;
-  }
-
-  input,
-  label {
-    @apply whitespace-pre rounded border-2 border-transparent;
-  }
-
-  input {
-    @apply absolute text-left;
-    text-indent: 6px;
-  }
-
-  label {
-    @apply w-fit min-w-8 px-2 text-transparent max-w-full;
-  }
-
   header {
+    @apply px-4 w-full;
     @apply justify-between;
-    @apply flex items-center pl-4 border-b border-gray-300 overflow-hidden;
-    height: var(--header-height);
-  }
-
-  .wrapper {
-    @apply overflow-hidden max-w-full gap-x-2;
-    @apply size-full relative flex items-center;
-    @apply font-bold pr-2 self-start;
-    font-size: 16px;
+    @apply flex flex-none py-2;
   }
 </style>

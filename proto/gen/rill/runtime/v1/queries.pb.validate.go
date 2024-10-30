@@ -875,6 +875,249 @@ var _ interface {
 	ErrorName() string
 } = ExportResponseValidationError{}
 
+// Validate checks the field values on ExportReportRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ExportReportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportReportRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportReportRequestMultiError, or nil if none found.
+func (m *ExportReportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportReportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Report
+
+	// no validation rules for Limit
+
+	// no validation rules for Format
+
+	if all {
+		switch v := interface{}(m.GetExecutionTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportReportRequestValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExportReportRequestValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExecutionTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportReportRequestValidationError{
+				field:  "ExecutionTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ExportReportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportReportRequestMultiError is an error wrapping multiple validation
+// errors returned by ExportReportRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ExportReportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportReportRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportReportRequestMultiError) AllErrors() []error { return m }
+
+// ExportReportRequestValidationError is the validation error returned by
+// ExportReportRequest.Validate if the designated constraints aren't met.
+type ExportReportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportReportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportReportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportReportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportReportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportReportRequestValidationError) ErrorName() string {
+	return "ExportReportRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExportReportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportReportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportReportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportReportRequestValidationError{}
+
+// Validate checks the field values on ExportReportResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ExportReportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportReportResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ExportReportResponseMultiError, or nil if none found.
+func (m *ExportReportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportReportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DownloadUrlPath
+
+	if len(errors) > 0 {
+		return ExportReportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportReportResponseMultiError is an error wrapping multiple validation
+// errors returned by ExportReportResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ExportReportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportReportResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportReportResponseMultiError) AllErrors() []error { return m }
+
+// ExportReportResponseValidationError is the validation error returned by
+// ExportReportResponse.Validate if the designated constraints aren't met.
+type ExportReportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportReportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportReportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportReportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportReportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportReportResponseValidationError) ErrorName() string {
+	return "ExportReportResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExportReportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportReportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportReportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportReportResponseValidationError{}
+
 // Validate checks the field values on Query with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -2956,6 +3199,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -2984,6 +3229,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	if m.GetLimit() < 0 {
 		err := MetricsViewAggregationRequestValidationError{
@@ -3693,6 +3940,88 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 			}
 		}
 
+	case *MetricsViewAggregationMeasure_PercentOfTotal:
+		if v == nil {
+			err := MetricsViewAggregationMeasureValidationError{
+				field:  "Compute",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetPercentOfTotal()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPercentOfTotal()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationMeasureValidationError{
+					field:  "PercentOfTotal",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *MetricsViewAggregationMeasure_Uri:
+		if v == nil {
+			err := MetricsViewAggregationMeasureValidationError{
+				field:  "Compute",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetUri()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "Uri",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "Uri",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetUri()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationMeasureValidationError{
+					field:  "Uri",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -4347,6 +4676,230 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewAggregationMeasureComputeComparisonRatioValidationError{}
 
+// Validate checks the field values on
+// MetricsViewAggregationMeasureComputePercentOfTotal with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasureComputePercentOfTotal with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// MetricsViewAggregationMeasureComputePercentOfTotalMultiError, or nil if
+// none found.
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationMeasureComputePercentOfTotal) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Measure
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationMeasureComputePercentOfTotalMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationMeasureComputePercentOfTotalMultiError is an error
+// wrapping multiple validation errors returned by
+// MetricsViewAggregationMeasureComputePercentOfTotal.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputePercentOfTotalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationMeasureComputePercentOfTotalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationMeasureComputePercentOfTotalMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationMeasureComputePercentOfTotalValidationError is the
+// validation error returned by
+// MetricsViewAggregationMeasureComputePercentOfTotal.Validate if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputePercentOfTotalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Field() string {
+	return e.field
+}
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Cause() error {
+	return e.cause
+}
+
+// Key function returns key value.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasureComputePercentOfTotalValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationMeasureComputePercentOfTotalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationMeasureComputePercentOfTotal.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationMeasureComputePercentOfTotalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationMeasureComputePercentOfTotalValidationError{}
+
+// Validate checks the field values on MetricsViewAggregationMeasureComputeURI
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewAggregationMeasureComputeURI) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasureComputeURI with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// MetricsViewAggregationMeasureComputeURIMultiError, or nil if none found.
+func (m *MetricsViewAggregationMeasureComputeURI) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationMeasureComputeURI) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Dimension
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationMeasureComputeURIMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationMeasureComputeURIMultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewAggregationMeasureComputeURI.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewAggregationMeasureComputeURIMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationMeasureComputeURIMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationMeasureComputeURIMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationMeasureComputeURIValidationError is the validation
+// error returned by MetricsViewAggregationMeasureComputeURI.Validate if the
+// designated constraints aren't met.
+type MetricsViewAggregationMeasureComputeURIValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationMeasureComputeURIValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasureComputeURIValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationMeasureComputeURIValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationMeasureComputeURI.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationMeasureComputeURIValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationMeasureComputeURIValidationError{}
+
 // Validate checks the field values on MetricsViewAggregationSort with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -4642,6 +5195,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -4670,6 +5225,8 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for Priority
 
@@ -5193,6 +5750,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5221,6 +5780,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	for idx, item := range m.GetAliases() {
 		_, _ = idx, item
@@ -6453,6 +7014,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WhereSql
+
 	if all {
 		switch v := interface{}(m.GetHaving()).(type) {
 		case interface{ ValidateAll() error }:
@@ -6481,6 +7044,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for HavingSql
 
 	// no validation rules for TimeZone
 
@@ -6903,6 +7468,8 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for WhereSql
 
 	// no validation rules for Priority
 
@@ -9006,6 +9573,337 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSearchResponseValidationError{}
+
+// Validate checks the field values on ResolveComponentRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveComponentRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveComponentRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResolveComponentRequestMultiError, or nil if none found.
+func (m *ResolveComponentRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveComponentRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Component
+
+	if all {
+		switch v := interface{}(m.GetArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveComponentRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveComponentRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveComponentRequestValidationError{
+				field:  "Args",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveComponentRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveComponentRequestMultiError is an error wrapping multiple validation
+// errors returned by ResolveComponentRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveComponentRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveComponentRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveComponentRequestMultiError) AllErrors() []error { return m }
+
+// ResolveComponentRequestValidationError is the validation error returned by
+// ResolveComponentRequest.Validate if the designated constraints aren't met.
+type ResolveComponentRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveComponentRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveComponentRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveComponentRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveComponentRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveComponentRequestValidationError) ErrorName() string {
+	return "ResolveComponentRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveComponentRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveComponentRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveComponentRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveComponentRequestValidationError{}
+
+// Validate checks the field values on ResolveComponentResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveComponentResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveComponentResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResolveComponentResponseMultiError, or nil if none found.
+func (m *ResolveComponentResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveComponentResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Show
+
+	if all {
+		switch v := interface{}(m.GetSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveComponentResponseValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveComponentResponseValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveComponentResponseValidationError{
+				field:  "Schema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetData() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResolveComponentResponseValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResolveComponentResponseValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResolveComponentResponseValidationError{
+					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetRendererProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveComponentResponseValidationError{
+					field:  "RendererProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveComponentResponseValidationError{
+					field:  "RendererProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRendererProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveComponentResponseValidationError{
+				field:  "RendererProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveComponentResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveComponentResponseMultiError is an error wrapping multiple validation
+// errors returned by ResolveComponentResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveComponentResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveComponentResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveComponentResponseMultiError) AllErrors() []error { return m }
+
+// ResolveComponentResponseValidationError is the validation error returned by
+// ResolveComponentResponse.Validate if the designated constraints aren't met.
+type ResolveComponentResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveComponentResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveComponentResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveComponentResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveComponentResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveComponentResponseValidationError) ErrorName() string {
+	return "ResolveComponentResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveComponentResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveComponentResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveComponentResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveComponentResponseValidationError{}
 
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are

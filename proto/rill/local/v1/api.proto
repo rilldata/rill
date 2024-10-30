@@ -14,9 +14,6 @@ service LocalService {
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
 
-  // DeployValidation validates a deploy request.
-  rpc DeployValidation(DeployValidationRequest) returns (DeployValidationResponse) {}
-
   // PushToGithub create a Git repo from local project and pushed to users git account.
   rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
 
@@ -26,8 +23,11 @@ service LocalService {
   // RedeployProject updates a deployed project.
   rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {}
 
-  // User returns the locally logged in user
+  // GetCurrentUser returns the locally logged in user
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
+
+  // GetCurrentProject returns the rill cloud project connected to the local project
+  rpc GetCurrentProject(GetCurrentProjectRequest) returns (GetCurrentProjectResponse) {}
 }
 
 message PingRequest {}
@@ -50,6 +50,7 @@ message GetMetadataResponse {
   bool analytics_enabled = 9;
   bool readonly = 10;
   int32 grpc_port = 11;
+  string login_url = 12;
 }
 
 message GetVersionRequest {}
@@ -57,27 +58,6 @@ message GetVersionRequest {}
 message GetVersionResponse {
   string current = 1;
   string latest = 2;
-}
-
-message DeployValidationRequest {}
-
-message DeployValidationResponse {
-  bool is_authenticated = 1; // if true below fields are relevant after login
-  string login_url = 2; // redirect to this if is_authenticated is false
-  bool is_github_connected = 3; // if true below fields are relevant after github install
-  string github_grant_access_url = 4; // redirect to this if is_github_connected or is_github_repo_access_granted is false
-  string github_user_name = 5;
-  rill.admin.v1.GithubPermission github_user_permission = 6; // if unspecified then github app not installed on user account
-  map<string, rill.admin.v1.GithubPermission> github_organization_permissions = 7;
-  bool is_github_repo = 8;
-  bool is_github_remote_found = 9; // only applicable when is_github_repo is true
-  bool is_github_repo_access_granted = 10; // relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
-  string github_url = 11; // only applicable when is_github_repo is true and remote found
-  optional bool has_uncommitted_changes = 12; // only applicable when is_github_repo is true and remote found
-  bool rill_org_exists_as_github_user_name = 13; // only applicable when user does not have any orgs
-  repeated string rill_user_orgs = 14;
-  string local_project_name = 15;
-  string deployed_project_id = 16;
 }
 
 message PushToGithubRequest {
@@ -110,10 +90,20 @@ message RedeployProjectRequest {
 }
 
 message RedeployProjectResponse {
+  string frontend_url = 1;
 }
 
 message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
   admin.v1.User user = 1;
+  repeated string rill_user_orgs = 2;
+  bool is_representing_user = 3;
+}
+
+message GetCurrentProjectRequest {}
+
+message GetCurrentProjectResponse {
+  string local_project_name = 1;
+  admin.v1.Project project = 2;
 }

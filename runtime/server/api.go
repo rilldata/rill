@@ -1,17 +1,24 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
+	"github.com/getkin/kin-openapi/openapi3"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"gopkg.in/yaml.v3"
 )
 
 func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
@@ -70,13 +77,229 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
+	defer res.Close()
 
 	// Write the response
+	data, err := res.MarshalJSON()
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(res.Data)
+	_, err = w.Write(data)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
 	return nil
+}
+
+func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) error {
+	// Parse path parameters
+	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
+
+	// Add observability attributes
+	observability.AddRequestAttributes(ctx)
+	s.addInstanceRequestAttributes(ctx, instanceID)
+
+	// Only GET request is allowed
+	if req.Method != http.MethodGet {
+		return httputil.Error(http.StatusMethodNotAllowed, fmt.Errorf("GET only"))
+	}
+
+	// Check if user has access to query for API data
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
+		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
+	}
+
+	apis := make(map[string]*runtimev1.API)
+
+	// Get all built-in APIs
+	for name, api := range runtime.BuiltinAPIs {
+		apis[name] = api
+	}
+
+	// Get all custom APIs
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return httputil.Error(http.StatusBadRequest, err)
+	}
+
+	list, err := ctrl.List(ctx, runtime.ResourceKindAPI, "", false)
+	if err != nil {
+		return err
+	}
+
+	for _, res := range list {
+		apis[res.Meta.Name.Name] = res.GetApi()
+	}
+
+	// Generate the OpenAPI spec
+	combinedAPISpec, err := s.generateOpenAPISpec(ctx, instanceID, apis)
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	// Check accepted format of the OpenAPI spec: JSON or YAML
+	accept := req.Header.Get("Accept")
+
+	// YAML
+	if accept == "application/yaml" || accept == "application/x-yaml" {
+		data, err := yaml.Marshal(combinedAPISpec)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
+
+		w.Header().Set("Content-Type", "application/yaml")
+		_, err = w.Write(data)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
+
+		return nil
+	}
+
+	// JSON
+	data, err := combinedAPISpec.MarshalJSON()
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(data)
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	return nil
+}
+
+func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, apis map[string]*runtimev1.API) (*openapi3.T, error) {
+	attributes := s.runtime.GetInstanceAttributes(ctx, instanceID)
+	var organization, project string
+	for _, attr := range attributes {
+		if attr.Key == "organization" {
+			organization = attr.Value.AsString()
+		} else if attr.Key == "project" {
+			project = attr.Value.AsString()
+		}
+	}
+	var title string
+	if organization != "" && project != "" {
+		title = fmt.Sprintf("Rill %s/%s project API", organization, project)
+	} else {
+		title = "Rill project API"
+	}
+
+	spec := &openapi3.T{
+		OpenAPI: "3.0.3",
+		Info: &openapi3.Info{
+			Title:   title,
+			Version: "1.0.0",
+		},
+		Paths: &openapi3.Paths{},
+	}
+
+	var runtimeHost string
+	if s.opts.AuthAudienceURL != "" {
+		runtimeURL, err := url.Parse(s.opts.AuthAudienceURL)
+		if err != nil {
+			return nil, err
+		}
+		runtimeHost = runtimeURL.Host
+	} else {
+		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.HTTPPort)
+	}
+
+	spec.Servers = openapi3.Servers{
+		&openapi3.Server{
+			URL: fmt.Sprintf("http://%s/v1/instances/%s/api", runtimeHost, instanceID),
+		},
+	}
+
+	for name, api := range apis {
+		pathItem, err := s.generatePathItemSpec(name, api)
+		if err != nil {
+			return nil, err
+		}
+
+		spec.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
+	}
+
+	return spec, nil
+}
+
+func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi3.PathItem, error) {
+	summary := ""
+	if api.Spec.OpenapiSummary != "" {
+		summary = api.Spec.OpenapiSummary
+	}
+	if summary == "" {
+		summary = fmt.Sprintf("Query %s resolver", name)
+	}
+
+	var parameters openapi3.Parameters
+	if api.Spec.OpenapiParameters != nil {
+		maps := make([]map[string]any, len(api.Spec.OpenapiParameters))
+		for i, param := range api.Spec.OpenapiParameters {
+			maps[i] = param.AsMap()
+		}
+		var err error
+		parameters, err = openapiutil.MapToParameters(maps)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var schema *openapi3.Schema
+	if api.Spec.OpenapiResponseSchema != nil {
+		var err error
+		schema, err = openapiutil.MapToSchema(api.Spec.OpenapiResponseSchema.AsMap())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		schema = &openapi3.Schema{
+			Type: &openapi3.Types{"object"},
+		}
+	}
+
+	pathItem := &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Summary:    summary,
+			Parameters: parameters,
+			Responses: openapi3.NewResponses(
+				openapi3.WithStatus(200, &openapi3.ResponseRef{
+					Value: openapi3.NewResponse().WithDescription(
+						fmt.Sprintf("Successful response of %s resolver", name),
+					).WithContent(
+						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+							Type: &openapi3.Types{"array"},
+							Items: &openapi3.SchemaRef{
+								Value: schema,
+							},
+						}),
+					),
+				}),
+				openapi3.WithStatus(400, &openapi3.ResponseRef{
+					Value: openapi3.NewResponse().WithDescription(
+						"Bad request",
+					).WithContent(
+						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+							Type: &openapi3.Types{"object"},
+							Properties: map[string]*openapi3.SchemaRef{
+								"error": {
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"string"},
+									},
+								},
+							},
+						}),
+					),
+				}),
+			),
+		},
+	}
+
+	return pathItem, nil
 }

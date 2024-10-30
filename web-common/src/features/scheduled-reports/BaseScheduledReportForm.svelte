@@ -1,23 +1,22 @@
 <script lang="ts">
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { useDashboard } from "../dashboards/selectors";
   import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;
   export let formState: any; // svelte-forms-lib's FormState
-  export let metricsViewName: string;
+  export let exploreName: string;
 
   const { form, errors, handleSubmit } = formState;
 
   // Pull the time zone options from the dashboard's spec
-  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
-  $: availableTimeZones =
-    $dashboard.data?.metricsView?.spec?.availableTimeZones;
+  $: exploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>
 
@@ -42,6 +41,7 @@
       label="Frequency"
       options={["Daily", "Weekdays", "Weekly"].map((frequency) => ({
         value: frequency,
+        label: frequency,
       }))}
     />
     {#if $form["frequency"] === "Weekly"}
@@ -59,6 +59,7 @@
           "Sunday",
         ].map((day) => ({
           value: day,
+          label: day,
         }))}
       />
     {/if}

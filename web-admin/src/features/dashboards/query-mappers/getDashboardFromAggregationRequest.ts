@@ -6,6 +6,7 @@ import {
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
@@ -25,6 +26,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import {
   getQueryServiceMetricsViewSchemaQueryKey,
   queryServiceMetricsViewSchema,
+  type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
@@ -39,6 +41,7 @@ export async function getDashboardFromAggregationRequest({
   timeRangeSummary,
   executionTime,
   metricsView,
+  explore,
   annotations,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   let loadedFromState = false;
@@ -48,6 +51,7 @@ export async function getDashboardFromAggregationRequest({
       instanceId,
       dashboard,
       metricsView,
+      explore,
       annotations["web_open_state"],
     );
     loadedFromState = true;
@@ -151,7 +155,8 @@ function exprHasComparison(expr: V1Expression) {
   forEachIdentifier(expr, (e, ident) => {
     if (
       ident.endsWith(ComparisonDeltaAbsoluteSuffix) ||
-      ident.endsWith(ComparisonDeltaRelativeSuffix)
+      ident.endsWith(ComparisonDeltaRelativeSuffix) ||
+      ident.endsWith(ComparisonPercentOfTotal)
     ) {
       hasComparison = true;
     }
@@ -164,6 +169,7 @@ async function mergeDashboardFromUrlState(
   instanceId: string,
   dashboard: MetricsExplorerEntity,
   metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
   urlState: string,
 ) {
   const schemaResp = await queryClient.fetchQuery({
@@ -178,6 +184,7 @@ async function mergeDashboardFromUrlState(
   const parsedDashboard = getDashboardStateFromUrl(
     urlState,
     metricsViewSpec,
+    exploreSpec,
     schemaResp.schema,
   );
   for (const k in parsedDashboard) {

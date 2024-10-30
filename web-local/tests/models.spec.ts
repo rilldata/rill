@@ -40,7 +40,9 @@ test.describe("models", () => {
 
     // Query parse error
     await updateCodeEditor(page, "select from AdBids");
-    await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
+    await wrapRetryAssertion(() =>
+      modelHasError(page, true, "SELECT clause without selection list"),
+    );
   });
 
   test("Rename and delete model", async ({ page }) => {

@@ -1,13 +1,17 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
-  import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
-  import PivotExportButton from "./PivotExportButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "../../../runtime-client";
+  import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -15,22 +19,10 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const {
-    metricsViewName,
-    dashboardStore,
-    selectors: {
-      timeRangeSelectors: { timeControlsState },
-    },
-  } = stateManagers;
+  const { exploreName, dashboardStore, validSpecStore } = stateManagers;
 
-  $: comparisonStart = $timeControlsState.comparisonTimeStart;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: comparisonEnabled = $dashboardStore?.pivot?.enableComparison;
-
-  $: canShowComparison = canEnablePivotComparison(
-    $dashboardStore?.pivot,
-    comparisonStart,
-  );
+  $: metricsViewProto = $dashboardStore.proto;
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -58,11 +50,24 @@
   //     expandRow(i.toString(), 1); // Start from level 1
   //   }
 
-  //   metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  //   metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   // }
+
+  const scheduledReportsQueryArgs = getPivotExportArgs(stateManagers);
+
+  const exportDash = createQueryServiceExport();
+
+  async function handleExportPivot(format: V1ExportFormat) {
+    await exportPivot({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+      timeDimension: $validSpecStore.data?.metricsView?.timeDimension,
+    });
+  }
 </script>
 
-<div class="flex items-center gap-x-4 p-2 px-4">
+<div class="flex items-center gap-x-4 select-none pointer-events-none">
   <Button
     square
     type="secondary"
@@ -89,24 +94,10 @@
       compact
       type="text"
       on:click={() => {
-        metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+        metricsExplorerStore.setPivotExpanded($exploreName, {});
       }}
     >
       Collapse All
-    </Button>
-  {/if}
-  {#if canShowComparison}
-    <Button
-      compact
-      type="text"
-      on:click={() => {
-        metricsExplorerStore.setPivotComparison(
-          $metricsViewName,
-          !comparisonEnabled,
-        );
-      }}
-    >
-      {comparisonEnabled ? "Hide comparisons" : "Show comparisons"}
     </Button>
   {/if}
 
@@ -115,6 +106,13 @@
   {/if}
   <div class="grow" />
   {#if $exports}
-    <PivotExportButton includeScheduledReport={$adminServer} />
+    <ExportMenu
+      label="Export pivot data"
+      onExport={handleExportPivot}
+      includeScheduledReport={$adminServer}
+      queryArgs={$scheduledReportsQueryArgs}
+      exploreName={$exploreName}
+      {metricsViewProto}
+    />
   {/if}
 </div>

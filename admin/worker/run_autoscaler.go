@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -9,9 +10,17 @@ import (
 	"go.uber.org/zap"
 )
 
-const legacyRecommendTime = 24 * time.Hour
+const (
+	legacyRecommendTime   = 24 * time.Hour
+	scaleThreshold        = 0.10 // 10%
+	smallServiceThreshold = 10
+	minScalingSlots       = 5.0
 
-const scaleThreshold = 0.10
+	// Reasons for not scaling
+	scaledown      = "scaling down is temporarily disabled due to constraint"
+	scaleMatch     = "current scale equals recommendation"
+	belowThreshold = "scaling change is below the threshold"
+)
 
 func (w *Worker) runAutoscaler(ctx context.Context) error {
 	recs, ok, err := w.allRecommendations(ctx)
@@ -48,13 +57,21 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			continue
 		}
 
-		if !shouldScale(targetProject.ProdSlots, rec.RecommendedSlots) {
-			w.logger.Debug("skipping autoscaler: target slots are within threshold of original slots",
+		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots, w.admin.ScaleDownConstraint); !shouldScale {
+			logMessage := "skipping autoscaler: " + reason
+
+			logFields := []zap.Field{
 				zap.Int("project_slots", targetProject.ProdSlots),
 				zap.Int("recommend_slots", rec.RecommendedSlots),
 				zap.Float64("scale_threshold_percentage", scaleThreshold),
 				zap.String("project_name", targetProject.Name),
-			)
+			}
+
+			if reason == scaledown {
+				w.logger.Info(logMessage, logFields...)
+			} else {
+				w.logger.Debug(logMessage, logFields...)
+			}
 			continue
 		}
 
@@ -67,7 +84,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			GithubInstallationID: targetProject.GithubInstallationID,
 			ProdVersion:          targetProject.ProdVersion,
 			ProdBranch:           targetProject.ProdBranch,
-			ProdVariables:        targetProject.ProdVariables,
+			Subpath:              targetProject.Subpath,
 			ProdDeploymentID:     targetProject.ProdDeploymentID,
 			ProdSlots:            rec.RecommendedSlots,
 			ProdTTLSeconds:       targetProject.ProdTTLSeconds,
@@ -75,7 +92,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Annotations:          targetProject.Annotations,
 		})
 		if err != nil {
-			w.logger.Error("failed to autoscale: error updating the project", zap.String("project_name", targetProject.Name), zap.String("org_name", projectOrg.Name), zap.Error(err))
+			w.logger.Error("failed to autoscale: error updating the project", zap.String("project_name", targetProject.Name), zap.String("organization_name", projectOrg.Name), zap.Error(err))
 			continue
 		}
 
@@ -90,7 +107,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			zap.String("project_name", updatedProject.Name),
 			zap.Int("updated_slots", updatedProject.ProdSlots),
 			zap.Int("prev_slots", targetProject.ProdSlots),
-			zap.String("org_name", projectOrg.Name),
+			zap.String("organization_name", projectOrg.Name),
 		)
 	}
 
@@ -129,8 +146,38 @@ func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSl
 	return recs, true, nil
 }
 
-func shouldScale(originSlots, recommendSlots int) bool {
-	lowerBound := float64(originSlots) * (1 - scaleThreshold)
-	upperBound := float64(originSlots) * (1 + scaleThreshold)
-	return float64(recommendSlots) < lowerBound || float64(recommendSlots) > upperBound
+// shouldScale determines whether scaling operations should be initiated
+// based on the comparison of the current number of slots (originSlots)
+// and the recommended number of slots (recommendSlots).
+func shouldScale(originSlots, recommendSlots, scaleDownConstraint int) (bool, string) {
+	if recommendSlots == originSlots {
+		return false, scaleMatch
+	}
+
+	// NOTE(2024-10-15): Disable scale down if breaking the constraints
+	if recommendSlots < originSlots {
+		if scaleDownConstraint != -1 && originSlots > scaleDownConstraint {
+			return false, scaledown
+		}
+	}
+
+	// Always allow scaling for small services
+	if originSlots < smallServiceThreshold {
+		return true, ""
+	}
+
+	// Calculate the absolute difference in slots
+	scalingSlots := math.Abs(float64(recommendSlots - originSlots))
+
+	// Avoid scaling if increase/decrease is less than 10%
+	if scalingSlots <= float64(originSlots)*scaleThreshold {
+		return false, belowThreshold
+	}
+
+	// Avoid scaling if increase/decrease is less than 5 slots
+	if scalingSlots < minScalingSlots {
+		return false, belowThreshold
+	}
+
+	return true, ""
 }

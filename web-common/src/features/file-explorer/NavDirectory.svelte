@@ -1,7 +1,7 @@
 <script lang="ts">
   import NavDirectoryEntry from "@rilldata/web-common/features/file-explorer/NavDirectoryEntry.svelte";
   import {
-    NavDragData,
+    type NavDragData,
     navEntryDragDropStore,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavFile from "./NavFile.svelte";
@@ -32,6 +32,7 @@
   class:bg-slate-100={isDragDropHover}
   on:mouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
   on:mouseleave={() => navEntryDragDropStore.onMouseLeave()}
+  on:contextmenu={() => navEntryDragDropStore.resetDrag()}
 >
   {#if directory.path !== "/"}
     <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />

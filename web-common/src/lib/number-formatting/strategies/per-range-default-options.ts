@@ -1,6 +1,6 @@
 import {
-  FormatterOptionsCommon,
-  FormatterRangeSpecsStrategy,
+  type FormatterOptionsCommon,
+  type FormatterRangeSpecsStrategy,
   NumberKind,
 } from "../humanizer-types";
 

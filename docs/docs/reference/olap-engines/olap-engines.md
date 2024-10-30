@@ -19,6 +19,7 @@ If there's an OLAP engine that you'd like to use with Rill but don't see it belo
 - [DuckDB (default)](duckdb.md) 
 - [Druid](druid.md)
 - [ClickHouse](clickhouse.md)
+- [Pinot](pinot.md)
 
 ## Reference
 

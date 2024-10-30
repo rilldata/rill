@@ -1,0 +1,6 @@
+sql: SELECT assumeNotNull(parseDateTimeBestEffort(timestamp)) AS timestamp, * except timestamp FROM file('AdBids.csv.gz')
+
+output:
+  type: table
+  engine: MergeTree
+  order_by: timestamp

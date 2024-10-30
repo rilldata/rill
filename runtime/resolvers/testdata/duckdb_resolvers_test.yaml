@@ -1,0 +1,122 @@
+project:
+  "sources/ad_bids_mini_source.yaml":
+      connector: https
+      path: https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv
+  "models/ad_bids_mini.yaml":
+      sql: |
+        select
+          id,
+          timestamp,
+          publisher,
+          domain,
+          volume,
+          impressions,
+          clicks
+        from ad_bids_mini_source
+  "dashboards/ad_bids_mini_metrics_with_policy.yaml":
+      model: ad_bids_mini
+      display_name: Ad bids
+      description:
+      timeseries: timestamp
+      smallest_time_grain: ""
+      dimensions:
+        - name: publisher
+          display_name: Publisher
+          expression: upper(publisher)
+          description: ""
+        - property: domain
+          display_name: Domain
+          description: ""
+      measures:
+        - name: bid's number
+          display_name: "Number of bids"
+          expression: count(*)
+        - name: total volume
+          display_name: "Total volume"
+          expression: sum(volume)
+        - name: total impressions
+          display_name: "Total impressions"
+          expression: sum(impressions)
+        - name: total click"s
+          display_name: "Total clicks"
+          expression: sum(clicks)
+      security:
+        access: true
+        row_filter: "domain = '{{ .user.domain }}'"
+        exclude:
+          - if: "'{{ .user.domain }}' != 'msn.com'"
+            names:
+              - total volume
+connectors:
+  duckdb: null
+tests:
+  csv:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: msn.com
+          email: user@msn.com
+    csv_result: |
+      domain,publisher,total impressions
+      msn.com,,3.00
+  empty:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: google.com
+          email: user@google.com
+    result: []
+  msn:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: msn.com
+          email: user@msn.com
+    result:
+      - domain: msn.com
+        publisher: null
+        total impressions: 3.00
+  sql:
+    options:
+      resolver: sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain \n    \nFROM \n  ad_bids_mini where publisher = 'Yahoo' limit 1\n"
+      args: {}
+      claims:
+        user_attributes:
+          domain: msn.com
+          email: user@msn.com
+    result:
+      - publisher: Yahoo
+        domain: yahoo.com
+  simple:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    domain, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes: {}
+    result: []
+  error:
+    options:
+      resolver: metrics_sql
+      resolver_properties:
+        sql: "select \n    publisher,\n    dom1, \n    \"total impressions\" \nFROM \n  ad_bids_mini_metrics_with_policy \n"
+      args: {}
+      claims:
+        user_attributes: {}
+    error_contains: "selected column `dom1` not found"
+

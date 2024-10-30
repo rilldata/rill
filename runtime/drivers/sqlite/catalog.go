@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -139,4 +140,220 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindModelSplitsOptions) ([]drivers.ModelSplit, error) {
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=?")
+	args = append(args, c.instanceID, opts.ModelID)
+
+	if opts.WhereErrored {
+		qry.WriteString(" AND error != ''")
+	}
+
+	if opts.WherePending {
+		qry.WriteString(" AND executed_on IS NULL")
+	}
+
+	if opts.AfterIndex != 0 || opts.AfterKey != "" {
+		qry.WriteString(" AND (idx > ? OR (idx = ? AND key > ?))")
+		args = append(args, opts.AfterIndex, opts.AfterIndex, opts.AfterKey)
+	}
+
+	qry.WriteString(" ORDER BY idx, key")
+
+	if opts.Limit != 0 {
+		qry.WriteString(" LIMIT ?")
+		args = append(args, opts.Limit)
+	}
+
+	rows, err := c.db.QueryContext(ctx, qry.String(), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []drivers.ModelSplit
+	for rows.Next() {
+		var elapsedMs int64
+		r := drivers.ModelSplit{}
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		if err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		res = append(res, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
+	args = append(args, c.instanceID, modelID)
+
+	qry.Grow(len(keys)*2 + 14) // Makes room for one ",?" per key plus the ORDER BY clause
+	for i, k := range keys {
+		if i == 0 {
+			qry.WriteString("?")
+		} else {
+			qry.WriteString(",?")
+		}
+		args = append(args, k)
+	}
+	qry.WriteString(") ORDER BY key")
+
+	rows, err := c.db.QueryxContext(ctx, qry.String(), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []drivers.ModelSplit
+	for rows.Next() {
+		var elapsedMs int64
+		r := drivers.ModelSplit{}
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		if err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		res = append(res, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *catalogStore) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+	rows, err := c.db.QueryContext(
+		ctx,
+		"SELECT 1 FROM model_splits WHERE instance_id=? AND model_id=? AND error != '' LIMIT 1",
+		c.instanceID,
+		modelID,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	var hasErrors bool
+	if rows.Next() {
+		hasErrors = true
+	}
+
+	if rows.Err() != nil {
+		return false, err
+	}
+
+	return hasErrors, nil
+}
+
+func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"INSERT INTO model_splits(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		c.instanceID,
+		modelID,
+		split.Key,
+		split.DataJSON,
+		split.Index,
+		split.Watermark,
+		split.ExecutedOn,
+		split.Error,
+		split.Elapsed.Milliseconds(),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
+		split.DataJSON,
+		split.Index,
+		split.Watermark,
+		split.ExecutedOn,
+		split.Error,
+		split.Elapsed.Milliseconds(),
+		c.instanceID,
+		modelID,
+		split.Key,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
+		c.instanceID,
+		modelID,
+		splitKey,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
+		c.instanceID,
+		modelID,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) DeleteModelSplits(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM model_splits WHERE instance_id=? AND model_id=?", c.instanceID, modelID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	var h drivers.InstanceHealth
+	err := c.db.QueryRowContext(ctx, "SELECT health_json, updated_on FROM instance_health WHERE instance_id=?", instanceID).Scan(&h.HealthJSON, &h.UpdatedOn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &h, nil
+}
+
+func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
+	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
+	`, h.InstanceID, h.HealthJSON)
+	return err
 }

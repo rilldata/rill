@@ -9,8 +9,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/fatih/color"
@@ -106,8 +108,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 func checkGoVersion() error {
 	v := version.Must(version.NewVersion(strings.TrimPrefix(runtime.Version(), "go")))
-	min := version.Must(version.NewVersion(minGoVersion))
-	if v.LessThan(min) {
+	minVersion := version.Must(version.NewVersion(minGoVersion))
+	if v.LessThan(minVersion) {
 		return fmt.Errorf("Go version %s or higher is required", minGoVersion)
 	}
 	return nil
@@ -120,8 +122,8 @@ func checkNodeVersion(ctx context.Context) error {
 	}
 
 	v := version.Must(version.NewVersion(strings.TrimSpace(string(out))))
-	min := version.Must(version.NewVersion(minNodeVersion))
-	if v.LessThan(min) {
+	minVersion := version.Must(version.NewVersion(minNodeVersion))
+	if v.LessThan(minVersion) {
 		return fmt.Errorf("node.js version %s or higher is required", minNodeVersion)
 	}
 
@@ -388,6 +390,11 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	logInfo.Printf("Starting dependencies\n")
 	defer logInfo.Printf("Stopped dependencies\n")
 
+	err := prepareStripeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to prepare stripe config: %w", err)
+	}
+
 	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
 	if verbose {
 		cmd.Stdout = os.Stdout
@@ -633,7 +640,7 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
-	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug"}
+	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
 	if verbose {
 		args = append(args, "--verbose")
 	}
@@ -684,14 +691,14 @@ func (s local) runUI(ctx context.Context) (err error) {
 	logInfo.Printf("Starting UI\n")
 	defer logInfo.Printf("Stopped UI\n")
 
-	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local")
+	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local", "--", "--port", "3001")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
 }
 
 func (s local) awaitUI(ctx context.Context) error {
-	uiURL := "http://localhost:3000"
+	uiURL := "http://localhost:3001"
 	for {
 		resp, err := http.Get(uiURL)
 		if err == nil {
@@ -708,6 +715,39 @@ func (s local) awaitUI(ctx context.Context) error {
 			return ctx.Err()
 		}
 	}
+}
+
+func prepareStripeConfig() error {
+	templateFile := "cli/cmd/devtool/data/stripe-config.template"
+	outputDir := "dev-cloud-state"
+	outputFile := filepath.Join(outputDir, "stripe-config.toml")
+
+	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
+
+	if apiKey == "" {
+		logWarn.Printf("No Stripe API key found in .env, Stripe webhook events will not be processed\n")
+	}
+
+	// Parse the template
+	tmpl, err := template.ParseFiles(templateFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Create the output file
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer out.Close()
+
+	// Execute the template, writing to the output file
+	err = tmpl.Execute(out, map[string]string{"APIKey": apiKey})
+	if err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
 }
 
 // awaitClose waits for all of the given channels to close.

@@ -176,12 +176,16 @@ func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger *zap.Logge
 
 // Log syslog level, lower is more critical.
 // See: https://en.wikipedia.org/wiki/Syslog#Severity_level
+// To avoid alerts on producer errors, we map all producer errors to WARN level.
+// It is still possible to be alerted because processProducerEvents logs delivery errors.
 func kafkaLogLevelToZapLevel(level int) zapcore.Level {
 	switch level {
 	case 0, 1, 2:
-		return zap.FatalLevel
+		// This might be zap.FatalLevel
+		return zap.WarnLevel
 	case 3:
-		return zap.ErrorLevel
+		// This might be zap.ErrorLevel
+		return zap.WarnLevel
 	case 4:
 		return zap.WarnLevel
 	case 5, 6:

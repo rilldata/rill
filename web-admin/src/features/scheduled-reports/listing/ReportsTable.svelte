@@ -1,16 +1,17 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
+  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
+  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
+  import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
+  import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
   import { useReports } from "../selectors";
   import NoReportsCTA from "./NoReportsCTA.svelte";
   import ReportsError from "./ReportsError.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
-  import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
-  import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
   export let organization: string;
   export let project: string;
@@ -35,7 +36,7 @@
           organization: organization,
           project: project,
           id: info.row.original.meta.name.name,
-          title: info.row.original.report.spec.title,
+          title: info.row.original.report.spec.displayName,
           lastRun:
             info.row.original.report.state.executionHistory[0]?.reportTime,
           timeZone: info.row.original.report.spec.refreshSchedule.timeZone,
@@ -75,7 +76,7 @@
 
 {#if $reports.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$reports.isLoading} size="24px" />
   </div>
 {:else if $reports.isError}
   <ReportsError />
@@ -84,8 +85,9 @@
     <NoReportsCTA />
   {:else}
     <Table {columns} data={$reports?.data?.resources} {columnVisibility}>
-      <ReportsTableHeader slot="header" />
-      <ReportsTableEmpty slot="empty" />
+      <Toolbar slot="toolbar" />
+      <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
+      <ResourceTableEmpty kind="report" slot="empty" />
     </Table>
   {/if}
 {/if}

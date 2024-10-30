@@ -2,13 +2,17 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +24,7 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// updating this as its not required to logout first and login again
+			// Logout if already logged in
 			if ch.AdminTokenDefault != "" {
 				err := Logout(ctx, ch)
 				if err != nil {
@@ -51,7 +55,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
 	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
 	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
-	authURL := ch.AdminURL
+	authURL := ch.AdminURL()
 	if strings.Contains(authURL, "http://localhost:9090") {
 		authURL = "http://localhost:8080"
 	}
@@ -82,9 +86,37 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	if err != nil {
 		return err
 	}
-	// set the default token to the one we just got
-	ch.AdminTokenDefault = res1.AccessToken
+
+	err = ch.ReloadAdminConfig()
+	if err != nil {
+		return err
+	}
+
 	ch.PrintfBold("Successfully logged in. Welcome to Rill!\n")
+	return nil
+}
+
+func LoginWithTelemetry(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
+	ch.PrintfBold("Please log in or sign up for Rill. Opening browser...\n")
+	time.Sleep(2 * time.Second)
+
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginStart)
+
+	if err := Login(ctx, ch, redirectURL); err != nil {
+		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
+			ch.PrintfWarn("Rill login has timed out as the code was not confirmed in the browser.\n")
+			ch.PrintfWarn("Run the command again.\n")
+			return nil
+		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
+			ch.PrintfError("Login failed: Confirmation code rejected\n")
+			return nil
+		}
+		return fmt.Errorf("login failed: %w", err)
+	}
+
+	// The cmdutil.Helper automatically detects the login and will add the user's ID to the telemetry.
+	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventLoginSuccess)
+
 	return nil
 }
 
@@ -101,7 +133,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 
 	if len(res.Organizations) == 0 {
 		if interactive {
-			ch.PrintfWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.\n")
+			ch.PrintfWarn("You are not part of an org. Run `rill org create` to create one.\n")
 		}
 		return nil
 	}

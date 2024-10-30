@@ -35,6 +35,14 @@ service QueryService {
     };
   }
 
+  // ExportReport builds a URL to download the results of a query as a file.
+  rpc ExportReport(ExportReportRequest) returns (ExportReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/reports/{report}/export",
+      body: "*"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -142,6 +150,16 @@ service QueryService {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/search",
       body: "*"
+    };
+  }
+
+  // Canvas APIs
+
+  // ResolveComponent resolves the data and renderer for a Component resource.
+  rpc ResolveComponent(ResolveComponentRequest) returns (ResolveComponentResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
+      body: "*",
     };
   }
 
@@ -259,10 +277,22 @@ message ExportRequest {
   int64 limit = 2;
   ExportFormat format = 3;
   Query query = 4;
-  string baked_query = 5;
+  string baked_query = 5 [deprecated = true];
 }
 
 message ExportResponse {
+  string download_url_path = 1;
+}
+
+message ExportReportRequest {
+  string instance_id = 1;
+  string report = 2;
+  int64 limit = 3;
+  ExportFormat format = 4;
+  google.protobuf.Timestamp execution_time = 5;
+}
+
+message ExportReportResponse {
   string download_url_path = 1;
 }
 
@@ -344,8 +374,12 @@ message MetricsViewAggregationRequest {
   repeated MetricsViewComparisonMeasureAlias aliases = 18;
   // Optional
   Expression where = 8;
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
+  string where_sql = 19;
   // Optional
   Expression having = 13;
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
+  string having_sql = 20;
   // Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   // Optional. Defaults to 0
@@ -389,6 +423,8 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputeComparisonValue comparison_value = 7;
     MetricsViewAggregationMeasureComputeComparisonDelta comparison_delta = 8;
     MetricsViewAggregationMeasureComputeComparisonRatio comparison_ratio = 9;
+    MetricsViewAggregationMeasureComputePercentOfTotal percent_of_total = 10;
+    MetricsViewAggregationMeasureComputeURI uri = 11;
   }
 }
 
@@ -408,6 +444,14 @@ message MetricsViewAggregationMeasureComputeComparisonDelta {
 
 message MetricsViewAggregationMeasureComputeComparisonRatio {
   string measure = 1;
+}
+
+message MetricsViewAggregationMeasureComputePercentOfTotal {
+  string measure = 1;
+}
+
+message MetricsViewAggregationMeasureComputeURI {
+  string dimension = 1;
 }
 
 message MetricsViewAggregationSort {
@@ -435,7 +479,9 @@ message MetricsViewToplistRequest {
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   repeated MetricsViewSort sort = 9;
   Expression where = 10;
+  string where_sql = 15;
   Expression having = 13;
+  string having_sql = 16;
   int32 priority = 11;
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
@@ -466,8 +512,12 @@ message MetricsViewComparisonRequest {
   TimeRange comparison_time_range = 7;
   // Optional
   Expression where = 8;
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
+  string where_sql = 17;
   // Optional
   Expression having = 12;
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
+  string having_sql = 18;
   // Optional
   repeated MetricsViewComparisonMeasureAlias aliases = 15;
   // Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
@@ -569,8 +619,12 @@ message MetricsViewTimeSeriesRequest {
   }];
   // Optional
   Expression where = 7;
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
+  string where_sql = 13;
   // Optional
   Expression having = 11;
+  // Optional. If both having and having_sql are set, both will be applied with an AND between them.
+  string having_sql = 14;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 10;
   int32 priority = 8;
@@ -594,6 +648,8 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_end = 5;
   // Optional
   Expression where = 7;
+  // Optional. If both where and where_sql are set, both will be applied with an AND between them.
+  string where_sql = 11;
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
 }
@@ -712,6 +768,31 @@ message MetricsViewSearchResponse {
   }
 
   repeated SearchResult results = 1;
+}
+
+// **********
+// Canvas APIs
+// **********
+
+message ResolveComponentRequest {
+  // Instance ID
+  string instance_id = 1;
+  // Component name
+  string component = 2;
+  // Optional args to pass to the data resolver and for resolving templating in the renderer properties
+  google.protobuf.Struct args = 3;
+}
+
+message ResolveComponentResponse {
+  // Show property with templating resolved for the provided args.
+  // If it resolves to false, the other fields are not set.
+  bool show = 1;
+  // Schema of the resolved component data
+  StructType schema = 2;
+  // Resolved component data
+  repeated google.protobuf.Struct data = 3;
+  // Renderer properties with templating resolved for the provided args
+  google.protobuf.Struct renderer_properties = 4;
 }
 
 // **********

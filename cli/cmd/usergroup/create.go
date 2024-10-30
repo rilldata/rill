@@ -11,7 +11,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	createCmd := &cobra.Command{
 		Use:   "create [<name>]",
-		Short: "Create a user group",
+		Short: "Create a group",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
