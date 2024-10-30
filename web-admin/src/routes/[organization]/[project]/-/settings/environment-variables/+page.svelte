@@ -13,7 +13,7 @@
     project,
   );
 
-  $: projectVariablesMap = $getProjectVariables.data || [];
+  $: projectVariables = $getProjectVariables.data?.variables || [];
 </script>
 
 <div class="flex flex-col w-full">
@@ -25,11 +25,10 @@
         Error loading environment variables: {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
-      {#if $getProjectVariables.data.variables.length === 0}
+      {#if projectVariables.length === 0}
         <Empty />
       {:else}
-        <!-- TODO: use variablesMap -->
-        <EnvironmentVariablesTable data={$getProjectVariables.data.variables} />
+        <EnvironmentVariablesTable data={projectVariables} />
       {/if}
     {/if}
   </div>

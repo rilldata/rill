@@ -12,6 +12,36 @@
       enableSorting: false,
       cell: ({ row }) => row.original.name,
     },
+    {
+      accessorKey: "value",
+      header: "Value",
+      enableSorting: false,
+      cell: ({ row }) => row.original.value,
+    },
+    {
+      accessorKey: "environment",
+      header: "Environment",
+      enableSorting: false,
+      cell: ({ row }) => row.original.environment,
+    },
+    {
+      accessorKey: "updatedByUserId",
+      header: "Updated By",
+      enableSorting: false,
+      cell: ({ row }) => row.original.updatedByUserId,
+    },
+    {
+      accessorKey: "createdOn",
+      header: "Created On",
+      enableSorting: false,
+      cell: ({ row }) => row.original.createdOn,
+    },
+    {
+      accessorKey: "updatedOn",
+      header: "Updated On",
+      enableSorting: false,
+      cell: ({ row }) => row.original.updatedOn,
+    },
   ];
 </script>
 
