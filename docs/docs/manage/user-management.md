@@ -95,7 +95,7 @@ There are a few ways to add a project user to Rill Cloud.
 
 
 
-### Admin invites user
+### Admin invites user from Rill Cloud
 
 From the project's splash screen, please select share and type the email[s] along with the type of permissions.
 
