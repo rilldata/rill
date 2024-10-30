@@ -47,7 +47,6 @@
   $: exploreStore = useExploreStore(exploreName);
 
   $: selectedDimensionName = $exploreStore?.selectedDimensionName;
-
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;

@@ -96,7 +96,7 @@
   $: ({
     name: dimensionName = "",
     description = "",
-    label = "",
+    displayName = "",
     uri,
   } = dimension);
 
@@ -259,7 +259,7 @@
 
     <LeaderboardHeader
       {hovered}
-      displayName={label ?? dimensionName}
+      displayName={displayName ?? dimensionName}
       dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
