@@ -5,6 +5,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type {
     V1Expression,
+    V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
@@ -16,6 +17,7 @@
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let timeControlsReady: boolean;
   export let activeMeasureName: string;
+  export let metricsView: V1MetricsViewSpec;
 
   const StateManagers = getStateManagers();
   const {
@@ -37,7 +39,6 @@
       dimensionsFilter: { toggleDimensionValueSelection },
     },
     exploreName,
-    validSpecStore,
   } = StateManagers;
 
   let parentElement: HTMLDivElement;
@@ -70,7 +71,7 @@
               {dimension}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
-              metricsView={$validSpecStore.data?.metricsView ?? {}}
+              {metricsView}
               {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}

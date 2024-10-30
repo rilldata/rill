@@ -98,7 +98,7 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
   dimensionValue: string;
 };
 
-export function getApiSortName(activeMeasureName: string, sortType: SortType) {
+function getApiSortName(activeMeasureName: string, sortType: SortType) {
   switch (sortType) {
     case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
       return (activeMeasureName += ComparisonDeltaAbsoluteSuffix);
@@ -109,6 +109,23 @@ export function getApiSortName(activeMeasureName: string, sortType: SortType) {
     default:
       return activeMeasureName;
   }
+}
+
+export function getSort(
+  ascending: boolean,
+  type: SortType,
+  activeMeasureName: string,
+  dimensionName: string,
+) {
+  return [
+    {
+      desc: !ascending,
+      name:
+        type === SortType.DIMENSION || !activeMeasureName
+          ? dimensionName
+          : getApiSortName(activeMeasureName, type),
+    },
+  ];
 }
 
 export function prepareLeaderboardItemData(

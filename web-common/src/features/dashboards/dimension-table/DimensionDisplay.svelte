@@ -23,10 +23,9 @@
   import { getFiltersForOtherDimensions } from "../selectors";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { getApiSortName } from "../leaderboard/leaderboard-utils";
+  import { getSort } from "../leaderboard/leaderboard-utils";
   import { getMeasuresForDimensionTable } from "../state-managers/selectors/dashboard-queries";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import { SortType } from "../proto-state/derived-types";
   import { dimensionSearchText } from "../stores/dashboard-stores";
 
   const queryLimit = 250;
@@ -42,7 +41,6 @@
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimensionV2;
 
-  const stateManagers = getStateManagers();
   const {
     selectors: {
       dimensionFilters: { unselectedDimensionValues },
@@ -60,7 +58,7 @@
         deselectItemsInFilter,
       },
     },
-  } = stateManagers;
+  } = getStateManagers();
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -72,19 +70,18 @@
     dimensionName,
   );
 
-  $: filters = getFiltersForOtherDimensions(whereFilter, dimensionName);
-
-  $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilter(filters, dimensionThresholdFilters),
-    undefined,
-  );
-
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
     {
       measures: [{ name: activeMeasureName }],
-      where,
+      where: sanitiseExpression(
+        mergeDimensionAndMeasureFilter(
+          getFiltersForOtherDimensions(whereFilter, dimensionName),
+          dimensionThresholdFilters,
+        ),
+        undefined,
+      ),
       timeStart: timeRange.start,
       timeEnd: timeRange.end,
     },
@@ -117,16 +114,6 @@
         : []),
     );
 
-  $: sort = [
-    {
-      desc: !$sortedAscending,
-      name:
-        $sortType === SortType.DIMENSION || !activeMeasureName
-          ? dimensionName
-          : getApiSortName(activeMeasureName, $sortType),
-    },
-  ];
-
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricsViewName,
@@ -135,7 +122,12 @@
       measures,
       timeRange,
       comparisonTimeRange,
-      sort,
+      sort: getSort(
+        $sortedAscending,
+        $sortType,
+        activeMeasureName,
+        dimensionName,
+      ),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
         undefined,

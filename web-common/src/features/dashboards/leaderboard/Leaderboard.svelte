@@ -36,7 +36,7 @@
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import { getApiSortName } from "./leaderboard-utils";
+  import { getSort } from "./leaderboard-utils";
 
   const slice = 7;
   const columnWidth = 66;
@@ -124,15 +124,12 @@
         : []),
     );
 
-  $: sort = [
-    {
-      desc: !sortedAscending,
-      name:
-        sortType === SortType.DIMENSION || !activeMeasureName
-          ? dimensionName
-          : getApiSortName(activeMeasureName, sortType),
-    },
-  ];
+  $: sort = getSort(
+    sortedAscending,
+    sortType,
+    activeMeasureName,
+    dimensionName,
+  );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -281,8 +278,8 @@
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
-            {isSummableMeasure}
             {tableWidth}
+            {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -300,7 +297,7 @@
         {/each}
       {/if}
 
-      {#each belowTheFoldRows as itemData, i (i)}
+      {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           {itemData}
           {isSummableMeasure}

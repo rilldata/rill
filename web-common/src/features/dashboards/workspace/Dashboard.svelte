@@ -77,6 +77,8 @@
         end: timeControls.comparisonTimeEnd,
       }
     : undefined;
+
+  $: metricsView = $validSpecStore.data?.metricsView ?? {};
 </script>
 
 <article
@@ -134,32 +136,35 @@
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay {exploreName} {expandedMeasureName} />
-      {:else if selectedDimension}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <DimensionDisplay
-            dimension={selectedDimension}
-            {metricsViewName}
-            {whereFilter}
-            {dimensionThresholdFilters}
-            {timeRange}
-            {comparisonTimeRange}
-            activeMeasureName={$activeMeasureName}
-            timeControlsReady={!!timeControls.ready}
-            metricsView={$validSpecStore.data?.metricsView ?? {}}
-            visibleMeasureNames={$visibleMeasures.map(({ name }) => name ?? "")}
-          />
-        </div>
       {:else}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <LeaderboardDisplay
-            {metricsViewName}
-            activeMeasureName={$activeMeasureName}
-            {whereFilter}
-            {dimensionThresholdFilters}
-            {timeRange}
-            {comparisonTimeRange}
-            timeControlsReady={!!timeControls.ready}
-          />
+          {#if selectedDimension}
+            <DimensionDisplay
+              dimension={selectedDimension}
+              {metricsViewName}
+              {whereFilter}
+              {dimensionThresholdFilters}
+              {timeRange}
+              {comparisonTimeRange}
+              activeMeasureName={$activeMeasureName}
+              timeControlsReady={!!timeControls.ready}
+              {metricsView}
+              visibleMeasureNames={$visibleMeasures.map(
+                ({ name }) => name ?? "",
+              )}
+            />
+          {:else}
+            <LeaderboardDisplay
+              {metricsViewName}
+              activeMeasureName={$activeMeasureName}
+              {whereFilter}
+              {dimensionThresholdFilters}
+              {timeRange}
+              {comparisonTimeRange}
+              {metricsView}
+              timeControlsReady={!!timeControls.ready}
+            />
+          {/if}
         </div>
       {/if}
     </div>
