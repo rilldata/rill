@@ -9,18 +9,20 @@ Once a project is ready to be deployed onto Rill Cloud, as an administrator, you
 
 ## Organization
 
+:::tip Deploying for the first time?
+If it is your first time deploying, we will automatically generate an organization for you! To make changes to the name of the organization, navigate to the Settings page.
+:::
+
 ![img](/img/manage/project-management/rill-org.png)
 
 An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards and more.
 
-### Managing an Organization via the UI
+### Managing an Organization via Rill Cloud
 
 Once your project has been deployed to Rill Cloud, you will be able to access the Organization's settings page.
 From this page, you can manage users, modify your Billing (if on a `Team Plan`), and see your overall usage. 
 
-:::tip Deploying for the first time?
-If it is your first time deploying, we will automatically generate an organization for you! To make changes to the name of the organization, navigate to the Settings page.
-:::
+
 ![img](/img/manage/project-management/rill-org-settings.png)
 
 

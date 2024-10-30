@@ -1,7 +1,7 @@
 ---
-title: Create Dashboards
+title: Create Explore Dashboards
 description: Create dashboards using source data and models with time, dimensions, and measures
-sidebar_label: Create Dashboards
+sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
 
