@@ -10,12 +10,14 @@
     <div class="settings-title">
       <span>{title}</span>
       {#if titleIcon === "info"}
-        <InfoCircleFilled />
+        <InfoCircleFilled className="text-yellow-500" size="14px" />
       {:else if titleIcon === "error"}
-        <CancelCircle />
+        <CancelCircle className="text-red-600" size="14px" />
       {/if}
     </div>
-    <slot name="body" />
+    <div class="settings-body">
+      <slot name="body" />
+    </div>
   </div>
   {#if $$slots["contact"] || $$slots["action"]}
     <div class="settings-footer">
@@ -30,7 +32,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full max-w-[844px] border border-slate-200;
+    @apply w-full max-w-[844px] border border-slate-200 text-slate-700;
   }
 
   .settings-header {
@@ -38,12 +40,16 @@
   }
 
   .settings-title {
-    @apply flex flex-row items-center;
+    @apply flex flex-row gap-x-2 items-center mb-2;
     @apply text-lg font-semibold;
+  }
+
+  .settings-body {
+    @apply text-sm text-slate-800;
   }
 
   .settings-footer {
     @apply flex flex-row items-center px-5 py-2;
-    @apply bg-slate-50 text-slate-500 border-t border-slate-200;
+    @apply bg-slate-50 text-slate-500 text-sm border-t border-slate-200;
   }
 </style>

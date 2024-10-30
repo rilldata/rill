@@ -32,7 +32,7 @@ Once your dashboard is ready, you can create the public URL via the `Share` butt
 
 **via UI** 
 
-Public URL can also be managed via the Settings page in Rill Cloud. Please refer to the [administrators guide](https://docs.rilldata.com/tutorials/administration/project-maintanence#public-url-management)!
+Public URL can also be managed via the Settings page in Rill Cloud. Please refer to the [administrators guide](https://docs.rilldata.com/tutorials/administration/project/project-maintanence#public-url-management)!
 
 
 

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { formatDuckdbIntervalLossless } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import Base from "./Base.svelte";
   export let isNull = false;

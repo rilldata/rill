@@ -13,7 +13,8 @@ import (
 
 type ExploreYAML struct {
 	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title       string                 `yaml:"title"`
+	DisplayName string                 `yaml:"display_name"`
+	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
@@ -28,6 +29,9 @@ type ExploreYAML struct {
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 	} `yaml:"defaults"`
+	Embeds struct {
+		HidePivot bool `yaml:"hide_pivot"`
+	} `yaml:"embeds"`
 	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
@@ -123,6 +127,11 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	if !node.ConnectorInferred && node.Connector != "" {
 		return fmt.Errorf("explores cannot have a connector")
+	}
+
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
 	}
 
 	// Validate metrics_view
@@ -243,7 +252,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.ExploreSpec.Title = tmp.Title
+	r.ExploreSpec.DisplayName = tmp.DisplayName
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
 	r.ExploreSpec.Dimensions = dimensions
@@ -254,6 +263,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
+	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
 	return nil

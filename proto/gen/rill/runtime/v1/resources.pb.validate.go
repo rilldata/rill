@@ -3046,7 +3046,7 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Model
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4167,7 +4167,7 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4329,6 +4329,8 @@ func (m *ExploreSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for EmbedsHidePivot
 
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
@@ -5768,9 +5770,9 @@ func (m *ReportSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -6494,9 +6496,9 @@ func (m *AlertSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -9471,9 +9473,9 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
-	// no validation rules for Subtitle
+	// no validation rules for Description
 
 	// no validation rules for Resolver
 
@@ -10124,7 +10126,7 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Columns
 
@@ -12046,13 +12048,13 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Column
 
 	// no validation rules for Expression
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for Unnest
 
@@ -12415,6 +12417,10 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Expression
 
 	// no validation rules for Type
@@ -12515,10 +12521,6 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for FormatPreset
 

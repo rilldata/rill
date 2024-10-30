@@ -142,5 +142,23 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 		}
 	}
 
+	// fetch the customer again to get the latest address status
+	c, err := w.admin.PaymentProvider.FindCustomer(ctx, job.Args.PaymentCustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find customer: %w", err)
+	}
+
+	if c.TaxExempt {
+		err = w.admin.Biller.MarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to set organization tax exempt: %w", err)
+		}
+	} else {
+		err = w.admin.Biller.UnmarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to unset organization tax exempt: %w", err)
+		}
+	}
+
 	return nil
 }

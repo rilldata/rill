@@ -44,7 +44,7 @@ export function compileSourceYAML(
         // For now, `.env` secrets are implicitly referenced
         return;
 
-        return `${key}: "{{ .vars.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
         )} }}"`;

@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import {
-    createSvelteTable,
-    flexRender,
-    getCoreRowModel,
-    getSortedRowModel,
-  } from "@tanstack/svelte-table";
   import type {
     ColumnDef,
     OnChangeFn,
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
+  import {
+    createSvelteTable,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+  } from "@tanstack/svelte-table";
+  import { writable } from "svelte/store";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
@@ -64,7 +64,7 @@
 <div class="overflow-x-auto" class:scroll-container={scrollable}>
   <table class="w-full">
     <thead class={scrollable ? "sticky top-0 z-30 bg-white" : ""}>
-      {#each $table.getHeaderGroups() as headerGroup}
+      {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
         <tr>
           {#each headerGroup.headers as header (header.id)}
             {@const widthPercent = header.column.columnDef.meta?.widthPercent}
@@ -115,13 +115,10 @@
           </td>
         </tr>
       {:else}
-        {#each $table.getRowModel().rows as row}
+        {#each $table.getRowModel().rows as row (row.id)}
           <tr>
-            {#each row.getVisibleCells() as cell}
-              <td
-                class="px-4 py-2 truncate"
-                data-label={cell.column.columnDef.header}
-              >
+            {#each row.getVisibleCells() as cell (cell.id)}
+              <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
                 <svelte:component
                   this={flexRender(
                     cell.column.columnDef.cell,

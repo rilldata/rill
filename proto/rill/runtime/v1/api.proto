@@ -227,6 +227,13 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Variables
+
+  // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+  rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -487,7 +494,7 @@ message RenameFileResponse {}
 // Example contains metadata about an example project that is available for unpacking.
 message Example {
   string name = 1;
-  string title = 2;
+  string display_name = 2;
   string description = 3;
 }
 
@@ -512,7 +519,7 @@ message UnpackExampleResponse {}
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string title = 2;
+  string display_name = 2;
   bool force = 3;
 }
 
@@ -823,4 +830,23 @@ message IssueDevJWTRequest {
 // Response message for RuntimeService.IssueDevJWT
 message IssueDevJWTResponse {
   string jwt = 1;
+}
+
+// Request message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesResponse {
+  repeated AnalyzedVariable variables = 1;
+}
+
+message AnalyzedVariable {
+  // Name of the variable.
+  string name = 1;
+  // Default value set for the variable in rill.yaml, if any.
+  string default_value = 2;
+  // List of resources that appear to use the connector.
+  repeated ResourceName used_by = 8;
 }

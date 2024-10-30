@@ -2002,8 +2002,8 @@ github.com/opencontainers/selinux v1.11.0 h1:+5Zbo97w3Lbmb3PeqQtpmTkMwsW5nRI3YaL
 github.com/opencontainers/selinux v1.11.0/go.mod h1:E5dMC3VPuVvVHDYmi78qvhJp8+M586T4DlDRYpFkyec=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
-github.com/orbcorp/orb-go v0.34.0 h1:Jkn6GEPziZTowpJxffaPpOyhGgyNNaWgx28lo6B28TA=
-github.com/orbcorp/orb-go v0.34.0/go.mod h1:vDaXj4QWK0Sl9PFfFP9zUDtKWyn9O1kKPDDPbsqYwkE=
+github.com/orbcorp/orb-go v0.74.0 h1:Z2w3wedi3VmvDXBpCauO+/w21shJ/IITp1InUE/+lKk=
+github.com/orbcorp/orb-go v0.74.0/go.mod h1:xfuWtARR24D2VtiPajDh9eY/gKudKIUsIaDglKJSOQE=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/paulmach/orb v0.11.1 h1:3koVegMC4X/WeiXYz9iswopaTwMem53NzTJuTF20JzU=
 github.com/paulmach/orb v0.11.1/go.mod h1:5mULz1xQfs3bmQm63QEJA6lNGujuRafwA5S/EnuLaLU=

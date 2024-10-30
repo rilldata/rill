@@ -11,8 +11,6 @@ tsc-tmp/
 export/
 .vscode
 
-# generated content
-bundle.html
 
 # IntelliJ
 .idea

@@ -76,7 +76,7 @@
           name: reportName,
           data: {
             options: {
-              title: values.title,
+              displayName: values.title,
               refreshCron: refreshCron, // for testing: "* * * * *"
               refreshTimeZone: values.timeZone,
               queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
@@ -135,7 +135,7 @@
 
   function getInitialValues(reportSpec: V1ReportSpec | undefined) {
     return {
-      title: reportSpec?.title ?? "",
+      title: reportSpec?.displayName ?? "",
       frequency: reportSpec
         ? getFrequencyFromCronExpression(
             reportSpec.refreshSchedule?.cron as string,

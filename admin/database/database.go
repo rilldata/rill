@@ -172,7 +172,13 @@ type DB interface {
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
+	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
+	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
+	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -276,6 +282,10 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
+	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
+	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -391,7 +401,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
@@ -410,7 +419,6 @@ type UpdateProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
@@ -636,7 +644,8 @@ type MagicAuthToken struct {
 	FilterJSON            string         `db:"filter_json"`
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
-	Title                 string         `db:"title"`
+	DisplayName           string         `db:"display_name"`
+	Internal              bool           `db:"internal"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -659,7 +668,29 @@ type InsertMagicAuthTokenOptions struct {
 	FilterJSON      string
 	Fields          []string
 	State           string
-	Title           string
+	DisplayName     string
+	Internal        bool
+}
+
+type ReportToken struct {
+	ID               string
+	ReportName       string `db:"report_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type ReportTokenWithSecret struct {
+	ID                   string
+	ReportName           string `db:"report_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
+}
+
+type InsertReportTokenOptions struct {
+	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -856,12 +887,12 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 const (
-	DefaultQuotaProjects                       = 5
-	DefaultQuotaDeployments                    = 10
-	DefaultQuotaSlotsTotal                     = 20
-	DefaultQuotaSlotsPerDeployment             = 5
+	DefaultQuotaProjects                       = 1
+	DefaultQuotaDeployments                    = 2
+	DefaultQuotaSlotsTotal                     = 4
+	DefaultQuotaSlotsPerDeployment             = 2
 	DefaultQuotaOutstandingInvites             = 200
-	DefaultQuotaSingleuserOrgs                 = 3
+	DefaultQuotaSingleuserOrgs                 = 100
 	DefaultQuotaTrialOrgs                      = 2
 	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
@@ -953,6 +984,18 @@ type Asset struct {
 	CreatedOn      time.Time `db:"created_on"`
 }
 
+type ProjectVariable struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Environment          string    `db:"environment"`
+	Name                 string    `db:"name"`
+	Value                string    `db:"value"`
+	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
+	UpdatedByUserID      *string   `db:"updated_by_user_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
 // EncryptionKey represents an encryption key for column-level encryption/decryption.
 // Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
 // It is implemented on the application side before writes to and after reads from the database.
@@ -992,6 +1035,8 @@ func NewRandomKeyring() ([]*EncryptionKey, error) {
 	return encKeyRing, nil
 }
 
+const BillingGracePeriodDays = 9
+
 type BillingIssueType int
 
 const (
@@ -1026,14 +1071,16 @@ type BillingIssue struct {
 type BillingIssueMetadata interface{}
 
 type BillingIssueMetadataOnTrial struct {
-	SubID   string    `json:"subscription_id"`
-	PlanID  string    `json:"plan_id"`
-	EndDate time.Time `json:"end_date"`
+	SubID              string    `json:"subscription_id"`
+	PlanID             string    `json:"plan_id"`
+	EndDate            time.Time `json:"end_date"`
+	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
 }
 
 type BillingIssueMetadataTrialEnded struct {
 	SubID              string    `json:"subscription_id"`
 	PlanID             string    `json:"plan_id"`
+	EndDate            time.Time `json:"end_date"`
 	GracePeriodEndDate time.Time `json:"grace_period_end_date"`
 }
 
