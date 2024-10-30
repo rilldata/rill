@@ -14,17 +14,22 @@ import {
 import type {
   V1Expression,
   V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  type PivotFilter,
-  type PivotState,
   type PivotDataRow,
+  type PivotDataState,
   type PivotDataStoreConfig,
+  type PivotFilter,
+  type PivotQueryError,
+  type PivotState,
   type PivotTimeConfig,
   type TimeFilters,
 } from "./types";
@@ -582,4 +587,37 @@ export function getFiltersForCell(
   const filters = mergeFilters(cellFilters, config.whereFilter);
 
   return { filters, timeRange };
+}
+
+export function getErrorFromResponse(
+  queryResult: QueryObserverResult<V1MetricsViewAggregationResponse, HTTPError>,
+): PivotQueryError {
+  return {
+    statusCode: queryResult?.error?.response?.status || null,
+    message: queryResult?.error?.response?.data?.message,
+  };
+}
+
+export function getErrorFromResponses(
+  queryResults: (QueryObserverResult<
+    V1MetricsViewAggregationResponse,
+    HTTPError
+  > | null)[],
+): PivotQueryError[] {
+  return queryResults
+    .filter((result) => result?.isError)
+    .map(getErrorFromResponse);
+}
+
+export function getErrorState(errors: PivotQueryError[]): PivotDataState {
+  // TODO: remove duplicate errors based on statusCode and message
+
+  return {
+    error: errors,
+    isFetching: false,
+    data: [],
+    columnDef: [],
+    assembled: false,
+    totalColumns: 0,
+  };
 }

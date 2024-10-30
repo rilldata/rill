@@ -12,7 +12,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
@@ -40,6 +40,8 @@ import {
 } from "./pivot-table-transformations";
 import {
   canEnablePivotComparison,
+  getErrorFromResponses,
+  getErrorState,
   getFilterForPivotTable,
   getFiltersForCell,
   getPivotConfigKey,
@@ -54,10 +56,10 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  type PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
+  type PivotFilter,
   type PivotTimeConfig,
 } from "./types";
 
@@ -342,6 +344,9 @@ export function createPivotDataStore(
     return derived(
       columnDimensionAxesQuery,
       (columnDimensionAxes, columnSet) => {
+        if (columnDimensionAxes?.error?.length) {
+          return columnSet(getErrorState(columnDimensionAxes.error));
+        }
         if (columnDimensionAxes?.isFetching) {
           return columnSet({
             isFetching: true,
@@ -425,6 +430,18 @@ export function createPivotDataStore(
             [rowDimensionAxes, globalTotalsResponse, totalsRowResponse],
             axesSet,
           ) => {
+            const totalErrors = getErrorFromResponses([
+              globalTotalsResponse,
+              totalsRowResponse,
+            ]);
+
+            if (totalErrors.length || rowDimensionAxes?.error?.length) {
+              const allErrors = totalErrors.concat(
+                rowDimensionAxes?.error || [],
+              );
+              return axesSet(getErrorState(allErrors));
+            }
+
             if (
               (globalTotalsResponse !== null &&
                 globalTotalsResponse?.isFetching) ||
@@ -530,6 +547,19 @@ export function createPivotDataStore(
             return derived(
               [rowAxesQueryForMeasureTotals, initialTableCellQuery],
               ([rowMeasureTotalsAxesQuery, initialTableCellData], cellSet) => {
+                const tableCellQueryError = getErrorFromResponses([
+                  initialTableCellData,
+                ]);
+
+                if (
+                  tableCellQueryError.length ||
+                  rowMeasureTotalsAxesQuery?.error?.length
+                ) {
+                  const allErrors = tableCellQueryError.concat(
+                    rowMeasureTotalsAxesQuery?.error || [],
+                  );
+                  return cellSet(getErrorState(allErrors));
+                }
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
@@ -561,17 +591,6 @@ export function createPivotDataStore(
                   if (initialTableCellData === null) {
                     cellData = pivotSkeleton;
                   } else {
-                    if (initialTableCellData.isError) {
-                      return cellSet({
-                        isFetching: false,
-                        error: initialTableCellData.error.message,
-                        data: [],
-                        columnDef,
-                        assembled: true,
-                        totalColumns,
-                        totalsRowData: undefined,
-                      });
-                    }
                     if (initialTableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,
