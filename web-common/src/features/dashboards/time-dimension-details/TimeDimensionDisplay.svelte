@@ -198,10 +198,7 @@
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
     {exploreName}
-    on:search={(e) => {
-      metricsExplorerStore.setSearchText(exploreName, e.detail);
-    }}
-    on:toggle-all-search-items={() => toggleAllSearchItems()}
+    onToggleSearchItems={toggleAllSearchItems}
   />
 
   {#if $timeDimensionDataStore?.isError}

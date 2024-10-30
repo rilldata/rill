@@ -2,17 +2,25 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type {
+    V1Expression,
+    V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+
+  export let metricsViewName: string;
+  export let whereFilter: V1Expression;
+  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let timeRange: V1TimeRange;
+  export let comparisonTimeRange: V1TimeRange | undefined;
+  export let timeControlsReady: boolean;
+  export let activeMeasureName: string;
 
   const StateManagers = getStateManagers();
   const {
     selectors: {
-      activeMeasure: {
-        activeMeasureName,
-        isValidPercentOfTotal,
-        isSummableMeasure,
-      },
+      activeMeasure: { isValidPercentOfTotal, isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
       dimensionFilters: {
         selectedDimensionValues,
@@ -29,31 +37,12 @@
       dimensionsFilter: { toggleDimensionValueSelection },
     },
     exploreName,
-    dashboardStore,
-    metricsViewName,
     validSpecStore,
   } = StateManagers;
 
-  const timeControlsStore = useTimeControlStore(StateManagers);
-
   let parentElement: HTMLDivElement;
 
-  $: timeControls = $timeControlsStore;
   $: ({ instanceId } = $runtime);
-
-  $: timeRange = {
-    start: timeControls.timeStart,
-    end: timeControls.timeEnd,
-  };
-
-  $: comparisonTimeRange = timeControls.showTimeComparison
-    ? {
-        start: timeControls.comparisonTimeStart,
-        end: timeControls.comparisonTimeEnd,
-      }
-    : undefined;
-
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
@@ -67,8 +56,8 @@
           {#if dimension.name}
             <Leaderboard
               isValidPercentOfTotal={$isValidPercentOfTotal}
-              metricsViewName={$metricsViewName}
-              activeMeasureName={$activeMeasureName}
+              {metricsViewName}
+              {activeMeasureName}
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
@@ -79,16 +68,16 @@
               atLeastOneActive={$atLeastOneSelection(dimension.name)}
               {comparisonTimeRange}
               {dimension}
-              {toggleDimensionValueSelection}
               isSummableMeasure={$isSummableMeasure}
               {parentElement}
               metricsView={$validSpecStore.data?.metricsView ?? {}}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
+              formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}
-              formatter={$activeMeasureFormatter}
+              {toggleDimensionValueSelection}
             />
           {/if}
         {/each}

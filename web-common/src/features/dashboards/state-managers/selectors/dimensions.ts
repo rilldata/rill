@@ -26,12 +26,6 @@ export const visibleDimensions = ({
   );
 };
 
-export const dimensionTableDimName = ({
-  dashboard,
-}: DashboardDataSources): string | undefined => {
-  return dashboard.selectedDimensionName;
-};
-
 export const dimensionTableColumnName = (
   dashData: DashboardDataSources,
 ): ((name: string) => string) => {
@@ -93,13 +87,6 @@ export const dimensionSelectors = {
    * Returns undefined otherwise.
    */
   comparisonDimension,
-
-  /**
-   * Gets the name of the dimension that is currently selected in the dimension table.
-   * Returns undefined if no dimension is selected, in which case the dimension table
-   * is not shown.
-   */
-  dimensionTableDimName,
 
   /**
    * Gets the name of the column that is currently selected in the dimension table.

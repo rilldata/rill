@@ -9,6 +9,7 @@ import {
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
 export type LeaderboardItemData = {
   /**
@@ -96,6 +97,19 @@ export function cleanUpComparisonValue(
 type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
   dimensionValue: string;
 };
+
+export function getApiSortName(activeMeasureName: string, sortType: SortType) {
+  switch (sortType) {
+    case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+      return (activeMeasureName += ComparisonDeltaAbsoluteSuffix);
+
+    case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+      return (activeMeasureName += ComparisonDeltaRelativeSuffix);
+
+    default:
+      return activeMeasureName;
+  }
+}
 
 export function prepareLeaderboardItemData(
   values: V1MetricsViewAggregationResponseDataItem[] | undefined,

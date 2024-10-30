@@ -36,15 +36,12 @@
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import {
-    ComparisonDeltaAbsoluteSuffix,
-    ComparisonDeltaRelativeSuffix,
-  } from "../filters/measure-filters/measure-filter-entry";
+  import { getApiSortName } from "./leaderboard-utils";
 
   const slice = 7;
   const columnWidth = 66;
   const gutterWidth = 24;
-  const queryLimit = 250;
+  const queryLimit = 8;
 
   export let parentElement: HTMLElement;
   export let dimension: MetricsViewSpecDimensionV2;
@@ -53,6 +50,7 @@
   export let selectedValues: string[];
   export let instanceId: string;
   export let whereFilter: V1Expression;
+  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
   export let metricsViewName: string;
   export let metricsView: V1MetricsViewSpec;
@@ -64,7 +62,6 @@
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -242,19 +239,6 @@
   $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
 
   $: tableWidth = columnCount * columnWidth + firstColumnWidth;
-
-  function getApiSortName(activeMeasureName: string, sortType: SortType) {
-    switch (sortType) {
-      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
-        return (activeMeasureName += ComparisonDeltaAbsoluteSuffix);
-
-      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
-        return (activeMeasureName += ComparisonDeltaRelativeSuffix);
-
-      default:
-        return activeMeasureName;
-    }
-  }
 </script>
 
 <div
