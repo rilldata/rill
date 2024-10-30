@@ -7,13 +7,9 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
-import {
-  activeMeasureName,
-  isAnyMeasureSelected,
-  selectedMeasureNames,
-} from "./active-measure";
+import { activeMeasureName, selectedMeasureNames } from "./active-measure";
 import { sortingSelectors } from "./sorting";
-import { isTimeControlReady, timeControlsState } from "./time-range";
+import { timeControlsState } from "./time-range";
 import {
   getFiltersForOtherDimensions,
   additionalMeasures,
@@ -76,66 +72,8 @@ export function dimensionTableTotalQueryBody(
   if (!dimensionName) {
     return {};
   }
-  return leaderboardDimensionTotalQueryBody(dashData)(dimensionName);
-}
 
-/**
- * Returns a function that can be used to get the sorted query body
- * for a leaderboard for the given dimension.
- */
-export function leaderboardSortedQueryBody(
-  dashData: DashboardDataSources,
-): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
-  return (dimensionName: string) =>
-    prepareSortedQueryBody(
-      dimensionName,
-      getIndependentMeasures(
-        dashData.validMetricsView ?? {},
-        additionalMeasures(
-          dashData.dashboard.leaderboardMeasureName,
-          dashData.dashboard.dimensionThresholdFilters,
-        ),
-      ),
-      timeControlsState(dashData),
-      sortingSelectors.sortMeasure(dashData),
-      sortingSelectors.sortType(dashData),
-      sortingSelectors.sortedAscending(dashData),
-      mergeMeasureFilters(
-        dashData.dashboard,
-        getFiltersForOtherDimensions(
-          dashData.dashboard.whereFilter,
-          dimensionName,
-        ),
-      ),
-      8,
-    );
-}
-
-export function leaderboardSortedQueryOptions(
-  dashData: DashboardDataSources,
-): (
-  dimensionName: string,
-  enabled: boolean,
-) => { query: { enabled: boolean } } {
-  return (dimensionName: string, enabled: boolean) => {
-    const sortedQueryEnabled =
-      timeControlsState(dashData).ready === true &&
-      !!getFiltersForOtherDimensions(
-        dashData.dashboard.whereFilter,
-        dimensionName,
-      );
-    return {
-      query: {
-        enabled: enabled && sortedQueryEnabled,
-      },
-    };
-  };
-}
-
-export function leaderboardDimensionTotalQueryBody(
-  dashData: DashboardDataSources,
-): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
-  return (dimensionName: string) => ({
+  return {
     measures: [{ name: activeMeasureName(dashData) }],
     where: sanitiseExpression(
       mergeMeasureFilters(
@@ -149,24 +87,6 @@ export function leaderboardDimensionTotalQueryBody(
     ),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
-  });
-}
-
-export function leaderboardDimensionTotalQueryOptions(
-  dashData: DashboardDataSources,
-): (dimensionName: string) => { query: { enabled: boolean } } {
-  return (dimensionName: string) => {
-    return {
-      query: {
-        enabled:
-          isAnyMeasureSelected(dashData) &&
-          isTimeControlReady(dashData) &&
-          !!getFiltersForOtherDimensions(
-            dashData.dashboard.whereFilter,
-            dimensionName,
-          ),
-      },
-    };
   };
 }
 
@@ -180,28 +100,4 @@ export const leaderboardQuerySelectors = {
    * Readable containing the totals query body for the dimension table.
    */
   dimensionTableTotalQueryBody,
-
-  /**
-   * Readable containg a function that will return
-   * the sorted query body for a leaderboard for the given dimension.
-   */
-  leaderboardSortedQueryBody,
-
-  /**
-   * Readable containg a function that will return
-   * the sorted query options for a leaderboard for the given dimension.
-   */
-  leaderboardSortedQueryOptions,
-
-  /**
-   * Readable containg a function that will return
-   * the totals query body for a leaderboard for the given dimension.
-   */
-  leaderboardDimensionTotalQueryBody,
-
-  /**
-   * Readable containg a function that will return
-   * the totals query options for a leaderboard for the given dimension.
-   */
-  leaderboardDimensionTotalQueryOptions,
 };

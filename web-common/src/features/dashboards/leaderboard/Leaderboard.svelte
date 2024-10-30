@@ -1,40 +1,72 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    createQueryServiceMetricsViewAggregation,
-    V1Operation,
-    type V1MetricsViewAggregationMeasure,
+  import type {
+    MetricsViewSpecDimensionV2,
+    V1Expression,
+    V1MetricsViewAggregationMeasure,
+    V1MetricsViewSpec,
+    V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import {
-    type LeaderboardItemData,
-    prepareLeaderboardItemData,
-  } from "./leaderboard-utils";
+  import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
+  import BelowTheFold from "./BelowTheFold.svelte";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+  import { SortType } from "../proto-state/derived-types";
+  import { sanitiseExpression } from "../stores/filter-utils";
+  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import {
+    additionalMeasures,
+    getFiltersForOtherDimensions,
+  } from "../selectors";
+  import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import {
-    createAndExpression,
-    createOrExpression,
-    sanitiseExpression,
-  } from "../stores/filter-utils";
-  import {
-    getFiltersForOtherDimensions,
-    additionalMeasures,
-  } from "../selectors";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import { getIndependentMeasures } from "../state-managers/selectors/measures";
+    ComparisonDeltaAbsoluteSuffix,
+    ComparisonDeltaRelativeSuffix,
+  } from "../filters/measure-filters/measure-filter-entry";
 
   const slice = 7;
   const columnWidth = 66;
   const gutterWidth = 24;
+  const queryLimit = 250;
 
   export let parentElement: HTMLElement;
-  export let dimensionName: string;
+
+  export let dimension: MetricsViewSpecDimensionV2;
+  export let timeRange: V1TimeRange;
+  export let comparisonTimeRange: V1TimeRange | undefined;
+  export let selectedValues: string[];
+  export let instanceId: string;
+  export let whereFilter: V1Expression;
+  export let activeMeasureName: string;
+  export let metricsViewName: string;
+  export let sortType: SortType;
+  export let metricsView: V1MetricsViewSpec;
+  export let sortedAscending: boolean;
+  export let isValidPercentOfTotal: boolean;
+  export let timeControlsReady: boolean;
+  export let isSummableMeasure: boolean;
+  export let filterExcludeMode: boolean;
+  export let atLeastOneActive: boolean;
+  export let isBeingCompared: boolean;
+  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let toggleDimensionValueSelection: (
+    dimensionName: string,
+    dimensionValue: string,
+    keepPillVisible?: boolean | undefined,
+    isExclusiveFilter?: boolean | undefined,
+  ) => void;
+  export let formatter:
+    | ((_value: number | undefined) => undefined)
+    | ((value: string | number) => string);
+  export let setPrimaryDimension: (dimensionName: string) => void;
+  export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -47,191 +79,147 @@
     },
   );
 
-  let container: HTMLElement;
-  let visible = false;
-  let hovered: boolean;
-
-  /** The reference value is the one that the bar in the LeaderboardListItem
-   * gets scaled with. For a summable metric, the total is a reference value,
-   * or for a count(*) metric, the reference value is the total number of rows.
-   */
-
   onMount(() => {
     observer.observe(container);
   });
 
-  const StateManagers = getStateManagers();
+  let container: HTMLElement;
+  let visible = false;
+  let hovered: boolean;
 
-  const {
-    selectors: {
-      dimensions: {
-        getDimensionDisplayName,
-        getDimensionDescription,
-        getDimensionByName,
-      },
-      activeMeasure: { activeMeasureName, isValidPercentOfTotal },
-      dimensionFilters: { selectedDimensionValues },
-      dashboardQueries: {
-        leaderboardSortedQueryBody,
-        leaderboardSortedQueryOptions,
-        leaderboardDimensionTotalQueryBody,
-        leaderboardDimensionTotalQueryOptions,
-      },
-      sorting: { sortedAscending, sortType },
-      timeRangeSelectors: { isTimeComparisonActive },
-      comparison: { isBeingCompared: isBeingComparedReadable },
+  $: ({
+    name: dimensionName = "",
+    description = "",
+    label = "",
+    uri,
+  } = dimension);
+
+  $: where = sanitiseExpression(
+    mergeDimensionAndMeasureFilter(
+      getFiltersForOtherDimensions(whereFilter, dimensionName),
+      dimensionThresholdFilters,
+    ),
+    undefined,
+  );
+
+  $: measures = getIndependentMeasures(
+    metricsView,
+    additionalMeasures(activeMeasureName, dimensionThresholdFilters),
+  )
+    .map(
+      (n) =>
+        ({
+          name: n,
+        }) as V1MetricsViewAggregationMeasure,
+    )
+    .concat(
+      ...(comparisonTimeRange
+        ? getComparisonRequestMeasures(activeMeasureName)
+        : []),
+    );
+
+  $: sort = [
+    {
+      desc: !sortedAscending,
+      name:
+        sortType === SortType.DIMENSION || !activeMeasureName
+          ? dimensionName
+          : getApiSortName(activeMeasureName, sortType),
     },
-    actions: {
-      dimensions: { setPrimaryDimension },
-      sorting: { toggleSort },
-    },
-    metricsViewName,
-    runtime,
-    dashboardStore,
-    validSpecStore,
-  } = getStateManagers();
-
-  const timeControlsStore = useTimeControlStore(StateManagers);
-
-  $: ({ instanceId } = $runtime);
-
-  $: dimension = $getDimensionByName(dimensionName);
-
-  $: timeControls = $timeControlsStore;
+  ];
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
-    $metricsViewName,
-    $leaderboardSortedQueryBody(dimensionName),
-    $leaderboardSortedQueryOptions(dimensionName, visible),
-  );
-
-  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
-
-  $: belowTheFoldDataQuery = createQueryServiceMetricsViewAggregation(
-    instanceId,
-    $metricsViewName,
+    metricsViewName,
     {
-      dimensions: [{ name: dimensionName }],
-      where: sanitiseExpression(
-        createAndExpression(
-          [
-            createOrExpression(
-              selectedBelowTheFold.map((item) => {
-                return {
-                  cond: {
-                    op: V1Operation.OPERATION_EQ,
-                    exprs: [
-                      { ident: dimensionName },
-                      { val: item.dimensionValue },
-                    ],
-                  },
-                };
-              }),
-            ),
-          ].concat(
-            sanitiseExpression(
-              mergeDimensionAndMeasureFilter(
-                getFiltersForOtherDimensions(whereFilter, dimensionName),
-                dimensionThresholdFilters,
-              ),
-              undefined,
-            ) ?? [],
-          ),
-        ),
-        undefined,
-      ),
-      timeRange: {
-        start: timeControls.timeStart,
-        end: timeControls.timeEnd,
-      },
-      comparisonTimeRange: timeControls.showTimeComparison
-        ? {
-            start: timeControls.comparisonTimeStart,
-            end: timeControls.comparisonTimeEnd,
-          }
-        : undefined,
-      measures: getIndependentMeasures(
-        $validSpecStore.data?.metricsView ?? {},
-        additionalMeasures($activeMeasureName, dimensionThresholdFilters),
-      )
-        .map(
-          (n) =>
-            <V1MetricsViewAggregationMeasure>{
-              name: n,
-            },
-        )
-        .concat(
-          ...(timeControls.showTimeComparison
-            ? getComparisonRequestMeasures($activeMeasureName)
-            : []),
-        ),
+      dimensions: [
+        {
+          name: dimensionName,
+        },
+      ],
+      measures,
+      timeRange,
+      comparisonTimeRange,
+      sort,
+      where,
+      limit: queryLimit.toString(),
+      offset: "0",
     },
-    $leaderboardSortedQueryOptions(
-      dimensionName,
-      visible && selectedBelowTheFold.length > 0,
-    ),
+    {
+      query: {
+        enabled: visible && timeControlsReady,
+      },
+    },
   );
-
-  $: ({ data: sortedData, isFetching } = $sortedQuery);
-  $: belowTheFoldData = $belowTheFoldDataQuery?.data?.data ?? [];
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
-    $metricsViewName,
-    $leaderboardDimensionTotalQueryBody(dimensionName),
-    $leaderboardDimensionTotalQueryOptions(dimensionName),
+    metricsViewName,
+    {
+      measures: [{ name: activeMeasureName }],
+      where,
+      timeStart: timeRange.start,
+      timeEnd: timeRange.end,
+    },
+    {
+      query: {
+        enabled: timeControlsReady && visible,
+      },
+    },
   );
 
-  $: leaderboardTotal = $totalsQuery?.data?.data?.[0]?.[$activeMeasureName];
+  $: ({ data: sortedData, isFetching } = $sortedQuery);
+  $: ({ data: totalsData } = $totalsQuery);
 
-  let aboveTheFold: LeaderboardItemData[] = [];
-  let selectedBelowTheFold: LeaderboardItemData[] = [];
-  let showExpandTable = false;
-  let noAvailableValues = true;
+  $: leaderboardTotal = totalsData?.data?.[0]?.[activeMeasureName] as
+    | number
+    | null;
 
-  $: if (sortedData && !isFetching) {
-    const leaderboardData = prepareLeaderboardItemData(
-      (sortedData?.data ?? []).concat(belowTheFoldData),
+  $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
+    prepareLeaderboardItemData(
+      sortedData?.data ?? [],
       dimensionName,
-      $activeMeasureName,
+      activeMeasureName,
       slice,
-      $selectedDimensionValues(dimensionName),
+      selectedValues,
       leaderboardTotal,
-    );
-
-    aboveTheFold = leaderboardData.aboveTheFold;
-    selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
-    noAvailableValues = leaderboardData.noAvailableValues;
-    showExpandTable = leaderboardData.showExpandTable;
-  }
-
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
-
-  $: dimensionDescription = $getDimensionDescription(dimensionName);
+    ));
 
   $: firstColumnWidth =
-    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 164;
+    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
 
-  $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
+  $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
 
   $: tableWidth = columnCount * columnWidth + firstColumnWidth;
+
+  function getApiSortName(activeMeasureName: string, sortType: SortType) {
+    switch (sortType) {
+      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+        return (activeMeasureName += ComparisonDeltaAbsoluteSuffix);
+
+      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+        return (activeMeasureName += ComparisonDeltaRelativeSuffix);
+
+      default:
+        return activeMeasureName;
+    }
+  }
 </script>
 
 <div
   class="flex flex-col"
   aria-label="{dimensionName} leaderboard"
   role="table"
+  bind:this={container}
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
-  bind:this={container}
 >
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
       <col style:width="{columnWidth}px" />
-      {#if $isTimeComparisonActive}
+      {#if !!comparisonTimeRange}
         <col style:width="{columnWidth}px" />
         <col style:width="{columnWidth}px" />
       {/if}
@@ -239,17 +227,17 @@
 
     <LeaderboardHeader
       {hovered}
-      displayName={$getDimensionDisplayName(dimensionName)}
-      {dimensionDescription}
+      displayName={label ?? dimensionName}
+      dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}
       {isFetching}
-      sortType={$sortType}
+      {sortType}
+      {isValidPercentOfTotal}
+      {sortedAscending}
+      isTimeComparisonActive={!!comparisonTimeRange}
       {toggleSort}
       {setPrimaryDimension}
-      isValidPercentOfTotal={$isValidPercentOfTotal}
-      sortedAscending={$sortedAscending}
-      isTimeComparisonActive={$isTimeComparisonActive}
     />
 
     <tbody>
@@ -258,34 +246,53 @@
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
+            {isSummableMeasure}
             {tableWidth}
+            {isBeingCompared}
+            {filterExcludeMode}
+            {atLeastOneActive}
             {dimensionName}
             uri={dimension?.uri}
             {itemData}
-            isValidPercentOfTotal={$isValidPercentOfTotal}
-            isTimeComparisonActive={$isTimeComparisonActive}
+            {isValidPercentOfTotal}
+            isTimeComparisonActive={!!comparisonTimeRange}
             {columnWidth}
             {gutterWidth}
             {firstColumnWidth}
+            {toggleDimensionValueSelection}
+            {formatter}
           />
         {/each}
       {/if}
 
-      {#each selectedBelowTheFold as itemData, i (itemData.dimensionValue)}
-        <LeaderboardRow
-          {itemData}
+      {#if belowTheFoldValues.length > 0}
+        <BelowTheFold
           {tableWidth}
-          {dimensionName}
-          uri={dimension?.uri}
-          isValidPercentOfTotal={$isValidPercentOfTotal}
-          isTimeComparisonActive={$isTimeComparisonActive}
-          borderTop={i === 0}
-          borderBottom={i === selectedBelowTheFold.length - 1}
-          {columnWidth}
           {gutterWidth}
           {firstColumnWidth}
+          {columnWidth}
+          {instanceId}
+          {metricsViewName}
+          {dimensionName}
+          {timeRange}
+          {where}
+          {filterExcludeMode}
+          {isBeingCompared}
+          {atLeastOneActive}
+          {isSummableMeasure}
+          {activeMeasureName}
+          {comparisonTimeRange}
+          {selectedValues}
+          {sort}
+          {measures}
+          {uri}
+          total={leaderboardTotal}
+          enabled={visible && timeControlsReady}
+          dimensionValues={belowTheFoldValues}
+          {toggleDimensionValueSelection}
+          {formatter}
         />
-      {/each}
+      {/if}
     </tbody>
   </table>
 
@@ -311,10 +318,6 @@
     @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;
     @apply table-fixed;
-  }
-
-  tbody {
-    /* @apply bg-gray-50; */
   }
 
   .table-message {
