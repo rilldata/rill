@@ -82,7 +82,6 @@
   ) {
     if (e.key === "Enter") {
       e.preventDefault();
-      inputElement?.blur();
       onEnter();
     } else if (e.key === "Escape") {
       e.preventDefault();
