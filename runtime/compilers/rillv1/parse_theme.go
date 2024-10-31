@@ -40,9 +40,7 @@ func (p *Parser) parseTheme(node *Node) error {
 func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 	// Parse the colors now to get the parse error before inserting resource
 	var pc csscolorparser.Color
-	// hasPc := false
 	var sc csscolorparser.Color
-	// hasSc := false
 	var err error
 
 	spec := &runtimev1.ThemeSpec{}
