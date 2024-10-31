@@ -7,7 +7,6 @@
   import { Plus } from "lucide-svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
-  import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
 
   let open = false;
   let searchText = "";
@@ -22,7 +21,29 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
+  const TEST_DATA = [
+    {
+      id: "123",
+      name: "test",
+      value: "asd",
+      environment: "Development",
+      updatedByUserId: "123",
+      createdOn: "2024-10-30T23:40:21.343110Z",
+      updatedOn: "2024-10-30T23:40:21.343110Z",
+    },
+    {
+      id: "123",
+      name: "okay",
+      value: "asd",
+      environment: "",
+      updatedByUserId: "123",
+      createdOn: "2024-10-30T23:40:21.343110Z",
+      updatedOn: "2024-10-30T23:40:21.343110Z",
+    },
+  ];
+
   // TODO: wire up searchText to filter variables key
+  // TODO: UpsertProjectVariable
 </script>
 
 <div class="flex flex-col w-full">
@@ -62,7 +83,7 @@
             <span>Add environment variable</span>
           </Button>
         </div>
-        <EnvironmentVariablesTable data={projectVariables} />
+        <EnvironmentVariablesTable data={TEST_DATA} />
       </div>
     {/if}
   </div>
