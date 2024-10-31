@@ -140,7 +140,7 @@ const sidebars = {
               items: [
                 'tutorials/administration/project/project-maintanence',
                 'tutorials/administration/project/alerts',
-                'tutorials/administration/project/credential-env-variable-mangement',
+                'tutorials/administration/project/credential-env-variable-management',
                 'tutorials/administration/project/github',
               ]
             },
