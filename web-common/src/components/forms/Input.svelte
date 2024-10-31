@@ -4,6 +4,7 @@
   import { slide } from "svelte/transition";
   import Select from "./Select.svelte";
   import InputLabel from "./InputLabel.svelte";
+  import FieldSwitcher from "./FieldSwitcher.svelte";
 
   const voidFunction = () => {};
 
@@ -97,19 +98,7 @@
   {/if}
 
   {#if fields && fields?.length > 1}
-    <div class="option-wrapper">
-      {#each fields as field, i (field)}
-        <button
-          on:click={() => {
-            selected = i;
-          }}
-          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-          class:selected={selected === i}
-        >
-          {field}
-        </button>
-      {/each}
-    </div>
+    <FieldSwitcher {fields} {selected} />
   {/if}
 
   {#if !options}
@@ -218,10 +207,6 @@
     @apply flex  flex-col gap-y-1 h-fit justify-center;
   }
 
-  .option-wrapper {
-    @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
-  }
-
   .sm {
     height: 24px;
   }
@@ -281,9 +266,5 @@
 
   .toggle:active {
     @apply bg-primary-100;
-  }
-
-  .option-wrapper > .selected {
-    @apply border-primary-500 z-50 text-primary-500;
   }
 </style>
