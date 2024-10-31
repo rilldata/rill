@@ -78,6 +78,10 @@ func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 }
 
 func (p *Parser) parseExploreTheme(exploreName string, v *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if v == nil {
+		return "", nil, nil
+	}
+
 	if v.Kind == yaml.ScalarNode {
 		var name string
 		err := v.Decode(&name)
