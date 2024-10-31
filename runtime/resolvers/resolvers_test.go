@@ -6,185 +6,228 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"flag"
-	"maps"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
-type Resolvers struct {
-	Project    map[string]yaml.Node
-	Connectors map[string]*testruntime.InstanceOptionsForResolvers
-	Tests      map[string]*Test
+// TestFileYAML is the structure of a test file.
+// One runtime instance will created for each test file, with the provided file contents and connectors initialized.
+// Each test in the file will be run in sequence against that runtime instance.
+// The available connectors are defined in runtime/testruntime/connectors.go.
+type TestFileYAML struct {
+	Connectors []string             `yaml:"connectors,omitempty"`
+	Files      map[string]yaml.Node `yaml:"files"`
+	Tests      map[string]*TestYAML `yaml:"tests"`
 }
 
-type Test struct {
-	Options struct {
-		InstanceID         string
-		Resolver           string
-		ResolverProperties map[string]any "yaml:\"resolver_properties\""
-		Args               map[string]any
-		Claims             struct {
-			UserAttributes map[string]any "yaml:\"user_attributes\""
-		}
-	}
-	Result        []map[string]any
-	CSVResult     string "yaml:\"csv_result\""
-	ErrorContains string "yaml:\"error_contains\""
+// TestYAML is the structure of a single resolver test executed against the runtime instance defined in TestFileYAML.
+type TestYAML struct {
+	Resolver           string           `yaml:"resolver"`
+	Properties         map[string]any   `yaml:"properties,omitempty"`
+	Args               map[string]any   `yaml:"args,omitempty"`
+	UserAttributes     map[string]any   `yaml:"user_attributes,omitempty"`
+	SkipSecurityChecks bool             `yaml:"skip_security_checks,omitempty"`
+	Result             []map[string]any `yaml:"result,omitempty"`
+	ResultCSV          string           `yaml:"result_csv,omitempty"`
+	ErrorContains      string           `yaml:"error_contains,omitempty"`
 }
 
+// update is a flag that denotes whether to overwrite the results in the test files instead of checking them.
 var update = flag.Bool("update", false, "Update test results")
 
-func TestMain(m *testing.M) {
-	flag.Parse()
-	os.Exit(m.Run())
-}
-
+// TestResolvers loads the test YAML files in ./testdata and runs them. Each test file should match the schema of TestFileYAML.
+//
+// The test YAML files provide a compact format for initializing runtime instances for a set of files and connectors,
+// and running a series of resolvers against them and testing the results.
+//
+// Example: run all resolver tests:
+//
+//	go test -run ^TestResolvers$ ./runtime/resolvers
+//
+// Example: update all resolver tests:
+//
+//	go test -run ^TestResolvers$ ./runtime/resolvers -update
+//
+// Example: run a single resolver test file:
+//
+// go test -run ^TestResolvers/metrics_clickhouse$ ./runtime/resolvers
+//
+// Example: run a single resolver file test case:
+//
+// go test -run ^TestResolvers/metrics_clickhouse/simple$ ./runtime/resolvers
 func TestResolvers(t *testing.T) {
-	files, err := filepath.Glob("./testdata/*_resolvers_test.yaml")
+	// Evaluate the -update flag.
+	flag.Parse()
+	update := update != nil && *update
+
+	// Discover the test files.
+	files, err := filepath.Glob("./testdata/*.yaml")
 	require.NoError(t, err)
+
+	// Run each test file as a subtest.
 	for _, f := range files {
-		t.Log("Running with", f)
-		yamlFile, err := os.ReadFile(f)
-		require.NoError(t, err)
-		var r Resolvers
-		err = yaml.Unmarshal(yamlFile, &r)
-		require.NoError(t, err)
-
-		files := make(map[string]string)
-		for name, node := range r.Project {
-			bytes, err := yaml.Marshal(&node)
+		t.Run(fileutil.Stem(f), func(t *testing.T) {
+			// Load the test file.
+			data, err := os.ReadFile(f)
 			require.NoError(t, err)
-			files[name] = string(bytes)
-		}
+			var tf TestFileYAML
+			err = yaml.Unmarshal(data, &tf)
+			require.NoError(t, err)
 
-		for connector, opts := range r.Connectors {
-			t.Log("Running with", connector)
-			if opts == nil {
-				opts = &testruntime.InstanceOptionsForResolvers{}
-			}
-			if opts.Files == nil {
-				opts.Files = map[string]string{"rill.yaml": ""}
-			}
-
-			switch connector {
-			case "druid":
-				opts.OLAPDriver = "druid"
-			case "clickhouse":
-				opts.OLAPDriver = "clickhouse"
+			// Create a map of project files for the runtime instance.
+			projectFiles := make(map[string]string)
+			projectFiles["rill.yaml"] = ""
+			for name, node := range tf.Files {
+				bytes, err := yaml.Marshal(&node)
+				require.NoError(t, err)
+				projectFiles[name] = string(bytes)
 			}
 
-			maps.Copy(opts.Files, files)
-			rt, instanceID := testruntime.NewInstanceForResolvers(t, *opts)
-			for testName, test := range r.Tests {
-				t.Run(testName, func(t *testing.T) {
-					t.Log("======================")
-					t.Log("Running ", testName, "with", f, "and", connector)
-					testruntime.RequireReconcileState(t, rt, instanceID, -1, 0, 0)
+			// Acquire the connectors for the runtime instance.
+			vars := make(map[string]string)
+			for _, connector := range tf.Connectors {
+				acquire, ok := testruntime.Connectors[connector]
+				require.True(t, ok, "unknown connector %q", connector)
+				connectorVars := acquire(t)
+				maps.Copy(vars, connectorVars)
+			}
 
-					ropts := test.Options
-					ro := &runtime.ResolveOptions{}
-					ro.InstanceID = instanceID
-					ro.Resolver = ropts.Resolver
-					ro.ResolverProperties = ropts.ResolverProperties
-					ro.Args = ropts.Args
-					ro.Claims = &runtime.SecurityClaims{
-						UserAttributes: ropts.Claims.UserAttributes,
-					}
-					res, err := rt.Resolve(context.Background(), ro)
-					if test.ErrorContains != "" {
-						if *update {
-							require.Error(t, err)
-							test.ErrorContains = err.Error()
+			// Create the test runtime instance.
+			rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+				Files:     projectFiles,
+				Variables: vars,
+			})
+			testruntime.RequireReconcileState(t, rt, instanceID, -1, 0, 0)
+
+			// Run each test case against the test runtime instance as a subtest.
+			for name, tc := range tf.Tests {
+				t.Run(name, func(t *testing.T) {
+					// Run the resolver.
+					ctx := context.Background()
+					res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+						InstanceID:         instanceID,
+						Resolver:           tc.Resolver,
+						ResolverProperties: tc.Properties,
+						Args:               tc.Args,
+						Claims: &runtime.SecurityClaims{
+							UserAttributes: tc.UserAttributes,
+							SkipChecks:     tc.SkipSecurityChecks,
+						},
+					})
+
+					// If it succeeded, get the result rows.
+					// Does a JSON roundtrip to coerce to simple types (easier to compare).
+					var rows []map[string]any
+					if err == nil {
+						data, err2 := res.MarshalJSON()
+						if err2 != nil {
+							err = err2
 						} else {
-							require.ErrorContains(t, err, test.ErrorContains)
+							err = json.Unmarshal(data, &rows)
+						}
+					}
+
+					// If the -update flag is set, update the test case results instead of checking them.
+					// The updated test case will be written back to the test file later.
+					if update {
+						tc.Result = rows
+						tc.ErrorContains = ""
+						if err != nil {
+							tc.ErrorContains = err.Error()
 						}
 						return
-					} else {
-						require.NoError(t, err)
 					}
-					var rows []map[string]interface{}
-					b, err := res.MarshalJSON()
+
+					// Check if an error was expected.
+					if tc.ErrorContains != "" {
+						require.Error(t, err)
+						require.Contains(t, err.Error(), tc.ErrorContains)
+						return
+					}
 					require.NoError(t, err)
-					require.NoError(t, json.Unmarshal(b, &rows), string(b))
-					if *update {
-						test.Result = rows
-						for _, m := range test.Result {
-							for k, v := range m {
-								node := yaml.Node{}
-								node.Kind = yaml.ScalarNode
-								switch val := v.(type) {
-								case float32:
-									node.Value = strconv.FormatFloat(float64(val), 'f', 2, 32)
-									m[k] = &node
-								case float64:
-									node.Value = strconv.FormatFloat(val, 'f', 2, 64)
-									m[k] = &node
-								}
-							}
-						}
-					} else {
-						expected := test.Result
-						if test.CSVResult != "" {
-							expected = readCSV(t, test.CSVResult)
-						}
-						require.Equal(t, expected, rows)
+
+					// We support expressing the expected result as a CSV string, which is more compact.
+					// Serialize the result to CSV and compare.
+					if tc.ResultCSV != "" {
+						actual := resultToCSV(t, rows, res.Schema())
+						require.Equal(t, strings.TrimSpace(tc.ResultCSV), strings.TrimSpace(actual))
+						return
 					}
-					t.Log("======================")
+
+					// Compare the result rows to the expected result.
+					// Like for rows, we do a JSON roundtrip on the expected result (parsed from YAML) to coerce to simple types.
+					var expected []map[string]any
+					data, err := json.Marshal(tc.Result)
+					require.NoError(t, err)
+					err = json.Unmarshal(data, &expected)
+					require.NoError(t, err)
+					if len(expected) != 0 || len(rows) != 0 {
+						require.EqualValues(t, expected, rows)
+					}
 				})
 			}
-			if *update {
-				buf := bytes.Buffer{}
-				yamlEncoder := yaml.NewEncoder(&buf)
+
+			// If the -update flag is set, the TestYAML values have been updated with the output results.
+			// Write out the updated test file.
+			if update {
+				buf := &bytes.Buffer{}
+				yamlEncoder := yaml.NewEncoder(buf)
 				yamlEncoder.SetIndent(2)
-				err := yamlEncoder.Encode(r)
+				err := yamlEncoder.Encode(tf)
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(f, buf.Bytes(), 0644))
 			}
-		}
+		})
 	}
+
 }
 
-func readCSV(t *testing.T, in string) []map[string]any {
-	var digitCheck = regexp.MustCompile(`^[0-9]+$`)
-	var numericCheck = regexp.MustCompile(`^[0-9\.]+$`)
+// resultToCSV serializes the rows to a CSV formatted string.
+// It is derived from runtime/drivers/file/model_executor_olap_self.go#writeCSV.
+func resultToCSV(t *testing.T, rows []map[string]any, schema *runtimev1.StructType) string {
+	buf := &bytes.Buffer{}
+	w := csv.NewWriter(buf)
 
-	r := csv.NewReader(strings.NewReader(in))
-	records, err := r.ReadAll()
+	strs := make([]string, len(schema.Fields))
+	for i, f := range schema.Fields {
+		strs[i] = f.Name
+	}
+	err := w.Write(strs)
 	require.NoError(t, err)
 
-	rows := make([]map[string]any, 0, len(records))
-	headers := records[0]
-	for i := 1; i < len(records); i++ {
-		m := make(map[string]any, len(headers))
-		for j, h := range headers {
-			str := records[i][j]
+	for _, row := range rows {
+		for i, f := range schema.Fields {
+			v, ok := row[f.Name]
+			require.True(t, ok, "missing field %q", f.Name)
 
-			if str == "" {
-				m[h] = nil
-				continue
+			var s string
+			if v != nil {
+				if v2, ok := v.(string); ok {
+					s = v2
+				} else {
+					tmp, err := json.Marshal(v)
+					require.NoError(t, err)
+					s = string(tmp)
+				}
 			}
-			if digitCheck.MatchString(str) {
-				num, err := strconv.Atoi(str)
-				require.NoError(t, err)
-				m[h] = num
-			} else if numericCheck.MatchString(str) {
-				num, err := strconv.ParseFloat(str, 64)
-				require.NoError(t, err)
-				m[h] = num
-			} else {
-				m[h] = records[i][j]
-			}
+
+			strs[i] = s
 		}
-		rows = append(rows, m)
+
+		err = w.Write(strs)
+		require.NoError(t, err)
 	}
-	return rows
+
+	w.Flush()
+	return buf.String()
 }
