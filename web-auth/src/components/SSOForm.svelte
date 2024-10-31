@@ -44,29 +44,27 @@
   }
 </script>
 
-<div>
-  <div class="flex flex-col gap-y-4">
-    <CtaButton {disabled} variant="primary" on:click={handleClick}>
-      <div class="flex justify-center font-medium">
-        <span>Continue with SAML SSO</span>
-      </div>
-    </CtaButton>
-    <CtaButton
-      {disabled}
-      variant="secondary"
-      gray
-      on:click={() => {
-        dispatch("back");
-      }}
-    >
-      <div class="flex justify-center items-center font-medium">
-        <ArrowLeftIcon class="mr-1" size={14} />
-        <span>Back</span>
-      </div>
-    </CtaButton>
-  </div>
-
-  {#if errorText}
-    <div class="mt-2 text-red-500 text-sm">{errorText}</div>
-  {/if}
+<div class="flex flex-col gap-y-4">
+  <CtaButton {disabled} variant="primary" on:click={handleClick}>
+    <div class="flex justify-center font-medium">
+      <span>Continue with SAML SSO</span>
+    </div>
+  </CtaButton>
+  <CtaButton
+    {disabled}
+    variant="secondary"
+    gray
+    on:click={() => {
+      dispatch("back");
+    }}
+  >
+    <div class="flex justify-center items-center font-medium">
+      <ArrowLeftIcon class="mr-1" size={14} />
+      <span>Back</span>
+    </div>
+  </CtaButton>
 </div>
+
+{#if errorText}
+  <div class="mt-2 text-red-500 text-sm">{errorText}</div>
+{/if}

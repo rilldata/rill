@@ -44,7 +44,7 @@
     showPassword = !showPassword;
   }
 
-  function handleSubmit() {
+  function handleClick() {
     errorText = "";
 
     authenticateUser(email, password);
@@ -136,11 +136,7 @@
   });
 </script>
 
-<form
-  on:submit|preventDefault={handleSubmit}
-  class="flex flex-col gap-y-4"
-  style:max-width="400px"
->
+<div class="flex flex-col gap-y-4" style:max-width="400px">
   <div>
     <div class="relative flex items-center">
       <input
@@ -152,6 +148,11 @@
         id="password"
         placeholder="Password"
         required
+        on:keydown={(e) => {
+          if (e.key === "Enter") {
+            handleClick();
+          }
+        }}
       />
 
       <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -186,7 +187,7 @@
     </div>
   {/if}
 
-  <CtaButton {disabled} variant="primary" submitForm>
+  <CtaButton {disabled} variant="primary" on:click={handleClick}>
     <div class="flex justify-center font-medium">Continue</div>
   </CtaButton>
   <CtaButton
@@ -201,4 +202,4 @@
       <span>Back</span>
     </div>
   </CtaButton>
-</form>
+</div>
