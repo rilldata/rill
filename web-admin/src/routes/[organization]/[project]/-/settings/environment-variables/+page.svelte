@@ -75,7 +75,7 @@
             large
             autofocus={false}
             showBorderOnFocus={false}
-            disabled={searchText === ""}
+            disabled={projectVariables.length === 0}
           />
           <!-- TODO: filter by environment -->
           <Button type="primary" large on:click={() => (open = true)}>
