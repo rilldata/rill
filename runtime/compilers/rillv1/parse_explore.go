@@ -183,6 +183,9 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	themeName, spec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
+	if err != nil {
+		return err
+	}
 
 	if spec != nil {
 		themResource, err := p.insertResource(ResourceKindTheme, themeName, node.Paths, node.Refs...)
