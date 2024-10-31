@@ -23,6 +23,7 @@ import {
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
+  prepareMeasureForComparison,
 } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -74,9 +75,8 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricsViewName,
         {
-          // measures: prepareMeasureForComparison(measures),
-          // measures: [],
-          dimensions: [],
+          measures: prepareMeasureForComparison(measures),
+          dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           whereSql: config.pivot?.whereSql,
           timeRange: {

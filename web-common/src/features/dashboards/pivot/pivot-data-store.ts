@@ -19,6 +19,7 @@ import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
+  getExpandedQueryErrors,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
 import {
@@ -633,6 +634,11 @@ export function createPivotDataStore(
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
+                      const queryErrors = getExpandedQueryErrors(
+                        expandedRowMeasureValues,
+                      );
+                      if (queryErrors.length) return getErrorState(queryErrors);
+
                       tableDataExpanded = addExpandedDataToPivot(
                         config,
                         pivotData,

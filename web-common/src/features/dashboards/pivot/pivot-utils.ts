@@ -610,8 +610,6 @@ export function getErrorFromResponses(
 }
 
 export function getErrorState(errors: PivotQueryError[]): PivotDataState {
-  // TODO: remove duplicate errors based on statusCode and message
-
   return {
     error: errors,
     isFetching: false,
