@@ -10,7 +10,7 @@
 </script>
 
 <div class="label-wrapper">
-  <label for={id} class="line-clamp-1">
+  <label for={id} class="line-clamp-1 capitalize">
     {label}
     {#if optional}
       <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
