@@ -77,38 +77,38 @@ func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-func (p *Parser) parseExploreTheme(exploreName string, v *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
-	if v == nil {
+func (p *Parser) parseExploreTheme(exploreName string, n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if n.IsZero() {
 		return "", nil, nil
 	}
 
-	if v.Kind == yaml.ScalarNode {
+	switch n.Kind {
+	case yaml.ScalarNode:
 		var name string
-		err := v.Decode(&name)
+		err := n.Decode(&name)
 		if err != nil {
 			return "", nil, err
 		}
 		return name, nil, nil
+	case yaml.MappingNode:
+		tmp := &ThemeYAML{}
+		err := n.Decode(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		name := fmt.Sprintf("theme:%s", exploreName)
+
+		spec, err := p.parseThemeYAML(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return name, spec, nil
+
+	default:
+		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
 	}
-
-	if v.Kind != yaml.MappingNode {
-		return "", nil, errors.New("expected a theme name or inline declaration")
-	}
-
-	tmp := &ThemeYAML{}
-	err := v.Decode(tmp)
-	if err != nil {
-		return "", nil, err
-	}
-
-	name := fmt.Sprintf("theme:%s", exploreName)
-
-	spec, err := p.parseThemeYAML(tmp)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return name, spec, nil
 }
 
 // ExploreComparisonTimeRangeYAML is part of ExploreTimeRangeYAML. See its docstring.
@@ -186,6 +186,8 @@ func (p *Parser) parseExplore(node *Node) error {
 		measuresSelector = tmp.Measures.Proto()
 	}
 
+	// if tmp.Theme != nil {
+
 	themeName, spec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
 	if err != nil {
 		return err
@@ -203,6 +205,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	if themeName != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
+	// }
 
 	// Build and validate time ranges
 	var timeRanges []*runtimev1.ExploreTimeRange
