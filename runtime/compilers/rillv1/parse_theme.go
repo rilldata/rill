@@ -22,24 +22,9 @@ func (p *Parser) parseTheme(node *Node) error {
 		return err
 	}
 
-	// Parse the colors now to get the parse error before inserting resource
-	var pc csscolorparser.Color
-	hasPc := false
-	var sc csscolorparser.Color
-	hasSc := false
-	if tmp.Colors.Primary != "" {
-		pc, err = csscolorparser.Parse(tmp.Colors.Primary)
-		if err != nil {
-			return err
-		}
-		hasPc = true
-	}
-	if tmp.Colors.Secondary != "" {
-		sc, err = csscolorparser.Parse(tmp.Colors.Secondary)
-		if err != nil {
-			return err
-		}
-		hasSc = true
+	spec, err := p.parseThemeYAML(tmp)
+	if err != nil {
+		return err
 	}
 
 	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Refs...)
@@ -47,14 +32,37 @@ func (p *Parser) parseTheme(node *Node) error {
 		return err
 	}
 
-	if hasPc {
-		r.ThemeSpec.PrimaryColor = toThemeColor(pc)
-	}
-	if hasSc {
-		r.ThemeSpec.SecondaryColor = toThemeColor(sc)
-	}
+	r.ThemeSpec = spec
 
 	return nil
+}
+
+func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
+	// Parse the colors now to get the parse error before inserting resource
+	var pc csscolorparser.Color
+	// hasPc := false
+	var sc csscolorparser.Color
+	// hasSc := false
+	var err error
+
+	spec := &runtimev1.ThemeSpec{}
+
+	if tmp.Colors.Primary != "" {
+		pc, err = csscolorparser.Parse(tmp.Colors.Primary)
+		if err != nil {
+			return nil, err
+		}
+		spec.PrimaryColor = toThemeColor(pc)
+	}
+	if tmp.Colors.Secondary != "" {
+		sc, err = csscolorparser.Parse(tmp.Colors.Secondary)
+		if err != nil {
+			return nil, err
+		}
+		spec.SecondaryColor = toThemeColor(sc)
+	}
+
+	return spec, nil
 }
 
 func toThemeColor(c csscolorparser.Color) *runtimev1.Color {

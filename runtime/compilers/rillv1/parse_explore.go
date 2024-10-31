@@ -19,7 +19,7 @@ type ExploreYAML struct {
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
-	Theme       string                 `yaml:"theme"`
+	Theme       yaml.Node              `yaml:"theme"`
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
 	Defaults    *struct {
@@ -53,6 +53,13 @@ type ExploreTimeRangeYAML struct {
 	ComparisonTimeRanges []ExploreComparisonTimeRangeYAML
 }
 
+type ExploreThemeYAML struct {
+	Colors struct {
+		Primary   string `yaml:"primary"`
+		Secondary string `yaml:"secondary"`
+	} `yaml:"colors"`
+}
+
 func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 	if v == nil {
 		return nil
@@ -75,6 +82,36 @@ func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 		return fmt.Errorf("invalid time_range: should be a string or mapping, got kind %q", v.Kind)
 	}
 	return nil
+}
+
+func (p *Parser) parseExploreTheme(exploreName string, v *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if v.Kind == yaml.ScalarNode {
+		var name string
+		err := v.Decode(&name)
+		if err != nil {
+			return "", nil, err
+		}
+		return name, nil, nil
+	}
+
+	if v.Kind != yaml.MappingNode {
+		return "", nil, errors.New("expected a theme name or inline declaration")
+	}
+
+	tmp := &ThemeYAML{}
+	err := v.Decode(tmp)
+	if err != nil {
+		return "", nil, err
+	}
+
+	name := fmt.Sprintf("theme:%s", exploreName)
+
+	spec, err := p.parseThemeYAML(tmp)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return name, spec, nil
 }
 
 // ExploreComparisonTimeRangeYAML is part of ExploreTimeRangeYAML. See its docstring.
@@ -152,9 +189,15 @@ func (p *Parser) parseExplore(node *Node) error {
 		measuresSelector = tmp.Measures.Proto()
 	}
 
+	themeName, spec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
+
+	themResource, err := p.insertResource(ResourceKindTheme, themeName, node.Paths, node.Refs...)
+
+	themResource.ThemeSpec = spec
+
 	// Add theme to refs
-	if tmp.Theme != "" {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.Theme})
+	if themeName != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
 	// Build and validate time ranges
@@ -259,7 +302,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
-	r.ExploreSpec.Theme = tmp.Theme
+	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
@@ -268,3 +311,61 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	return nil
 }
+
+// func (p *Parser) parseInlineTheme(n yaml.Node) (string, *componentDef, error) {
+// 	if n.Kind == yaml.ScalarNode {
+// 		var name string
+// 		err := n.Decode(&name)
+// 		if err != nil {
+// 			return "", nil, err
+// 		}
+// 		return name, nil, nil
+// 	}
+
+// 	if n.Kind != yaml.MappingNode {
+// 		// Takes the form { colors: { primary: "color", secondary: "color "}}
+// 		tmp := &struct {
+// 			Colors struct {
+// 				Primary   string `yaml:"primary"`
+// 				Secondary string `yaml:"secondary"`
+// 			} `yaml:"colors"`
+// 		}{}
+// 		err := n.Decode(tmp)
+// 		if err != nil {
+// 			return "", nil, err
+// 		}
+// 		return "", nil, errors.New("expected a component name or inline declaration")
+// 	}
+
+// 	tmp := &ComponentYAML{}
+// 	err := n.Decode(tmp)
+// 	if err != nil {
+// 		return "", nil, err
+// 	}
+
+// 	spec, refs, err := p.parseComponentYAML(tmp)
+// 	if err != nil {
+// 		return "", nil, err
+// 	}
+
+// 	spec.DefinedInCanvas = true
+
+// 	name := fmt.Sprintf("%s--component-%d", canvasName, idx)
+
+// 	err = p.insertDryRun(ResourceKindComponent, name)
+// 	if err != nil {
+// 		name = fmt.Sprintf("%s--component-%d-%s", canvasName, idx, uuid.New())
+// 		err = p.insertDryRun(ResourceKindComponent, name)
+// 		if err != nil {
+// 			return "", nil, err
+// 		}
+// 	}
+
+// 	def := &componentDef{
+// 		name: name,
+// 		refs: refs,
+// 		spec: spec,
+// 	}
+
+// 	return name, def, nil
+// }
