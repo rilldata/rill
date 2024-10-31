@@ -53,13 +53,6 @@ type ExploreTimeRangeYAML struct {
 	ComparisonTimeRanges []ExploreComparisonTimeRangeYAML
 }
 
-type ExploreThemeYAML struct {
-	Colors struct {
-		Primary   string `yaml:"primary"`
-		Secondary string `yaml:"secondary"`
-	} `yaml:"colors"`
-}
-
 func (y *ExploreTimeRangeYAML) UnmarshalYAML(v *yaml.Node) error {
 	if v == nil {
 		return nil
@@ -191,9 +184,13 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	themeName, spec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
 
-	themResource, err := p.insertResource(ResourceKindTheme, themeName, node.Paths, node.Refs...)
-
-	themResource.ThemeSpec = spec
+	if spec != nil {
+		themResource, err := p.insertResource(ResourceKindTheme, themeName, node.Paths, node.Refs...)
+		if err != nil {
+			return err
+		}
+		themResource.ThemeSpec = spec
+	}
 
 	// Add theme to refs
 	if themeName != "" {
