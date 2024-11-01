@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"strings"
@@ -75,42 +74,49 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
-	return t.to.db.WithWriteConnection(ctx, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
-		// load motherduck extension; connect to motherduck service
-		_, err = conn.ExecContext(ctx, "INSTALL 'motherduck'; LOAD 'motherduck';")
+	rwConn, release, err := t.to.acquireConn(ctx, false)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	conn := rwConn.Connx()
+
+	// load motherduck extension; connect to motherduck service
+	_, err = conn.ExecContext(ctx, "INSTALL 'motherduck'; LOAD 'motherduck';")
+	if err != nil {
+		return fmt.Errorf("failed to load motherduck extension %w", err)
+	}
+
+	if _, err = conn.ExecContext(ctx, fmt.Sprintf("SET motherduck_token='%s'", token)); err != nil {
+		if !strings.Contains(err.Error(), "can only be set during initialization") {
+			return fmt.Errorf("failed to set motherduck token %w", err)
+		}
+	}
+
+	// ignore attach error since it might be already attached
+	_, _ = conn.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", srcConfig.DSN))
+	userQuery := strings.TrimSpace(srcConfig.SQL)
+	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+
+	// we first ingest data in a temporary table in the main db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs
+	tmpTable := fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table)
+	defer func() {
+		// ensure temporary table is cleaned
+		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
 		if err != nil {
-			return fmt.Errorf("failed to load motherduck extension %w", err)
+			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
 		}
+	}()
 
-		if _, err = conn.ExecContext(ctx, fmt.Sprintf("SET motherduck_token='%s'", token)); err != nil {
-			if !strings.Contains(err.Error(), "can only be set during initialization") {
-				return fmt.Errorf("failed to set motherduck token %w", err)
-			}
-		}
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n);", safeName(tmpTable), userQuery)
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
 
-		// ignore attach error since it might be already attached
-		_, _ = conn.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", srcConfig.DSN))
-		userQuery := strings.TrimSpace(srcConfig.SQL)
-		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+	// copy data from temp table to target table
+	return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 
-		// we first ingest data in a temporary table in the main db
-		// and then copy it to the final table to ensure that the final table is always created using CRUD APIs
-		tmpTable := fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table)
-		defer func() {
-			// ensure temporary table is cleaned
-			_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
-			if err != nil {
-				t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
-			}
-		}()
-
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n);", safeName(tmpTable), userQuery)
-		_, err = conn.ExecContext(ctx, query)
-		if err != nil {
-			return err
-		}
-
-		// copy data from temp table to target table
-		return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
-	})
 }

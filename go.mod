@@ -75,7 +75,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
-	github.com/rilldata/duckdb-replicator v0.0.0-20241030092710-25561e98b106
+	github.com/rilldata/duckdb-replicator v0.0.0-20241101141720-e0a536d1aa53
 	github.com/riverqueue/river v0.11.4
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
 	github.com/riverqueue/river/rivertype v0.11.4
@@ -431,3 +431,5 @@ replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v
 
 // security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
+
+// replace github.com/rilldata/duckdb-replicator => /home/anshul/workspace/duckdb-replicator

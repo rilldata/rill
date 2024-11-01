@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -71,71 +70,75 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	err = s.to.db.WithWriteConnection(ctx, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		// create table
-		_, err := conn.ExecContext(ctx, qry, nil)
+	rwConn, release, err := s.to.acquireConn(ctx, false)
+	if err != nil {
+		return err
+	}
+	defer release()
+	conn := rwConn.Connx()
+
+	// create table
+	_, err = conn.ExecContext(ctx, qry, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// ensure temporary table is cleaned
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
+		if err != nil {
+			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+		}
+	}()
+
+	// append data using appender API
+	err = rawConn(conn.Conn, func(conn driver.Conn) error {
+		a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
 		if err != nil {
 			return err
 		}
-
 		defer func() {
-			// ensure temporary table is cleaned
-			_, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
+			err = a.Close()
 			if err != nil {
-				s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+				s.logger.Error("appender closed failed", zap.Error(err))
 			}
 		}()
 
-		// append data using appender API
-		err = rawConn(conn, func(conn driver.Conn) error {
-			a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				err = a.Close()
+		for num := 0; ; num++ {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				if num == 10000 {
+					num = 0
+					if err := a.Flush(); err != nil {
+						return err
+					}
+				}
+
+				row, err := iter.Next(ctx)
 				if err != nil {
-					s.logger.Error("appender closed failed", zap.Error(err))
+					if errors.Is(err, drivers.ErrIteratorDone) {
+						return nil
+					}
+					return err
 				}
-			}()
+				if err := convert(row, schema); err != nil { // duckdb specific datatype conversion
+					return err
+				}
 
-			for num := 0; ; num++ {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					if num == 10000 {
-						num = 0
-						if err := a.Flush(); err != nil {
-							return err
-						}
-					}
-
-					row, err := iter.Next(ctx)
-					if err != nil {
-						if errors.Is(err, drivers.ErrIteratorDone) {
-							return nil
-						}
-						return err
-					}
-					if err := convert(row, schema); err != nil { // duckdb specific datatype conversion
-						return err
-					}
-
-					if err := a.AppendRow(row...); err != nil {
-						return err
-					}
+				if err := a.AppendRow(row...); err != nil {
+					return err
 				}
 			}
-		})
-		if err != nil {
-			return err
 		}
-
-		// copy data from temp table to target table
-		return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {

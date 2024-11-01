@@ -565,7 +565,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	rwConn, releaseConn, err := c.acquireConn(ctx, true)
 	if err != nil {
 		c.metaSem.Release(1)
 		return nil, nil, err
@@ -578,7 +578,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 		return err
 	}
 
-	return conn, release, nil
+	return rwConn.Connx(), release, nil
 }
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
@@ -608,7 +608,7 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	rwConn, releaseConn, err := c.acquireConn(ctx, true)
 	if err != nil {
 		c.olapSem.Release()
 		if longRunning {
@@ -627,12 +627,12 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 		return err
 	}
 
-	return conn, release, nil
+	return rwConn.Connx(), release, nil
 }
 
 // acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 // acquireConn implements the connection tracking and DB reopening logic described in the struct definition for connection.
-func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireConn(ctx context.Context, read bool) (duckdbreplicator.Conn, func() error, error) {
 	c.dbCond.L.Lock()
 	for {
 		if c.dbErr != nil {
@@ -648,7 +648,14 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	c.dbConnCount++
 	c.dbCond.L.Unlock()
 
-	conn, releaseConn, err := c.db.AcquireReadConnection(ctx)
+	var conn duckdbreplicator.Conn
+	var releaseConn func() error
+	var err error
+	if read {
+		conn, releaseConn, err = c.db.AcquireReadConnection(ctx)
+	} else {
+		conn, releaseConn, err = c.db.AcquireWriteConnection(ctx)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
