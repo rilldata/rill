@@ -31,6 +31,8 @@ export const load = async ({ params, depends, url }) => {
     const response = await queryClient.fetchQuery({
       queryFn: queryFunction,
       queryKey,
+      // this loader function is run for every param change in url.
+      // so to avoid re-fetching explore everytime we set this so that it hits cache.
       staleTime: Infinity,
     });
 

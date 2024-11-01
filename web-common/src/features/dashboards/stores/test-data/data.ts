@@ -1,7 +1,9 @@
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -13,6 +15,7 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -316,3 +319,52 @@ export const CUSTOM_TEST_CONTROLS = {
   start: TestTimeConstants.LAST_18_HOURS,
   end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;
+
+export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
+  activePage: DashboardState_ActivePage.PIVOT,
+  pivot: {
+    active: true,
+    rows: {
+      dimension: [
+        {
+          id: AD_BIDS_PUBLISHER_DIMENSION,
+          type: PivotChipType.Dimension,
+          title: AD_BIDS_PUBLISHER_DIMENSION,
+        },
+        {
+          id: V1TimeGrain.TIME_GRAIN_HOUR,
+          type: PivotChipType.Time,
+          title: "hour",
+        },
+      ],
+    },
+    columns: {
+      measure: [
+        {
+          id: AD_BIDS_IMPRESSIONS_MEASURE,
+          type: PivotChipType.Measure,
+          title: AD_BIDS_IMPRESSIONS_MEASURE,
+        },
+      ],
+      dimension: [
+        {
+          id: AD_BIDS_DOMAIN_DIMENSION,
+          type: PivotChipType.Dimension,
+          title: AD_BIDS_DOMAIN_DIMENSION,
+        },
+        {
+          id: V1TimeGrain.TIME_GRAIN_DAY,
+          type: PivotChipType.Time,
+          title: "day",
+        },
+      ],
+    },
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    rowJoinType: "nest",
+  },
+};

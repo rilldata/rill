@@ -361,7 +361,7 @@ function fromPivotUrlParams(
       const m = measures.get(entry)!;
       return {
         id: entry,
-        title: m.label || m.name || "Unknown",
+        title: m.displayName || m.name || "Unknown",
         type: PivotChipType.Measure,
       };
     }
@@ -370,7 +370,7 @@ function fromPivotUrlParams(
       const d = dimensions.get(entry)!;
       return {
         id: entry,
-        title: d.label || d.name || "Unknown",
+        title: d.displayName || d.name || "Unknown",
         type: PivotChipType.Dimension,
       };
     }

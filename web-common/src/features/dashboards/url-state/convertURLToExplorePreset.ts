@@ -1,4 +1,6 @@
+import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -12,6 +14,7 @@ import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
@@ -45,6 +48,16 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // Support legacy dashboard param.
+  // This will be applied 1st so that any newer params added can be applied as well.
+  if (searchParams.has("state")) {
+    const legacyState = searchParams.get("state") as string;
+    const { preset: presetFromLegacyState, errors: errorsFromLegacyState } =
+      fromLegacyStateUrlParam(legacyState, metricsView, explore, basePreset);
+    Object.assign(preset, presetFromLegacyState);
+    errors.push(...errorsFromLegacyState);
+  }
 
   if (searchParams.has("vw")) {
     preset.view = FromURLParamViewMap[searchParams.get("vw") as string];
@@ -90,6 +103,34 @@ export function convertURLToExplorePreset(
   errors.push(...pivotErrors);
 
   return { preset, errors };
+}
+
+function fromLegacyStateUrlParam(
+  legacyState: string,
+  metricsView: V1MetricsViewSpec,
+  explore: V1ExploreSpec,
+  basePreset: V1ExplorePreset,
+) {
+  try {
+    legacyState = legacyState.includes("%")
+      ? decodeURIComponent(legacyState)
+      : legacyState;
+    const legacyDashboardState = DashboardState.fromBinary(
+      base64ToProto(legacyState),
+    );
+
+    return convertLegacyStateToExplorePreset(
+      legacyDashboardState,
+      metricsView,
+      explore,
+      basePreset,
+    );
+  } catch (e) {
+    return {
+      preset: {},
+      errors: [e], // TODO: parse and show meaningful error
+    };
+  }
 }
 
 function fromFilterUrlParam(filter: string): {

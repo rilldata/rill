@@ -1,4 +1,5 @@
 import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   correctComparisonTimeRange,
   fromExpressionProto,
@@ -8,6 +9,7 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   ExplorePresetDefaultChartType,
   URLStateDefaultTimezone,
@@ -18,6 +20,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
 import { mapLegacyChartType } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
+  FromActivePageMap,
   FromURLParamTimeDimensionMap,
   ToURLParamTimeDimensionMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
@@ -28,6 +31,7 @@ import {
 import type { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   type DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -37,6 +41,7 @@ import {
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  V1ExploreWebView,
   type V1Expression,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -64,8 +69,14 @@ export function convertLegacyStateToExplorePreset(
     (d) => d.name!,
   );
 
+  if (legacyState.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
+    preset.view = FromActivePageMap[legacyState.activePage];
+  }
+
   if (legacyState.filters) {
-    // TODO
+    // backwards compatibility for our older filter format
+    preset.where = convertFilterToExpression(legacyState.filters);
+    // TODO: correct older values that would have strings for non-strings
   } else if (legacyState.where) {
     preset.where = fromExpressionProto(legacyState.where);
   }
@@ -73,6 +84,7 @@ export function convertLegacyStateToExplorePreset(
     preset.where ??= createAndExpression([]);
     const exprs = preset.where?.cond?.exprs as V1Expression[];
     legacyState.having.forEach((h) => {
+      if (!h.filter) return;
       const expr = fromExpressionProto(h.filter);
       exprs.push(
         createSubQueryExpression(h.name, getAllIdentifiers(expr), expr),
@@ -80,17 +92,17 @@ export function convertLegacyStateToExplorePreset(
     });
   }
 
-  const { entity: trEntity, errors: trErrors } = fromLegacyTimeRangeFields(
+  const { preset: trPreset, errors: trErrors } = fromLegacyTimeRangeFields(
     legacyState,
     dimensions,
   );
-  Object.assign(entity, trEntity);
+  Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
   const { preset: ovPreset, errors: ovErrors } = fromLegacyOverviewFields(
     legacyState,
-    dimensions,
     measures,
+    dimensions,
     explore,
   );
   Object.assign(preset, ovPreset);
@@ -134,7 +146,7 @@ function fromLegacyTimeRangeFields(
     );
     // TODO: custom time range
   }
-  if (legacyState.showTimeComparison !== undefined) {
+  if (legacyState.showTimeComparison) {
     preset.comparisonMode =
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
   }
@@ -214,7 +226,7 @@ function fromLegacyOverviewFields(
       preset.overviewSortBy = legacyState.leaderboardMeasure;
     } else {
       errors.push(
-        getMultiFieldError("sort by measure", legacyState.leaderboardMeasure),
+        getSingleFieldError("sort by measure", legacyState.leaderboardMeasure),
       );
     }
   }
@@ -233,6 +245,23 @@ function fromLegacyOverviewFields(
     // TODO
   }
 
+  if (legacyState.selectedDimension) {
+    if (dimensions.has(legacyState.selectedDimension)) {
+      preset.overviewExpandedDimension = legacyState.selectedDimension;
+    } else {
+      errors.push(
+        getSingleFieldError(
+          "expanded dimension",
+          legacyState.selectedDimension,
+        ),
+      );
+    }
+  } else if (legacyState.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
+    // UNSPECIFIED means it was a partial state stored to proto state
+    // So anything other than that would need to unset this
+    preset.overviewExpandedDimension = "";
+  }
+
   return { preset, errors };
 }
 
@@ -244,7 +273,7 @@ function fromLegacyTimeDimensionFields(
   const errors: Error[] = [];
 
   if (!legacyState.expandedMeasure) {
-    if (dashboard.activePage) {
+    if (legacyState.activePage) {
       preset.timeDimensionMeasure = "";
       preset.timeDimensionPin = false;
       preset.timeDimensionChartType = ExplorePresetDefaultChartType;
@@ -269,12 +298,13 @@ function fromLegacyTimeDimensionFields(
 function fromLegacyPivotFields(
   legacyState: DashboardState,
   measures: Map<string, MetricsViewSpecMeasureV2>,
+  dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ) {
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
   const mapTimeDimension = (grain: TimeGrain) =>
-    ToURLParamTimeDimensionMap[FromProtoTimeGrainMap[grain]];
+    ToURLParamTimeDimensionMap[FromProtoTimeGrainMap[grain]] ?? "";
   const mapAllDimension = (dimension: PivotElement) => {
     if (dimension?.element.case === "pivotTimeDimension") {
       return mapTimeDimension(dimension?.element.value);
@@ -284,7 +314,7 @@ function fromLegacyPivotFields(
   };
 
   if (
-    legacyState.pivotRowAllDimensions?.length &&
+    legacyState.pivotRowAllDimensions?.length ||
     legacyState.pivotColumnAllDimensions?.length
   ) {
     preset.pivotRows = legacyState.pivotRowAllDimensions.map(mapAllDimension);
@@ -298,13 +328,22 @@ function fromLegacyPivotFields(
     legacyState.pivotColumnTimeDimensions?.length
   ) {
     preset.pivotRows = [
-      ...legacyState.pivotRowTimeDimensions.map(mapTimeDimension),
+      ...legacyState.pivotRowTimeDimensions
+        .map(mapTimeDimension)
+        .filter(Boolean),
       ...legacyState.pivotRowDimensions,
     ];
     preset.pivotCols = [
-      ...legacyState.pivotColumnTimeDimensions.map(mapTimeDimension),
+      ...legacyState.pivotColumnTimeDimensions
+        .map(mapTimeDimension)
+        .filter(Boolean),
       ...legacyState.pivotColumnDimensions,
     ];
+  }
+
+  if (legacyState.pivotColumnMeasures?.length) {
+    preset.pivotCols ??= [];
+    preset.pivotCols.push(...legacyState.pivotColumnMeasures);
   }
 
   if (preset.pivotRows?.length) {
@@ -330,6 +369,16 @@ function fromLegacyPivotFields(
     if (missingCols.length) {
       errors.push(getMultiFieldError("pivot column", missingCols));
     }
+  }
+
+  if (
+    legacyState.activePage !== DashboardState_ActivePage.PIVOT &&
+    // UNSPECIFIED means it was a partial state stored to proto state
+    legacyState.activePage !== DashboardState_ActivePage.UNSPECIFIED
+  ) {
+    // legacy state would unset when active page is not pivot
+    preset.pivotRows = [];
+    preset.pivotCols = [];
   }
 
   // TODO: other fields
