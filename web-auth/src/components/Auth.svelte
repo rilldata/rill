@@ -31,9 +31,11 @@
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
-  const isDomainDisabled = disableForgotPassDomainsArr.some((domain) =>
-    email.toLowerCase().endsWith(domain.toLowerCase()),
-  );
+  function isDomainDisabled(email: string): boolean {
+    return disableForgotPassDomainsArr.some((domain) =>
+      email.toLowerCase().endsWith(domain.toLowerCase()),
+    );
+  }
 
   function getLastUsedConnection() {
     return localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -47,6 +49,8 @@
     }
     lastUsedConnection = connection;
   }
+
+  $: domainDisabled = isDomainDisabled(email);
 
   $: {
     const storedConnection = getLastUsedConnection();
@@ -85,7 +89,6 @@
 
   function processEmailSubmission(event) {
     email = event.detail.email;
-    setLastUsedConnection("email-password");
 
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
@@ -186,7 +189,15 @@
     {/if}
 
     {#if step === AuthStep.SSO}
-      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
+      <SSOForm
+        {email}
+        {connectionMapObj}
+        {webAuth}
+        on:setEmailPasswordConnection={() => {
+          setLastUsedConnection("email-password");
+        }}
+        on:back={backToBaseStep}
+      />
     {/if}
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
@@ -194,8 +205,11 @@
         {step}
         {email}
         showForgetPassword={step === AuthStep.Login}
-        {isDomainDisabled}
+        isDomainDisabled={domainDisabled}
         {webAuth}
+        on:setEmailPasswordConnection={() => {
+          setLastUsedConnection("email-password");
+        }}
         on:back={backToBaseStep}
       />
     {/if}

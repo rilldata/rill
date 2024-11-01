@@ -16,6 +16,7 @@
 
   function handleClick() {
     void authorizeSSO(email.toLowerCase());
+    dispatch("setConnection");
   }
 
   function displayError(err: any) {

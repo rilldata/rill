@@ -104,8 +104,12 @@
             password: password,
           },
           (signupErr: any) => {
-            if (signupErr) handleAuthError(signupErr);
-            else disabled = false;
+            if (signupErr) {
+              handleAuthError(signupErr);
+            } else {
+              disabled = false;
+              dispatch("setEmailPasswordConnection");
+            }
           },
         );
       } else {
@@ -116,8 +120,12 @@
             password: password,
           },
           (err) => {
-            if (err) displayError({ message: err?.description });
-            else disabled = false;
+            if (err) {
+              displayError({ message: err?.description });
+            } else {
+              disabled = false;
+              dispatch("setEmailPasswordConnection");
+            }
           },
         );
       }
