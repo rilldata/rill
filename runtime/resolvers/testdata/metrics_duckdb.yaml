@@ -4,14 +4,7 @@ files:
     connector: duckdb
     materialize: true
     sql: |
-      select
-        id,
-        timestamp,
-        publisher,
-        domain,
-        volume,
-        impressions,
-        clicks
+      select id, timestamp, publisher, domain, volume, impressions, clicks
       from read_csv('../testruntime/testdata/ad_bids/data/AdBids_mini.csv')
   metrics_with_policy.yaml:
     type: metrics_view
@@ -42,11 +35,11 @@ tests:
     resolver: metrics_sql
     properties:
       sql: |
-        select 
+        select
           publisher,
           domain,
           "total impressions"
-        FROM 
+        FROM
           metrics_with_policy
     user_attributes:
       domain: google.com
@@ -55,29 +48,25 @@ tests:
     resolver: metrics_sql
     properties:
       sql: |
-        select 
+        select
           publisher,
-          domain, 
-          "total impressions" 
-        FROM 
-          metrics_with_policy 
+          domain,
+          "total impressions"
+        FROM
+          metrics_with_policy
     user_attributes:
       domain: msn.com
       email: user@msn.com
     result:
       - domain: msn.com
         publisher: null
-        total impressions: 3.00
+        total impressions: 3
   - name: msn_csv
     resolver: metrics_sql
     properties:
       sql: |
-        select 
-          publisher,
-          domain, 
-          "total impressions"
-        FROM 
-          metrics_with_policy 
+        select publisher, domain, "total impressions"
+        from metrics_with_policy
     user_attributes:
       domain: msn.com
       email: user@msn.com
@@ -88,24 +77,24 @@ tests:
     resolver: sql
     properties:
       sql: |
-        select publisher, domain 
+        select publisher, domain
         from ad_bids_mini where publisher = 'Yahoo' limit 1
     user_attributes:
-        domain: msn.com
-        email: user@msn.com
+      domain: msn.com
+      email: user@msn.com
     result:
-      - publisher: Yahoo
-        domain: yahoo.com
+      - domain: yahoo.com
+        publisher: Yahoo
   - name: simple
     resolver: metrics_sql
     properties:
       sql: |
-        select publisher, domain, "total impressions" 
+        select publisher, domain, "total impressions"
         from metrics_with_policy
   - name: error
     resolver: metrics_sql
     properties:
       sql: |
-        select publisher, dom1, "total impressions" 
-        from metrics_with_policy 
-    error_contains: selected column `dom1` not found
+        select publisher, dom1, "total impressions"
+        from metrics_with_policy
+    error_contains: 'metrics sql: selected column `dom1` not found in dimensions/measures in metrics view'
