@@ -16,7 +16,7 @@
   let isDevelopment = false;
   let isProduction = false;
 
-  // TODO: wire up `UpsertProjectVariable`
+  // TODO: wire up `createAdminServiceUpdateProjectVariables`
 </script>
 
 <Dialog bind:open>

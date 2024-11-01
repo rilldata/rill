@@ -6,6 +6,7 @@
   import KeyIcon from "@rilldata/web-common/components/icons/KeyIcon.svelte";
   import ActivityCell from "./ActivityCell.svelte";
   import KeyCell from "./KeyCell.svelte";
+  import ValueCell from "./ValueCell.svelte";
 
   export let data: V1ProjectVariable[];
 
@@ -27,7 +28,11 @@
       accessorKey: "value",
       header: "Value",
       enableSorting: false,
-      cell: ({ row }) => row.original.value,
+      cell: ({ row }) => {
+        return flexRender(ValueCell, {
+          value: row.original.value,
+        });
+      },
       meta: {
         widthPercent: 20,
       },
