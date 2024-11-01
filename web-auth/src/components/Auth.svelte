@@ -13,7 +13,6 @@
   import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
-  import { LOCAL_STORAGE_KEY } from "../constants";
   import { AuthStep, type Config } from "../types";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
@@ -26,7 +25,6 @@
 
   $: errorText = "";
 
-  let lastUsedConnection: string | null = null;
   let email = "";
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
@@ -37,29 +35,7 @@
     );
   }
 
-  function getLastUsedConnection() {
-    return localStorage.getItem(LOCAL_STORAGE_KEY);
-  }
-
-  function setLastUsedConnection(connection: string | null) {
-    if (connection) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, connection);
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-    lastUsedConnection = connection;
-  }
-
   $: domainDisabled = isDomainDisabled(email);
-
-  $: {
-    const storedConnection = getLastUsedConnection();
-    if (storedConnection) {
-      lastUsedConnection = storedConnection;
-    } else {
-      setLastUsedConnection(null);
-    }
-  }
 
   function initConfig() {
     const config = JSON.parse(
@@ -157,28 +133,17 @@
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
     {#if step === AuthStep.Base}
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        {@const ctaText = `${label}${
-          lastUsedConnection === connection ? " (last used)" : ""
-        }`}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
           on:click={() => {
-            if (import.meta.env.DEV) {
-              setLastUsedConnection(connection);
-              return;
-            }
-
             webAuth.authorize({ connection });
-            setLastUsedConnection(connection);
           }}
         >
           <div class="flex justify-center items-center gap-x-2 font-medium">
             {#if icon}
               <svelte:component this={icon} />
             {/if}
-            <span>
-              {ctaText}
-            </span>
+            <div>{label}</div>
           </div>
         </CtaButton>
       {/each}
@@ -189,15 +154,7 @@
     {/if}
 
     {#if step === AuthStep.SSO}
-      <SSOForm
-        {email}
-        {connectionMapObj}
-        {webAuth}
-        on:setEmailPasswordConnection={() => {
-          setLastUsedConnection("email-password");
-        }}
-        on:back={backToBaseStep}
-      />
+      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
     {/if}
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
@@ -207,9 +164,6 @@
         showForgetPassword={step === AuthStep.Login}
         isDomainDisabled={domainDisabled}
         {webAuth}
-        on:setEmailPasswordConnection={() => {
-          setLastUsedConnection("email-password");
-        }}
         on:back={backToBaseStep}
       />
     {/if}

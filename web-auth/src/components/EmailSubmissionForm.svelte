@@ -2,7 +2,6 @@
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import { validateEmail } from "./utils";
   import { createEventDispatcher } from "svelte";
-  import { LOCAL_STORAGE_KEY } from "../constants";
 
   export let disabled = false;
 
@@ -15,10 +14,6 @@
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
-
-  function getLastUsedConnection() {
-    return localStorage.getItem(LOCAL_STORAGE_KEY);
-  }
 
   function handleSubmit() {
     if (!email) {
@@ -37,10 +32,6 @@
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));
-  $: lastUsedConnection = getLastUsedConnection();
-  $: continueText = `Continue with email${
-    lastUsedConnection === "email-password" ? " (last used)" : ""
-  }`;
 </script>
 
 <form on:submit|preventDefault={handleSubmit}>
@@ -63,7 +54,7 @@
 
   <CtaButton {disabled} variant="secondary" submitForm>
     <div class="flex justify-center font-medium">
-      <span>{continueText}</span>
+      <span>Continue with email</span>
     </div>
   </CtaButton>
 </form>

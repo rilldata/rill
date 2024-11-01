@@ -108,7 +108,6 @@
               handleAuthError(signupErr);
             } else {
               disabled = false;
-              dispatch("setEmailPasswordConnection");
             }
           },
         );
@@ -124,7 +123,6 @@
               displayError({ message: err?.description });
             } else {
               disabled = false;
-              dispatch("setEmailPasswordConnection");
             }
           },
         );
