@@ -26,8 +26,6 @@
 
   $: errorText = "";
 
-  let isSSODisabled = false;
-  let isEmailDisabled = false;
   let lastUsedConnection: string | null = null;
   let email = "";
   let step: AuthStep = AuthStep.Base;
@@ -184,26 +182,15 @@
 
       <OrSeparator />
 
-      <EmailSubmissionForm
-        disabled={isEmailDisabled}
-        on:submit={processEmailSubmission}
-      />
+      <EmailSubmissionForm on:submit={processEmailSubmission} />
     {/if}
 
     {#if step === AuthStep.SSO}
-      <SSOForm
-        disabled={isSSODisabled}
-        {email}
-        {connectionMapObj}
-        {webAuth}
-        on:back={backToBaseStep}
-      />
+      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
     {/if}
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
-        disabled={isEmailDisabled}
-        {isEmailDisabled}
         {step}
         {email}
         showForgetPassword={step === AuthStep.Login}

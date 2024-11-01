@@ -15,7 +15,6 @@
   export let email = "";
   export let showForgetPassword = false;
   export let isDomainDisabled = false;
-  export let isEmailDisabled = false;
   export let webAuth: WebAuth;
   export let step: AuthStep;
 
@@ -88,11 +87,11 @@
             : err?.errorDescription;
 
     displayError({ message: errorText });
-    isEmailDisabled = false;
+    disabled = false;
   }
 
   function authenticateUser(email: string, password: string) {
-    isEmailDisabled = true;
+    disabled = true;
     errorText = "";
 
     try {
@@ -106,7 +105,7 @@
           },
           (signupErr: any) => {
             if (signupErr) handleAuthError(signupErr);
-            else isEmailDisabled = false;
+            else disabled = false;
           },
         );
       } else {
@@ -118,7 +117,7 @@
           },
           (err) => {
             if (err) displayError({ message: err?.description });
-            isEmailDisabled = false;
+            else disabled = false;
           },
         );
       }
