@@ -7,6 +7,7 @@
   import { Plus } from "lucide-svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
+  import AddDialog from "@rilldata/web-admin/features/projects/environment-variables/AddDialog.svelte";
 
   let open = false;
   let searchText = "";
@@ -41,6 +42,10 @@
       updatedOn: "2024-10-30T23:40:21.343110Z",
     },
   ];
+
+  $: filteredVariables = projectVariables.filter((variable) =>
+    variable.name.toLowerCase().includes(searchText.toLowerCase()),
+  );
 
   // TODO: wire up searchText to filter variables key
   // TODO: UpsertProjectVariable
@@ -83,8 +88,10 @@
             <span>Add environment variable</span>
           </Button>
         </div>
-        <EnvironmentVariablesTable data={TEST_DATA} />
+        <EnvironmentVariablesTable data={filteredVariables} />
       </div>
     {/if}
   </div>
 </div>
+
+<AddDialog bind:open />

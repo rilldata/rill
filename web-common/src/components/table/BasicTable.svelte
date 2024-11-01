@@ -16,7 +16,7 @@
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
-  export let emptyIcon: typeof SvelteComponent | null = null;
+  export let emptyIcon: any | null = null;
   export let emptyText = "No data available";
   export let scrollable = false;
 
