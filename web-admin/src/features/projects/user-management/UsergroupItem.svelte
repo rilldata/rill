@@ -13,7 +13,7 @@
   export let organization: string;
   export let project: string;
   export let group: V1MemberUsergroup;
-  export let manageProjectMembers: boolean;
+  export let canManage: boolean = false;
 
   let isHovered = false;
 
@@ -36,7 +36,7 @@
     on:blur={() => (isHovered = false)}
   >
     <UsergroupAvatar {organization} usergroup={group.groupName} />
-    {#if manageProjectMembers}
+    {#if !canManage}
       <UsergroupSetRole {organization} {project} {group} />
     {/if}
   </div>

@@ -96,7 +96,7 @@
                 {organization}
                 {project}
                 group={showAllUsersGroup ?? null}
-                {manageProjectMembers}
+                canManage
               />
             </div>
           </div>
@@ -109,12 +109,7 @@
             <!-- 52 * 5 = 260px -->
             <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
               {#each projectMemberUserGroupsList as group}
-                <UsergroupItem
-                  {organization}
-                  {project}
-                  {group}
-                  {manageProjectMembers}
-                />
+                <UsergroupItem {organization} {project} {group} canManage />
               {/each}
             </div>
           </div>

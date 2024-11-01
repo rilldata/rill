@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
@@ -10,7 +12,10 @@
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
-  export let isEveryFromText: boolean = false;
+  export let isEveryoneFromText: boolean = false;
+  export let canManage: boolean = false;
+
+  $: organization = $page.params.organization;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -37,7 +42,7 @@
   {/if}
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
-      {#if isEveryFromText}
+      {#if isEveryoneFromText}
         {@html `Everyone from <span class="font-bold">${name}</span>`}
       {:else}
         {name}
@@ -51,10 +56,23 @@
         {pendingAcceptance ? "Pending invitation" : email}
       </span>
     {/if}
-    {#if count && count > 0}
-      <span class="text-xs text-gray-500">
-        {count} user{count > 1 ? "s" : ""}
-      </span>
-    {/if}
+    <div class="flex flex-row items-center gap-x-1">
+      {#if count && count > 0}
+        <span class="text-xs text-gray-500">
+          {count} user{count > 1 ? "s" : ""}
+        </span>
+      {/if}
+      {#if canManage}
+        <button
+          class="text-xs text-primary-600 font-medium cursor-pointer"
+          on:click={() => {
+            // TODO: redirect to user management page, open the user modal
+            goto(`/${organization}/-/users`);
+          }}
+        >
+          Manage
+        </button>
+      {/if}
+    </div>
   </div>
 </div>

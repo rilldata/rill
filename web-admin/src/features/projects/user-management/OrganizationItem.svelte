@@ -9,13 +9,17 @@
     type V1MemberUsergroup,
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
+  import { isMetricsExplorerPage } from "../../navigation/nav-utils";
+  import { page } from "$app/stores";
 
   export let group: V1MemberUsergroup;
-  export let manageProjectMembers: boolean;
   export let organization: string;
   export let project: string;
+  export let canManage: boolean = false;
 
   let isHovered = false;
+
+  $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
   $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
     organization,
@@ -42,9 +46,10 @@
         shape="square"
         name={organization}
         count={userGroupMemberUsersCount}
-        isEveryFromText
+        isEveryoneFromText
+        canManage={onMetricsExplorerPage}
       />
-      {#if manageProjectMembers}
+      {#if !canManage}
         <UserManagementOrganizationSetRole {organization} {project} {group} />
       {/if}
     </div>
