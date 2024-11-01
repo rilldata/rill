@@ -11,11 +11,11 @@
   import OrSeparator from "./OrSeparator.svelte";
   import SSOForm from "./SSOForm.svelte";
   import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
-  import DiscordCTA from "./DiscordCTA.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
   import { LOCAL_STORAGE_KEY } from "../constants";
   import { AuthStep, type Config } from "../types";
+  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
   export let configParams: string;
   export let disableForgotPassDomains = "";
@@ -208,5 +208,7 @@
   {/if}
 
   <Disclaimer />
-  <DiscordCTA />
+  <div class="mt-6 text-center">
+    <CtaNeedHelp />
+  </div>
 </AuthContainer>
