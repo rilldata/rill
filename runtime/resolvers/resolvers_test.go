@@ -34,9 +34,9 @@ type TestFileYAML struct {
 type TestYAML struct {
 	Name               string           `yaml:"name"`
 	Resolver           string           `yaml:"resolver"`
-	Properties         map[string]any   `yaml:"properties,omitempty"`
-	Args               map[string]any   `yaml:"args,omitempty"`
-	UserAttributes     map[string]any   `yaml:"user_attributes,omitempty"`
+	Properties         yaml.Node        `yaml:"properties,omitempty"`      // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	Args               yaml.Node        `yaml:"args,omitempty"`            // Expects map[string]any, but using yaml.Node to preserve order for -update.
+	UserAttributes     yaml.Node        `yaml:"user_attributes,omitempty"` // Expects map[string]any, but using yaml.Node to preserve order for -update.
 	SkipSecurityChecks bool             `yaml:"skip_security_checks,omitempty"`
 	Result             []map[string]any `yaml:"result,omitempty"`
 	ResultCSV          string           `yaml:"result_csv,omitempty"`
@@ -113,15 +113,28 @@ func TestResolvers(t *testing.T) {
 			// Run each test case against the test runtime instance as a subtest.
 			for _, tc := range tf.Tests {
 				t.Run(tc.Name, func(t *testing.T) {
+					// Read mapping properties that were parsed as yaml.Node to avoid reshuffling the order when using -update.
+					properties := make(map[string]any)
+					err := tc.Properties.Decode(&properties)
+					require.NoError(t, err, "failed to decode properties into map[string]any")
+
+					args := make(map[string]any)
+					err = tc.Args.Decode(&args)
+					require.NoError(t, err, "failed to decode args into map[string]any")
+
+					userAttributes := make(map[string]any)
+					err = tc.UserAttributes.Decode(&userAttributes)
+					require.NoError(t, err, "failed to decode user_attributes into map[string]any")
+
 					// Run the resolver.
 					ctx := context.Background()
 					res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
 						InstanceID:         instanceID,
 						Resolver:           tc.Resolver,
-						ResolverProperties: tc.Properties,
-						Args:               tc.Args,
+						ResolverProperties: properties,
+						Args:               args,
 						Claims: &runtime.SecurityClaims{
-							UserAttributes: tc.UserAttributes,
+							UserAttributes: userAttributes,
 							SkipChecks:     tc.SkipSecurityChecks,
 						},
 					})
