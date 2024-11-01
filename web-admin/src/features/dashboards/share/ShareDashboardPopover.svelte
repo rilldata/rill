@@ -19,7 +19,6 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   export let createMagicAuthTokens: boolean;
-  export let manageProjectMembers: boolean;
   export let organization: string;
   export let project: string;
 

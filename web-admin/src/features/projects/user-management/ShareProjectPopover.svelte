@@ -18,7 +18,6 @@
   import UsergroupItem from "./UsergroupItem.svelte";
   import UserItem from "./UserItem.svelte";
 
-  export let manageProjectMembers: boolean;
   export let organization: string;
   export let project: string;
 
