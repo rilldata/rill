@@ -29,7 +29,7 @@ type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Cont
 // NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn WithConnectionFunc) error
+	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema

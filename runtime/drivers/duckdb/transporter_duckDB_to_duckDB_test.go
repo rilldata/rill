@@ -36,7 +36,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 
 	olap, _ = to.AsOLAP("")
 
-	tr := NewDuckDBToDuckDB(olap, zap.NewNop())
+	tr := newDuckDBToDuckDB(to.(*connection), zap.NewNop())
 
 	// transfer once
 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})

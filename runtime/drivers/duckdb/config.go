@@ -34,13 +34,13 @@ type config struct {
 	// ExtTableStorage controls if every table is stored in a different db file.
 	// Backup is only enabled when external table storage is enabled.
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
-	// CPU cores available for the DB
+	// CPU cores available for the read DB. If no CPUWrite is set and external_table_storage is enabled then this is split evenly between read and write.
 	CPU int `mapstructure:"cpu"`
-	// MemoryLimitGB is the amount of memory available for the DB
+	// MemoryLimitGB is the amount of memory available for the read DB. If no MemoryLimitGBWrite is set and external_table_storage is enabled then this is split evenly between read and write.
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// CPUWrite is CPU available for the DB when writing data
+	// CPUWrite is CPU available for the DB when writing data.
 	CPUWrite int `mapstructure:"cpu_write"`
-	// MemoryLimitGBWrite is the amount of memory available for the DB when writing data
+	// MemoryLimitGBWrite is the amount of memory available for the DB when writing data.
 	MemoryLimitGBWrite int `mapstructure:"memory_limit_gb_write"`
 	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
@@ -101,6 +101,8 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Set memory limit
+	cfg.ReadSettings = make(map[string]string)
+	cfg.WriteSettings = make(map[string]string)
 	if cfg.MemoryLimitGB > 0 {
 		cfg.ReadSettings["max_memory"] = fmt.Sprintf("%dGB", cfg.MemoryLimitGB)
 	}

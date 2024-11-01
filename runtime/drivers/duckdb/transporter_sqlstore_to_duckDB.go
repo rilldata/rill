@@ -14,16 +14,16 @@ import (
 )
 
 type sqlStoreToDuckDB struct {
-	to     drivers.OLAPStore
+	to     *connection
 	from   drivers.SQLStore
 	logger *zap.Logger
 }
 
 var _ drivers.Transporter = &sqlStoreToDuckDB{}
 
-func NewSQLStoreToDuckDB(from drivers.SQLStore, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func newSQLStoreToDuckDB(from drivers.SQLStore, c *connection, logger *zap.Logger) drivers.Transporter {
 	return &sqlStoreToDuckDB{
-		to:     to,
+		to:     c,
 		from:   from,
 		logger: logger,
 	}
@@ -63,8 +63,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		s.logger.Debug("records to be ingested", zap.Uint64("rows", total))
 	}
 	// we first ingest data in a temporary table in the main db
-	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
-	// whether table goes in main db or in separate table specific db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs
 	tmpTable := fmt.Sprintf("__%s_tmp_sqlstore", table)
 	// generate create table query
 	qry, err := createTableQuery(schema, tmpTable)
@@ -72,27 +71,23 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	// create table
-	err = s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		// ensure temporary table is cleaned
-		err := s.to.Exec(context.Background(), &drivers.Statement{
-			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
-			Priority:    100,
-			LongRunning: true,
-		})
+	err = s.to.db.WithWriteConnection(ctx, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		// create table
+		_, err := conn.ExecContext(ctx, qry, nil)
 		if err != nil {
-			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+			return err
 		}
-	}()
 
-	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		defer func() {
+			// ensure temporary table is cleaned
+			_, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
+			if err != nil {
+				s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+			}
+		}()
+
 		// append data using appender API
-		return rawConn(conn, func(conn driver.Conn) error {
+		err = rawConn(conn, func(conn driver.Conn) error {
 			a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
 			if err != nil {
 				return err
@@ -133,13 +128,14 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 				}
 			}
 		})
-	})
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	// copy data from temp table to target table
-	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
+		// copy data from temp table to target table
+		return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
+	})
+	return err
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
