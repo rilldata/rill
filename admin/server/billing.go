@@ -164,12 +164,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
+	planChange := false
 	if sub == nil {
 		// create new subscription
 		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+		planChange = true
 		s.logger.Named("billing").Info("new subscription created", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 	} else {
 		// schedule plan change
@@ -179,6 +181,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
+			planChange = true
 			s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
 		}
 	}
@@ -186,6 +189,19 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if planChange {
+		// send plan changed email
+		err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
+			ToEmail:  org.BillingEmail,
+			ToName:   org.Name,
+			OrgName:  org.Name,
+			PlanName: plan.DisplayName,
+		})
+		if err != nil {
+			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		}
 	}
 
 	return &adminv1.UpdateBillingSubscriptionResponse{

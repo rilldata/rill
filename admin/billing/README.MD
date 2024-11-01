@@ -104,7 +104,7 @@ If needed, billing issues can be deleted using `rill sudo billing delete-issue -
 
 ## Local dev and testing
 `rill devtool start cloud` starts the admin service with Orb and Stripe integration (except for Orb webhooks, see above for manual setup).
-All billing related background jobs like checking for trial end, hibernatino on subscription cancellation, etc. rely on end or grace end times set in respective billing issues.
+All billing related background jobs like checking for trial end, hibernation on subscription cancellation, etc. rely on end or grace end times set in respective billing issues.
 
 These times can be artificially advanced using `rill devtool subscription advance-time` to test out various billing scenarios.
 

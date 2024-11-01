@@ -565,7 +565,7 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 	billingPlan := &Plan{
 		ID:              p.ID,
 		Name:            p.ExternalPlanID,
-		DisplayName:     p.Name,
+		DisplayName:     getPlanDisplayName(p.ExternalPlanID),
 		Description:     p.Description,
 		TrialPeriodDays: trialPeriodDays,
 		Default:         metadata.Default,
@@ -615,6 +615,19 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 		CreatedAt:      i.CreatedAt,
 		SubscriptionID: i.Subscription.ID,
 		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
+	}
+}
+
+func getPlanDisplayName(externalID string) string {
+	switch externalID {
+	case "free_trial":
+		return "Trial"
+	case "team":
+		return "Team"
+	case "poc":
+		return "POC"
+	default:
+		return "Enterprise"
 	}
 }
 

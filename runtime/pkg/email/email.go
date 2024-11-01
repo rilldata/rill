@@ -547,3 +547,20 @@ func (c *Client) SendTrialExtended(opts *TrialExtended) error {
 		Body:    template.HTML(fmt.Sprintf("Your trial for %q has been extended and will end on %s.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
 	})
 }
+
+type PlanUpdate struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	PlanName string
+}
+
+func (c *Client) SendPlanUpdate(opts *PlanUpdate) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your plan has been updated to %s", opts.PlanName),
+		Title:   fmt.Sprintf("Your plan has been updated to %s", opts.PlanName),
+		Body:    template.HTML(fmt.Sprintf("Your plan for %q has been updated to %q.", opts.OrgName, opts.PlanName)),
+	})
+}
