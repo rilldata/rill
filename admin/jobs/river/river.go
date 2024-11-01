@@ -25,6 +25,8 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 )
 
+const billerJobQueue = "biller"
+
 var (
 	tracer              = otel.Tracer("github.com/rilldata/rill/admin/jobs/river")
 	meter               = otel.Meter("github.com/rilldata/rill/admin/jobs/river")
@@ -114,6 +116,7 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	riverClient, err := river.NewClient(riverpgxv5.New(dbPool), &river.Config{
 		Queues: map[string]river.QueueConfig{
 			river.QueueDefault: {MaxWorkers: 10},
+			billerJobQueue:     {MaxWorkers: 3},
 		},
 		Workers:      workers,
 		PeriodicJobs: periodicJobs,
@@ -295,6 +298,7 @@ func (c *Client) InitOrgBilling(ctx context.Context, orgID string) (*jobs.Insert
 	res, err := c.riverClient.Insert(ctx, InitOrgBillingArgs{
 		OrgID: orgID,
 	}, &river.InsertOpts{
+		Queue: billerJobQueue,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -317,6 +321,7 @@ func (c *Client) RepairOrgBilling(ctx context.Context, orgID string) (*jobs.Inse
 	res, err := c.riverClient.Insert(ctx, RepairOrgBillingArgs{
 		OrgID: orgID,
 	}, &river.InsertOpts{
+		Queue: billerJobQueue,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs:  true,
 			ByState: []rivertype.JobState{rivertype.JobStateAvailable, rivertype.JobStateRunning, rivertype.JobStateRetryable, rivertype.JobStateScheduled}, // to prevent concurrent run but still allow retries
@@ -340,6 +345,7 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 	res, err := c.riverClient.Insert(ctx, StartTrialArgs{
 		OrgID: orgID,
 	}, &river.InsertOpts{
+		Queue: billerJobQueue,
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
 		},
@@ -362,7 +368,9 @@ func (c *Client) StartOrgTrial(ctx context.Context, orgID string) (*jobs.InsertR
 func (c *Client) PurgeOrg(ctx context.Context, orgID string) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, PurgeOrgArgs{
 		OrgID: orgID,
-	}, &river.InsertOpts{})
+	}, &river.InsertOpts{
+		Queue: billerJobQueue,
+	})
 	if err != nil {
 		return nil, err
 	}
