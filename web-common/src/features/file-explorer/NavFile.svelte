@@ -38,8 +38,8 @@
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
   export let filePath: string;
-  export let onCopy: (filePath: string, isDir: boolean) => void;
   export let onRename: (filePath: string, isDir: boolean) => void;
+  export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
@@ -172,13 +172,13 @@
             Save file
           </NavigationMenuItem>
         {/if}
-        <NavigationMenuItem on:click={() => onCopy(filePath, false)}>
-          <CopyIcon slot="icon" />
-          Copy
-        </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />
           Rename...
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+          <CopyIcon slot="icon" />
+          Duplicate
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
           <Cancel slot="icon" />

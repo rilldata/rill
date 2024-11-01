@@ -19,30 +19,6 @@ import {
   removeLeadingSlash,
 } from "./entity-mappers";
 
-export async function copyFileArtifact(
-  instanceId: string,
-  filePath: string,
-): Promise<string> {
-  // Get new file path
-  const [folder, fileName, extension] =
-    splitFolderFileNameAndExtension(filePath);
-  const newFilePath = `${folder}/${fileName} (copy)${extension}`;
-
-  // Get file content
-  const fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  await fileArtifact.fetchContent();
-  const fileContent = get(fileArtifact.remoteContent);
-
-  // Create new file
-  await runtimeServicePutFile(instanceId, {
-    path: newFilePath,
-    blob: fileContent ?? "",
-  });
-
-  // Return the new file path
-  return newFilePath;
-}
-
 export async function renameFileArtifact(
   instanceId: string,
   fromPath: string,
@@ -94,6 +70,30 @@ export async function renameFileArtifact(
       message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
     });
   }
+}
+
+export async function duplicateFileArtifact(
+  instanceId: string,
+  filePath: string,
+): Promise<string> {
+  // Get new file path
+  const [folder, fileName, extension] =
+    splitFolderFileNameAndExtension(filePath);
+  const newFilePath = `${folder}/${fileName} (copy)${extension}`;
+
+  // Get file content
+  const fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  await fileArtifact.fetchContent();
+  const fileContent = get(fileArtifact.remoteContent);
+
+  // Create new file
+  await runtimeServicePutFile(instanceId, {
+    path: newFilePath,
+    blob: fileContent ?? "",
+  });
+
+  // Return the new file path
+  return newFilePath;
 }
 
 export async function deleteFileArtifact(

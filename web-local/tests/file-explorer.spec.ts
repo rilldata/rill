@@ -41,10 +41,10 @@ test.describe("File Explorer", () => {
         page.getByText("Here's a README.md file for the e2e test!"),
       ).toBeVisible();
 
-      // Copy the file
+      // Duplicate the file
       await page.getByRole("listitem", { name: "/README.md" }).hover();
       await page.getByLabel("/README.md actions menu").click();
-      await page.getByRole("menuitem", { name: "Copy" }).click();
+      await page.getByRole("menuitem", { name: "Duplicate" }).click();
       await expect(
         page.getByRole("link", { name: "README (copy).md" }),
       ).toBeVisible();
