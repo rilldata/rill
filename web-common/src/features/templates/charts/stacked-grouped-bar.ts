@@ -1,4 +1,5 @@
-import { ChartField } from "./build-template";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
+import type { ChartField } from "./build-template";
 import { sanitizeValueForVega, singleLayerBaseSpec } from "./utils";
 
 export function buildStackedGroupedBar(
@@ -87,6 +88,20 @@ export function buildStackedGroupedBar(
         on: "pointerover",
         clear: "pointerout",
         encodings: ["x", "xOffset", "color"],
+      },
+    },
+    {
+      name: "brush",
+      select: {
+        type: "interval",
+        encodings: ["x"],
+        mark: {
+          fill: ScrubBoxColor,
+          fillOpacity: 0.2,
+          stroke: ScrubBoxColor,
+          strokeWidth: 1,
+          strokeOpacity: 0.8,
+        },
       },
     },
   ];

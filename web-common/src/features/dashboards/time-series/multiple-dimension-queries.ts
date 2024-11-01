@@ -18,8 +18,8 @@ import {
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  createMetricsViewTimeSeries,
   type TimeSeriesDatum,
+  createMetricsViewTimeSeries,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -29,7 +29,7 @@ import {
   type V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   getFilterForComparedDimension,
