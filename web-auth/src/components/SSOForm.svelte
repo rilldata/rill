@@ -10,7 +10,7 @@
   export let disabled = false;
   export let email = "";
   export let webAuth: WebAuth;
-  export let connectionMapObj: Record<string, string>;
+  export let connectionMapObj: Record<string, string[]>;
 
   let errorText = "";
 
