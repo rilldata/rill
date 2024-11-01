@@ -38,7 +38,7 @@ files:
           names:
             - total volume
 tests:
-  empty:
+  - name: empty
     resolver: metrics_sql
     properties:
       sql: |
@@ -47,12 +47,11 @@ tests:
           domain,
           "total impressions"
         FROM 
-          metrics_with_policy 
+          metrics_with_policy
     user_attributes:
       domain: google.com
       email: user@google.com
-    result: []
-  msn:
+  - name: msn
     resolver: metrics_sql
     properties:
       sql: |
@@ -69,7 +68,7 @@ tests:
       - domain: msn.com
         publisher: null
         total impressions: 3.00
-  msn_csv:
+  - name: msn_csv
     resolver: metrics_sql
     properties:
       sql: |
@@ -85,25 +84,25 @@ tests:
     result_csv: |
       publisher,domain,total impressions
       ,msn.com,3
-  sql:
+  - name: sql
     resolver: sql
     properties:
       sql: |
         select publisher, domain 
         from ad_bids_mini where publisher = 'Yahoo' limit 1
     user_attributes:
-          domain: msn.com
-          email: user@msn.com
+        domain: msn.com
+        email: user@msn.com
     result:
       - publisher: Yahoo
         domain: yahoo.com
-  simple:
+  - name: simple
     resolver: metrics_sql
     properties:
       sql: |
         select publisher, domain, "total impressions" 
         from metrics_with_policy
-  error:
+  - name: error
     resolver: metrics_sql
     properties:
       sql: |

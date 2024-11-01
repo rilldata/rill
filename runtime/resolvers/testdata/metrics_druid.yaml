@@ -20,7 +20,7 @@ files:
       access: true
       row_filter: domain = '{{ .user.domain }}'
 tests:
-  simple:
+  - name: simple
     resolver: metrics_sql
     properties:
       sql: |

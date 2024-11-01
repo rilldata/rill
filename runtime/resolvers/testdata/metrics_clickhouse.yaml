@@ -36,14 +36,14 @@ files:
         - if: "'{{ .user.domain }}' != 'msn.com'"
           names: [total volume]
 tests:
-  empty:
+  - name: empty
     resolver: metrics_sql
     properties:
       sql: select publisher, domain, "total impressions" FROM metrics_with_policy
     user_attributes:
       domain: google.com
       email: user@google.com
-  msn:
+  - name: msn
     resolver: metrics_sql
     properties:
       sql: select publisher, domain, "total impressions" FROM metrics_with_policy
@@ -54,7 +54,7 @@ tests:
       - domain: msn.com
         publisher: null
         total impressions: 3
-  simple:
+  - name: simple
     resolver: metrics_sql
     properties:
       sql: select publisher, domain, "total impressions" from metrics_with_policy

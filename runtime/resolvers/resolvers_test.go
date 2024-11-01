@@ -27,11 +27,12 @@ import (
 type TestFileYAML struct {
 	Connectors []string             `yaml:"connectors,omitempty"`
 	Files      map[string]yaml.Node `yaml:"files"`
-	Tests      map[string]*TestYAML `yaml:"tests"`
+	Tests      []*TestYAML          `yaml:"tests"`
 }
 
 // TestYAML is the structure of a single resolver test executed against the runtime instance defined in TestFileYAML.
 type TestYAML struct {
+	Name               string           `yaml:"name"`
 	Resolver           string           `yaml:"resolver"`
 	Properties         map[string]any   `yaml:"properties,omitempty"`
 	Args               map[string]any   `yaml:"args,omitempty"`
@@ -110,8 +111,8 @@ func TestResolvers(t *testing.T) {
 			testruntime.RequireReconcileState(t, rt, instanceID, -1, 0, 0)
 
 			// Run each test case against the test runtime instance as a subtest.
-			for name, tc := range tf.Tests {
-				t.Run(name, func(t *testing.T) {
+			for _, tc := range tf.Tests {
+				t.Run(tc.Name, func(t *testing.T) {
 					// Run the resolver.
 					ctx := context.Background()
 					res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
