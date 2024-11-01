@@ -1,12 +1,11 @@
 <script lang="ts">
-  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     createRuntimeServiceListConnectorDrivers,
-    V1ConnectorDriver,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
@@ -35,6 +34,7 @@
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import * as Dialog from "@rilldata/web-common/components/dialog-v2";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -83,7 +83,7 @@
     pinot: ApachePinot,
   };
 
-  const connectors = createRuntimeServiceListConnectorDrivers({
+  const connectorsQuery = createRuntimeServiceListConnectorDrivers({
     query: {
       // arrange connectors in the way we would like to display them
       select: (data) => {
@@ -107,6 +107,8 @@
       },
     },
   });
+
+  $: connectors = $connectorsQuery.data?.connectors ?? [];
 
   onMount(() => {
     function listen(e: PopStateEvent) {
@@ -160,69 +162,84 @@
 </script>
 
 {#if step >= 1 || $duplicateSourceName}
-  <!-- This precise width fits exactly 3 connectors per line  -->
-  <Dialog
+  <Dialog.Root
     open
-    on:close={onCancelDialog}
-    widthOverride="w-[560px]"
-    titleMarginBottomOverride={step === 1 ? "mb-0" : "mb-2"}
+    onOpenChange={async (open) => {
+      if (!open) {
+        await onCancelDialog();
+      }
+    }}
   >
-    <div slot="title">
-      {#if step === 2}
-        <h2 class="flex gap-x-1 items-center">
-          <span>
-            {#if $duplicateSourceName !== null}
-              Duplicate source
-            {:else if selectedConnector}
-              {selectedConnector?.displayName}
-            {:else if requestConnector}
-              Request a connector
-            {/if}
-          </span>
-        </h2>
-      {/if}
-    </div>
-    <div slot="body" class="flex flex-col gap-y-4">
-      {#if $duplicateSourceName}
-        <DuplicateSource on:cancel={resetModal} on:complete={resetModal} />
-      {:else if step === 1}
-        {#if $connectors.data && $connectors.data?.connectors}
-          <!-- Direct sources -->
-          <section>
-            <h2>Add a source</h2>
-            <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
-                {#if connector.name}
-                  <button
-                    id={connector.name}
-                    on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
-                  >
-                    <svelte:component this={ICONS[connector.name]} />
-                  </button>
-                {/if}
-              {/each}
-            </div>
-          </section>
+    <Dialog.Content noClose>
+      <section class="mb-1">
+        <Dialog.Title>
+          {#if $duplicateSourceName !== null}
+            Duplicate source
+          {:else if selectedConnector}
+            {selectedConnector?.displayName}
+          {:else if requestConnector}
+            Request a connector
+          {:else if step === 1}
+            Add a source
+          {/if}
+        </Dialog.Title>
 
-          <!-- OLAP connectors -->
-          <section>
-            <h2>Connect an OLAP engine</h2>
-            <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
-                {#if connector.name}
-                  <button
-                    id={connector.name}
-                    on:click={() => goToConnectorForm(connector)}
-                    class="connector-tile-button"
-                  >
+        {#if $duplicateSourceName}
+          <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
+        {:else if requestConnector}
+          <RequestConnectorForm on:close={resetModal} on:back={back} />
+        {:else if step === 1}
+          <div class="connector-grid">
+            {#each connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
+              {#if connector.name}
+                <button
+                  id={connector.name}
+                  on:click={() => goToConnectorForm(connector)}
+                  class="connector-tile-button"
+                >
+                  <div class="connector-wrapper">
                     <svelte:component this={ICONS[connector.name]} />
-                  </button>
-                {/if}
-              {/each}
-            </div>
-          </section>
+                  </div>
+                </button>
+              {/if}
+            {/each}
+          </div>
+        {:else if step === 2 && selectedConnector}
+          {#if selectedConnector.name === "local_file"}
+            <LocalSourceUpload on:close={resetModal} on:back={back} />
+          {:else if selectedConnector && selectedConnector.name}
+            <AddDataForm
+              connector={selectedConnector}
+              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+                ? "connector"
+                : "source"}
+              onClose={resetModal}
+              onBack={back}
+            />
+          {/if}
         {/if}
+      </section>
+
+      {#if step === 1}
+        <section>
+          <Dialog.Title>Connect an OLAP engine</Dialog.Title>
+
+          <div class="connector-grid">
+            {#each connectors?.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
+              {#if connector.name}
+                <button
+                  id={connector.name}
+                  class="connector-tile-button"
+                  on:click={() => goToConnectorForm(connector)}
+                >
+                  <div class="connector-wrapper">
+                    <svelte:component this={ICONS[connector.name]} />
+                  </div>
+                </button>
+              {/if}
+            {/each}
+          </div>
+        </section>
 
         <div class="text-slate-500">
           Don't see what you're looking for?
@@ -233,33 +250,14 @@
             Request a new connector
           </button>
         </div>
-      {:else if step === 2}
-        {#if selectedConnector}
-          {#if selectedConnector.name === "local_file"}
-            <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector && selectedConnector.name}
-            <AddDataForm
-              connector={selectedConnector}
-              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
-                ? "connector"
-                : "source"}
-              on:close={resetModal}
-              on:back={back}
-            />
-          {/if}
-        {/if}
-
-        {#if requestConnector}
-          <RequestConnectorForm on:close={resetModal} on:back={back} />
-        {/if}
       {/if}
-    </div>
-  </Dialog>
+    </Dialog.Content>
+  </Dialog.Root>
 {/if}
 
 <style lang="postcss">
-  h2 {
-    @apply text-gray-900 font-semibold text-base mb-2;
+  section {
+    @apply flex flex-col gap-y-3;
   }
 
   .connector-grid {
@@ -267,9 +265,15 @@
   }
 
   .connector-tile-button {
-    @apply w-40 h-20 border border-gray-300 rounded;
-    @apply justify-center items-center gap-2.5 inline-flex;
-    @apply cursor-pointer;
+    aspect-ratio: 2/1;
+    @apply basis-40;
+    @apply border border-gray-300 rounded;
+    @apply cursor-pointer overflow-hidden;
+  }
+
+  .connector-wrapper {
+    @apply py-3 px-7 size-full;
+    @apply flex items-center justify-center;
   }
 
   .connector-tile-button:hover {

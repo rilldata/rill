@@ -13,8 +13,8 @@ import { DateTime, Duration } from "luxon";
 import {
   Period,
   ReferencePoint,
-  RelativePointInTime,
-  RelativeTimeTransformation,
+  type RelativePointInTime,
+  type RelativeTimeTransformation,
   TimeOffsetType,
   TimeTruncationType,
   TimeUnit,

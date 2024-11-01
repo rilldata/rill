@@ -1,4 +1,4 @@
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 import type { StateManagers } from "./state-managers";
 
 /**

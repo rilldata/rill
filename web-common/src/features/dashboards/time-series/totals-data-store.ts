@@ -11,7 +11,7 @@ import {
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { type HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 

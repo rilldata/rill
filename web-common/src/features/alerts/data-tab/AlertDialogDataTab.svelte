@@ -1,20 +1,23 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
-  import { useMetricsView } from "../../dashboards/selectors";
+  import { useMetricsViewValidSpec } from "../../dashboards/selectors";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
   const { form } = formState;
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(
+    $runtime.instanceId,
+    metricsViewName,
+  );
 
   $: measureOptions =
     $metricsView.data?.measures
@@ -25,7 +28,9 @@
       )
       .map((m) => ({
         value: m.name as string,
-        label: m.label?.length ? m.label : m.expression ?? (m.name as string),
+        label: m.displayName?.length
+          ? m.displayName
+          : (m.expression ?? (m.name as string)),
       })) ?? [];
   $: dimensionOptions = [
     {
@@ -34,7 +39,9 @@
     },
     ...($metricsView.data?.dimensions?.map((d) => ({
       value: d.name as string,
-      label: d.label?.length ? d.label : d.expression ?? (d.name as string),
+      label: d.displayName?.length
+        ? d.displayName
+        : (d.expression ?? (d.name as string)),
     })) ?? []),
   ];
 </script>
@@ -47,7 +54,7 @@
     <FilterChipsReadOnly
       dimensionThresholdFilters={$form["dimensionThresholdFilters"]}
       filters={$form["whereFilter"]}
-      metricsViewName={$form["metricsViewName"]}
+      exploreName={$form["exploreName"]}
       timeRange={$form["timeRange"]}
       comparisonTimeRange={$form["comparisonTimeRange"]}
     />

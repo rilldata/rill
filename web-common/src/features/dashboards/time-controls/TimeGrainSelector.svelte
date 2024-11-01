@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -10,31 +9,21 @@
     DashboardTimeControls,
     TimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "../stores/dashboard-stores";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
-  import { timeChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-  import { useMetricsView } from "../selectors";
 
-  export let metricViewName: string;
-  export let pill = false;
+  export let exploreName: string;
+  export let tdd = false;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const { dashboardStore, validSpecStore } = ctx;
+  const timeControlsStore = useTimeControlStore(ctx);
 
   let timeGrainOptions: TimeGrain[];
   let open = false;
-
-  $: ({ instanceId } = $runtime);
-
-  $: dashboardStore = useDashboardStore(metricViewName);
-  $: metricsViewQuery = useMetricsView(instanceId, metricViewName);
-  $: metricsView = $metricsViewQuery.data ?? {};
 
   $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
     $timeControlsStore);
@@ -93,11 +82,11 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      metricsView,
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 </script>
@@ -105,42 +94,22 @@
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
   <DropdownMenu.Root bind:open>
     <DropdownMenu.Trigger asChild let:builder>
-      {#if pill}
-        <Chip
-          builders={[builder]}
-          {...timeChipColors}
-          extraRounded
-          outline
-          extraPadding={false}
-        >
-          <div slot="body" class="flex gap-x-2 pl-1.5 items-center">
-            <b>Time</b>
+      <Chip
+        type="time"
+        builders={[builder]}
+        active={open}
+        label="Select a time grain"
+      >
+        <div slot="body" class="flex gap-x-2 items-center">
+          <svelte:element this={tdd ? "b" : "span"}>
+            {tdd ? "Time" : "by"}
+          </svelte:element>
 
-            <div class="flex gap-x-1 items-center">
-              <span class="font-medium">{capitalizedLabel}</span>
-
-              <div class="transition-transform" class:-rotate-180={open}>
-                <CaretDownIcon size="14px" />
-              </div>
-            </div>
-          </div>
-        </Chip>
-      {:else}
-        <button
-          use:builder.action
-          {...builder}
-          aria-label="Select a time grain"
-          class="pill"
-        >
-          <span class="ml-1">by</span>
-
-          <span class="font-bold">{capitalizedLabel}</span>
-
-          <div class="flex-none transition-transform" class:-rotate-180={open}>
-            <CaretDownIcon />
-          </div>
-        </button>
-      {/if}
+          <svelte:element this={tdd ? "span" : "b"}>
+            {capitalizedLabel}
+          </svelte:element>
+        </div>
+      </Chip>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content class="min-w-40" align="start">
       {#each timeGrains as option (option.key)}
@@ -156,11 +125,3 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
-
-<style lang="postcss">
-  .pill {
-    @apply bg-background rounded-full;
-    @apply border overflow-hidden flex gap-x-1.5 w-fit h-7;
-    @apply px-2 items-center justify-center;
-  }
-</style>

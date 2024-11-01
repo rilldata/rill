@@ -126,6 +126,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -166,8 +170,15 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	q := `
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
+	var likeClause string
+	var args []any
+	if like != "" {
+		likeClause = "AND LOWER(T.TABLE_NAME) LIKE LOWER(?)"
+		args = []any{like}
+	}
+
+	q := fmt.Sprintf(`
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
@@ -178,10 +189,11 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid'
+		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`
+	`, likeClause)
 
-	rows, err := i.c.db.QueryxContext(ctx, q)
+	rows, err := i.c.db.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,54 +1,54 @@
 <script lang="ts">
-  import * as Elements from "./components";
-  import {
-    ALL_TIME_RANGE_ALIAS,
-    CUSTOM_TIME_RANGE_ALIAS,
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
-    deriveInterval,
-  } from "../new-time-controls";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
-    DashboardTimeControls,
     TimeComparisonOption,
-    TimeRange,
     TimeRangePreset,
+    type DashboardTimeControls,
+    type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { DateTime, Interval } from "luxon";
+  import { onMount } from "svelte";
   import {
     metricsExplorerStore,
-    useDashboardStore,
+    useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { DateTime, Interval } from "luxon";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
-  import { onMount } from "svelte";
+  import {
+    ALL_TIME_RANGE_ALIAS,
+    CUSTOM_TIME_RANGE_ALIAS,
+    deriveInterval,
+    type ISODurationString,
+    type NamedRange,
+    type RangeBuckets,
+  } from "../new-time-controls";
+  import * as Elements from "./components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
-  const metricsView = useMetricsView(ctx);
   const {
-    metricsViewName,
+    exploreName,
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
+    validSpecStore,
   } = ctx;
 
-  $: localUserPreferences = initLocalUserPreferenceStore(metricViewName);
+  $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
 
-  $: metricViewName = $metricsViewName;
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  $: exploreStore = useExploreStore($exploreName);
   $: selectedRange =
-    $dashboardStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
+    $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
-  $: defaultTimeRange = $metricsView.data?.defaultTimeRange;
+  $: defaultTimeRange = exploreSpec?.defaultPreset?.timeRange;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -57,11 +57,9 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: activeTimeZone = $dashboardStore?.selectedTimezone;
+  $: activeTimeZone = $exploreStore?.selectedTimezone;
 
-  $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
-
-  $: metricsViewSpec = $metricsView.data ?? {};
+  $: availableTimeZones = exploreSpec.timeZones ?? [];
 
   $: ({
     latestWindowTimeRanges,
@@ -102,7 +100,7 @@
       });
     }
 
-    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    metricsExplorerStore.setTimeZone($exploreName, timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -145,9 +143,9 @@
      */
     if (
       !availableTimeZones.length &&
-      $dashboardStore?.selectedTimezone !== "UTC"
+      $exploreStore?.selectedTimezone !== "UTC"
     ) {
-      metricsExplorerStore.setTimeZone(metricViewName, "UTC");
+      metricsExplorerStore.setTimeZone($exploreName, "UTC");
       localUserPreferences.set({ timeZone: "UTC" });
     }
   });
@@ -157,12 +155,11 @@
 
     // Get valid option for the new time range
     const validComparison =
-      $metricsView.data &&
       allTimeRange &&
       getValidComparisonOption(
-        $metricsView.data,
+        exploreSpec,
         range,
-        $dashboardStore.selectedComparisonTimeRange?.name as
+        $exploreStore.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
         allTimeRange,
@@ -183,7 +180,7 @@
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      $exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
@@ -208,7 +205,7 @@
 
     if (!activeTimeGrain) return;
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      $exploreName,
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,
@@ -265,7 +262,7 @@
 <style lang="postcss">
   .wrapper {
     @apply flex w-fit;
-    @apply h-7 rounded-full;
+    @apply h-[26px] rounded-full;
     @apply overflow-hidden;
   }
 

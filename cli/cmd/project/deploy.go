@@ -103,7 +103,7 @@ func ValidateLocalProject(ch *cmdutil.Helper, gitPath, subPath string) (string, 
 	}
 
 	ch.PrintfWarn("Directory %q doesn't contain a valid Rill project.\n", localProjectPath)
-	ch.PrintfWarn("Run `rill project upload` from a Rill project directory or use `--path` to pass a project path.\n")
+	ch.PrintfWarn("Run `rill project deploy` from a Rill project directory or use `--path` to pass a project path.\n")
 	ch.PrintfWarn("Run `rill start` to initialize a new Rill project.\n")
 	return "", "", ErrInvalidProject
 }

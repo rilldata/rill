@@ -59,12 +59,14 @@
   }}
 />
 
-<Calendar
-  rangeSelection={calendarInterval}
-  {selectingStart}
-  {firstVisibleMonth}
-  onSelectDay={onValidDateInput}
-/>
+{#if calendarInterval.isValid}
+  <Calendar
+    selection={calendarInterval}
+    {selectingStart}
+    {firstVisibleMonth}
+    onSelectDay={onValidDateInput}
+  />
+{/if}
 
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">

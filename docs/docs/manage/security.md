@@ -28,7 +28,7 @@ You define access policies for dashboards under the `security` key in a dashboar
 
 ![access](../../static/img/manage/security/access.png)
 
-See the [Dashboard YAML](/reference/project-files/dashboards) reference docs for all the available fields.
+See the [Dashboard YAML](/reference/project-files/explore-dashboards) reference docs for all the available fields.
 
 See the [Examples](#examples) below for how to set up each type of configuration.
 
@@ -125,7 +125,7 @@ security:
         - id
 ```
 
-Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/dashboards) reference for details.
+Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/explore-dashboards) reference for details.
 
 ### Use wildcards to select all dimensions and measures
 

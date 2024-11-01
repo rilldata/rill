@@ -1,6 +1,6 @@
-import { VegaSpec } from "svelte-vega";
-import { compile, TopLevelSpec } from "vega-lite";
-import { Signal } from "vega-typings";
+import type { VegaSpec } from "svelte-vega";
+import { compile, type TopLevelSpec } from "vega-lite";
+import type { Signal } from "vega-typings";
 
 export class VegaSignalManager {
   private compiledSpec: VegaSpec;

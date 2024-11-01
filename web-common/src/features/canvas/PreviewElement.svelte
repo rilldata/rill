@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
-  import { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
   import Component from "./Component.svelte";

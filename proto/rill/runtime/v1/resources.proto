@@ -161,10 +161,10 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message DimensionV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string column = 2;
     string expression = 6;
-    string label = 3;
-    string description = 4;
     bool unnest = 5;
     string uri = 7;
   }
@@ -193,14 +193,14 @@ message MetricsViewSpec {
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;
     repeated DimensionSelector per_dimensions = 10;
     repeated DimensionSelector required_dimensions = 11;
     repeated string referenced_measures = 12;
-    string label = 3;
-    string description = 4;
     string format_preset = 5;
     string format_d3 = 7;
     bool valid_percent_of_total = 6;
@@ -215,8 +215,8 @@ message MetricsViewSpec {
   string table = 2;
   // Name of the model the metrics view is based on. Either table or model should be set.
   string model = 24;
-  // User-facing title
-  string title = 3;
+  // User-facing name
+  string display_name = 3;
   // User-facing description
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
@@ -323,22 +323,20 @@ message Explore {
 }
 
 message ExploreSpec {
-  // User-facing title
-  string title = 1;
+  // User-facing name
+  string display_name = 1;
   // User-facing description
   string description = 2;
   // The metrics view the explore is based on
   string metrics_view = 3;
-  // Dimensions to show.
+  // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
   repeated string dimensions = 4;
-  // If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-  // Since it is processed during validation, this will always be false in `state.valid_spec`.
-  bool dimensions_exclude = 5;
-  // Measures available
+  // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector dimensions_selector = 13;
+  // Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
   repeated string measures = 6;
-  // If true, `measures` will be inverted during validation to include all measures except the ones listed.
-  // Since it is processed during validation, this will always be false in `state.valid_spec`.
-  bool measures_exclude = 7;
+  // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector measures_selector = 14;
   // Theme to use
   string theme = 8;
   // List of selectable time ranges with comparison time ranges.
@@ -348,9 +346,10 @@ message ExploreSpec {
   // If the list is empty, a default list should be shown.
   // The values should be valid IANA location identifiers.
   repeated string time_zones = 10;
-  // List of preconfigured UI states that can be toggled between.
-  // If the list is not empty, the first item should be selected by default.
-  repeated ExplorePreset presets = 11;
+  // Preset UI state to show by default.
+  ExplorePreset default_preset = 15;
+  // If true, the pivot tab will be hidden when the explore is embedded.
+  bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
@@ -376,18 +375,14 @@ message ExploreComparisonTimeRange {
 }
 
 message ExplorePreset {
-  // Display name of the preset
-  string label = 1;
-  // Dimensions to show
+  // Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
   repeated string dimensions = 2;
-  // If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-  // Since it is processed during validation, this will always be false in `state.valid_spec`.
-  bool dimensions_exclude = 3;
-  // Measures to show
+  // Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector dimensions_selector = 9;
+  // Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
   repeated string measures = 4;
-  // If true, `measures` will be inverted during validation to include all measures except the ones listed.
-  // Since it is processed during validation, this will always be false in `state.valid_spec`.
-  bool measures_exclude = 5;
+  // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+  FieldSelector measures_selector = 10;
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
   // If not found in `time_ranges`, it should be added to the list.
@@ -403,6 +398,27 @@ enum ExploreComparisonMode {
   EXPLORE_COMPARISON_MODE_NONE = 1;
   EXPLORE_COMPARISON_MODE_TIME = 2;
   EXPLORE_COMPARISON_MODE_DIMENSION = 3;
+}
+
+// FieldSelector describes logic for selecting a list of fields.
+// It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
+message FieldSelector {
+  // Invert the result such that all fields *except* the selected fields are returned.
+  bool invert = 1;
+  oneof selector {
+    // Select all fields.
+    bool all = 2;
+    // Select specific fields by name.
+    StringListValue fields = 3;
+    // Select fields by a regular expression.
+    string regex = 4;
+    // Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)".
+    string duckdb_expression = 5;
+  }
+}
+
+message StringListValue {
+  repeated string values = 1;
 }
 
 message Migration {
@@ -426,8 +442,8 @@ message Report {
 }
 
 message ReportSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
   string query_name = 5;
@@ -463,8 +479,8 @@ message Alert {
 }
 
 message AlertSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
   string intervals_iso_duration = 5;
@@ -608,8 +624,8 @@ message Component {
 }
 
 message ComponentSpec {
-  string title = 1;
-  string subtitle = 7;
+  string display_name = 1;
+  string description = 7;
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
@@ -636,7 +652,7 @@ message Canvas {
 }
 
 message CanvasSpec {
-  string title = 1;
+  string display_name = 1;
   uint32 columns = 2;
   uint32 gap = 3;
   repeated ComponentVariable variables = 5;

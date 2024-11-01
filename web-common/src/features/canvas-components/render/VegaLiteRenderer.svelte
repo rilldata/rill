@@ -4,13 +4,13 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import {
-    SignalListeners,
+    type SignalListeners,
     VegaLite,
-    View,
-    VisualizationSpec,
+    type View,
+    type VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
-  import { ExpressionFunction, VLTooltipFormatter } from "../types";
+  import type { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
   export let data: Record<string, unknown> = {};

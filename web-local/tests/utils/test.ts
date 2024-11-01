@@ -45,7 +45,7 @@ export const test = base.extend({
           `http://localhost:${TEST_PORT}/v1/ping`,
         );
         return response.status === 200;
-      } catch (err) {
+      } catch {
         return false;
       }
     });

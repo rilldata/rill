@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -7,21 +6,18 @@
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
+  import ExploreIcon from "../../../components/icons/ExploreIcon.svelte";
+  import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+
+  const { ai } = featureFlags;
+  const queryClient = useQueryClient();
 
   export let filePath: string;
 
-  const { ai } = featureFlags;
-
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-
-  const queryClient = useQueryClient();
-  const dispatch = createEventDispatcher();
-
-  const { customDashboards } = featureFlags;
 
   $: modelHasError = fileArtifact.getHasErrors(
     queryClient,
@@ -35,13 +31,24 @@
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+  $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
     $runtime.instanceId,
     connector as string,
     "",
     "",
     tableName,
-    "dashboards",
+    false,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
+
+  $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
+    $runtime.instanceId,
+    connector as string,
+    "",
+    "",
+    tableName,
+    true,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
   );
@@ -49,9 +56,30 @@
 
 <NavigationMenuItem
   disabled={disableCreateDashboard}
-  on:click={createDashboardFromTable}
+  on:click={createMetricsViewFromTable}
 >
-  <Explore slot="icon" />
+  <MetricsViewIcon slot="icon" />
+  <div class="flex gap-x-2 items-center">
+    Generate metrics
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
+  </div>
+  <svelte:fragment slot="description">
+    {#if $modelHasError}
+      Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
+    {/if}
+  </svelte:fragment>
+</NavigationMenuItem>
+
+<NavigationMenuItem
+  disabled={disableCreateDashboard}
+  on:click={createExploreFromTable}
+>
+  <ExploreIcon slot="icon" />
   <div class="flex gap-x-2 items-center">
     Generate dashboard
     {#if $ai}
@@ -67,30 +95,3 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
-{#if $customDashboards}
-  <NavigationMenuItem
-    disabled={disableCreateDashboard}
-    on:click={() => {
-      dispatch("generate-chart", {
-        table: $modelQuery.data?.model?.state?.resultTable,
-        connector: $modelQuery.data?.model?.state?.resultConnector,
-      });
-    }}
-  >
-    <Explore slot="icon" />
-    <div class="flex gap-x-2 items-center">
-      Generate Chart
-      {#if $ai}
-        with AI
-        <WandIcon class="w-3 h-3" />
-      {/if}
-    </div>
-    <svelte:fragment slot="description">
-      {#if $modelHasError}
-        Model has errors
-      {:else if !modelIsIdle}
-        Dependencies are being reconciled.
-      {/if}
-    </svelte:fragment>
-  </NavigationMenuItem>
-{/if}

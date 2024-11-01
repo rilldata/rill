@@ -16,6 +16,7 @@ static/
 temp/
 dev-project/
 proto/
+playwright-report/
 
 .env
 *.sql
@@ -29,6 +30,8 @@ proto/
 *.toml
 *.parquet
 *.parquet.gz
+*.ne
+*.webm
 .travis.yml
 .DS_Store
 buf.lock

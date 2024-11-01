@@ -4,39 +4,52 @@
     createAdminServiceIssueMagicAuthToken,
     getAdminServiceListMagicAuthTokensQueryKey,
   } from "@rilldata/web-admin/client";
-  import { Button } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
+  import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@rilldata/web-common/components/popover";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { Pencil } from "lucide-svelte";
+  import { DateTime } from "luxon";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     convertDateToMinutes,
-    getMetricsViewFields,
+    getExploreFields,
     getSanitizedDashboardStateParam,
+    hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
 
   const queryClient = useQueryClient();
+  const StateManagers = getStateManagers();
+
   const {
     dashboardStore,
-    metricsViewName,
+    exploreName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
     },
-  } = getStateManagers();
+  } = StateManagers;
 
-  $: ({ organization, project } = $page.params);
+  $: ({ organization, project, dashboard } = $page.params);
 
   $: isTitleEmpty = $form.title.trim() === "";
 
-  $: metricsViewFields = getMetricsViewFields(
+  $: exploreFields = getExploreFields(
     $dashboardStore,
     $visibleDimensions,
     $visibleMeasures,
@@ -44,7 +57,7 @@
 
   $: sanitizedState = getSanitizedDashboardStateParam(
     $dashboardStore,
-    metricsViewFields,
+    exploreFields,
   );
 
   let token: string;
@@ -78,16 +91,15 @@
             organization,
             project,
             data: {
-              metricsView: $metricsViewName,
-              metricsViewFilter: hasWhereFilter
-                ? $dashboardStore.whereFilter
-                : undefined,
-              metricsViewFields,
+              resourceType: ResourceKind.Explore as string,
+              resourceName: dashboard,
+              filter: hasWhereFilter ? $dashboardStore.whereFilter : undefined,
+              fields: exploreFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              title: values.title,
+              displayName: values.title,
             },
           });
           token = _token;
@@ -109,78 +121,128 @@
   );
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+  $: hasDimensionThresholdFilter =
+    hasDashboardDimensionThresholdFilter($dashboardStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
-    $form.expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10); // ISO string formatted for input[type="date"]
+    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
   } else if (!setExpiration) {
     $form.expiresAt = null;
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
+
+  $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
+
+  let popoverOpen = false;
 </script>
 
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <div class="information-container">
-      <h3>Create a shareable public URL for this view</h3>
-      <ul>
-        <li>Measures and dimensions will be limited to current visible set.</li>
-        <li>Filters will be locked and hidden.</li>
-      </ul>
+    <div class="flex flex-col gap-y-4">
+      <h3 class="text-xs text-gray-800 font-normal">
+        Create a shareable public URL for this view.
+      </h3>
 
-      <div class="name-input-container">
-        <Label for="name-input" class="text-xs">URL label</Label>
-        <input
+      <div class="flex flex-col gap-y-1">
+        <Input
           id="name-input"
-          type="text"
           bind:value={$form.title}
-          placeholder="Name this URL"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md"
+          placeholder="Label this URL"
         />
       </div>
-
-      <!-- Filters -->
-      {#if hasWhereFilter}
-        <div>
-          <FilterChipsReadOnly
-            metricsViewName={$metricsViewName}
-            filters={$dashboardStore.whereFilter}
-            dimensionThresholdFilters={[]}
-            timeRange={undefined}
-            comparisonTimeRange={undefined}
-          />
-        </div>
-      {/if}
     </div>
 
-    <!-- Expiration -->
-    <div>
-      <div class="has-expiration-container">
+    <div
+      class="mt-4"
+      class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
+    >
+      <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
         <Label class="text-xs" for="has-expiration">Set expiration</Label>
       </div>
       {#if setExpiration}
-        <div class="expires-at-container">
-          <label for="expires-at" class="expires-at-label w-1/3">
-            Access expires
+        <div class="flex items-center gap-x-1 pl-[30px]">
+          <label for="expires-at" class="text-slate-500 font-medium">
+            Access expires {new Date($form.expiresAt).toLocaleDateString(
+              "en-US",
+              { year: "numeric", month: "short", day: "numeric" },
+            )}
           </label>
-          <!-- TODO: use a Rill date picker, once we have one that can select a single day -->
-          <!-- Minimum date is tomorrow -->
-          <input
-            id="expires-at"
-            type="date"
-            bind:value={$form.expiresAt}
-            min={new Date(Date.now() + 24 * 60 * 60 * 1000)
-              .toISOString()
-              .slice(0, 10)}
-            class="w-2/3"
-          />
+          <Popover bind:open={popoverOpen}>
+            <PopoverTrigger>
+              <IconButton>
+                <Pencil size="14px" class="text-primary-600" />
+              </IconButton>
+            </PopoverTrigger>
+            <PopoverContent align="end" class="p-0">
+              <Calendar
+                selection={DateTime.fromISO($form.expiresAt)}
+                singleDaySelection
+                minDate={includingTomorrowDate}
+                firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
+                onSelectDay={(date) => {
+                  $form.expiresAt = date.toISO();
+                  popoverOpen = false;
+                }}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       {/if}
     </div>
+
+    <!-- TODO: revisit when time range lock is implemented -->
+    <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
+      <div class="flex items-center gap-x-2">
+        <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
+
+        <div class="flex flex-row items-center gap-x-1">
+          <Label class="text-xs" for="lock-time-range">Lock time range</Label>
+          <Tooltip location="right" alignment="middle" distance={8}>
+            <div class="text-gray-500">
+              <InfoCircle size="12px" />
+            </div>
+            <TooltipContent maxWidth="400px" slot="tooltip-content">
+              Only data within this range will be visible
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+      {#if lockTimeRange}
+        <div class="w-full pl-[30px]">
+          <label for="lock-time-range" class="text-slate-500 font-medium">
+            {#if interval.isValid}
+              <RangeDisplay {interval} grain={activeTimeGrain} {abbreviation} />
+            {/if}
+          </label>
+        </div>
+      {/if}
+    </div> -->
+
+    {#if hasWhereFilter || hasDimensionThresholdFilter}
+      <hr class="border-gray-200 mt-4 mb-4" />
+
+      <div class="flex flex-col gap-y-1">
+        <p class="text-xs text-gray-800 font-normal">
+          The following filters will be locked and hidden:
+        </p>
+        <div class="flex flex-row gap-1 mt-2">
+          <FilterChipsReadOnly
+            exploreName={$exploreName}
+            filters={$dashboardStore.whereFilter}
+            dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
+            timeRange={undefined}
+            comparisonTimeRange={undefined}
+          />
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+        Measures and dimensions will be limited to current visible set.
+      </p>
+    {/if}
 
     <Button
       type="primary"
@@ -208,54 +270,10 @@
 
 <style lang="postcss">
   form {
-    @apply flex flex-col gap-y-4;
+    @apply flex flex-col;
   }
 
   h3 {
     @apply font-semibold;
-  }
-
-  .information-container {
-    @apply flex flex-col gap-y-2;
-  }
-
-  ul {
-    @apply list-disc list-inside;
-  }
-
-  .name-input-container {
-    @apply flex flex-col gap-y-1;
-  }
-
-  .has-expiration-container {
-    @apply flex items-center gap-x-2;
-  }
-
-  .expires-at-container {
-    @apply mt-2;
-    @apply flex items-center gap-x-2;
-  }
-
-  .expires-at-label {
-    @apply text-slate-500 font-medium;
-  }
-
-  input {
-    @apply size-full outline-none border-0;
-  }
-
-  #name-input {
-    @apply flex justify-center items-center overflow-hidden;
-    @apply h-8 pl-2 w-full;
-    @apply border border-gray-300 rounded-sm;
-    @apply text-xs;
-  }
-
-  #name-input:focus-within {
-    @apply border-primary-500;
-  }
-
-  #name-input::placeholder {
-    @apply text-xs;
   }
 </style>

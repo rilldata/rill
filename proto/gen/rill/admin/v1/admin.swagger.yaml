@@ -32,6 +32,27 @@ paths:
             $ref: '#/definitions/v1CompleteRequest'
       tags:
         - AIService
+  /v1/billing/metrics-project-credentials:
+    post:
+      summary: GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+      operationId: AdminService_GetBillingProjectCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsRequest'
+      tags:
+        - AdminService
   /v1/billing/plans:
     get:
       summary: ListPublicBillingPlans lists all public billing plans
@@ -399,7 +420,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      summary: CancelBillingSubscription cancels the billing subscription for the organization
       operationId: AdminService_CancelBillingSubscription
       responses:
         "200":
@@ -442,6 +463,38 @@ paths:
             properties:
               planName:
                 type: string
+              superuserForceAccess:
+                type: boolean
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/billing/subscriptions/renew:
+    post:
+      summary: RenewBillingSubscription renews the billing plan for the organization once cancelled
+      operationId: AdminService_RenewBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenewBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              planName:
+                type: string
+              superuserForceAccess:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -1008,9 +1061,12 @@ paths:
               attributes:
                 type: object
                 description: If set, will use the provided attributes outright.
+              type:
+                type: string
+                description: Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
               kind:
                 type: string
-                description: Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+                description: 'Deprecated: Alias for `type`.'
               resource:
                 type: string
                 description: Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
@@ -1507,25 +1563,30 @@ paths:
                 type: string
                 format: int64
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
-              metricsView:
+              resourceType:
                 type: string
-                description: Metrics view the token will provide access to.
-              metricsViewFilter:
+                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+              resourceName:
+                type: string
+                description: Name of the resource to grant access to.
+              filter:
                 $ref: '#/definitions/v1Expression'
-                description: Optional filter to apply to all queries to the metrics view.
-              metricsViewFields:
+                description: |-
+                  Optional filter to apply as a row filter in queries.
+                  This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+              fields:
                 type: array
                 items:
                   type: string
                 description: |-
-                  Optional list of names of dimensions and measures to limit access to.
-                  If empty, all dimensions and measures are accessible.
+                  Optional list of fields to limit access to. If empty, no field access rule will be added.
+                  This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
-              title:
+              displayName:
                 type: string
-                description: Optional public url title to store with the token.
+                description: Optional display name to store with the token.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -1692,6 +1753,94 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/variables:
+    get:
+      summary: GetProjectVariables returns project variables.
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          description: Organization the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to get variables for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            Environment to get the variables for.
+            If empty, only variables shared across all environments are returned.
+          in: query
+          required: false
+          type: string
+        - name: forAllEnvironments
+          description: |-
+            If true, return variable values for all environments.
+            Can't be used together with the "environment" option.
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - AdminService
+    put:
+      summary: UpdateProjectVariables updates variables for a project.
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          description: Organization the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to update variables for.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+                description: |-
+                  Environment to set the variables for.
+                  If empty, the variable(s) will be used as defaults for all environments.
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
+                description: |-
+                  New variable values.
+                  It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+              unsetVariables:
+                type: array
+                items:
+                  type: string
+                description: Variables to delete.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/whitelisted:
@@ -2318,10 +2467,6 @@ paths:
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
               prodVersion:
                 type: string
       tags:
@@ -2433,63 +2578,6 @@ paths:
                 format: int64
               prodVersion:
                 type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organizationName}/projects/{name}/variables:
-    get:
-      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
-      operationId: AdminService_GetProjectVariables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetProjectVariablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    put:
-      summary: 'UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn''t update variables.'
-      operationId: AdminService_UpdateProjectVariables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services:
@@ -2893,13 +2981,15 @@ paths:
                 type: string
               report:
                 type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
+              ownerId:
+                type: string
               executionTime:
                 type: string
                 format: date-time
+              emailRecipients:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -2920,6 +3010,27 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/superuser/billing/repair:
+    post:
+      summary: SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+      operationId: AdminService_SudoTriggerBillingRepair
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairRequest'
       tags:
         - AdminService
   /v1/superuser/deployments/manager-token:
@@ -3023,6 +3134,27 @@ paths:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/trial/extend:
+    post:
+      summary: SudoExtendTrial extends the trial period for an organization
+      operationId: AdminService_SudoExtendTrial
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoExtendTrialRequest'
+      tags:
+        - AdminService
   /v1/superuser/organizations/{organization}/billing/issues/{type}:
     delete:
       summary: SudoDeleteOrganizationBillingIssue deletes a billing issue of a type for the organization
@@ -3053,6 +3185,7 @@ paths:
             - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
             - BILLING_ISSUE_TYPE_PAYMENT_FAILED
             - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+            - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -3440,6 +3573,15 @@ paths:
       tags:
         - AdminService
 definitions:
+  GetReportMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -3503,7 +3645,7 @@ definitions:
   v1AlertOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       intervalDuration:
         type: string
@@ -3587,6 +3729,10 @@ definitions:
         $ref: '#/definitions/v1BillingIssueMetadataPaymentFailed'
       subscriptionCancelled:
         $ref: '#/definitions/v1BillingIssueMetadataSubscriptionCancelled'
+      neverSubscribed:
+        $ref: '#/definitions/v1BillingIssueMetadataNeverSubscribed'
+  v1BillingIssueMetadataNeverSubscribed:
+    type: object
   v1BillingIssueMetadataNoBillableAddress:
     type: object
   v1BillingIssueMetadataNoPaymentMethod:
@@ -3595,6 +3741,9 @@ definitions:
     type: object
     properties:
       endDate:
+        type: string
+        format: date-time
+      gracePeriodEndDate:
         type: string
         format: date-time
   v1BillingIssueMetadataPaymentFailed:
@@ -3636,6 +3785,9 @@ definitions:
   v1BillingIssueMetadataTrialEnded:
     type: object
     properties:
+      endDate:
+        type: string
+        format: date-time
       gracePeriodEndDate:
         type: string
         format: date-time
@@ -3649,6 +3801,7 @@ definitions:
       - BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS
       - BILLING_ISSUE_TYPE_PAYMENT_FAILED
       - BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED
+      - BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED
     default: BILLING_ISSUE_TYPE_UNSPECIFIED
   v1BillingPlan:
     type: object
@@ -3668,6 +3821,8 @@ definitions:
         type: boolean
       quotas:
         $ref: '#/definitions/v1Quotas'
+      public:
+        type: boolean
         title: TODO expose pricing information
   v1Bookmark:
     type: object
@@ -3909,6 +4064,23 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingProjectCredentialsRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+  v1GetBillingProjectCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
   v1GetBillingSubscriptionResponse:
     type: object
     properties:
@@ -4050,9 +4222,17 @@ definitions:
     type: object
     properties:
       variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+      variablesMap:
         type: object
         additionalProperties:
           type: string
+        description: |-
+          Deprecated: Populated for backwards compatibility.
+          (Renamed from "variables" to "variables_map").
   v1GetRepoMetaResponse:
     type: object
     properties:
@@ -4071,12 +4251,12 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
+      baseUrls:
+        $ref: '#/definitions/GetReportMetaResponseURLs'
+      recipientUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/GetReportMetaResponseURLs'
   v1GetUserResponse:
     type: object
     properties:
@@ -4323,17 +4503,19 @@ definitions:
         type: string
       attributes:
         type: object
-      metricsView:
+      resourceType:
         type: string
-      metricsViewFilter:
+      resourceName:
+        type: string
+      filter:
         $ref: '#/definitions/v1Expression'
-      metricsViewFields:
+      fields:
         type: array
         items:
           type: string
       state:
         type: string
-      title:
+      displayName:
         type: string
   v1MemberUser:
     type: object
@@ -4343,6 +4525,8 @@ definitions:
       userEmail:
         type: string
       userName:
+        type: string
+      userPhotoUrl:
         type: string
       roleName:
         type: string
@@ -4552,6 +4736,34 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+  v1ProjectVariable:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Internal ID.
+      name:
+        type: string
+        description: Variable name (case insensitive).
+      value:
+        type: string
+        description: Variable value.
+      environment:
+        type: string
+        description: |-
+          Environment the variable is set for.
+          If empty, the variable is shared for all environments.
+      updatedByUserId:
+        type: string
+        description: User ID that most recently updated the variable. May be empty.
+      createdOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was created.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was last updated.
   v1PullVirtualRepoResponse:
     type: object
     properties:
@@ -4606,10 +4818,17 @@ definitions:
     type: object
   v1RenameUsergroupResponse:
     type: object
+  v1RenewBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1ReportOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       refreshCron:
         type: string
@@ -4751,12 +4970,8 @@ definitions:
     properties:
       id:
         type: string
-      planId:
-        type: string
-      planName:
-        type: string
-      planDisplayName:
-        type: string
+      plan:
+        $ref: '#/definitions/v1BillingPlan'
       startDate:
         type: string
         format: date-time
@@ -4774,6 +4989,20 @@ definitions:
         format: date-time
   v1SudoDeleteOrganizationBillingIssueResponse:
     type: object
+  v1SudoExtendTrialRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+      days:
+        type: integer
+        format: int32
+  v1SudoExtendTrialResponse:
+    type: object
+    properties:
+      trialEnd:
+        type: string
+        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -4797,6 +5026,10 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoTriggerBillingRepairRequest:
+    type: object
+  v1SudoTriggerBillingRepairResponse:
+    type: object
   v1SudoUpdateAnnotationsRequest:
     type: object
     properties:
@@ -4820,16 +5053,15 @@ definitions:
         type: string
       billingCustomerId:
         type: string
+      paymentCustomerId:
+        type: string
   v1SudoUpdateOrganizationBillingCustomerResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1SudoUpdateOrganizationCustomDomainRequest:
     type: object
     properties:
@@ -4878,6 +5110,9 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int32
+      trialOrgs:
+        type: integer
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -4912,11 +5147,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1UpdateBookmarkRequest:
     type: object
     properties:
@@ -4949,9 +5181,11 @@ definitions:
     type: object
     properties:
       variables:
-        type: object
-        additionalProperties:
-          type: string
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Variables that were created or updated by the request.
   v1UpdateServiceResponse:
     type: object
     properties:
@@ -5006,6 +5240,9 @@ definitions:
     type: object
     properties:
       singleuserOrgs:
+        type: integer
+        format: int32
+      trialOrgs:
         type: integer
         format: int32
   v1Usergroup:

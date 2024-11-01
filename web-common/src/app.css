@@ -183,6 +183,10 @@
     --ring: 222.2 84% 4.9%;
   
     --radius: 0.5rem;
+
+    /* Used to set svg gradient */
+    --color-slate-200: theme("colors.slate.200");
+    --color-slate-300: theme("colors.slate.300");
   }
 
   h1,
@@ -214,7 +218,7 @@ body {
   --monospace: 'Source Code Variable';
   margin: 0;
   padding: 0;
-  --header-height: 44px;
+
   --right-drawer-width: 400px;
 
   --left-sidebar-width: 400px;

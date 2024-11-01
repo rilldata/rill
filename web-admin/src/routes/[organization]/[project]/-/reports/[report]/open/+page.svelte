@@ -2,6 +2,10 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
+  import {
+    getExploreName,
+    getExplorePageUrl,
+  } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -17,18 +21,28 @@
   $: executionTime = $page.url.searchParams.get("execution_time");
 
   $: report = useReport($runtime.instanceId, reportId);
+  $: exploreName = getExploreName(
+    $report?.data?.resource?.report?.spec?.annotations?.web_open_path,
+  );
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
-    $report.data?.resource?.report?.spec?.queryName,
-    $report.data?.resource?.report?.spec?.queryArgsJson,
+    exploreName,
+    $report?.data?.resource?.report?.spec?.queryName,
+    $report?.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
-    $report.data?.resource?.report?.spec?.annotations ?? {},
+    $report?.data?.resource?.report?.spec?.annotations ?? {},
   );
 
-  $: if ($dashboardStateForReport.data) {
-    goto(
-      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${encodeURIComponent($dashboardStateForReport.data.state)}`,
+  $: if ($dashboardStateForReport?.data) {
+    void goto(
+      getExplorePageUrl(
+        $page.url,
+        organization,
+        project,
+        $dashboardStateForReport.data.exploreName,
+        $dashboardStateForReport.data.state,
+      ),
     );
   }
 

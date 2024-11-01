@@ -3,8 +3,8 @@ import {
   getUrlForPath,
 } from "@rilldata/web-common/lib/url-utils";
 import type { Page } from "@sveltejs/kit";
-import { Readable, writable } from "svelte/store";
-import { beforeAll, describe, it, SpyInstance, vi, expect } from "vitest";
+import { type Readable, writable } from "svelte/store";
+import { beforeAll, describe, it, type MockInstance, vi, expect } from "vitest";
 
 const pageMock: PageMock = vi.hoisted(() => ({}) as any);
 
@@ -73,7 +73,7 @@ type PageMock = Readable<Page> & {
   updateState: (state: string) => void;
   goto: (path: string) => void;
   setUrl: (url: string) => void;
-  gotoSpy: SpyInstance;
+  gotoSpy: MockInstance;
 };
 function createPageMock() {
   const { update, subscribe } = writable<Page>({

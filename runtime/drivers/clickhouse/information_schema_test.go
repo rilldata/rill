@@ -41,17 +41,18 @@ func TestInformationSchema(t *testing.T) {
 	require.NoError(t, err)
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })
+	t.Run("testInformationSchemaAllLike", func(t *testing.T) { testInformationSchemaAllLike(t, conn) })
 	t.Run("testInformationSchemaLookup", func(t *testing.T) { testInformationSchemaLookup(t, conn) })
 }
 
 func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	olap, _ := conn.AsOLAP("")
 	err := olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE VIEW model as (select 1, 2, 3)",
+		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
 	})
 	require.NoError(t, err)
 
-	tables, err := olap.InformationSchema().All(context.Background())
+	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
 	require.Equal(t, 5, len(tables))
 
@@ -76,6 +77,24 @@ func testInformationSchemaAll(t *testing.T, conn drivers.Handle) {
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
 
 	require.Equal(t, true, tables[2].View)
+}
+
+func testInformationSchemaAllLike(t *testing.T, conn drivers.Handle) {
+	olap, _ := conn.AsOLAP("")
+	err := olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE OR REPLACE VIEW model as (select 1, 2, 3)",
+	})
+	require.NoError(t, err)
+
+	tables, err := olap.InformationSchema().All(context.Background(), "%odel")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "model", tables[0].Name)
+
+	tables, err = olap.InformationSchema().All(context.Background(), "other.%ar")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, "bar", tables[0].Name)
 }
 
 func testInformationSchemaLookup(t *testing.T, conn drivers.Handle) {

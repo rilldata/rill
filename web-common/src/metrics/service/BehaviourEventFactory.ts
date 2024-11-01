@@ -1,13 +1,13 @@
-import { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
+import type { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
 import {
-  BehaviourEvent,
+  type BehaviourEvent,
   BehaviourEventAction,
   BehaviourEventMedium,
 } from "./BehaviourEventTypes";
 import { MetricsEventFactory } from "./MetricsEventFactory";
 import {
-  CommonFields,
-  CommonUserFields,
+  type CommonFields,
+  type CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "./MetricsTypes";

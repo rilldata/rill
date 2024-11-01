@@ -3,13 +3,13 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import {
-    SignalListeners,
+    type SignalListeners,
     Vega,
-    View,
-    VisualizationSpec,
+    type View,
+    type VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
-  import { ExpressionFunction, VLTooltipFormatter } from "../types";
+  import type { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
   import { onDestroy } from "svelte";
   import { getRillTheme } from "./vega-config";

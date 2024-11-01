@@ -93,12 +93,12 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to list resources: %w", err)
 			}
 
-			var parser *runtimev1.ProjectParser
+			var parser *runtimev1.Resource
 			var table []*resourceTableRow
 
 			for _, r := range res.Resources {
 				if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
-					parser = r.GetProjectParser()
+					parser = r
 				}
 				if r.Meta.Hidden {
 					continue
@@ -110,14 +110,29 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("\nResources\n\n")
 			ch.PrintData(table)
 
-			if parser != nil && parser.State != nil && len(parser.State.ParseErrors) != 0 {
+			if parser != nil {
+				state := parser.GetProjectParser().State
+
 				var table []*parseErrorTableRow
-				for _, e := range parser.State.ParseErrors {
-					table = append(table, newParseErrorTableRow(e))
+				if parser.Meta.ReconcileError != "" {
+					table = append(table, &parseErrorTableRow{
+						Path:  "<meta>",
+						Error: parser.Meta.ReconcileError,
+					})
+				}
+				if state != nil {
+					for _, e := range state.ParseErrors {
+						table = append(table, &parseErrorTableRow{
+							Path:  e.FilePath,
+							Error: e.Message,
+						})
+					}
 				}
 
-				ch.PrintfSuccess("\nParse errors\n\n")
-				ch.PrintData(table)
+				if len(table) > 0 {
+					ch.PrintfSuccess("\nParse errors\n\n")
+					ch.PrintData(table)
+				}
 			}
 
 			return nil
@@ -154,11 +169,4 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 type parseErrorTableRow struct {
 	Path  string `header:"path"`
 	Error string `header:"error"`
-}
-
-func newParseErrorTableRow(e *runtimev1.ParseError) *parseErrorTableRow {
-	return &parseErrorTableRow{
-		Path:  e.FilePath,
-		Error: e.Message,
-	}
 }

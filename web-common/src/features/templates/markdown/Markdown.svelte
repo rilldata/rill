@@ -1,8 +1,8 @@
 <script lang="ts">
   import DOMPurify from "dompurify";
   import { marked } from "marked";
-  import { MarkdownProperties } from "@rilldata/web-common/features/templates/types";
-  import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { MarkdownProperties } from "@rilldata/web-common/features/templates/types";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 

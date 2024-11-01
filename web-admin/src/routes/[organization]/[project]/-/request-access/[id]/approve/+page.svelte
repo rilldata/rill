@@ -38,7 +38,7 @@
           persisted: true,
         },
       });
-    } catch (e) {
+    } catch {
       eventBus.emit("notification", {
         type: "error",
         message: parseAccessRequestError(

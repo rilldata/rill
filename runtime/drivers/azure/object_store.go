@@ -136,31 +136,28 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
 			c.logger.Debug("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.", zap.Error(err))
 
-			client, err = c.createAnonymousClient(conf)
+			client, err := c.createAnonymousClient(conf)
 			if err != nil {
 				return nil, err
 			}
 
-			bucketObj, err = azureblob.OpenBucket(ctx, client, nil)
+			bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
 			if err != nil {
 				return nil, err
 			}
 
 			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 			if anonErr == nil {
-				iter = anonIt
-				err = nil
+				return anonIt, nil
 			}
 		}
 
 		// If there's still an err, return it
-		if err != nil {
-			respErr = nil
-			if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
-				return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
-			}
-			return nil, err
+		respErr = nil
+		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
+			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
 		}
+		return nil, err
 	}
 
 	return iter, nil

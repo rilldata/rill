@@ -1,18 +1,18 @@
 <script lang="ts">
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
+  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
-  export let metricsViewName: string;
+  export let exploreName: string;
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: exploreStore = useExploreStore(exploreName);
 
   let timeRange: V1TimeRange;
   $: timeRange = {
-    isoDuration: $dashboardStore.selectedTimeRange?.name,
-    start: $dashboardStore.selectedTimeRange?.start?.toISOString() ?? "",
-    end: $dashboardStore.selectedTimeRange?.end?.toISOString() ?? "",
+    isoDuration: $exploreStore.selectedTimeRange?.name,
+    start: $exploreStore.selectedTimeRange?.start?.toISOString() ?? "",
+    end: $exploreStore.selectedTimeRange?.end?.toISOString() ?? "",
   };
 </script>
 
@@ -22,9 +22,9 @@
   title="Filters"
 >
   <FilterChipsReadOnly
-    dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-    filters={$dashboardStore.whereFilter}
-    {metricsViewName}
+    dimensionThresholdFilters={$exploreStore.dimensionThresholdFilters}
+    filters={$exploreStore.whereFilter}
+    {exploreName}
     {timeRange}
   />
 </FormSection>

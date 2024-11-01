@@ -10,7 +10,7 @@
   import { getNameFromFile } from "../entity-management/entity-mappers";
   // import { featureFlags } from "../feature-flags";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { handleEntityCreate } from "../file-explorer/new-files";
+  import { createResourceFile } from "../file-explorer/new-files";
 
   // const { ai } = featureFlags;
 
@@ -30,11 +30,11 @@
       .map((c) => c.meta?.name?.name ?? "") ?? [];
 
   async function handleAddComponent() {
-    const newRoute = await handleEntityCreate(ResourceKind.Component);
+    const newFilePath = await createResourceFile(ResourceKind.Component);
 
-    if (!newRoute) return;
+    if (!newFilePath) return;
 
-    const componentName = getNameFromFile(newRoute);
+    const componentName = getNameFromFile(newFilePath);
 
     if (componentName) {
       addComponent(componentName);

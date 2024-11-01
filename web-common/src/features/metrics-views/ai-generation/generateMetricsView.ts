@@ -2,9 +2,11 @@ import { goto } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-import { get } from "svelte/store";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { get } from "svelte/store";
 import { overlay } from "../../../layout/overlay-store";
+import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
+import { waitUntil } from "../../../lib/waitUtils";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 import {
@@ -12,14 +14,15 @@ import {
   type MetricsEventSpace,
 } from "../../../metrics/service/MetricsTypes";
 import {
-  RuntimeServiceGenerateMetricsViewFileBody,
-  V1GenerateMetricsViewFileResponse,
+  type RuntimeServiceGenerateMetricsViewFileBody,
+  type V1GenerateMetricsViewFileResponse,
   runtimeServiceGenerateMetricsViewFile,
   runtimeServiceGetFile,
 } from "../../../runtime-client";
 import httpClient from "../../../runtime-client/http-client";
 import { getName } from "../../entity-management/name-utils";
 import { featureFlags } from "../../feature-flags";
+import { createAndPreviewExplore } from "../create-and-preview-explore";
 import OptionToCancelAIGeneration from "./OptionToCancelAIGeneration.svelte";
 
 /**
@@ -46,13 +49,13 @@ const runtimeServiceGenerateMetricsViewFileWithSignal = (
  *
  * This function is to be called from all `Generate dashboard with AI` CTAs *outside* of the Metrics Editor.
  */
-export function useCreateDashboardFromTableUIAction(
+export function useCreateMetricsViewFromTableUIAction(
   instanceId: string,
   connector: string,
   database: string,
   databaseSchema: string,
   tableName: string,
-  folder: string,
+  createExplore: boolean,
   behaviourEventMedium: BehaviourEventMedium,
   metricsEventSpace: MetricsEventSpace,
 ) {
@@ -64,7 +67,7 @@ export function useCreateDashboardFromTableUIAction(
     const abortController = new AbortController();
 
     overlay.set({
-      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your ${createExplore ? "dashboard" : "metrics"}`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -77,14 +80,14 @@ export function useCreateDashboardFromTableUIAction(
     });
 
     // Get a unique name
-    const newDashboardName = getName(
-      `${tableName}_dashboard`,
+    const newMetricsViewName = getName(
+      `${tableName}_metrics`,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
-    const newFilePath = `/${folder}/${newDashboardName}.yaml`;
+    const newMetricsViewFilePath = `/metrics/${newMetricsViewName}.yaml`;
 
     try {
-      // First, request an AI-generated dashboard
+      // First, request an AI-generated metrics view
       void runtimeServiceGenerateMetricsViewFileWithSignal(
         instanceId,
         {
@@ -92,7 +95,7 @@ export function useCreateDashboardFromTableUIAction(
           database: database,
           databaseSchema: databaseSchema,
           table: tableName,
-          path: newFilePath,
+          path: newMetricsViewFilePath,
           useAi: isAiEnabled, // AI isn't enabled during e2e tests
         },
         abortController.signal,
@@ -103,10 +106,12 @@ export function useCreateDashboardFromTableUIAction(
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
-          await runtimeServiceGetFile(instanceId, { path: newFilePath });
+          await runtimeServiceGetFile(instanceId, {
+            path: newMetricsViewFilePath,
+          });
           // success, AI is done
           break;
-        } catch (err) {
+        } catch {
           // 404 error, AI is not done
         }
       }
@@ -118,24 +123,47 @@ export function useCreateDashboardFromTableUIAction(
           database: database,
           databaseSchema: databaseSchema,
           table: tableName,
-          path: newFilePath,
+          path: newMetricsViewFilePath,
           useAi: false,
         });
       }
 
-      // Preview
       const previousScreenName = getScreenNameFromPage();
-      await goto(`/files${newFilePath}`);
-      void behaviourEvent.fireNavigationEvent(
-        newDashboardName,
-        behaviourEventMedium,
-        metricsEventSpace,
-        previousScreenName,
-        MetricsEventScreenName.Dashboard,
-      );
+
+      // If we're not creating an Explore, navigate to the Metrics View file
+      if (!createExplore) {
+        await goto(`/files${newMetricsViewFilePath}`);
+        void behaviourEvent.fireNavigationEvent(
+          newMetricsViewName,
+          behaviourEventMedium,
+          metricsEventSpace,
+          previousScreenName,
+          MetricsEventScreenName.MetricsDefinition,
+        );
+        overlay.set(null);
+        return;
+      }
+
+      // If we are creating an Explore...
+
+      // Get the Metrics View to use as a base for the Explore
+      const metricsViewResource = fileArtifacts
+        .getFileArtifact(newMetricsViewFilePath)
+        .getResource(queryClient, instanceId);
+      await waitUntil(() => get(metricsViewResource).data !== undefined, 5000);
+
+      const resource = get(metricsViewResource).data;
+      if (!resource) {
+        throw new Error("Failed to create a Metrics View resource");
+      }
+
+      // Create the Explore file, and navigate to it
+      await createAndPreviewExplore(queryClient, instanceId, resource);
     } catch (err) {
       eventBus.emit("notification", {
-        message: "Failed to create a dashboard for " + tableName,
+        message:
+          `Failed to create ${createExplore ? "a dashboard" : "metrics"} for ` +
+          tableName,
         detail: err.response?.data?.message ?? err.message,
       });
     }
@@ -198,7 +226,7 @@ export async function createDashboardFromTableInMetricsEditor(
           // success, AI is done
           break;
         }
-      } catch (err) {
+      } catch {
         // 404 error, AI is not done
       }
     }

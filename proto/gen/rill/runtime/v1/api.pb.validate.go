@@ -792,6 +792,12 @@ func (m *InstanceHealth) validate(all bool) error {
 
 	// no validation rules for RepoError
 
+	// no validation rules for MetricsViewErrors
+
+	// no validation rules for ParseErrorCount
+
+	// no validation rules for ReconcileErrorCount
+
 	if len(errors) > 0 {
 		return InstanceHealthMultiError(errors)
 	}
@@ -4346,7 +4352,7 @@ func (m *Example) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4928,7 +4934,7 @@ func (m *UnpackEmptyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Force
 
@@ -9627,6 +9633,384 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IssueDevJWTResponseValidationError{}
+
+// Validate checks the field values on AnalyzeVariablesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeVariablesRequestMultiError, or nil if none found.
+func (m *AnalyzeVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return AnalyzeVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeVariablesRequestMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeVariablesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeVariablesRequestMultiError) AllErrors() []error { return m }
+
+// AnalyzeVariablesRequestValidationError is the validation error returned by
+// AnalyzeVariablesRequest.Validate if the designated constraints aren't met.
+type AnalyzeVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeVariablesRequestValidationError) ErrorName() string {
+	return "AnalyzeVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeVariablesRequestValidationError{}
+
+// Validate checks the field values on AnalyzeVariablesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeVariablesResponseMultiError, or nil if none found.
+func (m *AnalyzeVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetVariables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzeVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzeVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzeVariablesResponseValidationError{
+					field:  fmt.Sprintf("Variables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzeVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeVariablesResponseMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeVariablesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeVariablesResponseMultiError) AllErrors() []error { return m }
+
+// AnalyzeVariablesResponseValidationError is the validation error returned by
+// AnalyzeVariablesResponse.Validate if the designated constraints aren't met.
+type AnalyzeVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeVariablesResponseValidationError) ErrorName() string {
+	return "AnalyzeVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeVariablesResponseValidationError{}
+
+// Validate checks the field values on AnalyzedVariable with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzedVariable) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzedVariable with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzedVariableMultiError, or nil if none found.
+func (m *AnalyzedVariable) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzedVariable) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for DefaultValue
+
+	for idx, item := range m.GetUsedBy() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzedVariableValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzedVariableValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzedVariableValidationError{
+					field:  fmt.Sprintf("UsedBy[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzedVariableMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzedVariableMultiError is an error wrapping multiple validation errors
+// returned by AnalyzedVariable.ValidateAll() if the designated constraints
+// aren't met.
+type AnalyzedVariableMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzedVariableMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzedVariableMultiError) AllErrors() []error { return m }
+
+// AnalyzedVariableValidationError is the validation error returned by
+// AnalyzedVariable.Validate if the designated constraints aren't met.
+type AnalyzedVariableValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzedVariableValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzedVariableValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzedVariableValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzedVariableValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzedVariableValidationError) ErrorName() string { return "AnalyzedVariableValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AnalyzedVariableValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzedVariable.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzedVariableValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzedVariableValidationError{}
 
 // Validate checks the field values on ConnectorDriver_Property with the rules
 // defined in the proto definition for this message. If any rules are

@@ -3,7 +3,7 @@ import { writable } from "svelte/store";
 import { debounce } from "../lib/create-debouncer";
 import {
   createRuntimeServiceGetInstance,
-  V1InstanceFeatureFlags,
+  type V1InstanceFeatureFlags,
 } from "../runtime-client";
 import { runtime } from "../runtime-client/runtime-store";
 

@@ -177,7 +177,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
           {@const x = $xScale(segment[0][xAccessor])}
           {@const width =
             $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
-          <rect {x} y={0} height={$yScale.range()[0]} {width} />
+          <rect {x} y={0} height={Number($yScale.range()[0])} {width} />
         {/each}
       </clipPath>
     </defs>

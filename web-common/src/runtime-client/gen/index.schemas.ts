@@ -35,6 +35,7 @@ export type ConnectorServiceS3GetBucketMetadataParams = {
 export type ConnectorServiceOLAPListTablesParams = {
   instanceId?: string;
   connector?: string;
+  searchPattern?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -73,6 +74,12 @@ export type RuntimeServiceListResourcesParams = {
 export type RuntimeServiceGetResourceParams = {
   "name.kind"?: string;
   "name.name"?: string;
+};
+
+export type QueryServiceExportReportBody = {
+  limit?: string;
+  format?: V1ExportFormat;
+  executionTime?: string;
 };
 
 export type QueryServiceQueryBatch200 = {
@@ -424,7 +431,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
-  title?: string;
+  displayName?: string;
   force?: boolean;
 };
 
@@ -699,6 +706,10 @@ export interface V1StructType {
   fields?: StructTypeField[];
 }
 
+export interface V1StringListValue {
+  values?: string[];
+}
+
 export interface V1SourceState {
   connector?: string;
   table?: string;
@@ -861,8 +872,8 @@ export interface V1ReportState {
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   queryName?: string;
@@ -1291,7 +1302,7 @@ export interface V1MetricsViewSpec {
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
   model?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -1615,10 +1626,15 @@ export interface V1IssueDevJWTRequest {
   admin?: boolean;
 }
 
+export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
+
 export interface V1InstanceHealth {
   controllerError?: string;
   olapError?: string;
   repoError?: string;
+  metricsViewErrors?: V1InstanceHealthMetricsViewErrors;
+  parseErrorCount?: number;
+  reconcileErrorCount?: number;
 }
 
 export interface V1InstanceHealthResponse {
@@ -1765,6 +1781,22 @@ export const V1FileEvent = {
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
 } as const;
 
+/**
+ * FieldSelector describes logic for selecting a list of fields.
+It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
+ */
+export interface V1FieldSelector {
+  /** Invert the result such that all fields *except* the selected fields are returned. */
+  invert?: boolean;
+  /** Select all fields. */
+  all?: boolean;
+  fields?: V1StringListValue;
+  /** Select fields by a regular expression. */
+  regex?: string;
+  /** Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)". */
+  duckdbExpression?: string;
+}
+
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1773,6 +1805,10 @@ export interface V1Expression {
 }
 
 export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
+export interface V1ExportReportResponse {
   downloadUrlPath?: string;
 }
 
@@ -1816,15 +1852,12 @@ export const V1ExploreComparisonMode = {
 } as const;
 
 export interface V1ExplorePreset {
-  label?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
-  /** If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  dimensionsExclude?: boolean;
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  measuresExclude?: boolean;
+  measuresSelector?: V1FieldSelector;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
@@ -1835,18 +1868,15 @@ If not found in `time_ranges`, it should be added to the list. */
 }
 
 export interface V1ExploreSpec {
-  title?: string;
+  displayName?: string;
   description?: string;
   metricsView?: string;
-  /** Dimensions to show. */
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
   dimensions?: string[];
-  /** If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  dimensionsExclude?: boolean;
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
-  /** If true, `measures` will be inverted during validation to include all measures except the ones listed.
-Since it is processed during validation, this will always be false in `state.valid_spec`. */
-  measuresExclude?: boolean;
+  measuresSelector?: V1FieldSelector;
   theme?: string;
   /** List of selectable time ranges with comparison time ranges.
 If the list is empty, a default list should be shown. */
@@ -1855,12 +1885,12 @@ If the list is empty, a default list should be shown. */
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
-  /** List of preconfigured UI states that can be toggled between.
-If the list is not empty, the first item should be selected by default. */
-  presets?: V1ExplorePreset[];
+  defaultPreset?: V1ExplorePreset;
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
 }
 
 export interface V1Explore {
@@ -1873,7 +1903,7 @@ export interface V1Explore {
  */
 export interface V1Example {
   name?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
 }
 
@@ -2005,8 +2035,8 @@ export type V1ComponentSpecRendererProperties = { [key: string]: any };
 export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
-  title?: string;
-  subtitle?: string;
+  displayName?: string;
+  description?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
@@ -2163,6 +2193,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2189,10 +2223,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2203,7 +2233,7 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
-  title?: string;
+  displayName?: string;
   columns?: number;
   gap?: number;
   variables?: V1ComponentVariable[];
@@ -2279,6 +2309,15 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
+export interface V1AnalyzedVariable {
+  /** Name of the variable. */
+  name?: string;
+  /** Default value set for the variable in rill.yaml, if any. */
+  defaultValue?: string;
+  /** List of resources that appear to use the connector. */
+  usedBy?: V1ResourceName[];
+}
+
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
@@ -2302,6 +2341,10 @@ export interface V1AnalyzedConnector {
   errorMessage?: string;
 }
 
+export interface V1AnalyzeVariablesResponse {
+  variables?: V1AnalyzedVariable[];
+}
+
 export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
@@ -2313,8 +2356,8 @@ export type V1AlertSpecQueryForAttributes = { [key: string]: any };
 export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
   watermarkInherit?: boolean;
@@ -2501,14 +2544,14 @@ export const MetricsViewSpecMeasureType = {
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
   requiredDimensions?: MetricsViewSpecDimensionSelector[];
   referencedMeasures?: string[];
-  label?: string;
-  description?: string;
   formatPreset?: string;
   formatD3?: string;
   validPercentOfTotal?: boolean;
@@ -2516,10 +2559,10 @@ export interface MetricsViewSpecMeasureV2 {
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   column?: string;
   expression?: string;
-  label?: string;
-  description?: string;
   unnest?: boolean;
   uri?: string;
 }

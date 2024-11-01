@@ -186,7 +186,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
-		attribute.String("args.kind", req.Kind),
+		attribute.String("args.type", req.Type),
+		attribute.String("args.kind", req.Kind), // nolint:staticcheck // Deprecated but still used
 		attribute.String("args.resource", req.Resource),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 		attribute.String("args.state", req.State),
@@ -272,23 +273,33 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
 	}
-	if req.Kind == "" {
-		iframeQuery["kind"] = runtime.ResourceKindMetricsView
+
+	if req.Type != "" {
+		iframeQuery["type"] = req.Type
+	} else if req.Kind != "" { // nolint:staticcheck // Deprecated but still used
+		iframeQuery["type"] = req.Kind
 	} else {
-		iframeQuery["kind"] = req.Kind
+		// Default to an explore if no type is explicitly provided
+		iframeQuery["type"] = runtime.ResourceKindExplore
 	}
+	iframeQuery["kind"] = iframeQuery["type"] // For backwards compatibility
+
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource
 	}
+
 	if req.Theme != "" {
 		iframeQuery["theme"] = req.Theme
 	}
+
 	if req.Navigation {
 		iframeQuery["navigation"] = "true"
 	}
+
 	if req.State != "" {
 		iframeQuery["state"] = req.State
 	}
+
 	for k, v := range req.Query {
 		iframeQuery[k] = v
 	}

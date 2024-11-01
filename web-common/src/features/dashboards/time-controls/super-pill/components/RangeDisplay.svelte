@@ -3,6 +3,7 @@
 
   export let interval: Interval<true>;
   export let grain: string;
+  export let abbreviation: string | undefined = undefined;
 
   $: showTime = grain === "TIME_GRAIN_HOUR" || grain === "TIME_GRAIN_MINUTE";
   $: timeFormat = grain === "TIME_GRAIN_MINUTE" ? "h:mm a" : "h a";
@@ -23,6 +24,9 @@
     {date}
     {#if showTime}
       ({time})
+    {/if}
+    {#if abbreviation}
+      {abbreviation}
     {/if}
   </span>
 </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { canvasVariablesStore } from "@rilldata/web-common/features/canvas/variables-store";
-  import {
+  import type {
     V1CanvasItem,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";

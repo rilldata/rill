@@ -22,13 +22,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const magicAuthTokenMetricsViewFilterMaxSize = 1024
+const magicAuthTokenFilterMaxSize = 1024
 
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
-		attribute.String("args.metrics_view", req.MetricsView),
+		attribute.String("args.display_name", req.DisplayName),
+		attribute.String("args.resource_type", req.ResourceType),
+		attribute.String("args.resource_name", req.ResourceName),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -48,11 +50,12 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	}
 
 	opts := &admin.IssueMagicAuthTokenOptions{
-		ProjectID:         proj.ID,
-		MetricsView:       req.MetricsView,
-		MetricsViewFields: req.MetricsViewFields,
-		State:             req.State,
-		Title:             req.Title,
+		ProjectID:    proj.ID,
+		ResourceType: req.ResourceType,
+		ResourceName: req.ResourceName,
+		Fields:       req.Fields,
+		State:        req.State,
+		DisplayName:  req.DisplayName,
 	}
 
 	if req.TtlMinutes != 0 {
@@ -76,17 +79,17 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.Attributes = attrs
 	}
 
-	if req.MetricsViewFilter != nil {
-		val, err := protojson.Marshal(req.MetricsViewFilter)
+	if req.Filter != nil {
+		val, err := protojson.Marshal(req.Filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if len(val) > magicAuthTokenMetricsViewFilterMaxSize {
-			return nil, status.Errorf(codes.InvalidArgument, "metrics view filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenMetricsViewFilterMaxSize)
+		if len(val) > magicAuthTokenFilterMaxSize {
+			return nil, status.Errorf(codes.InvalidArgument, "filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenFilterMaxSize)
 		}
 
-		opts.MetricsViewFilterJSON = string(val)
+		opts.FilterJSON = string(val)
 	}
 
 	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
@@ -245,12 +248,12 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
 	}
 
-	var metricsViewFilter *runtimev1.Expression
-	if tkn.MetricsViewFilterJSON != "" {
-		metricsViewFilter = &runtimev1.Expression{}
-		err := protojson.Unmarshal([]byte(tkn.MetricsViewFilterJSON), metricsViewFilter)
+	var filter *runtimev1.Expression
+	if tkn.FilterJSON != "" {
+		filter = &runtimev1.Expression{}
+		err := protojson.Unmarshal([]byte(tkn.FilterJSON), filter)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal metrics view filter: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
 		}
 	}
 
@@ -281,11 +284,12 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		CreatedByUserId:    safeStr(tkn.CreatedByUserID),
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
-		MetricsView:        tkn.MetricsView,
-		MetricsViewFilter:  metricsViewFilter,
-		MetricsViewFields:  tkn.MetricsViewFields,
+		ResourceType:       tkn.ResourceType,
+		ResourceName:       tkn.ResourceName,
+		Filter:             filter,
+		Fields:             tkn.Fields,
 		State:              tkn.State,
-		Title:              tkn.Title,
+		DisplayName:        tkn.DisplayName,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)

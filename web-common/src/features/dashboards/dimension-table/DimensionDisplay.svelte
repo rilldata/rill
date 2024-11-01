@@ -40,6 +40,7 @@
       },
     },
     metricsViewName,
+    exploreName,
     runtime,
   } = stateManagers;
 
@@ -103,7 +104,7 @@
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
-      $metricsViewName,
+      $exploreName,
       isBeingCompared ? undefined : dimensionName,
     );
   }

@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -31,12 +32,12 @@ type Node struct {
 }
 
 // parseNode multiplexes to the appropriate parse function based on the node kind.
-func (p *Parser) parseNode(node *Node) error {
+func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 	switch node.Kind {
 	case ResourceKindSource:
-		return p.parseSource(node)
+		return p.parseSource(ctx, node)
 	case ResourceKindModel:
-		return p.parseModel(node)
+		return p.parseModel(ctx, node)
 	case ResourceKindMetricsView:
 		return p.parseMetricsView(node)
 	case ResourceKindExplore:
@@ -83,10 +84,12 @@ type commonYAML struct {
 	// SQL contains the SQL string for this resource. It may be specified inline, or will be loaded from a file at the same stem. It may not be supported in all resources.
 	SQL string `yaml:"sql"`
 	// Environment-specific overrides
-	Env map[string]yaml.Node `yaml:"env"`
-	// Shorthand for setting "env:dev:"
+	EnvironmentOverrides map[string]yaml.Node `yaml:"environment_overrides"`
+	// Deprecated key for environment-specific overrides (replaced by "environment_overrides")
+	EnvironmentOverridesOld map[string]yaml.Node `yaml:"env"`
+	// Shorthand for setting "environment_overrides:dev:"
 	Dev yaml.Node `yaml:"dev"`
-	// Shorthand for setting "env:prod:"
+	// Shorthand for setting "environment_overrides:prod:"
 	Prod yaml.Node `yaml:"prod"`
 }
 
@@ -117,22 +120,30 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 	// Handle YAML config
 	templatingEnabled := true
 	if cfg != nil {
+		// Copy EnvironmentOverridesOld to EnvironmentOverrides
+		for k, v := range cfg.EnvironmentOverridesOld { // nolint: gocritic // Using a pointer changes parser behavior
+			if cfg.EnvironmentOverrides == nil {
+				cfg.EnvironmentOverrides = make(map[string]yaml.Node)
+			}
+			cfg.EnvironmentOverrides[k] = v
+		}
+
 		// Handle "dev:" and "prod:" shorthands (copy to to cfg.Env)
 		if !cfg.Dev.IsZero() {
-			if cfg.Env == nil {
-				cfg.Env = make(map[string]yaml.Node)
+			if cfg.EnvironmentOverrides == nil {
+				cfg.EnvironmentOverrides = make(map[string]yaml.Node)
 			}
-			cfg.Env["dev"] = cfg.Dev
+			cfg.EnvironmentOverrides["dev"] = cfg.Dev
 		}
 		if !cfg.Prod.IsZero() {
-			if cfg.Env == nil {
-				cfg.Env = make(map[string]yaml.Node)
+			if cfg.EnvironmentOverrides == nil {
+				cfg.EnvironmentOverrides = make(map[string]yaml.Node)
 			}
-			cfg.Env["prod"] = cfg.Prod
+			cfg.EnvironmentOverrides["prod"] = cfg.Prod
 		}
 
 		// Set environment-specific override
-		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {
+		if envOverride := cfg.EnvironmentOverrides[p.Environment]; !envOverride.IsZero() {
 			res.YAMLOverride = &envOverride
 
 			// Apply the override immediately in case it changes any of the commonYAML fields

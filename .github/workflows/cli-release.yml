@@ -143,3 +143,15 @@ jobs:
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/nightly/*" --async
           fi
+
+      - name: Notify Slack
+        uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "{workflow} has {status_message}"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          footer: "Linked Repo <{repo_url}|{repo}>"
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}

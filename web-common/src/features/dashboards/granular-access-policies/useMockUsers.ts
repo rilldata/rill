@@ -15,6 +15,7 @@ export function useMockUsers(instanceId: string) {
     {
       query: {
         select: (data) => {
+          if (!data.blob) return [];
           const yamlObj = parseDocument(data.blob, {
             logLevel: "error",
           })?.toJS();

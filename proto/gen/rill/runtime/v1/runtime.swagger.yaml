@@ -747,7 +747,7 @@ paths:
           schema:
             type: object
             properties:
-              title:
+              displayName:
                 type: string
               force:
                 type: boolean
@@ -2386,6 +2386,44 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/reports/{report}/export:
+    post:
+      summary: ExportReport builds a URL to download the results of a query as a file.
+      operationId: QueryService_ExportReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ExportReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: report
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              limit:
+                type: string
+                format: int64
+              format:
+                $ref: '#/definitions/v1ExportFormat'
+              executionTime:
+                type: string
+                format: date-time
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/resource:
     get:
       summary: GetResource looks up a specific catalog resource
@@ -2561,6 +2599,26 @@ paths:
                   Will trigger models with RefreshModelTrigger.full set to true.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/variables/analyze:
+    get:
+      summary: AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+      operationId: RuntimeService_AnalyzeVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/olap/tables:
     get:
       summary: OLAPListTables list all tables across all databases on motherduck
@@ -2580,6 +2638,15 @@ paths:
           required: false
           type: string
         - name: connector
+          description: Connector to list tables from.
+          in: query
+          required: false
+          type: string
+        - name: searchPattern
+          description: |-
+            Optional search pattern to filter tables by.
+            Has the same syntax and behavior as ILIKE in SQL.
+            If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
           in: query
           required: false
           type: string
@@ -2873,13 +2940,13 @@ definitions:
     properties:
       name:
         type: string
+      displayName:
+        type: string
+      description:
+        type: string
       column:
         type: string
       expression:
-        type: string
-      label:
-        type: string
-      description:
         type: string
       unnest:
         type: boolean
@@ -2899,6 +2966,10 @@ definitions:
     type: object
     properties:
       name:
+        type: string
+      displayName:
+        type: string
+      description:
         type: string
       expression:
         type: string
@@ -2920,10 +2991,6 @@ definitions:
         type: array
         items:
           type: string
-      label:
-        type: string
-      description:
-        type: string
       formatPreset:
         type: string
       formatD3:
@@ -3149,10 +3216,10 @@ definitions:
   v1AlertSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       watermarkInherit:
@@ -3232,6 +3299,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1AnalyzedConnector'
     title: Response message for RuntimeService.AnalyzeConnectors
+  v1AnalyzeVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AnalyzedVariable'
+    title: Response message for RuntimeService.AnalyzeVariables
   v1AnalyzedConnector:
     type: object
     properties:
@@ -3274,6 +3350,21 @@ definitions:
         type: string
         title: Error message if the connector is misconfigured
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
+  v1AnalyzedVariable:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of the variable.
+      defaultValue:
+        type: string
+        description: Default value set for the variable in rill.yaml, if any.
+      usedBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: List of resources that appear to use the connector.
   v1AssertionResult:
     type: object
     properties:
@@ -3375,7 +3466,7 @@ definitions:
   v1CanvasSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       columns:
         type: integer
@@ -3728,9 +3819,9 @@ definitions:
   v1ComponentSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-      subtitle:
+      description:
         type: string
       resolver:
         type: string
@@ -3949,7 +4040,7 @@ definitions:
     properties:
       name:
         type: string
-      title:
+      displayName:
         type: string
       description:
         type: string
@@ -3983,29 +4074,22 @@ definitions:
   v1ExplorePreset:
     type: object
     properties:
-      label:
-        type: string
-        title: Display name of the preset
       dimensions:
         type: array
         items:
           type: string
-        title: Dimensions to show
-      dimensionsExclude:
-        type: boolean
-        description: |-
-          If true, the `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       measures:
         type: array
         items:
           type: string
-        title: Measures to show
-      measuresExclude:
-        type: boolean
-        description: |-
-          If true, `measures` will be inverted during validation to include all measures except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       timeRange:
         type: string
         description: |-
@@ -4021,9 +4105,9 @@ definitions:
   v1ExploreSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -4034,22 +4118,18 @@ definitions:
         type: array
         items:
           type: string
-        description: Dimensions to show.
-      dimensionsExclude:
-        type: boolean
-        description: |-
-          If true, `dimensions` will be inverted during validation to include all dimensions except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`.
+      dimensionsSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `dimensions`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       measures:
         type: array
         items:
           type: string
-        title: Measures available
-      measuresExclude:
-        type: boolean
-        description: |-
-          If true, `measures` will be inverted during validation to include all measures except the ones listed.
-          Since it is processed during validation, this will always be false in `state.valid_spec`.
+        description: Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`.
+      measuresSelector:
+        $ref: '#/definitions/v1FieldSelector'
+        description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
       theme:
         type: string
         title: Theme to use
@@ -4069,14 +4149,9 @@ definitions:
           List of selectable time zones.
           If the list is empty, a default list should be shown.
           The values should be valid IANA location identifiers.
-      presets:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ExplorePreset'
-        description: |-
-          List of preconfigured UI states that can be toggled between.
-          If the list is not empty, the first item should be selected by default.
+      defaultPreset:
+        $ref: '#/definitions/v1ExplorePreset'
+        description: Preset UI state to show by default.
       securityRules:
         type: array
         items:
@@ -4085,6 +4160,9 @@ definitions:
         description: |-
           Security for the explore dashboard.
           These are not currently parsed from YAML, but will be derived from the parent metrics view.
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
   v1ExploreState:
     type: object
     properties:
@@ -4110,6 +4188,11 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
+  v1ExportReportResponse:
+    type: object
+    properties:
+      downloadUrlPath:
+        type: string
   v1ExportResponse:
     type: object
     properties:
@@ -4125,6 +4208,27 @@ definitions:
         $ref: '#/definitions/v1Condition'
       subquery:
         $ref: '#/definitions/v1Subquery'
+  v1FieldSelector:
+    type: object
+    properties:
+      invert:
+        type: boolean
+        description: Invert the result such that all fields *except* the selected fields are returned.
+      all:
+        type: boolean
+        description: Select all fields.
+      fields:
+        $ref: '#/definitions/v1StringListValue'
+        description: Select specific fields by name.
+      regex:
+        type: string
+        description: Select fields by a regular expression.
+      duckdbExpression:
+        type: string
+        description: Select fields by a DuckDB SQL SELECT expression. For example "* EXCLUDE (city)".
+    description: |-
+      FieldSelector describes logic for selecting a list of fields.
+      It is useful for dynamically evaluating fields when the list of potential fields is not known at parse time.
   v1FileEvent:
     type: string
     enum:
@@ -4326,6 +4430,16 @@ definitions:
         type: string
       repoError:
         type: string
+      metricsViewErrors:
+        type: object
+        additionalProperties:
+          type: string
+      parseErrorCount:
+        type: integer
+        format: int32
+      reconcileErrorCount:
+        type: integer
+        format: int32
   v1InstanceHealthResponse:
     type: object
     properties:
@@ -4886,9 +5000,9 @@ definitions:
       model:
         type: string
         description: Name of the model the metrics view is based on. Either table or model should be set.
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -5641,10 +5755,10 @@ definitions:
   v1ReportSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
@@ -5951,6 +6065,13 @@ definitions:
         $ref: '#/definitions/v1SourceSpec'
       state:
         $ref: '#/definitions/v1SourceState'
+  v1StringListValue:
+    type: object
+    properties:
+      values:
+        type: array
+        items:
+          type: string
   v1StructType:
     type: object
     properties:

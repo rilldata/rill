@@ -22,7 +22,7 @@ describe("formatMsInterval - non numeric inputs", () => {
     let inputString;
     try {
       inputString = JSON.stringify(input);
-    } catch (error) {
+    } catch {
       inputString = input?.toString();
     }
 

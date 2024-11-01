@@ -8,6 +8,9 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+
+	// Load database/sql driver
+	_ "github.com/snowflakedb/gosnowflake"
 )
 
 func init() {
@@ -41,7 +44,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
-			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
+			Hint:        "Either set this or pass --env connector.snowflake.dsn=... to rill start",
 		},
 		{
 			Key:         "name",

@@ -3,7 +3,7 @@ import { createLineStatusHighlighter } from "./highlighter";
 import { createLineNumberGutter } from "./line-number-gutter";
 import { createStatusLineGutter } from "./line-status-gutter";
 import {
-  LineStatus,
+  type LineStatus,
   lineStatusesStateField,
   updateLineStatuses as updateLineStatusesEffect,
 } from "./state";

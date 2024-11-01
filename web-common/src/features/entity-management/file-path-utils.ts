@@ -21,7 +21,7 @@ export function extractFileExtension(filePath: string): string {
   return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot) : "";
 }
 
-export function splitFolderAndName(
+export function splitFolderAndFileName(
   filePath: string,
 ): [folder: string, fileName: string] {
   const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
@@ -29,6 +29,22 @@ export function splitFolderAndName(
     filePath.substring(0, filePath.length - fileName.length - 1),
     fileName,
   ];
+}
+
+export function splitFolderFileNameAndExtension(
+  filePath: string,
+): [folder: string, fileName: string, extension: string] {
+  const [folder, fullFileName] = splitFolderAndFileName(filePath);
+
+  const lastIndexOfDot = fullFileName.lastIndexOf(".");
+  const fileName =
+    lastIndexOfDot >= 0
+      ? fullFileName.substring(0, lastIndexOfDot)
+      : fullFileName;
+  const extension =
+    lastIndexOfDot >= 0 ? fullFileName.substring(lastIndexOfDot) : "";
+
+  return [folder, fileName, extension];
 }
 
 export function getTopLevelFolder(filePath: string): string {

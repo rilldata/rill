@@ -1,11 +1,11 @@
-import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import {
   MeasureFilterBaseTypeOptions,
   MeasureFilterComparisonTypeOptions,
   MeasureFilterPercentOfTotalOption,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
-import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
 export function getTypeOptions(
   formValues: AlertFormValues,

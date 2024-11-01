@@ -3,7 +3,7 @@ import {
   Decoration,
   EditorView,
   ViewPlugin,
-  ViewUpdate,
+  type ViewUpdate,
 } from "@codemirror/view";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
 

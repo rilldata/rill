@@ -621,6 +621,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	return err
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	var byNameClause string
 	if byName {
@@ -727,7 +731,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 			existingTyp = "TABLE"
 		}
 
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, newName)})
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(newName))})
 		if err != nil {
 			return err
 		}

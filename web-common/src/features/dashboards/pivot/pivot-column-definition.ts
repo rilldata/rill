@@ -20,7 +20,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  MeasureType,
+  type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
@@ -186,7 +186,7 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
     }
 
     return {
-      label: label || measure?.label || measureName,
+      label: label || measure?.displayName || measureName,
       formatter: createMeasureValueFormatter<null | undefined>(measure),
       name: m,
       type,
@@ -202,7 +202,7 @@ function getDimensionColumnProps(
     let label =
       config.allDimensions.find(
         (dimension) => dimension.name === d || dimension.column === d,
-      )?.label || d;
+      )?.displayName || d;
     if (isTimeDimension(d, config.time.timeDimension)) {
       const timeGrain = getTimeGrainFromDimension(d);
       const grainLabel = TIME_GRAIN[timeGrain]?.label || d;

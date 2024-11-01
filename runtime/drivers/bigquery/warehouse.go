@@ -207,7 +207,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp*.parquet")
+	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
   import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
-  import MetricsExplorerIcon from "@rilldata/web-common/components/icons/MetricsExplorerIcon.svelte";
+  import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
@@ -37,12 +37,12 @@
         const name = resource.meta.name.name;
 
         // If not a Metrics Explorer, it's a Custom Dashboard.
-        const isMetricsExplorer = !!resource?.metricsView;
+        const isMetricsExplorer = !!resource?.explore;
         const title = isMetricsExplorer
-          ? resource.metricsView.spec.title
-          : resource.canvas.spec.title;
+          ? resource.explore.spec.displayName
+          : resource.canvas.spec.displayName;
         const description = isMetricsExplorer
-          ? resource.metricsView.spec.description
+          ? resource.explore.spec.description
           : "";
 
         return flexRender(DashboardsTableCompositeCell, {
@@ -60,10 +60,10 @@
       id: "title",
       accessorFn: (row: DashboardResource) => {
         const resource = row.resource;
-        const isMetricsExplorer = !!resource?.metricsView;
+        const isMetricsExplorer = !!resource?.explore;
         return isMetricsExplorer
-          ? resource.metricsView.spec.title
-          : resource.canvas.spec.title;
+          ? resource.explore.spec.displayName
+          : resource.canvas.spec.displayName;
       },
     },
     {
@@ -78,8 +78,8 @@
       id: "description",
       accessorFn: (row: DashboardResource) => {
         const resource = row.resource;
-        const isMetricsExplorer = !!resource?.metricsView;
-        return isMetricsExplorer ? resource.metricsView.spec.description : "";
+        const isMetricsExplorer = !!resource?.explore;
+        return isMetricsExplorer ? resource.explore.spec.description : "";
       },
     },
   ];
@@ -115,11 +115,7 @@
       on:click-row={handleClickRow}
     >
       <Toolbar slot="toolbar" />
-      <ResourceHeader
-        kind="dashboard"
-        icon={MetricsExplorerIcon}
-        slot="header"
-      />
+      <ResourceHeader kind="dashboard" icon={ExploreIcon} slot="header" />
       <ResourceTableEmpty kind="dashboard" slot="empty" />
     </Table>
   {/if}

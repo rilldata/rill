@@ -138,9 +138,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -158,7 +158,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, updated_on=now() WHERE id=$14 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, created_by_user_id=$14, updated_on=now() WHERE id=$15 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -367,16 +367,11 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
-	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &projectDTO{}
-	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version, prod_variables_encryption_key_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, vars, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion, encKeyID,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -397,16 +392,11 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Annotations = make(map[string]string, 0)
 	}
 
-	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &projectDTO{}
-	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, prod_variables_encryption_key_id=$16, updated_on=now()
-		WHERE id=$17 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, vars, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, encKeyID, id,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, subpath=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
+		WHERE id=$15 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -667,7 +657,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_trial_orgs, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaTrialOrgs, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -694,13 +684,14 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, preference_time_zone=$7, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, quota_trial_orgs=$7, preference_time_zone=$8, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
 		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
+		opts.QuotaTrialOrgs,
 		opts.PreferenceTimeZone).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
@@ -732,6 +723,23 @@ func (c *connection) CheckUserIsAProjectMember(ctx context.Context, userID, proj
 		return false, parseErr("check", err)
 	}
 	return res, nil
+}
+
+func (c *connection) GetCurrentTrialOrgCount(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT current_trial_orgs_count FROM users WHERE id=$1", userID).Scan(&count)
+	if err != nil {
+		return 0, parseErr("org count", err)
+	}
+	return count, nil
+}
+
+func (c *connection) IncrementCurrentTrialOrgCount(ctx context.Context, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE users SET current_trial_orgs_count = current_trial_orgs_count + 1 WHERE id=$1", userID)
+	if err != nil {
+		return parseErr("org count", err)
+	}
+	return nil
 }
 
 func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
@@ -807,7 +815,7 @@ func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, use
 func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uug.user_id as "id", u.email, u.display_name FROM usergroups_users uug
+		SELECT uug.user_id as "id", u.email, u.display_name, u.photo_url FROM usergroups_users uug
 		JOIN users u ON uug.user_id = u.id
 		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
 		ORDER BY lower(u.email) LIMIT $3
@@ -1094,7 +1102,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 		n++
 	}
 
-	where += " AND (t.expires_on IS NULL OR t.expires_on > now())"
+	where += " AND (t.expires_on IS NULL OR t.expires_on > now()) AND t.internal=false"
 
 	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
 	args = append(args, limit)
@@ -1127,7 +1135,7 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecr
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
 	res := &magicAuthTokenWithUserDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
@@ -1139,8 +1147,8 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	if opts.MetricsViewFields == nil {
-		opts.MetricsViewFields = []string{}
+	if opts.Fields == nil {
+		opts.Fields = []string{}
 	}
 
 	encSecret, encKeyID, err := c.encrypt(opts.Secret)
@@ -1150,9 +1158,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields, state, title)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields, opts.State, opts.Title,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, resource_type, resource_name, filter_json, fields, state, display_name, internal)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.ResourceType, opts.ResourceName, opts.FilterJSON, opts.Fields, opts.State, opts.DisplayName, opts.Internal,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -1173,9 +1181,62 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 	return checkDeleteRow("magic auth token", res, err)
 }
 
+func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("magic auth token", err)
+}
+
+func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([]*database.ReportToken, error) {
+	var res []*database.ReportToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM report_tokens WHERE report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
+	var res []*reportTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+
+	ret := make([]*database.ReportTokenWithSecret, len(res))
+	for i, dto := range res {
+		ret[i], err = c.reportTokenWithSecretFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ret, nil
+}
+
+func (c *connection) FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.ReportToken, error) {
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM report_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO report_tokens (report_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.ReportName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -1307,7 +1368,7 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1 AND lower(u.email) > lower($2)
@@ -1372,7 +1433,7 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
 			JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id
 		WHERE uor.org_id=$1 AND r.manage_org_members=true
@@ -1387,7 +1448,7 @@ func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Cont
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+		SELECT u.id, u.email, u.display_name, u.photo_url, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_projects_roles upr ON u.id = upr.user_id
 		JOIN project_roles r ON r.id = upr.project_role_id
 		WHERE upr.project_id=$1 AND lower(u.email) > lower($2)
@@ -1895,6 +1956,15 @@ func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]stri
 	return res, nil
 }
 
+func (c *connection) FindOrganizationIDsWithoutBilling(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id = ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs without billing or payment info", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
@@ -1921,15 +1991,6 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
-func (c *connection) FindOrganizationsWithoutBillingCustomerID(ctx context.Context) ([]*database.Organization, error) {
-	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
-	if err != nil {
-		return nil, parseErr("billing orgs without billing id", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindOrganizationForPaymentCustomerID(ctx context.Context, customerID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM orgs WHERE payment_customer_id = $1`, customerID).StructScan(res)
@@ -1948,7 +2009,7 @@ func (c *connection) FindOrganizationForBillingCustomerID(ctx context.Context, c
 	return res, nil
 }
 
-func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssuesForOrg(ctx context.Context, orgID string) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
 	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE org_id = $1`, orgID)
 	if err != nil {
@@ -1962,7 +2023,7 @@ func (c *connection) FindBillingIssues(ctx context.Context, orgID string) ([]*da
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
 	res := &billingIssueDTO{}
 	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2`, orgID, errorType)
 	if err != nil {
@@ -1971,9 +2032,9 @@ func (c *connection) FindBillingIssueByType(ctx context.Context, orgID string, e
 	return res.AsModel(), nil
 }
 
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
+func (c *connection) FindBillingIssueByType(ctx context.Context, errorType database.BillingIssueType) ([]*database.BillingIssue, error) {
 	var res []*billingIssueDTO
-	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = false`, errorType)
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1`, errorType)
 	if err != nil {
 		return nil, parseErr("billing issues", err)
 	}
@@ -1985,13 +2046,18 @@ func (c *connection) FindBillingIssueByTypeNotOverdueProcessed(ctx context.Conte
 	return billingErrors, nil
 }
 
-func (c *connection) FindBillingIssueByTypeNotOverdueProcessedForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) (*database.BillingIssue, error) {
-	res := &billingIssueDTO{}
-	err := c.db.GetContext(ctx, res, `SELECT * FROM billing_issues WHERE org_id = $1 AND type = $2 AND overdue_processed = false`, orgID, errorType)
+func (c *connection) FindBillingIssueByTypeAndOverdueProcessed(ctx context.Context, errorType database.BillingIssueType, overdueProcessed bool) ([]*database.BillingIssue, error) {
+	var res []*billingIssueDTO
+	err := c.db.SelectContext(ctx, &res, `SELECT * FROM billing_issues WHERE type = $1 AND overdue_processed = $2`, errorType, overdueProcessed)
 	if err != nil {
-		return nil, parseErr("billing issue", err)
+		return nil, parseErr("billing issues", err)
 	}
-	return res.AsModel(), nil
+
+	var billingErrors []*database.BillingIssue
+	for _, dto := range res {
+		billingErrors = append(billingErrors, dto.AsModel())
+	}
+	return billingErrors, nil
 }
 
 func (c *connection) UpsertBillingIssue(ctx context.Context, opts *database.UpsertBillingIssueOptions) (*database.BillingIssue, error) {
@@ -2032,9 +2098,110 @@ func (c *connection) DeleteBillingIssue(ctx context.Context, id string) error {
 	return checkDeleteRow("billing issue", res, err)
 }
 
-func (c *connection) DeleteBillingIssueByType(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
+func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType database.BillingIssueType) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM billing_issues WHERE org_id = $1 AND type = $2", orgID, errorType)
 	return checkDeleteRow("billing issue", res, err)
+}
+
+func (c *connection) FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
+	q := `SELECT * FROM project_variables p WHERE p.project_id = $1`
+	args := []interface{}{projectID}
+	if environment != nil {
+		// Also include variables that are not environment specific and not set for the given environment
+		q += `
+			AND (
+				p.environment = $2 
+				OR (
+					p.environment = '' 
+					AND NOT EXISTS (
+						SELECT 1 
+						FROM project_variables p2 
+						WHERE p2.project_id = p.project_id 
+						AND p2.environment = $2 
+						AND lower(p2.name) = lower(p.name)
+					)
+				)
+			)
+		`
+		args = append(args, environment)
+	}
+	var res []*database.ProjectVariable
+	err := c.getDB(ctx).SelectContext(ctx, &res, q, args...)
+	if err != nil {
+		return nil, parseErr("project variables", err)
+	}
+
+	// Decrypt the variables
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*database.ProjectVariable, error) {
+	query := `INSERT INTO project_variables (project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on)
+	VALUES %s
+	ON CONFLICT (project_id, environment, lower(name)) DO UPDATE SET
+		value = EXCLUDED.value,
+		value_encryption_key_id = EXCLUDED.value_encryption_key_id,
+		updated_by_user_id = EXCLUDED.updated_by_user_id,
+		updated_on = now() RETURNING *`
+
+	var placeholders strings.Builder
+	args := []any{projectID, environment, userID}
+	i := 3
+	for key, value := range vars {
+		// Encrypt the variables
+		encryptedValue, valueEncryptionKeyID, err := c.encrypt([]byte(value))
+		if err != nil {
+			return nil, err
+		}
+
+		if valueEncryptionKeyID != "" {
+			value = base64.StdEncoding.EncodeToString(encryptedValue)
+		}
+		args = append(args, key, value, valueEncryptionKeyID)
+		if placeholders.Len() > 0 {
+			placeholders.WriteString(", ")
+		}
+		fmt.Fprintf(&placeholders, "($1, $2, $%d, $%d, $%d, $3, now())", i+1, i+2, i+3) // project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on
+		i += 3
+	}
+
+	var res []*database.ProjectVariable
+	err := c.getDB(ctx).SelectContext(ctx, &res, fmt.Sprintf(query, placeholders.String()), args...)
+	if err != nil {
+		return nil, parseErr("project variables", err)
+	}
+
+	// Decrypt the variables
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, environment string, names []string) error {
+	if len(names) == 0 {
+		return fmt.Errorf("no names provided to delete project variables")
+	}
+
+	placeholders := make([]string, len(names))
+	args := make([]interface{}, len(names)+2)
+	args[0] = projectID
+	args[1] = environment
+	for i, name := range names {
+		placeholders[i] = fmt.Sprintf("lower($%d)", i+3)
+		args[i+2] = name
+	}
+
+	query := fmt.Sprintf("DELETE FROM project_variables WHERE project_id = $1 AND environment = $2 AND lower(name) IN (%s)", strings.Join(placeholders, ","))
+	_, err := c.getDB(ctx).ExecContext(ctx, query, args...)
+	return err
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
@@ -2045,17 +2212,7 @@ type projectDTO struct {
 }
 
 func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
-	err := dto.ProdVariables.AssignTo(&dto.Project.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-	m, err := c.decryptMap(dto.Project.ProdVariables, dto.Project.ProdVariablesEncryptionKeyID)
-	if err != nil {
-		return nil, err
-	}
-	dto.Project.ProdVariables = m
-
-	err = dto.Annotations.AssignTo(&dto.Project.Annotations)
+	err := dto.Annotations.AssignTo(&dto.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -2106,65 +2263,31 @@ func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
 	return decrypt(text, encKey.Secret)
 }
 
-// returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
-func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
-	if len(c.encKeyring) == 0 {
-		return m, "", nil
-	}
-
-	encKeyID := ""
-	// copy the map to avoid modifying the original map
-	vars := make(map[string]string, len(m))
-	for k, v := range m {
-		// use the first key in the keyring for encryption
-		encKeyID = c.encKeyring[0].ID
-		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
+func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
+	for _, v := range res {
+		if v.ValueEncryptionKeyID == "" {
+			continue
+		}
+		dec, err := base64.StdEncoding.DecodeString(v.Value)
 		if err != nil {
-			return nil, "", err
+			return err
 		}
-		vars[k] = base64.StdEncoding.EncodeToString(encrypted)
-	}
-	return vars, encKeyID, nil
-}
 
-// returns the map with decrypted values and the encryption key id used
-func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[string]string, error) {
-	if encKeyID == "" {
-		return m, nil
-	}
-
-	var encKey *database.EncryptionKey
-	for _, key := range c.encKeyring {
-		if key.ID == encKeyID {
-			encKey = key
-			break
-		}
-	}
-	if encKey == nil {
-		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-	}
-
-	// copy the map to avoid modifying the original map
-	vars := make(map[string]string, len(m))
-	for k, v := range m {
-		decoded, err := base64.StdEncoding.DecodeString(v)
+		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		decrypted, err := decrypt(decoded, encKey.Secret)
-		if err != nil {
-			return nil, err
-		}
-		vars[k] = string(decrypted)
+
+		v.Value = string(decryptedValue)
 	}
-	return vars, nil
+	return nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret bool) (*database.MagicAuthToken, error) {
@@ -2172,7 +2295,7 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
@@ -2193,8 +2316,8 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes pgtype.JSON      `db:"attributes"`
+	Fields     pgtype.TextArray `db:"fields"`
 }
 
 func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDTO) (*database.MagicAuthTokenWithUser, error) {
@@ -2202,7 +2325,7 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	if err != nil {
 		return nil, err
 	}
-	err = dto.MetricsViewFields.AssignTo(&dto.MagicAuthToken.MetricsViewFields)
+	err = dto.Fields.AssignTo(&dto.MagicAuthToken.Fields)
 	if err != nil {
 		return nil, err
 	}
@@ -2213,6 +2336,23 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	}
 
 	return dto.MagicAuthTokenWithUser, nil
+}
+
+type reportTokenWithSecretDTO struct {
+	*database.ReportTokenWithSecret
+	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+}
+
+func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO) (*database.ReportTokenWithSecret, error) {
+	if dto.SecretEncryptionKeyID == "" {
+		return dto.ReportTokenWithSecret, nil
+	}
+	decrypted, err := c.decrypt(dto.ReportTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.ReportTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {
@@ -2255,6 +2395,8 @@ func (b *billingIssueDTO) AsModel() *database.BillingIssue {
 		metadata = &database.BillingIssueMetadataPaymentFailed{}
 	case database.BillingIssueTypeSubscriptionCancelled:
 		metadata = &database.BillingIssueMetadataSubscriptionCancelled{}
+	case database.BillingIssueTypeNeverSubscribed:
+		metadata = &database.BillingIssueMetadataNeverSubscribed{}
 	default:
 	}
 	if err := json.Unmarshal(b.Metadata, &metadata); err != nil {

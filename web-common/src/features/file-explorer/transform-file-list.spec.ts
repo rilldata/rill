@@ -1,4 +1,4 @@
-import { V1DirEntry } from "@rilldata/web-common/runtime-client";
+import type { V1DirEntry } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 import { transformFileList } from "./transform-file-list";
 

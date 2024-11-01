@@ -696,7 +696,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar3
 dimensions:
 - column: b
@@ -847,7 +847,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -868,7 +868,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -890,7 +890,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -912,7 +912,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -935,7 +935,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -956,7 +956,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -977,7 +977,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -998,7 +998,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1044,7 +1044,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1136,7 +1136,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: b
@@ -1179,7 +1179,7 @@ measures:
 		"explores/e1.yaml": `
 type: explore
 metrics_view: m1
-title: Hello
+display_name: Hello
 theme: t1
 `,
 		"themes/t1.yaml": `
@@ -1270,7 +1270,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-title: dash
+display_name: dash
 model: bar
 dimensions:
 - column: country
@@ -1311,16 +1311,15 @@ security:
 `,
 		"explores/e1.yaml": `
 type: explore
-title: Hello
+display_name: Hello
 metrics_view: mv1
 dimensions:
   exclude: ['internal']
 measures: '*'
 time_zones: ['UTC', 'America/Los_Angeles']
-presets:
-  - label: Default
-    measures: ['x']
-    comparison_mode: time
+defaults:
+  measures: ['x']
+  comparison_mode: time
 `,
 	})
 
@@ -1336,36 +1335,33 @@ presets:
 		Resource: &runtimev1.Resource_Explore{
 			Explore: &runtimev1.Explore{
 				Spec: &runtimev1.ExploreSpec{
-					Title:             "Hello",
-					MetricsView:       "mv1",
-					Dimensions:        []string{"internal"},
-					DimensionsExclude: true,
-					Measures:          nil,
-					MeasuresExclude:   true,
-					TimeZones:         []string{"UTC", "America/Los_Angeles"},
-					Presets: []*runtimev1.ExplorePreset{
-						{
-							Label:             "Default",
-							DimensionsExclude: true,
-							Measures:          []string{"x"},
-							ComparisonMode:    runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
-						},
+					DisplayName: "Hello",
+					MetricsView: "mv1",
+					Dimensions:  nil,
+					DimensionsSelector: &runtimev1.FieldSelector{
+						Invert:   true,
+						Selector: &runtimev1.FieldSelector_Fields{Fields: &runtimev1.StringListValue{Values: []string{"internal"}}},
+					},
+					Measures:         nil,
+					MeasuresSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeZones:        []string{"UTC", "America/Los_Angeles"},
+					DefaultPreset: &runtimev1.ExplorePreset{
+						DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+						Measures:           []string{"x"},
+						ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 					},
 				},
 				State: &runtimev1.ExploreState{
 					ValidSpec: &runtimev1.ExploreSpec{
-						Title:       "Hello",
+						DisplayName: "Hello",
 						MetricsView: "mv1",
 						Dimensions:  []string{"foo", "bar"},
 						Measures:    []string{"x", "y"},
 						TimeZones:   []string{"UTC", "America/Los_Angeles"},
-						Presets: []*runtimev1.ExplorePreset{
-							{
-								Label:          "Default",
-								Dimensions:     []string{"foo", "bar"},
-								Measures:       []string{"x"},
-								ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
-							},
+						DefaultPreset: &runtimev1.ExplorePreset{
+							Dimensions:     []string{"foo", "bar"},
+							Measures:       []string{"x"},
+							ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_TIME,
 						},
 						SecurityRules: []*runtimev1.SecurityRule{
 							{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
@@ -1447,20 +1443,20 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 func newMetricsView(name, model string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
 	metrics := &runtimev1.MetricsViewV2{
 		Spec: &runtimev1.MetricsViewSpec{
-			Connector:  "duckdb",
-			Model:      model,
-			Title:      name,
-			Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-			Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			Connector:   "duckdb",
+			Model:       model,
+			DisplayName: name,
+			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 		},
 		State: &runtimev1.MetricsViewState{
 			ValidSpec: &runtimev1.MetricsViewSpec{
-				Connector:  "duckdb",
-				Table:      model,
-				Model:      model,
-				Title:      name,
-				Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
-				Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+				Connector:   "duckdb",
+				Table:       model,
+				Model:       model,
+				DisplayName: name,
+				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 			},
 		},
 	}

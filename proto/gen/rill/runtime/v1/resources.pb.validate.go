@@ -3046,7 +3046,7 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Model
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4167,15 +4167,69 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
 	// no validation rules for MetricsView
 
-	// no validation rules for DimensionsExclude
+	if all {
+		switch v := interface{}(m.GetDimensionsSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "DimensionsSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for MeasuresExclude
+	if all {
+		switch v := interface{}(m.GetMeasuresSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "MeasuresSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for Theme
 
@@ -4213,38 +4267,33 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetPresets() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExploreSpecValidationError{
-						field:  fmt.Sprintf("Presets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExploreSpecValidationError{
-						field:  fmt.Sprintf("Presets[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExploreSpecValidationError{
-					field:  fmt.Sprintf("Presets[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetDefaultPreset()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DefaultPreset",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "DefaultPreset",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetDefaultPreset()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "DefaultPreset",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	for idx, item := range m.GetSecurityRules() {
@@ -4280,6 +4329,8 @@ func (m *ExploreSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for EmbedsHidePivot
 
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
@@ -4750,11 +4801,63 @@ func (m *ExplorePreset) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Label
+	if all {
+		switch v := interface{}(m.GetDimensionsSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "DimensionsSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDimensionsSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExplorePresetValidationError{
+				field:  "DimensionsSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for DimensionsExclude
-
-	// no validation rules for MeasuresExclude
+	if all {
+		switch v := interface{}(m.GetMeasuresSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExplorePresetValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExplorePresetValidationError{
+				field:  "MeasuresSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for TimeRange
 
@@ -4839,6 +4942,290 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExplorePresetValidationError{}
+
+// Validate checks the field values on FieldSelector with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *FieldSelector) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FieldSelector with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FieldSelectorMultiError, or
+// nil if none found.
+func (m *FieldSelector) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FieldSelector) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Invert
+
+	switch v := m.Selector.(type) {
+	case *FieldSelector_All:
+		if v == nil {
+			err := FieldSelectorValidationError{
+				field:  "Selector",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for All
+	case *FieldSelector_Fields:
+		if v == nil {
+			err := FieldSelectorValidationError{
+				field:  "Selector",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetFields()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, FieldSelectorValidationError{
+						field:  "Fields",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, FieldSelectorValidationError{
+						field:  "Fields",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetFields()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return FieldSelectorValidationError{
+					field:  "Fields",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *FieldSelector_Regex:
+		if v == nil {
+			err := FieldSelectorValidationError{
+				field:  "Selector",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for Regex
+	case *FieldSelector_DuckdbExpression:
+		if v == nil {
+			err := FieldSelectorValidationError{
+				field:  "Selector",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for DuckdbExpression
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return FieldSelectorMultiError(errors)
+	}
+
+	return nil
+}
+
+// FieldSelectorMultiError is an error wrapping multiple validation errors
+// returned by FieldSelector.ValidateAll() if the designated constraints
+// aren't met.
+type FieldSelectorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FieldSelectorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FieldSelectorMultiError) AllErrors() []error { return m }
+
+// FieldSelectorValidationError is the validation error returned by
+// FieldSelector.Validate if the designated constraints aren't met.
+type FieldSelectorValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FieldSelectorValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FieldSelectorValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FieldSelectorValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FieldSelectorValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FieldSelectorValidationError) ErrorName() string { return "FieldSelectorValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FieldSelectorValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFieldSelector.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FieldSelectorValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FieldSelectorValidationError{}
+
+// Validate checks the field values on StringListValue with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *StringListValue) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StringListValue with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StringListValueMultiError, or nil if none found.
+func (m *StringListValue) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StringListValue) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return StringListValueMultiError(errors)
+	}
+
+	return nil
+}
+
+// StringListValueMultiError is an error wrapping multiple validation errors
+// returned by StringListValue.ValidateAll() if the designated constraints
+// aren't met.
+type StringListValueMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StringListValueMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StringListValueMultiError) AllErrors() []error { return m }
+
+// StringListValueValidationError is the validation error returned by
+// StringListValue.Validate if the designated constraints aren't met.
+type StringListValueValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StringListValueValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StringListValueValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StringListValueValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StringListValueValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StringListValueValidationError) ErrorName() string { return "StringListValueValidationError" }
+
+// Error satisfies the builtin error interface
+func (e StringListValueValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStringListValue.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StringListValueValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StringListValueValidationError{}
 
 // Validate checks the field values on Migration with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -5383,9 +5770,9 @@ func (m *ReportSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -6109,9 +6496,9 @@ func (m *AlertSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -9086,9 +9473,9 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
-	// no validation rules for Subtitle
+	// no validation rules for Description
 
 	// no validation rules for Resolver
 
@@ -9739,7 +10126,7 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Columns
 
@@ -11661,13 +12048,13 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Column
 
 	// no validation rules for Expression
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for Unnest
 
@@ -12030,6 +12417,10 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Expression
 
 	// no validation rules for Type
@@ -12130,10 +12521,6 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for FormatPreset
 

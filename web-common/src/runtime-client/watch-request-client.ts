@@ -39,7 +39,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
-  private outOfFocusThrottler = new Throttler(120000, 30000);
+  private outOfFocusThrottler = new Throttler(120000, 20000);
   public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -57,7 +57,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   public heartbeat = () => {
-    if (this.closed) {
+    if (get(this.closed)) {
       this.reconnect().catch(console.error);
     }
     this.throttle();
@@ -74,8 +74,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   public close = () => {
-    this.closed.set(true);
     this.cancel();
+    this.closed.set(true);
   };
 
   public throttle(prioritize: boolean = false) {
@@ -83,7 +83,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   private async reconnect() {
-    this.closed.set(false);
     clearTimeout(this.reconnectTimeout);
 
     if (this.outOfFocusThrottler.isThrottling()) {
@@ -130,6 +129,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         }, RECONNECT_CALLBACK_DELAY);
       }
 
+      this.closed.set(false);
       for await (const res of this.stream) {
         if (this.controller?.signal.aborted) break;
         if (res.error) throw new Error(res.error.message);
@@ -137,11 +137,12 @@ export class WatchRequestClient<Res extends WatchResponse> {
         if (res.result)
           this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
-    } catch (err) {
+    } catch {
       clearTimeout(this.retryTimeout);
 
-      if (this.controller) this.cancel();
-      if (this.closed) return;
+      this.cancel();
+      if (get(this.closed)) return;
+
       this.reconnect().catch((e) => {
         throw new Error(e);
       });

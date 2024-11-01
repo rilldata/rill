@@ -63,10 +63,10 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name       string
-	Label      string
-	Expr       string
-	AutoUnnest bool
+	Name        string
+	DisplayName string
+	Expr        string
+	AutoUnnest  bool
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -166,9 +166,9 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 
 		f := FieldNode{
-			Name:  dim.Name,
-			Label: dim.Label,
-			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
+			Name:        dim.Name,
+			DisplayName: dim.DisplayName,
+			Expr:        ast.dialect.MetricsViewDimensionExpression(dim),
 		}
 
 		if dim.Unnest {
@@ -180,6 +180,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 			}
 
 			if auto {
+				f.Expr = ast.dialect.AutoUnnest(f.Expr)
 				f.AutoUnnest = true
 			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
@@ -308,17 +309,17 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 		return nil, fmt.Errorf(`failed to compute time floor: %w`, err)
 	}
 
-	label := dim.Label
-	if label == "" {
-		label = qd.Name
+	displayName := dim.DisplayName
+	if displayName == "" {
+		displayName = qd.Name
 	}
-	label = fmt.Sprintf("%s (%s)", label, qd.Compute.TimeFloor.Grain)
+	displayName = fmt.Sprintf("%s (%s)", displayName, qd.Compute.TimeFloor.Grain)
 
 	return &runtimev1.MetricsViewSpec_DimensionV2{
-		Name:       qd.Name,
-		Expression: expr,
-		Label:      label,
-		Unnest:     dim.Unnest,
+		Name:        qd.Name,
+		Expression:  expr,
+		DisplayName: displayName,
+		Unnest:      dim.Unnest,
 	}, nil
 }
 
@@ -340,10 +341,10 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 
 	if qm.Compute.Count {
 		return &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       qm.Name,
-			Expression: "COUNT(*)",
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			Label:      "Count",
+			Name:        qm.Name,
+			Expression:  "COUNT(*)",
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DisplayName: "Count",
 		}, nil
 	}
 
@@ -359,10 +360,10 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       qm.Name,
-			Expression: fmt.Sprintf("COUNT(DISTINCT %s)", expr),
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			Label:      fmt.Sprintf("Unique %s", dim.Label),
+			Name:        qm.Name,
+			Expression:  fmt.Sprintf("COUNT(DISTINCT %s)", expr),
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DisplayName: fmt.Sprintf("Unique %s", dim.DisplayName),
 		}, nil
 	}
 
@@ -377,7 +378,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
-			Label:              fmt.Sprintf("%s (prev)", m.Label),
+			DisplayName:        fmt.Sprintf("%s (prev)", m.DisplayName),
 		}, nil
 	}
 
@@ -392,7 +393,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
-			Label:              fmt.Sprintf("%s (Δ)", m.Label),
+			DisplayName:        fmt.Sprintf("%s (Δ)", m.DisplayName),
 		}, nil
 	}
 
@@ -411,7 +412,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonRatio.Measure},
-			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
+			DisplayName:        fmt.Sprintf("%s (Δ%%)", m.DisplayName),
 		}, nil
 	}
 
@@ -430,7 +431,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Expression:         fmt.Sprintf("%s/%#f", a.dialect.EscapeIdentifier(m.Name), *qm.Compute.PercentOfTotal.Total),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
-			Label:              fmt.Sprintf("%s (Σ%%)", m.Label),
+			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
 		}, nil
 	}
 
@@ -446,10 +447,10 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       qm.Name,
-			Expression: a.sqlForAnyInGroup(uri),
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-			Label:      fmt.Sprintf("URI for %s", dim.Label),
+			Name:        qm.Name,
+			Expression:  a.sqlForAnyInGroup(uri),
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			DisplayName: fmt.Sprintf("URI for %s", dim.DisplayName),
 		}, nil
 	}
 
@@ -751,9 +752,9 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 		}
 
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
-			Name:  m.Name,
-			Label: m.Label,
-			Expr:  expr,
+			Name:        m.Name,
+			DisplayName: m.DisplayName,
+			Expr:        expr,
 		})
 
 		return nil
@@ -775,9 +776,9 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 	}
 
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
-		Name:  m.Name,
-		Label: m.Label,
-		Expr:  expr,
+		Name:        m.Name,
+		DisplayName: m.DisplayName,
+		Expr:        expr,
 	})
 
 	return nil
@@ -808,9 +809,9 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 		}
 
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
-			Name:  m.Name,
-			Label: m.Label,
-			Expr:  expr,
+			Name:        m.Name,
+			DisplayName: m.DisplayName,
+			Expr:        expr,
 		})
 
 		return nil
@@ -843,9 +844,9 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 	}
 
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
-		Name:  m.Name,
-		Label: m.Label,
-		Expr:  expr,
+		Name:        m.Name,
+		DisplayName: m.DisplayName,
+		Expr:        expr,
 	})
 
 	return nil
@@ -901,9 +902,9 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	}
 
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
-		Name:  m.Name,
-		Label: m.Label,
-		Expr:  expr,
+		Name:        m.Name,
+		DisplayName: m.DisplayName,
+		Expr:        expr,
 	})
 
 	return nil
@@ -975,18 +976,18 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	s.DimFields = make([]FieldNode, 0, len(cpy.DimFields))
 	for _, f := range cpy.DimFields {
 		s.DimFields = append(s.DimFields, FieldNode{
-			Name:  f.Name,
-			Label: f.Label,
-			Expr:  a.sqlForMember(cpy.Alias, f.Name),
+			Name:        f.Name,
+			DisplayName: f.DisplayName,
+			Expr:        a.sqlForMember(cpy.Alias, f.Name),
 		})
 	}
 
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
-			Name:  f.Name,
-			Label: f.Label,
-			Expr:  a.sqlForMember(cpy.Alias, f.Name),
+			Name:        f.Name,
+			DisplayName: f.DisplayName,
+			Expr:        a.sqlForMember(cpy.Alias, f.Name),
 		})
 	}
 

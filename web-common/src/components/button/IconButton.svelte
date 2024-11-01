@@ -1,4 +1,8 @@
 <script lang="ts">
+  import type {
+    Alignment,
+    Location,
+  } from "@rilldata/web-common/lib/place-element";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
@@ -11,8 +15,8 @@
   export let disableHover = false;
 
   export let tooltipDistance = 8;
-  export let tooltipLocation = "bottom";
-  export let tooltipAlignment = "center";
+  export let tooltipLocation: Location = "bottom";
+  export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
 </script>
