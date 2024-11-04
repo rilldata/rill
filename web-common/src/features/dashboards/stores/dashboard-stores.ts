@@ -186,7 +186,6 @@ const metricsViewReducers = {
       schema,
     );
     if (!partial) return;
-    console.log("syncFromUrl", partial);
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {

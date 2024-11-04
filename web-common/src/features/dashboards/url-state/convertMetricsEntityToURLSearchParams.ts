@@ -28,7 +28,7 @@ import {
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
-export function getUrlFromMetricsExplorer(
+export function convertMetricsEntityToURLSearchParams(
   metrics: MetricsExplorerEntity,
   searchParams: URLSearchParams,
   explore: V1ExploreSpec,

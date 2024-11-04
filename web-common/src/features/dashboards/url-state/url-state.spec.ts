@@ -19,7 +19,7 @@ import {
 import { getPivotedPartialDashboard } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
-import { getUrlFromMetricsExplorer } from "@rilldata/web-common/features/dashboards/url-state/toUrl";
+import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -385,7 +385,7 @@ describe("Human readable URL state", () => {
         cleanMetricsExplore(initEntity);
 
         // load url params with update metrics state
-        getUrlFromMetricsExplorer(
+        convertMetricsEntityToURLSearchParams(
           {
             ...initEntity,
             ...entity,
@@ -480,7 +480,7 @@ describe("Human readable URL state", () => {
 });
 
 // cleans up any UI only state from MetricsExplorerEntity
-function cleanMetricsExplore(
+export function cleanMetricsExplore(
   metricsExplorerEntity: Partial<MetricsExplorerEntity>,
 ) {
   delete metricsExplorerEntity.name;
@@ -489,12 +489,15 @@ function cleanMetricsExplore(
   delete metricsExplorerEntity.temporaryFilterName;
   delete metricsExplorerEntity.contextColumnWidths;
   delete metricsExplorerEntity.dimensionSearchText;
-  metricsExplorerEntity.selectedTimeRange = {
-    name: metricsExplorerEntity.selectedTimeRange?.name ?? "inf",
-  } as DashboardTimeControls;
+  if (metricsExplorerEntity.selectedTimeRange) {
+    metricsExplorerEntity.selectedTimeRange = {
+      name: metricsExplorerEntity.selectedTimeRange?.name ?? "inf",
+      // TODO: grain
+    } as DashboardTimeControls;
+  }
   delete metricsExplorerEntity.lastDefinedScrubRange;
 
-  //TODO
+  // TODO
   delete metricsExplorerEntity.selectedScrubRange;
   delete metricsExplorerEntity.leaderboardContextColumn;
   delete metricsExplorerEntity.dashboardSortType;

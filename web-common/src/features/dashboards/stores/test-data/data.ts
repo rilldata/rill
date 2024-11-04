@@ -184,7 +184,7 @@ export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
   ],
 };
 export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
-  title: AD_BIDS_NAME,
+  displayName: AD_BIDS_NAME,
   table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_THREE_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
