@@ -23,13 +23,6 @@ Rill supports connecting to an existing ClickHouse instance and using it as an O
 
 Rill supports connecting to ClickHouse v22.7 or newer versions.
 
-## ClickHouse Local vs ClickHouse Cloud
-
-
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
 
 ## Connection string (DSN)
 
