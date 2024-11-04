@@ -7,6 +7,7 @@
   import ActivityCell from "./ActivityCell.svelte";
   import KeyCell from "./KeyCell.svelte";
   import ValueCell from "./ValueCell.svelte";
+  import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1ProjectVariable[];
 
@@ -14,12 +15,11 @@
     {
       accessorKey: "name",
       header: "Key",
-      cell: ({ row }) => {
-        return flexRender(KeyCell, {
+      cell: ({ row }) =>
+        flexRender(KeyCell, {
           name: row.original.name,
           environment: row.original.environment,
-        });
-      },
+        }),
       meta: {
         widthPercent: 30,
       },
@@ -28,11 +28,10 @@
       accessorKey: "value",
       header: "Value",
       enableSorting: false,
-      cell: ({ row }) => {
-        return flexRender(ValueCell, {
+      cell: ({ row }) =>
+        flexRender(ValueCell, {
           value: row.original.value,
-        });
-      },
+        }),
       meta: {
         widthPercent: 30,
       },
@@ -51,7 +50,10 @@
     {
       accessorKey: "actions",
       header: "",
-      // TODO: complete cell
+      cell: ({ row }) =>
+        flexRender(ActionsCell, {
+          id: row.original.id,
+        }),
       enableSorting: false,
       meta: {
         widthPercent: 0,
