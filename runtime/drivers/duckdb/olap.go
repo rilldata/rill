@@ -98,7 +98,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
 		attrs := []attribute.KeyValue{
-			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 			attribute.String("instance_id", c.instanceID),

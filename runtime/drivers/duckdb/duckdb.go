@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -147,12 +147,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	}
 	logger.Debug("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
-	if cfg.DBStoragePath != "" {
-		if err := os.MkdirAll(cfg.DBStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return nil, err
-		}
-	}
-
 	// See note in connection struct
 	olapSemSize := cfg.PoolSize - 1
 	if olapSemSize < 1 {
@@ -177,7 +171,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	}
 
 	// register a callback to add a gauge on number of connections in use per db
-	attrs := []attribute.KeyValue{attribute.String("db", c.config.DBFilePath)}
+	attrs := []attribute.KeyValue{attribute.String("instance_id", instanceID)}
 	c.registration = observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
 		observer.ObserveInt64(connectionsInUse, int64(c.dbConnCount), metric.WithAttributes(attrs...))
 		return nil
@@ -502,9 +496,15 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
-	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
-		AddSource: true,
-	}))
+	var logger *slog.Logger
+
+	if c.config.LogQueries {
+		logger = slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
+			AddSource: true,
+		}))
+	} else {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
 	// Create new DB
 	var err error
@@ -522,8 +522,8 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 			}
 		}
 		c.db, err = duckdbreplicator.NewDB(ctx, c.instanceID, &duckdbreplicator.DBOptions{
-			LocalPath:      c.config.DBStoragePath,
 			Clean:          clean,
+			LocalPath:      c.config.DataDir,
 			BackupProvider: backup,
 			InitQueries:    bootQueries,
 			StableSelect:   !c.config.AllowHostAccess,

@@ -3,7 +3,6 @@ package duckdb
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -48,14 +47,11 @@ type config struct {
 	InitSQL string `mapstructure:"init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
-	// BackupBucket is gcs bucket to store db backups. Should be of the form `gs://bucket-name`.
+	// BackupBucket is gcs bucket to store db backups. Should be of the form `bucket-name`.
 	BackupBucket string `mapstructure:"backup_bucket"`
 	// BackupBucketCredentialsJSON is the json credentials for the backup bucket.
 	BackupBucketCredentialsJSON string `mapstructure:"backup_bucket_credentials_json"`
-	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
-	DBFilePath string `mapstructure:"-"`
-	// DBStoragePath is the path where the database files are stored. It is inferred from the DSN (can't be provided by user).
-	DBStoragePath string            `mapstructure:"-"`
+
 	ReadSettings  map[string]string `mapstructure:"-"`
 	WriteSettings map[string]string `mapstructure:"-"`
 }
@@ -91,13 +87,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 			uri.Path = cfg.Path
 			cfg.ExtTableStorage = false
-		} else if cfg.DataDir != "" && uri.Path == "" { // if some path is set in DSN, honour that path and ignore DataDir
-			uri.Path = filepath.Join(cfg.DataDir, "main.db")
+		} else if uri.Path != "" { // if some path is set in DSN, honour that path and ignore DataDir
+			cfg.ExtTableStorage = false
 		}
-
-		// Infer DBFilePath
-		cfg.DBFilePath = uri.Path
-		cfg.DBStoragePath = filepath.Dir(cfg.DBFilePath)
 	}
 
 	// Set memory limit
@@ -147,11 +139,16 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	// useful for motherduck but safe to pass at initial connect
 	if !qry.Has("custom_user_agent") {
 		qry.Add("custom_user_agent", "rill")
+		cfg.WriteSettings["custom_user_agent"] = "rill"
+	} else {
+		cfg.WriteSettings["custom_user_agent"] = qry.Get("custom_user_agent")
+	}
+	for k, v := range cfg.ReadSettings {
+		qry.Add(k, v)
 	}
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	cfg.DSN = generateDSN(uri.Path, qry.Encode())
-
 	return cfg, nil
 }
 

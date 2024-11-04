@@ -85,6 +85,9 @@ type Config struct {
 	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
 	// The data for each instance is stored in a child directory named instance_id
 	DataDir string `split_words:"true"`
+	// DuckDBBackupBucket is the name of the GCS bucket where DuckDB backups are stored
+	DuckDBBackupBucket                string `split_words:"true"`
+	DuckDBBackupBucketCredentialsJSON string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Kafka brokers of an activity client's sink
@@ -200,14 +203,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize:          conf.ConnectionCacheSize,
-				MetastoreConnector:           "metastore",
-				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
-				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,
-				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
-				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
-				AllowHostAccess:              conf.AllowHostAccess,
-				DataDir:                      conf.DataDir,
+				ConnectionCacheSize:               conf.ConnectionCacheSize,
+				MetastoreConnector:                "metastore",
+				QueryCacheSizeBytes:               conf.QueryCacheSizeBytes,
+				SecurityEngineCacheSize:           conf.SecurityEngineCacheSize,
+				ControllerLogBufferCapacity:       conf.LogBufferCapacity,
+				ControllerLogBufferSizeBytes:      conf.LogBufferSizeBytes,
+				AllowHostAccess:                   conf.AllowHostAccess,
+				DataDir:                           conf.DataDir,
+				DuckDBBackupBucket:                conf.DuckDBBackupBucket,
+				DuckDBBackupBucketCredentialsJSON: conf.DuckDBBackupBucketCredentialsJSON,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,

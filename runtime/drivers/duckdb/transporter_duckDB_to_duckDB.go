@@ -143,14 +143,35 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(dbName)))
 	}()
 
-	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s;", safeName(dbName))); err != nil {
 		return err
 	}
 
+	defer func() {
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+		if err != nil {
+			t.logger.Error("failed to switch back to original database", zap.Error(err))
+		}
+	}()
+
 	userQuery := strings.TrimSpace(srcProps.SQL)
 	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(sinkProps.Table), userQuery)
-	return t.to.Exec(ctx, &drivers.Statement{Query: query})
+	safeTempTable := fmt.Sprintf("%s_tmp_", sinkProps.Table)
+	query := fmt.Sprintf("CREATE OR REPLACE TEMPORARY TABLE %s AS (%s\n);", safeTempTable, userQuery)
+	_, err = conn.ExecContext(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+
+	defer func() {
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE %s;", safeTempTable))
+		if err != nil {
+			t.logger.Error("failed to drop temporary table", zap.Error(err))
+		}
+	}()
+
+	// create permanent table from temp table using crud API
+	return rwConn.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), nil)
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

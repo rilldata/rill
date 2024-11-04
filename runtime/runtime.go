@@ -20,15 +20,17 @@ import (
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
 
 type Options struct {
-	MetastoreConnector           string
-	SystemConnectors             []*runtimev1.Connector
-	ConnectionCacheSize          int
-	QueryCacheSizeBytes          int64
-	SecurityEngineCacheSize      int
-	ControllerLogBufferCapacity  int
-	ControllerLogBufferSizeBytes int64
-	AllowHostAccess              bool
-	DataDir                      string
+	MetastoreConnector                string
+	SystemConnectors                  []*runtimev1.Connector
+	ConnectionCacheSize               int
+	QueryCacheSizeBytes               int64
+	SecurityEngineCacheSize           int
+	ControllerLogBufferCapacity       int
+	ControllerLogBufferSizeBytes      int64
+	AllowHostAccess                   bool
+	DataDir                           string
+	DuckDBBackupBucket                string
+	DuckDBBackupBucketCredentialsJSON string
 }
 
 type Runtime struct {

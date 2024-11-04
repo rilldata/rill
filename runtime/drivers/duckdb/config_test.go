@@ -32,14 +32,12 @@ func TestConfig(t *testing.T) {
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
 	require.NoError(t, err)
-	require.Equal(t, "path/to/main.db?custom_user_agent=rill", cfg.DSN)
-	require.Equal(t, "path/to/main.db", cfg.DBFilePath)
+	require.Subset(t, cfg.WriteSettings, map[string]string{"custom_user_agent": "rill"})
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to", "pool_size": 10})
 	require.NoError(t, err)
-	require.Equal(t, "path/to/main.db?custom_user_agent=rill", cfg.DSN)
-	require.Equal(t, "path/to/main.db", cfg.DBFilePath)
+	require.Subset(t, cfg.WriteSettings, map[string]string{"custom_user_agent": "rill"})
 	require.Equal(t, 10, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to", "pool_size": "10"})
@@ -53,35 +51,29 @@ func TestConfig(t *testing.T) {
 	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db?rill_pool_size=10"})
 	require.NoError(t, err)
 	require.Equal(t, "path/to/duck.db?custom_user_agent=rill", cfg.DSN)
-	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
 	require.Equal(t, 10, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db?max_memory=4GB&rill_pool_size=10"})
 	require.NoError(t, err)
 	require.Equal(t, "path/to/duck.db?custom_user_agent=rill&max_memory=4GB", cfg.DSN)
 	require.Equal(t, 10, cfg.PoolSize)
-	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
 
 	_, err = newConfig(map[string]any{"dsn": "path/to/duck.db?max_memory=4GB", "pool_size": "abc"})
 	require.Error(t, err)
 
-	cfg, err = newConfig(map[string]any{"dsn": "duck.db"})
+	_, err = newConfig(map[string]any{"dsn": "duck.db"})
 	require.NoError(t, err)
-	require.Equal(t, "duck.db", cfg.DBFilePath)
 
-	cfg, err = newConfig(map[string]any{"dsn": "duck.db?rill_pool_size=10"})
+	_, err = newConfig(map[string]any{"dsn": "duck.db?rill_pool_size=10"})
 	require.NoError(t, err)
-	require.Equal(t, "duck.db", cfg.DBFilePath)
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"})
 	require.NoError(t, err)
-	require.Equal(t, "duck.db", cfg.DBFilePath)
 	require.Equal(t, "duck.db?custom_user_agent=rill&max_memory=8GB&threads=2", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db?max_memory=2GB&rill_pool_size=4"})
 	require.NoError(t, err)
-	require.Equal(t, "duck.db", cfg.DBFilePath)
 	require.Equal(t, "duck.db?custom_user_agent=rill&max_memory=2GB", cfg.DSN)
 	require.Equal(t, 4, cfg.PoolSize)
 }

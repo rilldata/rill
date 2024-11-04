@@ -117,6 +117,6 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}
 
 	// copy data from temp table to target table
-	return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
+	return rwConn.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 
 }
