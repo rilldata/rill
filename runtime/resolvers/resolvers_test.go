@@ -25,9 +25,10 @@ import (
 // Each test in the file will be run in sequence against that runtime instance.
 // The available connectors are defined in runtime/testruntime/connectors.go.
 type TestFileYAML struct {
-	Connectors []string             `yaml:"connectors,omitempty"`
-	Files      map[string]yaml.Node `yaml:"files"`
-	Tests      []*TestYAML          `yaml:"tests"`
+	Connectors   []string             `yaml:"connectors,omitempty"`
+	Variables    map[string]string    `yaml:"variables,omitempty"`
+	ProjectFiles map[string]yaml.Node `yaml:"project_files"`
+	Tests        []*TestYAML          `yaml:"tests"`
 }
 
 // TestYAML is the structure of a single resolver test executed against the runtime instance defined in TestFileYAML.
@@ -48,7 +49,7 @@ var update = flag.Bool("update", false, "Update test results")
 
 // TestResolvers loads the test YAML files in ./testdata and runs them. Each test file should match the schema of TestFileYAML.
 //
-// The test YAML files provide a compact format for initializing runtime instances for a set of files and connectors,
+// The test YAML files provide a compact format for initializing runtime instances for a set of project files and connectors,
 // and running a series of resolvers against them and testing the results.
 //
 // Example: run all resolver tests:
@@ -88,7 +89,7 @@ func TestResolvers(t *testing.T) {
 			// Create a map of project files for the runtime instance.
 			projectFiles := make(map[string]string)
 			projectFiles["rill.yaml"] = ""
-			for name, node := range tf.Files {
+			for name, node := range tf.ProjectFiles {
 				bytes, err := yaml.Marshal(&node)
 				require.NoError(t, err)
 				projectFiles[name] = string(bytes)
@@ -96,6 +97,9 @@ func TestResolvers(t *testing.T) {
 
 			// Acquire the connectors for the runtime instance.
 			vars := make(map[string]string)
+			for k, v := range tf.Variables {
+				vars[k] = v
+			}
 			for _, connector := range tf.Connectors {
 				acquire, ok := testruntime.Connectors[connector]
 				require.True(t, ok, "unknown connector %q", connector)

@@ -1,4 +1,4 @@
-files:
+project_files:
   ad_bids_mini.yaml:
     type: model
     connector: duckdb

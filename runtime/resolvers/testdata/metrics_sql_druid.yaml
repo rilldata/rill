@@ -1,6 +1,6 @@
 connectors:
   - druid
-files:
+project_files:
   metrics_with_policy.yaml:
     type: metrics_view
     connector: druid
