@@ -1,6 +1,5 @@
 <script lang="ts">
   import EyeIcon from "@rilldata/web-common/components/icons/EyeIcon.svelte";
-  import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import EyeOffIcon from "@rilldata/web-common/components/icons/EyeOffIcon.svelte";
 
   export let value: string;

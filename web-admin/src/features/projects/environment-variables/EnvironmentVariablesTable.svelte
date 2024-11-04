@@ -21,7 +21,7 @@
         });
       },
       meta: {
-        widthPercent: 20,
+        widthPercent: 30,
       },
     },
     {
@@ -34,7 +34,7 @@
         });
       },
       meta: {
-        widthPercent: 20,
+        widthPercent: 30,
       },
     },
     {
@@ -46,6 +46,15 @@
           createdOn: row.original.createdOn,
           updatedOn: row.original.updatedOn,
         });
+      },
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      // TODO: complete cell
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
       },
     },
   ];
