@@ -2,7 +2,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 
 export const load = async ({ url, parent }) => {
-  const { explore, metricsView, basePreset } = await parent();
+  const { explore, metricsView, basePreset, bookmarks } = await parent();
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
@@ -20,6 +20,7 @@ export const load = async ({ url, parent }) => {
   }
 
   return {
+    defaultPartialMetrics: bookmarks.home?.metricsEntity ?? {},
     partialMetrics,
     errors,
   };

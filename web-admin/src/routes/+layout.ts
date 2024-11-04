@@ -99,11 +99,14 @@ export const load = async ({ params, url, route }) => {
       queryKey,
     });
 
-    const { projectPermissions } = response;
+    const { projectPermissions, project, prodDeployment, jwt } = response;
 
     return {
       organizationPermissions,
       projectPermissions,
+      project,
+      prodDeployment,
+      jwt,
     };
   } catch (e) {
     if (e.response?.status !== 403) {

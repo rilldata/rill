@@ -83,7 +83,6 @@ function toTimeRangesUrl(
     searchParams.set("tz", metrics.selectedTimezone);
   }
 
-  console.log(metrics.showTimeComparison, metrics.selectedComparisonTimeRange);
   if (
     (preset.compareTimeRange !== undefined &&
       metrics.selectedComparisonTimeRange?.name !== preset.compareTimeRange) ||

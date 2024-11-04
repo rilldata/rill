@@ -20,6 +20,7 @@ import { getPivotedPartialDashboard } from "@rilldata/web-common/features/dashbo
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -376,6 +377,9 @@ describe("Human readable URL state", () => {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
         };
+        const basePreset = getBasePreset(explore, {
+          timeZone: "UTC",
+        });
         const initEntity = getDefaultMetricsExplorerEntity(
           AD_BIDS_EXPLORE_NAME,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -399,10 +403,10 @@ describe("Human readable URL state", () => {
 
         // get back the entity from url params
         const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          AD_BIDS_EXPLORE_NAME,
           url.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
+          basePreset,
         );
 
         // assert that the entity we got back matches the expected entity
@@ -414,10 +418,10 @@ describe("Human readable URL state", () => {
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { entity: entityFromDefaultUrl } = convertURLToMetricsExplore(
-          AD_BIDS_EXPLORE_NAME,
           defaultUrl.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
+          basePreset,
         );
 
         // assert that the entity we got back matches the original
@@ -434,6 +438,9 @@ describe("Human readable URL state", () => {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
         };
+        const basePreset = getBasePreset(explore, {
+          timeZone: "UTC",
+        });
         const initEntity = getDefaultMetricsExplorerEntity(
           AD_BIDS_EXPLORE_NAME,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -452,10 +459,10 @@ describe("Human readable URL state", () => {
 
         // get back the entity from url params
         const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          AD_BIDS_EXPLORE_NAME,
           url.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
+          basePreset,
         );
         // assert that the entity we got back matches the expected entity
         expect(entityFromUrl).toEqual({
@@ -466,10 +473,10 @@ describe("Human readable URL state", () => {
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { entity: entityFromDefaultUrl } = convertURLToMetricsExplore(
-          AD_BIDS_EXPLORE_NAME,
           defaultUrl.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
+          basePreset,
         );
 
         // assert that the entity we got back matches the original

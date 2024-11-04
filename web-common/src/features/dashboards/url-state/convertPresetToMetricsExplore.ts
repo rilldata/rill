@@ -11,13 +11,11 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import {
   FromURLParamTDDChartMap,
   FromURLParamTimeDimensionMap,
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   getMissingValues,
@@ -36,18 +34,17 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export function convertURLToMetricsExplore(
-  exploreName: string,
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
+  basePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
     explore,
-    // TODO: can we cache this per explore?
-    getBasePreset(explore, getLocalUserPreferencesState(exploreName)),
+    basePreset,
   );
   errors.push(...errorsFromPreset);
   const { entity, errors: errorsFromEntity } = convertPresetToMetricsExplore(

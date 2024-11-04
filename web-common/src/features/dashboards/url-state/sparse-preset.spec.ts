@@ -2,6 +2,7 @@ import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/d
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
+  AD_BIDS_BASE_PRESET,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -29,7 +30,6 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import { convertMetricsExploreToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsExploreToPreset";
 import {
   convertPresetToMetricsExplore,
@@ -119,10 +119,10 @@ describe("sparse preset", () => {
         const url = new URL("http://localhost");
         // get the entity from no param url
         const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          AD_BIDS_EXPLORE_NAME,
           url.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           AD_BIDS_EXPLORE_INIT,
+          AD_BIDS_BASE_PRESET,
         );
 
         expect(entityFromUrl).toEqual(initEntity);

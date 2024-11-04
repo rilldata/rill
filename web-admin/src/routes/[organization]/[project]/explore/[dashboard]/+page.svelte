@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
@@ -13,13 +11,14 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-
-  const user = createAdminServiceGetCurrentUser();
+  import type { PageData } from "./$types";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
+  export let data: PageData;
+  $: ({ partialMetrics, defaultPartialMetrics } = data);
   $: instanceId = $runtime?.instanceId;
 
   $: ({
@@ -87,21 +86,11 @@
   {:else if metricsViewName}
     {#key metricsViewName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider {metricsViewName} {exploreName}>
-            <DashboardURLStateSync>
-              <DashboardThemeProvider>
-                <Dashboard {metricsViewName} {exploreName} />
-              </DashboardThemeProvider>
-            </DashboardURLStateSync>
-          </DashboardBookmarksStateProvider>
-        {:else}
-          <DashboardURLStateSync>
-            <DashboardThemeProvider>
-              <Dashboard {metricsViewName} {exploreName} />
-            </DashboardThemeProvider>
-          </DashboardURLStateSync>
-        {/if}
+        <DashboardURLStateSync {partialMetrics} {defaultPartialMetrics}>
+          <DashboardThemeProvider>
+            <Dashboard {metricsViewName} {exploreName} />
+          </DashboardThemeProvider>
+        </DashboardURLStateSync>
       </StateManagersProvider>
     {/key}
   {/if}

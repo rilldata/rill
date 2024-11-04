@@ -4,6 +4,7 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -229,6 +230,10 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
     AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
   ],
 };
+
+export const AD_BIDS_BASE_PRESET = getBasePreset(AD_BIDS_EXPLORE_INIT, {
+  timeZone: "UTC",
+});
 
 export const AD_BIDS_SCHEMA: V1StructType = {
   fields: [
