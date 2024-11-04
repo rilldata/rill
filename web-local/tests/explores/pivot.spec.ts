@@ -593,10 +593,6 @@ test.describe("pivot run through", () => {
       .getByRole("cell", { name: "Jan" })
       .getByRole("button");
     await expandButton.click();
-
-    // close rows viewer
-    // remove this post fixing https://github.com/rilldata/rill/issues/6028
-    await page.getByRole("button", { name: "Toggle rows viewer" }).click();
     await validateTableContents(page, "table", expectExpandedTable);
 
     // Remove the time dimension and column dimension and measure
