@@ -2111,6 +2111,8 @@ github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff h1:Tt67B9BQ
 github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff/go.mod h1:u3fgh3EdgN/YQ8cVQRguVW3R+seMybFg8QBQ5LU+eBY=
 github.com/rilldata/duckdb-replicator v0.0.0-20241104113724-8735428481ef h1:+FNaqFgSY+tNiUzyASBPk2OF7R/ePke8FKF/Wn1qQY4=
 github.com/rilldata/duckdb-replicator v0.0.0-20241104113724-8735428481ef/go.mod h1:mRKMcdCdKJOrtHKMYXVpeEklqrP8AakXIet4RgqbpGI=
+github.com/rilldata/duckdb-replicator v0.0.0-20241104142154-c29e5da9b7e2 h1:PPf/zD3/0+La8VUn+HiP8KpiUAWSBlt9QkLy9fjl5Fc=
+github.com/rilldata/duckdb-replicator v0.0.0-20241104142154-c29e5da9b7e2/go.mod h1:mRKMcdCdKJOrtHKMYXVpeEklqrP8AakXIet4RgqbpGI=
 github.com/riverqueue/river v0.11.4 h1:NMRsODhRgFztf080RMCjI377jldLXsx41E2r7+c0lPE=
 github.com/riverqueue/river v0.11.4/go.mod h1:HvgBkqon7lYKm9Su4lVOnn1qx8Q4FnSMJjf5auVial4=
 github.com/riverqueue/river/riverdriver v0.11.4 h1:kBg68vfTnRuSwsgcZ7UbKC4ocZ+KSCGnuZw/GwMMMP4=

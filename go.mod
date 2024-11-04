@@ -75,6 +75,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
+	github.com/rilldata/duckdb-replicator v0.0.0-20241104142154-c29e5da9b7e2
 	github.com/riverqueue/river v0.11.4
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
 	github.com/riverqueue/river/rivertype v0.11.4
@@ -343,7 +344,6 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
-	github.com/rilldata/duckdb-replicator v0.0.0-20241104113724-8735428481ef // indirect
 	github.com/riverqueue/river/riverdriver v0.11.4 // indirect
 	github.com/riverqueue/river/rivershared v0.11.4 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

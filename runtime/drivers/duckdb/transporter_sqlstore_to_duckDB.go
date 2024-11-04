@@ -138,7 +138,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	}
 
 	// copy data from temp table to target table
-	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
+	return rwConn.CreateTableAsSelect(ctx, table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {

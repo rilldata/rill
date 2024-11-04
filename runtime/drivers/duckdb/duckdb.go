@@ -526,7 +526,6 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 			LocalPath:      c.config.DataDir,
 			BackupProvider: backup,
 			InitQueries:    bootQueries,
-			StableSelect:   !c.config.AllowHostAccess,
 			Logger:         logger,
 		})
 	} else {
