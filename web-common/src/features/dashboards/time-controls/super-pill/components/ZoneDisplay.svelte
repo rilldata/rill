@@ -10,7 +10,7 @@
   $: watermarkTs = watermark.getTime();
 </script>
 
-<div class="flex items-center gap-x-1 text-xs cursor-pointer">
+<div class="flex items-center gap-x-1 text-xs cursor-pointer overflow-hidden">
   <b class="min-w-9 max-w-9">
     {getAbbreviationForIANA(watermark, iana)}
   </b>
