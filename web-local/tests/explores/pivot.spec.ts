@@ -566,6 +566,7 @@ test.describe("pivot run through", () => {
 
     // one measure and one dimension
     await publisher.dragTo(rowZone);
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureOneDim);
 
     // add second measure using menu and add column dimension
@@ -575,11 +576,13 @@ test.describe("pivot run through", () => {
       .nth(1);
     await addColumnField.click();
     await clickMenuButton(page, "Sum of Bid Price");
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTwoMeasureRowDimColDim);
 
     // Remove the row dimension and second measure
     await page.getByRole("button", { name: "Remove" }).nth(3).click();
     await page.getByRole("button", { name: "Remove" }).nth(0).click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureColDim);
 
     const timeMonth = page.getByRole("button", { name: "month" });
@@ -593,6 +596,7 @@ test.describe("pivot run through", () => {
       .getByRole("cell", { name: "Jan" })
       .getByRole("button");
     await expandButton.click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectExpandedTable);
 
     // Remove the time dimension and column dimension and measure
@@ -612,6 +616,7 @@ test.describe("pivot run through", () => {
 
     // enable time comparison
     await page.getByRole("button", { name: "Comparing" }).click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedTimeComparison);
 
     await addColumnField.click();
@@ -625,6 +630,7 @@ test.describe("pivot run through", () => {
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
     });
+    await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectSortedDeltaCol);
   });
 });

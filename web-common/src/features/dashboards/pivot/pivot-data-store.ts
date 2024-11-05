@@ -345,9 +345,6 @@ export function createPivotDataStore(
     return derived(
       columnDimensionAxesQuery,
       (columnDimensionAxes, columnSet) => {
-        if (columnDimensionAxes?.error?.length) {
-          return columnSet(getErrorState(columnDimensionAxes.error));
-        }
         if (columnDimensionAxes?.isFetching) {
           return columnSet({
             isFetching: true,
@@ -356,6 +353,9 @@ export function createPivotDataStore(
             assembled: false,
             totalColumns: 0,
           });
+        }
+        if (columnDimensionAxes?.error && columnDimensionAxes?.error.length) {
+          return columnSet(getErrorState(columnDimensionAxes.error));
         }
         const anchorDimension = rowDimensionNames[0];
 
@@ -549,6 +549,17 @@ export function createPivotDataStore(
             return derived(
               [rowAxesQueryForMeasureTotals, initialTableCellQuery],
               ([rowMeasureTotalsAxesQuery, initialTableCellData], cellSet) => {
+                if (rowMeasureTotalsAxesQuery?.isFetching) {
+                  return cellSet({
+                    isFetching: true,
+                    data: axesRowTotals,
+                    columnDef,
+                    assembled: false,
+                    totalColumns,
+                    totalsRowData: displayTotalsRow ? totalsRowData : undefined,
+                  });
+                }
+
                 const tableCellQueryError = getErrorFromResponses([
                   initialTableCellData,
                 ]);
@@ -561,16 +572,6 @@ export function createPivotDataStore(
                     rowMeasureTotalsAxesQuery?.error || [],
                   );
                   return cellSet(getErrorState(allErrors));
-                }
-                if (rowMeasureTotalsAxesQuery?.isFetching) {
-                  return cellSet({
-                    isFetching: true,
-                    data: axesRowTotals,
-                    columnDef,
-                    assembled: false,
-                    totalColumns,
-                    totalsRowData: displayTotalsRow ? totalsRowData : undefined,
-                  });
                 }
 
                 const mergedRowTotals = mergeRowTotalsInOrder(
