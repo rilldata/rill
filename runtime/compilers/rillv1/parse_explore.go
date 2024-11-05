@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -19,7 +20,7 @@ type ExploreYAML struct {
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
-	Theme       string                 `yaml:"theme"`
+	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
 	Defaults    *struct {
@@ -152,9 +153,14 @@ func (p *Parser) parseExplore(node *Node) error {
 		measuresSelector = tmp.Measures.Proto()
 	}
 
-	// Add theme to refs
-	if tmp.Theme != "" {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.Theme})
+	// Parse theme if present.
+	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
+	themeName, themeSpec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
+	if err != nil {
+		return err
+	}
+	if themeName != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
 	// Build and validate time ranges
@@ -259,12 +265,64 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
-	r.ExploreSpec.Theme = tmp.Theme
+	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
+	if themeSpec != nil {
+		r, err := p.insertResource(ResourceKindTheme, themeName, node.Paths)
+		if err != nil {
+			// Normally we could return the error, but we can't do that here because we've already inserted the explore.
+			// Since the theme has been validated with insertDryRun in parseExploreTheme, this error should never happen in practice.
+			// So let's panic.
+			panic(err)
+		}
+		r.ThemeSpec = themeSpec
+	}
+
 	return nil
+}
+
+func (p *Parser) parseExploreTheme(exploreName string, n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if n == nil || n.IsZero() {
+		return "", nil, nil
+	}
+
+	switch n.Kind {
+	case yaml.ScalarNode: // It's the name of an existing theme
+		var name string
+		err := n.Decode(&name)
+		if err != nil {
+			return "", nil, err
+		}
+		return name, nil, nil
+	case yaml.MappingNode: // It's an inline definition of a new theme
+		tmp := &ThemeYAML{}
+		err := n.Decode(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		name := fmt.Sprintf("%s--theme", exploreName)
+		err = p.insertDryRun(ResourceKindTheme, name)
+		if err != nil {
+			name = fmt.Sprintf("%s--theme-%s", exploreName, uuid.New())
+			err = p.insertDryRun(ResourceKindTheme, name)
+			if err != nil {
+				return "", nil, err
+			}
+		}
+
+		spec, err := p.parseThemeYAML(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return name, spec, nil
+	default:
+		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
+	}
 }
