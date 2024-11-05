@@ -10,6 +10,7 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1ProjectVariable[];
+  export let emptyText: string = "No environment variables";
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
@@ -64,10 +65,4 @@
   ];
 </script>
 
-<BasicTable
-  {data}
-  {columns}
-  emptyIcon={KeyIcon}
-  emptyText="No environment variables"
-  scrollable
-/>
+<BasicTable {data} {columns} emptyIcon={KeyIcon} {emptyText} scrollable />

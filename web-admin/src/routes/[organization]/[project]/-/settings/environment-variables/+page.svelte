@@ -8,9 +8,15 @@
   import { Search } from "@rilldata/web-common/components/search";
   import RadixLarge from "@rilldata/web-common/components/typography/RadixLarge.svelte";
   import AddDialog from "@rilldata/web-admin/features/projects/environment-variables/AddDialog.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import type { EnvironmentTypes } from "@rilldata/web-admin/features/projects/environment-variables/types";
 
   let open = false;
   let searchText = "";
+  let isDropdownOpen = false;
+  let filterByEnvironment: EnvironmentTypes = "";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -25,9 +31,30 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
-  $: filteredVariables = projectVariables.filter((variable) =>
+  $: searchedVariables = projectVariables.filter((variable) =>
     variable.name.toLowerCase().includes(searchText.toLowerCase()),
   );
+
+  $: filteredVariables = searchedVariables.filter((variable) => {
+    if (filterByEnvironment === "") return true;
+    return variable.environment === filterByEnvironment;
+  });
+
+  function handleFilterByEnvironment(environment: EnvironmentTypes) {
+    filterByEnvironment = environment;
+  }
+
+  $: environmentLabel =
+    filterByEnvironment === ""
+      ? "All environments"
+      : filterByEnvironment === "prod"
+        ? "Production"
+        : "Development";
+
+  $: emptyTextWhenNoVariables =
+    filterByEnvironment === ""
+      ? "No environment variables"
+      : `No environment variables for ${environmentLabel}`;
 </script>
 
 <div class="flex flex-col w-full">
@@ -61,13 +88,52 @@
             showBorderOnFocus={false}
             disabled={projectVariables.length === 0}
           />
-          <!-- TODO: filter by environment, EnvironmentType -->
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger
+              class="min-w-fit flex flex-row gap-1 items-center rounded-sm {isDropdownOpen
+                ? 'bg-slate-200'
+                : 'hover:bg-slate-100'} px-2 py-1"
+            >
+              {environmentLabel}
+              {#if isDropdownOpen}
+                <CaretUpIcon size="12px" />
+              {:else}
+                <CaretDownIcon size="12px" />
+              {/if}
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <DropdownMenu.Label class="uppercase"
+                >Filter by environment</DropdownMenu.Label
+              >
+              <DropdownMenu.CheckboxItem
+                checked={filterByEnvironment === ""}
+                on:click={() => handleFilterByEnvironment("")}
+              >
+                All environments
+              </DropdownMenu.CheckboxItem>
+              <DropdownMenu.CheckboxItem
+                checked={filterByEnvironment === "prod"}
+                on:click={() => handleFilterByEnvironment("prod")}
+              >
+                Production
+              </DropdownMenu.CheckboxItem>
+              <DropdownMenu.CheckboxItem
+                checked={filterByEnvironment === "dev"}
+                on:click={() => handleFilterByEnvironment("dev")}
+              >
+                Development
+              </DropdownMenu.CheckboxItem>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
           <Button type="primary" large on:click={() => (open = true)}>
             <Plus size="16px" />
             <span>Add environment variable</span>
           </Button>
         </div>
-        <EnvironmentVariablesTable data={filteredVariables} />
+        <EnvironmentVariablesTable
+          data={filteredVariables}
+          emptyText={emptyTextWhenNoVariables}
+        />
       </div>
     {/if}
   </div>

@@ -4,6 +4,8 @@ export enum EnvironmentType {
   PRODUCTION = "prod",
 }
 
+export type EnvironmentTypes = "dev" | "prod" | "";
+
 export type EnvironmentVariable = {
   key: string;
   value: string;
