@@ -94,7 +94,7 @@
                 ? 'bg-slate-200'
                 : 'hover:bg-slate-100'} px-2 py-1"
             >
-              {environmentLabel}
+              <span class="text-slate-600 font-medium">{environmentLabel}</span>
               {#if isDropdownOpen}
                 <CaretUpIcon size="12px" />
               {:else}
