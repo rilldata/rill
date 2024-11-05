@@ -7,9 +7,10 @@
   import DeleteDialog from "./DeleteDialog.svelte";
 
   export let name: string;
+  export let environment: string;
 
   let isDropdownOpen = false;
-  let isDeleteConfirmOpen = false;
+  let isDeleteDialogOpen = false;
   let isEditDialogOpen = false;
 </script>
 
@@ -33,7 +34,7 @@
       class="font-normal flex items-center"
       type="destructive"
       on:click={() => {
-        isDeleteConfirmOpen = true;
+        isDeleteDialogOpen = true;
       }}
     >
       <Trash2Icon size="12px" />
@@ -43,4 +44,4 @@
 </DropdownMenu.Root>
 
 <EditDialog bind:open={isEditDialogOpen} />
-<DeleteDialog bind:open={isDeleteConfirmOpen} {name} />
+<DeleteDialog bind:open={isDeleteDialogOpen} {name} {environment} />

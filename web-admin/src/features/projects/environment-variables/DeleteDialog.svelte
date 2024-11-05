@@ -19,6 +19,7 @@
 
   export let open = false;
   export let name: string;
+  export let environment: string | undefined;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -32,6 +33,7 @@
         organization,
         project,
         data: {
+          environment,
           // Variables to delete.
           unsetVariables: [deletedName],
         },

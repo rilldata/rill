@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { EnvironmentType } from "./types";
+
   export let environment: string;
   export let name: string;
 
@@ -7,7 +9,13 @@
     if (environment === "") {
       return "Development, Production";
     }
-    return environment;
+    if (environment === EnvironmentType.DEVELOPMENT) {
+      return "Development";
+    }
+    if (environment === EnvironmentType.PRODUCTION) {
+      return "Production";
+    }
+    return "";
   }
 
   $: environmentLabel = getEnvironmentLabel(environment);

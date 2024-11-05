@@ -54,6 +54,7 @@
       cell: ({ row }) =>
         flexRender(ActionsCell, {
           name: row.original.name,
+          environment: row.original.environment,
         }),
       enableSorting: false,
       meta: {

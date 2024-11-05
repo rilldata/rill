@@ -18,10 +18,12 @@
   $: getProjectVariables = createAdminServiceGetProjectVariables(
     organization,
     project,
+    {
+      forAllEnvironments: true,
+    },
   );
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
-  $: console.log(projectVariables);
 
   $: filteredVariables = projectVariables.filter((variable) =>
     variable.name.toLowerCase().includes(searchText.toLowerCase()),

@@ -17,13 +17,13 @@
   import {
     createAdminServiceUpdateProjectVariables,
     getAdminServiceGetProjectVariablesQueryKey,
-    type AdminServiceUpdateProjectVariablesBodyVariables,
   } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
+  import { EnvironmentType } from "./types";
 
   export let open = false;
 
@@ -31,7 +31,7 @@
   let isDevelopment = false;
   let isProduction = false;
   let newVariables: { key: string; value: string }[] = [
-    { key: "test_key", value: "test_value" },
+    { key: "CLIENT_KEY", value: "test_value" },
   ];
 
   $: console.log(newVariables);
@@ -44,11 +44,53 @@
 
   const formId = "add-environment-variables-form";
 
+  const initialValues = {
+    newVariables,
+  };
+
+  const schema = yup(
+    object({
+      newVariables: array(
+        object({
+          key: string().required("Key is required"),
+          value: string().required("Value is required"),
+        }),
+      ),
+    }),
+  );
+
+  const { form, enhance, submit, errors, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      // https://superforms.rocks/concepts/nested-data
+      dataType: "json",
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+
+        const flatVariables = Object.fromEntries(
+          values.newVariables.map(({ key, value }) => [key, value]),
+        );
+
+        console.log("flatVariables: ", flatVariables);
+
+        try {
+          await handleUpdateProjectVariables(flatVariables);
+          open = false;
+        } catch (error) {
+          console.error(error);
+        }
+      },
+    },
+  );
+
   function processEnvironment() {
     return isDevelopment
-      ? "development"
+      ? EnvironmentType.DEVELOPMENT
       : isProduction
-        ? "production"
+        ? EnvironmentType.PRODUCTION
         : // If empty, the variable(s) will be used as defaults for all environments.
           undefined;
   }
@@ -85,47 +127,6 @@
   function handleDelete(index: number) {
     newVariables = newVariables.filter((_, i) => i !== index);
   }
-
-  const initialValues = {
-    newVariables,
-  };
-
-  const schema = yup(
-    object({
-      newVariables: array(
-        object({
-          key: string().required("Key is required"),
-          value: string().required("Value is required"),
-        }),
-      ),
-    }),
-  );
-
-  const { form, enhance, submit, errors, submitting } = superForm(
-    defaults(initialValues, schema),
-    {
-      SPA: true,
-      validators: schema,
-      dataType: 'json', // https://superforms.rocks/concepts/nested-data
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
-
-        const flatVariables = values.newVariables.reduce((acc, { key, value }) => {
-        acc[key] = value;
-            return acc;
-          }, {} as { [key: string]: string }),
-
-        try {
-          await handleUpdateProjectVariables(flatVariables);
-          open = false;
-        } catch (error) {
-          console.error(error);
-        }
-      },
-    },
-  );
-
 </script>
 
 <Dialog bind:open>
