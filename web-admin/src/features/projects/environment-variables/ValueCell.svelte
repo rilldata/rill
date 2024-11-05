@@ -8,17 +8,27 @@
 
   $: inputType = showValue ? "text" : "password";
 
+  $: isEmpty = value.length === 0;
+
   let displayValue = value;
   $: if (!showValue) {
     // 16 characters
     displayValue = "****************";
   } else {
-    displayValue = value;
+    if (isEmpty) {
+      displayValue = "Empty";
+    } else {
+      displayValue = value;
+    }
+  }
+
+  function toggleShowValue() {
+    showValue = !showValue;
   }
 </script>
 
 <div class="flex flex-row gap-[10px] items-center">
-  <button on:click={() => (showValue = !showValue)}>
+  <button on:click={toggleShowValue}>
     {#if !showValue}
       <EyeIcon color="#94A3B8" size="16" />
     {:else}
@@ -28,7 +38,7 @@
   <input
     readonly
     type={inputType}
-    class="text-sm text-gray-800 font-medium"
+    class="text-sm text-gray-800 font-medium {isEmpty ? 'italic' : ''}"
     value={displayValue}
   />
 </div>

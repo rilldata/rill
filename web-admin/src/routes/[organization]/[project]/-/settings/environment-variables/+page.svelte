@@ -61,7 +61,7 @@
             showBorderOnFocus={false}
             disabled={projectVariables.length === 0}
           />
-          <!-- TODO: filter by environment -->
+          <!-- TODO: filter by environment, EnvironmentType -->
           <Button type="primary" large on:click={() => (open = true)}>
             <Plus size="16px" />
             <span>Add environment variable</span>

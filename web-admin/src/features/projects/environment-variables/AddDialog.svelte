@@ -13,28 +13,30 @@
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { Plus } from "lucide-svelte";
   import ErrorMessage from "./ErrorMessage.svelte";
-  import KeyValueItem from "./KeyValueItem.svelte";
   import {
     createAdminServiceUpdateProjectVariables,
     getAdminServiceGetProjectVariablesQueryKey,
   } from "@rilldata/web-admin/client";
+  import { type AdminServiceUpdateProjectVariablesBodyVariables } from "@rilldata/web-admin/client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type EnvironmentVariable } from "./types";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import { Trash2Icon } from "lucide-svelte";
 
   export let open = false;
 
   let errorMessage = "";
   let isDevelopment = false;
   let isProduction = false;
-  let newVariables: { key: string; value: string }[] = [
-    { key: "CLIENT_KEY", value: "test_value" },
-  ];
 
-  $: console.log(newVariables);
+  const newVariables: EnvironmentVariable[] = [{ key: "", value: "" }];
+
+  // $: console.log("newVariables: ", newVariables);
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -45,7 +47,7 @@
   const formId = "add-environment-variables-form";
 
   const initialValues = {
-    newVariables,
+    newVariables: [{ key: "", value: "" }],
   };
 
   const schema = yup(
@@ -53,7 +55,7 @@
       newVariables: array(
         object({
           key: string().required("Key is required"),
-          value: string().required("Value is required"),
+          value: string().optional(),
         }),
       ),
     }),
@@ -64,7 +66,7 @@
     {
       SPA: true,
       validators: schema,
-      // https://superforms.rocks/concepts/nested-data
+      // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
       async onUpdate({ form }) {
         if (!form.valid) return;
@@ -74,7 +76,7 @@
           values.newVariables.map(({ key, value }) => [key, value]),
         );
 
-        console.log("flatVariables: ", flatVariables);
+        console.log("variables to create flatVariables: ", flatVariables);
 
         try {
           await handleUpdateProjectVariables(flatVariables);
@@ -86,6 +88,8 @@
     },
   );
 
+  $: console.log("$form.newVariables: ", $form.newVariables);
+
   function processEnvironment() {
     return isDevelopment
       ? EnvironmentType.DEVELOPMENT
@@ -95,9 +99,9 @@
           undefined;
   }
 
-  async function handleUpdateProjectVariables(flatVariables: {
-    [key: string]: string;
-  }) {
+  async function handleUpdateProjectVariables(
+    flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
+  ) {
     try {
       await $updateProjectVariables.mutateAsync({
         organization,
@@ -124,8 +128,20 @@
     }
   }
 
+  function handleAdd() {
+    $form.newVariables = [...newVariables, { key: "", value: "" }];
+  }
+
+  function handleKeyChange(index: number, e: any) {
+    $form.newVariables[index].key = e.target.value;
+  }
+
+  function handleValueChange(index: number, e: any) {
+    $form.newVariables[index].value = e.target.value;
+  }
+
   function handleDelete(index: number) {
-    newVariables = newVariables.filter((_, i) => i !== index);
+    $form.newVariables = $form.newVariables.filter((_, i) => i !== index);
   }
 </script>
 
@@ -175,21 +191,43 @@
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
           <div class="flex flex-col gap-y-4 w-full">
-            {#each newVariables as variable, index}
-              <KeyValueItem
-                {variable}
-                {index}
-                on:delete={() => handleDelete(index)}
-              />
+            {#each $form.newVariables as variable, index}
+              <div
+                class="flex flex-row items-center gap-2"
+                id={`variable-${index}`}
+              >
+                <Input
+                  bind:value={variable.key}
+                  id={`key-${index}`}
+                  label=""
+                  placeholder="Key"
+                  on:input={(e) => handleKeyChange(index, e.target.value)}
+                />
+                <Input
+                  bind:value={variable.value}
+                  id={`value-${index}`}
+                  label=""
+                  placeholder="Value"
+                  on:input={(e) => handleValueChange(index, e.target.value)}
+                />
+                <IconButton
+                  on:click={() => {
+                    if (index !== newVariables.length - 1) {
+                      handleDelete(index);
+                    }
+                  }}
+                >
+                  <Trash2Icon size="16px" />
+                </IconButton>
+              </div>
+              {#if $errors.newVariables}
+                <p class="text-xs text-red-600 font-normal">
+                  {$errors.newVariables[index]?.key}
+                </p>
+              {/if}
             {/each}
           </div>
-          <Button
-            type="dashed"
-            class="w-full mt-4"
-            on:click={() => {
-              newVariables = [...newVariables, { key: "", value: "" }];
-            }}
-          >
+          <Button type="dashed" class="w-full mt-4" on:click={handleAdd}>
             <Plus size="16px" />
             <span>Add variable</span>
           </Button>
