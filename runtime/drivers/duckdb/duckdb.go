@@ -544,8 +544,7 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 	if err != nil {
 		return err
 	}
-	defer release()
-	return nil
+	return release()
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like catalog and information schema (i.e. fast queries).

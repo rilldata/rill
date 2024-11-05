@@ -31,7 +31,7 @@ type config struct {
 	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file.
-	// Backup is only enabled when external table storage is enabled.
+	// Backup is only and automatically enabled when external table storage is enabled.
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
 	// CPU cores available for the read DB. If no CPUWrite is set and external_table_storage is enabled then this is split evenly between read and write.
 	CPU int `mapstructure:"cpu"`

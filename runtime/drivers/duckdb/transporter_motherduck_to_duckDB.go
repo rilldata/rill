@@ -78,7 +78,9 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	if err != nil {
 		return err
 	}
-	defer release()
+	defer func() {
+		_ = release()
+	}()
 
 	conn := rwConn.Connx()
 
@@ -101,22 +103,21 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 	// we first ingest data in a temporary table in the main db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs
-	tmpTable := fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table)
+	safeTmpTable := safeName(fmt.Sprintf("__%s_tmp_motherduck", sinkCfg.Table))
 	defer func() {
 		// ensure temporary table is cleaned
-		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
+		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTmpTable))
 		if err != nil {
-			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+			t.logger.Error("failed to drop temp table", zap.String("table", safeTmpTable), zap.Error(err))
 		}
 	}()
 
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n);", safeName(tmpTable), userQuery)
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n);", safeTmpTable, userQuery)
 	_, err = conn.ExecContext(ctx, query)
 	if err != nil {
 		return err
 	}
 
 	// copy data from temp table to target table
-	return rwConn.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
-
+	return rwConn.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), nil)
 }

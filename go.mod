@@ -75,7 +75,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
-	github.com/rilldata/duckdb-replicator v0.0.0-20241104142154-c29e5da9b7e2
+	github.com/rilldata/duckdb-replicator v0.0.0-20241105044430-27fe98427e31
 	github.com/riverqueue/river v0.11.4
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
 	github.com/riverqueue/river/rivertype v0.11.4

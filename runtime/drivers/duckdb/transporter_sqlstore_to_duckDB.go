@@ -63,9 +63,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	}
 	// we first ingest data in a temporary table in the main db
 	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs
-	tmpTable := fmt.Sprintf("__%s_tmp_sqlstore", table)
+	safeTmpTable := safeName(fmt.Sprintf("__%s_tmp_sqlstore", table))
 	// generate create table query
-	qry, err := createTableQuery(schema, tmpTable)
+	qry, err := createTableQuery(schema, safeTmpTable)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	if err != nil {
 		return err
 	}
-	defer release()
+	defer func() {
+		_ = release()
+	}()
 	conn := rwConn.Connx()
 
 	// create table
@@ -85,15 +87,15 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 
 	defer func() {
 		// ensure temporary table is cleaned
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable))
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTmpTable))
 		if err != nil {
-			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+			s.logger.Error("failed to drop temp table", zap.String("table", safeTmpTable), zap.Error(err))
 		}
 	}()
 
 	// append data using appender API
 	err = rawConn(conn.Conn, func(conn driver.Conn) error {
-		a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
+		a, err := duckdb.NewAppenderFromConn(conn, "", safeTmpTable)
 		if err != nil {
 			return err
 		}
@@ -138,7 +140,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	}
 
 	// copy data from temp table to target table
-	return rwConn.CreateTableAsSelect(ctx, table, fmt.Sprintf("SELECT * FROM %s", tmpTable), nil)
+	return rwConn.CreateTableAsSelect(ctx, table, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), nil)
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {

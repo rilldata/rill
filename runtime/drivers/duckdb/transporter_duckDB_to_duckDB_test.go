@@ -34,15 +34,16 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db"), "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	olap, _ = to.AsOLAP("")
-
 	tr := newDuckDBToDuckDB(to.(*connection), zap.NewNop())
 
 	// transfer once
 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
+	olap, ok = to.AsOLAP("")
+	require.True(t, ok)
+
+	rows, err := to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
 	require.NoError(t, err)
 
 	var count int
