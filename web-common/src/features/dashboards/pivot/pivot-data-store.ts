@@ -431,18 +431,6 @@ export function createPivotDataStore(
             [rowDimensionAxes, globalTotalsResponse, totalsRowResponse],
             axesSet,
           ) => {
-            const totalErrors = getErrorFromResponses([
-              globalTotalsResponse,
-              totalsRowResponse,
-            ]);
-
-            if (totalErrors.length || rowDimensionAxes?.error?.length) {
-              const allErrors = totalErrors.concat(
-                rowDimensionAxes?.error || [],
-              );
-              return axesSet(getErrorState(allErrors));
-            }
-
             if (
               (globalTotalsResponse !== null &&
                 globalTotalsResponse?.isFetching) ||
@@ -463,6 +451,19 @@ export function createPivotDataStore(
                   ? skeletonTotalsRowData
                   : undefined,
               });
+            }
+
+            // check for errors in the responses
+            const totalErrors = getErrorFromResponses([
+              globalTotalsResponse,
+              totalsRowResponse,
+            ]);
+
+            if (totalErrors.length || rowDimensionAxes?.error?.length) {
+              const allErrors = totalErrors.concat(
+                rowDimensionAxes?.error || [],
+              );
+              return axesSet(getErrorState(allErrors));
             }
 
             /**
