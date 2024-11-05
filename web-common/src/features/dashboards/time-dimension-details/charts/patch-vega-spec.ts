@@ -124,7 +124,7 @@ export function patchSpecForTDD(
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
   xEncoding.timeUnit = timeUnit;
 
-  if (isTimeComparison) {
+  if (isTimeComparison && !selectedValuesLength) {
     patchSpecForTimeComparison(
       sanitizedSpec,
       chartType,

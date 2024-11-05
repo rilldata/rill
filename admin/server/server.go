@@ -447,7 +447,7 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	if v.LessThan(minVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for this operation, run `rill upgrade` to upgrade to the latest version", v))
 	}
 
 	return ctx, nil
