@@ -101,12 +101,14 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 }
 
 type Usage struct {
-	OrgID     string    `json:"org_id"`
-	ProjectID string    `json:"project_id"`
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
-	EventName string    `json:"event_name"`
-	MaxValue  float64   `json:"max_value"`
+	OrgID             string    `json:"org_id"`
+	ProjectID         string    `json:"project_id"`
+	ProjectName       string    `json:"project_name"`
+	BillingCustomerID *string   `json:"billing_customer_id"`
+	StartTime         time.Time `json:"start_time"`
+	EndTime           time.Time `json:"end_time"`
+	EventName         string    `json:"event_name"`
+	MaxValue          float64   `json:"max_value"`
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime, afterTime time.Time, afterOrgID, afterProjectID, afterEventName, grain string, limit int) ([]*Usage, error) {

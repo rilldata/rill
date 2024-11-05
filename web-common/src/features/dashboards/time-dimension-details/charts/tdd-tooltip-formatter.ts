@@ -23,7 +23,7 @@ function createColorMap(
 
   colorMap[measureLabel] = MainLineColor;
 
-  if (isTimeComparison) {
+  if (isTimeComparison && selectedDimensionValues.length === 0) {
     colorMap["current_period"] = MainLineColor;
     colorMap["comparison_period"] = MainAreaColorGradientDark;
   }
@@ -141,6 +141,8 @@ function generateTableContent(
     content += "<table>";
 
     const selectedValuesLength = !!selectedDimensionValues.length;
+    const isNonDimensionalTimeComparison =
+      isTimeComparison && !selectedValuesLength;
     if (
       chartType === TDDChart.STACKED_AREA &&
       (selectedValuesLength || isTimeComparison)
@@ -149,7 +151,7 @@ function generateTableContent(
         keys,
         rest,
         colorMap,
-        isTimeComparison,
+        isNonDimensionalTimeComparison,
       );
     } else {
       content += generateBarContent(

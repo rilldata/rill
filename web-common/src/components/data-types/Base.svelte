@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   export let classes = "";
   export let isNull = false;
   export let dark = false;

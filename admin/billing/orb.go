@@ -28,6 +28,8 @@ const (
 	avalaraTaxExemptionCode = "R" // code for NON-RESIDENT
 )
 
+var ErrCustomerIDRequired = errors.New("customer id is required")
+
 var _ Biller = &Orb{}
 
 type Orb struct {
@@ -174,6 +176,19 @@ func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string)
 	return nil
 }
 
+func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
+	c, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		return err
+	}
+
+	err = o.client.Customers.Delete(ctx, c.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	return o.createSubscription(ctx, customerID, plan)
 }
@@ -189,7 +204,7 @@ func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Su
 	}
 
 	if len(subs) > 1 {
-		return nil, fmt.Errorf("multiple active subscriptions found for customer %s", customerID)
+		return nil, fmt.Errorf("multiple active subscriptions (%d) found for customer %s", len(subs), customerID)
 	}
 
 	return subs[0], nil
@@ -432,6 +447,10 @@ func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *P
 }
 
 func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status orb.SubscriptionListParamsStatus) ([]*Subscription, error) {
+	if customerID == "" { // weird behaviour but empty external customer id returns all active subscriptions
+		return nil, ErrCustomerIDRequired
+	}
+
 	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
 		ExternalCustomerID: orb.String(customerID),
 		Status:             orb.F(status),

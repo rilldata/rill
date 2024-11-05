@@ -41,7 +41,7 @@
         <DashboardStateProvider {exploreName}>
           <DashboardURLStateProvider {metricsViewName}>
             <DashboardThemeProvider>
-              <Dashboard {exploreName} {metricsViewName} />
+              <Dashboard {exploreName} {metricsViewName} isEmbedded />
             </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>

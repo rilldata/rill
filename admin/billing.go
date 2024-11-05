@@ -64,7 +64,11 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	var pc *payment.Customer
 	var err error
 
-	bc, err = s.Biller.FindCustomer(ctx, org.ID)
+	bcid := org.BillingCustomerID // for safety in case the method is called with org which has billing customer id, currently there is no such call
+	if bcid == "" {
+		bcid = org.ID
+	}
+	bc, err = s.Biller.FindCustomer(ctx, bcid)
 	if err != nil && !errors.Is(err, billing.ErrNotFound) {
 		return nil, nil, fmt.Errorf("error finding billing customer: %w", err)
 	}
@@ -206,6 +210,9 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
+			if errors.Is(err, billing.ErrCustomerIDRequired) {
+				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
 	}

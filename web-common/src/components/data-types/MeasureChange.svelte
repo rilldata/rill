@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Base from "./Base.svelte";
   import { isPercDiff } from "./type-utils";
   export let inTable = false;

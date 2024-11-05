@@ -81,21 +81,21 @@ var spec = drivers.Spec{
 			DisplayName: "Salesforce Username",
 			Required:    false,
 			Placeholder: "user@example.com",
-			Hint:        "Either set this or pass --var connector.salesforce.username=... to rill start",
+			Hint:        "Either set this or pass --env connector.salesforce.username=... to rill start",
 		},
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Salesforce Password",
 			Required:    false,
-			Hint:        "Either set this or pass --var connector.salesforce.password=... to rill start",
+			Hint:        "Either set this or pass --env connector.salesforce.password=... to rill start",
 		},
 		{
 			Key:         "key",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "JWT Key for Authentication",
 			Required:    false,
-			Hint:        "Either set this or pass --var connector.salesforce.key=... to rill start",
+			Hint:        "Either set this or pass --env connector.salesforce.key=... to rill start",
 		},
 		{
 			Key:         "endpoint",
@@ -104,7 +104,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Default:     "login.salesforce.com",
 			Placeholder: "login.salesforce.com",
-			Hint:        "Either set this or pass --var connector.salesforce.endpoint=... to rill start",
+			Hint:        "Either set this or pass --env connector.salesforce.endpoint=... to rill start",
 		},
 		{
 			Key:         "client_id",
@@ -112,7 +112,7 @@ var spec = drivers.Spec{
 			DisplayName: "Connected App Client Id",
 			Required:    false,
 			Default:     defaultClientID,
-			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
+			Hint:        "Either set this or pass --env connector.salesforce.client_id=... to rill start",
 		},
 		{
 			Key:         "name",

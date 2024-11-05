@@ -1980,6 +1980,8 @@ func (m *OLAPListTablesRequest) validate(all bool) error {
 
 	// no validation rules for Connector
 
+	// no validation rules for SearchPattern
+
 	if len(errors) > 0 {
 		return OLAPListTablesRequestMultiError(errors)
 	}

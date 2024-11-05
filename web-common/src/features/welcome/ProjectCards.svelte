@@ -59,7 +59,7 @@
     );
 
     const mutationFunction = example ? unpackExample : unpackEmpty;
-    const key = example ? "name" : "title";
+    const key = example ? "name" : "displayName";
 
     try {
       await mutationFunction({
@@ -69,6 +69,11 @@
           force: true,
         },
       });
+
+      setTimeout(() => {
+        if (window.location.search.includes("redirect=true"))
+          window.location.reload();
+      }, 5000);
     } catch {
       selectedProjectName = null;
     }

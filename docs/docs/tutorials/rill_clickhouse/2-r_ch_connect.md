@@ -93,7 +93,7 @@ dsn: "clickhouse://localhost:9000"
 Navigate back to the Terminal and stop the Rill process. You can run the following to add a variable and use this is within Rill.
 
 ```
-rill start --var host='localhost' --var  port='9000'
+rill start --env host='localhost' --env  port='9000'
 ```
 
 Afterwards, create a file called clickchouse.yaml and add the following contents:
@@ -102,8 +102,8 @@ Afterwards, create a file called clickchouse.yaml and add the following contents
 type: connector
 driver: clickhouse
 
-host: '{{ .vars.host }}'
-port: '{{ .vars.port }}'
+host: '{{ .env.host }}'
+port: '{{ .env.port }}'
 ```
 
 

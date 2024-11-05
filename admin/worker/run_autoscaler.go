@@ -85,7 +85,6 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			ProdVersion:          targetProject.ProdVersion,
 			ProdBranch:           targetProject.ProdBranch,
 			Subpath:              targetProject.Subpath,
-			ProdVariables:        targetProject.ProdVariables,
 			ProdDeploymentID:     targetProject.ProdDeploymentID,
 			ProdSlots:            rec.RecommendedSlots,
 			ProdTTLSeconds:       targetProject.ProdTTLSeconds,

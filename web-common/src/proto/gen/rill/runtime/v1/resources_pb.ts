@@ -1115,11 +1115,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   model = "";
 
   /**
-   * User-facing title
+   * User-facing name
    *
-   * @generated from field: string title = 3;
+   * @generated from field: string display_name = 3;
    */
-  title = "";
+  displayName = "";
 
   /**
    * User-facing description
@@ -1262,7 +1262,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 22, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 24, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -1380,6 +1380,16 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
   name = "";
 
   /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description = "";
+
+  /**
    * @generated from field: string column = 2;
    */
   column = "";
@@ -1388,16 +1398,6 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    * @generated from field: string expression = 6;
    */
   expression = "";
-
-  /**
-   * @generated from field: string label = 3;
-   */
-  label = "";
-
-  /**
-   * @generated from field: string description = 4;
-   */
-  description = "";
 
   /**
    * @generated from field: bool unnest = 5;
@@ -1418,10 +1418,10 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.DimensionV2";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -1567,6 +1567,16 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   name = "";
 
   /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName = "";
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description = "";
+
+  /**
    * @generated from field: string expression = 2;
    */
   expression = "";
@@ -1597,16 +1607,6 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   referencedMeasures: string[] = [];
 
   /**
-   * @generated from field: string label = 3;
-   */
-  label = "";
-
-  /**
-   * @generated from field: string description = 4;
-   */
-  description = "";
-
-  /**
    * @generated from field: string format_preset = 5;
    */
   formatPreset = "";
@@ -1635,14 +1635,14 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.MeasureV2";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_MeasureType) },
     { no: 9, name: "window", kind: "message", T: MetricsViewSpec_MeasureWindow },
     { no: 10, name: "per_dimensions", kind: "message", T: MetricsViewSpec_DimensionSelector, repeated: true },
     { no: 11, name: "required_dimensions", kind: "message", T: MetricsViewSpec_DimensionSelector, repeated: true },
     { no: 12, name: "referenced_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
@@ -2064,11 +2064,11 @@ export class Explore extends Message<Explore> {
  */
 export class ExploreSpec extends Message<ExploreSpec> {
   /**
-   * User-facing title
+   * User-facing name
    *
-   * @generated from field: string title = 1;
+   * @generated from field: string display_name = 1;
    */
-  title = "";
+  displayName = "";
 
   /**
    * User-facing description
@@ -2144,6 +2144,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
   defaultPreset?: ExplorePreset;
 
   /**
+   * If true, the pivot tab will be hidden when the explore is embedded.
+   *
+   * @generated from field: bool embeds_hide_pivot = 16;
+   */
+  embedsHidePivot = false;
+
+  /**
    * Security for the explore dashboard.
    * These are not currently parsed from YAML, but will be derived from the parent metrics view.
    *
@@ -2159,7 +2166,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ExploreSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -2170,6 +2177,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
+    { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
@@ -2708,14 +2716,14 @@ export class Report extends Message<Report> {
  */
 export class ReportSpec extends Message<ReportSpec> {
   /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
    * @generated from field: bool trigger = 1;
    */
   trigger = false;
-
-  /**
-   * @generated from field: string title = 2;
-   */
-  title = "";
 
   /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
@@ -2787,8 +2795,8 @@ export class ReportSpec extends Message<ReportSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ReportSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2984,14 +2992,14 @@ export class Alert extends Message<Alert> {
  */
 export class AlertSpec extends Message<AlertSpec> {
   /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
    * @generated from field: bool trigger = 1;
    */
   trigger = false;
-
-  /**
-   * @generated from field: string title = 2;
-   */
-  title = "";
 
   /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
@@ -3113,8 +3121,8 @@ export class AlertSpec extends Message<AlertSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.AlertSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4044,14 +4052,14 @@ export class Component extends Message<Component> {
  */
 export class ComponentSpec extends Message<ComponentSpec> {
   /**
-   * @generated from field: string title = 1;
+   * @generated from field: string display_name = 1;
    */
-  title = "";
+  displayName = "";
 
   /**
-   * @generated from field: string subtitle = 7;
+   * @generated from field: string description = 7;
    */
-  subtitle = "";
+  description = "";
 
   /**
    * @generated from field: string resolver = 2;
@@ -4103,8 +4111,8 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ComponentSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4266,9 +4274,9 @@ export class Canvas extends Message<Canvas> {
  */
 export class CanvasSpec extends Message<CanvasSpec> {
   /**
-   * @generated from field: string title = 1;
+   * @generated from field: string display_name = 1;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: uint32 columns = 2;
@@ -4303,7 +4311,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },

@@ -161,10 +161,10 @@ message MetricsViewSpec {
   // Dimensions are columns to filter and group by
   message DimensionV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string column = 2;
     string expression = 6;
-    string label = 3;
-    string description = 4;
     bool unnest = 5;
     string uri = 7;
   }
@@ -193,14 +193,14 @@ message MetricsViewSpec {
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
+    string display_name = 3;
+    string description = 4;
     string expression = 2;
     MeasureType type = 8;
     MeasureWindow window = 9;
     repeated DimensionSelector per_dimensions = 10;
     repeated DimensionSelector required_dimensions = 11;
     repeated string referenced_measures = 12;
-    string label = 3;
-    string description = 4;
     string format_preset = 5;
     string format_d3 = 7;
     google.protobuf.Struct format_d3_locale = 13;
@@ -216,8 +216,8 @@ message MetricsViewSpec {
   string table = 2;
   // Name of the model the metrics view is based on. Either table or model should be set.
   string model = 24;
-  // User-facing title
-  string title = 3;
+  // User-facing name
+  string display_name = 3;
   // User-facing description
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
@@ -324,8 +324,8 @@ message Explore {
 }
 
 message ExploreSpec {
-  // User-facing title
-  string title = 1;
+  // User-facing name
+  string display_name = 1;
   // User-facing description
   string description = 2;
   // The metrics view the explore is based on
@@ -349,6 +349,8 @@ message ExploreSpec {
   repeated string time_zones = 10;
   // Preset UI state to show by default.
   ExplorePreset default_preset = 15;
+  // If true, the pivot tab will be hidden when the explore is embedded.
+  bool embeds_hide_pivot = 16;
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
@@ -441,8 +443,8 @@ message Report {
 }
 
 message ReportSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
   string query_name = 5;
@@ -478,8 +480,8 @@ message Alert {
 }
 
 message AlertSpec {
+  string display_name = 2;
   bool trigger = 1;
-  string title = 2;
   Schedule refresh_schedule = 3;
   bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
   string intervals_iso_duration = 5;
@@ -623,8 +625,8 @@ message Component {
 }
 
 message ComponentSpec {
-  string title = 1;
-  string subtitle = 7;
+  string display_name = 1;
+  string description = 7;
   string resolver = 2;
   google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
@@ -651,7 +653,7 @@ message Canvas {
 }
 
 message CanvasSpec {
-  string title = 1;
+  string display_name = 1;
   uint32 columns = 2;
   uint32 gap = 3;
   repeated ComponentVariable variables = 5;
