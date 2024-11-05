@@ -53,7 +53,7 @@
       header: "",
       cell: ({ row }) =>
         flexRender(ActionsCell, {
-          id: row.original.id,
+          name: row.original.name,
         }),
       enableSorting: false,
       meta: {

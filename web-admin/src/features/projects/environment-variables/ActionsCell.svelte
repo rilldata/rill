@@ -6,7 +6,7 @@
   import EditDialog from "./EditDialog.svelte";
   import DeleteDialog from "./DeleteDialog.svelte";
 
-  export let id: string;
+  export let name: string;
 
   let isDropdownOpen = false;
   let isDeleteConfirmOpen = false;
@@ -43,4 +43,4 @@
 </DropdownMenu.Root>
 
 <EditDialog bind:open={isEditDialogOpen} />
-<DeleteDialog bind:open={isDeleteConfirmOpen} {id} />
+<DeleteDialog bind:open={isDeleteConfirmOpen} {name} />

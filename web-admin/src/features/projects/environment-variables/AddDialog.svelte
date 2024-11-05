@@ -31,7 +31,7 @@
   let isDevelopment = false;
   let isProduction = false;
   let newVariables: { key: string; value: string }[] = [
-    { key: "", value: "" },
+    { key: "test_key", value: "test_value" },
   ];
 
   $: console.log(newVariables);
@@ -67,11 +67,7 @@
       });
 
       await queryClient.invalidateQueries(
-        getAdminServiceGetProjectVariablesQueryKey(organization, project, {
-          // TODO: revisit to invalidate specific environment project variables if needed when adding new variables
-          // otherwise, safe to invalidate all environment variables
-          forAllEnvironments: true,
-        }),
+        getAdminServiceGetProjectVariablesQueryKey(organization, project),
       );
 
       eventBus.emit("notification", {

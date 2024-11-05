@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    createAdminServiceDeleteUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+    createAdminServiceUpdateProjectVariables,
+    getAdminServiceGetProjectVariablesQueryKey,
   } from "@rilldata/web-admin/client";
   import {
     AlertDialog,
@@ -18,30 +18,35 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let open = false;
-  export let id: string;
+  export let name: string;
 
   $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   const queryClient = useQueryClient();
-  const deleteUserGroup = createAdminServiceDeleteUsergroup();
+  const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  // TODO: use `createAdminServiceUpdateProjectVariables`
-  async function onDelete(deletedId: string) {
+  async function onDelete(deletedName: string) {
     try {
-      await $deleteUserGroup.mutateAsync({
-        organization: organization,
-        usergroup: deletedId,
+      await $updateProjectVariables.mutateAsync({
+        organization,
+        project,
+        data: {
+          // Variables to delete.
+          unsetVariables: [deletedName],
+        },
       });
-
       await queryClient.invalidateQueries(
-        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+        getAdminServiceGetProjectVariablesQueryKey(organization, project),
       );
 
-      eventBus.emit("notification", { message: "User group deleted" });
-    } catch (error) {
-      console.error("Error deleting user group", error);
       eventBus.emit("notification", {
-        message: "Error deleting user group",
+        message: "Environment variable deleted",
+      });
+    } catch (error) {
+      console.error("Error deleting environment variable", error);
+      eventBus.emit("notification", {
+        message: "Error deleting environment variable",
         type: "error",
       });
     }
@@ -49,10 +54,10 @@
 
   async function handleDelete() {
     try {
-      onDelete(id);
+      onDelete(name);
       open = false;
     } catch (error) {
-      console.error("Failed to delete user group:", error);
+      console.error("Failed to delete environment variable:", error);
     }
   }
 </script>
