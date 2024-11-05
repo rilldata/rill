@@ -10,14 +10,10 @@ import { isTeamPlan } from "@rilldata/web-admin/features/billing/plans/utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
-import {
-  getLocalServiceGetMetadataQueryKey,
-  localServiceGetMetadata,
-} from "@rilldata/web-common/runtime-client/local-service";
 import type { Page } from "@sveltejs/kit";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { DateTime } from "luxon";
-import { derived, type Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
 export async function fetchTeamPlan() {
   const plansResp = await queryClient.fetchQuery({

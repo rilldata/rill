@@ -18,6 +18,7 @@
   const project = deployer.project;
   const deployerStatus = deployer.getStatus();
   const promptOrgSelection = deployer.promptOrgSelection;
+  const org = deployer.org;
 
   function onOrgSelect(org: string) {
     promptOrgSelection.set(false);
@@ -31,6 +32,21 @@
   onMount(() => {
     void deployer.loginOrDeploy();
   });
+
+  let upgradeHref = "";
+  $: if ($org && $metadata.data) {
+    let cloudUrl = $metadata.data.adminUrl.replace(
+      "admin.rilldata",
+      "ui.rilldata",
+    );
+    if (cloudUrl === "http://localhost:9090") {
+      cloudUrl = "http://localhost:3000";
+    }
+    const url = new URL(cloudUrl);
+    url.pathname = `/${$org}/-/settings/billing`;
+    url.searchParams.set("upgrade", "true");
+    upgradeHref = url.toString();
+  }
 </script>
 
 <!-- This seems to be necessary to trigger tanstack query to update the query object -->
@@ -54,13 +70,17 @@
         Hang tight! We're deploying your project...
       </CTAHeader>
       <CTANeedHelp />
-    {:else if $deployerStatus.error}
+    {:else if $deployerStatus.error?.message}
       <CancelCircleInverse size="7rem" className="text-gray-200" />
       <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
-      <CTAMessage>{$deployerStatus.error}</CTAMessage>
-      <CTAButton variant="secondary" on:click={onContactUs}>
-        Contact us
-      </CTAButton>
+      <CTAMessage>{$deployerStatus.error.message}</CTAMessage>
+      {#if $deployerStatus.error.quotaError}
+        <CTAButton href={upgradeHref}>Upgrade</CTAButton>
+      {:else}
+        <CTAButton variant="secondary" on:click={onContactUs}>
+          Contact us
+        </CTAButton>
+      {/if}
       <CTANeedHelp />
     {/if}
   </CTAContentContainer>
