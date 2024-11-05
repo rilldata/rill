@@ -4,7 +4,7 @@
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { Trash2Icon, Pencil } from "lucide-svelte";
   import EditDialog from "./EditDialog.svelte";
-  import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
+  import DeleteDialog from "./DeleteDialog.svelte";
 
   export let id: string;
 
@@ -43,5 +43,4 @@
 </DropdownMenu.Root>
 
 <EditDialog bind:open={isEditDialogOpen} />
-
-<DeleteConfirmDialog bind:open={isDeleteConfirmOpen} {id} />
+<DeleteDialog bind:open={isDeleteConfirmOpen} {id} />

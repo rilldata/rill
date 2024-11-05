@@ -25,7 +25,7 @@
   const queryClient = useQueryClient();
   const deleteUserGroup = createAdminServiceDeleteUsergroup();
 
-  // TODO: rename to onDeleteEnvironmentVariable
+  // TODO: use `createAdminServiceUpdateProjectVariables`
   async function onDelete(deletedId: string) {
     try {
       await $deleteUserGroup.mutateAsync({
