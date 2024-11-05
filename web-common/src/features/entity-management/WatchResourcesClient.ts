@@ -4,6 +4,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
+  getRuntimeServiceGetExploreQueryKey,
   getRuntimeServiceGetModelSplitsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -215,6 +216,14 @@ export class WatchResourcesClient {
                 failed,
               );
             }
+
+            queryClient
+              .invalidateQueries(
+                getRuntimeServiceGetExploreQueryKey(this.instanceId, {
+                  name: res.name.name,
+                }),
+              )
+              .catch(console.error);
 
             // Done
             return;

@@ -7,10 +7,11 @@
   export let label: string;
   export let hint: string | undefined = undefined;
   export let optional = false;
+  export let capitalize = true;
 </script>
 
 <div class="label-wrapper">
-  <label for={id} class="line-clamp-1 capitalize">
+  <label for={id} class="line-clamp-1" class:capitalize>
     {label}
     {#if optional}
       <span class="text-gray-500 text-[12px] font-normal">(optional)</span>

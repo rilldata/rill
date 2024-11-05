@@ -15,6 +15,9 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import ViewSelector from "../canvas/ViewSelector.svelte";
+  import VisualExploreEditing from "./VisualExploreEditing.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -39,6 +42,9 @@
   $: allErrors = $allErrorsQuery;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
+  $: workspace = workspaces.get(filePath);
+  $: selectedView = workspace.view;
+
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
@@ -61,19 +67,35 @@
     {filePath}
     resourceKind={ResourceKind.Explore}
   >
-    <PreviewButton
-      slot="cta"
-      href="/explore/{exploreName}"
-      disabled={allErrors.length > 0 || resourceIsReconciling}
-      reconciling={resourceIsReconciling}
-    />
+    <div class="flex gap-x-2" slot="cta">
+      <PreviewButton
+        href="/explore/{exploreName}"
+        disabled={allErrors.length > 0 || resourceIsReconciling}
+        reconciling={resourceIsReconciling}
+      />
+
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
+    </div>
   </WorkspaceHeader>
 
-  <ExploreEditor
-    slot="body"
-    bind:autoSave={$autoSave}
-    {exploreName}
-    {fileArtifact}
-    {allErrors}
-  />
+  <svelte:fragment slot="body">
+    {#if $selectedView === "code"}
+      <ExploreEditor
+        bind:autoSave={$autoSave}
+        {exploreName}
+        {fileArtifact}
+        {allErrors}
+      />
+    {:else}
+      {#key fileArtifact}
+        <VisualExploreEditing
+          errors={[]}
+          {fileArtifact}
+          switchView={() => {
+            $selectedView = "code";
+          }}
+        />
+      {/key}
+    {/if}
+  </svelte:fragment>
 </WorkspaceContainer>
