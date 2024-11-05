@@ -12,7 +12,6 @@
   } from "@rilldata/web-common/components/dialog-v2";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
   import { Plus } from "lucide-svelte";
-  import ErrorMessage from "./ErrorMessage.svelte";
   import {
     createAdminServiceUpdateProjectVariables,
     getAdminServiceGetProjectVariablesQueryKey,
@@ -129,7 +128,7 @@
   }
 
   function handleAdd() {
-    $form.newVariables = [...newVariables, { key: "", value: "" }];
+    $form.newVariables = [...$form.newVariables, { key: "", value: "" }];
   }
 
   function handleKeyChange(index: number, e: any) {
@@ -143,9 +142,13 @@
   function handleDelete(index: number) {
     $form.newVariables = $form.newVariables.filter((_, i) => i !== index);
   }
+
+  function handleReset() {
+    $form.newVariables = [{ key: "", value: "" }];
+  }
 </script>
 
-<Dialog bind:open>
+<Dialog bind:open onOutsideClick={() => handleReset()}>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -233,7 +236,9 @@
           </Button>
           {#if errorMessage}
             <div class="mt-1">
-              <ErrorMessage />
+              <p class="text-xs text-red-600 font-normal">
+                These keys already exist for this environment.
+              </p>
             </div>
           {/if}
         </div>
@@ -245,6 +250,7 @@
         type="plain"
         on:click={() => {
           open = false;
+          handleReset();
         }}>Cancel</Button
       >
       <Button type="primary" form={formId} disabled={$submitting} submitForm
