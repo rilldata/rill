@@ -224,8 +224,6 @@ export class WatchResourcesClient {
                 }),
               )
               .catch(console.error);
-
-            // Done
             return;
           }
 
