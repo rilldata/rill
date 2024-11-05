@@ -6,19 +6,19 @@ sidebar_position: 11
 ---
 
 Rill exposes [custom APIs](/integrate/custom-apis/index.md) you have created under `apis` folder as HTTP endpoints 
-at `https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/api/<api-name>`.
+at `https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/<path to api file>`.
 
 ## Accessing custom APIs
 Custom APIs accepts both POST and GET requests to the API endpoint with a bearer token in the `Authorization` header.
 For GET requests parameters can be passed in the url.
 
 ```bash
-curl https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
+curl https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/<path to api file>[?query-args] \
 -H "Authorization: Bearer <token>"
 ```
 
 ```bash
-curl -X POST https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/api/<api-name>[?query-args] \
+curl -X POST https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/runtime/<path to api file>[?query-args] \
 -H "Authorization: Bearer <token>"
 ```
 
@@ -35,7 +35,7 @@ There are two types of bearer tokens that you can use to access the custom APIs:
     To get user token you need to perform a handshake with Rill's [credentials API](https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials) using a service account token. Example:
     
     ```bash
-    curl -X POST https://admin.rilldata.com/v1/orgs/<org-name>/projects/<project-name>/credentials \
+    curl -X POST https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/credentials \
     -H "Authorization: Bearer <service-account-token>"
    --data-raw '{
       "user_email":"<user-email>"
