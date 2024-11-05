@@ -41,7 +41,7 @@ var (
 	_minCliVersionByMethod = map[string]*version.Version{
 		"/rill.admin.v1.AdminService/UpdateProject":          version.Must(version.NewVersion("0.28.0")),
 		"/rill.admin.v1.AdminService/UpdateOrganization":     version.Must(version.NewVersion("0.28.0")),
-		"/rill.admin.v1.AdminService/UpdateProjectVariables": version.Must(version.NewVersion("0.51.0")),
+		"/rill.admin.v1.AdminService/UpdateProjectVariables": version.Must(version.NewVersion("0.50.9")),
 	}
 )
 
