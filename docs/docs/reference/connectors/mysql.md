@@ -23,7 +23,8 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) will need to be 
 - **hostname** and **port** should correspond to the respective ip address / hostname and port (default 3306) of your MySQL database
 - **database_name** should correspond to the database in MySQL that you are using
 
-![Connecting to MySQL](/img/reference/connectors/mysql/mysql.png)
+<img src = '/img/reference/connectors/mysql/mysql.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 

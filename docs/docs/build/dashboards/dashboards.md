@@ -17,11 +17,31 @@ When including dimensions and measures only the named resources will be included
 Rill also supports the ability to exclude a set of named dimensions and measures.
 
 ```yaml
-metrics_view: my_metrics_view
 
-dimensions: [country, region, product_category] # Only these three dimensions will be included
-measures:
-  exclude: [profit] # All measures except profit will be included
+type: explore
+
+title: Title of your Explore Dashboard
+description: a description for your explore dashboard
+metrics_view: my_metricsview
+
+dimensions: '*' #can use regex
+measures: '*' #can use regex
+
+theme: #your default theme
+
+time_ranges: #was available_time_ranges, list the time of available time ranges that can be selected in your dashboard
+time_zones: #was available_time_zones, list the time zones that are selectable in the dashboard
+
+defaults: #define all the defaults within here, was default_* in previous dashboard YAML
+    dimensions: 
+    measures:
+    time_range:
+    comparison_mode:
+    comparison_dimension:
+
+security:
+    access: #only dashboard access can be defined here, other security policies must be set on the metrics view
+
 ```
 
 :::tip
