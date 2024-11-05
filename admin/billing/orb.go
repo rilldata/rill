@@ -624,6 +624,8 @@ func getPlanDisplayName(externalID string) string {
 		return "Trial"
 	case "team":
 		return "Team"
+	case "managed":
+		return "Managed"
 	case "poc":
 		return "POC"
 	default:
