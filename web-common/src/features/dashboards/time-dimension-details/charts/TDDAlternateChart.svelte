@@ -1,5 +1,11 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
+  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
+  import {
+    resolveSignalField,
+    resolveSignalIntervalField,
+    resolveSignalTimeField,
+  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
@@ -22,12 +28,6 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
-  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
-  import {
-    resolveSignalField,
-    resolveSignalTimeField,
-    resolveSignalIntervalField,
-  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
