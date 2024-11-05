@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetBillingSubscription,
+    type V1OrganizationQuotas,
+  } from "@rilldata/web-admin/client";
   import CancelledTeamPlan from "@rilldata/web-admin/features/billing/plans/CancelledTeamPlan.svelte";
   import EnterprisePlan from "@rilldata/web-admin/features/billing/plans/EnterprisePlan.svelte";
   import POCPlan from "@rilldata/web-admin/features/billing/plans/POCPlan.svelte";
@@ -13,6 +16,7 @@
 
   export let organization: string;
   export let showUpgradeDialog: boolean;
+  export let organizationQuotas: V1OrganizationQuotas;
 
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
@@ -35,13 +39,18 @@
 {#if neverSubbed}
   <!-- TODO: once mocks are in. Right now we just disable the routes. -->
 {:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgradeDialog} />
+  <TrialPlan
+    {organization}
+    {subscription}
+    {showUpgradeDialog}
+    {organizationQuotas}
+  />
 {:else if hasEnded}
-  <CancelledTeamPlan {organization} {subscription} {showUpgradeDialog} />
+  <CancelledTeamPlan {organization} {showUpgradeDialog} {organizationQuotas} />
 {:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} />
+  <TeamPlan {organization} {subscription} {organizationQuotas} />
 {:else if subIsPOCPlan}
-  <POCPlan {organization} plan={subscription.plan} {hasPayment} />
+  <POCPlan {organization} {hasPayment} {organizationQuotas} />
 {:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} plan={subscription.plan} />
+  <EnterprisePlan {organization} {organizationQuotas} />
 {/if}

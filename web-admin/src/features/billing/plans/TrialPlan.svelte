@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     V1BillingIssueType,
+    type V1OrganizationQuotas,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
@@ -17,8 +18,7 @@
   export let organization: string;
   export let subscription: V1Subscription;
   export let showUpgradeDialog: boolean;
-
-  $: plan = subscription?.plan;
+  export let organizationQuotas: V1OrganizationQuotas;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: trialIssue = $categorisedIssues.data?.trial;
@@ -54,9 +54,7 @@
     <div>
       {trialEndMessage} Ready to get started with Rill?
       <PricingDetails />
-      {#if plan}
-        <PlanQuotas {organization} quotas={plan.quotas} />
-      {/if}
+      <PlanQuotas {organization} {organizationQuotas} />
     </div>
   </div>
   <svelte:fragment slot="contact">

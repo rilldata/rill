@@ -31,11 +31,10 @@ export async function fetchAllProjectsHibernating(organization: string) {
   return projectsResp.projects?.every((p) => !p.prodDeploymentId) ?? false;
 }
 
-export async function fetchOrganizationPermissions(organization: string) {
-  const orgResp = await queryClient.fetchQuery({
+export async function fetchOrganization(organization: string) {
+  return await queryClient.fetchQuery({
     queryKey: getAdminServiceGetOrganizationQueryKey(organization),
     queryFn: () => adminServiceGetOrganization(organization),
     staleTime: Infinity,
   });
-  return orgResp.permissions ?? {};
 }

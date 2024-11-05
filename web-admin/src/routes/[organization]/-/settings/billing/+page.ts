@@ -3,7 +3,11 @@ import type { PageLoad } from "./$types";
 
 const ShowUpgradeKey = "rill:app:showUpgrade";
 
-export const load: PageLoad = async ({ params: { organization }, url }) => {
+export const load: PageLoad = async ({
+  params: { organization },
+  url,
+  parent,
+}) => {
   // Save the state in localStorage and redirect to the url without it.
   // This prevents a refresh or saving the url from re-opening the page
   if (url.searchParams.has("upgrade")) {

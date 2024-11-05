@@ -12,7 +12,7 @@
 
   export let data: PageData;
 
-  $: ({ organization, showUpgradeDialog } = data);
+  $: ({ organization, showUpgradeDialog, organizationQuotas } = data);
 
   $: allStatus = mergedQueryStatus([
     createAdminServiceGetBillingSubscription(organization),
@@ -25,6 +25,6 @@
 {#if $allStatus.isLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {:else}
-  <Plan {organization} {showUpgradeDialog} />
+  <Plan {organization} {showUpgradeDialog} {organizationQuotas} />
   <Payment {organization} />
 {/if}

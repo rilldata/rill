@@ -26,7 +26,7 @@ export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
-  public readonly promptOrgSelection = writable(false);
+  public readonly promptOrgSelection = writable(true);
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();

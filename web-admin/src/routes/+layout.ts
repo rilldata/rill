@@ -9,13 +9,14 @@ import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
   type V1OrganizationPermissions,
+  type V1OrganizationQuotas,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
 import {
   redirectToLoginIfNotLoggedIn,
   redirectToLoginOrRequestAccess,
 } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
+import { fetchOrganization } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
@@ -39,19 +40,22 @@ export const load = async ({ params, url, route }) => {
   const token = searchParamToken ?? routeToken;
 
   let organizationPermissions: V1OrganizationPermissions = {};
+  let organizationQuotas: V1OrganizationQuotas = {};
   if (organization && !token) {
     try {
-      organizationPermissions =
-        await fetchOrganizationPermissions(organization);
+      const organizationResp = await fetchOrganization(organization);
+      organizationPermissions = organizationResp.permissions ?? {};
+      organizationQuotas = organizationResp.organization?.quotas ?? {};
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
       }
-      // Use without access to anything withing the org will hit this, so redirect to access page here.
+      // Use without access to anything within the org will hit this, so redirect to access page here.
       const didRedirect = await redirectToLoginIfNotLoggedIn();
       if (!didRedirect) {
         return {
           organizationPermissions,
+          organizationQuotas,
           projectPermissions: <V1ProjectPermissions>{},
         };
       }
@@ -61,6 +65,7 @@ export const load = async ({ params, url, route }) => {
   if (!organization || !project) {
     return {
       organizationPermissions,
+      organizationQuotas,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
@@ -103,6 +108,7 @@ export const load = async ({ params, url, route }) => {
 
     return {
       organizationPermissions,
+      organizationQuotas,
       projectPermissions,
     };
   } catch (e) {

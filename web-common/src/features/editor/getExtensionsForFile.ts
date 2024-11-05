@@ -1,5 +1,5 @@
 import { markdown } from "@codemirror/lang-markdown";
-import { LanguageSupport } from "@codemirror/language";
+import type { LanguageSupport } from "@codemirror/language";
 import { yaml } from "@codemirror/lang-yaml";
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 

@@ -21,6 +21,7 @@
     target="_blank">See docs</a
   >
 </div>
+<!-- w-[400px] Needed for tailwind to compile for this -->
 <Select
   bind:value={selectedOrg}
   id="deploy-target-org"
