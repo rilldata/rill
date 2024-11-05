@@ -38,22 +38,18 @@ func (p *Parser) parseTheme(node *Node) error {
 }
 
 func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
-	// Parse the colors now to get the parse error before inserting resource
-	var pc csscolorparser.Color
-	var sc csscolorparser.Color
-	var err error
-
 	spec := &runtimev1.ThemeSpec{}
 
 	if tmp.Colors.Primary != "" {
-		pc, err = csscolorparser.Parse(tmp.Colors.Primary)
+		pc, err := csscolorparser.Parse(tmp.Colors.Primary)
 		if err != nil {
 			return nil, err
 		}
 		spec.PrimaryColor = toThemeColor(pc)
 	}
+
 	if tmp.Colors.Secondary != "" {
-		sc, err = csscolorparser.Parse(tmp.Colors.Secondary)
+		sc, err := csscolorparser.Parse(tmp.Colors.Secondary)
 		if err != nil {
 			return nil, err
 		}
