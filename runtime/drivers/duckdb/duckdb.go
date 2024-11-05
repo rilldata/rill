@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -180,7 +179,13 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	// Open the DB
 	err = c.reopenDB(ctx, false)
 	if err != nil {
-		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
+		// Check for another process currently accessing the DB
+		if strings.Contains(err.Error(), "Could not set lock on file") {
+			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
+		}
+
+		// Check for using incompatible database files
+		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "Trying to read a database file with version number") {
 			return nil, err
 		}
 
@@ -496,17 +501,10 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 		bootQueries = append(bootQueries, c.config.InitSQL)
 	}
 
-	var logger *slog.Logger
-
-	if c.config.LogQueries {
-		logger = slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
-			AddSource: true,
-		}))
-	} else {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	}
-
 	// Create new DB
+	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
+		AddSource: true,
+	}))
 	var err error
 	if c.config.ExtTableStorage {
 		var backup *duckdbreplicator.BackupProvider
@@ -536,15 +534,7 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 			Logger:      logger,
 		})
 	}
-	if err != nil {
-		return err
-	}
-
-	_, release, err := c.db.AcquireReadConnection(context.Background())
-	if err != nil {
-		return err
-	}
-	return release()
+	return err
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like catalog and information schema (i.e. fast queries).
@@ -749,4 +739,11 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Unlock()
 		}
 	}
+}
+
+// fatalInternalError logs a critical internal error and exits the process.
+// This is used for errors that are completely unrecoverable.
+// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
+func (c *connection) fatalInternalError(err error) {
+	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
 }

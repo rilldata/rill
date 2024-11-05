@@ -175,9 +175,8 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-// TODO :: implement estimate size
 func (c *connection) estimateSize() int64 {
-	return 0
+	return c.db.Size()
 }
 
 // AddTableColumn implements drivers.OLAPStore.

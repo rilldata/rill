@@ -170,8 +170,8 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
 	_, err = conn.ExecContext(ctx, query)
 	// first revert to original database
-	if _, err = conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))); err != nil {
-		t.logger.Error("failed to switch back to original database", zap.Error(err))
+	if _, switchErr := conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))); switchErr != nil {
+		t.to.fatalInternalError(fmt.Errorf("failed to switch back to original database: %w", err))
 	}
 	// check for the original error
 	if err != nil {

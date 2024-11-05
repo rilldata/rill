@@ -2109,8 +2109,8 @@ github.com/richardlehane/msoleps v1.0.3 h1:aznSZzrwYRl3rLKRT3gUk9am7T/mLNSnJINvN
 github.com/richardlehane/msoleps v1.0.3/go.mod h1:BWev5JBpU9Ko2WAgmZEuiz4/u3ZYTKbjLycmwiWUfWg=
 github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff h1:Tt67B9BQVkymWsosWgz7vyz8MXnlYzc8xbqtxYuPU1s=
 github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff/go.mod h1:u3fgh3EdgN/YQ8cVQRguVW3R+seMybFg8QBQ5LU+eBY=
-github.com/rilldata/duckdb-replicator v0.0.0-20241105044430-27fe98427e31 h1:xU7v5LJ++FGySr7s8P+J5ZtjLIBYcnIZg1fHcTb+/W0=
-github.com/rilldata/duckdb-replicator v0.0.0-20241105044430-27fe98427e31/go.mod h1:mRKMcdCdKJOrtHKMYXVpeEklqrP8AakXIet4RgqbpGI=
+github.com/rilldata/duckdb-replicator v0.0.0-20241105125325-4015bc69dfa9 h1:wFQnKx1rjGUEKJnXmVb+DrU3NQ4WJDBLblQlzhxcYA8=
+github.com/rilldata/duckdb-replicator v0.0.0-20241105125325-4015bc69dfa9/go.mod h1:bYAIEgpvXrIsKxIwSUMv1Ei5/mN6mOa2dD01gr5kBsw=
 github.com/riverqueue/river v0.11.4 h1:NMRsODhRgFztf080RMCjI377jldLXsx41E2r7+c0lPE=
 github.com/riverqueue/river v0.11.4/go.mod h1:HvgBkqon7lYKm9Su4lVOnn1qx8Q4FnSMJjf5auVial4=
 github.com/riverqueue/river/riverdriver v0.11.4 h1:kBg68vfTnRuSwsgcZ7UbKC4ocZ+KSCGnuZw/GwMMMP4=

@@ -1,6 +1,6 @@
 module github.com/rilldata/rill
 
-go 1.23.2
+go 1.22.0
 
 require (
 	cloud.google.com/go/bigquery v1.62.0
@@ -75,7 +75,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
-	github.com/rilldata/duckdb-replicator v0.0.0-20241105044430-27fe98427e31
+	github.com/rilldata/duckdb-replicator v0.0.0-20241105125325-4015bc69dfa9
 	github.com/riverqueue/river v0.11.4
 	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.11.4
 	github.com/riverqueue/river/rivertype v0.11.4
