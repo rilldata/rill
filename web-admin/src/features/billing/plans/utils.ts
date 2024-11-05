@@ -4,18 +4,18 @@ import { DateTime } from "luxon";
 import { writable } from "svelte/store";
 
 export function formatDataSizeQuota(
-  total: number,
+  totalSizeInBytes: number,
   storageLimitBytesPerDeployment: string,
 ): string {
   const maxSize = Number(storageLimitBytesPerDeployment);
   if (Number.isNaN(maxSize) || storageLimitBytesPerDeployment === "-1")
     return "";
-  const formattedTotal = formatMemorySize(total);
+  const formattedTotal = formatMemorySize(totalSizeInBytes);
   const formattedMax = formatMemorySize(maxSize);
   const percent =
     formattedTotal > formattedMax
       ? "100+"
-      : Math.round((total * 100) / maxSize) + "";
+      : Math.round((totalSizeInBytes * 100) / maxSize) + "";
   return `${formattedTotal} of ${formattedMax} (${percent}%)`;
 }
 

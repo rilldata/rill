@@ -2,7 +2,6 @@
   import {
     createAdminServiceCancelBillingSubscription,
     V1BillingIssueType,
-    type V1OrganizationQuotas,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
@@ -27,7 +26,6 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
-  export let organizationQuotas: V1OrganizationQuotas;
 
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
@@ -57,7 +55,7 @@
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
     <PricingDetails />
-    <PlanQuotas {organization} {organizationQuotas} />
+    <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>

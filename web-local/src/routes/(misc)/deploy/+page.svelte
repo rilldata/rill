@@ -39,6 +39,8 @@
       "admin.rilldata",
       "ui.rilldata",
     );
+    // hack for dev env
+    // TODO: find a better solution and get a url from backend
     if (cloudUrl === "http://localhost:9090") {
       cloudUrl = "http://localhost:3000";
     }

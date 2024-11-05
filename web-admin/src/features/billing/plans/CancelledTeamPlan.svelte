@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { type V1OrganizationQuotas } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
@@ -11,7 +10,6 @@
 
   export let organization: string;
   export let showUpgradeDialog: boolean;
-  export let organizationQuotas: V1OrganizationQuotas;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: cancelledSubIssue = $categorisedIssues.data?.cancelled;
@@ -40,7 +38,7 @@
           and your subscription has ended.
         {/if}
       </div>
-      <PlanQuotas {organization} {organizationQuotas} />
+      <PlanQuotas {organization} />
     </div>
   </div>
   <svelte:fragment slot="contact">

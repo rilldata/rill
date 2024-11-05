@@ -164,7 +164,6 @@ export class ProjectDeployer {
       try {
         const tryOrgName = `${org}${i === 0 ? "" : "-" + i}`;
         this.org.set(tryOrgName);
-        return;
         const resp = await get(this.deployMutation).mutateAsync({
           projectName,
           org: tryOrgName,

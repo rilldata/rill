@@ -9,14 +9,13 @@ import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
   type V1OrganizationPermissions,
-  type V1OrganizationQuotas,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
 import {
   redirectToLoginIfNotLoggedIn,
   redirectToLoginOrRequestAccess,
 } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import { fetchOrganization } from "@rilldata/web-admin/features/organizations/selectors";
+import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
@@ -40,12 +39,10 @@ export const load = async ({ params, url, route }) => {
   const token = searchParamToken ?? routeToken;
 
   let organizationPermissions: V1OrganizationPermissions = {};
-  let organizationQuotas: V1OrganizationQuotas = {};
   if (organization && !token) {
     try {
-      const organizationResp = await fetchOrganization(organization);
-      organizationPermissions = organizationResp.permissions ?? {};
-      organizationQuotas = organizationResp.organization?.quotas ?? {};
+      organizationPermissions =
+        await fetchOrganizationPermissions(organization);
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
@@ -55,7 +52,6 @@ export const load = async ({ params, url, route }) => {
       if (!didRedirect) {
         return {
           organizationPermissions,
-          organizationQuotas,
           projectPermissions: <V1ProjectPermissions>{},
         };
       }
@@ -65,7 +61,6 @@ export const load = async ({ params, url, route }) => {
   if (!organization || !project) {
     return {
       organizationPermissions,
-      organizationQuotas,
       projectPermissions: <V1ProjectPermissions>{},
     };
   }
