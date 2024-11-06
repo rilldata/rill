@@ -621,13 +621,11 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 func getPlanDisplayName(externalID string) string {
 	switch externalID {
 	case "free_trial":
-		return "Trial"
+		return "Free trial"
 	case "team":
 		return "Team"
 	case "managed":
 		return "Managed"
-	case "poc":
-		return "POC"
 	default:
 		return "Enterprise"
 	}
