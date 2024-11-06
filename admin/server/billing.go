@@ -130,7 +130,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				TrialEndDate: sub.TrialEndDate,
 			})
 			if err != nil {
-				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
@@ -200,7 +200,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			PlanName: plan.DisplayName,
 		})
 		if err != nil {
-			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	}
 
@@ -254,6 +254,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+
 	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
 		ToEmail: org.BillingEmail,
 		ToName:  org.Name,
@@ -261,10 +263,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		EndDate: endDate,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		s.logger.Named("billing").Error("failed to send subscription cancelled email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 	}
-
-	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	return &adminv1.CancelBillingSubscriptionResponse{}, nil
 }
@@ -372,6 +372,17 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
+
+	// send subscription renewed email
+	err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		PlanName: sub.Plan.DisplayName,
+	})
+	if err != nil {
+		s.logger.Named("billing").Error("failed to send subscription renewed email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
 		Organization: organizationToDTO(org),
@@ -627,7 +638,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 			TrialEndDate: newEndDate,
 		})
 		if err != nil {
-			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	}
 

@@ -561,6 +561,23 @@ func (c *Client) SendPlanUpdate(opts *PlanUpdate) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your plan has been updated to %s", opts.PlanName),
 		Title:   fmt.Sprintf("Your plan has been updated to %s", opts.PlanName),
-		Body:    template.HTML(fmt.Sprintf("Your plan for %q has been updated to %q.", opts.OrgName, opts.PlanName)),
+		Body:    template.HTML(fmt.Sprintf("Your plan for %q has been updated to %q plan.", opts.OrgName, opts.PlanName)),
+	})
+}
+
+type SubscriptionRenewed struct {
+	ToEmail  string
+	ToName   string
+	OrgName  string
+	PlanName string
+}
+
+func (c *Client) SendSubscriptionRenewed(opts *SubscriptionRenewed) error {
+	return c.SendInformational(&Informational{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your subscription for %s has been renewed", opts.OrgName),
+		Title:   fmt.Sprintf("Your subscription for %s has been renewed", opts.OrgName),
+		Body:    template.HTML(fmt.Sprintf("Your subscription for %q has been renewed for %q plan.", opts.OrgName, opts.PlanName)),
 	})
 }
