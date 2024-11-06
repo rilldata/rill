@@ -154,7 +154,7 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
-	themeName, themeSpec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
+	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
 	if err != nil {
 		return err
 	}
@@ -281,7 +281,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	return nil
 }
 
-func (p *Parser) parseExploreTheme(exploreName string, n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
 	if n == nil || n.IsZero() {
 		return "", nil, nil
 	}

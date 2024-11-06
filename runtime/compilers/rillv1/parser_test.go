@@ -1580,7 +1580,7 @@ theme:
 					Blue:  0,
 					Alpha: 1,
 				},
-				Primary: "red",
+				PrimaryColorRaw: "red",
 			},
 		},
 	}
