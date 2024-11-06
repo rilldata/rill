@@ -92,12 +92,12 @@ func (r *ExploreReconciler) validateAndRewrite(ctx context.Context, self *runtim
 	}
 
 	// Check the theme exists
-	if spec.Theme != "" {
-		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: spec.Theme}, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find theme %q: %w", spec.Theme, err)
-		}
-	}
+	// if spec.Theme != "" {
+	// 	_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: spec.Theme}, false)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to find theme %q: %w", spec.Theme, err)
+	// 	}
+	// }
 
 	// Get the parent metrics view's valid spec
 	mvn := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}

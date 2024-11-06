@@ -4233,6 +4233,35 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for Theme
 
+	if all {
+		switch v := interface{}(m.GetEmbeddedTheme()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEmbeddedTheme()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "EmbeddedTheme",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	for idx, item := range m.GetTimeRanges() {
 		_, _ = idx, item
 
@@ -9052,9 +9081,9 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Primary
+	// no validation rules for PrimaryColorRaw
 
-	// no validation rules for Secondary
+	// no validation rules for SecondaryColorRaw
 
 	if m.PrimaryColor != nil {
 
