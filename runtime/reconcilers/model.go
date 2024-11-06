@@ -1354,7 +1354,10 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 
 	var extraProps map[string]any
 	if partition != nil {
-		extraProps = map[string]any{"partition": partition}
+		extraProps = map[string]any{
+			"partition": partition,
+			"split":     partition, // Deprecated: use "partition" instead
+		}
 	}
 
 	td := compilerv1.TemplateData{

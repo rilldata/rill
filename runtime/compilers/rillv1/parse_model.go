@@ -22,6 +22,7 @@ type ModelYAML struct {
 	Incremental           bool                                    `yaml:"incremental"`
 	State                 *DataYAML                               `yaml:"state"`
 	Partitions            *DataYAML                               `yaml:"partitions"`
+	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
 	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
 	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
 	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
@@ -75,6 +76,12 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse partitions resolver
 	var partitionsResolver string
 	var partitionsResolverProps *structpb.Struct
+	if tmp.Splits != nil { // Backwards compatibility: "splits" is deprecated and has been renamed to "partitions"
+		if tmp.Partitions != nil {
+			return fmt.Errorf(`"partitions" and "splits" are mutually exclusive`)
+		}
+		tmp.Partitions = tmp.Splits
+	}
 	if tmp.Partitions != nil {
 		var refs []ResourceName
 		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions)
