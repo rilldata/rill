@@ -103,7 +103,6 @@ export const load = async ({ params, url, route }) => {
 
     return {
       organizationPermissions,
-      organizationQuotas,
       projectPermissions,
     };
   } catch (e) {

@@ -14,6 +14,7 @@
       font-src 'self' https://fonts.gstatic.com *.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
+    Referrer-Policy = "no-referrer"
     X-Content-Type-Options = "nosniff"
     Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Opener-Policy = "unsafe-none"
