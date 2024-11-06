@@ -23,7 +23,7 @@ func TestRillYAML(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:
@@ -32,7 +32,7 @@ connectors:
   defaults:
     region: us-east-1
 
-vars:
+env:
   foo: bar
 `,
 	})
@@ -40,7 +40,7 @@ vars:
 	res, err := ParseRillYAML(ctx, repo, "")
 	require.NoError(t, err)
 
-	require.Equal(t, res.Title, "Hello world")
+	require.Equal(t, res.DisplayName, "Hello world")
 	require.Equal(t, res.Description, "This project says hello to the world")
 
 	require.Len(t, res.Connectors, 1)
@@ -161,7 +161,7 @@ first_month_of_year: 3
 		// explore e1
 		`explores/e1.yaml`: `
 type: explore
-title: E1
+display_name: E1
 metrics_view: d1
 measures:
   - b
@@ -288,7 +288,7 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
 			Paths: []string{"/explores/e1.yaml"},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				Title:              "E1",
+				DisplayName:        "E1",
 				MetricsView:        "d1",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				Measures:           []string{"b"},
@@ -1108,22 +1108,21 @@ func TestEnvironmentOverrides(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: `
-env:
-  test:
-    sources:
-      limit: 10000
+dev:
+  sources:
+    limit: 10000
 `,
 		// source s1
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
 sql: SELECT 10
-env:
-  test:
-    path: world
-    sql: SELECT 20 # Override a property from commonYAML
-    refresh:
-      cron: "0 0 * * *"
+dev:
+  path: world
+  sql: SELECT 20 # Override a property from commonYAML
+  refresh:
+    cron: "0 0 * * *"
+    run_in_dev: true
 `,
 	})
 
@@ -1154,8 +1153,8 @@ env:
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
 
-	// Parse in environment "test"
-	p, err = Parse(ctx, repo, "", "test", "duckdb")
+	// Parse in environment "dev"
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
@@ -1247,7 +1246,7 @@ func TestReport(t *testing.T) {
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1277,7 +1276,7 @@ annotations:
 `,
 		`reports/r2.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1319,7 +1318,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
 			Paths: []string{"/reports/r1.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1343,7 +1342,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
 			Paths: []string{"/reports/r2.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1378,7 +1377,7 @@ func TestAlert(t *testing.T) {
 		`models/m1.sql`: `SELECT 1`,
 		`alerts/a1.yaml`: `
 type: alert
-title: My Alert
+display_name: My Alert
 
 refs:
   - model/m1
@@ -1430,7 +1429,7 @@ annotations:
 			Paths: []string{"/alerts/a1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			AlertSpec: &runtimev1.AlertSpec{
-				Title: "My Alert",
+				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
 					Cron:      "0 * * * *",
 					RefUpdate: false,
@@ -1504,12 +1503,27 @@ func TestTheme(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
+		// Theme resource
 		`themes/t1.yaml`: `
 type: theme
 
 colors:
   primary: red
   secondary: grey
+`,
+		// Explore referencing the external theme resource
+		`explores/e1.yaml`: `
+type: explore
+metrics_view: missing
+theme: t1
+`,
+		// Explore that defines an inline theme
+		`explores/e2.yaml`: `
+type: explore
+metrics_view: missing
+theme:
+  colors:
+    primary: red
 `,
 	})
 
@@ -1528,6 +1542,40 @@ colors:
 					Red:   0.5019608,
 					Green: 0.5019608,
 					Blue:  0.5019608,
+					Alpha: 1,
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Paths: []string{"/explores/e1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Theme:              "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e2"},
+			Paths: []string{"/explores/e2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "e2--theme"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Theme:              "e2--theme",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindTheme, Name: "e2--theme"},
+			Paths: []string{"/explores/e2.yaml"},
+			ThemeSpec: &runtimev1.ThemeSpec{
+				PrimaryColor: &runtimev1.Color{
+					Red:   1,
+					Green: 0,
+					Blue:  0,
 					Alpha: 1,
 				},
 			},

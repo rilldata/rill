@@ -35,14 +35,23 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(d, offsetDuration: string, zone: string) {
+export function toComparisonKeys(
+  d,
+  offsetDuration: string,
+  zone: string,
+  grainDuration: string,
+) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(d[key], zone);
+      acc[`comparison.${key}`] = adjustOffsetForZone(
+        d[key],
+        zone,
+        grainDuration,
+      );
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
@@ -110,7 +119,8 @@ export function prepareTimeSeries(
     if (!originalPt?.ts) {
       return emptyPt;
     }
-    const ts = adjustOffsetForZone(originalPt.ts, zone);
+    const ts = adjustOffsetForZone(originalPt.ts, zone, timeGrainDuration);
+
     if (!ts || typeof ts === "string") {
       return emptyPt;
     }
@@ -121,7 +131,12 @@ export function prepareTimeSeries(
       ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
+      ...toComparisonKeys(
+        comparisonPt || {},
+        offsetDuration,
+        zone,
+        timeGrainDuration,
+      ),
     };
   });
 }

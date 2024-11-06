@@ -18,7 +18,7 @@
   $: ({ message, link, type, detail, options } = notification);
 
   onMount(() => {
-    if (!options?.persisted || link) {
+    if (!options?.persisted && !link) {
       setTimeout(onClose, NOTIFICATION_TIMEOUT);
     }
   });
@@ -42,7 +42,9 @@
 
     {#if link}
       <div class="link-container">
-        <a href={link.href} on:click={onClose}>{link.text}</a>
+        <a href={link.href} on:click={onClose} class="text-secondary-400">
+          {link.text}
+        </a>
       </div>
     {/if}
 

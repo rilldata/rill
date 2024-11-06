@@ -14,7 +14,7 @@ var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
-	Title         string
+	DisplayName   string
 	Description   string
 	OLAPConnector string
 	Connectors    []*ConnectorDef
@@ -40,7 +40,9 @@ type VariableDef struct {
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
 	// Title of the project
-	Title string `yaml:"title"`
+	DisplayName string `yaml:"display_name"`
+	// Title of the project
+	Title string `yaml:"title"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
@@ -51,13 +53,16 @@ type rillYAML struct {
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	// Variables required by the project and their default values
+	// Default values for project variables.
+	// For backwards compatibility, "dev" and "prod" keys with nested values will populate "environment_overrides".
+	Env map[string]yaml.Node `yaml:"env"`
+	// Deprecated: Use "env" instead.
 	Vars map[string]string `yaml:"vars"`
 	// Environment-specific overrides for rill.yaml
-	Env map[string]yaml.Node `yaml:"env"`
-	// Shorthand for setting "env:dev:"
+	EnvironmentOverrides map[string]yaml.Node `yaml:"environment_overrides"`
+	// Shorthand for setting "environment:dev:"
 	Dev yaml.Node `yaml:"dev"`
-	// Shorthand for setting "env:prod:"
+	// Shorthand for setting "environment:prod:"
 	Prod yaml.Node `yaml:"prod"`
 	// Default YAML values for sources
 	Sources yaml.Node `yaml:"sources"`
@@ -90,35 +95,51 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		return newYAMLError(err)
 	}
 
-	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
-	// For backwards compatibility, we still consider "env" entries with scalar values as variables.
-	for k := range tmp.Env {
-		v := tmp.Env[k]
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
+	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
+	vars := make(map[string]string)
+	for k, v := range tmp.Vars { // Backwards compatibility
+		vars[k] = v
+	}
+	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
 		if v.Kind == yaml.ScalarNode {
-			if tmp.Vars == nil {
-				tmp.Vars = make(map[string]string)
-			}
-			tmp.Vars[k] = v.Value
-			delete(tmp.Env, k)
+			vars[k] = v.Value
+			continue
 		}
+
+		// Backwards compatibility hack: we renamed "env" to "environment_overrides".
+		// The only environments supported at the rename time were "dev" and "prod".
+		if k == "dev" || k == "prod" {
+			if tmp.EnvironmentOverrides == nil {
+				tmp.EnvironmentOverrides = make(map[string]yaml.Node)
+			}
+			tmp.EnvironmentOverrides[k] = v
+			continue
+		}
+
+		return fmt.Errorf(`invalid property "env": must be a map of strings`)
 	}
 
 	// Handle "dev:" and "prod:" shorthands (copy to to tmp.Env)
 	if !tmp.Dev.IsZero() {
-		if tmp.Env == nil {
-			tmp.Env = make(map[string]yaml.Node)
+		if tmp.EnvironmentOverrides == nil {
+			tmp.EnvironmentOverrides = make(map[string]yaml.Node)
 		}
-		tmp.Env["dev"] = tmp.Dev
+		tmp.EnvironmentOverrides["dev"] = tmp.Dev
 	}
 	if !tmp.Prod.IsZero() {
-		if tmp.Env == nil {
-			tmp.Env = make(map[string]yaml.Node)
+		if tmp.EnvironmentOverrides == nil {
+			tmp.EnvironmentOverrides = make(map[string]yaml.Node)
 		}
-		tmp.Env["prod"] = tmp.Prod
+		tmp.EnvironmentOverrides["prod"] = tmp.Prod
 	}
 
 	// Apply environment-specific overrides
-	if envOverride := tmp.Env[p.Environment]; !envOverride.IsZero() {
+	if envOverride := tmp.EnvironmentOverrides[p.Environment]; !envOverride.IsZero() {
 		if err := envOverride.Decode(tmp); err != nil {
 			return newYAMLError(err)
 		}
@@ -195,11 +216,11 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	res := &RillYAML{
-		Title:         tmp.Title,
+		DisplayName:   tmp.DisplayName,
 		Description:   tmp.Description,
 		OLAPConnector: tmp.OLAPConnector,
 		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:     make([]*VariableDef, len(tmp.Vars)),
+		Variables:     make([]*VariableDef, len(vars)),
 		Defaults:      defaults,
 		FeatureFlags:  featureFlags,
 		PublicPaths:   tmp.PublicPaths,
@@ -217,7 +238,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	i := 0
-	for k, v := range tmp.Vars {
+	for k, v := range vars {
 		res.Variables[i] = &VariableDef{
 			Name:    k,
 			Default: v,

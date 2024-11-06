@@ -20,16 +20,22 @@
     datePortion,
     timePortion,
   } from "@rilldata/web-common/lib/formatters";
+  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
   export let value: Date;
+  export let grain: V1TimeGrain;
   export let label = "value";
   export let align: "left" | "right" = "left";
 
   let valueWithoutOffset: Date | undefined;
 
   $: if (value instanceof Date)
-    valueWithoutOffset = removeLocalTimezoneOffset(value);
+    valueWithoutOffset = removeLocalTimezoneOffset(
+      value,
+      timeGrainToDuration(grain),
+    );
 </script>
 
 <Tooltip

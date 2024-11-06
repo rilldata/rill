@@ -22,7 +22,11 @@ export function convertTimestampPreview(d, removeLocalTimezoneOffset = false) {
 export function adjustOffsetForZone(
   ts: Date | string | undefined,
   zone: string,
+  grainDuration: string,
 ) {
   if (!ts) return ts;
-  return addZoneOffset(remove(new Date(ts)), zone);
+
+  const removedLocalOffsetdate = remove(new Date(ts), grainDuration);
+
+  return addZoneOffset(removedLocalOffsetdate, zone);
 }

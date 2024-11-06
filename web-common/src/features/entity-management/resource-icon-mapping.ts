@@ -7,12 +7,13 @@ import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte"
 import TableIcon from "@rilldata/web-common/components/icons/TableIcon.svelte";
 import ThemeIcon from "@rilldata/web-common/components/icons/ThemeIcon.svelte";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { Code2Icon, Database } from "lucide-svelte";
+import { Code2Icon } from "lucide-svelte";
+import ConnectorIcon from "../../components/icons/ConnectorIcon.svelte";
 import MetricsViewIcon from "../../components/icons/MetricsViewIcon.svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: TableIcon,
-  [ResourceKind.Connector]: Database,
+  [ResourceKind.Connector]: ConnectorIcon,
   [ResourceKind.Model]: Code2Icon,
   [ResourceKind.MetricsView]: MetricsViewIcon,
   [ResourceKind.Explore]: ExploreIcon,

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -118,7 +120,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables", http.NoBody)
 	for k, v := range i.c.headers {
@@ -141,11 +143,24 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		return nil, err
 	}
 
+	// Poor man's conversion of a SQL ILIKE pattern to a Go regexp.
+	var likeRegexp *regexp.Regexp
+	if like != "" {
+		likeRegexp, err = regexp.Compile(fmt.Sprintf("(?i)^%s$", strings.ReplaceAll(like, "%", ".*")))
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert like pattern to regexp: %w", err)
+		}
+	}
+
 	tables := make([]*drivers.Table, 0, len(tablesResp.Tables))
 	// fetch table schemas in parallel with concurrency of 5
 	g, ctx := errgroup.WithContext(ctx)
 	sem := make(chan struct{}, 5)
 	for _, tableName := range tablesResp.Tables {
+		if likeRegexp != nil && !likeRegexp.MatchString(tableName) {
+			continue
+		}
+
 		tableName := tableName
 		g.Go(func() error {
 			sem <- struct{}{}

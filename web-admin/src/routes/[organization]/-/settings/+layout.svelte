@@ -3,24 +3,31 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+  $: ({ neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
 
-  const navItems = [
+  $: navItems = [
     {
       label: "General",
       route: "",
     },
-    // TODO: Uncomment when we have billing and usage page
-    // {
-    //   label: "Billing",
-    //   route: "/billing",
-    // },
-    // {
-    //   label: "Usage",
-    //   route: "/usage",
-    // },
+    ...(!neverSubscribed
+      ? [
+          {
+            label: "Billing",
+            route: "/billing",
+          },
+          {
+            label: "Usage",
+            route: "/usage",
+          },
+        ]
+      : []),
   ];
 </script>
 
@@ -28,7 +35,9 @@
   <h3>Settings</h3>
   <div class="container">
     <LeftNav {basePage} baseRoute="/[organization]/-/settings" {navItems} />
-    <slot />
+    <div class="contents-container">
+      <slot />
+    </div>
   </div>
 </div>
 
@@ -43,5 +52,9 @@
 
   .container {
     @apply flex flex-row pt-6 gap-x-6;
+  }
+
+  .contents-container {
+    @apply flex flex-col w-full gap-y-5 ml-16;
   }
 </style>

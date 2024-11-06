@@ -117,6 +117,10 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		if mv.GetMetricsView() == nil || mv.GetMetricsView().State.ValidSpec == nil {
 			continue
 		}
+		if mv.GetMetricsView().State.ValidSpec.TimeDimension == "" {
+			// no time dimension so metrics_time_range is guranateed to fail
+			continue
+		}
 		olap, release, err := r.OLAP(ctx, instanceID, mv.GetMetricsView().State.ValidSpec.Connector)
 		if err != nil {
 			res.MetricsViews[mv.Meta.Name.Name] = InstanceHealthMetricsViewError{Err: err.Error()}

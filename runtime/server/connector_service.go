@@ -141,7 +141,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}
 	defer release()
 
-	tables, err := olap.InformationSchema().All(ctx)
+	tables, err := olap.InformationSchema().All(ctx, req.SearchPattern)
 	if err != nil {
 		return nil, err
 	}

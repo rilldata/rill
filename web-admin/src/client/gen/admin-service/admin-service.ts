@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListPublicBillingPlansResponse,
+  V1GetBillingProjectCredentialsResponse,
   RpcStatus,
+  V1GetBillingProjectCredentialsRequest,
+  V1ListPublicBillingPlansResponse,
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
@@ -98,6 +100,10 @@ import type {
   V1SetProjectMemberUsergroupRoleResponse,
   V1SearchProjectUsersResponse,
   AdminServiceSearchProjectUsersParams,
+  V1GetProjectVariablesResponse,
+  AdminServiceGetProjectVariablesParams,
+  V1UpdateProjectVariablesResponse,
+  AdminServiceUpdateProjectVariablesBody,
   V1ListProjectWhitelistedDomainsResponse,
   V1CreateProjectWhitelistedDomainResponse,
   AdminServiceCreateProjectWhitelistedDomainBodyBody,
@@ -133,9 +139,6 @@ import type {
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   AdminServiceUpdateProjectBody,
-  V1GetProjectVariablesResponse,
-  V1UpdateProjectVariablesResponse,
-  AdminServiceUpdateProjectVariablesBody,
   V1ListServicesResponse,
   V1CreateServiceResponse,
   AdminServiceCreateServiceParams,
@@ -209,6 +212,57 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
+/**
+ * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+ */
+export const adminServiceGetBillingProjectCredentials = (
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+) => {
+  return httpClient<V1GetBillingProjectCredentialsResponse>({
+    url: `/v1/billing/metrics-project-credentials`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetBillingProjectCredentialsRequest,
+  });
+};
+
+export type AdminServiceGetBillingProjectCredentialsMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+  >;
+export type AdminServiceGetBillingProjectCredentialsMutationBody =
+  V1GetBillingProjectCredentialsRequest;
+export type AdminServiceGetBillingProjectCredentialsMutationError = RpcStatus;
+
+export const createAdminServiceGetBillingProjectCredentials = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    TError,
+    { data: V1GetBillingProjectCredentialsRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    { data: V1GetBillingProjectCredentialsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceGetBillingProjectCredentials(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    TError,
+    { data: V1GetBillingProjectCredentialsRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListPublicBillingPlans lists all public billing plans
  */
@@ -1157,7 +1211,7 @@ export const createAdminServiceGetBillingSubscription = <
 };
 
 /**
- * @summary CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+ * @summary CancelBillingSubscription cancels the billing subscription for the organization
  */
 export const adminServiceCancelBillingSubscription = (organization: string) => {
   return httpClient<V1CancelBillingSubscriptionResponse>({
@@ -3781,6 +3835,143 @@ export const createAdminServiceSearchProjectUsers = <
 };
 
 /**
+ * @summary GetProjectVariables returns project variables.
+ */
+export const adminServiceGetProjectVariables = (
+  organization: string,
+  project: string,
+  params?: AdminServiceGetProjectVariablesParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectVariablesResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/variables`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectVariablesQueryKey = (
+  organization: string,
+  project: string,
+  params?: AdminServiceGetProjectVariablesParams,
+) => [
+  `/v1/organizations/${organization}/projects/${project}/variables`,
+  ...(params ? [params] : []),
+];
+
+export type AdminServiceGetProjectVariablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectVariables>>
+>;
+export type AdminServiceGetProjectVariablesQueryError = RpcStatus;
+
+export const createAdminServiceGetProjectVariables = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceGetProjectVariablesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetProjectVariablesQueryKey(organization, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectVariables>>
+  > = ({ signal }) =>
+    adminServiceGetProjectVariables(organization, project, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary UpdateProjectVariables updates variables for a project.
+ */
+export const adminServiceUpdateProjectVariables = (
+  organization: string,
+  project: string,
+  adminServiceUpdateProjectVariablesBody: AdminServiceUpdateProjectVariablesBody,
+) => {
+  return httpClient<V1UpdateProjectVariablesResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/variables`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateProjectVariablesBody,
+  });
+};
+
+export type AdminServiceUpdateProjectVariablesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>
+>;
+export type AdminServiceUpdateProjectVariablesMutationBody =
+  AdminServiceUpdateProjectVariablesBody;
+export type AdminServiceUpdateProjectVariablesMutationError = RpcStatus;
+
+export const createAdminServiceUpdateProjectVariables = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceUpdateProjectVariablesBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceUpdateProjectVariablesBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceUpdateProjectVariables(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceUpdateProjectVariablesBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary ListWhitelistedDomains lists all the whitelisted domains of the project
  */
 export const adminServiceListProjectWhitelistedDomains = (
@@ -5270,136 +5461,6 @@ export const createAdminServiceUpdateProject = <
       organizationName: string;
       name: string;
       data: AdminServiceUpdateProjectBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
- */
-export const adminServiceGetProjectVariables = (
-  organizationName: string,
-  name: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetProjectVariablesResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}/variables`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceGetProjectVariablesQueryKey = (
-  organizationName: string,
-  name: string,
-) => [`/v1/organizations/${organizationName}/projects/${name}/variables`];
-
-export type AdminServiceGetProjectVariablesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetProjectVariables>>
->;
-export type AdminServiceGetProjectVariablesQueryError = RpcStatus;
-
-export const createAdminServiceGetProjectVariables = <
-  TData = Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
-  TError = RpcStatus,
->(
-  organizationName: string,
-  name: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetProjectVariablesQueryKey(organizationName, name);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetProjectVariables>>
-  > = ({ signal }) =>
-    adminServiceGetProjectVariables(organizationName, name, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetProjectVariables>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(organizationName && name),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
- */
-export const adminServiceUpdateProjectVariables = (
-  organizationName: string,
-  name: string,
-  adminServiceUpdateProjectVariablesBody: AdminServiceUpdateProjectVariablesBody,
-) => {
-  return httpClient<V1UpdateProjectVariablesResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${name}/variables`,
-    method: "put",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateProjectVariablesBody,
-  });
-};
-
-export type AdminServiceUpdateProjectVariablesMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>
->;
-export type AdminServiceUpdateProjectVariablesMutationBody =
-  AdminServiceUpdateProjectVariablesBody;
-export type AdminServiceUpdateProjectVariablesMutationError = RpcStatus;
-
-export const createAdminServiceUpdateProjectVariables = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
-    TError,
-    {
-      organizationName: string;
-      name: string;
-      data: AdminServiceUpdateProjectVariablesBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
-    {
-      organizationName: string;
-      name: string;
-      data: AdminServiceUpdateProjectVariablesBody;
-    }
-  > = (props) => {
-    const { organizationName, name, data } = props ?? {};
-
-    return adminServiceUpdateProjectVariables(organizationName, name, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceUpdateProjectVariables>>,
-    TError,
-    {
-      organizationName: string;
-      name: string;
-      data: AdminServiceUpdateProjectVariablesBody;
     },
     TContext
   >(mutationFn, mutationOptions);

@@ -206,7 +206,6 @@ export function createScrubAction({
       }
 
       function onScrubEnd(event: MouseEvent) {
-        event.preventDefault();
         node.removeEventListener(moveEvent, onScrub);
         if (!(endPredicate === undefined || endPredicate(event))) {
           reset();
