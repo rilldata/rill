@@ -614,6 +614,8 @@ message Theme {
 message ThemeSpec {
   optional Color primary_color = 1;
   optional Color secondary_color = 2;
+  string primary = 3;
+  string secondary = 4;
 }
 
 message ThemeState {}

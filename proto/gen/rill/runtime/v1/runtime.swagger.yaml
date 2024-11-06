@@ -4152,6 +4152,9 @@ definitions:
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
         description: Preset UI state to show by default.
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
       securityRules:
         type: array
         items:
@@ -4160,9 +4163,6 @@ definitions:
         description: |-
           Security for the explore dashboard.
           These are not currently parsed from YAML, but will be derived from the parent metrics view.
-      embedsHidePivot:
-        type: boolean
-        description: If true, the pivot tab will be hidden when the explore is embedded.
   v1ExploreState:
     type: object
     properties:
@@ -6202,6 +6202,10 @@ definitions:
         $ref: '#/definitions/v1Color'
       secondaryColor:
         $ref: '#/definitions/v1Color'
+      primary:
+        type: string
+      secondary:
+        type: string
   v1ThemeState:
     type: object
   v1TimeGrain:

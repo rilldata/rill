@@ -2138,19 +2138,19 @@ export class ExploreSpec extends Message<ExploreSpec> {
   defaultPreset?: ExplorePreset;
 
   /**
+   * If true, the pivot tab will be hidden when the explore is embedded.
+   *
+   * @generated from field: bool embeds_hide_pivot = 16;
+   */
+  embedsHidePivot = false;
+
+  /**
    * Security for the explore dashboard.
    * These are not currently parsed from YAML, but will be derived from the parent metrics view.
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 12;
    */
   securityRules: SecurityRule[] = [];
-
-  /**
-   * If true, the pivot tab will be hidden when the explore is embedded.
-   *
-   * @generated from field: bool embeds_hide_pivot = 16;
-   */
-  embedsHidePivot = false;
 
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
@@ -2171,8 +2171,8 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
-    { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -3938,6 +3938,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColor?: Color;
 
+  /**
+   * @generated from field: string primary = 3;
+   */
+  primary = "";
+
+  /**
+   * @generated from field: string secondary = 4;
+   */
+  secondary = "";
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3948,6 +3958,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "primary_color", kind: "message", T: Color, opt: true },
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
+    { no: 3, name: "primary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "secondary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
