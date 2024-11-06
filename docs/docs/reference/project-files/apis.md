@@ -11,8 +11,13 @@ See comprehensive documentation on how to define and use [custom APIs](/integrat
 
 _**`type`**_ — Refers to the resource type and must be `api` _(required)_.
 
+_**`name`**_ — Refers to the name of the API. _(optional)_.
+
+
 Either one of the following:
 
 - _**`sql`**_ — General SQL query referring a [model](/build/models/models.md) _(required)_.
 
 - _**`metrics_sql`**_ — SQL query referring metrics definition and dimensions defined in the [metrics view](/build/dashboards/dashboards.md) _(required)_.
+
+_**`connector`**_ — Refers to the OLAP engine, if you are not using DuckDB, IE: [ClickHouse OLAP engine](../olap-engines/multiple-olap.md). _(optional)_.
