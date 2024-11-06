@@ -2,6 +2,9 @@ package rilltime
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/participle/v2"
@@ -10,7 +13,9 @@ import (
 )
 
 var (
-	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
+	infPattern      = regexp.MustCompile("^(?i)inf$")
+	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
+	rillTimeLexer   = lexer.MustSimple([]lexer.SimpleRule{
 		{"Now", `now`},
 		{"Latest", `latest`},
 		{"Earliest", `earliest`},
@@ -23,11 +28,30 @@ var (
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
 		{"Whitespace", `[ \t\n\r]+`},
 	})
+	daxNotations = map[string]string{
+		// Mapping for our old rill-<DAX> syntax
+		"TD":  "",
+		"WTD": "",
+		"MTD": "",
+		"QTD": "",
+		"YTD": "",
+		"PP":  "",
+		"PD":  "",
+		"PW":  "",
+		"PM":  "",
+		"PQ":  "",
+		"PY":  "",
+		"PDC": "",
+		"PWC": "",
+		"PMC": "",
+		"PQC": "",
+		"PYC": "",
+	}
 	rillTimeParser = participle.MustBuild[RillTime](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
 	)
-	daxOffsetRangeNotations = map[string]timeutil.TimeGrain{
+	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
 		"m": timeutil.TimeGrainMinute,
 		"h": timeutil.TimeGrainHour,
@@ -41,12 +65,13 @@ var (
 )
 
 type RillTime struct {
-	Start      *TimeModifier `parser:"  @@"`
-	End        *TimeModifier `parser:"(',' @@)?"`
-	Modifiers  *Modifiers    `parser:"(':' @@)?"`
-	Grain      timeutil.TimeGrain
-	IsComplete bool
-	TimeZone   *time.Location
+	Start       *TimeModifier `parser:"  @@"`
+	End         *TimeModifier `parser:"(',' @@)?"`
+	Modifiers   *Modifiers    `parser:"(':' @@)?"`
+	IsNewFormat bool
+	grain       timeutil.TimeGrain
+	isComplete  bool
+	timeZone    *time.Location
 }
 
 type TimeModifier struct {
@@ -82,27 +107,36 @@ type ResolverContext struct {
 	FirstMonth int
 }
 
-func Parse(timeRange string) (*RillTime, error) {
-	ast, err := rillTimeParser.ParseString("", timeRange)
+func Parse(from string) (*RillTime, error) {
+	isoRange, err := ParseISO(from, false)
 	if err != nil {
 		return nil, err
 	}
+	if isoRange != nil {
+		return isoRange, nil
+	}
 
-	ast.TimeZone = time.UTC
+	ast, err := rillTimeParser.ParseString("", from)
+	if err != nil {
+		return nil, err
+	}
+	ast.IsNewFormat = true
+
+	ast.timeZone = time.UTC
 	if ast.Modifiers != nil {
 		if ast.Modifiers.Grain != nil {
-			ast.Grain = daxOffsetRangeNotations[ast.Modifiers.Grain.Grain]
+			ast.grain = grainMap[ast.Modifiers.Grain.Grain]
 			// TODO: non-1 grains
 		} else if ast.Modifiers.CompleteGrain != nil {
-			ast.Grain = daxOffsetRangeNotations[ast.Modifiers.CompleteGrain.Grain]
+			ast.grain = grainMap[ast.Modifiers.CompleteGrain.Grain]
 			// TODO: non-1 grains
-			ast.IsComplete = true
+			ast.isComplete = true
 		}
 
 		if ast.Modifiers.At != nil {
 			if ast.Modifiers.At.TimeZone != nil {
 				var err error
-				ast.TimeZone, err = time.LoadLocation(*ast.Modifiers.At.TimeZone)
+				ast.timeZone, err = time.LoadLocation(*ast.Modifiers.At.TimeZone)
 				if err != nil {
 					return nil, fmt.Errorf("invalid time zone %q: %w", *ast.Modifiers.At.TimeZone, err)
 				}
@@ -117,6 +151,73 @@ func Parse(timeRange string) (*RillTime, error) {
 	}
 
 	return ast, nil
+}
+
+func ParseISO(from string, strict bool) (*RillTime, error) {
+	// Try parsing for "inf"
+	if infPattern.MatchString(from) {
+		return &RillTime{
+			Start: &TimeModifier{Earliest: true},
+			End:   &TimeModifier{Latest: true},
+		}, nil
+	}
+
+	if strings.HasPrefix(from, "rill-") {
+		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
+		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
+		rillDur := strings.Replace(from, "rill-", "", 1)
+		if t, ok := daxNotations[rillDur]; ok {
+			return Parse(t)
+		}
+	}
+
+	// Parse as a regular ISO8601 duration
+	if !durationPattern.MatchString(from) {
+		if !strict {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("string %q is not a valid ISO 8601 duration", from)
+	}
+
+	rt := &RillTime{
+		Start: &TimeModifier{},
+		End:   &TimeModifier{Now: true},
+	}
+	match := durationPattern.FindStringSubmatch(from)
+	for i, name := range durationPattern.SubexpNames() {
+		part := match[i]
+		if i == 0 || name == "" || part == "" {
+			continue
+		}
+
+		val, err := strconv.Atoi(part)
+		if err != nil {
+			return nil, err
+		}
+		rt.Start.Num = &val
+		var g string
+		switch name {
+		case "year":
+			g = "Y"
+		case "month":
+			g = "M"
+		case "week":
+			g = "W"
+		case "day":
+			g = "d"
+		case "hour":
+			g = "h"
+		case "minute":
+			g = "m"
+		case "second":
+			g = "s"
+		default:
+			return nil, fmt.Errorf("unexpected field %q in duration", name)
+		}
+		rt.Start.Grain = &g
+	}
+
+	return rt, nil
 }
 
 func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, error) {
@@ -141,16 +242,16 @@ func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, e
 
 func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *TimeModifier) time.Time {
 	isTruncate := true
-	grain := r.Grain
+	grain := r.grain
 
 	if tm.Now {
-		t = resolverCtx.Now.In(r.TimeZone)
-		isTruncate = r.IsComplete
+		t = resolverCtx.Now.In(r.timeZone)
+		isTruncate = r.isComplete
 	} else if tm.Earliest {
-		t = resolverCtx.MinTime.In(r.TimeZone)
+		t = resolverCtx.MinTime.In(r.timeZone)
 	} else if tm.Latest {
-		t = resolverCtx.MaxTime.In(r.TimeZone)
-		isTruncate = r.IsComplete
+		t = resolverCtx.MaxTime.In(r.timeZone)
+		isTruncate = r.isComplete
 	} else {
 		n := 0
 		if tm.Num != nil {
@@ -162,7 +263,7 @@ func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *Time
 			g = *tm.Grain
 		}
 
-		t = t.In(r.TimeZone)
+		t = t.In(r.timeZone)
 		switch g {
 		case "s":
 			t = t.Add(time.Duration(n) * time.Second)
@@ -184,11 +285,11 @@ func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *Time
 			t = t.AddDate(n, 0, 0)
 		}
 
-		grain = daxOffsetRangeNotations[g]
+		grain = grainMap[g]
 	}
 
 	if isTruncate {
-		return timeutil.TruncateTime(t, grain, r.TimeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+		return timeutil.TruncateTime(t, grain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 	}
-	return timeutil.CeilTime(t, grain, r.TimeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+	return timeutil.CeilTime(t, grain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 }

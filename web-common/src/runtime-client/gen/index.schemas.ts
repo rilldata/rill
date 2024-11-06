@@ -240,6 +240,11 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type QueryServiceMetricsViewResolveTimeRangesBody = {
+  rillTimes?: string[];
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
@@ -623,6 +628,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries. */
+  rillTime?: string;
 }
 
 export interface V1ThemeState {
@@ -827,26 +835,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -860,13 +848,6 @@ If it resolves to false, the other fields are not set. */
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -897,6 +878,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -913,6 +901,26 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1364,6 +1372,10 @@ export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewRowsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewResolveTimeRangesResponse {
+  ranges?: V1TimeRange[];
 }
 
 export interface V1MetricsViewFilter {

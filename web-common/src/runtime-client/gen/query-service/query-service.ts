@@ -37,6 +37,8 @@ import type {
   QueryServiceMetricsViewSearchBody,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
+  V1MetricsViewResolveTimeRangesResponse,
+  QueryServiceMetricsViewResolveTimeRangesBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -991,6 +993,93 @@ export const createQueryServiceMetricsViewTimeRange = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const queryServiceMetricsViewResolveTimeRanges = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1MetricsViewResolveTimeRangesResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewResolveTimeRangesBody,
+    signal,
+  });
+};
+export const getQueryServiceMetricsViewResolveTimeRanges = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
+  queryServiceMetricsViewResolveTimeRangesBody,
+];
+
+export type QueryServiceMetricsViewResolveTimeRangesMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+  >;
+export type QueryServiceMetricsViewResolveTimeRangesMutationBody =
+  QueryServiceMetricsViewResolveTimeRangesBody;
+export type QueryServiceMetricsViewResolveTimeRangesMutationError =
+  ErrorType<RpcStatus>;
+
+export const createQueryServiceMetricsViewResolveTimeRanges = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewResolveTimeRanges(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewResolveTimeRangesBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewResolveTimeRanges(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewResolveTimeRangesBody,
+      signal,
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
     TError,
     TData
   >({
@@ -2258,4 +2347,3 @@ export const createQueryServiceExportReport = <
     TContext
   >(mutationFn, mutationOptions);
 };
-

@@ -401,6 +401,31 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
+func (s *Server) MetricsViewResolveTimeRanges(ctx context.Context, req *runtimev1.MetricsViewResolveTimeRangesRequest) (*runtimev1.MetricsViewResolveTimeRangesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.StringSlice("args.rill_times", req.RillTimes),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	q := &queries.MetricsViewResolveTimeRanges{
+		MetricsViewName: req.MetricsViewName,
+		RillTimes:       req.RillTimes,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {

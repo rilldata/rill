@@ -1,3 +1,4 @@
+import { createQueryServiceMetricsViewResolveTimeRanges } from "@rilldata/web-common/runtime-client";
 import { defineConfig } from "orval";
 
 export default defineConfig({
@@ -91,6 +92,12 @@ export default defineConfig({
             },
           },
           QueryService_MetricsViewSearch: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
+          QueryService_MetricsViewResolveTimeRanges: {
             query: {
               useQuery: true,
               signal: true,

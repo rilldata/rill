@@ -10,11 +10,11 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 )
 
 func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := parseTimeRangeArgs(node.Args)
+	rt, unit, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -24,20 +24,26 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	if t, ok := d.(duration.TruncToDateDuration); ok {
-		watermark = t.SubWithUnit(watermark, unit)
-	} else {
-		for i := 1; i <= unit; i++ {
-			watermark = d.Sub(watermark)
+	for i := 1; i <= unit; i++ {
+		watermark, _, err = rt.Resolve(rilltime.ResolverContext{
+			Now:        time.Now(),
+			MaxTime:    watermark,
+			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
+			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+			// MinTime:    watermark, // TODO
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
+
 	return &metricsview.Expression{
 		Value: watermark,
 	}, nil
 }
 
 func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := parseTimeRangeArgs(node.Args)
+	rt, unit, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -47,23 +53,21 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	if t, ok := d.(duration.TruncToDateDuration); ok {
-		watermark = t.SubWithUnit(watermark, unit-1)
-	} else {
-		for i := 1; i < unit; i++ {
-			watermark = d.Sub(watermark)
+	for i := 1; i <= unit; i++ {
+		_, watermark, err = rt.Resolve(rilltime.ResolverContext{
+			Now:        time.Now(),
+			MaxTime:    watermark,
+			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
+			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+			// MinTime:    watermark, // TODO
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	var end time.Time
-	if std, ok := d.(duration.StandardDuration); ok {
-		end = std.EndTime(watermark)
-	} else {
-		end = watermark
-	}
-
 	return &metricsview.Expression{
-		Value: end,
+		Value: watermark,
 	}, nil
 }
 
@@ -102,7 +106,7 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 	return watermark, nil
 }
 
-func parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, error) {
+func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.RillTime, int, string, error) {
 	if len(args) == 0 {
 		return nil, 0, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
 	}
@@ -142,9 +146,9 @@ func parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, er
 		return nil, 0, "", err
 	}
 
-	d, err := duration.ParseISO8601(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
+	rt, err := rilltime.Parse(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
 	}
-	return d, unit, col, nil
+	return rt, unit, col, nil
 }
