@@ -349,7 +349,7 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
-export type RuntimeServiceGetModelSplitsParams = {
+export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
   pageSize?: number;
@@ -921,10 +921,10 @@ export interface V1RefreshModelTrigger {
   /** If true, the current table and state will be dropped before refreshing.
 For non-incremental models, this is equivalent to a normal refresh. */
   full?: boolean;
-  /** Keys of specific splits to refresh. */
-  splits?: string[];
-  /** If true, it will refresh all splits that errored on their last execution. */
-  allErroredSplits?: boolean;
+  /** Keys of specific partitions to refresh. */
+  partitions?: string[];
+  /** If true, it will refresh all partitions that errored on their last execution. */
+  allErroredPartitions?: boolean;
 }
 
 export interface V1RefreshTriggerSpec {
@@ -1153,10 +1153,10 @@ export interface V1ModelState {
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
-  /** splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore. */
-  splitsModelId?: string;
-  /** splits_have_errors is true if one or more splits failed to execute. */
-  splitsHaveErrors?: boolean;
+  /** partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore. */
+  partitionsModelId?: string;
+  /** partitions_have_errors is true if one or more partitions failed to execute. */
+  partitionsHaveErrors?: boolean;
 }
 
 export type V1ModelSplitData = { [key: string]: any };
@@ -1176,7 +1176,7 @@ export type V1ModelSpecStageProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
-export type V1ModelSpecSplitsResolverProperties = { [key: string]: any };
+export type V1ModelSpecPartitionsResolverProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
   [key: string]: any;
@@ -1188,10 +1188,10 @@ export interface V1ModelSpec {
   incremental?: boolean;
   incrementalStateResolver?: string;
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
-  splitsResolver?: string;
-  splitsResolverProperties?: V1ModelSpecSplitsResolverProperties;
-  splitsWatermarkField?: string;
-  splitsConcurrencyLimit?: number;
+  partitionsResolver?: string;
+  partitionsResolverProperties?: V1ModelSpecPartitionsResolverProperties;
+  partitionsWatermarkField?: string;
+  partitionsConcurrencyLimit?: number;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   /** stage_connector is optional. */
@@ -1702,8 +1702,8 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
-export interface V1GetModelSplitsResponse {
-  splits?: V1ModelSplit[];
+export interface V1GetModelPartitionsResponse {
+  partitions?: V1ModelSplit[];
   nextPageToken?: string;
 }
 
@@ -1886,11 +1886,11 @@ If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
   defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
-  /** If true, the pivot tab will be hidden when the explore is embedded. */
-  embedsHidePivot?: boolean;
 }
 
 export interface V1Explore {

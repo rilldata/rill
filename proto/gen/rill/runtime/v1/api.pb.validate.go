@@ -7762,22 +7762,22 @@ var _ interface {
 	ErrorName() string
 } = GetExploreResponseValidationError{}
 
-// Validate checks the field values on GetModelSplitsRequest with the rules
+// Validate checks the field values on GetModelPartitionsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetModelSplitsRequest) Validate() error {
+func (m *GetModelPartitionsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetModelSplitsRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GetModelPartitionsRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetModelSplitsRequestMultiError, or nil if none found.
-func (m *GetModelSplitsRequest) ValidateAll() error {
+// GetModelPartitionsRequestMultiError, or nil if none found.
+func (m *GetModelPartitionsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetModelSplitsRequest) validate(all bool) error {
+func (m *GetModelPartitionsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7795,7 +7795,7 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 10000 {
-			err := GetModelSplitsRequestValidationError{
+			err := GetModelPartitionsRequestValidationError{
 				field:  "PageSize",
 				reason: "value must be less than or equal to 10000",
 			}
@@ -7810,19 +7810,19 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 	// no validation rules for PageToken
 
 	if len(errors) > 0 {
-		return GetModelSplitsRequestMultiError(errors)
+		return GetModelPartitionsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetModelSplitsRequestMultiError is an error wrapping multiple validation
-// errors returned by GetModelSplitsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetModelSplitsRequestMultiError []error
+// GetModelPartitionsRequestMultiError is an error wrapping multiple validation
+// errors returned by GetModelPartitionsRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GetModelPartitionsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetModelSplitsRequestMultiError) Error() string {
+func (m GetModelPartitionsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7831,11 +7831,11 @@ func (m GetModelSplitsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetModelSplitsRequestMultiError) AllErrors() []error { return m }
+func (m GetModelPartitionsRequestMultiError) AllErrors() []error { return m }
 
-// GetModelSplitsRequestValidationError is the validation error returned by
-// GetModelSplitsRequest.Validate if the designated constraints aren't met.
-type GetModelSplitsRequestValidationError struct {
+// GetModelPartitionsRequestValidationError is the validation error returned by
+// GetModelPartitionsRequest.Validate if the designated constraints aren't met.
+type GetModelPartitionsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7843,24 +7843,24 @@ type GetModelSplitsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetModelSplitsRequestValidationError) Field() string { return e.field }
+func (e GetModelPartitionsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetModelSplitsRequestValidationError) Reason() string { return e.reason }
+func (e GetModelPartitionsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetModelSplitsRequestValidationError) Cause() error { return e.cause }
+func (e GetModelPartitionsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetModelSplitsRequestValidationError) Key() bool { return e.key }
+func (e GetModelPartitionsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetModelSplitsRequestValidationError) ErrorName() string {
-	return "GetModelSplitsRequestValidationError"
+func (e GetModelPartitionsRequestValidationError) ErrorName() string {
+	return "GetModelPartitionsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetModelSplitsRequestValidationError) Error() string {
+func (e GetModelPartitionsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7872,14 +7872,14 @@ func (e GetModelSplitsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetModelSplitsRequest.%s: %s%s",
+		"invalid %sGetModelPartitionsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetModelSplitsRequestValidationError{}
+var _ error = GetModelPartitionsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7887,47 +7887,47 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetModelSplitsRequestValidationError{}
+} = GetModelPartitionsRequestValidationError{}
 
-// Validate checks the field values on GetModelSplitsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on GetModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetModelSplitsResponse) Validate() error {
+func (m *GetModelPartitionsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetModelSplitsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GetModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetModelSplitsResponseMultiError, or nil if none found.
-func (m *GetModelSplitsResponse) ValidateAll() error {
+// GetModelPartitionsResponseMultiError, or nil if none found.
+func (m *GetModelPartitionsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetModelSplitsResponse) validate(all bool) error {
+func (m *GetModelPartitionsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	for idx, item := range m.GetSplits() {
+	for idx, item := range m.GetPartitions() {
 		_, _ = idx, item
 
 		if all {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetModelSplitsResponseValidationError{
-						field:  fmt.Sprintf("Splits[%v]", idx),
+					errors = append(errors, GetModelPartitionsResponseValidationError{
+						field:  fmt.Sprintf("Partitions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetModelSplitsResponseValidationError{
-						field:  fmt.Sprintf("Splits[%v]", idx),
+					errors = append(errors, GetModelPartitionsResponseValidationError{
+						field:  fmt.Sprintf("Partitions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -7935,8 +7935,8 @@ func (m *GetModelSplitsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetModelSplitsResponseValidationError{
-					field:  fmt.Sprintf("Splits[%v]", idx),
+				return GetModelPartitionsResponseValidationError{
+					field:  fmt.Sprintf("Partitions[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -7948,19 +7948,19 @@ func (m *GetModelSplitsResponse) validate(all bool) error {
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
-		return GetModelSplitsResponseMultiError(errors)
+		return GetModelPartitionsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetModelSplitsResponseMultiError is an error wrapping multiple validation
-// errors returned by GetModelSplitsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetModelSplitsResponseMultiError []error
+// GetModelPartitionsResponseMultiError is an error wrapping multiple
+// validation errors returned by GetModelPartitionsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetModelPartitionsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetModelSplitsResponseMultiError) Error() string {
+func (m GetModelPartitionsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7969,11 +7969,11 @@ func (m GetModelSplitsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetModelSplitsResponseMultiError) AllErrors() []error { return m }
+func (m GetModelPartitionsResponseMultiError) AllErrors() []error { return m }
 
-// GetModelSplitsResponseValidationError is the validation error returned by
-// GetModelSplitsResponse.Validate if the designated constraints aren't met.
-type GetModelSplitsResponseValidationError struct {
+// GetModelPartitionsResponseValidationError is the validation error returned
+// by GetModelPartitionsResponse.Validate if the designated constraints aren't met.
+type GetModelPartitionsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7981,24 +7981,24 @@ type GetModelSplitsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetModelSplitsResponseValidationError) Field() string { return e.field }
+func (e GetModelPartitionsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetModelSplitsResponseValidationError) Reason() string { return e.reason }
+func (e GetModelPartitionsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetModelSplitsResponseValidationError) Cause() error { return e.cause }
+func (e GetModelPartitionsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetModelSplitsResponseValidationError) Key() bool { return e.key }
+func (e GetModelPartitionsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetModelSplitsResponseValidationError) ErrorName() string {
-	return "GetModelSplitsResponseValidationError"
+func (e GetModelPartitionsResponseValidationError) ErrorName() string {
+	return "GetModelPartitionsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetModelSplitsResponseValidationError) Error() string {
+func (e GetModelPartitionsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8010,14 +8010,14 @@ func (e GetModelSplitsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetModelSplitsResponse.%s: %s%s",
+		"invalid %sGetModelPartitionsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetModelSplitsResponseValidationError{}
+var _ error = GetModelPartitionsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -8025,7 +8025,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetModelSplitsResponseValidationError{}
+} = GetModelPartitionsResponseValidationError{}
 
 // Validate checks the field values on CreateTriggerRequest with the rules
 // defined in the proto definition for this message. If any rules are

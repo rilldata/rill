@@ -3097,9 +3097,9 @@ export class GetExploreResponse extends Message<GetExploreResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.GetModelSplitsRequest
+ * @generated from message rill.runtime.v1.GetModelPartitionsRequest
  */
-export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
+export class GetModelPartitionsRequest extends Message<GetModelPartitionsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3130,13 +3130,13 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
    */
   pageToken = "";
 
-  constructor(data?: PartialMessage<GetModelSplitsRequest>) {
+  constructor(data?: PartialMessage<GetModelPartitionsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GetModelSplitsRequest";
+  static readonly typeName = "rill.runtime.v1.GetModelPartitionsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -3146,63 +3146,63 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined, b: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined): boolean {
-    return proto3.util.equals(GetModelSplitsRequest, a, b);
+  static equals(a: GetModelPartitionsRequest | PlainMessage<GetModelPartitionsRequest> | undefined, b: GetModelPartitionsRequest | PlainMessage<GetModelPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(GetModelPartitionsRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.GetModelSplitsResponse
+ * @generated from message rill.runtime.v1.GetModelPartitionsResponse
  */
-export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
+export class GetModelPartitionsResponse extends Message<GetModelPartitionsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ModelSplit splits = 1;
+   * @generated from field: repeated rill.runtime.v1.ModelSplit partitions = 1;
    */
-  splits: ModelSplit[] = [];
+  partitions: ModelSplit[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<GetModelSplitsResponse>) {
+  constructor(data?: PartialMessage<GetModelPartitionsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GetModelSplitsResponse";
+  static readonly typeName = "rill.runtime.v1.GetModelPartitionsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "splits", kind: "message", T: ModelSplit, repeated: true },
+    { no: 1, name: "partitions", kind: "message", T: ModelSplit, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined, b: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined): boolean {
-    return proto3.util.equals(GetModelSplitsResponse, a, b);
+  static equals(a: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined, b: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(GetModelPartitionsResponse, a, b);
   }
 }
 

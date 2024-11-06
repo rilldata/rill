@@ -92,14 +92,14 @@ const sidebars = {
                 'tutorials/rill_advanced_features/incremental_models/introduction',
                 {
                   type: 'category',
-                  label: 'Basic Incremental and Split Model Examples',
+                  label: 'Basic Incremental and Partitioned Model Examples',
                   items: [
                     'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/split_now',
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partition_now',
                   ]
                 },
-                'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
-                'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
+                'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
+                'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 
               ]

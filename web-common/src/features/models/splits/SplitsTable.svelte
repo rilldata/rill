@@ -13,17 +13,17 @@
   import { writable } from "svelte/store";
   import {
     type RpcStatus,
-    type V1GetModelSplitsResponse,
-    type V1ModelSplit,
+    type V1GetModelPartitionsResponse,
+    type V1ModelPartition,
     type V1Resource,
-    getRuntimeServiceGetModelSplitsQueryKey,
-    runtimeServiceGetModelSplits,
+    getRuntimeServiceGetModelPartitionsQueryKey,
+    runtimeServiceGetModelPartitions,
   } from "../../../runtime-client";
   import type { ErrorType } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
-  import TriggerSplit from "./TriggerSplit.svelte";
+  import TriggerPartition from "./TriggerPartition.svelte";
 
   export let resource: V1Resource;
   export let whereErrored: boolean;
@@ -39,16 +39,16 @@
     ...(wherePending ? { pending: true } : {}),
   };
   $: query = createInfiniteQuery<
-    V1GetModelSplitsResponse,
+    V1GetModelPartitionsResponse,
     ErrorType<RpcStatus>
   >({
-    queryKey: getRuntimeServiceGetModelSplitsQueryKey(
+    queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
       $runtime.instanceId,
       modelName,
       baseParams,
     ),
     queryFn: ({ pageParam }) => {
-      const getModelSplitsParams = {
+      const getModelPartitionsParams = {
         ...baseParams,
         ...(pageParam
           ? {
@@ -56,10 +56,10 @@
             }
           : {}),
       };
-      return runtimeServiceGetModelSplits(
+      return runtimeServiceGetModelPartitions(
         $runtime.instanceId,
         modelName,
-        getModelSplitsParams,
+        getModelPartitionsParams,
       );
     },
     enabled: !!modelName,
@@ -78,7 +78,7 @@
   // ==========================
   const isIncremental = resource.model?.spec?.incremental;
 
-  const columns: ColumnDef<V1ModelSplit>[] = [
+  const columns: ColumnDef<V1ModelPartition>[] = [
     {
       accessorKey: "data",
       header: "Data",
@@ -149,15 +149,15 @@
               widthPercent: 10,
             },
             cell: ({ row }) =>
-              flexRender(TriggerSplit, {
-                splitKey: (row as Row<V1ModelSplit>).original.key as string,
+              flexRender(TriggerPartition, {
+                partitionKey: (row as Row<V1ModelPartition>).original.key as string,
               }),
           },
         ]
       : []),
   ];
 
-  const options = writable<TableOptions<V1ModelSplit>>({
+  const options = writable<TableOptions<V1ModelPartition>>({
     data: [],
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -167,11 +167,11 @@
   $: ({ getHeaderGroups } = $table);
 
   // Sync table data with query data
-  let allRows: V1ModelSplit[] = [];
+  let allRows: V1ModelPartition[] = [];
   $: {
     allRows =
       ($query.data &&
-        $query.data.pages.flatMap((page) => page.splits as V1ModelSplit[])) ||
+        $query.data.pages.flatMap((page) => page.partitions as V1ModelPartition[])) ||
       [];
 
     options.update((old) => ({

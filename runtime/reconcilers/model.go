@@ -29,11 +29,11 @@ import (
 const (
 	_modelDefaultTimeout = 60 * time.Minute
 
-	_modelSyncSplitsBatchSize    = 1000
-	_modelPendingSplitsBatchSize = 1000
+	_modelSyncPartitionsBatchSize    = 1000
+	_modelPendingPartitionsBatchSize = 1000
 )
 
-var errSplitsHaveErrors = errors.New("some splits have errors")
+var errPartitionsHaveErrors = errors.New("some partitions have errors")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -122,7 +122,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			return runtime.ReconcileResult{Err: err}
 		}
 
-		err := r.clearSplits(ctx, model)
+		err := r.clearPartitions(ctx, model)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -160,7 +160,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
 			}
 
-			err := r.clearSplits(ctx, model)
+			err := r.clearPartitions(ctx, model)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
@@ -219,9 +219,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reschedule if we're not triggering
 	if !trigger {
-		// Show if any splits errored
-		if model.State.SplitsHaveErrors {
-			return runtime.ReconcileResult{Err: errSplitsHaveErrors, Retrigger: refreshOn}
+		// Show if any partitions errored
+		if model.State.PartitionsHaveErrors {
+			return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
 		}
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
@@ -245,16 +245,16 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, model)
 	}
 
-	// If the model is split, track if any of the splits have errors
-	var splitsHaveErrors bool
-	if model.State.SplitsModelId != "" {
+	// If the model is partitioned, track if any of the partitions have errors
+	var partitionsHaveErrors bool
+	if model.State.PartitionsModelId != "" {
 		catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
 		defer release()
 
-		splitsHaveErrors, err = catalog.CheckModelSplitsHaveErrors(ctx, model.State.SplitsModelId)
+		partitionsHaveErrors, err = catalog.CheckModelPartitionsHaveErrors(ctx, model.State.PartitionsModelId)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -268,7 +268,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.RefreshedOn = timestamppb.Now()
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
-		model.State.SplitsHaveErrors = splitsHaveErrors
+		model.State.PartitionsHaveErrors = partitionsHaveErrors
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -278,7 +278,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// If the build failed, clear the state only if we're not staging changes
 	if execErr != nil {
 		if !modelEnv.StageChanges {
-			err := r.clearSplits(ctx, model)
+			err := r.clearPartitions(ctx, model)
 			if err != nil {
 				return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
 			}
@@ -314,9 +314,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 	}
 
-	// Show if any splits errored
-	if model.State.SplitsHaveErrors {
-		return runtime.ReconcileResult{Err: errSplitsHaveErrors, Retrigger: refreshOn}
+	// Show if any partitions errored
+	if model.State.PartitionsHaveErrors {
+		return runtime.ReconcileResult{Err: errPartitionsHaveErrors, Retrigger: refreshOn}
 	}
 
 	// Return the next refresh time
@@ -394,18 +394,18 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		}
 	}
 
-	_, err = hash.Write([]byte(spec.SplitsResolver))
+	_, err = hash.Write([]byte(spec.PartitionsResolver))
 	if err != nil {
 		return "", err
 	}
 
-	if spec.SplitsResolverProperties != nil {
-		err = pbutil.WriteHash(structpb.NewStructValue(spec.SplitsResolverProperties), hash)
+	if spec.PartitionsResolverProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.PartitionsResolverProperties), hash)
 		if err != nil {
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.SplitsResolverProperties.AsMap())
+		res, err := r.analyzeTemplatedVariables(ctx, spec.PartitionsResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -415,7 +415,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		}
 	}
 
-	_, err = hash.Write([]byte(spec.SplitsWatermarkField))
+	_, err = hash.Write([]byte(spec.PartitionsWatermarkField))
 	if err != nil {
 		return "", err
 	}
@@ -538,8 +538,8 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.RefreshedOn = nil
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
-	mdl.State.SplitsModelId = ""
-	mdl.State.SplitsHaveErrors = false
+	mdl.State.PartitionsModelId = ""
+	mdl.State.PartitionsHaveErrors = false
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
@@ -606,25 +606,25 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 	return state, res.Schema(), nil
 }
 
-// resolveAndSyncSplits resolves the model's splits using its configured splits resolver and inserts or updates them in the catalog.
-func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
+// resolveAndSyncPartitions resolves the model's partitions using its configured partitions resolver and inserts or updates them in the catalog.
+func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
 	// Log
-	r.C.Logger.Debug("Resolving model splits", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.SplitsResolver))
+	r.C.Logger.Debug("Resolving model partitions", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.PartitionsResolver))
 
-	// Ensure a model ID is set. We use it to track the model's splits in the catalog.
-	if mdl.State.SplitsModelId == "" {
-		mdl.State.SplitsModelId = uuid.NewString()
+	// Ensure a model ID is set. We use it to track the model's partitions in the catalog.
+	if mdl.State.PartitionsModelId == "" {
+		mdl.State.PartitionsModelId = uuid.NewString()
 		err := r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Resolve split rows
+	// Resolve partition rows
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
-		Resolver:           mdl.Spec.SplitsResolver,
-		ResolverProperties: mdl.Spec.SplitsResolverProperties.AsMap(),
+		Resolver:           mdl.Spec.PartitionsResolver,
+		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
 		Args:               map[string]any{"state": incrementalState},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
@@ -643,14 +643,14 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return fmt.Errorf("failed to read splits resolver output: %w", err)
+			return fmt.Errorf("failed to read partitions resolver output: %w", err)
 		}
 		batch = append(batch, row)
 
 		// Flush a batch of rows
-		if len(batch) >= _modelSyncSplitsBatchSize {
-			// Sync the splits
-			err = r.syncSplits(ctx, mdl, batchStartIdx, batch)
+		if len(batch) >= _modelSyncPartitionsBatchSize {
+			// Sync the partitions
+			err = r.syncPartitions(ctx, mdl, batchStartIdx, batch)
 			if err != nil {
 				return err
 			}
@@ -668,22 +668,22 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 
 	// Log
 	count := batchStartIdx + len(batch)
-	defer r.C.Logger.Debug("Resolved model splits", zap.String("model", self.Meta.Name.Name), zap.Int("splits", count))
+	defer r.C.Logger.Debug("Resolved model partitions", zap.String("model", self.Meta.Name.Name), zap.Int("partitions", count))
 
 	// Flush the remaining rows not handled in the loop
-	return r.syncSplits(ctx, mdl, batchStartIdx, batch)
+	return r.syncPartitions(ctx, mdl, batchStartIdx, batch)
 }
 
-// syncSplits syncs a batch of split rows to the catalog.
-// If a split doesn't exist, it is inserted and marked for execution.
-// If a split already exists, it will be ignored unless its watermark field has advanced, in which case it will be marked for execution.
+// syncPartitions syncs a batch of partition rows to the catalog.
+// If a partition doesn't exist, it is inserted and marked for execution.
+// If a partition already exists, it will be ignored unless its watermark field has advanced, in which case it will be marked for execution.
 //
-// The startIdx should be the index of the first row in the batch in the full splits dataset.
-// Split indexes only inform the order that splits are executed in, so they don't need to be very consistent across invocations.
+// The startIdx should be the index of the first row in the batch in the full partitions dataset.
+// Partition indexes only inform the order that partitions are executed in, so they don't need to be very consistent across invocations.
 //
-// NOTE: This implementation inserts/updates splits one-by-one in the catalog.
+// NOTE: This implementation inserts/updates partitions one-by-one in the catalog.
 // If we start using another DB than SQLite for the catalog, it may make sense to implement batched writes.
-func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
+func (r *ModelReconciler) syncPartitions(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -694,37 +694,37 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 	}
 	defer release()
 
-	// Build ModelSplit objects indexed by their Key
-	splits := make(map[string]drivers.ModelSplit, len(rows))
+	// Build ModelPartition objects indexed by their Key
+	partitions := make(map[string]drivers.ModelPartition, len(rows))
 	for i, row := range rows {
 		// If a watermark field is configured, we extract and remove it from the map.
 		// It is necessary to remove it to ensure the key is deterministic.
 		var watermark *time.Time
-		if mdl.Spec.SplitsWatermarkField != "" {
-			if v, ok := row[mdl.Spec.SplitsWatermarkField]; ok {
+		if mdl.Spec.PartitionsWatermarkField != "" {
+			if v, ok := row[mdl.Spec.PartitionsWatermarkField]; ok {
 				t, ok := v.(time.Time)
 				if !ok {
-					return fmt.Errorf(`expected a timestamp for split watermark field %q, got type %T`, mdl.Spec.SplitsWatermarkField, v)
+					return fmt.Errorf(`expected a timestamp for partition watermark field %q, got type %T`, mdl.Spec.PartitionsWatermarkField, v)
 				}
 
 				watermark = &t
-				delete(row, mdl.Spec.SplitsWatermarkField)
+				delete(row, mdl.Spec.PartitionsWatermarkField)
 			}
 		}
 
 		// Marshal the rest of the row
 		rowJSON, err := json.Marshal(row)
 		if err != nil {
-			return fmt.Errorf("failed to marshal split row at index %d: %w", i, err)
+			return fmt.Errorf("failed to marshal partition row at index %d: %w", i, err)
 		}
 
 		// JSON serialization is deterministic in Go, so we can hash it to get a key
 		key, err := md5Hash(rowJSON)
 		if err != nil {
-			return fmt.Errorf("failed to hash split row at index %d: %w", i, err)
+			return fmt.Errorf("failed to hash partition row at index %d: %w", i, err)
 		}
 
-		splits[key] = drivers.ModelSplit{
+		partitions[key] = drivers.ModelPartition{
 			Key:        key,
 			DataJSON:   rowJSON,
 			Index:      startIdx + i,
@@ -735,51 +735,51 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 		}
 	}
 
-	// Find those splits that already exist in the catalog
-	keys := make([]string, 0, len(splits))
-	for key := range splits {
+	// Find those partitions that already exist in the catalog
+	keys := make([]string, 0, len(partitions))
+	for key := range partitions {
 		keys = append(keys, key)
 	}
-	existing, err := catalog.FindModelSplitsByKeys(ctx, mdl.State.SplitsModelId, keys)
+	existing, err := catalog.FindModelPartitionsByKeys(ctx, mdl.State.PartitionsModelId, keys)
 	if err != nil {
-		return fmt.Errorf("failed to find existing splits: %w", err)
+		return fmt.Errorf("failed to find existing partitions: %w", err)
 	}
 
-	// Handle the existing splits by skipping or updating them.
-	// We remove the handled splits from the splits map. The ones that remain are new and should be inserted.
+	// Handle the existing partitions by skipping or updating them.
+	// We remove the handled partitions from the partitions map. The ones that remain are new and should be inserted.
 	for _, old := range existing {
-		// Pop the matching split from the map
-		split := splits[old.Key]
-		delete(splits, old.Key)
+		// Pop the matching partition from the map
+		partition := partitions[old.Key]
+		delete(partitions, old.Key)
 
 		// If the watermark hasn't advanced, there's nothing to do
-		if split.Watermark == nil {
+		if partition.Watermark == nil {
 			continue
 		}
-		if old.Watermark != nil && !old.Watermark.Before(*split.Watermark) {
+		if old.Watermark != nil && !old.Watermark.Before(*partition.Watermark) {
 			continue
 		}
 
-		// Update the split (the new split's ExecutedOn will be nil, so it will be marked for execution).
-		err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
+		// Update the partition (the new partition's ExecutedOn will be nil, so it will be marked for execution).
+		err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
 		if err != nil {
-			return fmt.Errorf("failed to update existing split: %w", err)
+			return fmt.Errorf("failed to update existing partition: %w", err)
 		}
 	}
 
-	// The remaining splits are new and should be inserted
-	for _, split := range splits {
-		err = catalog.InsertModelSplit(ctx, mdl.State.SplitsModelId, split)
+	// The remaining partitions are new and should be inserted
+	for _, partition := range partitions {
+		err = catalog.InsertModelPartition(ctx, mdl.State.PartitionsModelId, partition)
 		if err != nil {
-			return fmt.Errorf("failed to insert new split: %w", err)
+			return fmt.Errorf("failed to insert new partition: %w", err)
 		}
 	}
 	return nil
 }
 
-// clearSplits drops all splits for a model from the catalog.
-func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV2) error {
-	if mdl.State.SplitsModelId == "" {
+// clearPartitions drops all partitions for a model from the catalog.
+func (r *ModelReconciler) clearPartitions(ctx context.Context, mdl *runtimev1.ModelV2) error {
+	if mdl.State.PartitionsModelId == "" {
 		return nil
 	}
 
@@ -789,14 +789,14 @@ func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV
 	}
 	defer release()
 
-	return catalog.DeleteModelSplits(ctx, mdl.State.SplitsModelId)
+	return catalog.DeleteModelPartitions(ctx, mdl.State.PartitionsModelId)
 }
 
-// executeAll executes all splits (if any) of a model with the given execution options.
+// executeAll executes all partitions (if any) of a model with the given execution options.
 // Note that triggerReset only denotes if a reset is required. Even if it is false, the model will still be reset if it's not an incremental model.
 func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
 	// Prepare the incremental state to pass to the executor
-	useSplits := model.Spec.SplitsResolver != ""
+	usePartitions := model.Spec.PartitionsResolver != ""
 	incrementalRun := false
 	incrementalState := map[string]any{}
 	if !triggerReset && model.Spec.Incremental && prevResult != nil {
@@ -815,8 +815,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	} else {
 		logArgs = append(logArgs, zap.String("run_type", "reset"))
 	}
-	if useSplits {
-		logArgs = append(logArgs, zap.Bool("split", true))
+	if usePartitions {
+		logArgs = append(logArgs, zap.Bool("partition", true))
 	}
 	if model.Spec.InputConnector == model.Spec.OutputConnector {
 		logArgs = append(logArgs, zap.String("connector", model.Spec.InputConnector))
@@ -836,9 +836,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// On non-incremental runs, we need to clear all split state from the catalog
+	// On non-incremental runs, we need to clear all partition state from the catalog
 	if !incrementalRun {
-		err := r.clearSplits(ctx, model)
+		err := r.clearPartitions(ctx, model)
 		if err != nil {
 			return "", nil, err
 		}
@@ -856,8 +856,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		return "", nil, ctx.Err()
 	}
 
-	// If we're not splitting execution, run the executor directly and return
-	if !useSplits {
+	// If we're not partitionting execution, run the executor directly and return
+	if !usePartitions {
 		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, nil)
 		if err != nil {
 			return "", nil, err
@@ -865,63 +865,63 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		return executor.finalConnector, res, err
 	}
 
-	// At this point, we know we're running with splits configured.
+	// At this point, we know we're running with partitions configured.
 
-	// Discover number of concurrent splits to process at a time
-	concurrency, ok := executor.final.Concurrency(int(model.Spec.SplitsConcurrencyLimit))
+	// Discover number of concurrent partitions to process at a time
+	concurrency, ok := executor.final.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 	if !ok {
-		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.SplitsConcurrencyLimit, executor.finalConnector)
+		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 	if executor.stage != nil {
-		stageConcurrency, ok := executor.stage.Concurrency(int(model.Spec.SplitsConcurrencyLimit))
+		stageConcurrency, ok := executor.stage.Concurrency(int(model.Spec.PartitionsConcurrencyLimit))
 		if !ok {
-			return "", nil, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.SplitsConcurrencyLimit, executor.stageConnector)
+			return "", nil, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.PartitionsConcurrencyLimit, executor.stageConnector)
 		}
 		if stageConcurrency < concurrency {
 			concurrency = stageConcurrency
 		}
 	}
 	if concurrency < 1 {
-		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.SplitsConcurrencyLimit, executor.finalConnector)
+		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
 
-	// Prepare catalog which tracks splits
+	// Prepare catalog which tracks partitions
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 	if err != nil {
 		return "", nil, err
 	}
 	defer release()
 
-	// First step is to resolve and sync the splits.
-	err = r.resolveAndSyncSplits(ctx, self, model, incrementalState)
+	// First step is to resolve and sync the partitions.
+	err = r.resolveAndSyncPartitions(ctx, self, model, incrementalState)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to sync splits: %w", err)
+		return "", nil, fmt.Errorf("failed to sync partitions: %w", err)
 	}
 
-	// We run the first split without concurrency to ensure that only incremental runs are executed concurrently.
-	// This enables the first split to create the initial result (such as a table) that the other splits incrementally build upon.
+	// We run the first partition without concurrency to ensure that only incremental runs are executed concurrently.
+	// This enables the first partition to create the initial result (such as a table) that the other partitions incrementally build upon.
 	if !incrementalRun {
-		// Find the first split
-		splits, err := catalog.FindModelSplits(ctx, &drivers.FindModelSplitsOptions{
-			ModelID:      model.State.SplitsModelId,
+		// Find the first partition
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
 			WherePending: true,
 			Limit:        1,
 		})
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to load first split: %w", err)
+			return "", nil, fmt.Errorf("failed to load first partition: %w", err)
 		}
-		if len(splits) == 0 {
-			return "", nil, fmt.Errorf("no splits found")
+		if len(partitions) == 0 {
+			return "", nil, fmt.Errorf("no partitions found")
 		}
-		split := splits[0]
+		partition := partitions[0]
 
-		// Execute the first split (with returnErr=true because for the first split, we do not log and skip erroring splits)
-		res, ok, err := r.executeSplit(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, split, true)
+		// Execute the first partition (with returnErr=true because for the first partition, we do not log and skip erroring partitions)
+		res, ok, err := r.executePartition(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, partition, true)
 		if err != nil {
 			return "", nil, err
 		}
 		if !ok {
-			panic("executeSplit returned false despite returnErr being set to true") // Can't happen
+			panic("executePartition returned false despite returnErr being set to true") // Can't happen
 		}
 
 		// Update the state so the next invocations will be incremental
@@ -929,32 +929,32 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		incrementalRun = true
 	}
 
-	// Repeatedly load a batch of pending splits and execute it with a pool of worker goroutines.
+	// Repeatedly load a batch of pending partitions and execute it with a pool of worker goroutines.
 	for {
-		// Get a batch of pending splits
-		// Note: We do this when no workers are running because splits are considered pending if they have not completed execution yet.
-		// This reduces concurrency when processing the last handful of splits in each batch, but with large batch sizes it's worth the simplicity for now.
-		splits, err := catalog.FindModelSplits(ctx, &drivers.FindModelSplitsOptions{
-			ModelID:      model.State.SplitsModelId,
+		// Get a batch of pending partitions
+		// Note: We do this when no workers are running because partitions are considered pending if they have not completed execution yet.
+		// This reduces concurrency when processing the last handful of partitions in each batch, but with large batch sizes it's worth the simplicity for now.
+		partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{
+			ModelID:      model.State.PartitionsModelId,
 			WherePending: true,
-			Limit:        _modelPendingSplitsBatchSize,
+			Limit:        _modelPendingPartitionsBatchSize,
 		})
 		if err != nil {
 			return "", nil, err
 		}
-		if len(splits) == 0 {
+		if len(partitions) == 0 {
 			break
 		}
 
 		// Determine how many workers goroutines to start
 		workers := concurrency
-		if len(splits) < concurrency {
-			workers = len(splits)
+		if len(partitions) < concurrency {
+			workers = len(partitions)
 		}
 
 		// Prepare the results of each worker.
-		// For incremental runs, we need to pass the previous result to the executor, but for split runs, we do not guarantee that the result is the most *recent* previous result.
-		// We do guarantee that no result is discarded, and that all results are either passed as a previous result to the executor or passed into MergeSplitResults.
+		// For incremental runs, we need to pass the previous result to the executor, but for partition runs, we do not guarantee that the result is the most *recent* previous result.
+		// We do guarantee that no result is discarded, and that all results are either passed as a previous result to the executor or passed into MergePartitionResults.
 		// To that end, we can start all the workers off with the same initial previous result.
 		results := make([]*drivers.ModelResult, workers)
 		for workerID := 0; workerID < workers; workerID++ {
@@ -968,9 +968,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			workerID := workerID
 			grp.Go(func() error {
 				for {
-					// Atomically grab the index of a split to process
+					// Atomically grab the index of a partition to process
 					idx := counter.Add(1) - 1
-					if idx >= int64(len(splits)) {
+					if idx >= int64(len(partitions)) {
 						return nil
 					}
 
@@ -979,9 +979,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 						return ctx.Err()
 					}
 
-					// Execute the split and capture the result in results[workerID]
-					split := splits[idx]
-					res, ok, err := r.executeSplit(ctx, catalog, executor, self, model, results[workerID], incrementalRun, incrementalState, split, false)
+					// Execute the partition and capture the result in results[workerID]
+					partition := partitions[idx]
+					res, ok, err := r.executePartition(ctx, catalog, executor, self, model, results[workerID], incrementalRun, incrementalState, partition, false)
 					if err != nil {
 						return err
 					}
@@ -1008,51 +1008,51 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 				continue
 			}
 
-			prevResult, err = executor.finalResultManager.MergeSplitResults(prevResult, r)
+			prevResult, err = executor.finalResultManager.MergePartitionResults(prevResult, r)
 			if err != nil {
-				return "", nil, fmt.Errorf("failed to merge split results: %w", err)
+				return "", nil, fmt.Errorf("failed to merge partition task results: %w", err)
 			}
 		}
 
-		// If we got fewer splits than the batch size, we've processed all pending splits and can stop.
-		if len(splits) < _modelPendingSplitsBatchSize {
+		// If we got fewer partitions than the batch size, we've processed all pending partitions and can stop.
+		if len(partitions) < _modelPendingPartitionsBatchSize {
 			break
 		}
 	}
 
 	// Should not happen, could also have been a panic
 	if prevResult == nil {
-		return "", nil, fmt.Errorf("split execution succeeded but did not produce a non-nil result")
+		return "", nil, fmt.Errorf("partition execution succeeded but did not produce a non-nil result")
 	}
 
-	// We have continuously updated prevResult with new split results, so we return it here
+	// We have continuously updated prevResult with new partition results, so we return it here
 	return executor.finalConnector, prevResult, nil
 }
 
-// executeSplit processes a drivers.ModelSplit by calling executeSingle and then updating the split's state in the catalog.
-// The returned bool will be false if execution failed, but the error was written to the split in the catalog instead of being returned.
-func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, split drivers.ModelSplit, returnErr bool) (*drivers.ModelResult, bool, error) {
-	// Get split data
+// executePartition processes a drivers.ModelPartition by calling executeSingle and then updating the partition's state in the catalog.
+// The returned bool will be false if execution failed, but the error was written to the partition in the catalog instead of being returned.
+func (r *ModelReconciler) executePartition(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, partition drivers.ModelPartition, returnErr bool) (*drivers.ModelResult, bool, error) {
+	// Get partition data
 	data := map[string]any{}
-	err := json.Unmarshal(split.DataJSON, &data)
+	err := json.Unmarshal(partition.DataJSON, &data)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to unmarshal split data: %w", err)
+		return nil, false, fmt.Errorf("failed to unmarshal partition data: %w", err)
 	}
 
 	// Log
-	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", split.Key)}
-	if len(split.DataJSON) < 256 {
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", partition.Key)}
+	if len(partition.DataJSON) < 256 {
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
-	r.C.Logger.Debug("Executing model split", logArgs...)
-	defer func() { r.C.Logger.Info("Executed model split", logArgs...) }()
+	r.C.Logger.Debug("Executing model partition", logArgs...)
+	defer func() { r.C.Logger.Info("Executed model partition", logArgs...) }()
 
-	// Execute the split.
+	// Execute the partition.
 	start := time.Now()
 	errStr := ""
 	res, err := r.executeSingle(ctx, executor, self, mdl, prevResult, incrementalRun, incrementalState, data)
 	if err != nil {
-		// Unless cancelled or explicitly told to return the error, we save the error in the split and continue.
+		// Unless cancelled or explicitly told to return the error, we save the error in the partition and continue.
 		if returnErr {
 			return nil, false, err
 		}
@@ -1063,28 +1063,28 @@ func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.Cata
 		logArgs = append(logArgs, zap.Error(err))
 	}
 
-	// Mark the split as executed
+	// Mark the partition as executed
 	now := time.Now()
-	split.ExecutedOn = &now
-	split.Error = errStr
-	split.Elapsed = time.Since(start)
-	logArgs = append(logArgs, zap.Duration("elapsed", split.Elapsed))
+	partition.ExecutedOn = &now
+	partition.Error = errStr
+	partition.Elapsed = time.Since(start)
+	logArgs = append(logArgs, zap.Duration("elapsed", partition.Elapsed))
 
-	err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
+	err = catalog.UpdateModelPartition(ctx, mdl.State.PartitionsModelId, partition)
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to update split: %w", err)
+		return nil, false, fmt.Errorf("failed to update partition: %w", err)
 	}
 	return res, res != nil, nil
 }
 
-// executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a split is optional.
-func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, split map[string]any) (*drivers.ModelResult, error) {
+// executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a partition is optional.
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, partition map[string]any) (*drivers.ModelResult, error) {
 	// Resolve templating in the input and output props
-	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
+	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
 	if err != nil {
 		return nil, err
 	}
-	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.OutputConnector, mdl.Spec.OutputProperties.AsMap())
+	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.OutputConnector, mdl.Spec.OutputProperties.AsMap())
 	if err != nil {
 		return nil, err
 	}
@@ -1092,7 +1092,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 	// Execute the stage step if configured
 	if executor.stage != nil {
 		// Also resolve templating in the stage props
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, partition, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
 		if err != nil {
 			return nil, err
 		}
@@ -1105,7 +1105,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			Priority:             0,
 			Incremental:          mdl.Spec.Incremental,
 			IncrementalRun:       incrementalRun,
-			SplitRun:             split != nil,
+			PartitionRun:         partition != nil,
 			PreviousResult:       prevResult,
 			TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 		})
@@ -1135,7 +1135,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		Priority:             0,
 		Incremental:          mdl.Spec.Incremental,
 		IncrementalRun:       incrementalRun,
-		SplitRun:             split != nil,
+		PartitionRun:         partition != nil,
 		PreviousResult:       prevResult,
 		TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
 	})
@@ -1336,7 +1336,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 
 // resolveTemplatedProps resolves template tags in strings nested in the provided props.
 // Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
-func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, incrementalState, split map[string]any, connector string, props map[string]any) (map[string]any, error) {
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, incrementalState, partition map[string]any, connector string, props map[string]any) (map[string]any, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -1353,8 +1353,8 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 	}
 
 	var extraProps map[string]any
-	if split != nil {
-		extraProps = map[string]any{"split": split}
+	if partition != nil {
+		extraProps = map[string]any{"partition": partition}
 	}
 
 	td := compilerv1.TemplateData{
