@@ -150,7 +150,8 @@
             },
             cell: ({ row }) =>
               flexRender(TriggerPartition, {
-                partitionKey: (row as Row<V1ModelPartition>).original.key as string,
+                partitionKey: (row as Row<V1ModelPartition>).original
+                  .key as string,
               }),
           },
         ]
@@ -171,7 +172,9 @@
   $: {
     allRows =
       ($query.data &&
-        $query.data.pages.flatMap((page) => page.partitions as V1ModelPartition[])) ||
+        $query.data.pages.flatMap(
+          (page) => page.partitions as V1ModelPartition[],
+        )) ||
       [];
 
     options.update((old) => ({
