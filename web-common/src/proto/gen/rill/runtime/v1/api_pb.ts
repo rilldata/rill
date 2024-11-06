@@ -2484,9 +2484,9 @@ export class Log extends Message<Log> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ModelSplit
+ * @generated from message rill.runtime.v1.ModelPartition
  */
-export class ModelSplit extends Message<ModelSplit> {
+export class ModelPartition extends Message<ModelPartition> {
   /**
    * @generated from field: string key = 1;
    */
@@ -2517,13 +2517,13 @@ export class ModelSplit extends Message<ModelSplit> {
    */
   elapsedMs = 0;
 
-  constructor(data?: PartialMessage<ModelSplit>) {
+  constructor(data?: PartialMessage<ModelPartition>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ModelSplit";
+  static readonly typeName = "rill.runtime.v1.ModelPartition";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "data", kind: "message", T: Struct },
@@ -2533,20 +2533,20 @@ export class ModelSplit extends Message<ModelSplit> {
     { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSplit {
-    return new ModelSplit().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelPartition {
+    return new ModelPartition().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelSplit {
-    return new ModelSplit().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelPartition {
+    return new ModelPartition().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelSplit {
-    return new ModelSplit().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelPartition {
+    return new ModelPartition().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ModelSplit | PlainMessage<ModelSplit> | undefined, b: ModelSplit | PlainMessage<ModelSplit> | undefined): boolean {
-    return proto3.util.equals(ModelSplit, a, b);
+  static equals(a: ModelPartition | PlainMessage<ModelPartition> | undefined, b: ModelPartition | PlainMessage<ModelPartition> | undefined): boolean {
+    return proto3.util.equals(ModelPartition, a, b);
   }
 }
 
@@ -3168,9 +3168,9 @@ export class GetModelPartitionsRequest extends Message<GetModelPartitionsRequest
  */
 export class GetModelPartitionsResponse extends Message<GetModelPartitionsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ModelSplit partitions = 1;
+   * @generated from field: repeated rill.runtime.v1.ModelPartition partitions = 1;
    */
-  partitions: ModelSplit[] = [];
+  partitions: ModelPartition[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -3185,7 +3185,7 @@ export class GetModelPartitionsResponse extends Message<GetModelPartitionsRespon
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GetModelPartitionsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "partitions", kind: "message", T: ModelSplit, repeated: true },
+    { no: 1, name: "partitions", kind: "message", T: ModelPartition, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

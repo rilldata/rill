@@ -1,19 +1,22 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill billing subscription edit
+title: rill project hibernate
 ---
-## rill billing subscription edit
+## rill project hibernate
 
-Edit organization subscription
+Hibernate project
 
 ```
-rill billing subscription edit [flags]
+rill project hibernate [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --plan string   Plan Name to change subscription to
+      --project string   Name
+      --path string      Project directory (default ".")
+      --redeploy         Restore a previously hibernated project
+      --force            Force a redeploy for a non-hibernated project
 ```
 
 ### Global flags
@@ -28,5 +31,5 @@ rill billing subscription edit [flags]
 
 ### SEE ALSO
 
-* [rill billing subscription](subscription.md)	 - Manage organisation subscription
+* [rill project](project.md)	 - Manage projects
 

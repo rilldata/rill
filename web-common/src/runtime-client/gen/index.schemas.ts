@@ -1159,17 +1159,6 @@ export interface V1ModelState {
   partitionsHaveErrors?: boolean;
 }
 
-export type V1ModelSplitData = { [key: string]: any };
-
-export interface V1ModelSplit {
-  key?: string;
-  data?: V1ModelSplitData;
-  watermark?: string;
-  executedOn?: string;
-  error?: string;
-  elapsedMs?: number;
-}
-
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
 export type V1ModelSpecStageProperties = { [key: string]: any };
@@ -1201,6 +1190,17 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
+}
+
+export type V1ModelPartitionData = { [key: string]: any };
+
+export interface V1ModelPartition {
+  key?: string;
+  data?: V1ModelPartitionData;
+  watermark?: string;
+  executedOn?: string;
+  error?: string;
+  elapsedMs?: number;
 }
 
 export interface V1MigrationState {
@@ -1703,7 +1703,7 @@ export interface V1GetResourceResponse {
 }
 
 export interface V1GetModelPartitionsResponse {
-  partitions?: V1ModelSplit[];
+  partitions?: V1ModelPartition[];
   nextPageToken?: string;
 }
 

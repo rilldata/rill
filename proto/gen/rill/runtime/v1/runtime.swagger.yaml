@@ -4333,7 +4333,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ModelSplit'
+          $ref: '#/definitions/v1ModelPartition'
       nextPageToken:
         type: string
   v1GetResourceResponse:
@@ -5299,6 +5299,24 @@ definitions:
       version:
         type: integer
         format: int64
+  v1ModelPartition:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelSpec:
     type: object
     properties:
@@ -5339,24 +5357,6 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
-  v1ModelSplit:
-    type: object
-    properties:
-      key:
-        type: string
-      data:
-        type: object
-      watermark:
-        type: string
-        format: date-time
-      executedOn:
-        type: string
-        format: date-time
-      error:
-        type: string
-      elapsedMs:
-        type: integer
-        format: int64
   v1ModelState:
     type: object
     properties:

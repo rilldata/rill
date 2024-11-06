@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill deploy
+title: rill project connect-github
 ---
-## rill deploy
+## rill project connect-github
 
-Deploy project to Rill Cloud
+Deploy project to Rill Cloud by pulling project files from a git repository
 
 ```
-rill deploy [<path>] [flags]
+rill project connect-github [flags]
 ```
 
 ### Flags
@@ -17,14 +17,12 @@ rill deploy [<path>] [flags]
       --subpath string        Relative path to project in the repository (for monorepos)
       --remote string         Remote name (default: first Git remote)
       --org string            Org to deploy project in
-      --project string        Project name (default: Git repo name)
+      --name string           Project name (default: Git repo name)
       --description string    Project description
       --public                Make dashboards publicly accessible
       --provisioner string    Project provisioner
       --prod-version string   Rill version (default: the latest release version) (default "latest")
       --prod-branch string    Git branch to deploy from (default: the default Git branch)
-      --upload                Create project using rill managed repo
-      --github                Use github repo to create the project
 ```
 
 ### Global flags
@@ -38,5 +36,5 @@ rill deploy [<path>] [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill project](project.md)	 - Manage projects
 

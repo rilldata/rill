@@ -6025,22 +6025,22 @@ var _ interface {
 	ErrorName() string
 } = LogValidationError{}
 
-// Validate checks the field values on ModelSplit with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on ModelPartition with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *ModelSplit) Validate() error {
+func (m *ModelPartition) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ModelSplit with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ModelSplitMultiError, or
-// nil if none found.
-func (m *ModelSplit) ValidateAll() error {
+// ValidateAll checks the field values on ModelPartition with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ModelPartitionMultiError,
+// or nil if none found.
+func (m *ModelPartition) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ModelSplit) validate(all bool) error {
+func (m *ModelPartition) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6053,7 +6053,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetData()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Data",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6061,7 +6061,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Data",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6070,7 +6070,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetData()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "Data",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6082,7 +6082,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetWatermark()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Watermark",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6090,7 +6090,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Watermark",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6099,7 +6099,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetWatermark()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "Watermark",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6111,7 +6111,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetExecutedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "ExecutedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6119,7 +6119,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "ExecutedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6128,7 +6128,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetExecutedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "ExecutedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6141,18 +6141,19 @@ func (m *ModelSplit) validate(all bool) error {
 	// no validation rules for ElapsedMs
 
 	if len(errors) > 0 {
-		return ModelSplitMultiError(errors)
+		return ModelPartitionMultiError(errors)
 	}
 
 	return nil
 }
 
-// ModelSplitMultiError is an error wrapping multiple validation errors
-// returned by ModelSplit.ValidateAll() if the designated constraints aren't met.
-type ModelSplitMultiError []error
+// ModelPartitionMultiError is an error wrapping multiple validation errors
+// returned by ModelPartition.ValidateAll() if the designated constraints
+// aren't met.
+type ModelPartitionMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ModelSplitMultiError) Error() string {
+func (m ModelPartitionMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6161,11 +6162,11 @@ func (m ModelSplitMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ModelSplitMultiError) AllErrors() []error { return m }
+func (m ModelPartitionMultiError) AllErrors() []error { return m }
 
-// ModelSplitValidationError is the validation error returned by
-// ModelSplit.Validate if the designated constraints aren't met.
-type ModelSplitValidationError struct {
+// ModelPartitionValidationError is the validation error returned by
+// ModelPartition.Validate if the designated constraints aren't met.
+type ModelPartitionValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6173,22 +6174,22 @@ type ModelSplitValidationError struct {
 }
 
 // Field function returns field value.
-func (e ModelSplitValidationError) Field() string { return e.field }
+func (e ModelPartitionValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ModelSplitValidationError) Reason() string { return e.reason }
+func (e ModelPartitionValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ModelSplitValidationError) Cause() error { return e.cause }
+func (e ModelPartitionValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ModelSplitValidationError) Key() bool { return e.key }
+func (e ModelPartitionValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ModelSplitValidationError) ErrorName() string { return "ModelSplitValidationError" }
+func (e ModelPartitionValidationError) ErrorName() string { return "ModelPartitionValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ModelSplitValidationError) Error() string {
+func (e ModelPartitionValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6200,14 +6201,14 @@ func (e ModelSplitValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sModelSplit.%s: %s%s",
+		"invalid %sModelPartition.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ModelSplitValidationError{}
+var _ error = ModelPartitionValidationError{}
 
 var _ interface {
 	Field() string
@@ -6215,7 +6216,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ModelSplitValidationError{}
+} = ModelPartitionValidationError{}
 
 // Validate checks the field values on GetLogsRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
