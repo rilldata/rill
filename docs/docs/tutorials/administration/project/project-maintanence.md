@@ -63,7 +63,7 @@ connection: dial tcp 127.0.0.1:9000: connect: connection refused
 
 Seeing as this is ClickHouse model, it is likely that the credentials or connections are not correct for this connection. 
 
-Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-env-variable-management.md) back in Rill Developer.
+Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-envvariable-mangement.md) back in Rill Developer.
 
 
 ### Incremental Models are failing 
