@@ -1544,6 +1544,8 @@ theme:
 					Blue:  0.5019608,
 					Alpha: 1,
 				},
+				Primary:   "red",
+				Secondary: "grey",
 			},
 		},
 		{
