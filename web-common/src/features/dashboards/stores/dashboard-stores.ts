@@ -149,16 +149,20 @@ const metricsViewReducers = {
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
     fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+    initState: Partial<MetricsExplorerEntity> = {},
   ) {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = getDefaultMetricsExplorerEntity(
-        name,
-        metricsView,
-        explore,
-        fullTimeRange,
-      );
+      state.entities[name] = {
+        ...getDefaultMetricsExplorerEntity(
+          name,
+          metricsView,
+          explore,
+          fullTimeRange,
+        ),
+        ...initState,
+      };
       state.entities[name] = restorePersistedDashboardState(
         state.entities[name],
       );

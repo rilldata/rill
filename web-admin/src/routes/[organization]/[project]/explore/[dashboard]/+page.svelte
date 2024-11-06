@@ -18,7 +18,7 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ partialMetrics, defaultPartialMetrics } = data);
+  $: ({ partialMetrics } = data);
   $: instanceId = $runtime?.instanceId;
 
   $: ({
@@ -86,7 +86,7 @@
   {:else if metricsViewName}
     {#key metricsViewName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync {partialMetrics} {defaultPartialMetrics}>
+        <DashboardURLStateSync {partialMetrics}>
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>

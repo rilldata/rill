@@ -11,8 +11,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let partialMetrics: Partial<MetricsExplorerEntity>;
-  export let defaultPartialMetrics: Partial<MetricsExplorerEntity> | undefined =
-    undefined;
 
   const {
     metricsViewName,
@@ -49,6 +47,8 @@
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {
       void goto(newUrl);
+    } else {
+      console.log("same", newUrl);
     }
   }
 
@@ -62,15 +62,6 @@
         exploreSpec,
         timeRangeSummary,
       );
-      // if a default metrics is passed sync with it then merge with it.
-      // this could be a bookmark or a magic auth token state.
-      if (defaultPartialMetrics) {
-        metricsExplorerStore.mergePartialExplorerEntity(
-          $exploreName,
-          defaultPartialMetrics,
-          metricsSpec,
-        );
-      }
     }
 
     metricsExplorerStore.mergePartialExplorerEntity(
