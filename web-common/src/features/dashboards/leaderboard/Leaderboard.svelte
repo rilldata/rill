@@ -174,6 +174,8 @@
     | number
     | null;
 
+  $: console.log(sortedData?.data);
+
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
       sortedData?.data,
@@ -218,7 +220,14 @@
 
   $: ({ data } = $belowTheFoldDataQuery);
 
-  $: belowTheFoldRows = (data?.data ?? []).map((item) =>
+  $: belowTheFoldData = data?.data?.length
+    ? data?.data
+    : belowTheFoldValues.map((value) => ({
+        [dimensionName]: value,
+        [activeMeasureName]: null,
+      }));
+
+  $: belowTheFoldRows = belowTheFoldData.map((item) =>
     cleanUpComparisonValue(
       item,
       dimensionName,
