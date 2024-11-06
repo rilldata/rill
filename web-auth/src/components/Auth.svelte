@@ -17,10 +17,12 @@
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
   export let configParams: string;
+  export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
   const connectionMapObj = JSON.parse(connectionMap);
+  const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
   $: errorText = "";
@@ -42,8 +44,14 @@
       decodeURIComponent(escape(window.atob(configParams))),
     ) as Config;
 
-    if (config?.extraParams?.screen_hint === "signup") {
+    const isSignup = config?.extraParams?.screen_hint === "signup";
+
+    if (isSignup) {
       step = AuthStep.SignUp;
+    }
+
+    if (cloudClientIDsArr.includes(config?.clientID)) {
+      step = AuthStep.Login;
     }
 
     const authOptions: AuthOptions = Object.assign(

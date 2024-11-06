@@ -15,7 +15,7 @@
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
-  function handleSubmit() {
+  function handleClick() {
     if (!email) {
       errorText = "Please enter your email";
       return;
@@ -31,30 +31,35 @@
     dispatch("submit", { email });
   }
 
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      handleClick();
+    }
+  }
+
   $: disabled = !(email.length > 0 && validateEmail(email));
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
-  <div class="mb-4 flex flex-col gap-y-4">
-    <input
-      class="{inputClasses} {focusClasses}"
-      style:width="400px"
-      type="email"
-      placeholder="Enter your email address"
-      id="email"
-      bind:value={email}
-    />
+<div class="mb-4 flex flex-col gap-y-4">
+  <input
+    class="{inputClasses} {focusClasses}"
+    style:width="400px"
+    type="email"
+    placeholder="Enter your email address"
+    id="email"
+    bind:value={email}
+    on:keydown={handleKeyDown}
+  />
 
-    {#if errorText}
-      <div class="text-red-500 text-sm -mt-2">
-        {errorText}
-      </div>
-    {/if}
-  </div>
-
-  <CtaButton {disabled} variant="secondary" submitForm>
-    <div class="flex justify-center font-medium">
-      <span>Continue with email</span>
+  {#if errorText}
+    <div class="text-red-500 text-sm -mt-2">
+      {errorText}
     </div>
-  </CtaButton>
-</form>
+  {/if}
+</div>
+
+<CtaButton {disabled} variant="secondary" on:click={handleClick}>
+  <div class="flex justify-center font-medium">
+    <span>Continue with email</span>
+  </div>
+</CtaButton>
