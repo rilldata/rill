@@ -1,4 +1,7 @@
-import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  matchExpressionByName,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   ResourceKind,
   useClientFilteredResources,
@@ -23,6 +26,7 @@ import type {
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { ErrorType } from "../../runtime-client/http-client";
+import type { DimensionThresholdFilter } from "./stores/metrics-explorer-entity";
 
 export function useMetricsView(
   instanceId: string,
@@ -135,20 +139,34 @@ export const useMetricsViewSpecMeasure = (
     meta?.measures?.find((measure) => measure.name === measureName),
   );
 
-/**
- * Returns a copy of a V1MetricsViewFilter that does not include
- * the filters for the specified dimension name.
- */
-export const getFiltersForOtherDimensions = (
-  filters: V1Expression,
-  dimensionName: string,
-) => {
-  if (!filters) return undefined;
-  return filterExpressions(
-    filters,
-    (e) => e.cond?.exprs?.[0].ident !== dimensionName,
+export function getFiltersForOtherDimensions(
+  whereFilter: V1Expression,
+  dimName: string,
+) {
+  const exprIdx = whereFilter?.cond?.exprs?.findIndex((e) =>
+    matchExpressionByName(e, dimName),
   );
-};
+  if (exprIdx === undefined || exprIdx === -1) return whereFilter;
+
+  return createAndExpression(
+    whereFilter.cond?.exprs?.filter(
+      (e) => !matchExpressionByName(e, dimName),
+    ) ?? [],
+  );
+}
+
+export function additionalMeasures(
+  activeMeasureName: string,
+  dimensionThresholdFilters: DimensionThresholdFilter[],
+) {
+  const measures = new Set<string>([activeMeasureName]);
+  dimensionThresholdFilters.forEach(({ filters }) => {
+    filters.forEach((filter) => {
+      measures.add(filter.measure);
+    });
+  });
+  return [...measures];
+}
 
 export const useGetMetricsViewsForModel = (
   instanceId: string,
