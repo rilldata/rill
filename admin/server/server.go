@@ -317,7 +317,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 
 	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+			return ctx, status.Error(codes.ResourceExhausted, err.Error())
 		}
 		return ctx, err
 	}

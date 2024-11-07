@@ -325,7 +325,7 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	pageSize := validPageSize(req.PageSize)
 
 	var projectNames []string
-	if req.Annotations != nil && len(req.Annotations) > 0 {
+	if len(req.Annotations) > 0 {
 		// If an annotation is set to "*", we just check for key presence (instead of exact key-value match)
 		var annotationKeys []string
 		for k, v := range req.Annotations {
