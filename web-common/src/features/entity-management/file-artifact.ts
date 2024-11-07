@@ -214,6 +214,7 @@ export class FileArtifact {
 
       // Optimistically update the remote content
       this.remoteContent.set(blob);
+      this.remoteCallbacks.forEach((cb) => cb(blob));
 
       this.updateLocalContent(null);
     } catch (e) {
@@ -315,6 +316,7 @@ export class FileArtifact {
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
+    console.log({ resource });
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
 

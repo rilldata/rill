@@ -4,12 +4,16 @@
 
   export let stringColor: string;
   export let label: string;
+  export let disabled = false;
+  export let onChange: (color: string) => void;
 
   let open = false;
 
   $: ({ h: hue, s: saturation, l: lightness } = stringColorToHsl(stringColor));
 
   $: hsl = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+  $: onChange(stringColor);
 
   function extractHSL(color: string) {
     const [, hue, saturation, lightness] = color.match(
@@ -172,7 +176,11 @@
   }}
 />
 
-<div class="color-wrapper">
+<div
+  class="color-wrapper"
+  class:pointer-events-none={disabled}
+  class:bg-gray-50={disabled}
+>
   <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
       <button
@@ -211,7 +219,7 @@
     </Popover.Content>
   </Popover.Root>
 
-  <input bind:value={stringColor} />
+  <input bind:value={stringColor} {disabled} />
 
   <p>{label}</p>
 </div>
@@ -238,6 +246,6 @@
 
   input {
     @apply w-full text-sm;
-    @apply outline-none border-0;
+    @apply outline-none border-0 bg-transparent;
   }
 </style>

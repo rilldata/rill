@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewTimeRange,
+    createRuntimeServiceGetResource,
+    runtimeServiceGetResource,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -29,6 +33,12 @@
   import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
   import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
+  import { useTheme } from "../themes/selectors";
+  import { defaultPercentOptions } from "@rilldata/web-common/lib/number-formatting/strategies/per-range-default-options";
+  import {
+    defaultPrimaryColors,
+    defaultSecondaryColors,
+  } from "../themes/color-config";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -179,9 +189,41 @@
 
   $: themesQuery = useFilteredResources(instanceId, ResourceKind.Theme);
 
-  $: themeNames = ($themesQuery?.data ?? []).map(
-    (theme) => theme.meta?.name?.name ?? "",
-  );
+  $: themeNames = ($themesQuery?.data ?? [])
+    .map((theme) => theme.meta?.name?.name ?? "")
+    .filter((string) => !string.endsWith("--theme"));
+
+  $: theme = parseTheme(rawTheme);
+
+  async function parseTheme(theme: string | YAMLMap | undefined | unknown) {
+    // if (typeof theme === "string") {
+    //   const themeResource = await runtimeServiceGetResource(instanceId, {
+    //     "name.kind": ResourceKind.Theme,
+    //     "name.name": theme,
+    //   });
+
+    //   const spec = themeResource.resource?.theme?.spec;
+
+    //   return {
+    //     name: theme,
+    //     ...spec,
+    //   };
+    // }
+
+    if (theme instanceof YAMLMap) {
+      return {
+        name: "Custom",
+        ...theme.toJSON().colors,
+        custom: true,
+      };
+    }
+
+    return {
+      name: "Default",
+      primary: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
+      secondary: `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`,
+    };
+  }
 
   export function isString(value: unknown): value is string {
     return typeof value === "string";
@@ -211,6 +253,8 @@
 
     await saveContent(parsedDocument.toString());
   }
+
+  $: console.log({ rawTheme });
 </script>
 
 <div class="flex gap-x-2 size-full">
@@ -270,9 +314,10 @@
     />
 
     {#each itemTypes as type (type)}
+      {@const items = type === "measures" ? measures : dimensions}
       <MeasureDimensionSelector
         {type}
-        items={type === "measures" ? measures : dimensions}
+        {items}
         expression={expressions[type]}
         selectedItems={subsets[type]}
         mode={fields[type]}
@@ -280,7 +325,7 @@
           await updateProperties({ [type]: "*" });
         }}
         onSelectSubset={async () => {
-          await updateProperties({ [type]: [] });
+          await updateProperties({ [type]: items.map(({ name }) => name) });
         }}
         onSelectExpression={async () => {
           await updateProperties({ [type]: { expr: "*" } });
@@ -335,13 +380,21 @@
       }}
     />
 
-    <!-- <div class="flex flex-col gap-y-1">
+    <div class="flex flex-col gap-y-1">
       <InputLabel label="Theme" id="visual-explore-theme" />
       <Select
         fontSize={14}
         sameWidth
         onChange={async (value) => {
           if (value === "Custom") {
+            await updateProperties({
+              theme: {
+                colors: {
+                  primary: "hsl(13, 98%, 54%)",
+                  secondary: "lightgreen",
+                },
+              },
+            });
             return;
           } else if (value === "Default") {
             await updateProperties({}, ["theme"]);
@@ -363,11 +416,42 @@
         id="theme"
       />
 
-      <div class="gap-y-2 flex flex-col">
-        <ColorInput stringColor="red" label="Primary" />
-        <ColorInput stringColor="red" label="Secondary" />
-      </div>
-    </div> -->
+      {#await theme then what}
+        <div class="gap-y-2 flex flex-col">
+          <ColorInput
+            stringColor={what.primary}
+            label="Primary"
+            disabled={!what.custom}
+            onChange={async (color) => {
+              console.log("update");
+              await updateProperties({
+                theme: {
+                  colors: {
+                    primary: color,
+                    secondary: what.secondary,
+                  },
+                },
+              });
+            }}
+          />
+          <ColorInput
+            stringColor={what.secondary}
+            label="Secondary"
+            disabled={!what.custom}
+            onChange={async (color) => {
+              await updateProperties({
+                theme: {
+                  colors: {
+                    primary: what.primary,
+                    secondary: color,
+                  },
+                },
+              });
+            }}
+          />
+        </div>
+      {/await}
+    </div>
   </SidebarWrapper>
 </div>
 
