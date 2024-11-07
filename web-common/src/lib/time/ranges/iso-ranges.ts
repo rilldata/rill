@@ -133,7 +133,7 @@ export function shiftToLargest(duration: Duration, units: DurationUnit[]) {
   if (!largestUnit) return duration;
   shiftedDuration = shiftedDuration.shiftTo(largestUnit);
   return shiftedDuration.set({
-    [largestUnit]: Math.round(shiftedDuration[largestUnit] as number),
+    [largestUnit]: Math.floor(shiftedDuration[largestUnit] as number),
   });
 }
 

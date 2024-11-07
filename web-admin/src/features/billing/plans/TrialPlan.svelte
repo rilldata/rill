@@ -35,7 +35,7 @@
       const endDate = DateTime.fromJSDate(new Date(subscriptionEndDate));
       if (endDate.isValid) {
         const diff = endDate.diff(today);
-        trialEndMessage = getTrialMessageForDays(endDate.diff(today), endDate);
+        trialEndMessage = getTrialMessageForDays(endDate.diff(today));
         trialEnded = diff.milliseconds < 0;
       }
     }

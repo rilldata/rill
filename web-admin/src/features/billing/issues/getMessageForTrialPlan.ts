@@ -49,7 +49,7 @@ export function getMessageForTrialPlan(
     trialIssue.type !== V1BillingIssueType.BILLING_ISSUE_TYPE_TRIAL_ENDED
   ) {
     const daysDiff = diff.shiftTo("days");
-    message.title = getTrialMessageForDays(diff, endDate);
+    message.title = getTrialMessageForDays(diff);
     message.type = daysDiff.days < WarningPeriodInDays ? "warning" : "default";
   } else {
     const gracePeriodDate = DateTime.fromJSDate(
@@ -73,12 +73,9 @@ export function getMessageForTrialPlan(
   return message;
 }
 
-export function getTrialMessageForDays(diff: Duration, endDate: DateTime) {
+export function getTrialMessageForDays(diff: Duration) {
   if (diff.milliseconds < 0) return "Your trial has expired.";
-  const UTCFormattedDate = endDate
-    .setLocale("UTC")
-    .toLocaleString(DateTime.DATE_MED);
-  return `Your trial expires in ${humanizeDuration(diff)} (${UTCFormattedDate} UTC).`;
+  return `Your trial expires in ${humanizeDuration(diff)}.`;
 }
 
 export function trialHasPastGracePeriod(trialEndedIssue: V1BillingIssue) {
