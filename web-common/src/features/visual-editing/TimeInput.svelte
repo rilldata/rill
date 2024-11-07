@@ -54,6 +54,7 @@
         mode = "custom";
       } else if (field === "Default") {
         onSelectDefault();
+        mode = "default";
       }
     }}
   />

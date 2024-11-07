@@ -23,7 +23,7 @@
   export let selectedItems: Set<string>;
   export let onSelectDefault: (defaults: string[]) => void;
   export let onSelectCustomItem: (item: string) => void;
-  export let restoreDefaults: (defaults: string[]) => void;
+  export let setTimeRanges: (timeRanges: string[]) => void;
 
   let open = false;
   let searchValue = "";
@@ -34,10 +34,6 @@
 
   $: mode = hasDefaultsSelected ? "default" : "custom";
 
-  // $: filteredNonDefaults = allNonDefaults.filter((item) =>
-  //   item.toLowerCase().includes(searchValue.toLowerCase()),
-  // );
-
   $: selected = mode === "custom" ? 1 : 0;
 
   $: filteredItems = ranges.filter(
@@ -45,8 +41,6 @@
       !selectedItems.has(item) &&
       item.toLowerCase().includes(searchValue.toLowerCase()),
   );
-
-  // function onToggleSelectAll() {}
 </script>
 
 <div class="flex flex-col gap-y-1">
@@ -63,6 +57,7 @@
         mode = "custom";
       } else if (field === "Default") {
         onSelectDefault(ranges);
+        mode = "default";
       }
     }}
   />
@@ -113,17 +108,26 @@
 
         <footer>
           {#if !hasDefaultsSelected}
-            <Button on:click={() => restoreDefaults(ranges)} type="text">
+            <Button on:click={() => setTimeRanges(ranges)} type="text">
               Restore defaults
             </Button>
           {/if}
-          <!-- <Button on:click={onToggleSelectAll} type="plain">
-              {#if selectedItems.size === DEFAULT_TIMEZONES.length}
-                Deselect all
-              {:else}
-                Select all
-              {/if}
-            </Button> -->
+          <Button
+            on:click={() => {
+              if (selectedItems.size === ranges.length) {
+                setTimeRanges([]);
+              } else {
+                setTimeRanges(ranges);
+              }
+            }}
+            type="plain"
+          >
+            {#if selectedItems.size === ranges.length}
+              Deselect all
+            {:else}
+              Select all
+            {/if}
+          </Button>
         </footer>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

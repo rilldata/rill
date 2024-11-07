@@ -7,7 +7,7 @@
   export let allItems: Set<string>;
   export let selectedItems: Set<string>;
   export let onSelect: (item: string) => void;
-  export let onToggleSelectAll: () => void;
+  export let setItems: (items: string[]) => void;
 
   let searchValue = "";
   let open = false;
@@ -73,7 +73,16 @@
     </div>
 
     <footer>
-      <Button on:click={onToggleSelectAll} type="plain">
+      <Button
+        on:click={() => {
+          if (selectedItems.size === allItems.size) {
+            setItems([]);
+          } else {
+            setItems(Array.from(allItems));
+          }
+        }}
+        type="plain"
+      >
         {#if selectedItems.size === allItems.size}
           Deselect all
         {:else}

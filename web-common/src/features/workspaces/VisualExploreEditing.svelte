@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    createQueryServiceMetricsViewTimeRange,
-    createRuntimeServiceGetResource,
-    runtimeServiceGetResource,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -13,13 +9,10 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { getNameFromFile } from "../entity-management/entity-mappers";
   import { initLocalUserPreferenceStore } from "../dashboards/user-preferences";
   import { YAMLSeq, Scalar, YAMLMap, parseDocument } from "yaml";
-  import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "../dashboards/stores/DashboardStateProvider.svelte";
   import DashboardUrlStateProvider from "../dashboards/proto-state/DashboardURLStateProvider.svelte";
@@ -30,15 +23,10 @@
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import TimeInput from "../visual-editing/TimeInput.svelte";
-  import { metricsExplorerStore } from "../dashboards/stores/dashboard-stores";
   import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
   import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
-  import { useTheme } from "../themes/selectors";
-  import { defaultPercentOptions } from "@rilldata/web-common/lib/number-formatting/strategies/per-range-default-options";
-  import {
-    defaultPrimaryColors,
-    defaultSecondaryColors,
-  } from "../themes/color-config";
+
+  import ThemeInput from "../visual-editing/ThemeInput.svelte";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -220,8 +208,8 @@
 
     return {
       name: "Default",
-      primary: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
-      secondary: `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`,
+      primary: undefined,
+      secondary: undefined,
     };
   }
 
@@ -254,7 +242,13 @@
     await saveContent(parsedDocument.toString());
   }
 
-  $: console.log({ rawTheme });
+  $: themeName = !rawTheme
+    ? "Default"
+    : typeof rawTheme === "string"
+      ? rawTheme
+      : rawTheme instanceof YAMLMap
+        ? "Custom"
+        : undefined;
 </script>
 
 <div class="flex gap-x-2 size-full">
@@ -303,13 +297,6 @@
         await updateProperties({ metrics_view: metricsView });
         await asyncWait(3000);
         if (!metricsViewSpec || !exploreSpec) return;
-        // metricsExplorerStore.init(
-        //   exploreName,
-        //   metricsViewSpec,
-        //   exploreSpec,
-        //   $timeRangeQuery.data,
-        // //   true,
-        // );
       }}
     />
 
@@ -321,6 +308,9 @@
         expression={expressions[type]}
         selectedItems={subsets[type]}
         mode={fields[type]}
+        setItems={(items) => {
+          updateProperties({ [type]: items });
+        }}
         onSelectAll={async () => {
           await updateProperties({ [type]: "*" });
         }}
@@ -375,83 +365,43 @@
 
         await updateProperties({ time_ranges: Array.from(timeRanges) });
       }}
-      restoreDefaults={async (time_ranges) => {
+      setTimeRanges={async (time_ranges) => {
         await updateProperties({ time_ranges });
       }}
     />
 
-    <div class="flex flex-col gap-y-1">
-      <InputLabel label="Theme" id="visual-explore-theme" />
-      <Select
-        fontSize={14}
-        sameWidth
-        onChange={async (value) => {
-          if (value === "Custom") {
-            await updateProperties({
-              theme: {
-                colors: {
-                  primary: "hsl(13, 98%, 54%)",
-                  secondary: "lightgreen",
-                },
+    <ThemeInput
+      {themeName}
+      {themeNames}
+      theme={exploreSpec?.embeddedTheme}
+      onModeChange={async (value) => {
+        if (value === "Custom") {
+          await updateProperties({
+            theme: {
+              colors: {
+                primary: "hsl(13, 98%, 54%)",
+                secondary: "lightgreen",
               },
-            });
-            return;
-          } else if (value === "Default") {
-            await updateProperties({}, ["theme"]);
-          } else {
-            await updateProperties({ theme: value });
-          }
-        }}
-        value={!rawTheme
-          ? "Default"
-          : typeof rawTheme === "string"
-            ? rawTheme
-            : rawTheme instanceof YAMLMap
-              ? "Custom"
-              : undefined}
-        options={["Default", ...themeNames, "Custom"].map((value) => ({
-          value,
-          label: value,
-        }))}
-        id="theme"
-      />
-
-      {#await theme then what}
-        <div class="gap-y-2 flex flex-col">
-          <ColorInput
-            stringColor={what.primary}
-            label="Primary"
-            disabled={!what.custom}
-            onChange={async (color) => {
-              console.log("update");
-              await updateProperties({
-                theme: {
-                  colors: {
-                    primary: color,
-                    secondary: what.secondary,
-                  },
-                },
-              });
-            }}
-          />
-          <ColorInput
-            stringColor={what.secondary}
-            label="Secondary"
-            disabled={!what.custom}
-            onChange={async (color) => {
-              await updateProperties({
-                theme: {
-                  colors: {
-                    primary: what.primary,
-                    secondary: color,
-                  },
-                },
-              });
-            }}
-          />
-        </div>
-      {/await}
-    </div>
+            },
+          });
+          return;
+        } else if (value === "Default") {
+          await updateProperties({}, ["theme"]);
+        } else {
+          await updateProperties({ theme: value });
+        }
+      }}
+      onColorChange={async (primary, secondary) => {
+        await updateProperties({
+          theme: {
+            colors: {
+              primary,
+              secondary,
+            },
+          },
+        });
+      }}
+    />
   </SidebarWrapper>
 </div>
 

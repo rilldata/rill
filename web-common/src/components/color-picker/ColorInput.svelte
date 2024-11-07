@@ -2,7 +2,7 @@
   import * as Popover from "@rilldata/web-common/components/popover";
   import ColorSlider from "./ColorSlider.svelte";
 
-  export let stringColor: string;
+  export let stringColor: string | undefined;
   export let label: string;
   export let disabled = false;
   export let onChange: (color: string) => void;
@@ -12,8 +12,6 @@
   $: ({ h: hue, s: saturation, l: lightness } = stringColorToHsl(stringColor));
 
   $: hsl = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-
-  $: onChange(stringColor);
 
   function extractHSL(color: string) {
     const [, hue, saturation, lightness] = color.match(
@@ -27,7 +25,14 @@
     };
   }
 
-  function stringColorToHsl(string: string) {
+  function stringColorToHsl(string: string | undefined) {
+    if (!string) {
+      return {
+        h: 0,
+        s: 100,
+        l: 50,
+      };
+    }
     if (string.startsWith("hsl")) {
       return extractHSL(string);
     }
@@ -196,24 +201,30 @@
         mode="hue"
         bind:value={hue}
         {hue}
+        color={hsl}
         onChange={() => {
           stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+          onChange(stringColor);
         }}
       />
       <ColorSlider
         mode="saturation"
         bind:value={saturation}
         {hue}
+        color={hsl}
         onChange={() => {
           stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+          onChange(stringColor);
         }}
       />
       <ColorSlider
         mode="lightness"
         bind:value={lightness}
         {hue}
+        color={hsl}
         onChange={() => {
           stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+          onChange(stringColor);
         }}
       />
     </Popover.Content>

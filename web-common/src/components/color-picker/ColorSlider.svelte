@@ -23,6 +23,7 @@
 <script lang="ts">
   export let value: number;
   export let hue = 0;
+  export let color: string;
   export let mode: "hue" | "saturation" | "lightness";
   export let onChange: () => void;
 </script>
@@ -30,6 +31,7 @@
 <div class="size-full flex flex-none gap-x-2 items-center">
   <input
     style:--hue={hue}
+    style:--color={color}
     style:background-image={gradients[mode]}
     type="range"
     min="0"
@@ -50,11 +52,11 @@
 
 <style lang="postcss">
   * {
-    --focus: rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      hsl(var(--hue), 100%, 50%) 0 0 0 4.5px;
+    --focus: rgba(255, 255, 255, 1) 0 0 0 2.5px, var(--color) 0 0 0 4.5px;
     --hover: rgba(255, 255, 255, 1) 0 0 0 2.5px,
       rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
   }
+
   input:focus {
     @apply outline-none;
   }
@@ -62,10 +64,8 @@
   input[type="range"] {
     @apply rounded-full w-full;
     -webkit-appearance: none;
-    /* box-shadow:
-      rgba(255, 255, 255, 0.25) 0 1px 1px inset,
-      rgba(0, 0, 0, 0.6) 0 0 0 1px; */
-    height: 12px;
+
+    height: 13px;
     margin: 0;
   }
 
@@ -77,7 +77,7 @@
       rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
     height: 14px;
     width: 14px;
-    background: hsl(var(--hue), 100%, 50%);
+    background: var(--color);
     cursor: pointer;
     margin-top: -0px;
   }

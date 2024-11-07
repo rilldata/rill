@@ -18,6 +18,7 @@
   export let onSelectSubsetItem: (item: string) => void;
   export let onSelectExpression: () => void;
   export let onExpressionBlur: (value: string) => void;
+  export let setItems: (items: string[]) => void;
 
   $: selected = mode === "all" ? 0 : mode === "subset" ? 1 : 2;
 </script>
@@ -55,7 +56,7 @@
       allItems={new Set(items.map((m) => m.name ?? ""))}
       selectedItems={new Set(selectedItems)}
       onSelect={onSelectSubsetItem}
-      onToggleSelectAll={() => {}}
+      {setItems}
     />
   {/if}
 </div>

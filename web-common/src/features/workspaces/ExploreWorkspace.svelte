@@ -78,16 +78,15 @@
     </div>
   </WorkspaceHeader>
 
-  <!-- <svelte:fragment slot="body"> -->
-  <!-- {#if $selectedView === "code"} -->
-  <ExploreEditor
-    slot="body"
-    bind:autoSave={$autoSave}
-    {exploreName}
-    {fileArtifact}
-    {allErrors}
-  />
-  <!-- {:else}
+  <svelte:fragment slot="body">
+    {#if $selectedView === "code"}
+      <ExploreEditor
+        bind:autoSave={$autoSave}
+        {exploreName}
+        {fileArtifact}
+        {allErrors}
+      />
+    {:else}
       {#key fileArtifact}
         <VisualExploreEditing
           errors={[]}
@@ -97,6 +96,6 @@
           }}
         />
       {/key}
-    {/if} -->
-  <!-- </svelte:fragment> -->
+    {/if}
+  </svelte:fragment>
 </WorkspaceContainer>

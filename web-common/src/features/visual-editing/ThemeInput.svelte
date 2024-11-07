@@ -2,10 +2,32 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import {
+    defaultPrimaryColors,
+    defaultSecondaryColors,
+  } from "../themes/color-config";
+  import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { useTheme } from "../themes/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let themes: string[];
-  export let selectedTheme: string;
+  const defaultTheme: V1ThemeSpec = {
+    primaryColorRaw: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
+    secondaryColorRaw: `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`,
+  };
+
+  export let themeName: string | "Custom" | "Default" | undefined;
+  export let themeNames: string[];
+  export let theme: V1ThemeSpec | undefined;
+  export let onModeChange: (mode: string) => void;
+  export let onColorChange: (primary: string, secondary: string) => void;
+
+  $: ({ instanceId } = $runtime);
+
+  $: themeQuery = useTheme(instanceId, themeName ?? "");
+
+  $: fetchedTheme = $themeQuery?.data?.theme?.spec;
+
+  $: theme = theme ?? fetchedTheme ?? defaultTheme;
 </script>
 
 <div class="flex flex-col gap-y-1">
@@ -13,30 +35,8 @@
   <Select
     fontSize={14}
     sameWidth
-    onChange={async (value) => {
-      if (value === "Custom") {
-        await updateProperties({
-          theme: {
-            colors: {
-              primary: "hsl(13, 98%, 54%)",
-              secondary: "lightgreen",
-            },
-          },
-        });
-        return;
-      } else if (value === "Default") {
-        await updateProperties({}, ["theme"]);
-      } else {
-        await updateProperties({ theme: value });
-      }
-    }}
-    value={!rawTheme
-      ? "Default"
-      : typeof rawTheme === "string"
-        ? rawTheme
-        : rawTheme instanceof YAMLMap
-          ? "Custom"
-          : undefined}
+    onChange={onModeChange}
+    value={themeName}
     options={["Default", ...themeNames, "Custom"].map((value) => ({
       value,
       label: value,
@@ -44,39 +44,22 @@
     id="theme"
   />
 
-  <!-- {#await theme then what} -->
   <div class="gap-y-2 flex flex-col">
     <ColorInput
-      stringColor={what.primary}
+      stringColor={theme.primaryColorRaw}
       label="Primary"
-      disabled={!what.custom}
-      onChange={async (color) => {
-        console.log("update");
-        await updateProperties({
-          theme: {
-            colors: {
-              primary: color,
-              secondary: what.secondary,
-            },
-          },
-        });
+      disabled={themeName !== "Custom"}
+      onChange={(color) => {
+        onColorChange(color, theme.secondaryColorRaw ?? "");
       }}
     />
     <ColorInput
-      stringColor={what.secondary}
+      stringColor={theme.secondaryColorRaw}
       label="Secondary"
-      disabled={!what.custom}
-      onChange={async (color) => {
-        await updateProperties({
-          theme: {
-            colors: {
-              primary: what.primary,
-              secondary: color,
-            },
-          },
-        });
+      disabled={themeName !== "Custom"}
+      onChange={(color) => {
+        onColorChange(theme.primaryColorRaw ?? "", color);
       }}
     />
   </div>
-  <!-- {/await} -->
 </div>
