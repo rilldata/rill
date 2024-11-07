@@ -4,8 +4,8 @@
   import type { Selected } from "bits-ui";
   import CollapsibleSectionTitle from "../../../layout/CollapsibleSectionTitle.svelte";
   import type { V1Resource } from "../../../runtime-client";
-  import SplitsFilter from "./SplitsFilter.svelte";
-  import SplitsTable from "./SplitsTable.svelte";
+  import PartitionsFilter from "./PartitionsFilter.svelte";
+  import PartitionsTable from "./PartitionsTable.svelte";
 
   export let resource: V1Resource;
 
@@ -19,31 +19,31 @@
 </script>
 
 <section>
-  <CollapsibleSectionTitle tooltipText="model splits" bind:active>
-    Model splits
+  <CollapsibleSectionTitle tooltipText="model partitions" bind:active>
+    Model partitions
   </CollapsibleSectionTitle>
 
   {#if active}
     <div class="line-wrapper">
-      {#if resource.model?.state?.splitsHaveErrors}
+      {#if resource.model?.state?.partitionsHaveErrors}
         <CancelCircle size="12" className="text-red-600" />
       {/if}
       <span class="help-text">
-        {resource.model?.state?.splitsHaveErrors
-          ? "Some splits have errors.  "
-          : "All splits were successful.   "}
+        {resource.model?.state?.partitionsHaveErrors
+          ? "Some partitions have errors.  "
+          : "All partitions were successful.   "}
         <Dialog.Root>
           <Dialog.Trigger class="text-primary-500 font-medium">
-            View splits
+            View partitions
           </Dialog.Trigger>
           <Dialog.Content class="max-w-screen-xl">
             <Dialog.Header>
-              <Dialog.Title>Model splits</Dialog.Title>
+              <Dialog.Title>Model partitions</Dialog.Title>
             </Dialog.Header>
             <div class="flex justify-end">
-              <SplitsFilter {selectedFilter} onChange={onFilterChange} />
+              <PartitionsFilter {selectedFilter} onChange={onFilterChange} />
             </div>
-            <SplitsTable
+            <PartitionsTable
               {resource}
               whereErrored={selectedFilter === "errors"}
               wherePending={selectedFilter === "pending"}

@@ -1,19 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill billing subscription edit
+title: rill billing subscription renew
 ---
-## rill billing subscription edit
+## rill billing subscription renew
 
-Edit organization subscription
+Renew cancelled organization subscription
 
 ```
-rill billing subscription edit [flags]
+rill billing subscription renew [flags]
 ```
 
 ### Flags
 
 ```
-      --plan string   Plan Name to change subscription to
+      --plan string   Plan name to renew subscription to
 ```
 
 ### Global flags
