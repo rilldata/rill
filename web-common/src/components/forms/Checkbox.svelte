@@ -12,6 +12,6 @@
     type="checkbox"
     {id}
     bind:checked
-    on:change={(event) => onCheckedChange(event.target?.checked)}
+    on:change={() => onCheckedChange(checked)}
   />
 </div>

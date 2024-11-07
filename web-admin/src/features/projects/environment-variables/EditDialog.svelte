@@ -21,8 +21,9 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type EnvironmentTypes } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { onMount } from "svelte";
 
   export let open = false;
   export let environment: string;
@@ -31,14 +32,32 @@
 
   let isDevelopment = false;
   let isProduction = false;
+  let processedEnvironment: EnvironmentTypes;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  function generateUUID(): string {
+    // Generate random numbers for the UUID
+    const randomNumbers: number[] = new Array(16)
+      .fill(0)
+      .map(() => Math.floor(Math.random() * 256));
+
+    // Set the version and variant bits
+    randomNumbers[6] = (randomNumbers[6] & 0x0f) | 0x40; // Version 4
+    randomNumbers[8] = (randomNumbers[8] & 0x3f) | 0x80; // Variant 10
+
+    // Convert to hexadecimal and format as a UUID
+    const hexDigits: string = randomNumbers
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return `${hexDigits.slice(0, 8)}-${hexDigits.slice(8, 12)}-${hexDigits.slice(12, 16)}-${hexDigits.slice(16, 20)}-${hexDigits.slice(20, 32)}`;
+  }
+
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  const formId = `edit-environment-variables-form-${name}`;
+  const formId = `edit-environment-variables-form-${generateUUID()}`;
 
   const initialValues = {
     environment: environment,
@@ -77,14 +96,16 @@
     },
   );
 
-  function processEnvironment() {
-    return environment === EnvironmentType.DEVELOPMENT
-      ? EnvironmentType.DEVELOPMENT
-      : environment === EnvironmentType.PRODUCTION
-        ? EnvironmentType.PRODUCTION
-        : // If empty, the variable(s) will be used as defaults for all environments.
-          undefined;
+  function processFormEnvironment() {
+    if (!$form.environment && !$form.environment) {
+      return "";
+    } else if ($form.environment === EnvironmentType.DEVELOPMENT) {
+      return EnvironmentType.DEVELOPMENT;
+    } else if ($form.environment === EnvironmentType.PRODUCTION) {
+      return EnvironmentType.PRODUCTION;
+    }
   }
+  $: processedEnvironment = processFormEnvironment();
 
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -94,7 +115,7 @@
         organization,
         project,
         data: {
-          environment: processEnvironment(),
+          environment: processedEnvironment,
           variables: flatVariable,
         },
       });
@@ -121,12 +142,20 @@
 
   function handleReset() {
     $form = initialValues;
+
+    isDevelopment = true;
+    isProduction = true;
   }
 
-  // TODO: handle empty environment
-  $: isDevelopment = $form.environment === EnvironmentType.DEVELOPMENT;
-  $: isProduction = $form.environment === EnvironmentType.PRODUCTION;
-  $: hasChanges = $form.value !== value || $form.environment !== environment;
+  onMount(() => {
+    if ($form.environment === "") {
+      isDevelopment = true;
+      isProduction = true;
+    }
+  });
+
+  // $: hasChanges =
+  //   $form.value !== value || $form.environment !== processedEnvironment;
 
   $: console.log("$form: ", $form);
 </script>
@@ -157,20 +186,26 @@
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
-              onCheckedChange={() => {
-                console.log("development");
-                environment = EnvironmentType.DEVELOPMENT;
-                $form.environment = EnvironmentType.DEVELOPMENT;
+              onCheckedChange={(checked) => {
+                // if (checked) {
+                //   isDevelopment = true;
+                // } else {
+                //   isDevelopment = false;
+                // }
+                isDevelopment = checked;
               }}
               id="development"
               label="Development"
             />
             <Checkbox
               bind:checked={isProduction}
-              onCheckedChange={() => {
-                console.log("production");
-                environment = EnvironmentType.PRODUCTION;
-                $form.environment = EnvironmentType.PRODUCTION;
+              onCheckedChange={(checked) => {
+                // if (checked) {
+                //   isProduction = true;
+                // } else {
+                //   isProduction = false;
+                // }
+                isProduction = checked;
               }}
               id="production"
               label="Production"
@@ -216,11 +251,8 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button
-        type="primary"
-        form={formId}
-        disabled={$submitting || !hasChanges}
-        submitForm>Edit</Button
+      <Button type="primary" form={formId} disabled={$submitting} submitForm
+        >Edit</Button
       >
     </DialogFooter>
   </DialogContent>
