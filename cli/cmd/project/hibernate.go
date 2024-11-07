@@ -25,7 +25,7 @@ func HibernateCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name, use `--project` to specify the project name")
 				}
 			}
 

@@ -1,6 +1,8 @@
 package publicurl
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -27,7 +29,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name, use `--project` to specify the project name")
 				}
 			}
 
