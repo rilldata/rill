@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Popover from "@rilldata/web-common/components/popover";
   import ColorSlider from "./ColorSlider.svelte";
+  import InputLabel from "../forms/InputLabel.svelte";
 
   export let stringColor: string | undefined;
   export let label: string;
@@ -196,41 +197,45 @@
       />
     </Popover.Trigger>
 
-    <Popover.Content class="w-[270px] space-y-2" align="start" sideOffset={10}>
-      <ColorSlider
-        mode="hue"
-        bind:value={hue}
-        {hue}
-        color={hsl}
-        onChange={() => {
-          stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-          onChange(stringColor);
-        }}
-      />
-      <ColorSlider
-        mode="saturation"
-        bind:value={saturation}
-        {hue}
-        color={hsl}
-        onChange={() => {
-          stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-          onChange(stringColor);
-        }}
-      />
-      <ColorSlider
-        mode="lightness"
-        bind:value={lightness}
-        {hue}
-        color={hsl}
-        onChange={() => {
-          stringColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-          onChange(stringColor);
-        }}
-      />
+    <Popover.Content class="w-[270px]  space-y-2" align="start" sideOffset={10}>
+      <div class="space-y-1">
+        <InputLabel label="Hue" id="hue" />
+        <ColorSlider
+          mode="hue"
+          bind:value={hue}
+          {hue}
+          color={hsl}
+          onChange={() => {
+            stringColor = `hsl(${hue}, ${saturation}%, 50%)`;
+            onChange(stringColor);
+          }}
+        />
+      </div>
+      <div class="space-y-1">
+        <InputLabel label="Saturation" id="saturation" />
+        <ColorSlider
+          mode="saturation"
+          bind:value={saturation}
+          {hue}
+          color={hsl}
+          onChange={() => {
+            stringColor = `hsl(${hue}, ${saturation}%, 50%)`;
+            onChange(stringColor);
+          }}
+        />
+      </div>
     </Popover.Content>
   </Popover.Root>
 
-  <input bind:value={stringColor} {disabled} />
+  <input
+    bind:value={stringColor}
+    {disabled}
+    on:keydown={(e) => {
+      if (e.key === "Enter") {
+        e.currentTarget.blur();
+      }
+    }}
+  />
 
   <p>{label}</p>
 </div>

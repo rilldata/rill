@@ -24,6 +24,7 @@
   export let ringFocus = true;
   export let truncate = false;
   export let enableSearch = false;
+  export let lockable = false;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -76,6 +77,7 @@
   >
     <Select.Trigger
       {id}
+      {lockable}
       bind:el={selectElement}
       class="flex px-3 gap-x-2 max-w-full {width &&
         `w-[${width}px]`} {ringFocus &&

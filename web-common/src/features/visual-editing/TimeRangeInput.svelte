@@ -73,7 +73,7 @@
           class:open
           class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
         >
-          {selectedItems.size} of {ranges.length}
+          {selectedItems.size} time ranges
           <CaretDownIcon
             size="12px"
             className="!fill-gray-600 ml-auto flex-none"
@@ -91,7 +91,7 @@
               checked
               on:click={() => onSelectCustomItem(item)}
             >
-              {DEFAULT_TIME_RANGES[item].label}
+              {DEFAULT_TIME_RANGES[item]?.label ?? item}
             </DropdownMenu.CheckboxItem>
           {/each}
 

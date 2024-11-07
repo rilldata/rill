@@ -70,7 +70,7 @@
           class:open
           class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
         >
-          {selectedItems.size} of {DEFAULT_TIMEZONES.length}
+          {selectedItems.size} time zones
           <CaretDownIcon
             size="12px"
             className="!fill-gray-600 ml-auto flex-none"

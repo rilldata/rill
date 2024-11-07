@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
@@ -7,11 +6,6 @@
     useFilteredResources,
   } from "../entity-management/resource-selectors";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { getNameFromFile } from "../entity-management/entity-mappers";
-  import { initLocalUserPreferenceStore } from "../dashboards/user-preferences";
   import { YAMLSeq, Scalar, YAMLMap, parseDocument } from "yaml";
   import StateManagersProvider from "../dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "../dashboards/stores/DashboardStateProvider.svelte";
@@ -25,47 +19,19 @@
   import TimeInput from "../visual-editing/TimeInput.svelte";
   import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
   import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
-
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
+  import type { V1Explore } from "@rilldata/web-common/runtime-client";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
   export let fileArtifact: FileArtifact;
-  export let errors: LineStatus[];
+  export let exploreName: string;
+  export let exploreResource: V1Explore;
+  export let metricsViewName: string;
   export let switchView: () => void;
 
   $: ({ instanceId } = $runtime);
-  $: ({
-    hasUnsavedChanges,
-    autoSave,
-    path: filePath,
-    resourceName,
-    fileName,
-    getResource,
-    localContent,
-    remoteContent,
-    saveContent,
-  } = fileArtifact);
-
-  $: workspace = workspaces.get(filePath);
-
-  $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
-
-  $: resourceQuery = getResource(queryClient, instanceId);
-
-  $: ({ data } = $resourceQuery);
-
-  $: exploreResource = data?.explore;
-
-  $: metricsViewName = data?.meta?.refs?.find(
-    (ref) => ref.kind === ResourceKind.MetricsView,
-  )?.name;
-
-  $: initLocalUserPreferenceStore(exploreName);
-
-  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
-  $: allErrors = $allErrorsQuery;
-  $: selectedView = workspace.view;
+  $: ({ localContent, remoteContent, saveContent } = fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
 
@@ -91,20 +57,6 @@
 
   $: metricsViewSpec = metricsViewResource?.state?.validSpec;
 
-  //   $: timeZones = new Set(exploreResource?.state?.validSpec?.timeZones ?? []);
-
-  $: defaultTimeRange =
-    exploreResource?.state?.validSpec?.defaultPreset?.timeRange;
-
-  $: timeRangeQuery = createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName ?? "",
-    {},
-    {
-      query: { enabled: !!metricsViewSpec?.timeDimension },
-    },
-  );
-
   $: rawTitle = parsedDocument.get("title");
   $: rawMetricsView = parsedDocument.get("metrics_view");
   $: rawDimensions = parsedDocument.get("dimensions");
@@ -114,11 +66,15 @@
   $: rawTimeRanges = parsedDocument.get("time_ranges");
 
   $: timeZones = new Set(
-    rawTimeZones instanceof YAMLSeq ? rawTimeZones.toJSON() : [],
+    rawTimeZones instanceof YAMLSeq
+      ? rawTimeZones.toJSON().filter(isString)
+      : [],
   );
 
   $: timeRanges = new Set(
-    rawTimeRanges instanceof YAMLSeq ? rawTimeRanges.toJSON() : [],
+    rawTimeRanges instanceof YAMLSeq
+      ? rawTimeRanges.toJSON().filter(isString)
+      : [],
   );
 
   $: title = stringGuard(rawTitle);
@@ -181,37 +137,13 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
-  $: theme = parseTheme(rawTheme);
-
-  async function parseTheme(theme: string | YAMLMap | undefined | unknown) {
-    // if (typeof theme === "string") {
-    //   const themeResource = await runtimeServiceGetResource(instanceId, {
-    //     "name.kind": ResourceKind.Theme,
-    //     "name.name": theme,
-    //   });
-
-    //   const spec = themeResource.resource?.theme?.spec;
-
-    //   return {
-    //     name: theme,
-    //     ...spec,
-    //   };
-    // }
-
-    if (theme instanceof YAMLMap) {
-      return {
-        name: "Custom",
-        ...theme.toJSON().colors,
-        custom: true,
-      };
-    }
-
-    return {
-      name: "Default",
-      primary: undefined,
-      secondary: undefined,
-    };
-  }
+  $: themeName = !rawTheme
+    ? "Default"
+    : typeof rawTheme === "string"
+      ? rawTheme
+      : rawTheme instanceof YAMLMap
+        ? "Custom"
+        : undefined;
 
   export function isString(value: unknown): value is string {
     return typeof value === "string";
@@ -241,14 +173,6 @@
 
     await saveContent(parsedDocument.toString());
   }
-
-  $: themeName = !rawTheme
-    ? "Default"
-    : typeof rawTheme === "string"
-      ? rawTheme
-      : rawTheme instanceof YAMLMap
-        ? "Custom"
-        : undefined;
 </script>
 
 <div class="flex gap-x-2 size-full">
@@ -286,7 +210,9 @@
     />
 
     <Input
+      lockable
       label="Metrics view referenced"
+      capitalizeLabel={false}
       bind:value={metricsView}
       sameWidth
       options={metricsViewNames.map((name) => ({
@@ -404,26 +330,23 @@
         });
       }}
     />
+
+    <footer
+      slot="footer"
+      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full"
+    >
+      <!-- <button class="text-primary-600 font-medium w-fit">
+        Use left settings as defaults
+      </button> -->
+      <p>
+        For more options,
+        <button on:click={switchView} class="text-primary-600 font-medium">
+          edit in YAML
+        </button>
+      </p>
+    </footer>
   </SidebarWrapper>
 </div>
 
 <style lang="postcss">
-  .wrapper {
-    @apply size-full max-w-full max-h-full flex-none;
-    @apply overflow-hidden;
-    @apply flex gap-x-2;
-  }
-
-  h1 {
-    @apply text-[16px] font-medium;
-  }
-
-  .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-background border;
-    @apply flex-shrink overflow-hidden rounded-[2px] relative;
-  }
-
-  .section {
-    @apply flex flex-none flex-col gap-y-2 justify-start w-full h-fit max-w-full;
-  }
 </style>

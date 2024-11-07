@@ -31,7 +31,11 @@
 </script>
 
 <div class="flex flex-col gap-y-1">
-  <InputLabel label="Theme" id="visual-explore-theme" />
+  <InputLabel
+    label="Theme"
+    id="visual-explore-theme"
+    hint="Colors may be adjusted for legibility"
+  />
   <Select
     fontSize={14}
     sameWidth
@@ -48,7 +52,7 @@
     <ColorInput
       stringColor={theme.primaryColorRaw}
       label="Primary"
-      disabled={themeName !== "Custom"}
+      disabled={themeName !== "Custom" && themeName !== "Default"}
       onChange={(color) => {
         onColorChange(color, theme.secondaryColorRaw ?? "");
       }}
@@ -56,7 +60,7 @@
     <ColorInput
       stringColor={theme.secondaryColorRaw}
       label="Secondary"
-      disabled={themeName !== "Custom"}
+      disabled={themeName !== "Custom" && themeName !== "Default"}
       onChange={(color) => {
         onColorChange(theme.primaryColorRaw ?? "", color);
       }}

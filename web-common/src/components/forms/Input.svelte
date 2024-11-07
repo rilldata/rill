@@ -32,6 +32,8 @@
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
   export let disabled = false;
+  export let lockable = false;
+  export let capitalizeLabel = true;
   export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
@@ -92,7 +94,7 @@
 
 <div class="component-wrapper" class:w-full={full} style:width>
   {#if label}
-    <InputLabel {label} {optional} {id} {hint}>
+    <InputLabel {label} {optional} {id} {hint} capitalize={capitalizeLabel}>
       <slot name="mode-switch" slot="mode-switch" />
     </InputLabel>
   {/if}
@@ -173,6 +175,7 @@
       ringFocus
       {sameWidth}
       {id}
+      {lockable}
       bind:selectElement
       bind:value
       {options}

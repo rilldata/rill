@@ -11,16 +11,28 @@
 
   let searchValue = "";
   let open = false;
+  let selectedProxy = new Set(selectedItems);
+  let allProxy = new Set(allItems);
 
-  $: filteredItems = Array.from(allItems).filter((item) => {
+  $: filteredItems = Array.from(allProxy).filter((item) => {
     return (
-      !selectedItems.has(item) &&
+      !selectedProxy.has(item) &&
       item.toLowerCase().includes(searchValue.toLowerCase())
     );
   });
 </script>
 
-<DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
+<DropdownMenu.Root
+  bind:open
+  typeahead={false}
+  closeOnItemClick={false}
+  onOpenChange={() => {
+    if (!open) {
+      selectedProxy = new Set(selectedItems);
+      allProxy = new Set(allItems);
+    }
+  }}
+>
   <DropdownMenu.Trigger asChild let:builder>
     <button
       use:builder.action
@@ -39,9 +51,9 @@
     </div>
     <div class="max-h-64 overflow-y-auto">
       {#if !searchValue}
-        {#each selectedItems as item (item)}
+        {#each selectedProxy as item (item)}
           <DropdownMenu.CheckboxItem
-            checked
+            checked={selectedItems.has(item)}
             class="mx-1 cursor-pointer"
             on:click={() => {
               onSelect(item);
@@ -57,14 +69,15 @@
       {/if}
 
       {#each filteredItems as item (item)}
-        <DropdownMenu.Item
+        <DropdownMenu.CheckboxItem
+          checked={selectedItems.has(item)}
           class="pl-8 mx-1"
           on:click={() => {
             onSelect(item);
           }}
         >
           {item}
-        </DropdownMenu.Item>
+        </DropdownMenu.CheckboxItem>
       {:else}
         {#if searchValue}
           <div class="ui-copy-disabled text-center p-2 w-full">no results</div>

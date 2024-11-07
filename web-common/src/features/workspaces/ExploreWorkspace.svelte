@@ -38,12 +38,20 @@
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
+  $: ({ data } = $resourceQuery);
+
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
+  $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
   $: selectedView = workspace.view;
+
+  $: exploreResource = data?.explore;
+
+  $: metricsViewName = data?.meta?.refs?.find(
+    (ref) => ref.kind === ResourceKind.MetricsView,
+  )?.name;
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -86,10 +94,12 @@
         {fileArtifact}
         {allErrors}
       />
-    {:else}
+    {:else if exploreResource && metricsViewName}
       {#key fileArtifact}
         <VisualExploreEditing
-          errors={[]}
+          {exploreResource}
+          {metricsViewName}
+          {exploreName}
           {fileArtifact}
           switchView={() => {
             $selectedView = "code";
