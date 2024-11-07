@@ -5,7 +5,7 @@ import {
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetExploreQueryKey,
-  getRuntimeServiceGetModelSplitsQueryKey,
+  getRuntimeServiceGetModelPartitionsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   type V1Resource,
@@ -181,10 +181,10 @@ export class WatchResourcesClient {
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
 
-            // Invalidate the model splits query
+            // Invalidate the model partitions query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
               void queryClient.invalidateQueries(
-                getRuntimeServiceGetModelSplitsQueryKey(
+                getRuntimeServiceGetModelPartitionsQueryKey(
                   this.instanceId,
                   res.name.name,
                 ),

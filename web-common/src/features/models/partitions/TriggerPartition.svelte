@@ -13,7 +13,7 @@
   const queryClient = useQueryClient();
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
-  export let splitKey: string;
+  export let partitionKey: string;
 
   function trigger() {
     $triggerMutation.mutate({
@@ -22,7 +22,7 @@
         models: [
           {
             model: resource?.meta?.name?.name as string,
-            splits: [splitKey],
+            partitions: [partitionKey],
           },
         ],
       },
@@ -46,5 +46,5 @@
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
   noWrap
 >
-  Refresh split
+  Refresh partition
 </Button>

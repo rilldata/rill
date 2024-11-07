@@ -111,10 +111,10 @@ message ModelSpec {
   bool incremental = 13;
   string incremental_state_resolver = 14;
   google.protobuf.Struct incremental_state_resolver_properties = 15;
-  string splits_resolver = 18;
-  google.protobuf.Struct splits_resolver_properties = 19;
-  string splits_watermark_field = 20;
-  uint32 splits_concurrency_limit = 21;
+  string partitions_resolver = 18;
+  google.protobuf.Struct partitions_resolver_properties = 19;
+  string partitions_watermark_field = 20;
+  uint32 partitions_concurrency_limit = 21;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   // stage_connector is optional.
@@ -146,10 +146,10 @@ message ModelState {
   google.protobuf.Struct incremental_state = 7;
   // incremental_state_schema contains a schema for the data in incremental_state.
   StructType incremental_state_schema = 8;
-  // splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
-  string splits_model_id = 10;
-  // splits_have_errors is true if one or more splits failed to execute.
-  bool splits_have_errors = 11;
+  // partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore.
+  string partitions_model_id = 10;
+  // partitions_have_errors is true if one or more partitions failed to execute.
+  bool partitions_have_errors = 11;
 }
 
 message MetricsViewV2 {
@@ -576,10 +576,10 @@ message RefreshModelTrigger {
   // If true, the current table and state will be dropped before refreshing.
   // For non-incremental models, this is equivalent to a normal refresh.
   bool full = 2;
-  // Keys of specific splits to refresh.
-  repeated string splits = 3;
-  // If true, it will refresh all splits that errored on their last execution.
-  bool all_errored_splits = 4;
+  // Keys of specific partitions to refresh.
+  repeated string partitions = 3;
+  // If true, it will refresh all partitions that errored on their last execution.
+  bool all_errored_partitions = 4;
 }
 
 message BucketPlanner {

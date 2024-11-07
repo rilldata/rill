@@ -1,19 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill billing subscription edit
+title: rill billing list-issues
 ---
-## rill billing subscription edit
+## rill billing list-issues
 
-Edit organization subscription
+List billing issues for an organization
 
 ```
-rill billing subscription edit [flags]
+rill billing list-issues [flags]
 ```
 
 ### Flags
 
 ```
-      --plan string   Plan Name to change subscription to
+      --org string   Organization Name
 ```
 
 ### Global flags
@@ -23,10 +23,9 @@ rill billing subscription edit [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name
 ```
 
 ### SEE ALSO
 
-* [rill billing subscription](subscription.md)	 - Manage organisation subscription
+* [rill billing](billing.md)	 - Billing related commands for org
 

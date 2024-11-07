@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill deploy
+title: rill project deploy
 ---
-## rill deploy
+## rill project deploy
 
-Deploy project to Rill Cloud
+Deploy project to Rill Cloud by uploading the project files
 
 ```
-rill deploy [<path>] [flags]
+rill project deploy [flags]
 ```
 
 ### Flags
@@ -15,7 +15,6 @@ rill deploy [<path>] [flags]
 ```
       --path string           Path to project repository (default: current directory) (default ".")
       --subpath string        Relative path to project in the repository (for monorepos)
-      --remote string         Remote name (default: first Git remote)
       --org string            Org to deploy project in
       --project string        Project name (default: Git repo name)
       --description string    Project description
@@ -23,8 +22,6 @@ rill deploy [<path>] [flags]
       --provisioner string    Project provisioner
       --prod-version string   Rill version (default: the latest release version) (default "latest")
       --prod-branch string    Git branch to deploy from (default: the default Git branch)
-      --upload                Create project using rill managed repo
-      --github                Use github repo to create the project
 ```
 
 ### Global flags
@@ -38,5 +35,5 @@ rill deploy [<path>] [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill project](project.md)	 - Manage projects
 

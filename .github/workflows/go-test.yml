@@ -4,6 +4,7 @@ on:
       - ".github/workflows/go-test.yml"
       - "**.go"
       - "go.mod"
+      - "runtime/resolvers/testdata/**"
 name: Test Go code
 jobs:
   test:

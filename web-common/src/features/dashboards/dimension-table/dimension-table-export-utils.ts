@@ -64,6 +64,7 @@ export function getDimensionTableAggregationRequestForTime(
   dashboardState: MetricsExplorerEntity,
   timeRange: V1TimeRange,
   comparisonTimeRange: V1TimeRange | undefined,
+  searchText = "",
 ): V1MetricsViewAggregationRequest {
   const measures: V1MetricsViewAggregationMeasure[] = [
     ...dashboardState.visibleMeasureKeys,
@@ -98,7 +99,7 @@ export function getDimensionTableAggregationRequestForTime(
       dashboardState,
       getDimensionFilterWithSearch(
         dashboardState?.whereFilter,
-        dashboardState?.dimensionSearchText ?? "",
+        searchText,
         dashboardState.selectedDimensionName!,
       ),
     ),

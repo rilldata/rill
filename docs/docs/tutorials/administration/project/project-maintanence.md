@@ -63,21 +63,21 @@ connection: dial tcp 127.0.0.1:9000: connect: connection refused
 
 Seeing as this is ClickHouse model, it is likely that the credentials or connections are not correct for this connection. 
 
-Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credential-envvariable-mangement.md) back in Rill Developer.
+Whether it's the source or the model that is erroring and causing the dashboard to fail, you may need to [check the credentials](credentials-env-variable-management.md) back in Rill Developer.
 
 
 ### Incremental Models are failing 
 
-Additionally, you may need to troubleshoot your incremental model's splits. As seen in the above image, our model, S3-incremental, is erroring with the following:
+Additionally, you may need to troubleshoot your incremental model's partitions. As seen in the above image, our model, S3-incremental, is erroring with the following:
 
 ```bash
-failed to sync splits: blob (code=Unknown): AccessDenied: Access Denied status code:...
+failed to sync partitions: blob (code=Unknown): AccessDenied: Access Denied status code:...
 ```
 
-Depending on the error, you might not be able to determine the cause of the issue and will need to return to the CLI to check each split. This can be done by running:
+Depending on the error, you might not be able to determine the cause of the issue and will need to return to the CLI to check each partition. This can be done by running:
 
 ```bash
-rill project splits <name_of_model> --project <your-project>
+rill project partitions <name_of_model> --project <your-project>
 ```
 
 ```
@@ -97,9 +97,9 @@ In order to refresh the full model, you can run the following:
 rill project refresh --model <your_model> --full
 ```
 
-If you notice that it is only a specific split that is broken you can use the KEY to refresh that specific split.
+If you notice that it is only a specific partition that is broken you can use the KEY to refresh that specific partition.
 ```bash
-rill project refresh --model <your_model> --split SPLIT_KEY
+rill project refresh --model <your_model> --partition SPLIT_KEY
 ```
 
 ### Data is not up to date

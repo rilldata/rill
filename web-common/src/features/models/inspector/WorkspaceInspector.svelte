@@ -26,7 +26,7 @@
   import InspectorHeaderGrid from "../../../layout/inspector/InspectorHeaderGrid.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import IncrementalProcessing from "../incremental/IncrementalProcessing.svelte";
-  import SplitsBrowser from "../splits/SplitsBrowser.svelte";
+  import PartitionsBrowser from "../partitions/PartitionsBrowser.svelte";
   import { getTableReferences } from "../utils/get-table-references";
   import References from "./References.svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
@@ -184,7 +184,7 @@
 
   $: columnDelta = profileColumnsCount - $sourceColumns;
   $: isIncremental = model?.spec?.incremental;
-  $: isSplit = !!model?.state?.splitsModelId;
+  $: isPartition = !!model?.state?.partitionsModelId;
 </script>
 
 <Inspector {filePath}>
@@ -312,9 +312,9 @@
         </div>
 
         {#if model}
-          {#if isSplit}
+          {#if isPartition}
             <hr />
-            <SplitsBrowser {resource} />
+            <PartitionsBrowser {resource} />
           {:else if isIncremental}
             <hr />
             <IncrementalProcessing {resource} />

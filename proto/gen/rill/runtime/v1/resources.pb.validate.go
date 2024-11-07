@@ -2418,14 +2418,14 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SplitsResolver
+	// no validation rules for PartitionsResolver
 
 	if all {
-		switch v := interface{}(m.GetSplitsResolverProperties()).(type) {
+		switch v := interface{}(m.GetPartitionsResolverProperties()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "SplitsResolverProperties",
+					field:  "PartitionsResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2433,25 +2433,25 @@ func (m *ModelSpec) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "SplitsResolverProperties",
+					field:  "PartitionsResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetSplitsResolverProperties()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetPartitionsResolverProperties()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelSpecValidationError{
-				field:  "SplitsResolverProperties",
+				field:  "PartitionsResolverProperties",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
 
-	// no validation rules for SplitsWatermarkField
+	// no validation rules for PartitionsWatermarkField
 
-	// no validation rules for SplitsConcurrencyLimit
+	// no validation rules for PartitionsConcurrencyLimit
 
 	// no validation rules for InputConnector
 
@@ -2775,9 +2775,9 @@ func (m *ModelState) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SplitsModelId
+	// no validation rules for PartitionsModelId
 
-	// no validation rules for SplitsHaveErrors
+	// no validation rules for PartitionsHaveErrors
 
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
@@ -8318,7 +8318,7 @@ func (m *RefreshModelTrigger) validate(all bool) error {
 
 	// no validation rules for Full
 
-	// no validation rules for AllErroredSplits
+	// no validation rules for AllErroredPartitions
 
 	if len(errors) > 0 {
 		return RefreshModelTriggerMultiError(errors)

@@ -52,6 +52,15 @@ If the DuckDB database file is external to your Rill project directory, you will
 
 ## Connecting to MotherDuck
 
+If you are creating the source YAML file directly, the definition should look something like:
+
+```yaml
+type: "source"
+connector: "motherduck"
+sql: "SELECT * from <my_db>.<duckdb_table>"
+db: "md:<my_db>"
+```
+
 ### Local credentials
 
 When using Rill Developer on your local machine (i.e. `rill start`), Rill will use the `motherduck_token` configured in your environment variables to attempt to establish a connection with MotherDuck. If this is not defined, you will need to set this environment variable appropriately. 
