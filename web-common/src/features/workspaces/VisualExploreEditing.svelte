@@ -335,6 +335,7 @@
     {/each}
 
     <TimeInput
+      keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
       onSelectDefault={async () => {
         await updateProperties({ time_zones: DEFAULT_TIMEZONES });
@@ -353,6 +354,7 @@
     />
 
     <TimeRangeInput
+      keyNotSet={!rawTimeRanges}
       selectedItems={timeRanges}
       onSelectDefault={async (time_ranges) => {
         await updateProperties({ time_ranges });

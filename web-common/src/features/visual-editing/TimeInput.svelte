@@ -12,6 +12,7 @@
   const allNonDefaults = Intl.supportedValuesOf("timeZone");
 
   export let selectedItems: Set<string>;
+  export let keyNotSet: boolean;
   export let onSelectDefault: () => void;
   export let onSelectCustomItem: (item: string) => void;
   export let restoreDefaults: () => void;
@@ -20,8 +21,9 @@
   let searchValue = "";
 
   $: hasDefaultsSelected =
-    defaultSet.size === selectedItems.size &&
-    defaultSet.isSubsetOf(selectedItems);
+    keyNotSet ||
+    (defaultSet.size === selectedItems.size &&
+      defaultSet.isSubsetOf(selectedItems));
 
   $: mode = hasDefaultsSelected ? "default" : "custom";
 

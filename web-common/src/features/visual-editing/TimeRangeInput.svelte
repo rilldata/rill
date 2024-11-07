@@ -21,6 +21,7 @@
   const defaultSet = new Set(ranges);
 
   export let selectedItems: Set<string>;
+  export let keyNotSet: boolean;
   export let onSelectDefault: (defaults: string[]) => void;
   export let onSelectCustomItem: (item: string) => void;
   export let setTimeRanges: (timeRanges: string[]) => void;
@@ -29,8 +30,9 @@
   let searchValue = "";
 
   $: hasDefaultsSelected =
-    defaultSet.size === selectedItems.size &&
-    defaultSet.isSubsetOf(selectedItems);
+    keyNotSet ||
+    (defaultSet.size === selectedItems.size &&
+      defaultSet.isSubsetOf(selectedItems));
 
   $: mode = hasDefaultsSelected ? "default" : "custom";
 
