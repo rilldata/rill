@@ -80,6 +80,8 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		return fmt.Errorf("failed to add billing error: %w", err)
 	}
 
+	w.logger.Warn("invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("amount", job.Args.Amount), zap.Time("due_date", job.Args.DueDate), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_url", job.Args.InvoiceURL))
+
 	err = w.admin.Email.SendInvoicePaymentFailed(&email.InvoicePaymentFailed{
 		ToEmail:            org.BillingEmail,
 		ToName:             org.Name,
@@ -92,7 +94,6 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 	if err != nil {
 		return fmt.Errorf("failed to send invoice payment failed email for org %q: %w", org.Name, err)
 	}
-	w.logger.Warn("invoice payment failed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("amount", job.Args.Amount), zap.Time("due_date", job.Args.DueDate), zap.String("invoice_id", job.Args.InvoiceID), zap.String("invoice_url", job.Args.InvoiceURL))
 
 	return nil
 }
@@ -169,7 +170,7 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 	})
 	if err != nil {
 		// ignore email sending error
-		w.logger.Error("failed to send invoice payment success email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.Error(err))
+		w.logger.Error("failed to send invoice payment success email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("invoice_id", job.Args.InvoiceID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 	}
 
 	return nil
