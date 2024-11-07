@@ -33,6 +33,7 @@
   export let fields: string[] | undefined = [];
   export let disabled = false;
   export let disabledMessage = "No valid options";
+  export let readonly = false;
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
@@ -152,6 +153,7 @@
           on:keydown={onKeydown}
           on:blur={onElementBlur}
           on:focus={() => (focus = true)}
+          {readonly}
         />
       {/if}
       {#if secret}

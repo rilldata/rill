@@ -71,7 +71,7 @@
           <RadixLarge>Environment variables</RadixLarge>
           <p class="text-base font-normal text-slate-700">
             Manage your environment variables here. <a
-              href="https://docs.rilldata.com/tutorials/administration/project/credential-envvariable-mangement"
+              href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
               target="_blank"
               class="text-primary-600 hover:text-primary-700 active:text-primary-800"
             >

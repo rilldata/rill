@@ -35,8 +35,6 @@
 
   const newVariables: EnvironmentVariable[] = [{ key: "", value: "" }];
 
-  // $: console.log("newVariables: ", newVariables);
-
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -86,8 +84,6 @@
       },
     },
   );
-
-  $: console.log("$form.newVariables: ", $form.newVariables);
 
   function processEnvironment() {
     return isDevelopment
@@ -158,7 +154,7 @@
     </DialogHeader>
     <DialogDescription>
       For help, see <a
-        href="https://docs.rilldata.com/tutorials/administration/project/credential-envvariable-mangement"
+        href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
         target="_blank">documentation</a
       >
     </DialogDescription>
@@ -220,7 +216,7 @@
                     }
                   }}
                 >
-                  <Trash2Icon size="16px" />
+                  <Trash2Icon size="16px" class="text-gray-500" />
                 </IconButton>
               </div>
               {#if $errors.newVariables}

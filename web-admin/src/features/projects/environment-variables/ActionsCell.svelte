@@ -6,12 +6,13 @@
   import EditDialog from "./EditDialog.svelte";
   import DeleteDialog from "./DeleteDialog.svelte";
 
-  export let name: string;
   export let environment: string;
+  export let name: string;
+  export let value: string;
 
   let isDropdownOpen = false;
-  let isDeleteDialogOpen = false;
   let isEditDialogOpen = false;
+  let isDeleteDialogOpen = false;
 </script>
 
 <DropdownMenu.Root bind:open={isDropdownOpen}>
@@ -43,5 +44,5 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<EditDialog bind:open={isEditDialogOpen} />
+<EditDialog bind:open={isEditDialogOpen} {environment} {name} {value} />
 <DeleteDialog bind:open={isDeleteDialogOpen} {name} {environment} />

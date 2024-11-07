@@ -1,174 +1,137 @@
 <script lang="ts">
+  import { page } from "$app/stores";
+  import { Button } from "@rilldata/web-common/components/button";
   import {
     Dialog,
     DialogContent,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogDescription,
+    DialogFooter,
   } from "@rilldata/web-common/components/dialog-v2";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
+  import {
+    createAdminServiceUpdateProjectVariables,
+    getAdminServiceGetProjectVariablesQueryKey,
+  } from "@rilldata/web-admin/client";
+  import { type AdminServiceUpdateProjectVariablesBodyVariables } from "@rilldata/web-admin/client";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { object, string } from "yup";
+  import { EnvironmentType } from "./types";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let open = false;
+  export let environment: string;
+  export let name: string;
+  export let value: string;
 
-  // let searchText = "";
+  let isDevelopment = false;
+  let isProduction = false;
 
-  // $: organization = $page.params.organization;
-  // $: listUsergroupMemberUsers = createAdminServiceListUsergroupMemberUsers(
-  //   organization,
-  //   groupName,
-  // );
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
-  // const queryClient = useQueryClient();
-  // const removeUserGroupMember = createAdminServiceRemoveUsergroupMemberUser();
-  // const addUsergroupMemberUser = createAdminServiceAddUsergroupMemberUser();
-  // const renameUserGroup = createAdminServiceRenameUsergroup();
+  const queryClient = useQueryClient();
+  const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  // async function handleAddUsergroupMemberUser(
-  //   email: string,
-  //   usergroup: string,
-  // ) {
-  //   try {
-  //     await $addUsergroupMemberUser.mutateAsync({
-  //       organization: organization,
-  //       usergroup: usergroup,
-  //       email: email,
-  //       data: {},
-  //     });
+  const formId = `edit-environment-variables-form-${name}`;
 
-  //     await queryClient.invalidateQueries(
-  //       getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-  //     );
+  const initialValues = {
+    environment: environment,
+    key: name,
+    value: value,
+  };
 
-  //     await queryClient.invalidateQueries(
-  //       getAdminServiceListUsergroupMemberUsersQueryKey(
-  //         organization,
-  //         usergroup,
-  //       ),
-  //     );
+  const schema = yup(
+    object({
+      environment: string().optional(),
+      key: string().required("Key is required"),
+      value: string().optional(),
+    }),
+  );
 
-  //     eventBus.emit("notification", {
-  //       message: "User added to user group",
-  //     });
-  //   } catch (error) {
-  //     console.error("Error adding user to user group", error);
-  //     eventBus.emit("notification", {
-  //       message: "Error adding user to user group",
-  //       type: "error",
-  //     });
-  //   }
-  // }
+  const { form, enhance, submit, errors, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
 
-  // async function handleRename(groupName: string, newName: string) {
-  //   try {
-  //     await $renameUserGroup.mutateAsync({
-  //       organization: organization,
-  //       usergroup: groupName,
-  //       data: {
-  //         name: newName,
-  //       },
-  //     });
+        const flatVariables = {
+          [values.key]: values.value,
+        };
 
-  //     await queryClient.invalidateQueries(
-  //       getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-  //     );
+        try {
+          await handleUpdateProjectVariables(flatVariables);
+          open = false;
+        } catch (error) {
+          console.error(error);
+        }
+      },
+    },
+  );
 
-  //     eventBus.emit("notification", { message: "User group renamed" });
-  //   } catch (error) {
-  //     console.error("Error renaming user group", error);
-  //     eventBus.emit("notification", {
-  //       message: "Error renaming user group",
-  //       type: "error",
-  //     });
-  //   }
-  // }
+  function processEnvironment() {
+    return environment === EnvironmentType.DEVELOPMENT
+      ? EnvironmentType.DEVELOPMENT
+      : environment === EnvironmentType.PRODUCTION
+        ? EnvironmentType.PRODUCTION
+        : // If empty, the variable(s) will be used as defaults for all environments.
+          undefined;
+  }
 
-  // async function handleRemoveUser(groupName: string, email: string) {
-  //   try {
-  //     await $removeUserGroupMember.mutateAsync({
-  //       organization: organization,
-  //       usergroup: groupName,
-  //       email: email,
-  //     });
+  async function handleUpdateProjectVariables(
+    flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
+  ) {
+    try {
+      await $updateProjectVariables.mutateAsync({
+        organization,
+        project,
+        data: {
+          environment: processEnvironment(),
+          variables: flatVariable,
+        },
+      });
 
-  //     await queryClient.invalidateQueries(
-  //       getAdminServiceListUsergroupMemberUsersQueryKey(
-  //         organization,
-  //         groupName,
-  //       ),
-  //     );
+      await queryClient.invalidateQueries(
+        getAdminServiceGetProjectVariablesQueryKey(organization, project),
+      );
 
-  //     eventBus.emit("notification", {
-  //       message: "User removed from user group",
-  //     });
-  //   } catch (error) {
-  //     console.error("Error removing user from user group", error);
-  //     eventBus.emit("notification", {
-  //       message: "Error removing user from user group",
-  //       type: "error",
-  //     });
-  //   }
-  // }
+      eventBus.emit("notification", {
+        message: "Environment variable updated",
+      });
+    } catch (error) {
+      console.error("Error updating project variable", error);
+      eventBus.emit("notification", {
+        message: "Error updating project variable",
+        type: "error",
+      });
+    }
+  }
 
-  // // We don't want to show users that are already in the group
-  // $: availableSearchUsersList = searchUsersList.filter(
-  //   (user) =>
-  //     !$listUsergroupMemberUsers.data?.members.some(
-  //       (member) => member.userEmail === user.userEmail,
-  //     ),
-  // );
+  function handleValueChange(e: any) {
+    $form.value = e.target.value;
+  }
 
-  const formId = "edit-environment-variable-form";
+  function handleReset() {
+    $form = initialValues;
+  }
 
-  // const initialValues = {
-  //   newName: groupName,
-  // };
+  // TODO: handle empty environment
+  $: isDevelopment = $form.environment === EnvironmentType.DEVELOPMENT;
+  $: isProduction = $form.environment === EnvironmentType.PRODUCTION;
+  $: hasChanges = $form.value !== value || $form.environment !== environment;
 
-  // const schema = yup(
-  //   object({
-  //     newName: string()
-  //       .required("New user group name is required")
-  //       .min(3, "New user group name must be at least 3 characters")
-  //       .matches(
-  //         /^[a-z0-9]+(-[a-z0-9]+)*$/,
-  //         "New user group name must be lowercase and can contain letters, numbers, and hyphens (slug)",
-  //       ),
-  //   }),
-  // );
-
-  // const { form, enhance, submit, errors, submitting } = superForm(
-  //   defaults(initialValues, schema),
-  //   {
-  //     SPA: true,
-  //     validators: schema,
-  //     async onUpdate({ form }) {
-  //       if (!form.valid) return;
-  //       const values = form.data;
-
-  //       try {
-  //         await handleRename(groupName, values.newName);
-  //         open = false;
-  //       } catch (error) {
-  //         console.error(error);
-  //       }
-  //     },
-  //   },
-  // );
-
-  // $: coercedUsersToOptions = availableSearchUsersList.map((user) => ({
-  //   value: user.userEmail,
-  //   label: user.userEmail,
-  //   name: user.userName,
-  // }));
+  $: console.log("$form: ", $form);
 </script>
 
-<Dialog
-  bind:open
-  onOutsideClick={(e) => {
-    e.preventDefault();
-    open = false;
-  }}
->
+<Dialog bind:open onOutsideClick={() => handleReset()}>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -176,15 +139,89 @@
     <DialogHeader>
       <DialogTitle>Edit environment variable</DialogTitle>
     </DialogHeader>
+    <DialogDescription>
+      For help, see <a
+        href="https://docs.rilldata.com/tutorials/administration/project/credentials-env-variable-management"
+        target="_blank">documentation</a
+      >
+    </DialogDescription>
+    <form
+      id={formId}
+      class="w-full"
+      on:submit|preventDefault={submit}
+      use:enhance
+    >
+      <div class="flex flex-col gap-y-5">
+        <div class="flex flex-col items-start gap-1">
+          <div class="text-sm font-medium text-gray-800">Environment</div>
+          <div class="flex flex-row gap-4 mt-1">
+            <Checkbox
+              bind:checked={isDevelopment}
+              onCheckedChange={() => {
+                console.log("development");
+                environment = EnvironmentType.DEVELOPMENT;
+                $form.environment = EnvironmentType.DEVELOPMENT;
+              }}
+              id="development"
+              label="Development"
+            />
+            <Checkbox
+              bind:checked={isProduction}
+              onCheckedChange={() => {
+                console.log("production");
+                environment = EnvironmentType.PRODUCTION;
+                $form.environment = EnvironmentType.PRODUCTION;
+              }}
+              id="production"
+              label="Production"
+            />
+          </div>
+        </div>
+        <div class="flex flex-col items-start gap-1">
+          <div class="text-sm font-medium text-gray-800">Variable</div>
+          <div class="flex flex-col w-full">
+            <div class="flex flex-row items-center gap-2">
+              <Input
+                bind:value={$form.key}
+                label=""
+                id={`edit-${name}`}
+                placeholder="Key"
+                readonly
+              />
+              <Input
+                bind:value={$form.value}
+                label=""
+                id={`edit-${value}`}
+                placeholder="Value"
+                on:input={(e) => handleValueChange(e.target.value)}
+              />
+            </div>
+            {#if $errors.key || $errors.value || $errors.environment}
+              <div class="mt-1">
+                <p class="text-xs text-red-600 font-normal">
+                  {$errors.key || $errors.value || $errors.environment}
+                </p>
+              </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+    </form>
 
     <DialogFooter>
       <Button
         type="plain"
         on:click={() => {
           open = false;
+          handleReset();
         }}>Cancel</Button
       >
-      <Button type="primary" form={formId} submitForm>Save</Button>
+      <Button
+        type="primary"
+        form={formId}
+        disabled={$submitting || !hasChanges}
+        submitForm>Edit</Button
+      >
     </DialogFooter>
   </DialogContent>
 </Dialog>
