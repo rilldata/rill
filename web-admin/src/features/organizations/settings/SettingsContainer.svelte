@@ -17,6 +17,9 @@
     </div>
     <div class="settings-body">
       <slot name="body" />
+      {#if $$slots["default"]}
+        <slot />
+      {/if}
     </div>
   </div>
   {#if $$slots["contact"] || $$slots["action"]}
