@@ -4133,6 +4133,8 @@ definitions:
       theme:
         type: string
         title: Theme to use
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
       timeRanges:
         type: array
         items:
@@ -6202,6 +6204,10 @@ definitions:
         $ref: '#/definitions/v1Color'
       secondaryColor:
         $ref: '#/definitions/v1Color'
+      primaryColorRaw:
+        type: string
+      secondaryColorRaw:
+        type: string
   v1ThemeState:
     type: object
   v1TimeGrain:

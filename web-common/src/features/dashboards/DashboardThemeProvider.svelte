@@ -13,12 +13,16 @@
   $: themeName = themeFromUrl ?? $validSpecStore.data?.explore?.theme;
   $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
 
-  $: if ($theme?.data?.theme) {
-    setTheme($theme.data.theme);
-  }
+  $: setTheme(
+    $theme?.data?.theme?.spec ?? $validSpecStore?.data?.explore?.embeddedTheme,
+  );
+
   onMount(() => {
     // Handle the case where we have data in cache but the dashboard is not mounted yet
-    if ($theme?.data?.theme) setTheme($theme.data.theme);
+    setTheme(
+      $theme?.data?.theme?.spec ??
+        $validSpecStore?.data?.explore?.embeddedTheme,
+    );
   });
 </script>
 

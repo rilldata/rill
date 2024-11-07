@@ -1211,6 +1211,8 @@ colors:
 						Blue:  0.5019608,
 						Alpha: 1,
 					},
+					PrimaryColorRaw:   "red",
+					SecondaryColorRaw: "grey",
 				},
 			},
 		},

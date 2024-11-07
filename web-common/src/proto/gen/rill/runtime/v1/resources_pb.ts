@@ -2114,6 +2114,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
   theme = "";
 
   /**
+   * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 17;
+   */
+  embeddedTheme?: ThemeSpec;
+
+  /**
    * List of selectable time ranges with comparison time ranges.
    * If the list is empty, a default list should be shown.
    *
@@ -2168,6 +2173,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 14, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 8, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
@@ -3938,6 +3944,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColor?: Color;
 
+  /**
+   * @generated from field: string primary_color_raw = 3;
+   */
+  primaryColorRaw = "";
+
+  /**
+   * @generated from field: string secondary_color_raw = 4;
+   */
+  secondaryColorRaw = "";
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3948,6 +3964,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "primary_color", kind: "message", T: Color, opt: true },
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
+    { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {

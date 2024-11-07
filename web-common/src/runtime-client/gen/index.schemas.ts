@@ -632,6 +632,8 @@ export interface V1ThemeState {
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
+  primaryColorRaw?: string;
+  secondaryColorRaw?: string;
 }
 
 export interface V1Theme {
@@ -1878,6 +1880,7 @@ export interface V1ExploreSpec {
   measures?: string[];
   measuresSelector?: V1FieldSelector;
   theme?: string;
+  embeddedTheme?: V1ThemeSpec;
   /** List of selectable time ranges with comparison time ranges.
 If the list is empty, a default list should be shown. */
   timeRanges?: V1ExploreTimeRange[];

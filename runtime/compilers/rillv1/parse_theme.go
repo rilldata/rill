@@ -46,6 +46,7 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 			return nil, err
 		}
 		spec.PrimaryColor = toThemeColor(pc)
+		spec.PrimaryColorRaw = tmp.Colors.Primary
 	}
 
 	if tmp.Colors.Secondary != "" {
@@ -54,6 +55,7 @@ func (p *Parser) parseThemeYAML(tmp *ThemeYAML) (*runtimev1.ThemeSpec, error) {
 			return nil, err
 		}
 		spec.SecondaryColor = toThemeColor(sc)
+		spec.SecondaryColorRaw = tmp.Colors.Secondary
 	}
 
 	return spec, nil

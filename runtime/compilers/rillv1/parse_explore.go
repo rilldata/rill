@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
@@ -155,11 +154,11 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
-	themeName, themeSpec, err := p.parseExploreTheme(node.Name, &tmp.Theme)
+	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
 	if err != nil {
 		return err
 	}
-	if themeName != "" {
+	if themeName != "" && themeSpec == nil {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
@@ -265,28 +264,24 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
-	r.ExploreSpec.Theme = themeName
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
+	if themeName != "" && themeSpec == nil {
+		r.ExploreSpec.Theme = themeName
+	}
+
 	if themeSpec != nil {
-		r, err := p.insertResource(ResourceKindTheme, themeName, node.Paths)
-		if err != nil {
-			// Normally we could return the error, but we can't do that here because we've already inserted the explore.
-			// Since the theme has been validated with insertDryRun in parseExploreTheme, this error should never happen in practice.
-			// So let's panic.
-			panic(err)
-		}
-		r.ThemeSpec = themeSpec
+		r.ExploreSpec.EmbeddedTheme = themeSpec
 	}
 
 	return nil
 }
 
-func (p *Parser) parseExploreTheme(exploreName string, n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
 	if n == nil || n.IsZero() {
 		return "", nil, nil
 	}
@@ -306,22 +301,12 @@ func (p *Parser) parseExploreTheme(exploreName string, n *yaml.Node) (string, *r
 			return "", nil, err
 		}
 
-		name := fmt.Sprintf("%s--theme", exploreName)
-		err = p.insertDryRun(ResourceKindTheme, name)
-		if err != nil {
-			name = fmt.Sprintf("%s--theme-%s", exploreName, uuid.New())
-			err = p.insertDryRun(ResourceKindTheme, name)
-			if err != nil {
-				return "", nil, err
-			}
-		}
-
 		spec, err := p.parseThemeYAML(tmp)
 		if err != nil {
 			return "", nil, err
 		}
 
-		return name, spec, nil
+		return "", spec, nil
 	default:
 		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
 	}
