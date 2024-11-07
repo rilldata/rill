@@ -26,6 +26,7 @@ export function createBookmarkApplier(
     ) {
       return;
     }
+    // TODO: use new methods. update the url directly
     metricsExplorerStore.syncFromUrl(
       exploreName,
       decodeURIComponent(bookmark.data),

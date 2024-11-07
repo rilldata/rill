@@ -6,8 +6,6 @@ ensure the same single-page app behavior in development.
 export const ssr = false;
 
 import {
-  adminServiceGetProject,
-  getAdminServiceGetProjectQueryKey,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
@@ -16,13 +14,11 @@ import {
   redirectToLoginOrRequestAccess,
 } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
+import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
+import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, type Page } from "@sveltejs/kit";
-import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
-import {
-  adminServiceGetProjectWithBearerToken,
-  getAdminServiceGetProjectWithBearerTokenQueryKey,
-} from "../features/public-urls/get-project-with-bearer-token.js";
 
 export const load = async ({ params, url, route }) => {
   const { organization, project, token: routeToken } = params;
@@ -65,48 +61,26 @@ export const load = async ({ params, url, route }) => {
     };
   }
 
-  let queryKey: QueryKey;
-  let queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetProject>>
-  >;
-
-  if (token) {
-    queryKey = getAdminServiceGetProjectWithBearerTokenQueryKey(
-      organization,
-      project,
-      token,
-      {},
-    );
-
-    queryFn = ({ signal }) =>
-      adminServiceGetProjectWithBearerToken(
-        organization,
-        project,
-        token,
-        {},
-        signal,
-      );
-  } else {
-    queryKey = getAdminServiceGetProjectQueryKey(organization, project);
-
-    queryFn = ({ signal }) =>
-      adminServiceGetProject(organization, project, {}, signal);
-  }
-
   try {
-    const response = await queryClient.fetchQuery({
-      queryFn,
-      queryKey,
-    });
+    const {
+      projectPermissions,
+      project: proj,
+      runtime: runtimeData,
+    } = await fetchProjectDeploymentDetails(organization, project, token);
 
-    const { projectPermissions, project, prodDeployment, jwt } = response;
+    await runtime.setRuntime(
+      queryClient,
+      fixLocalhostRuntimePort(runtimeData.host),
+      runtimeData.instanceId,
+      runtimeData.jwt.token,
+      runtimeData.jwt.authContext,
+    );
 
     return {
       organizationPermissions,
       projectPermissions,
-      project,
-      prodDeployment,
-      jwt,
+      project: proj,
+      runtime: runtimeData,
     };
   } catch (e) {
     if (e.response?.status !== 403) {

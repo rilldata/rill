@@ -13,7 +13,10 @@ export function convertFilterParamToExpression(filter: string) {
   return parser.results[0] as V1Expression;
 }
 
-export function convertExpressionToFilterParam(expr: V1Expression): string {
+export function convertExpressionToFilterParam(
+  expr: V1Expression,
+  depth = 0,
+): string {
   if (!expr) return "";
 
   if (expr.val) {
@@ -28,14 +31,14 @@ export function convertExpressionToFilterParam(expr: V1Expression): string {
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_AND:
     case V1Operation.OPERATION_OR:
-      return convertJoinerExpressionToFilterParam(expr);
+      return convertJoinerExpressionToFilterParam(expr, depth);
 
     case V1Operation.OPERATION_IN:
     case V1Operation.OPERATION_NIN:
-      return convertInExpressionToFilterParam(expr);
+      return convertInExpressionToFilterParam(expr, depth);
 
     default:
-      return convertBinaryExpressionToFilterParam(expr);
+      return convertBinaryExpressionToFilterParam(expr, depth);
   }
 }
 
@@ -46,18 +49,25 @@ export function stripParserError(err: Error) {
   );
 }
 
-function convertJoinerExpressionToFilterParam(expr: V1Expression) {
+function convertJoinerExpressionToFilterParam(
+  expr: V1Expression,
+  depth: number,
+) {
   const joiner = expr.cond?.op === V1Operation.OPERATION_AND ? "AND" : "OR";
 
   const parts = expr.cond?.exprs
-    ?.map(convertExpressionToFilterParam)
+    ?.map((e) => convertExpressionToFilterParam(e, depth + 1))
     .filter(Boolean);
   if (!parts?.length) return "";
+  const exprParam = parts.join(joiner);
 
-  return `(${parts.join(joiner)})`;
+  if (depth === 0) {
+    return exprParam;
+  }
+  return `(${exprParam})`;
 }
 
-function convertInExpressionToFilterParam(expr: V1Expression) {
+function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
   if (!expr.cond?.exprs?.length) return "";
   const joiner = expr.cond?.op === V1Operation.OPERATION_IN ? "IN" : "NIN";
 
@@ -68,6 +78,7 @@ function convertInExpressionToFilterParam(expr: V1Expression) {
     // TODO: support `NIN <subquery>`
     const having = convertExpressionToFilterParam(
       expr.cond.exprs[1]?.subquery?.having,
+      depth + 1,
     );
     if (having) return `${column} having (${having})`;
   }
@@ -75,7 +86,7 @@ function convertInExpressionToFilterParam(expr: V1Expression) {
   if (expr.cond.exprs.length > 1) {
     const vals = expr.cond.exprs
       .slice(1)
-      .map(convertExpressionToFilterParam)
+      .map((e) => convertExpressionToFilterParam(e, depth + 1))
       .filter(Boolean);
     return `${column} ${joiner} (${vals.join(",")})`;
   }
@@ -83,13 +94,16 @@ function convertInExpressionToFilterParam(expr: V1Expression) {
   return "";
 }
 
-function convertBinaryExpressionToFilterParam(expr: V1Expression) {
+function convertBinaryExpressionToFilterParam(
+  expr: V1Expression,
+  depth: number,
+) {
   if (!expr.cond?.op || !(expr.cond?.op in BinaryOperationReverseMap))
     return "";
   const op = BinaryOperationReverseMap[expr.cond.op];
   if (!expr.cond?.exprs?.length) return "";
-  const left = convertExpressionToFilterParam(expr.cond.exprs[0]);
-  const right = convertExpressionToFilterParam(expr.cond.exprs[1]);
+  const left = convertExpressionToFilterParam(expr.cond.exprs[0], depth + 1);
+  const right = convertExpressionToFilterParam(expr.cond.exprs[1], depth + 1);
   if (!left || !right) return "";
 
   return `${left} ${op} ${right}`;

@@ -9,7 +9,6 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   ExplorePresetDefaultChartType,
   URLStateDefaultTimezone,
@@ -41,7 +40,6 @@ import {
   V1ExploreComparisonMode,
   type V1ExplorePreset,
   type V1ExploreSpec,
-  V1ExploreWebView,
   type V1Expression,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";

@@ -13,7 +13,7 @@ export const load = async ({ url, parent, params }) => {
 
   let partialMetrics: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
-  if (metricsViewSpec && exploreSpec && url) {
+  if (metricsViewSpec && exploreSpec) {
     const { entity, errors: errorsFromConvert } = convertURLToMetricsExplore(
       url.searchParams,
       metricsViewSpec,
@@ -42,7 +42,6 @@ export const load = async ({ url, parent, params }) => {
   }
 
   return {
-    defaultPartialMetrics: bookmarks.home?.metricsEntity ?? {},
     partialMetrics,
     errors,
   };
