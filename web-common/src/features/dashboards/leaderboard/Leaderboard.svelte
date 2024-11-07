@@ -174,8 +174,6 @@
     | number
     | null;
 
-  $: console.log(sortedData?.data);
-
   $: ({ aboveTheFold, belowTheFoldValues, noAvailableValues, showExpandTable } =
     prepareLeaderboardItemData(
       sortedData?.data,
