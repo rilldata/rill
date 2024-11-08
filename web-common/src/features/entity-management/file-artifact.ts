@@ -316,7 +316,6 @@ export class FileArtifact {
   }
 
   private updateResourceNameIfChanged(resource: V1Resource) {
-    console.log({ resource });
     const isSubResource = !!resource.component?.spec?.definedInCanvas;
     if (isSubResource) return;
 

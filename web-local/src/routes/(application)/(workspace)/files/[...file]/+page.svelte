@@ -44,13 +44,6 @@
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
-  $: console.log(
-    { resourceKind },
-    $inferredResourceKind,
-    resourceKind,
-    $resourceName,
-  );
-
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 
   $: extensions =

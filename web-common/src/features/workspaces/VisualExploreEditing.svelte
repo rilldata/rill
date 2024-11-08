@@ -21,6 +21,8 @@
   import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
+  import { useExploreStore } from "../dashboards/stores/dashboard-stores";
+  import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -64,6 +66,7 @@
   $: rawTimeZones = parsedDocument.get("time_zones");
   $: rawTheme = parsedDocument.get("theme");
   $: rawTimeRanges = parsedDocument.get("time_ranges");
+  $: rawDefaults = parsedDocument.get("defaults");
 
   $: timeZones = new Set(
     rawTimeZones instanceof YAMLSeq
@@ -126,6 +129,9 @@
       : [],
   );
 
+  $: defaults =
+    rawDefaults instanceof YAMLMap ? (rawDefaults.toJSON() as Defaults) : {};
+
   $: measureExpression =
     rawMeasures instanceof YAMLMap ? rawMeasures?.get("expr") : "";
   $: dimensionExpression =
@@ -145,7 +151,28 @@
         ? "Custom"
         : undefined;
 
-  export function isString(value: unknown): value is string {
+  $: exploreStateStore = useExploreStore(exploreName);
+
+  $: exploreStore = $exploreStateStore;
+
+  $: newDefaults = constructDefaultState(
+    exploreStore?.showTimeComparison,
+    exploreStore?.selectedComparisonDimension,
+    exploreStore?.visibleDimensionKeys,
+    exploreStore?.visibleMeasureKeys,
+    exploreStore?.selectedTimeRange,
+  );
+
+  $: viewingDefaults = Object.entries(defaults).every(([key, value]) => {
+    if (Array.isArray(value) && Array.isArray(newDefaults[key])) {
+      return (
+        JSON.stringify(value.sort()) === JSON.stringify(newDefaults[key].sort())
+      );
+    }
+    return JSON.stringify(value) === JSON.stringify(newDefaults[key]);
+  });
+
+  function isString(value: unknown): value is string {
     return typeof value === "string";
   }
 
@@ -172,6 +199,46 @@
     }
 
     await saveContent(parsedDocument.toString());
+  }
+
+  type Defaults = {
+    measures?: string[];
+    dimensions?: string[];
+    comparison_mode?: "time" | "dimension" | "none";
+    comparison_dimension?: string;
+    time_comparison?: boolean;
+    time_range?: string;
+  };
+
+  function constructDefaultState(
+    showTimeComparison?: boolean,
+    selectedComparisonDimension?: string | undefined,
+    visibleDimensionKeys?: Set<string>,
+    visibleMeasureKeys?: Set<string>,
+    selectedTimeRange?: DashboardTimeControls | undefined,
+  ): Defaults {
+    const newDefaults: Defaults = {};
+
+    if (showTimeComparison) {
+      newDefaults.comparison_mode = "time";
+    } else if (selectedComparisonDimension) {
+      newDefaults.comparison_mode = "dimension";
+      newDefaults.comparison_dimension = selectedComparisonDimension;
+    }
+
+    if (visibleDimensionKeys?.size) {
+      newDefaults.dimensions = Array.from(visibleDimensionKeys);
+    }
+
+    if (visibleMeasureKeys?.size) {
+      newDefaults.measures = Array.from(visibleMeasureKeys);
+    }
+
+    if (selectedTimeRange) {
+      newDefaults.time_range = selectedTimeRange.name;
+    }
+
+    return newDefaults;
   }
 </script>
 
@@ -333,11 +400,20 @@
 
     <footer
       slot="footer"
-      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full"
+      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-gray-500"
     >
-      <!-- <button class="text-primary-600 font-medium w-fit">
-        Use left settings as defaults
-      </button> -->
+      {#if viewingDefaults}
+        <p>Viewing current default state</p>
+      {:else}
+        <button
+          class="text-primary-600 font-medium w-fit"
+          on:click={async () => {
+            await updateProperties({ defaults: newDefaults });
+          }}
+        >
+          Use left settings as defaults
+        </button>
+      {/if}
       <p>
         For more options,
         <button on:click={switchView} class="text-primary-600 font-medium">
