@@ -141,7 +141,7 @@
   // $: hasChanges =
   //   $form.value !== value || $form.environment !== processedEnvironment;
 
-  $: console.log("$form: ", $form);
+  // $: console.log("$form: ", $form);
 </script>
 
 <Dialog bind:open onOutsideClick={() => handleReset()}>

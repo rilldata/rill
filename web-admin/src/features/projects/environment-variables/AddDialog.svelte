@@ -34,25 +34,10 @@
   let isKeyAlreadyExists = false;
   let isDevelopment = false;
   let isProduction = false;
-
-  const newVariables: EnvironmentVariable[] = [{ key: "", value: "" }];
+  let fileInput: HTMLInputElement;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-
-  function checkForExistingKeys() {
-    const existingKeys = $form.newVariables.map((variable) => variable.key);
-    inputErrors = {};
-    isKeyAlreadyExists = false;
-
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
-        isKeyAlreadyExists = true;
-      }
-    });
-  }
 
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
 
@@ -160,6 +145,51 @@
     inputErrors = {};
     isKeyAlreadyExists = false;
   }
+
+  function checkForExistingKeys() {
+    const existingKeys = $form.newVariables.map((variable) => variable.key);
+    inputErrors = {};
+    isKeyAlreadyExists = false;
+
+    existingKeys.forEach((key, index) => {
+      // Case sensitive
+      if (variableNames.some((existingKey) => existingKey === key)) {
+        inputErrors[index] = true;
+        isKeyAlreadyExists = true;
+      }
+    });
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const contents = e.target.result;
+        parseFile(contents);
+        checkForExistingKeys();
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  function parseFile(contents) {
+    const lines = contents.split("\n");
+
+    lines.forEach((line) => {
+      const [key, value] = line.split("=");
+      if (key && value) {
+        if (key.trim() && value.trim()) {
+          $form.newVariables = [
+            ...$form.newVariables,
+            { key: key.trim(), value: value.trim() },
+          ];
+        }
+      }
+    });
+  }
+
+  $: console.log("$form: ", $form);
 </script>
 
 <Dialog
@@ -187,10 +217,20 @@
       use:enhance
     >
       <div class="flex flex-col gap-y-5">
-        <!-- TODO: onclick to trigger file upload, parse the content -->
-        <Button type="secondary" small class="w-fit">
+        <Button
+          type="secondary"
+          small
+          class="w-fit"
+          on:click={() => fileInput.click()}
+        >
           <span>Import .env file</span>
         </Button>
+        <input
+          type="file"
+          bind:this={fileInput}
+          on:change={handleFileUpload}
+          class="hidden"
+        />
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
@@ -236,8 +276,10 @@
                 />
                 <IconButton
                   on:click={() => {
-                    if (index !== newVariables.length - 1) {
+                    if (index !== $form.newVariables.length - 1) {
                       handleDelete(index);
+                    } else {
+                      handleReset();
                     }
                   }}
                 >
