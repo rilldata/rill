@@ -14,6 +14,7 @@
   export let data: PageData;
 
   $: ({
+    basePreset,
     partialMetrics,
     token: { resourceName },
   } = data);
@@ -54,7 +55,7 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardURLStateSync {partialMetrics}>
+      <DashboardURLStateSync {basePreset} {partialMetrics}>
         <DashboardThemeProvider>
           <Dashboard
             exploreName={resourceName}

@@ -52,7 +52,7 @@ const TestCases: {
       ]),
       dimensionThresholdFilters: [],
     },
-    expectedUrl: "http://localhost/?f=%28publisher+IN+%28%27Yahoo%27%29%29",
+    expectedUrl: "http://localhost/?f=publisher+IN+%28%27Yahoo%27%29",
   },
 
   {
@@ -241,7 +241,7 @@ const TestCases: {
       "Dimension table with preset and with no dimension table in state different than preset",
     entity: {
       activePage: DashboardState_ActivePage.DEFAULT,
-      selectedDimensionName: undefined,
+      selectedDimensionName: "",
     },
     preset: {
       overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
@@ -396,7 +396,7 @@ describe("Human readable URL state", () => {
           },
           url.searchParams,
           explore,
-          preset ?? {},
+          basePreset,
         );
 
         expect(url.toString()).to.eq(expectedUrl);

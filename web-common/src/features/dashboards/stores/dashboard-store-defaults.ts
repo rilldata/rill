@@ -145,11 +145,12 @@ export function getDefaultMetricsExplorerEntity(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+  basePreset = getBasePreset(explore, getLocalUserPreferencesState(name)),
 ): MetricsExplorerEntity {
   const { entity: baseEntity } = convertPresetToMetricsExplore(
     metricsView,
     explore,
-    getBasePreset(explore, getLocalUserPreferencesState(name)),
+    basePreset,
   );
   const metricsExplorer = {
     // fields filled here are the ones that are not stored and loaded to/from URL

@@ -12,6 +12,7 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -19,6 +20,7 @@ import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewSchema,
+  type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
@@ -32,6 +34,7 @@ export type BookmarkEntry = {
   metricsEntity: Partial<MetricsExplorerEntity>;
   filtersOnly: boolean;
   absoluteTimeRange: boolean;
+  url: string;
 };
 
 export type Bookmarks = {
@@ -138,9 +141,9 @@ function categorizeBookmarks(
 }
 
 export function searchBookmarks(
-  bookmarks: Bookmarks,
+  bookmarks: Bookmarks | undefined,
   searchText: string,
-): Bookmarks {
+): Bookmarks | undefined {
   if (!searchText || !bookmarks) return bookmarks;
   searchText = searchText.toLowerCase();
   const matchName = (bookmark: BookmarkEntry | undefined) =>
@@ -223,6 +226,39 @@ export function getPrettySelectedTimeRange(
   );
 }
 
+export function getFilledInBookmarks(
+  bookmarks: Bookmarks | undefined,
+  baseUrl: string,
+  dashboard: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  basePreset: V1ExplorePreset,
+): Bookmarks | undefined {
+  if (!bookmarks) return undefined;
+
+  if (!baseUrl.startsWith("http")) {
+    // handle case where only path is provided
+    baseUrl = "http://localhost" + baseUrl;
+  }
+
+  return {
+    home: bookmarks.home
+      ? getFilledInBookmark(
+          bookmarks.home,
+          baseUrl,
+          dashboard,
+          exploreSpec,
+          basePreset,
+        )
+      : undefined,
+    personal: bookmarks.personal.map((b) =>
+      getFilledInBookmark(b, baseUrl, dashboard, exploreSpec, basePreset),
+    ),
+    shared: bookmarks.shared.map((b) =>
+      getFilledInBookmark(b, baseUrl, dashboard, exploreSpec, basePreset),
+    ),
+  };
+}
+
 function parseBookmarkEntry(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
@@ -241,5 +277,26 @@ function parseBookmarkEntry(
     absoluteTimeRange:
       metricsEntity.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
     filtersOnly: !metricsEntity.pivot,
+    url: "", // will be filled in along with existing dashboard
+  };
+}
+
+function getFilledInBookmark(
+  bookmark: BookmarkEntry,
+  baseUrl: string,
+  dashboard: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  basePreset: V1ExplorePreset,
+) {
+  const url = new URL(baseUrl);
+  convertMetricsEntityToURLSearchParams(
+    { ...dashboard, ...bookmark.metricsEntity },
+    url.searchParams,
+    exploreSpec,
+    basePreset,
+  );
+  return {
+    ...bookmark,
+    url: `${url.pathname}${url.search}`,
   };
 }

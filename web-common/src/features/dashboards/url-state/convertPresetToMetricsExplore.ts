@@ -171,7 +171,7 @@ function fromTimeRangesParams(
   ) {
     // unset all comparison setting if mode is none
     entity.selectedComparisonTimeRange = undefined;
-    entity.selectedComparisonDimension = undefined;
+    entity.selectedComparisonDimension = "";
     entity.showTimeComparison = false;
   }
 
@@ -252,7 +252,7 @@ function fromOverviewUrlParams(
 
   if (preset.overviewExpandedDimension !== undefined) {
     if (preset.overviewExpandedDimension === "") {
-      entity.selectedDimensionName = undefined;
+      entity.selectedDimensionName = "";
       // if preset didnt have a view then this is a dimension table unset.
       if (
         preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||

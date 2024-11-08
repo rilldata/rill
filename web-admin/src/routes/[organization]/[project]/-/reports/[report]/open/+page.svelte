@@ -34,16 +34,20 @@
     $report?.data?.resource?.report?.spec?.annotations ?? {},
   );
 
-  $: if ($dashboardStateForReport?.data) {
-    void goto(
-      getExplorePageUrl(
+  async function gotExplorePage() {
+    return goto(
+      await getExplorePageUrl(
         $page.url,
         organization,
         project,
         $dashboardStateForReport.data.exploreName,
-        $dashboardStateForReport.data.state,
+        $dashboardStateForReport.data.dashboard,
       ),
     );
+  }
+
+  $: if ($dashboardStateForReport?.data) {
+    void gotExplorePage();
   }
 
   // TODO: error handling

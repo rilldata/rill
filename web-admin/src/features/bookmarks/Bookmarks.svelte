@@ -6,7 +6,6 @@
   } from "@rilldata/web-admin/client";
   import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
   import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
-  import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
   import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
@@ -29,12 +28,6 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: bookmarkApplier = createBookmarkApplier(
-    $runtime?.instanceId,
-    metricsViewName,
-    exploreName,
-  );
-
   $: exploreStore = useExploreStore(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
 
@@ -45,10 +38,6 @@
     exploreName,
   );
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
-
-  function selectBookmark(bookmark: BookmarkEntry) {
-    bookmarkApplier(bookmark.resource);
-  }
 
   async function createHomeBookmark() {
     await homeBookmarkModifier(getBookmarkDataForDashboard($exploreStore));
@@ -102,7 +91,6 @@
       showDialog = true;
       bookmark = detail;
     }}
-    on:select={({ detail }) => selectBookmark(detail)}
     {metricsViewName}
     {exploreName}
   />

@@ -6,10 +6,14 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
-  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewSchema,
+    type V1ExplorePreset,
+  } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  export let basePreset: V1ExplorePreset;
   export let partialMetrics: Partial<MetricsExplorerEntity>;
 
   const {
@@ -42,7 +46,7 @@
       $dashboardStore,
       u.searchParams,
       exploreSpec,
-      exploreSpec.defaultPreset ?? {},
+      basePreset,
     );
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {

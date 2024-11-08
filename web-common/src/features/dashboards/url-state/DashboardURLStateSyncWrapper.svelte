@@ -37,6 +37,6 @@
   $: parseUrl($page.url);
 </script>
 
-<DashboardURLStateSync {partialMetrics}>
+<DashboardURLStateSync {basePreset} {partialMetrics}>
   <slot />
 </DashboardURLStateSync>

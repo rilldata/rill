@@ -66,7 +66,8 @@ function toTimeRangesUrl(
 ) {
   if (
     (preset.timeRange !== undefined &&
-      metrics.selectedTimeRange?.name !== preset.timeRange) ||
+      metrics.selectedTimeRange !== undefined &&
+      metrics.selectedTimeRange.name !== preset.timeRange) ||
     (preset.timeRange === undefined &&
       metrics.selectedTimeRange?.name !== URLStateDefaultTimeRange)
   ) {
@@ -85,7 +86,8 @@ function toTimeRangesUrl(
 
   if (
     (preset.compareTimeRange !== undefined &&
-      metrics.selectedComparisonTimeRange?.name !== preset.compareTimeRange) ||
+      metrics.selectedComparisonTimeRange !== undefined &&
+      metrics.selectedComparisonTimeRange.name !== preset.compareTimeRange) ||
     (preset.compareTimeRange === undefined &&
       !!metrics.selectedComparisonTimeRange?.name)
   ) {

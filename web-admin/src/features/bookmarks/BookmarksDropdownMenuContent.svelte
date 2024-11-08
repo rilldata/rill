@@ -11,9 +11,14 @@
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
     getBookmarks,
+    getFilledInBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { Search } from "@rilldata/web-common/components/search";
+  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+  import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
@@ -28,6 +33,13 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: dashboard = useExploreStore(exploreName);
+  $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: exploreSpec = $validExploreSpec.data.explore ?? {};
+  $: basePreset = getBasePreset(
+    exploreSpec,
+    getLocalUserPreferencesState(exploreName),
+  );
 
   let searchText: string;
   let bookmarks: ReturnType<typeof getBookmarks>;
@@ -39,7 +51,14 @@
     metricsViewName,
     exploreName,
   );
-  $: filteredBookmarks = searchBookmarks($bookmarks.data, searchText);
+  $: filledInBookmarks = getFilledInBookmarks(
+    $bookmarks.data,
+    `/${organization}/${project}/explore/${exploreName}`,
+    $dashboard,
+    $validExploreSpec.data.explore ?? {},
+    basePreset,
+  );
+  $: filteredBookmarks = searchBookmarks(filledInBookmarks, searchText);
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;
@@ -108,7 +127,6 @@
             <BookmarkItem
               bookmark={filteredBookmarks.home}
               on:edit
-              on:select
               on:delete
               readOnly={!manageProject}
             />
@@ -119,7 +137,6 @@
             <BookmarkItem
               {bookmark}
               on:edit
-              on:select
               on:delete
               readOnly={!manageProject}
             />
