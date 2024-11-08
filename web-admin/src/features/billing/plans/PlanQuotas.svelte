@@ -23,7 +23,7 @@
       : "Unlimited";
 
   $: usageMetrics = getOrganizationUsageMetrics(organization);
-  $: total = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
+  $: totalOrgSize = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
 
   $: singleProjectLimit = $organizationQuotas.data?.projects === 1;
   $: storageLimitBytesPerDeployment =
@@ -38,17 +38,22 @@
     </div>
   </div>
 
-  <div class="quota-entry">
-    <div class="quota-entry-title">Data Size</div>
-    <div>
-      {#if singleProjectLimit && storageLimitBytesPerDeployment && storageLimitBytesPerDeployment !== "-1"}
-        <Progress value={total} max={Number(storageLimitBytesPerDeployment)} />
-        {formatDataSizeQuota(total, storageLimitBytesPerDeployment)}
-      {:else}
-        <!-- TODO: once we have the dashboard support link to it -->
-      {/if}
-    </div>
-  </div>
+  {#if $usageMetrics?.data}
+    {#if singleProjectLimit && storageLimitBytesPerDeployment && storageLimitBytesPerDeployment !== "-1"}
+      <div class="quota-entry">
+        <div class="quota-entry-title">Data Size</div>
+        <div>
+          <Progress
+            value={totalOrgSize}
+            max={Number(storageLimitBytesPerDeployment)}
+          />
+          {formatDataSizeQuota(totalOrgSize, storageLimitBytesPerDeployment)}
+        </div>
+      </div>
+    {:else}
+      <!-- TODO: once we have the dashboard support link to it -->
+    {/if}
+  {/if}
 </div>
 
 <style lang="postcss">

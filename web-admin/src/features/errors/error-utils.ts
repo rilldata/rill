@@ -1,6 +1,9 @@
 import { page } from "$app/stores";
 import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
-import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import {
+  isAdminServerQuery,
+  isMetricsProjectQuery,
+} from "@rilldata/web-admin/client/utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
   isAlertPage,
@@ -136,6 +139,12 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       isProjectRequestAccessPage(pageState) &&
       error.response?.status !== 403
     ) {
+      return;
+    }
+
+    // Handle case when usage metrics project is not available
+    // This is always the case on non-prod
+    if (isMetricsProjectQuery(query)) {
       return;
     }
 
