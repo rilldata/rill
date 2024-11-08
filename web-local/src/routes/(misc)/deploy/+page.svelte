@@ -1,6 +1,7 @@
 <script lang="ts">
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { buildPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
   import { onMount } from "svelte";
@@ -35,19 +36,7 @@
 
   let upgradeHref = "";
   $: if ($org && $metadata.data) {
-    let cloudUrl = $metadata.data.adminUrl.replace(
-      "admin.rilldata",
-      "ui.rilldata",
-    );
-    // hack for dev env
-    // TODO: find a better solution and get a url from backend
-    if (cloudUrl === "http://localhost:9090") {
-      cloudUrl = "http://localhost:3000";
-    }
-    const url = new URL(cloudUrl);
-    url.pathname = `/${$org}/-/settings/billing`;
-    url.searchParams.set("upgrade", "true");
-    upgradeHref = url.toString();
+    upgradeHref = buildPlanUpgradeUrl($org, $metadata.data.adminUrl);
   }
 </script>
 

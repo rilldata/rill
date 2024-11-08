@@ -72,9 +72,9 @@ export function getOrganizationUsageMetrics(
     ([credsResp], set) => {
       if (!credsResp.data) return;
       return getUsageMetrics(
-        credsResp.data.runtimeHost,
-        credsResp.data.instanceId,
-        credsResp.data.accessToken,
+        credsResp.data.runtimeHost ?? "",
+        credsResp.data.instanceId ?? "",
+        credsResp.data.accessToken ?? "",
       ).subscribe(set);
     },
   );
