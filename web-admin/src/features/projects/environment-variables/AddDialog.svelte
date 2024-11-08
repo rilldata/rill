@@ -76,7 +76,7 @@
     }),
   );
 
-  const { form, enhance, submit, errors, submitting } = superForm(
+  const { form, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -157,10 +157,16 @@
 
   function handleReset() {
     $form.newVariables = [{ key: "", value: "" }];
+    inputErrors = {};
+    isKeyAlreadyExists = false;
   }
 </script>
 
-<Dialog bind:open onOutsideClick={() => handleReset()}>
+<Dialog
+  bind:open
+  onOpenChange={() => handleReset()}
+  onOutsideClick={() => handleReset()}
+>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -238,11 +244,6 @@
                   <Trash2Icon size="16px" class="text-gray-500" />
                 </IconButton>
               </div>
-              {#if $errors.newVariables}
-                <p class="text-xs text-red-600 font-normal">
-                  {$errors.newVariables[index]?.key}
-                </p>
-              {/if}
             {/each}
           </div>
           <Button type="dashed" class="w-full mt-4" on:click={handleAdd}>

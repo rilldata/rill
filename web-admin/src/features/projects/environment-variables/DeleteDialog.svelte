@@ -38,8 +38,11 @@
           unsetVariables: [deletedName],
         },
       });
+
       await queryClient.invalidateQueries(
-        getAdminServiceGetProjectVariablesQueryKey(organization, project),
+        getAdminServiceGetProjectVariablesQueryKey(organization, project, {
+          forAllEnvironments: true,
+        }),
       );
 
       eventBus.emit("notification", {
