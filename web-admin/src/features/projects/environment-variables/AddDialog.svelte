@@ -28,8 +28,10 @@
   import { Trash2Icon } from "lucide-svelte";
 
   export let open = false;
+  export let variableNames: string[] = [];
+  export let inputErrors: { [key: number]: boolean } = {};
 
-  let errorMessage = "";
+  let isKeyAlreadyExists = false;
   let isDevelopment = false;
   let isProduction = false;
 
@@ -37,6 +39,22 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  function checkForExistingKeys() {
+    const existingKeys = $form.newVariables.map((variable) => variable.key);
+    inputErrors = {};
+    isKeyAlreadyExists = false;
+
+    existingKeys.forEach((key, index) => {
+      // Case sensitive
+      if (variableNames.some((existingKey) => existingKey === key)) {
+        inputErrors[index] = true;
+        isKeyAlreadyExists = true;
+      }
+    });
+  }
+
+  $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -72,8 +90,6 @@
         const flatVariables = Object.fromEntries(
           values.newVariables.map(({ key, value }) => [key, value]),
         );
-
-        console.log("variables to create flatVariables: ", flatVariables);
 
         try {
           await handleUpdateProjectVariables(flatVariables);
@@ -172,7 +188,6 @@
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
-            <!-- TODO: check the usage before changing the label color to text-gray-800 -->
             <Checkbox
               inverse
               bind:checked={isDevelopment}
@@ -199,8 +214,12 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
+                  textClass={inputErrors[index] ? "error-input-wrapper" : ""}
                   placeholder="Key"
                   on:input={(e) => handleKeyChange(index, e.target.value)}
+                  onBlur={() => {
+                    checkForExistingKeys();
+                  }}
                 />
                 <Input
                   bind:value={variable.value}
@@ -230,7 +249,7 @@
             <Plus size="16px" />
             <span>Add variable</span>
           </Button>
-          {#if errorMessage}
+          {#if isKeyAlreadyExists}
             <div class="mt-1">
               <p class="text-xs text-red-600 font-normal">
                 These keys already exist for this environment.
@@ -249,8 +268,11 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button type="primary" form={formId} disabled={$submitting} submitForm
-        >Create</Button
+      <Button
+        type="primary"
+        form={formId}
+        disabled={$submitting || hasExistingKeys}
+        submitForm>Create</Button
       >
     </DialogFooter>
   </DialogContent>

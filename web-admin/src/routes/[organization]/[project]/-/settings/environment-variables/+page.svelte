@@ -31,6 +31,8 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
+  $: variableNames = projectVariables.map((variable) => variable.name);
+
   $: searchedVariables = projectVariables.filter((variable) =>
     variable.name.toLowerCase().includes(searchText.toLowerCase()),
   );
@@ -139,4 +141,4 @@
   </div>
 </div>
 
-<AddDialog bind:open />
+<AddDialog bind:open {variableNames} />

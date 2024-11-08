@@ -26,6 +26,7 @@
   import { onMount } from "svelte";
 
   export let open = false;
+  export let id: string;
   export let environment: string;
   export let name: string;
   export let value: string;
@@ -37,27 +38,10 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  function generateUUID(): string {
-    // Generate random numbers for the UUID
-    const randomNumbers: number[] = new Array(16)
-      .fill(0)
-      .map(() => Math.floor(Math.random() * 256));
-
-    // Set the version and variant bits
-    randomNumbers[6] = (randomNumbers[6] & 0x0f) | 0x40; // Version 4
-    randomNumbers[8] = (randomNumbers[8] & 0x3f) | 0x80; // Variant 10
-
-    // Convert to hexadecimal and format as a UUID
-    const hexDigits: string = randomNumbers
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    return `${hexDigits.slice(0, 8)}-${hexDigits.slice(8, 12)}-${hexDigits.slice(12, 16)}-${hexDigits.slice(16, 20)}-${hexDigits.slice(20, 32)}`;
-  }
-
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  const formId = `edit-environment-variables-form-${generateUUID()}`;
+  const formId = `edit-environment-variables-form-${id}`;
 
   const initialValues = {
     environment: environment,

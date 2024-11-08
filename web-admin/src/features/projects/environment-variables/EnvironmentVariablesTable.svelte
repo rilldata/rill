@@ -54,6 +54,7 @@
       header: "",
       cell: ({ row }) =>
         flexRender(ActionsCell, {
+          id: row.original.id,
           name: row.original.name,
           value: row.original.value,
           environment: row.original.environment,

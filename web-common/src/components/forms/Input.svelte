@@ -13,6 +13,7 @@
   export let label = "";
   export let description = "";
   export let errors: string | string[] | null | undefined = null;
+  export let errorInputWrapper = false;
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
@@ -257,6 +258,11 @@
   .input-wrapper:focus-within {
     @apply border-primary-500;
     @apply ring-2 ring-primary-100;
+  }
+
+  .error-input-wrapper.input-wrapper {
+    @apply border-red-600;
+    @apply ring-1 ring-red-600;
   }
 
   .error {
