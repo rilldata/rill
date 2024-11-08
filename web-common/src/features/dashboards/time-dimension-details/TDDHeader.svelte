@@ -21,7 +21,6 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
@@ -34,6 +33,7 @@
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
   import { getTDDExportArgs } from "./getTDDExportArgs";
+  import { dimensionSearchText } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -42,8 +42,8 @@
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = false;
   export let expandedMeasureName: string;
+  export let onToggleSearchItems: () => void;
 
-  const dispatch = createEventDispatcher();
   const { adminServer, exports } = featureFlags;
   const exportDash = createQueryServiceExport();
   const stateManagers = getStateManagers();
@@ -87,20 +87,14 @@
 
   let searchToggle = false;
 
-  let searchText = "";
-  function onSearch() {
-    dispatch("search", searchText);
-  }
-
   function closeSearchBar() {
-    searchText = "";
+    dimensionSearchText.set("");
     searchToggle = false;
-    dispatch("search", searchText);
   }
 
   function onSubmit() {
     if (!areAllTableRowsSelected) {
-      dispatch("toggle-all-search-items");
+      onToggleSearchItems();
       closeSearchBar();
     }
   }
@@ -171,6 +165,7 @@
       query: exportDash,
       format,
       timeDimension: $validSpecStore.data?.metricsView?.timeDimension as string,
+      searchText: $dimensionSearchText,
     });
   };
 </script>
@@ -227,11 +222,7 @@
           transition:slideRight={{ leftOffset: 8 }}
           class="flex items-center gap-x-1"
         >
-          <Search
-            bind:value={searchText}
-            on:input={onSearch}
-            on:submit={onSubmit}
-          />
+          <Search bind:value={$dimensionSearchText} on:submit={onSubmit} />
           <button
             class="ui-copy-icon"
             style:cursor="pointer"

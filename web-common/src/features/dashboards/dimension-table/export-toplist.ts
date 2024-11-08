@@ -11,10 +11,12 @@ export default async function exportToplist({
   ctx,
   query,
   format,
+  searchText,
 }: {
   ctx: StateManagers;
   query: ReturnType<typeof createQueryServiceExport>;
   format: V1ExportFormat;
+  searchText: string;
 }) {
   const metricsViewName = get(ctx.metricsViewName);
   const dashboard = get(ctx.dashboardStore);
@@ -39,6 +41,7 @@ export default async function exportToplist({
               start: timeControlState.comparisonTimeStart,
               end: timeControlState.comparisonTimeEnd,
             },
+            searchText,
           ),
       },
     },

@@ -6,6 +6,12 @@ title: rill billing subscription
 
 Manage organisation subscription
 
+### Flags
+
+```
+      --org string   Organization Name
+```
+
 ### Global flags
 
 ```
@@ -18,7 +24,8 @@ Manage organisation subscription
 ### SEE ALSO
 
 * [rill billing](../billing.md)	 - Billing related commands for org
-* [rill billing subscription create](create.md)	 - Create subscription for an organization
+* [rill billing subscription cancel](cancel.md)	 - Cancel subscription for an organization
 * [rill billing subscription edit](edit.md)	 - Edit organization subscription
 * [rill billing subscription list](list.md)	 - List subscription for an organization
+* [rill billing subscription renew](renew.md)	 - Renew cancelled organization subscription
 

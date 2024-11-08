@@ -27,6 +27,7 @@
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     TimeRangePreset,
@@ -133,15 +134,17 @@
   $: dimensionData = dimensionDataCopy;
 
   // FIXME: move this logic to a function + write tests.
-  $: if ($timeControlsStore.ready) {
+  $: if ($timeControlsStore.ready && interval) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.start,
       $exploreStore.selectedTimezone,
+      timeGrainToDuration(interval),
     );
     scrubEnd = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.end,
       $exploreStore.selectedTimezone,
+      timeGrainToDuration(interval),
     );
 
     const slicedData = isAllTime

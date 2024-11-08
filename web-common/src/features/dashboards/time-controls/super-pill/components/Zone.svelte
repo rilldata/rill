@@ -5,7 +5,7 @@
     getAbbreviationForIANA,
     getLocalIANA,
   } from "@rilldata/web-common/lib/time/timezone";
-  import { IANAZone } from "luxon";
+  import ZoneDisplay from "./ZoneDisplay.svelte";
 
   // watermark indicates the latest reference point in the dashboard
   export let watermark: Date;
@@ -30,8 +30,6 @@
   $: if (userLocalIANA === UTCIana) {
     availableTimeZones = availableTimeZones.slice(1);
   }
-
-  $: watermarkTs = watermark.getTime();
 </script>
 
 <DropdownMenu.Root bind:open>
@@ -50,24 +48,13 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start">
     {#each availableTimeZones as option (option)}
-      {@const zone = new IANAZone(option)}
       <DropdownMenu.CheckboxItem
-        class="flex items-center gap-x-1 text-xs cursor-pointer"
-        role="menuitem"
         checked={activeTimeZone === option}
         on:click={() => {
           onSelectTimeZone(option);
         }}
       >
-        <b class="w-9">
-          {getAbbreviationForIANA(watermark, option)}
-        </b>
-        <p class="inline-block italic w-20">
-          GMT {zone.formatOffset(watermarkTs, "short")}
-        </p>
-        <p>
-          {option}
-        </p>
+        <ZoneDisplay iana={option} {watermark} />
       </DropdownMenu.CheckboxItem>
       {#if option === UTCIana}
         <DropdownMenu.Separator />

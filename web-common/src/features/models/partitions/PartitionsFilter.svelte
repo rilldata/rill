@@ -21,7 +21,7 @@
   bind:open={openFilterMenu}
 >
   <Select.Trigger class="outline-none border-none w-fit px-0 gap-x-0.5">
-    <Button type="text" label="Filter splits">
+    <Button type="text" label="Filter partitions">
       <span class="text-gray-700 hover:text-inherit">
         Showing <b>{selectedFilter}</b>
       </span>

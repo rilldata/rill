@@ -14,8 +14,10 @@
    * a smoothed series (showing the trend) if the time series merits it.
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { bisector, extent, max, min } from "d3-array";
@@ -38,7 +40,6 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   const id = guidGenerator();
 
@@ -291,6 +292,7 @@
   function shiftClick() {
     const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
       nearestPoint[xAccessor],
+      timeGrainToDuration(rollupTimeGrain),
     ).toISOString()}'`;
     copyToClipboard(exportedValue);
   }
@@ -422,6 +424,7 @@
       {#if $coordinates.x}
         <TimestampMouseoverAnnotation
           point={nearestPoint}
+          grain={rollupTimeGrain}
           {xAccessor}
           {yAccessor}
         />
@@ -496,8 +499,18 @@
 
   <!-- Bottom time horizon labels -->
   <div class="select-none grid grid-cols-2 space-between">
-    <TimestampBound align="left" value={zoomMinBound} label="Min" />
-    <TimestampBound align="right" value={zoomMaxBound} label="Max" />
+    <TimestampBound
+      grain={rollupTimeGrain}
+      align="left"
+      value={zoomMinBound}
+      label="Min"
+    />
+    <TimestampBound
+      grain={rollupTimeGrain}
+      align="right"
+      value={zoomMaxBound}
+      label="Max"
+    />
   </div>
 </div>
 

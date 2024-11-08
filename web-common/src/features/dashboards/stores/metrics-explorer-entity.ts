@@ -115,14 +115,6 @@ export interface MetricsExplorerEntity {
   selectedTimezone: string;
 
   /**
-   * Search text state for dimension tables. This search text state
-   * is shared by both the dimension detail table AND the time
-   * detailed dimension table, so that the same filter will be
-   * applied when switching between those views.
-   */
-  dimensionSearchText?: string;
-
-  /**
    * flag to show/hide time comparison based on user preference.
    * This controls whether a time comparison is shown in e.g.
    * the line charts and bignums.

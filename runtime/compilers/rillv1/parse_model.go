@@ -16,16 +16,17 @@ import (
 
 // ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
 type ModelYAML struct {
-	commonYAML        `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
-	Refresh           *ScheduleYAML                           `yaml:"refresh"`
-	Timeout           string                                  `yaml:"timeout"`
-	Incremental       bool                                    `yaml:"incremental"`
-	State             *DataYAML                               `yaml:"state"`
-	Splits            *DataYAML                               `yaml:"splits"`
-	SplitsWatermark   string                                  `yaml:"splits_watermark"`
-	SplitsConcurrency uint                                    `yaml:"splits_concurrency"`
-	InputProperties   map[string]any                          `yaml:",inline" mapstructure:",remain"`
-	Stage             struct {
+	commonYAML            `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into InputProperties
+	Refresh               *ScheduleYAML                           `yaml:"refresh"`
+	Timeout               string                                  `yaml:"timeout"`
+	Incremental           bool                                    `yaml:"incremental"`
+	State                 *DataYAML                               `yaml:"state"`
+	Partitions            *DataYAML                               `yaml:"partitions"`
+	Splits                *DataYAML                               `yaml:"splits"` // Deprecated: use "partitions" instead
+	PartitionsWatermark   string                                  `yaml:"partitions_watermark"`
+	PartitionsConcurrency uint                                    `yaml:"partitions_concurrency"`
+	InputProperties       map[string]any                          `yaml:",inline" mapstructure:",remain"`
+	Stage                 struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"stage"`
@@ -72,21 +73,27 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		node.Refs = append(node.Refs, refs...)
 	}
 
-	// Parse splits resolver
-	var splitsResolver string
-	var splitsResolverProps *structpb.Struct
-	if tmp.Splits != nil {
+	// Parse partitions resolver
+	var partitionsResolver string
+	var partitionsResolverProps *structpb.Struct
+	if tmp.Splits != nil { // Backwards compatibility: "splits" is deprecated and has been renamed to "partitions"
+		if tmp.Partitions != nil {
+			return fmt.Errorf(`"partitions" and "splits" are mutually exclusive`)
+		}
+		tmp.Partitions = tmp.Splits
+	}
+	if tmp.Partitions != nil {
 		var refs []ResourceName
-		splitsResolver, splitsResolverProps, refs, err = p.parseDataYAML(tmp.Splits)
+		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions)
 		if err != nil {
-			return fmt.Errorf(`failed to parse "splits": %w`, err)
+			return fmt.Errorf(`failed to parse "partitions": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
 
 		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
-		if tmp.SplitsWatermark == "" {
-			if splitsResolver == "glob" {
-				tmp.SplitsWatermark = "updated_on"
+		if tmp.PartitionsWatermark == "" {
+			if partitionsResolver == "glob" {
+				tmp.PartitionsWatermark = "updated_on"
 			}
 		}
 	}
@@ -175,10 +182,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	r.ModelSpec.IncrementalStateResolver = incrementalStateResolver
 	r.ModelSpec.IncrementalStateResolverProperties = incrementalStateResolverProps
 
-	r.ModelSpec.SplitsResolver = splitsResolver
-	r.ModelSpec.SplitsResolverProperties = splitsResolverProps
-	r.ModelSpec.SplitsWatermarkField = tmp.SplitsWatermark
-	r.ModelSpec.SplitsConcurrencyLimit = uint32(tmp.SplitsConcurrency)
+	r.ModelSpec.PartitionsResolver = partitionsResolver
+	r.ModelSpec.PartitionsResolverProperties = partitionsResolverProps
+	r.ModelSpec.PartitionsWatermarkField = tmp.PartitionsWatermark
+	r.ModelSpec.PartitionsConcurrencyLimit = uint32(tmp.PartitionsConcurrency)
 
 	r.ModelSpec.InputConnector = inputConnector
 	r.ModelSpec.InputProperties = inputPropsPB

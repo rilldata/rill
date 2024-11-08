@@ -1503,12 +1503,27 @@ func TestTheme(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
+		// Theme resource
 		`themes/t1.yaml`: `
 type: theme
 
 colors:
   primary: red
   secondary: grey
+`,
+		// Explore referencing the external theme resource
+		`explores/e1.yaml`: `
+type: explore
+metrics_view: missing
+theme: t1
+`,
+		// Explore that defines an inline theme
+		`explores/e2.yaml`: `
+type: explore
+metrics_view: missing
+theme:
+  colors:
+    primary: red
 `,
 	})
 
@@ -1528,6 +1543,38 @@ colors:
 					Green: 0.5019608,
 					Blue:  0.5019608,
 					Alpha: 1,
+				},
+				PrimaryColorRaw:   "red",
+				SecondaryColorRaw: "grey",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Paths: []string{"/explores/e1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Theme:              "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e2"},
+			Paths: []string{"/explores/e2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
 				},
 			},
 		},

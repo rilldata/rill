@@ -1,6 +1,6 @@
 import { markdown } from "@codemirror/lang-markdown";
-import type { LanguageSupport } from "@codemirror/language";
 import { yaml } from "@codemirror/lang-yaml";
+import { type LanguageSupport } from "@codemirror/language";
 import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 
 export const FileExtensionToEditorExtension: Record<string, LanguageSupport[]> =

@@ -33,21 +33,21 @@ incremental: true
 refresh:
   cron: 0 0 * * *
 ```
-Next, we can define the SQL splits based on a time frame. Since that data in the ORDERS dataset in old, we can make the range from some data in the 1990s. Feel free to navigate to your Snowflake console and run some SQL commands to better understand what the data is: 
+Next, we can define the SQL partitions based on a time frame. Since that data in the ORDERS dataset in old, we can make the range from some data in the 1990s. Feel free to navigate to your Snowflake console and run some SQL commands to better understand what the data is: 
 ```sql
 select max(o_orderdate) from ORDERS; -- 1998-08-02
 select min(o_orderdate) from ORDERS; -- 1992-01-01
 ```
-Next, we use the range of dates created for our splits in our actual SQL query that will read data from Snowflake
+Next, we use the range of dates created for our partitions in our actual SQL query that will read data from Snowflake
 ```yaml
-splits_concurrency: 3
+partitions_concurrency: 3
 
-splits:
+partitions:
     connector: duckdb
     sql: SELECT range as day FROM range(TIMESTAMPTZ '1995-01-01', TIMESTAMPTZ '1995-01-31', INTERVAL 1 DAY)
 
 connector: snowflake
-sql: SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.ORDERS WHERE date_trunc('day', O_ORDERDATE) = '{{ .split.day }}'
+sql: SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.ORDERS WHERE date_trunc('day', O_ORDERDATE) = '{{ .partition.day }}'
 ```
 
 Since Snowflake cannot write directly to ClickHouse and vice-versa, we use a S3 staging connector that has capabilities to write/read from ClickHouse and Snowflake.
