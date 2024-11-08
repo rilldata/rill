@@ -15,9 +15,15 @@ export function isAdminServerQuery(query: Query): boolean {
     "/v1/telemetry",
     "/v1/tokens",
     "/v1/users",
+    "/v1/billing",
   ];
 
   return adminApiEndpoints.some((endpoint) => apiPath.startsWith(endpoint));
+}
+
+export function isMetricsProjectQuery(query: Query): boolean {
+  const [apiPath] = query.queryKey as string[];
+  return apiPath === "/v1/billing/metrics-project-credentials";
 }
 
 export function mergedQueryStatus(
