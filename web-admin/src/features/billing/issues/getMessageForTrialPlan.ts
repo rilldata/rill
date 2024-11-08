@@ -25,7 +25,7 @@ export function getMessageForTrialPlan(
     "";
 
   const message: BillingIssueMessage = {
-    type: "info",
+    type: "default",
     title: "Your trial has expired.",
     description: "Upgrade to maintain access.",
     iconType: "alert",
@@ -50,7 +50,7 @@ export function getMessageForTrialPlan(
   ) {
     const daysDiff = diff.shiftTo("days");
     message.title = getTrialMessageForDays(diff);
-    message.type = daysDiff.days < WarningPeriodInDays ? "warning" : "info";
+    message.type = daysDiff.days < WarningPeriodInDays ? "warning" : "default";
   } else {
     const gracePeriodDate = DateTime.fromJSDate(
       new Date(trialIssue.metadata?.trialEnded?.gracePeriodEndDate ?? ""),
