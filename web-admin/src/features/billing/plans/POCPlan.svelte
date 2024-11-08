@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { V1BillingPlan } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
@@ -7,11 +8,12 @@
 
   export let organization: string;
   export let hasPayment: boolean;
+  export let plan: V1BillingPlan;
 
   let open = false;
 </script>
 
-<SettingsContainer title="POC plan">
+<SettingsContainer title={plan?.displayName}>
   <div slot="body">
     <div>You’re currently on a custom contract.</div>
     <PlanQuotas {organization} />

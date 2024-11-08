@@ -17,6 +17,7 @@
   $: subscriptionQuery = createAdminServiceGetBillingSubscription(organization);
   $: subscription = $subscriptionQuery?.data?.subscription;
   $: hasPayment = !!$subscriptionQuery?.data?.organization?.paymentCustomerId;
+  $: plan = subscription?.plan;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
 
@@ -25,23 +26,22 @@
   // trial plan will have a trial issue associated with it
   $: isTrial = !!$categorisedIssues.data?.trial;
   // ended subscription will have a cancelled issue associated with it
-  $: hasEnded = !!$categorisedIssues.data?.cancelled;
-  $: subIsTeamPlan = subscription?.plan && isTeamPlan(subscription.plan);
-  $: subIsPOCPlan = subscription?.plan && isPOCPlan(subscription.plan);
-  $: subIsEnterprisePlan =
-    subscription?.plan && !isTrial && !subIsTeamPlan && !subIsPOCPlan;
+  $: subHasEnded = !!$categorisedIssues.data?.cancelled;
+  $: subIsTeamPlan = plan && isTeamPlan(plan);
+  $: subIsPOCPlan = plan && isPOCPlan(plan);
+  $: subIsEnterprisePlan = plan && !isTrial && !subIsTeamPlan && !subIsPOCPlan;
 </script>
 
 {#if neverSubbed}
   <!-- TODO: once mocks are in. Right now we just disable the routes. -->
 {:else if isTrial}
-  <TrialPlan {organization} {subscription} {showUpgradeDialog} />
-{:else if hasEnded}
-  <CancelledTeamPlan {organization} {showUpgradeDialog} />
+  <TrialPlan {organization} {subscription} {showUpgradeDialog} {plan} />
+{:else if subHasEnded}
+  <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
 {:else if subIsTeamPlan}
-  <TeamPlan {organization} {subscription} />
+  <TeamPlan {organization} {subscription} {plan} />
 {:else if subIsPOCPlan}
-  <POCPlan {organization} {hasPayment} />
+  <POCPlan {organization} {hasPayment} {plan} />
 {:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} />
+  <EnterprisePlan {organization} {plan} />
 {/if}
