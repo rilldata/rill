@@ -12,8 +12,8 @@ import (
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var local bool
-	var models, modelSplits, sources, alerts, reports []string
-	var all, full, erroredSplits, parser bool
+	var models, modelPartitions, sources, alerts, reports []string
+	var all, full, erroredPartitions, parser bool
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
@@ -67,10 +67,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Build model triggers
-			if len(modelSplits) > 0 || erroredSplits {
-				// If splits are specified, ensure exactly one model is specified.
+			if len(modelPartitions) > 0 || erroredPartitions {
+				// If partitions are specified, ensure exactly one model is specified.
 				if len(models) != 1 {
-					return fmt.Errorf("must specify exactly one --model when using --split or --errored-splits")
+					return fmt.Errorf("must specify exactly one --model when using --partition or --errored-partitions")
 				}
 
 				// Since it's a common error, do an early check to ensure the model is incremental.
@@ -85,16 +85,16 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				m := resp.Resource.GetModel()
 				if !m.Spec.Incremental {
-					return fmt.Errorf("can't refresh splits on model %q because it is not incremental", mn)
+					return fmt.Errorf("can't refresh partitions on model %q because it is not incremental", mn)
 				}
 			}
 			var modelTriggers []*runtimev1.RefreshModelTrigger
 			for _, m := range models {
 				modelTriggers = append(modelTriggers, &runtimev1.RefreshModelTrigger{
-					Model:            m,
-					Full:             full,
-					AllErroredSplits: erroredSplits,
-					Splits:           modelSplits,
+					Model:                m,
+					Full:                 full,
+					AllErroredPartitions: erroredPartitions,
+					Partitions:           modelPartitions,
 				})
 			}
 
@@ -129,8 +129,8 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().BoolVar(&all, "all", false, "Refresh all sources and models (default)")
 	refreshCmd.Flags().BoolVar(&full, "full", false, "Fully reload the targeted models (use with --all or --model)")
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
-	refreshCmd.Flags().StringSliceVar(&modelSplits, "split", nil, "Refresh a model split (must set --model)")
-	refreshCmd.Flags().BoolVar(&erroredSplits, "errored-splits", false, "Refresh all model splits with errors (must set --model)")
+	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
+	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
 	refreshCmd.Flags().StringSliceVar(&reports, "report", nil, "Refresh a report")

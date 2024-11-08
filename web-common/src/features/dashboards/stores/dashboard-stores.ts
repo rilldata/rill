@@ -467,12 +467,6 @@ const metricsViewReducers = {
     });
   },
 
-  setSearchText(name: string, searchText: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.dimensionSearchText = searchText;
-    });
-  },
-
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showTimeComparison = showTimeComparison;
@@ -573,3 +567,5 @@ function getPinIndexForDimension(
   // 1st entry in the expression is the identifier. hence the -2 here.
   return dimExpr.cond.exprs.length - 2;
 }
+
+export const dimensionSearchText = writable("");
