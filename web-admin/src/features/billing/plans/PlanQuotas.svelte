@@ -1,16 +1,33 @@
 <script lang="ts">
   import {
+    createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
-    type V1Quotas,
   } from "@rilldata/web-admin/client";
+  import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
+  import { formatDataSizeQuota } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;
-  export let quotas: V1Quotas;
 
   $: projects = createAdminServiceListProjectsForOrganization(organization);
+  $: organizationQuotas = createAdminServiceGetOrganization(organization, {
+    query: {
+      select: (data) => data.organization?.quotas,
+    },
+  });
 
   $: projectQuota =
-    quotas.projects && quotas.projects !== "-1" ? quotas.projects : "Unlimited";
+    $organizationQuotas.data?.projects &&
+    $organizationQuotas.data?.projects !== -1
+      ? $organizationQuotas.data?.projects
+      : "Unlimited";
+
+  $: usageMetrics = getOrganizationUsageMetrics(organization);
+  $: total = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
+
+  $: singleProjectLimit = $organizationQuotas.data?.projects === 1;
+  $: storageLimitBytesPerDeployment =
+    $organizationQuotas.data?.storageLimitBytesPerDeployment ?? "";
 </script>
 
 <div class="quotas">
@@ -21,27 +38,17 @@
     </div>
   </div>
 
-  <!-- TODO: we need backend support for these -->
-  <!--{#if singleProjectLimit}-->
-  <!--  <div class="quota-entry">-->
-  <!--    <div class="quota-entry-title">Data Size {dataSize}</div>-->
-  <!--    <div>-->
-  <!--      <Progress-->
-  <!--        value={0}-->
-  <!--        max={Number(quotas.storageLimitBytesPerDeployment)}-->
-  <!--      />-->
-  <!--    </div>-->
-  <!--  </div>-->
-  <!--{:else}-->
-  <!--   <Button-->
-  <!--     type="link"-->
-  <!--     compact-->
-  <!--     href="/#todo"-->
-  <!--     forcedStyle="min-height: 18px !important;height: 18px !important;padding:0px !important;"-->
-  <!--   >-->
-  <!--     See project size breakdown-->
-  <!--   </Button>-->
-  <!--{/if}-->
+  <div class="quota-entry">
+    <div class="quota-entry-title">Data Size</div>
+    <div>
+      {#if singleProjectLimit && storageLimitBytesPerDeployment && storageLimitBytesPerDeployment !== "-1"}
+        <Progress value={total} max={Number(storageLimitBytesPerDeployment)} />
+        {formatDataSizeQuota(total, storageLimitBytesPerDeployment)}
+      {:else}
+        <!-- TODO: once we have the dashboard support link to it -->
+      {/if}
+    </div>
+  </div>
 </div>
 
 <style lang="postcss">

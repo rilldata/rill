@@ -18,8 +18,6 @@
   export let subscription: V1Subscription;
   export let showUpgradeDialog: boolean;
 
-  $: plan = subscription?.plan;
-
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: trialIssue = $categorisedIssues.data?.trial;
   // prefer using end date from BillingIssues since we use that to hibernate projects and take other actions
@@ -54,9 +52,7 @@
     <div>
       {trialEndMessage} Ready to get started with Rill?
       <PricingDetails />
-      {#if plan}
-        <PlanQuotas {organization} quotas={plan.quotas} />
-      {/if}
+      <PlanQuotas {organization} />
     </div>
   </div>
   <svelte:fragment slot="contact">

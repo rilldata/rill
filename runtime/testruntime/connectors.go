@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	goruntime "runtime"
-	"testing"
 
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
@@ -16,7 +15,7 @@ import (
 
 // ConnectorAcquireFunc is a function that acquires a connector for a test.
 // It should return a map of variables to add to the test runtime instance.
-type ConnectorAcquireFunc func(t *testing.T) (vars map[string]string)
+type ConnectorAcquireFunc func(t TestingT) (vars map[string]string)
 
 // Connectors is a map of available connectors for use in tests.
 // When acquiring a connector, it will only be cleaned up when the test has completed.
@@ -28,17 +27,20 @@ type ConnectorAcquireFunc func(t *testing.T) (vars map[string]string)
 // - Real external services configured for use in tests with credentials provided in the root .env file with the prefix RILL_RUNTIME_TEST_.
 var Connectors = map[string]ConnectorAcquireFunc{
 	// clickhouse starts a ClickHouse test container with no tables initialized.
-	"clickhouse": func(t *testing.T) map[string]string {
+	"clickhouse": func(t TestingT) map[string]string {
+		_, currentFile, _, _ := goruntime.Caller(0)
+		testdataPath := filepath.Join(currentFile, "..", "testdata")
+
 		ctx := context.Background()
 		clickHouseContainer, err := clickhouse.Run(
 			ctx,
 			"clickhouse/clickhouse-server:24.6.2.17",
 			clickhouse.WithUsername("clickhouse"),
 			clickhouse.WithPassword("clickhouse"),
-			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+			clickhouse.WithConfigFile(filepath.Join(testdataPath, "clickhouse-config.xml")),
 			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 				cf := testcontainers.ContainerFile{
-					HostFilePath:      "../testruntime/testdata/users.xml",
+					HostFilePath:      filepath.Join(testdataPath, "users.xml"),
 					ContainerFilePath: "/etc/clickhouse-server/users.xml",
 					FileMode:          0o755,
 				}
@@ -64,7 +66,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
 	// This usually uses the master.in cluster.
-	"druid": func(t *testing.T) map[string]string {
+	"druid": func(t TestingT) map[string]string {
 		// Load .env file at the repo root (if any)
 		_, currentFile, _, _ := goruntime.Caller(0)
 		envPath := filepath.Join(currentFile, "..", "..", "..", ".env")

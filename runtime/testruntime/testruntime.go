@@ -82,10 +82,11 @@ func New(t TestingT) *runtime.Runtime {
 
 // InstanceOptions enables configuration of the instance options that are configurable in tests.
 type InstanceOptions struct {
-	Files        map[string]string
-	Variables    map[string]string
-	WatchRepo    bool
-	StageChanges bool
+	Files          map[string]string
+	Variables      map[string]string
+	WatchRepo      bool
+	StageChanges   bool
+	TestConnectors []string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -105,6 +106,11 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+
+	for _, conn := range opts.TestConnectors {
+		connVars := Connectors[conn](t)
+		maps.Copy(vars, connVars)
+	}
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{

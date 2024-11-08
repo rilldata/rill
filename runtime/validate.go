@@ -110,10 +110,24 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 	}
 
+	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
+	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
 	if olap.Dialect() == drivers.DialectClickHouse {
+		for _, d := range mv.Dimensions {
+			if d.Expression == "" && !d.Unnest {
+				continue
+			}
+			if d.Expression == d.Name {
+				// If the expression exactly matches the name, substitution is not a problem.
+				continue
+			}
+			if _, ok := cols[strings.ToLower(d.Name)]; ok {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid dimension %q: dimensions that use `expression` or `unnest` cannot have the same name as a column in the underlying table when backed by clickhouse", d.Name))
+			}
+		}
 		for _, m := range mv.Measures {
-			if _, ok := cols[m.Name]; ok {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measure %q. measures cannot have the same name as a column for metric views backed by clickhouse", m.Name))
+			if _, ok := cols[strings.ToLower(m.Name)]; ok {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("invalid measure %q: measures cannot have the same name as a column in the underlying table when backed by clickhouse", m.Name))
 			}
 		}
 	}

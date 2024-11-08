@@ -26,7 +26,9 @@ export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
-  public readonly promptOrgSelection = writable(false);
+  public readonly promptOrgSelection = writable(true);
+
+  public readonly org = writable("");
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
@@ -61,7 +63,7 @@ export class ProjectDeployer {
                 (project.error as ConnectError) ??
                 (deployMutation.error as ConnectError) ??
                 (redeployMutation.error as ConnectError),
-            ).message,
+            ),
           };
         }
 
@@ -129,7 +131,7 @@ export class ProjectDeployer {
       projectResp.localProjectName,
       checkNextOrg,
     );
-    window.open(frontendUrl + "/-/invite", "_self");
+    if (frontendUrl) window.open(frontendUrl + "/-/invite", "_self");
   }
 
   private async inferOrg(rillUserOrgs: string[]) {
@@ -160,9 +162,11 @@ export class ProjectDeployer {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
+        const tryOrgName = `${org}${i === 0 ? "" : "-" + i}`;
+        this.org.set(tryOrgName);
         const resp = await get(this.deployMutation).mutateAsync({
           projectName,
-          org: `${org}${i === 0 ? "" : "-" + i}`,
+          org: tryOrgName,
           upload: true,
         });
         // wait for the telemetry to finish since the page will be redirected after a deploy success
