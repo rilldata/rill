@@ -43,5 +43,5 @@
 {:else if subIsPOCPlan}
   <POCPlan {organization} {hasPayment} {plan} />
 {:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} />
+  <EnterprisePlan {organization} {plan} />
 {/if}

@@ -2,7 +2,7 @@ import { page } from "$app/stores";
 import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
 import {
   isAdminServerQuery,
-  isMetricsProjectQuery,
+  isOrgUsageQuery,
 } from "@rilldata/web-admin/client/utils";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
@@ -142,9 +142,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       return;
     }
 
-    // Handle case when usage metrics project is not available
-    // This is always the case on non-prod
-    if (isMetricsProjectQuery(query)) {
+    // Handle case when usage metrics project is not unavailable for some reason.
+    // We shouldn't block the user in this case.
+    if (isOrgUsageQuery(query)) {
       return;
     }
 

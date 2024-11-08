@@ -4,7 +4,7 @@
     createAdminServiceListProjectsForOrganization,
   } from "@rilldata/web-admin/client";
   import { getOrganizationUsageMetrics } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import { formatDataSizeQuota } from "@rilldata/web-admin/features/billing/plans/utils";
+  import { formatUsageVsQuota } from "@rilldata/web-admin/features/billing/plans/utils";
   import { Progress } from "@rilldata/web-common/components/progress";
 
   export let organization: string;
@@ -23,7 +23,7 @@
       : "Unlimited";
 
   $: usageMetrics = getOrganizationUsageMetrics(organization);
-  $: totalOrgSize = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
+  $: totalOrgUsage = $usageMetrics?.data?.reduce((s, m) => s + m.size, 0) ?? 0;
 
   $: singleProjectLimit = $organizationQuotas.data?.projects === 1;
   $: storageLimitBytesPerDeployment =
@@ -44,10 +44,10 @@
         <div class="quota-entry-title">Data Size</div>
         <div>
           <Progress
-            value={totalOrgSize}
+            value={totalOrgUsage}
             max={Number(storageLimitBytesPerDeployment)}
           />
-          {formatDataSizeQuota(totalOrgSize, storageLimitBytesPerDeployment)}
+          {formatUsageVsQuota(totalOrgUsage, storageLimitBytesPerDeployment)}
         </div>
       </div>
     {:else}

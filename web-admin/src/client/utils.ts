@@ -21,9 +21,13 @@ export function isAdminServerQuery(query: Query): boolean {
   return adminApiEndpoints.some((endpoint) => apiPath.startsWith(endpoint));
 }
 
-export function isMetricsProjectQuery(query: Query): boolean {
+const OrgUsageAPIRegex = /v1\/instances\/.*\/api\/usage-meter/;
+export function isOrgUsageQuery(query: Query): boolean {
   const [apiPath] = query.queryKey as string[];
-  return apiPath === "/v1/billing/metrics-project-credentials";
+  return (
+    apiPath === "/v1/billing/metrics-project-credentials" ||
+    OrgUsageAPIRegex.test(apiPath)
+  );
 }
 
 export function mergedQueryStatus(

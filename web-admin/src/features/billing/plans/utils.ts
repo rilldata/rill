@@ -3,20 +3,19 @@ import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/mem
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
 
-export function formatDataSizeQuota(
-  sizeInBytes: number,
+export function formatUsageVsQuota(
+  usageInBytes: number,
   storageLimitBytesPerDeployment: string,
 ): string {
-  const maxSize = Number(storageLimitBytesPerDeployment);
-  if (Number.isNaN(maxSize) || storageLimitBytesPerDeployment === "-1")
-    return "";
-  const formattedTotal = formatMemorySize(sizeInBytes);
-  const formattedMax = formatMemorySize(maxSize);
+  const quota = Number(storageLimitBytesPerDeployment);
+  if (Number.isNaN(quota) || storageLimitBytesPerDeployment === "-1") return "";
+  const formattedUsage = formatMemorySize(usageInBytes);
+  const formattedQuota = formatMemorySize(quota);
   const percent =
-    formattedTotal > formattedMax
+    formattedUsage > formattedQuota
       ? "100+"
-      : Math.round((sizeInBytes * 100) / maxSize) + "";
-  return `${formattedTotal} of ${formattedMax} (${percent}%)`;
+      : Math.round((usageInBytes * 100) / quota) + "";
+  return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
 export function isTrialPlan(plan: V1BillingPlan) {
