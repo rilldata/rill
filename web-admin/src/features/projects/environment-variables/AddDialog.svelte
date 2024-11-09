@@ -188,8 +188,6 @@
       }
     });
   }
-
-  $: console.log("$form: ", $form);
 </script>
 
 <Dialog

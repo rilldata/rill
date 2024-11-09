@@ -13,7 +13,6 @@
   export let label = "";
   export let description = "";
   export let errors: string | string[] | null | undefined = null;
-  export let errorInputWrapper = false;
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
