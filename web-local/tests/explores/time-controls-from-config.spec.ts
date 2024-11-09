@@ -11,6 +11,8 @@ test.describe("time controls settings from explore preset", () => {
   test("preset time_range", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("code").click();
+
     // Set a time range that is one of the supported presets
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"
@@ -80,6 +82,7 @@ test.describe("time controls settings from explore preset", () => {
   test("preset comparison_modes", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
 
+    await page.getByLabel("code").click();
     // Set comparison to time
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"
@@ -124,6 +127,9 @@ test.describe("time controls settings from explore preset", () => {
 
   test("preset time_ranges", async ({ page }) => {
     const watcher = new ResourceWatcher(page);
+
+    await page.getByLabel("code").click();
+
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(
         `time_range: "P4W"
