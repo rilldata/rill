@@ -89,7 +89,6 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	}
 
 	if p.Typ != "TABLE" && (opts.Incremental || opts.PartitionRun) && p.IncrementalStrategy == drivers.IncrementalStrategyReplace {
-		// incremental replace strategy is applied only for tables
 		return fmt.Errorf("incremental replace strategy is not supported for %q materialized models", p.Typ)
 	}
 
