@@ -639,7 +639,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		})
 	}
 
-	if strategy == drivers.IncrementalStrategyMerge || strategy == drivers.IncrementalStrategyReplace{
+	if strategy == drivers.IncrementalStrategyMerge || strategy == drivers.IncrementalStrategyReplace {
 		// Create a temporary table with the new data
 		tmp := uuid.New().String()
 		err := c.Exec(ctx, &drivers.Statement{

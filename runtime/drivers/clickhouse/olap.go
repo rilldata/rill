@@ -283,7 +283,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			if err := res.Scan(&part); err != nil {
 				return err
 			}
-		// alter the main table to replace partitions with the temp table
+			// alter the main table to replace partitions with the temp table
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("ALTER TABLE %s REPLACE PARTITION %s FROM %s", safeSQLName(name), part, safeSQLName(tempName)),
 				Priority: 1,
