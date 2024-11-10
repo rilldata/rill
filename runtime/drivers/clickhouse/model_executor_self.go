@@ -86,7 +86,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	}
 
 	if opts.IncrementalRun {
-		// Insert into the table
 		var key []string
 		switch outputProps.IncrementalStrategy {
 		case drivers.IncrementalStrategyAppend:
@@ -94,6 +93,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		case drivers.IncrementalStrategyReplace:
 			key = outputProps.ReplaceKey
 		}
+		// Insert into the table
 		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, key)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
