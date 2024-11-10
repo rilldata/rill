@@ -88,10 +88,18 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 		p.Typ = "VIEW"
 	}
 
+	if p.Typ != "TABLE" && (opts.Incremental || opts.PartitionRun) && p.IncrementalStrategy == drivers.IncrementalStrategyReplace {
+		// incremental replace strategy is applied only for tables
+		return fmt.Errorf("incremental replace strategy is not supported for %q materialized models", p.Typ)
+	}
+
 	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend:
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyReplace:
 	default:
 		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
+	}
+	if p.IncrementalStrategy == drivers.IncrementalStrategyReplace && len(p.ReplaceKey) == 0 {
+		return fmt.Errorf("replace key is required for incremental strategy %q", p.IncrementalStrategy)
 	}
 
 	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {

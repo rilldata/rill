@@ -254,7 +254,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		// create temp table with the same schema
 		tempName := tempName(name)
 		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE TABLE %s AS %s", safeSQLName(tempName), sql),
+			Query:    fmt.Sprintf("CREATE TABLE %s AS %s", safeSQLName(tempName), name),
 			Priority: 1,
 		})
 		if err != nil {
@@ -279,13 +279,13 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		defer res.Close()
 		// iterate the partitions of the temp table
 		for res.Next() {
-			var part []string
+			var part string
 			if err := res.Scan(&part); err != nil {
 				return err
 			}
 		// alter the main table to replace partitions with the temp table
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s REPLACE PARTITION %s FROM %s", safeSQLName(name), strings.Join(part, ", "), safeSQLName(tempName)),
+				Query:    fmt.Sprintf("ALTER TABLE %s REPLACE PARTITION %s FROM %s", safeSQLName(name), part, safeSQLName(tempName)),
 				Priority: 1,
 			})
 			if err != nil {
