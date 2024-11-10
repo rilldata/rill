@@ -239,7 +239,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, key []string) error {
 	if !inPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -250,7 +250,51 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			LongRunning: true,
 		})
 	}
-
+	if strategy == drivers.IncrementalStrategyReplace {
+		// create temp table with the same schema
+		tempName := tempName(name)
+		err := c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE TABLE %s AS %s", safeSQLName(tempName), sql),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		// insert into temp table
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		// list partitions from the temp table
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SELECT DISTINCT %s FROM %s", strings.Join(key, ", "), safeSQLName(tempName)),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+		// iterate the partitions of the temp table
+		for res.Next() {
+			var part []string
+			if err := res.Scan(&part); err != nil {
+				return err
+			}
+		// alter the main table to replace partitions with the temp table
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER TABLE %s REPLACE PARTITION %s FROM %s", safeSQLName(name), strings.Join(part, ", "), safeSQLName(tempName)),
+				Priority: 1,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		// drop the temp table
+		return c.DropTable(ctx, tempName, false)
+	}
 	// merge strategy is also not supported for clickhouse
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }

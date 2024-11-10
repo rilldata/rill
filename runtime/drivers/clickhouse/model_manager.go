@@ -23,6 +23,7 @@ type ModelOutputProperties struct {
 	Table               string                      `mapstructure:"table"`
 	Materialize         *bool                       `mapstructure:"materialize"`
 	UniqueKey           []string                    `mapstructure:"unique_key"`
+	ReplaceKey          []string                    `mapstructure:"replace_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	// Typ to materialize the model into. Possible values include `TABLE`, `VIEW` or `DICTIONARY`. Optional.
 	Typ string `mapstructure:"type"`
