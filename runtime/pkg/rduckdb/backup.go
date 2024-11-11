@@ -1,78 +1,25 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"gocloud.dev/blob"
-	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcerrors"
 	"golang.org/x/sync/errgroup"
 )
 
-type BackupFormat string
-
-const (
-	BackupFormatUnknown BackupFormat = "unknown"
-	BackupFormatDB      BackupFormat = "db"
-	BackupFormatParquet BackupFormat = "parquet"
-)
-
-type BackupProvider struct {
-	bucket *blob.Bucket
-}
-
-func (b *BackupProvider) Close() error {
-	return b.bucket.Close()
-}
-
-type GCSBackupProviderOptions struct {
-	// UseHostCredentials specifies whether to use the host's default credentials.
-	UseHostCredentials         bool
-	ApplicationCredentialsJSON string
-	// Bucket is the GCS bucket to use for backups. Should be of the form `bucket-name`.
-	Bucket string
-	// BackupFormat specifies the format of the backup.
-	// TODO :: implement backup format. Fixed to DuckDB for now.
-	BackupFormat BackupFormat
-	// UnqiueIdentifier is used to store backups in a unique location.
-	// This must be set when multiple databases are writing to the same bucket.
-	UniqueIdentifier string
-}
-
-// NewGCSBackupProvider creates a new BackupProvider based on GCS.
-func NewGCSBackupProvider(ctx context.Context, opts *GCSBackupProviderOptions) (*BackupProvider, error) {
-	client, err := newClient(ctx, opts.ApplicationCredentialsJSON, opts.UseHostCredentials)
-	if err != nil {
-		return nil, err
-	}
-
-	bucket, err := gcsblob.OpenBucket(ctx, client, opts.Bucket, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", opts.Bucket, err)
-	}
-
-	if opts.UniqueIdentifier != "" {
-		if !strings.HasSuffix(opts.UniqueIdentifier, "/") {
-			opts.UniqueIdentifier += "/"
-		}
-		bucket = blob.PrefixedBucket(bucket, opts.UniqueIdentifier)
-	}
-	return &BackupProvider{
-		bucket: bucket,
-	}, nil
-}
-
-// syncWrite syncs the write path with the backup location.
-func (d *db) syncWrite(ctx context.Context) error {
+// syncLocalWithBackup syncs the write path with the backup location.
+// This is not safe for concurrent calls.
+func (d *db) syncLocalWithBackup(ctx context.Context) error {
 	if !d.writeDirty || d.backup == nil {
 		// optimisation to skip sync if write was already synced
 		return nil
@@ -116,8 +63,8 @@ func (d *db) syncWrite(ctx context.Context) error {
 
 		// get version of the table
 		var backedUpVersion string
-		err = retry(func() error {
-			res, err := d.backup.ReadAll(ctx, filepath.Join(table, "version.txt"))
+		err = retry(ctx, func() error {
+			res, err := d.backup.ReadAll(ctx, path.Join(table, "version.txt"))
 			if err != nil {
 				return err
 			}
@@ -135,13 +82,13 @@ func (d *db) syncWrite(ctx context.Context) error {
 		tblVersions[table] = backedUpVersion
 
 		// check with current version
-		version, exists, _ := tableVersion(d.writePath, table)
+		version, exists, _ := tableVersion(d.localPath, table)
 		if exists && version == backedUpVersion {
 			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
 			continue
 		}
 
-		tableDir := filepath.Join(d.writePath, table)
+		tableDir := filepath.Join(d.localPath, table)
 		// truncate existing table directory
 		if err := os.RemoveAll(tableDir); err != nil {
 			return err
@@ -150,7 +97,7 @@ func (d *db) syncWrite(ctx context.Context) error {
 			return err
 		}
 
-		tblIter := d.backup.List(&blob.ListOptions{Prefix: filepath.Join(table, backedUpVersion)})
+		tblIter := d.backup.List(&blob.ListOptions{Prefix: path.Join(table, backedUpVersion)})
 		// download all objects in the table and current version
 		for {
 			obj, err := tblIter.Next(ctx)
@@ -161,8 +108,8 @@ func (d *db) syncWrite(ctx context.Context) error {
 				return err
 			}
 			g.Go(func() error {
-				return retry(func() error {
-					file, err := os.Create(filepath.Join(d.writePath, obj.Key))
+				return retry(ctx, func() error {
+					file, err := os.Create(filepath.Join(d.localPath, obj.Key))
 					if err != nil {
 						return err
 					}
@@ -189,14 +136,14 @@ func (d *db) syncWrite(ctx context.Context) error {
 
 	// Update table versions
 	for table, version := range tblVersions {
-		err = os.WriteFile(filepath.Join(d.writePath, table, "version.txt"), []byte(version), fs.ModePerm)
+		err = d.setTableVersion(table, version)
 		if err != nil {
 			return err
 		}
 	}
 
 	// remove any tables that are not in backup
-	entries, err := os.ReadDir(d.writePath)
+	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
 	}
@@ -207,7 +154,7 @@ func (d *db) syncWrite(ctx context.Context) error {
 		if _, ok := tblVersions[entry.Name()]; ok {
 			continue
 		}
-		err = os.RemoveAll(filepath.Join(d.writePath, entry.Name()))
+		err = os.RemoveAll(filepath.Join(d.localPath, entry.Name()))
 		if err != nil {
 			return err
 		}
@@ -215,12 +162,14 @@ func (d *db) syncWrite(ctx context.Context) error {
 	return nil
 }
 
-func (d *db) syncBackup(ctx context.Context, table string) error {
+// syncBackupWithLocal syncs the backup location with the local path for given table.
+// If oldVersion is specified, it is deleted after successful sync.
+func (d *db) syncBackupWithLocal(ctx context.Context, table, oldVersion string) error {
 	if d.backup == nil {
 		return nil
 	}
 	d.logger.Debug("syncing table", slog.String("table", table))
-	version, exist, err := tableVersion(d.writePath, table)
+	version, exist, err := tableVersion(d.localPath, table)
 	if err != nil {
 		return err
 	}
@@ -229,44 +178,52 @@ func (d *db) syncBackup(ctx context.Context, table string) error {
 		return fmt.Errorf("table %q not found", table)
 	}
 
-	path := filepath.Join(d.writePath, table, version)
-	entries, err := os.ReadDir(path)
+	localPath := filepath.Join(d.localPath, table, version)
+	entries, err := os.ReadDir(localPath)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
-		d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", path))
+		d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
 		// no directory should exist as of now
 		if entry.IsDir() {
-			d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", path))
+			d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
 			continue
 		}
 
-		wr, err := os.Open(filepath.Join(path, entry.Name()))
+		wr, err := os.Open(filepath.Join(localPath, entry.Name()))
 		if err != nil {
 			return err
 		}
 
 		// upload to cloud storage
-		err = retry(func() error {
-			return d.backup.Upload(ctx, filepath.Join(table, version, entry.Name()), wr, &blob.WriterOptions{
+		err = retry(ctx, func() error {
+			return d.backup.Upload(ctx, path.Join(table, version, entry.Name()), wr, &blob.WriterOptions{
 				ContentType: "application/octet-stream",
 			})
 		})
-		wr.Close()
+		_ = wr.Close()
 		if err != nil {
 			return err
 		}
 	}
 
 	// update version.txt
-	// Ideally if this fails it is a non recoverable error but for now we will rely on retries
-	err = retry(func() error {
-		return d.backup.WriteAll(ctx, filepath.Join(table, "version.txt"), []byte(version), nil)
+	// Ideally if this fails it leaves backup in inconsistent state but for now we will rely on retries
+	// ignore context cancellation errors for version.txt updates
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err = retry(context.Background(), func() error {
+		return d.backup.WriteAll(ctxWithTimeout, path.Join(table, "version.txt"), []byte(version), nil)
 	})
 	if err != nil {
 		d.logger.Error("failed to update version.txt in backup", slog.Any("error", err))
+	}
+
+	// success -- remove old version
+	if oldVersion != "" {
+		_ = d.deleteBackup(ctx, table, oldVersion)
 	}
 	return err
 }
@@ -284,18 +241,22 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 	var prefix string
 	if table != "" {
 		if version != "" {
-			prefix = filepath.Join(table, version) + "/"
+			prefix = path.Join(table, version) + "/"
 		} else {
 			// deleting the entire table
 			prefix = table + "/"
 			// delete version.txt first
-			err := retry(func() error { return d.backup.Delete(ctx, "version.txt") })
+			// also ignore context cancellation errors since it can leave the backup in inconsistent state
+			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			err := retry(context.Background(), func() error { return d.backup.Delete(ctxWithTimeout, "version.txt") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
 				d.logger.Error("failed to delete version.txt in backup", slog.Any("error", err))
 				return err
 			}
 		}
 	}
+	// ignore errors since version.txt is already removed
 
 	iter := d.backup.List(&blob.ListOptions{Prefix: prefix})
 	for {
@@ -304,26 +265,30 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return err
+			d.logger.Debug("failed to list object", slog.Any("error", err))
 		}
-		err = retry(func() error { return d.backup.Delete(ctx, obj.Key) })
+		err = retry(ctx, func() error { return d.backup.Delete(ctx, obj.Key) })
 		if err != nil {
-			return err
+			d.logger.Debug("failed to delete object", slog.String("object", obj.Key), slog.Any("error", err))
 		}
 	}
 	return nil
 }
 
-func retry(fn func() error) error {
+func retry(ctx context.Context, fn func() error) error {
 	var err error
 	for i := 0; i < _maxRetries; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err() // return on context cancellation
+		case <-time.After(_retryDelay):
+		}
 		err = fn()
 		if err == nil {
 			return nil // success
-		} else if strings.Contains(err.Error(), "stream error: stream ID") {
-			time.Sleep(_retryDelay) // retry
-		} else {
-			break // return error
+		}
+		if !strings.Contains(err.Error(), "stream error: stream ID") {
+			break // break and return error
 		}
 	}
 	return err

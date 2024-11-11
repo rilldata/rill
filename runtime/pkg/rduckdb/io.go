@@ -1,4 +1,4 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"io"

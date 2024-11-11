@@ -1,4 +1,4 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"context"
@@ -44,19 +44,11 @@ func (c *conn) Connx() *sqlx.Conn {
 }
 
 func (c *conn) CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) error {
-	if opts == nil {
-		opts = &CreateTableOptions{}
-	}
 	return c.db.createTableAsSelect(ctx, c.Conn, func() error { return nil }, name, sql, opts)
 }
 
 // InsertTableAsSelect inserts the results of the given SQL query into the table.
 func (c *conn) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) error {
-	if opts == nil {
-		opts = &InsertTableOptions{
-			Strategy: IncrementalStrategyAppend,
-		}
-	}
 	return c.db.insertTableAsSelect(ctx, c.Conn, func() error { return nil }, name, sql, opts)
 }
 
@@ -98,11 +90,6 @@ func (c *singledbConn) CreateTableAsSelect(ctx context.Context, name, sql string
 
 // InsertTableAsSelect inserts the results of the given SQL query into the table.
 func (c *singledbConn) InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) error {
-	if opts == nil {
-		opts = &InsertTableOptions{
-			Strategy: IncrementalStrategyAppend,
-		}
-	}
 	return execIncrementalInsert(ctx, c.Conn, name, sql, opts)
 }
 

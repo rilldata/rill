@@ -1,4 +1,4 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"context"
@@ -12,18 +12,18 @@ import (
 func TestDB(t *testing.T) {
 	dir := t.TempDir()
 	ctx := context.Background()
-	db, err := NewDB(ctx, "test", &DBOptions{
-		LocalPath:      dir,
-		BackupProvider: nil,
-		ReadSettings:   map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
+	db, err := NewDB(ctx, &DBOptions{
+		LocalPath:     dir,
+		Backup:        nil,
+		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
+		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
+		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 	require.NoError(t, err)
 
 	// create table
-	err = db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", nil)
+	err = db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// query table
@@ -48,7 +48,9 @@ func TestDB(t *testing.T) {
 	require.Error(t, err)
 
 	// insert into table
-	err = db.InsertTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'US' AS country", nil)
+	err = db.InsertTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'US' AS country", &InsertTableOptions{
+		Strategy: IncrementalStrategyAppend,
+	})
 	require.NoError(t, err)
 
 	// merge into table

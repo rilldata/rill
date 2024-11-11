@@ -1,4 +1,4 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"context"
@@ -184,11 +184,6 @@ func (s *singledb) dropTable(ctx context.Context, conn *sqlx.Conn, name string) 
 
 // InsertTableAsSelect implements DB.
 func (s *singledb) InsertTableAsSelect(ctx context.Context, name, query string, opts *InsertTableOptions) error {
-	if opts == nil {
-		opts = &InsertTableOptions{
-			Strategy: IncrementalStrategyAppend,
-		}
-	}
 	s.writeMU.Lock()
 	defer s.writeMU.Unlock()
 
@@ -197,11 +192,6 @@ func (s *singledb) InsertTableAsSelect(ctx context.Context, name, query string, 
 		return err
 	}
 
-	if opts == nil {
-		opts = &InsertTableOptions{
-			Strategy: IncrementalStrategyAppend,
-		}
-	}
 	return execIncrementalInsert(ctx, conn, safeSQLName(name), query, opts)
 }
 

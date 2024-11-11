@@ -1,4 +1,4 @@
-package duckdbreplicator
+package rduckdb
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestSingleDB_test(t *testing.T) {
 	rw, release, err := db.AcquireWriteConnection(ctx)
 	require.NoError(t, err)
 
-	err = rw.CreateTableAsSelect(ctx, "test-2", "SELECT 1 AS id, 'India' AS country", nil)
+	err = rw.CreateTableAsSelect(ctx, "test-2", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
 	require.NoError(t, err)
 
 	// rename table
@@ -27,7 +27,9 @@ func TestSingleDB_test(t *testing.T) {
 	require.NoError(t, err)
 
 	// insert into table
-	err = rw.InsertTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", nil)
+	err = rw.InsertTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &InsertTableOptions{
+		Strategy: IncrementalStrategyAppend,
+	})
 	require.NoError(t, err)
 
 	// add column

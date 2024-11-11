@@ -1,4 +1,4 @@
-# DuckDB Replicator
+# rduckdb
 
 ## Motivation
 1. As an embedded database, DuckDB does not inherently provide the same isolation for ETL and serving workloads that other OLAP databases offer.
