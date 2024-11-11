@@ -1,9 +1,6 @@
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import {
-  extractFileName,
-  splitFolderAndFileName,
-} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { splitFolderAndFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   INVALID_NAME_MESSAGE,
   isDuplicateName,
@@ -36,13 +33,7 @@ export async function handleEntityRename(
     instanceId,
     folder,
   );
-  if (
-    isDuplicateName(
-      extractFileName(newName),
-      existingName,
-      fileNamesInDirectory,
-    )
-  ) {
+  if (isDuplicateName(newName, existingName, fileNamesInDirectory)) {
     eventBus.emit("notification", {
       message: `Name ${newName} is already in use`,
     });
