@@ -17,6 +17,7 @@
 {/if}
 {#if billingUrl}
   <iframe
+    credentialless="true"
     src={billingUrl}
     title="Orb Billing Portal"
     class="w-full h-[1000px]"
