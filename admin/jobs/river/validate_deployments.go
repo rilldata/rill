@@ -171,7 +171,6 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 
 				w.admin.Logger.Info("validate deployments: re-provisioned", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
 			}
-
 		} else if depl.UpdatedOn.Add(3 * time.Hour).Before(time.Now()) {
 			// Teardown old orphan non-prod deployment if more than 3 hours since last update
 			w.admin.Logger.Info("validate deployments: teardown deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
