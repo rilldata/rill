@@ -28,7 +28,7 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 			if projectName == "" {
 				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
 				if err != nil {
-					return fmt.Errorf("unable to infer project name, use `--project` to specify the project name")
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
