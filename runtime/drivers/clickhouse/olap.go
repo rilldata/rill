@@ -253,6 +253,13 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	if strategy == drivers.IncrementalStrategyReplace {
 		// create temp table with the same schema
 		tempName := tempName(name)
+		// drop the temp table
+		defer func() {
+			err := c.DropTable(ctx, tempName, false)
+			if err != nil {
+				c.logger.Error("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+			}
+		}()
 		err := c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE TABLE %s AS %s", safeSQLName(tempName), name),
 			Priority: 1,
@@ -292,8 +299,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 				return err
 			}
 		}
-		// drop the temp table
-		return c.DropTable(ctx, tempName, false)
+		return nil
 	}
 	// merge strategy is also not supported for clickhouse
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
