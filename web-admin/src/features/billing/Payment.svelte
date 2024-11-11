@@ -13,6 +13,7 @@
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
   $: neverSubscribed = $categorisedIssues.data?.neverSubscribed;
+  $: onTrial = !!$categorisedIssues.data?.trial;
 
   async function handleManagePayment() {
     window.open(
@@ -23,7 +24,7 @@
 </script>
 
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
-{#if !$categorisedIssues.isLoading && !neverSubscribed && $org.data?.organization?.paymentCustomerId}
+{#if !onTrial && !$categorisedIssues.isLoading && !neverSubscribed && $org.data?.organization?.paymentCustomerId}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}

@@ -86,7 +86,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		break
 	}
 
-	// Get the catalog in case we need to update model splits
+	// Get the catalog in case we need to update model partitions
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
@@ -110,29 +110,29 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			continue
 		}
 
-		if len(mt.Splits) > 0 || mt.AllErroredSplits {
+		if len(mt.Partitions) > 0 || mt.AllErroredPartitions {
 			mdl := mr.GetModel()
-			modelID := mdl.State.SplitsModelId
+			modelID := mdl.State.PartitionsModelId
 			if !mdl.Spec.Incremental {
-				r.C.Logger.Warn("Skipped splits trigger for model because it is not incremental", zap.String("model", mt.Model))
+				r.C.Logger.Warn("Skipped partitions trigger for model because it is not incremental", zap.String("model", mt.Model))
 				continue
 			}
 			if modelID == "" {
-				r.C.Logger.Warn("Skipped splits trigger for model because no splits have been ingested yet", zap.String("model", mt.Model))
+				r.C.Logger.Warn("Skipped partitions trigger for model because no partitions have been ingested yet", zap.String("model", mt.Model))
 				continue
 			}
 
-			if mt.AllErroredSplits {
-				err := catalog.UpdateModelSplitsPendingIfError(ctx, modelID)
+			if mt.AllErroredPartitions {
+				err := catalog.UpdateModelPartitionsPendingIfError(ctx, modelID)
 				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update splits for model %s: %w", mt.Model, err)}
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to update partitions for model %s: %w", mt.Model, err)}
 				}
 			}
 
-			for _, split := range mt.Splits {
-				err := catalog.UpdateModelSplitPending(ctx, modelID, split)
+			for _, partition := range mt.Partitions {
+				err := catalog.UpdateModelPartitionPending(ctx, modelID, partition)
 				if err != nil {
-					return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark split %q pending for model %q: %w", split, mt.Model, err)}
+					return runtime.ReconcileResult{Err: fmt.Errorf("failed to mark partition %q pending for model %q: %w", partition, mt.Model, err)}
 				}
 			}
 		}

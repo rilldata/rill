@@ -121,6 +121,7 @@ linters-settings:
       - G107
       - G108
       - G112
+      - G115
       - G203
       - G204
       - G306

@@ -1,0 +1,38 @@
+connectors:
+  - druid
+project_files:
+  metrics_with_policy.yaml:
+    type: metrics_view
+    connector: druid
+    table: AdBids
+    timeseries: __time
+    dimensions:
+      - column: publisher
+      - column: domain
+    measures:
+      - name: bid's number
+        expression: count(*)
+      - name: max bid price
+        expression: max(bid_price)
+      - name: min bid price
+        expression: min(bid_price)
+    security:
+      access: true
+      row_filter: domain = '{{ .user.domain }}'
+tests:
+  - name: simple
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select publisher, domain, "min bid price", "max bid price"
+        from metrics_with_policy
+        where publisher is not null
+        order by publisher, domain limit 1
+    user_attributes:
+      domain: news.yahoo.com
+      email: user@news.yahoo.com
+    result:
+      - domain: news.yahoo.com
+        max bid price: 6
+        min bid price: 1
+        publisher: Yahoo

@@ -4,6 +4,7 @@
     createAdminServiceGetOrganization,
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
+    getAdminServiceListOrganizationsQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseUpdateOrgError } from "@rilldata/web-admin/features/organizations/settings/errors";
@@ -56,6 +57,10 @@
               description: values.description,
             },
           });
+
+          await queryClient.invalidateQueries(
+            getAdminServiceListOrganizationsQueryKey(),
+          );
         } catch (err) {
           const parsedErr = parseUpdateOrgError(err);
           if (parsedErr.duplicateOrg) {

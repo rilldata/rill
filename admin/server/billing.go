@@ -708,6 +708,10 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "not allowed to get metrics for this org")
 	}
 
+	if s.admin.MetricsProjectID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "metrics project not configured")
+	}
+
 	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

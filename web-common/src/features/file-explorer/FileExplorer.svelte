@@ -5,6 +5,7 @@
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
     deleteFileArtifact,
+    duplicateFileArtifact,
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -67,6 +68,21 @@
     showRenameModelModal = true;
     renameFilePath = filePath;
     renameIsDir = isDir;
+  }
+
+  async function onDuplicate(filePath: string, isDir: boolean) {
+    if (isDir) {
+      throw new Error("Copying directories is not supported");
+    }
+
+    try {
+      const newFilePath = await duplicateFileArtifact(instanceId, filePath);
+      await goto(`/files${newFilePath}`);
+    } catch {
+      eventBus.emit("notification", {
+        message: `Failed to copy ${filePath}`,
+      });
+    }
   }
 
   let forceDeletePath: string;
@@ -170,6 +186,7 @@
     <NavDirectory
       directory={fileTree}
       {onRename}
+      {onDuplicate}
       {onDelete}
       {onGenerateChart}
       onMouseDown={(e, dragData) =>

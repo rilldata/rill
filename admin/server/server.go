@@ -317,7 +317,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 
 	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+			return ctx, status.Error(codes.ResourceExhausted, err.Error())
 		}
 		return ctx, err
 	}
@@ -447,7 +447,7 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	if v.LessThan(minVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for this operation, run `rill upgrade` to upgrade to the latest version", v))
 	}
 
 	return ctx, nil

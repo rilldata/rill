@@ -7,18 +7,16 @@
   import { Button } from "@rilldata/web-common/components/button";
 
   export let organization: string;
-  export let plan: V1BillingPlan;
   export let hasPayment: boolean;
+  export let plan: V1BillingPlan;
 
   let open = false;
 </script>
 
-<SettingsContainer title="POC plan">
+<SettingsContainer title={plan?.displayName}>
   <div slot="body">
     <div>You’re currently on a custom contract.</div>
-    {#if plan}
-      <PlanQuotas {organization} quotas={plan.quotas} />
-    {/if}
+    <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
     <span>To make changes to your contract,</span>

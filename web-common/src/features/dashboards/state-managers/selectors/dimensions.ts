@@ -26,12 +26,6 @@ export const visibleDimensions = ({
   );
 };
 
-export const dimensionTableDimName = ({
-  dashboard,
-}: DashboardDataSources): string | undefined => {
-  return dashboard.selectedDimensionName;
-};
-
 export const dimensionTableColumnName = (
   dashData: DashboardDataSources,
 ): ((name: string) => string) => {
@@ -57,15 +51,6 @@ export const getDimensionDisplayName = (
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
     return (dim?.displayName?.length ? dim?.displayName : dim?.name) ?? name;
-  };
-};
-
-export const getDimensionDescription = (
-  dashData: DashboardDataSources,
-): ((name: string) => string) => {
-  return (name: string) => {
-    const dim = getDimensionByName(dashData)(name);
-    return dim?.description || "";
   };
 };
 
@@ -96,24 +81,12 @@ export const dimensionSelectors = {
    * given its "key" name.
    */
   getDimensionDisplayName,
-  /**
-   * Returns a function that can be used to get a dimension's description
-   * given its "key" name. Returns an empty string if the dimension has no description.
-   */
-  getDimensionDescription,
 
   /**
    * Gets the dimension that is currently being compared.
    * Returns undefined otherwise.
    */
   comparisonDimension,
-
-  /**
-   * Gets the name of the dimension that is currently selected in the dimension table.
-   * Returns undefined if no dimension is selected, in which case the dimension table
-   * is not shown.
-   */
-  dimensionTableDimName,
 
   /**
    * Gets the name of the column that is currently selected in the dimension table.
