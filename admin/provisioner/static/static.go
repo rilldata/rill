@@ -77,7 +77,7 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	}, nil
 }
 
-func (p *StaticProvisioner) CheckCapacity(ctx context.Context) error {
+func (p *StaticProvisioner) Check(ctx context.Context) error {
 	slotsUsedByRuntime, err := p.db.ResolveRuntimeSlotsUsed(ctx)
 	if err != nil {
 		return err

@@ -8,7 +8,7 @@ import (
 func (w *Worker) checkProvisionerCapacity(ctx context.Context) error {
 	// Check every provisioner in the set individually
 	for _, p := range w.admin.ProvisionerSet {
-		err := p.CheckCapacity(ctx)
+		err := p.Check(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to check provisioner capacity: %w", err)
 		}
