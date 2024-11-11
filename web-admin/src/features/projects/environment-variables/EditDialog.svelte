@@ -41,8 +41,6 @@
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
-  const formId = `edit-environment-variables-form-${id}`;
-
   const initialValues = {
     environment: environment,
     key: name,
@@ -57,9 +55,11 @@
     }),
   );
 
-  const { form, enhance, submit, errors, submitting } = superForm(
+  const { form, enhance, formId, submit, errors, submitting } = superForm(
     defaults(initialValues, schema),
     {
+      // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
+      id: id,
       SPA: true,
       validators: schema,
       async onUpdate({ form }) {
@@ -159,7 +159,7 @@
       >
     </DialogDescription>
     <form
-      id={formId}
+      id={$formId}
       class="w-full"
       on:submit|preventDefault={submit}
       use:enhance
@@ -235,7 +235,7 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button type="primary" form={formId} disabled={$submitting} submitForm
+      <Button type="primary" form={$formId} disabled={$submitting} submitForm
         >Edit</Button
       >
     </DialogFooter>
