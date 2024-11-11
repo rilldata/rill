@@ -6,16 +6,18 @@
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import type { Readable } from "svelte/store";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;
-  export let formState: any; // svelte-forms-lib's FormState
+  export let data: Readable<any>;
+  export let errors: Readable<any>;
+  export let submit: () => void;
+  export let enhance;
   export let exploreName: string;
-
-  const { form, errors, handleSubmit } = formState;
 
   // Pull the time zone options from the dashboard's spec
   $: exploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
@@ -28,11 +30,12 @@
   autocomplete="off"
   class="flex flex-col gap-y-6"
   id={formId}
-  on:submit|preventDefault={handleSubmit}
+  on:submit|preventDefault={submit}
+  use:enhance
 >
   <span>Email recurring exports to recipients.</span>
   <Input
-    bind:value={$form["title"]}
+    bind:value={$data["title"]}
     errors={$errors["title"]}
     id="title"
     label="Report title"
@@ -40,7 +43,7 @@
   />
   <div class="flex gap-x-2">
     <Select
-      bind:value={$form["frequency"]}
+      bind:value={$data["frequency"]}
       id="frequency"
       label="Frequency"
       options={["Daily", "Weekdays", "Weekly"].map((frequency) => ({
@@ -48,9 +51,9 @@
         label: frequency,
       }))}
     />
-    {#if $form["frequency"] === "Weekly"}
+    {#if $data["frequency"] === "Weekly"}
       <Select
-        bind:value={$form["dayOfWeek"]}
+        bind:value={$data["dayOfWeek"]}
         id="dayOfWeek"
         label="Day"
         options={[
@@ -67,16 +70,16 @@
         }))}
       />
     {/if}
-    <TimePicker bind:value={$form["timeOfDay"]} id="timeOfDay" label="Time" />
+    <TimePicker bind:value={$data["timeOfDay"]} id="timeOfDay" label="Time" />
     <Select
-      bind:value={$form["timeZone"]}
+      bind:value={$data["timeZone"]}
       id="timeZone"
       label="Time zone"
       options={timeZoneOptions}
     />
   </div>
   <Select
-    bind:value={$form["exportFormat"]}
+    bind:value={$data["exportFormat"]}
     id="exportFormat"
     label="Format"
     options={[
@@ -86,46 +89,49 @@
     ]}
   />
   <Input
-    bind:value={$form["exportLimit"]}
+    bind:value={$data["exportLimit"]}
     errors={$errors["exportLimit"]}
     id="exportLimit"
     label="Row limit"
     optional
     placeholder="1000"
   />
-  <InputArray
-    accessorKey="email"
-    addItemLabel="Add email"
-    {formState}
-    hint="Recipients will receive different views based on their security policy.
-        Recipients without project access can't view the report."
+  <MultiInput
     id="emailRecipients"
     label="Recipients"
+    hint="Recipients will receive different views based on their security policy.
+        Recipients without project access can't view the report."
+    bind:values={$data["emailRecipients"]}
+    errors={$errors["emailRecipients"]}
+    singular="email"
+    plural="emails"
     placeholder="Enter an email address"
   />
   {#if $hasSlackNotifier.data}
     <FormSection
-      bind:enabled={$form["enableSlackNotification"]}
+      bind:enabled={$data["enableSlackNotification"]}
       showSectionToggle
       title="Slack notifications"
       padding=""
     >
-      <InputArray
-        accessorKey="channel"
-        addItemLabel="Add channel"
-        hint="We’ll send alerts directly to these channels."
-        {formState}
+      <MultiInput
         id="slackChannels"
         label="Channels"
+        hint="We’ll send alerts directly to these channels."
+        bind:values={$data["slackChannels"]}
+        errors={$errors["slackChannels"]}
+        singular="channel"
+        plural="channels"
         placeholder="# Enter a Slack channel name"
       />
-      <InputArray
-        accessorKey="email"
-        addItemLabel="Add user"
-        hint="We’ll alert them with direct messages in Slack."
-        {formState}
+      <MultiInput
         id="slackUsers"
         label="Users"
+        hint="We’ll alert them with direct messages in Slack."
+        bind:values={$data["slackUsers"]}
+        errors={$errors["slackUsers"]}
+        singular="email"
+        plural="emails"
         placeholder="Enter an email address"
       />
     </FormSection>

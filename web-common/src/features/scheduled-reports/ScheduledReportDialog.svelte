@@ -6,16 +6,16 @@
     createAdminServiceEditReport,
   } from "@rilldata/web-admin/client";
   import {
-    extractNotification,
     getDashboardNameFromReport,
+    getInitialValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { array, object, string } from "yup";
+  import { yup } from "sveltekit-superforms/adapters";
   import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { getLocalIANA } from "../../lib/time/timezone";
   import {
-    V1ExportFormat,
     getRuntimeServiceListResourcesQueryKey,
     type V1ReportSpec,
     getRuntimeServiceGetResourceQueryKey,
@@ -23,15 +23,7 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
-  import {
-    convertFormValuesToCronExpression,
-    getNextQuarterHour,
-    getTimeIn24FormatFromDateTime,
-    getTodaysDayOfWeek,
-    getDayOfWeekFromCronExpression,
-    getFrequencyFromCronExpression,
-    getTimeOfDayFromCronExpression,
-  } from "./time-utils";
+  import { convertFormValuesToCronExpression } from "./time-utils";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { ResourceKind } from "../entity-management/resource-selectors";
@@ -55,137 +47,102 @@
     ? createAdminServiceEditReport()
     : createAdminServiceCreateReport();
 
-  const formState = createForm({
-    initialValues: getInitialValues(reportSpec),
-    validationSchema: yup.object({
-      title: yup.string().required("Required"),
-      emailRecipients: yup.array().of(
-        yup.object().shape({
-          email: yup.string().email("Invalid email"),
-        }),
-      ),
-      slackChannels: yup.array().of(
-        yup.object().shape({
-          channel: yup.string(),
-        }),
-      ),
-      slackUsers: yup.array().of(
-        yup.object().shape({
-          email: yup.string().email("Invalid email"),
-        }),
-      ),
+  const initialValues = getInitialValues(reportSpec, $user.data?.user?.email);
+  const schema = yup(
+    object({
+      title: string().required("Required"),
+      emailRecipients: array().of(string().email("Invalid email")),
+      slackChannels: array().of(string()),
+      slackUsers: array().of(string().email("Invalid email")),
     }),
-    onSubmit: async (values) => {
-      const refreshCron = convertFormValuesToCronExpression(
-        values.frequency,
-        values.dayOfWeek,
-        values.timeOfDay,
+  );
+
+  async function handleSubmit(values: ReturnType<typeof getInitialValues>) {
+    const refreshCron = convertFormValuesToCronExpression(
+      values.frequency,
+      values.dayOfWeek,
+      values.timeOfDay,
+    );
+
+    try {
+      await $mutation.mutateAsync({
+        organization,
+        project,
+        name: reportName,
+        data: {
+          options: {
+            displayName: values.title,
+            refreshCron: refreshCron, // for testing: "* * * * *"
+            refreshTimeZone: values.timeZone,
+            queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
+            queryArgsJson: JSON.stringify(
+              reportSpec?.queryArgsJson
+                ? JSON.parse(reportSpec.queryArgsJson)
+                : queryArgs,
+            ),
+            exportLimit: values.exportLimit || undefined,
+            exportFormat: values.exportFormat,
+            emailRecipients: values.emailRecipients.filter(Boolean),
+            slackChannels: values.enableSlackNotification
+              ? values.slackChannels.filter(Boolean)
+              : undefined,
+            slackUsers: values.enableSlackNotification
+              ? values.slackUsers.filter(Boolean)
+              : undefined,
+            webOpenState: reportSpec
+              ? (reportSpec.annotations as V1ReportSpecAnnotations)[
+                  "web_open_state"
+                ]
+              : metricsViewProto,
+            webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+          },
+        },
+      });
+
+      if (reportSpec) {
+        await queryClient.invalidateQueries(
+          getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
+            "name.name": reportName,
+            "name.kind": ResourceKind.Report,
+          }),
+        );
+      }
+
+      await queryClient.invalidateQueries(
+        getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
       );
 
-      try {
-        await $mutation.mutateAsync({
-          organization,
-          project,
-          name: reportName,
-          data: {
-            options: {
-              displayName: values.title,
-              refreshCron: refreshCron, // for testing: "* * * * *"
-              refreshTimeZone: values.timeZone,
-              queryName: reportSpec?.queryName ?? "MetricsViewAggregation",
-              queryArgsJson: JSON.stringify(
-                reportSpec?.queryArgsJson
-                  ? JSON.parse(reportSpec.queryArgsJson)
-                  : queryArgs,
-              ),
-              exportLimit: values.exportLimit || undefined,
-              exportFormat: values.exportFormat,
-              emailRecipients: values.emailRecipients
-                .map((r) => r.email)
-                .filter(Boolean),
-              slackChannels: values.enableSlackNotification
-                ? values.slackChannels.map((c) => c.channel).filter(Boolean)
-                : undefined,
-              slackUsers: values.enableSlackNotification
-                ? values.slackUsers.map((c) => c.email).filter(Boolean)
-                : undefined,
-              webOpenState: reportSpec
-                ? (reportSpec.annotations as V1ReportSpecAnnotations)[
-                    "web_open_state"
-                  ]
-                : metricsViewProto,
-              webOpenPath: exploreName ? `/explore/${exploreName}` : undefined,
+      open = false;
+
+      eventBus.emit("notification", {
+        message: `Report ${reportSpec ? "edited" : "created"}`,
+        link: reportSpec
+          ? undefined
+          : {
+              href: `/${organization}/${project}/-/reports`,
+              text: "Go to scheduled reports",
             },
-          },
-        });
-
-        if (reportSpec) {
-          await queryClient.invalidateQueries(
-            getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
-              "name.name": reportName,
-              "name.kind": ResourceKind.Report,
-            }),
-          );
-        }
-
-        await queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
-        );
-
-        open = false;
-
-        eventBus.emit("notification", {
-          message: `Report ${reportSpec ? "edited" : "created"}`,
-          link: reportSpec
-            ? undefined
-            : {
-                href: `/${organization}/${project}/-/reports`,
-                text: "Go to scheduled reports",
-              },
-          type: "success",
-        });
-      } catch {
-        // showing error below
-      }
-    },
-  });
-
-  const { isSubmitting, form } = formState;
-
-  function getInitialValues(reportSpec: V1ReportSpec | undefined) {
-    return {
-      title: reportSpec?.displayName ?? "",
-      frequency: reportSpec
-        ? getFrequencyFromCronExpression(
-            reportSpec.refreshSchedule?.cron as string,
-          )
-        : "Weekly",
-      dayOfWeek: reportSpec
-        ? getDayOfWeekFromCronExpression(
-            reportSpec.refreshSchedule?.cron as string,
-          )
-        : getTodaysDayOfWeek(),
-      timeOfDay: reportSpec
-        ? getTimeOfDayFromCronExpression(
-            reportSpec.refreshSchedule?.cron as string,
-          )
-        : getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-      timeZone: reportSpec?.refreshSchedule?.timeZone ?? getLocalIANA(),
-      exportFormat: reportSpec
-        ? (reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED)
-        : V1ExportFormat.EXPORT_FORMAT_CSV,
-      exportLimit: reportSpec
-        ? reportSpec.exportLimit === "0"
-          ? ""
-          : reportSpec.exportLimit
-        : "",
-      ...extractNotification(
-        reportSpec?.notifiers,
-        $user.data?.user?.email,
-        !!reportSpec,
-      ),
-    };
+        type: "success",
+      });
+    } catch {
+      // showing error below
+    }
   }
+
+  const { form, errors, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+        return handleSubmit(values);
+      },
+      validationMethod: "oninput",
+    },
+  );
+  $: console.log($form, $errors);
 </script>
 
 <Dialog.Root bind:open>
@@ -194,7 +151,10 @@
 
     <BaseScheduledReportForm
       formId="scheduled-report-form"
-      {formState}
+      data={form}
+      {errors}
+      {submit}
+      {enhance}
       exploreName={exploreName ?? ""}
     />
 
@@ -205,8 +165,7 @@
       <div class="grow" />
       <Button on:click={() => (open = false)} type="secondary">Cancel</Button>
       <Button
-        disabled={$isSubmitting ||
-          $form["emailRecipients"].filter((r) => r.email).length === 0}
+        disabled={$submitting || $form["emailRecipients"]?.length === 0}
         form="scheduled-report-form"
         submitForm
         type="primary"
