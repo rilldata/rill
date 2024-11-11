@@ -50,7 +50,6 @@ export class NavEntryDragDropStore {
     e: MouseEvent,
     dropSuccess: (fromPath: string, toDir: string) => Promise<void>,
   ) {
-    e.preventDefault();
     e.stopPropagation();
 
     const curDragData = get(this.dragData);

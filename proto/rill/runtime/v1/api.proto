@@ -185,9 +185,9 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
   }
 
-  // GetModelSplits returns the splits of a model
-  rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
+  // GetModelPartitions returns the partitions of a model
+  rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
   }
   
   // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
@@ -595,7 +595,7 @@ enum ResourceEvent {
   RESOURCE_EVENT_DELETE = 2;
 }
 
-message ModelSplit {
+message ModelPartition {
   string key = 1;
   google.protobuf.Struct data = 2;
   google.protobuf.Timestamp watermark = 3;
@@ -671,7 +671,7 @@ message GetExploreResponse {
   Resource metrics_view = 2;
 }
 
-message GetModelSplitsRequest {
+message GetModelPartitionsRequest {
   string instance_id = 1;
   string model = 2;
   bool pending = 5;
@@ -680,8 +680,8 @@ message GetModelSplitsRequest {
   string page_token = 4;
 }
 
-message GetModelSplitsResponse {
-  repeated ModelSplit splits = 1;
+message GetModelPartitionsResponse {
+  repeated ModelPartition partitions = 1;
   string next_page_token = 2;
 }
 

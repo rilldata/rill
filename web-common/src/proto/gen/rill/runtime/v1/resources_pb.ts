@@ -808,24 +808,24 @@ export class ModelSpec extends Message<ModelSpec> {
   incrementalStateResolverProperties?: Struct;
 
   /**
-   * @generated from field: string splits_resolver = 18;
+   * @generated from field: string partitions_resolver = 18;
    */
-  splitsResolver = "";
+  partitionsResolver = "";
 
   /**
-   * @generated from field: google.protobuf.Struct splits_resolver_properties = 19;
+   * @generated from field: google.protobuf.Struct partitions_resolver_properties = 19;
    */
-  splitsResolverProperties?: Struct;
+  partitionsResolverProperties?: Struct;
 
   /**
-   * @generated from field: string splits_watermark_field = 20;
+   * @generated from field: string partitions_watermark_field = 20;
    */
-  splitsWatermarkField = "";
+  partitionsWatermarkField = "";
 
   /**
-   * @generated from field: uint32 splits_concurrency_limit = 21;
+   * @generated from field: uint32 partitions_concurrency_limit = 21;
    */
-  splitsConcurrencyLimit = 0;
+  partitionsConcurrencyLimit = 0;
 
   /**
    * @generated from field: string input_connector = 10;
@@ -882,10 +882,10 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
-    { no: 18, name: "splits_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 19, name: "splits_resolver_properties", kind: "message", T: Struct },
-    { no: 20, name: "splits_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 21, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 18, name: "partitions_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "partitions_resolver_properties", kind: "message", T: Struct },
+    { no: 20, name: "partitions_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "partitions_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -981,18 +981,18 @@ export class ModelState extends Message<ModelState> {
   incrementalStateSchema?: StructType;
 
   /**
-   * splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+   * partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore.
    *
-   * @generated from field: string splits_model_id = 10;
+   * @generated from field: string partitions_model_id = 10;
    */
-  splitsModelId = "";
+  partitionsModelId = "";
 
   /**
-   * splits_have_errors is true if one or more splits failed to execute.
+   * partitions_have_errors is true if one or more partitions failed to execute.
    *
-   * @generated from field: bool splits_have_errors = 11;
+   * @generated from field: bool partitions_have_errors = 11;
    */
-  splitsHaveErrors = false;
+  partitionsHaveErrors = false;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -1011,8 +1011,8 @@ export class ModelState extends Message<ModelState> {
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
-    { no: 10, name: "splits_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "splits_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -2114,6 +2114,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
   theme = "";
 
   /**
+   * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 17;
+   */
+  embeddedTheme?: ThemeSpec;
+
+  /**
    * List of selectable time ranges with comparison time ranges.
    * If the list is empty, a default list should be shown.
    *
@@ -2136,6 +2141,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    * @generated from field: rill.runtime.v1.ExplorePreset default_preset = 15;
    */
   defaultPreset?: ExplorePreset;
+
+  /**
+   * If true, the pivot tab will be hidden when the explore is embedded.
+   *
+   * @generated from field: bool embeds_hide_pivot = 16;
+   */
+  embedsHidePivot = false;
 
   /**
    * Security for the explore dashboard.
@@ -2161,9 +2173,11 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 6, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 14, name: "measures_selector", kind: "message", T: FieldSelector },
     { no: 8, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 9, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 10, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "default_preset", kind: "message", T: ExplorePreset },
+    { no: 16, name: "embeds_hide_pivot", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
@@ -3631,18 +3645,18 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
   full = false;
 
   /**
-   * Keys of specific splits to refresh.
+   * Keys of specific partitions to refresh.
    *
-   * @generated from field: repeated string splits = 3;
+   * @generated from field: repeated string partitions = 3;
    */
-  splits: string[] = [];
+  partitions: string[] = [];
 
   /**
-   * If true, it will refresh all splits that errored on their last execution.
+   * If true, it will refresh all partitions that errored on their last execution.
    *
-   * @generated from field: bool all_errored_splits = 4;
+   * @generated from field: bool all_errored_partitions = 4;
    */
-  allErroredSplits = false;
+  allErroredPartitions = false;
 
   constructor(data?: PartialMessage<RefreshModelTrigger>) {
     super();
@@ -3654,8 +3668,8 @@ export class RefreshModelTrigger extends Message<RefreshModelTrigger> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "full", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "splits", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "all_errored_splits", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "partitions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_errored_partitions", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshModelTrigger {
@@ -3930,6 +3944,16 @@ export class ThemeSpec extends Message<ThemeSpec> {
    */
   secondaryColor?: Color;
 
+  /**
+   * @generated from field: string primary_color_raw = 3;
+   */
+  primaryColorRaw = "";
+
+  /**
+   * @generated from field: string secondary_color_raw = 4;
+   */
+  secondaryColorRaw = "";
+
   constructor(data?: PartialMessage<ThemeSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3940,6 +3964,8 @@ export class ThemeSpec extends Message<ThemeSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "primary_color", kind: "message", T: Color, opt: true },
     { no: 2, name: "secondary_color", kind: "message", T: Color, opt: true },
+    { no: 3, name: "primary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "secondary_color_raw", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {

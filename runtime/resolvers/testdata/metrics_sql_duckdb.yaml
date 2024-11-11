@@ -1,0 +1,100 @@
+project_files:
+  ad_bids_mini.yaml:
+    type: model
+    connector: duckdb
+    materialize: true
+    sql: |
+      select id, timestamp, publisher, domain, volume, impressions, clicks
+      from read_csv('../testruntime/testdata/ad_bids/data/AdBids_mini.csv')
+  metrics_with_policy.yaml:
+    type: metrics_view
+    model: ad_bids_mini
+    timeseries: timestamp
+    dimensions:
+      - name: publisher
+        expression: upper(publisher)
+      - column: domain
+    measures:
+      - name: bid's number
+        expression: count(*)
+      - name: total volume
+        expression: sum(volume)
+      - name: total impressions
+        expression: sum(impressions)
+      - name: total click"s
+        expression: sum(clicks)
+    security:
+      access: true
+      row_filter: domain = '{{ .user.domain }}'
+      exclude:
+        - if: "'{{ .user.domain }}' != 'msn.com'"
+          names:
+            - total volume
+tests:
+  - name: empty
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select
+          publisher,
+          domain,
+          "total impressions"
+        FROM
+          metrics_with_policy
+    user_attributes:
+      domain: google.com
+      email: user@google.com
+  - name: msn
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select
+          publisher,
+          domain,
+          "total impressions"
+        FROM
+          metrics_with_policy
+    user_attributes:
+      domain: msn.com
+      email: user@msn.com
+    result:
+      - domain: msn.com
+        publisher: null
+        total impressions: 3
+  - name: msn_csv
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select publisher, domain, "total impressions"
+        from metrics_with_policy
+    user_attributes:
+      domain: msn.com
+      email: user@msn.com
+    result_csv: |
+      publisher,domain,total impressions
+      ,msn.com,3
+  - name: sql
+    resolver: sql
+    properties:
+      sql: |
+        select publisher, domain
+        from ad_bids_mini where publisher = 'Yahoo' limit 1
+    user_attributes:
+      domain: msn.com
+      email: user@msn.com
+    result:
+      - domain: yahoo.com
+        publisher: Yahoo
+  - name: simple
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select publisher, domain, "total impressions"
+        from metrics_with_policy
+  - name: error
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select publisher, dom1, "total impressions"
+        from metrics_with_policy
+    error_contains: 'metrics sql: selected column `dom1` not found in dimensions/measures in metrics view'

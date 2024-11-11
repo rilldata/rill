@@ -89,6 +89,8 @@
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
     $tableInteractionStore.time;
+  $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
+
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: scrubStartCords = $xScale(scrubStart);
@@ -273,7 +275,7 @@
       <ChartBody
         {data}
         {dimensionData}
-        dimensionValue={$tableInteractionStore?.dimensionValue}
+        dimensionValue={hoveredDimensionValue}
         isHovering={Boolean(hoveredTime)}
         {scrubEnd}
         {scrubStart}
@@ -337,7 +339,8 @@
                   {xAccessor}
                   {yAccessor}
                   {dimensionData}
-                  dimensionValue={$tableInteractionStore?.dimensionValue}
+                  hasTimeComparison={showComparison}
+                  dimensionValue={hoveredDimensionValue}
                   {validPercTotal}
                   {mouseoverFormat}
                   {hovered}

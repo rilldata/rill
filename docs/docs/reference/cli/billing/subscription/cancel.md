@@ -1,20 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill billing subscription create
+title: rill billing subscription cancel
 ---
-## rill billing subscription create
+## rill billing subscription cancel
 
-Create subscription for an organization
-
-```
-rill billing subscription create [flags]
-```
-
-### Flags
+Cancel subscription for an organization
 
 ```
-      --org string    Organization Name
-      --plan string   Plan Name to subscribe to
+rill billing subscription cancel [flags]
 ```
 
 ### Global flags
@@ -24,6 +17,7 @@ rill billing subscription create [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

@@ -3,7 +3,9 @@ import { test } from "./utils/test";
 
 test.describe("File Explorer", () => {
   test.describe("File CRUD Operations", () => {
-    test("should create, rename, edit, and delete a file", async ({ page }) => {
+    test("should create, rename, edit, copy, and delete a file", async ({
+      page,
+    }) => {
       // Create a new file
       await page.getByLabel("Add Asset").click();
       await page.getByRole("menuitem", { name: "More" }).hover();
@@ -35,6 +37,17 @@ test.describe("File Explorer", () => {
       // Navigate away from the file and back to it to verify the changes
       await page.getByRole("link", { name: "rill.yaml" }).click();
       await page.getByRole("link", { name: "README.md" }).click();
+      await expect(
+        page.getByText("Here's a README.md file for the e2e test!"),
+      ).toBeVisible();
+
+      // Duplicate the file
+      await page.getByRole("listitem", { name: "/README.md" }).hover();
+      await page.getByLabel("/README.md actions menu").click();
+      await page.getByRole("menuitem", { name: "Duplicate" }).click();
+      await expect(
+        page.getByRole("link", { name: "README (copy).md" }),
+      ).toBeVisible();
       await expect(
         page.getByText("Here's a README.md file for the e2e test!"),
       ).toBeVisible();

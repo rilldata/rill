@@ -226,43 +226,60 @@ export const adminServiceGetBillingProjectCredentials = (
   });
 };
 
-export type AdminServiceGetBillingProjectCredentialsMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
-  >;
-export type AdminServiceGetBillingProjectCredentialsMutationBody =
-  V1GetBillingProjectCredentialsRequest;
-export type AdminServiceGetBillingProjectCredentialsMutationError = RpcStatus;
+export const getAdminServiceGetBillingProjectCredentialsQueryKey = (
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+) => [
+  `/v1/billing/metrics-project-credentials`,
+  v1GetBillingProjectCredentialsRequest,
+];
+
+export type AdminServiceGetBillingProjectCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+>;
+export type AdminServiceGetBillingProjectCredentialsQueryError = RpcStatus;
 
 export const createAdminServiceGetBillingProjectCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
   TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
+>(
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingProjectCredentialsQueryKey(
+      v1GetBillingProjectCredentialsRequest,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+  > = () =>
+    adminServiceGetBillingProjectCredentials(
+      v1GetBillingProjectCredentialsRequest,
+    );
+
+  const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
     TError,
-    { data: V1GetBillingProjectCredentialsRequest },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
-    { data: V1GetBillingProjectCredentialsRequest }
-  > = (props) => {
-    const { data } = props ?? {};
+  query.queryKey = queryKey;
 
-    return adminServiceGetBillingProjectCredentials(data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
-    TError,
-    { data: V1GetBillingProjectCredentialsRequest },
-    TContext
-  >(mutationFn, mutationOptions);
+  return query;
 };
+
 /**
  * @summary ListPublicBillingPlans lists all public billing plans
  */

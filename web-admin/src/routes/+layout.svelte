@@ -60,6 +60,11 @@
     isBillingUpgradePage($page) ||
     // public reports are shared to external users who shouldn't be shown any rill related stuff
     isPublicReportPage($page);
+  $: hideBillingManager =
+    // billing manager needs organization
+    !organization ||
+    // invite page shouldn't show the banner since the illusion is that the user is not on cloud yet.
+    isProjectInvitePage($page);
 
   $: withinOnlyOrg = withinOrganization($page) && !withinProject($page);
 </script>
@@ -72,7 +77,7 @@
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
       <BannerCenter />
-      {#if organization}
+      {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
       {/if}
       {#if !isEmbed && !hideTopBar}

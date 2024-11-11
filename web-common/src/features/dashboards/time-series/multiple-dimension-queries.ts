@@ -18,8 +18,8 @@ import {
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  createMetricsViewTimeSeries,
   type TimeSeriesDatum,
+  createMetricsViewTimeSeries,
 } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -29,12 +29,14 @@ import {
   type V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
   getFilterForComparedDimension,
   prepareTimeSeries,
   transformAggregateDimensionData,
 } from "./utils";
+import { dimensionSearchText } from "../stores/dashboard-stores";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -76,8 +78,9 @@ export function getDimensionValuesForComparison(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      dimensionSearchText,
     ],
-    ([runtime, name, dashboardStore, timeControls], set) => {
+    ([runtime, name, dashboardStore, timeControls, searchText], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -124,7 +127,7 @@ export function getDimensionValuesForComparison(
                   dashboardStore,
                   getDimensionFilterWithSearch(
                     dashboardStore?.whereFilter,
-                    dashboardStore?.dimensionSearchText ?? "",
+                    searchText,
                     dimensionName,
                   ),
                 ),
@@ -185,14 +188,31 @@ function batchAggregationQueries(
   ctx: StateManagers,
   measures: string[],
   dimensionValues: DimensionTopList,
+  includeTimeComparisonForDimension: boolean,
 ) {
   const batches = createBatches(dimensionValues.values, BATCH_SIZE);
-  const queries = batches.map((batch) =>
+  let queries = batches.map((batch) =>
     getAggregationQueryForTopList(ctx, measures, {
       values: batch,
       filter: dimensionValues.filter,
     }),
   );
+
+  if (includeTimeComparisonForDimension) {
+    queries = queries.concat(
+      batches.map((batch) =>
+        getAggregationQueryForTopList(
+          ctx,
+          measures,
+          {
+            values: batch,
+            filter: dimensionValues.filter,
+          },
+          true,
+        ),
+      ),
+    );
+  }
 
   return { batchedTopList: batches, batchedQueries: queries };
 }
@@ -201,7 +221,8 @@ function getAggregationQueryForTopList(
   ctx: StateManagers,
   measures: string[],
   dimensionValues: DimensionTopList,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+  isTimeComparison: boolean = false,
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
@@ -236,8 +257,12 @@ function getAggregationQueryForTopList(
             { name: timeDimension, timeGrain, timeZone },
           ],
           where: sanitiseExpression(updatedFilter, undefined),
-          timeStart: timeStore?.adjustedStart,
-          timeEnd: timeStore?.adjustedEnd,
+          timeStart: isTimeComparison
+            ? timeStore?.comparisonAdjustedStart
+            : timeStore?.adjustedStart,
+          timeEnd: isTimeComparison
+            ? timeStore?.comparisonAdjustedEnd
+            : timeStore?.adjustedEnd,
           sort: [
             {
               desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
@@ -274,9 +299,19 @@ export function getDimensionValueTimeSeries(
       ctx.dashboardStore,
       useTimeControlStore(ctx),
       createMetricsViewTimeSeries(ctx, measures, false),
+      createMetricsViewTimeSeries(ctx, measures, true),
       getDimensionValuesForComparison(ctx, measures, surface),
     ],
-    ([dashboardStore, timeStore, timeSeriesData, dimensionValues], set) => {
+    (
+      [
+        dashboardStore,
+        timeStore,
+        timeSeriesData,
+        comparisonTimeSeriesData,
+        dimensionValues,
+      ],
+      set,
+    ) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const topListValues = dimensionValues?.values || [];
       const timeGrain =
@@ -285,6 +320,9 @@ export function getDimensionValueTimeSeries(
       const timeDimension = timeStore?.timeDimension;
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
+      const includeTimeComparisonForDimension = Boolean(
+        timeStore?.comparisonAdjustedStart && surface === "chart",
+      );
 
       if (
         !topListValues.length ||
@@ -300,12 +338,12 @@ export function getDimensionValueTimeSeries(
         ctx,
         measures,
         dimensionValues,
+        includeTimeComparisonForDimension,
       );
 
       return derived(batchedQueries, (batchedAggTimeSeriesData) => {
         let transformedData: V1TimeSeriesValue[][] = [];
-
-        batchedAggTimeSeriesData.forEach((aggTimeSeriesData, i) => {
+        for (let i = 0; i < batchedTopList.length; i++) {
           transformedData = transformedData.concat(
             transformAggregateDimensionData(
               timeDimension,
@@ -313,16 +351,35 @@ export function getDimensionValueTimeSeries(
               measures,
               batchedTopList[i],
               timeSeriesData?.data?.data || [],
-              aggTimeSeriesData?.data?.data || [],
+              batchedAggTimeSeriesData[i]?.data?.data || [],
             ),
           );
-        });
+        }
+
+        let comparisonData: V1TimeSeriesValue[][] = [];
+
+        if (includeTimeComparisonForDimension) {
+          {
+            comparisonData = transformAggregateDimensionData(
+              timeDimension,
+              dimensionName,
+              measures,
+              // For chart surface, we only have 1 batch
+              batchedTopList[0],
+              comparisonTimeSeriesData?.data?.data || [],
+              batchedAggTimeSeriesData[1]?.data?.data || [],
+            );
+          }
+        }
 
         const isFetching = batchedAggTimeSeriesData.some((d) => d.isFetching);
-        return topListValues?.map((value, i) => {
+
+        const results: DimensionDataItem[] = [];
+        for (let i = 0; i < topListValues.length; i++) {
+          const value = topListValues[i];
           const prepData = prepareTimeSeries(
             transformedData[i],
-            undefined,
+            comparisonData[i],
             TIME_GRAIN[timeGrain]?.duration,
             timeZone,
           );
@@ -332,14 +389,16 @@ export function getDimensionValueTimeSeries(
             total = dimensionValues?.totals?.[i];
           }
 
-          return {
+          results.push({
             value,
             total,
             color: COMPARIONS_COLORS[i] ? COMPARIONS_COLORS[i] : "",
             data: prepData,
             isFetching,
-          };
-        });
+          });
+        }
+
+        return results;
       }).subscribe(set);
     },
   );

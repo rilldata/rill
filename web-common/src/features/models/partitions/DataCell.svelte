@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { V1ModelSplitData } from "../../../runtime-client";
+  import type { V1ModelPartitionData } from "../../../runtime-client";
 
-  export let data: V1ModelSplitData;
+  export let data: V1ModelPartitionData;
 </script>
 
 <div class="data-cell">
