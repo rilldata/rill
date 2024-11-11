@@ -86,6 +86,10 @@
   }
 
   function getHeadingText(step: AuthStep): string {
+    if (isLegacy) {
+      return "Log in";
+    }
+
     switch (step) {
       case AuthStep.Base:
         return "Log in or sign up";
