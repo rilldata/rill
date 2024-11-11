@@ -15,6 +15,7 @@
   export let email = "";
   export let showForgetPassword = false;
   export let isDomainDisabled = false;
+  export let isLegacy = false;
   export let webAuth: WebAuth;
   export let step: AuthStep;
 
@@ -95,7 +96,8 @@
     errorText = "";
 
     try {
-      if (step === AuthStep.SignUp) {
+      // NOTE: Sign up is only supported on Rill Cloud login pages, not Rill Dash
+      if (step === AuthStep.SignUp && !isLegacy) {
         // Directly attempt to sign up and log in the user
         webAuth.redirect.signupAndLogin(
           {

@@ -31,6 +31,8 @@
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
+  $: isLegacy = false;
+
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
       email.toLowerCase().endsWith(domain.toLowerCase()),
@@ -51,7 +53,7 @@
     }
 
     if (cloudClientIDsArr.includes(config?.clientID)) {
-      step = AuthStep.Login;
+      isLegacy = true;
     }
 
     const authOptions: AuthOptions = Object.assign(
@@ -169,6 +171,7 @@
       <EmailPasswordForm
         {step}
         {email}
+        {isLegacy}
         showForgetPassword={step === AuthStep.Login}
         isDomainDisabled={domainDisabled}
         {webAuth}
