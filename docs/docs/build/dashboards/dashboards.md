@@ -4,8 +4,13 @@ description: Create dashboards using source data and models with time, dimension
 sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
+:::tip
+Starting in version 0.50, metrics views has been separated from explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
 
-In Rill, dashboards are one of many components that access the metrics layer. Currently, it is only possible to create an explore dashboard but more features are on the way!
+For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
+:::
+
+In Rill, explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
 
 ![img](/img/build/dashboard/explore-dashboard.png)
 
@@ -44,11 +49,7 @@ security:
 
 ```
 
-:::tip
-Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
 
-For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
-:::
 
 
 :::note Dashboard Properties
