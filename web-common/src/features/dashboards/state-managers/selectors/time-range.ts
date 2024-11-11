@@ -16,7 +16,6 @@ export const timeControlsState = (dashData: DashboardDataSources) =>
   timeControlStateSelector([
     dashData.validMetricsView,
     dashData.validExplore,
-    dashData.timeRangeSummary,
     dashData.timeRanges,
     dashData.dashboard,
   ]);
@@ -49,7 +48,6 @@ export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
 export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
   selectedTimeRangeSelector([
     dashData.validExplore,
-    dashData.timeRangeSummary,
     dashData.timeRanges,
     dashData.dashboard,
   ]);

@@ -16,6 +16,7 @@ import (
 
 type MetricsViewResolveTimeRanges struct {
 	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
+	MinTime         time.Time               `json:"min_time,omitempty"`
 	RillTimes       []string                `json:"rill_times,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
@@ -84,7 +85,7 @@ func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.
 
 		start, end, err := rt.Resolve(rilltime.ResolverContext{
 			Now:        now,
-			MinTime:    time.Time{}, // TODO
+			MinTime:    q.MinTime,
 			MaxTime:    watermark,
 			FirstDay:   int(mv.FirstDayOfWeek),
 			FirstMonth: int(mv.FirstMonthOfYear),

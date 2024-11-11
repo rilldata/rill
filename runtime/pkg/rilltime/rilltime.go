@@ -108,49 +108,51 @@ type ResolverContext struct {
 }
 
 func Parse(from string) (*RillTime, error) {
-	isoRange, err := ParseISO(from, false)
+	var rt *RillTime
+	var err error
+
+	rt, err = ParseISO(from, false)
 	if err != nil {
 		return nil, err
 	}
-	if isoRange != nil {
-		return isoRange, nil
+
+	if rt == nil {
+		rt, err = rillTimeParser.ParseString("", from)
+		if err != nil {
+			return nil, err
+		}
+		rt.IsNewFormat = true
 	}
 
-	ast, err := rillTimeParser.ParseString("", from)
-	if err != nil {
-		return nil, err
-	}
-	ast.IsNewFormat = true
-
-	ast.timeZone = time.UTC
-	if ast.Modifiers != nil {
-		if ast.Modifiers.Grain != nil {
-			ast.grain = grainMap[ast.Modifiers.Grain.Grain]
+	rt.timeZone = time.UTC
+	if rt.Modifiers != nil {
+		if rt.Modifiers.Grain != nil {
+			rt.grain = grainMap[rt.Modifiers.Grain.Grain]
 			// TODO: non-1 grains
-		} else if ast.Modifiers.CompleteGrain != nil {
-			ast.grain = grainMap[ast.Modifiers.CompleteGrain.Grain]
+		} else if rt.Modifiers.CompleteGrain != nil {
+			rt.grain = grainMap[rt.Modifiers.CompleteGrain.Grain]
 			// TODO: non-1 grains
-			ast.isComplete = true
+			rt.isComplete = true
 		}
 
-		if ast.Modifiers.At != nil {
-			if ast.Modifiers.At.TimeZone != nil {
+		if rt.Modifiers.At != nil {
+			if rt.Modifiers.At.TimeZone != nil {
 				var err error
-				ast.timeZone, err = time.LoadLocation(*ast.Modifiers.At.TimeZone)
+				rt.timeZone, err = time.LoadLocation(*rt.Modifiers.At.TimeZone)
 				if err != nil {
-					return nil, fmt.Errorf("invalid time zone %q: %w", *ast.Modifiers.At.TimeZone, err)
+					return nil, fmt.Errorf("invalid time zone %q: %w", *rt.Modifiers.At.TimeZone, err)
 				}
 			}
 		}
 	}
 
-	if ast.End == nil {
-		ast.End = &TimeModifier{
+	if rt.End == nil {
+		rt.End = &TimeModifier{
 			Now: true,
 		}
 	}
 
-	return ast, nil
+	return rt, nil
 }
 
 func ParseISO(from string, strict bool) (*RillTime, error) {

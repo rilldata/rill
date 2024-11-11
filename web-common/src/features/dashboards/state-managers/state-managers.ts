@@ -143,7 +143,7 @@ export function createStateManagers({
       const explore = validSpec.data.explore;
       const defaultPreset = explore.defaultPreset ?? {};
       const rillTimes = dedupe([
-        // "inf",
+        "inf",
         ...(defaultPreset.timeRange ? [defaultPreset.timeRange] : []),
         ...(explore.timeRanges?.length
           ? explore.timeRanges.map((t) => t.range)

@@ -9,7 +9,6 @@
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { createQueryServiceMetricsViewResolveTimeRanges } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
@@ -41,23 +40,6 @@
     );
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
-
-  $: rillTimes = [
-    ...($explore?.data?.explore?.defaultPreset?.timeRange
-      ? [$explore?.data?.explore?.defaultPreset.timeRange]
-      : []),
-    ...($explore?.data?.explore?.timeRanges?.length
-      ? $explore.data.explore.timeRanges.map((t) => t.range)
-      : []),
-  ];
-  $: resolvedTimeRanges = createQueryServiceMetricsViewResolveTimeRanges(
-    instanceId,
-    metricsViewName,
-    {
-      rillTimes,
-    },
-  );
-  $: console.log($resolvedTimeRanges.data);
 </script>
 
 <svelte:head>

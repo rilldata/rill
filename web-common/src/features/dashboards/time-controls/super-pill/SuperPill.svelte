@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
-  import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     TimeComparisonOption,
@@ -20,7 +19,6 @@
   import {
     ALL_TIME_RANGE_ALIAS,
     CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
     type ISODurationString,
     type NamedRange,
     type RangeBuckets,
@@ -38,6 +36,7 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
+    timeRanges,
   } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
@@ -68,8 +67,6 @@
     previousCompleteDateRanges,
     showDefaultItem,
   } = $timeRangeSelectorState);
-
-  $: timeRanges = getTimeRanges($exploreName);
 
   $: ranges = <RangeBuckets>{
     latest: [
@@ -114,12 +111,12 @@
   }
 
   function onSelectRange(name: NamedRange | ISODurationString) {
-    console.log(name);
     if (!allTimeRange?.end || !$timeRanges.data?.ranges) {
       return;
     }
 
     const tr = $timeRanges.data.ranges.find((r) => r.rillTime === name);
+    console.log(name, tr);
     if (!tr) return;
 
     const baseTimeRange: TimeRange = {
