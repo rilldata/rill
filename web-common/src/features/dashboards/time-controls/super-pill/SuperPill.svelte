@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
+  import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     TimeComparisonOption,
@@ -68,11 +69,19 @@
     showDefaultItem,
   } = $timeRangeSelectorState);
 
+  $: timeRanges = getTimeRanges($exploreName);
+
   $: ranges = <RangeBuckets>{
-    latest: latestWindowTimeRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
+    latest: [
+      ...latestWindowTimeRanges.map((range) => ({
+        range: range.name,
+        label: range.label,
+      })),
+      ...($timeRanges.data?.ranges?.map((r) => ({
+        range: r.rillTime,
+        label: r.rillTime,
+      })) ?? []),
+    ],
     periodToDate: periodToDateRanges.map((range) => ({
       range: range.name,
       label: range.label,
@@ -105,29 +114,18 @@
   }
 
   function onSelectRange(name: NamedRange | ISODurationString) {
-    if (!allTimeRange?.end) {
+    console.log(name);
+    if (!allTimeRange?.end || !$timeRanges.data?.ranges) {
       return;
     }
 
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate(allTimeRange.end),
-    );
-    if (!interval?.isValid) return;
+    const tr = $timeRanges.data.ranges.find((r) => r.rillTime === name);
+    if (!tr) return;
 
     const baseTimeRange: TimeRange = {
       name: name as TimeRangePreset,
-      start: interval.start.toJSDate(),
-      end: interval.end.toJSDate(),
+      start: new Date(tr.start),
+      end: new Date(tr.end),
     };
 
     selectRange(baseTimeRange);

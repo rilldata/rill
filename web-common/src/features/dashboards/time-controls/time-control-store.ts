@@ -25,10 +25,13 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  type RpcStatus,
   type V1ExploreSpec,
+  type V1MetricsViewResolveTimeRangesResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
@@ -71,11 +74,13 @@ export const timeControlStateSelector = ([
   metricsView,
   explore,
   timeRangeResponse,
+  timeRanges,
   metricsExplorer,
 ]: [
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>,
   MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView?.timeDimension);
@@ -87,7 +92,9 @@ export const timeControlStateSelector = ([
     !timeRangeResponse ||
     !timeRangeResponse.isSuccess ||
     !timeRangeResponse.data.timeRangeSummary?.min ||
-    !timeRangeResponse.data.timeRangeSummary?.max
+    !timeRangeResponse.data.timeRangeSummary?.max ||
+    !timeRanges?.isSuccess ||
+    !timeRanges?.data?.ranges
   ) {
     return {
       isFetching: timeRangeResponse.isRefetching,
@@ -115,6 +122,7 @@ export const timeControlStateSelector = ([
     allTimeRange,
     defaultTimeRange,
     minTimeGrain,
+    timeRanges.data.ranges,
   );
   if (!timeRangeState) {
     return {
@@ -146,12 +154,18 @@ export const timeControlStateSelector = ([
 
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
-    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([validSpecResp, timeRangeSummaryResp, dashboardStore]) =>
+    [
+      ctx.validSpecStore,
+      ctx.timeRangeSummaryStore,
+      ctx.timeRanges,
+      ctx.dashboardStore,
+    ],
+    ([validSpecResp, timeRangeSummaryResp, timeRangesResp, dashboardStore]) =>
       timeControlStateSelector([
         validSpecResp.data?.metricsView,
         validSpecResp.data?.explore,
         timeRangeSummaryResp,
+        timeRangesResp,
         dashboardStore,
       ]),
   );
@@ -173,6 +187,7 @@ function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
+  timeRanges: V1TimeRange[],
 ): TimeRangeState | undefined {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
@@ -180,6 +195,7 @@ function calculateTimeRangePartial(
     metricsExplorer,
     allTimeRange,
     defaultTimeRange,
+    timeRanges,
   );
   if (!selectedTimeRange) return undefined;
 
@@ -283,6 +299,7 @@ function getTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  timeRanges: V1TimeRange[],
 ) {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
@@ -296,17 +313,26 @@ function getTimeRange(
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
   } else if (metricsExplorer.selectedTimeRange?.name) {
-    if (metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+    const tr = timeRanges.find(
+      (tr) => tr.rillTime === metricsExplorer.selectedTimeRange?.name,
+    );
+    if (tr) {
+      timeRange = {
+        name: tr.rillTime,
+        start: new Date(tr.start),
+        end: new Date(tr.end),
+      };
+    } else if (metricsExplorer.selectedTimeRange.name in DEFAULT_TIME_RANGES) {
       /** rebuild off of relative time range */
       timeRange = convertTimeRangePreset(
-        metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
+        metricsExplorer.selectedTimeRange.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
         metricsExplorer.selectedTimezone,
       );
     } else {
       timeRange = isoDurationToFullTimeRange(
-        metricsExplorer.selectedTimeRange?.name,
+        metricsExplorer.selectedTimeRange.name,
         allTimeRange.start,
         allTimeRange.end,
         metricsExplorer.selectedTimezone,
@@ -408,17 +434,20 @@ function getComparisonTimeRange(
 export function selectedTimeRangeSelector([
   exploreSpec,
   timeRangeResponse,
+  timeRanges,
   explorer,
 ]: [
   V1ExploreSpec | undefined,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>,
   MetricsExplorerEntity,
 ]) {
   if (
     !exploreSpec ||
     !timeRangeResponse.data?.timeRangeSummary ||
     !timeRangeResponse.data.timeRangeSummary.min ||
-    !timeRangeResponse.data.timeRangeSummary.max
+    !timeRangeResponse.data.timeRangeSummary.max ||
+    !timeRanges.data?.ranges
   ) {
     return undefined;
   }
@@ -435,5 +464,10 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
   );
 
-  return getTimeRange(explorer, allTimeRange, defaultTimeRange);
+  return getTimeRange(
+    explorer,
+    allTimeRange,
+    defaultTimeRange,
+    timeRanges.data.ranges,
+  );
 }

@@ -26,3 +26,8 @@ export function createBatches<T>(array: T[], batchSize: number): T[][] {
   }
   return batches;
 }
+
+export function dedupe<T>(array: T[]): T[] {
+  const set = new Set(array);
+  return [...set.values()];
+}

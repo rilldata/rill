@@ -69,8 +69,13 @@ export function getPivotConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([validSpec, timeRangeSummary, dashboardStore]) => {
+    [
+      ctx.validSpecStore,
+      ctx.timeRangeSummaryStore,
+      ctx.timeRanges,
+      ctx.dashboardStore,
+    ],
+    ([validSpec, timeRangeSummary, timeRanges, dashboardStore]) => {
       if (
         !validSpec?.data?.metricsView ||
         !validSpec?.data?.explore ||
@@ -97,6 +102,7 @@ export function getPivotConfig(
         metricsView,
         explore,
         timeRangeSummary,
+        timeRanges,
         dashboardStore,
       ]);
 

@@ -11,10 +11,13 @@ import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
+import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
 import {
   type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
+  type V1MetricsViewResolveTimeRangesResponse,
+  createQueryServiceMetricsViewResolveTimeRanges,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -51,6 +54,9 @@ export type StateManagers = {
   >;
   validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
+  >;
+  timeRanges: Readable<
+    QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>
   >;
   queryClient: QueryClient;
   updateDashboard: DashboardCallbackExecutor;
@@ -125,6 +131,35 @@ export function createStateManagers({
       ).subscribe(set),
   );
 
+  const timeRanges: Readable<
+    QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>
+  > = derived(
+    [runtime, metricsViewNameStore, validSpecStore],
+    ([runtime, mvName, validSpec], set) => {
+      if (!validSpec.data?.explore) {
+        return;
+      }
+
+      const explore = validSpec.data.explore;
+      const defaultPreset = explore.defaultPreset ?? {};
+      const rillTimes = dedupe([
+        // "inf",
+        ...(defaultPreset.timeRange ? [defaultPreset.timeRange] : []),
+        ...(explore.timeRanges?.length
+          ? explore.timeRanges.map((t) => t.range)
+          : []),
+      ]);
+
+      createQueryServiceMetricsViewResolveTimeRanges(
+        runtime.instanceId,
+        mvName,
+        {
+          rillTimes,
+        },
+      ).subscribe(set);
+    },
+  );
+
   const updateDashboard = (
     callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
@@ -147,6 +182,7 @@ export function createStateManagers({
     exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
+    timeRanges,
     validSpecStore,
     queryClient,
     dashboardStore,
@@ -159,6 +195,7 @@ export function createStateManagers({
       dashboardStore,
       validSpecStore,
       timeRangeSummaryStore,
+      timeRanges,
       queryClient,
     }),
     /**

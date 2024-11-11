@@ -3,6 +3,7 @@ import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type {
   RpcStatus,
+  V1MetricsViewResolveTimeRangesResponse,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
@@ -29,6 +30,9 @@ export type DashboardDataReadables = {
   >;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
+  >;
+  timeRanges: Readable<
+    QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>
   >;
   queryClient: QueryClient;
 };
@@ -176,13 +180,15 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
           readables.dashboardStore,
           readables.validSpecStore,
           readables.timeRangeSummaryStore,
+          readables.timeRanges,
         ],
-        ([dashboard, validSpec, timeRangeSummary]) =>
+        ([dashboard, validSpec, timeRangeSummary, timeRanges]) =>
           selectorFn({
             dashboard,
             validMetricsView: validSpec.data?.metricsView,
             validExplore: validSpec.data?.explore,
             timeRangeSummary,
+            timeRanges,
             queryClient: readables.queryClient,
           }),
       ),

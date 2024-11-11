@@ -9,6 +9,7 @@ import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboar
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
@@ -162,13 +163,15 @@ export function getPrettySelectedTimeRange(
       useMetricsViewTimeRange(instanceId, metricsViewName, {
         query: { queryClient },
       }),
+      getTimeRanges(exploreName),
       useExploreStore(metricsViewName),
     ],
-    ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
+    ([validSpec, timeRangeSummary, timeRanges, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([
         validSpec.data?.metricsView ?? {},
         validSpec.data?.explore ?? {},
         timeRangeSummary,
+        timeRanges,
         metricsExplorerEntity,
       ]);
       if (!timeRangeState.ready) return "";
