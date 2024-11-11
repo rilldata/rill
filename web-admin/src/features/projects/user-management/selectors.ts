@@ -16,13 +16,15 @@ export function userDomainIsPublic() {
     query: {
       select: (data) => {
         if (!data.user?.email) return false;
-        const domain = getDomain(data.user.email);
-        return ((window as any).RillPublicEmailDomains as string[]).includes(
-          domain,
-        );
+        return emailIsPublic(data.user.email);
       },
     },
   });
+}
+
+export function emailIsPublic(email: string) {
+  const domain = getDomain(email);
+  return RillPublicEmailDomains.includes(domain);
 }
 
 function getDomain(email: string) {
