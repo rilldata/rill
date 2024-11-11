@@ -173,8 +173,70 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 			}
 		}()
 
+		// select pivot column values from the temp table
+		// example query - select distinct(d1), t2.d2, t3."d3" from temp cross join (select distinct(d2) from temp) t2 cross join (select distinct(d3) from temp) t3 limit 1000;
+		sqlPrefix := fmt.Sprintf("SELECT DISTINCT(CAST(%s AS VARCHAR)) ", e.olap.Dialect().EscapeIdentifier(pivot.on[0]))
+		sqlSuffix := fmt.Sprintf(" FROM %s", alias)
+		orderBy := " ORDER BY 1"
+		for i := 1; i < len(pivot.on); i++ {
+			sqlSuffix += fmt.Sprintf(" CROSS JOIN (SELECT DISTINCT(CAST(%s AS VARCHAR)) FROM %s) t%d", e.olap.Dialect().EscapeIdentifier(pivot.on[i]), alias, i+1)
+			sqlPrefix += fmt.Sprintf(", t%d.%s", i+1, e.olap.Dialect().EscapeIdentifier(pivot.on[i]))
+			orderBy += fmt.Sprintf(", %d", i+1)
+		}
+
+		res, err := e.olap.Execute(wrappedCtx, &drivers.Statement{
+			Query: fmt.Sprintf("%s %s %s LIMIT 1000", sqlPrefix, sqlSuffix, orderBy), // limit to only 1000 values as these are added as column names in the pivot query
+		})
+		if err != nil {
+			return fmt.Errorf("failed to execute pivot column query: %w", err)
+		}
+		defer res.Close()
+
+		var usingFields []string
+		for _, fn := range pivot.using {
+			f, ok := findField(fn, ast.Root.MeasureFields)
+			if !ok {
+				return fmt.Errorf("pivot using measure %q not found in underlying query", fn)
+			}
+			if pivot.useDisplayNames && f.DisplayName != "" {
+				usingFields = append(usingFields, f.DisplayName)
+			} else {
+				usingFields = append(usingFields, f.Name)
+			}
+		}
+
+		// create pivot column names from the results
+		var pivotColumns []string
+		for res.Next() {
+			if len(pivot.on) == 1 {
+				var row string
+				if err := res.Scan(&row); err != nil {
+					return fmt.Errorf("failed to scan pivot column values: %w", err)
+				}
+				if len(usingFields) == 0 {
+					pivotColumns = append(pivotColumns, row)
+				} else {
+					for _, using := range usingFields {
+						pivotColumns = append(pivotColumns, fmt.Sprintf("%s_%s", row, using))
+					}
+				}
+				continue
+			}
+			var row []string
+			if err := res.Scan(&row); err != nil {
+				return fmt.Errorf("failed to scan pivot column values: %w", err)
+			}
+			if len(usingFields) == 0 {
+				pivotColumns = append(pivotColumns, strings.Join(row, "_"))
+				continue
+			}
+			for _, using := range usingFields {
+				pivotColumns = append(pivotColumns, strings.Join(append(row, using), "_"))
+			}
+		}
+
 		// Build the PIVOT query
-		pivotSQL, err := pivot.SQL(ast, alias)
+		pivotSQL, err := pivot.SQL(ast, alias, pivotColumns)
 		if err != nil {
 			return err
 		}
@@ -210,7 +272,7 @@ type pivotAST struct {
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
 // The underlyingAlias must be an alias for a table that holds the data produced by underlyingAST.SQL().
-func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, error) {
+func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string, pivotColumns []string) (string, error) {
 	if !a.dialect.CanPivot() {
 		return "", fmt.Errorf("pivot queries not supported for dialect %q", a.dialect.String())
 	}
@@ -236,20 +298,14 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, erro
 			b.WriteString(", ")
 		}
 
-		b.WriteString("* EXCLUDE (")
-		for i, fn := range a.keep {
-			f, ok := findField(fn, underlyingAST.Root.DimFields)
-			if !ok {
-				return "", fmt.Errorf("pivot keep dimension %q not found in underlying query", fn)
-			}
-
+		for i, pc := range pivotColumns {
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(a.dialect.EscapeIdentifier(f.Name))
+			b.WriteString(fmt.Sprintf("COALESCE(%s, 0) AS %s", a.dialect.EscapeIdentifier(pc), a.dialect.EscapeIdentifier(pc)))
 		}
 
-		b.WriteString(") FROM (")
+		b.WriteString(" FROM (")
 	}
 
 	// Build a PIVOT query like: PIVOT (<underlyingSQL>) ON <dimensions> USING <measures> ORDER BY <sort> LIMIT <limit> OFFSET <offset>
