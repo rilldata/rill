@@ -29,9 +29,16 @@ function updateColorVars(
   const palette = generateColorPalette(inputColor);
   // Update CSS variables
   palette.forEach((c, i) => {
+    const hsl = c.css("hsl");
+
+    root.style.setProperty(
+      `--hsl-${colorVarKind}-${TailwindColorSpacing[i]}`,
+      hsl.slice(4, -1).split(",").join(" "),
+    );
+
     root.style.setProperty(
       `--color-${colorVarKind}-${TailwindColorSpacing[i]}`,
-      c.css(),
+      hsl,
     );
   });
 }

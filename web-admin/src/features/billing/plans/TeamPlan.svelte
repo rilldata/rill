@@ -27,8 +27,6 @@
   export let organization: string;
   export let subscription: V1Subscription;
 
-  $: plan = subscription.plan;
-
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
     await $planCanceller.mutateAsync({
@@ -57,7 +55,7 @@
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
     <PricingDetails />
-    <PlanQuotas {organization} quotas={plan.quotas} />
+    <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>

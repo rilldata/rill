@@ -37,11 +37,11 @@
 {:else if isTrial}
   <TrialPlan {organization} {subscription} {showUpgradeDialog} />
 {:else if hasEnded}
-  <CancelledTeamPlan {organization} {subscription} {showUpgradeDialog} />
+  <CancelledTeamPlan {organization} {showUpgradeDialog} />
 {:else if subIsTeamPlan}
   <TeamPlan {organization} {subscription} />
 {:else if subIsPOCPlan}
-  <POCPlan {organization} plan={subscription.plan} {hasPayment} />
+  <POCPlan {organization} {hasPayment} />
 {:else if subIsEnterprisePlan}
-  <EnterprisePlan {organization} plan={subscription.plan} />
+  <EnterprisePlan {organization} />
 {/if}
