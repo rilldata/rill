@@ -10,6 +10,11 @@
   $: billingUrl = $billingSub.data?.billingPortalUrl;
 
   let iframeLoading = true;
+
+  // credentialless is not standard and throws lint error, but it works on chrome and safari for now.
+  const iframeProps = {
+    credentialless: true,
+  };
 </script>
 
 {#if $billingSub.isLoading || iframeLoading}
@@ -17,6 +22,7 @@
 {/if}
 {#if billingUrl}
   <iframe
+    {...iframeProps}
     src={billingUrl}
     title="Orb Billing Portal"
     class="w-full h-[1000px]"
