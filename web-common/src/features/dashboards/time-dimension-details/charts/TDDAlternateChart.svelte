@@ -33,8 +33,8 @@
   export let dimensionData: DimensionDataItem[];
   export let expandedMeasureName: string;
   export let chartType: TDDAlternateCharts;
-  export let xMin: Date;
-  export let xMax: Date;
+  export let xMin: Date | undefined;
+  export let xMax: Date | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
   export let isScrubbing: boolean;

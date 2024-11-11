@@ -5,8 +5,8 @@ A container GraphicContext for the time series in a metrics dashboard.
   import { GraphicContext } from "@rilldata/web-common/components/data-graphic/elements";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
   import { MEASURE_CONFIG } from "../config";
-  export let start: Date;
-  export let end: Date;
+  export let start: Date | undefined;
+  export let end: Date | undefined;
   export let workspaceWidth: number;
   export let enableFullWidth = false;
 
