@@ -142,7 +142,6 @@
       validationMethod: "oninput",
     },
   );
-  $: console.log($form, $errors);
 </script>
 
 <Dialog.Root bind:open>

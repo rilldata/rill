@@ -153,7 +153,7 @@ function mapAndAddEmptyEntry<K extends string>(
 }
 
 function mapAndAddEmptyEntryV2(entries: string[] | undefined) {
-  const finalEntries = entries ?? [];
+  const finalEntries = entries ? [...entries] : [];
   finalEntries.push("");
   return finalEntries;
 }
