@@ -7,9 +7,9 @@ sidebar_position: 12
 
 Now that we understand what Incremental Models and Partitions are, let's apply to them to our ClickHouse project.
 
-Since our ClickHouse data is hosted in GCS, we will be using glob based splits, instead of the example's sql select statements.
+Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's sql select statements.
 
-### Let's create a basic split model.
+### Let's create a basic partition model.
 In the previous courses, we used a GCS connection to import ClickHouse's repository commit history. Let's go ahead and assume we are using the same folder structure.
 
 ```
@@ -34,7 +34,7 @@ partitions:
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 ```
 
-Once you save the file, Rill will start to ingest all the splits from GCS. This may take a few minutes. You can see the progress of the ingestion from the CLI.
+Once you save the file, Rill will start to ingest all the partitions from GCS. This may take a few minutes. You can see the progress of the ingestion from the CLI.
 
 ```bash
 2024-11-12T13:41:43.355 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "3c4cdfc819f8a64ecaeecbc9ae9702af", "data": {"path":"github-analytics/Clickhouse/2019/01/commits_2019_01.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2019/01/commits_2019_01.parquet"}, "elapsed": "903.89675ms"}
@@ -49,7 +49,7 @@ Once completed you should see the following:
 
 ### Viewing Partition Status in the UI
 
-If you see any errors in the UI regarding your splits, you may need to check the status by selecting "View partitions"
+If you see any errors in the UI regarding your partitions, you may need to check the status by selecting "View partitions"
 
 ![img](/img/tutorials/302/partitions-refresh-ui.png)
 
@@ -66,7 +66,7 @@ rill project partitions <model_name> --local
 
 ### Refreshing Partitions 
 
-When issues arise in partitions in your model, you will need to fix the underlying issue then refresh this specific split in Rill. In the UI, you can select the dropdown `Showing` and select errors.
+When issues arise in partitions in your model, you will need to fix the underlying issue then refresh this specific partitions in Rill. In the UI, you can select the dropdown `Showing` and select errors.
 
 ![img](/img/tutorials/302/errored-partitions.png)
 
@@ -89,7 +89,7 @@ Now partitions are set up, you can use enable incremental modeling to load only 
 
 1. After copying the previous YAML contents, set `incremental` to true 
 
-2. You can manually setup a `splits_watermark` but since our data is using the `glob` key, it is automatically set to the `updated_on` field. 
+2. You can manually setup a `partitions_watermark` but since our data is using the `glob` key, it is automatically set to the `updated_on` field. 
 
 3. Let's set up a `refresh` based on `cron` that runs daily at 8AM UTC.
 ```

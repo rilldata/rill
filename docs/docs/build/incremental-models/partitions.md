@@ -9,8 +9,26 @@ sidebar_position: 05
 
 In Rill, partitions are a special type of state in which you can explicitly partition the model into parts. Depending on if your data is in cloud storage or a data warehouse, you can use the `glob` or `sql` parameters. 
 
+You can manage partitions via the CLI using the `rill project partitions` command.
+```bash
+rill project partitions 
+List partitions for a model
 
-## How to Define a Partition
+Usage:
+  rill project partitions [<project>] <model> [flags]
+
+Flags:
+      --project string      Project Name
+      --path string         Project directory (default ".")
+      --model string        Model Name
+      --pending             Only fetch pending partitions
+      --errored             Only fetch errored partitions
+      --local               Target locally running Rill
+      --page-size uint32    Number of partitions to return 
+```
+
+
+## How to Define a Partition in a Model
 Under the `partitions:` parameter, you will define the pattern in which your data is stored.
 
 ### SQL

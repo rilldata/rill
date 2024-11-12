@@ -16,7 +16,7 @@ partitions:
 sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 ```
 
-In this simple example, we set up 10 splits [range(0,10)] that have a single row with the same now() function as defined earlier. To confirm this we can run the following:
+In this simple example, we set up 10 partitions [range(0,10)] that have a single row with the same now() function as defined earlier. To confirm this we can run the following:
 
 ```bash
 rill project partitions partitions_range --local
@@ -48,7 +48,7 @@ Bringing both concepts together, we can create a incremental partitioned model.
 ```yaml
 type: model
 
-splits:
+partitions:
   sql: SELECT range AS num FROM range(0,10)
 sql: SELECT {{ .split.num }} AS num, now() AS inserted_on
 incremental: true
@@ -83,7 +83,7 @@ rill project refresh --model partitions_range_incremental --partition ff7416f774
 Refresh initiated. Check the project logs for status updates.
 ```
 
-Then, rerun the splits command to see that the EXECUTED ON columns has been updated.
+Then, rerun the partitions command to see that the EXECUTED ON columns has been updated.
 ```bash
 rill project partitions partitions_range_incremental --local
   KEY (10)                           DATA        EXECUTED ON            ELAPSED   ERROR  
