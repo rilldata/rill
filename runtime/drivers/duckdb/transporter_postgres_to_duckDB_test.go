@@ -59,14 +59,16 @@ func TestTransfer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	t.Run("AllDataTypes", func(t *testing.T) { allDataTypesTest(t, db, pg.DatabaseURL) })
-}
-
-func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
-	ctx := context.Background()
-	_, err := db.ExecContext(ctx, sqlStmt)
+	_, err = db.ExecContext(context.Background(), sqlStmt)
 	require.NoError(t, err)
 
+	t.Run("AllDataTypes", func(t *testing.T) { allDataTypesTest(t, pg.DatabaseURL) })
+
+	t.Run("model_executor_postgres_to_duckDB", func(t *testing.T) { pgxToDuckDB(t, db, pg.DatabaseURL) })
+}
+
+func allDataTypesTest(t *testing.T, dbURL string) {
+	ctx := context.Background()
 	handle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
@@ -89,4 +91,68 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	}
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
+}
+
+func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
+	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	me := &postgresToSelfExecutor{
+		c: duckDB.(*connection),
+	}
+	opts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: &drivers.ModelExecutorOptions{
+			Env: &drivers.ModelEnv{
+				AllowHostAccess: false,
+				StageChanges:    true,
+			},
+		},
+		InputProperties: map[string]any{
+			"sql":          "SELECT * FROM all_datatypes;",
+			"database_url": dbURL,
+		},
+		OutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+
+	_, err = me.Execute(context.Background(), opts)
+	require.NoError(t, err)
+
+	res, err := me.c.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 1, count)
+	}
+	require.NoError(t, res.Close())
+
+	// incremental run
+	opts.IncrementalRun = true
+	opts.InputProperties["sql"] = "SELECT * FROM all_datatypes WHERE created_at > '2024-01-01 00:00:00';"
+
+	// ingest some more data in postges
+	_, err = pgdb.Exec("INSERT INTO all_datatypes(uuid, created_at) VALUES (gen_random_uuid(), '2024-01-02 12:46:55');")
+	require.NoError(t, err)
+
+	// drop older data from postgres
+	_, err = pgdb.Exec("DELETE FROM all_datatypes WHERE created_at < '2024-01-01 00:00:00';")
+	require.NoError(t, err)
+
+	_, err = me.Execute(context.Background(), opts)
+	require.NoError(t, err)
+
+	res, err = me.c.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
+	require.NoError(t, res.Close())
+
+	require.NoError(t, duckDB.Close())
 }
