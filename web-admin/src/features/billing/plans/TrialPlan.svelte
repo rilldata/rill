@@ -9,7 +9,6 @@
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
   import type { TeamPlanDialogTypes } from "@rilldata/web-admin/features/billing/plans/types";
-  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -53,7 +52,11 @@
   <div slot="body">
     <div>
       {trialEndMessage} Ready to get started with Rill?
-      <PricingDetails />
+      <a
+        href="https://www.rilldata.com/pricing"
+        target="_blank"
+        rel="noreferrer noopener">See pricing details -></a
+      >
       <PlanQuotas {organization} />
     </div>
   </div>

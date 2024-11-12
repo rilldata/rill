@@ -1,16 +1,13 @@
 <script lang="ts">
-  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { buildPlanUpgradeUrl } from "@rilldata/web-common/features/organization/utils";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
+  import DeployError from "@rilldata/web-common/features/project/DeployError.svelte";
   import { onMount } from "svelte";
   import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
-  import CTAMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   const deployer = new ProjectDeployer();
@@ -26,18 +23,9 @@
     return deployer.deploy(org);
   }
 
-  function onContactUs() {
-    window.Pylon("show");
-  }
-
   onMount(() => {
     void deployer.loginOrDeploy();
   });
-
-  let upgradeHref = "";
-  $: if ($org && $metadata.data) {
-    upgradeHref = buildPlanUpgradeUrl($org, $metadata.data.adminUrl);
-  }
 </script>
 
 <!-- This seems to be necessary to trigger tanstack query to update the query object -->
@@ -61,18 +49,13 @@
         Hang tight! We're deploying your project...
       </CTAHeader>
       <CTANeedHelp />
-    {:else if $deployerStatus.error?.message}
-      <CancelCircleInverse size="7rem" className="text-gray-200" />
-      <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
-      <CTAMessage>{$deployerStatus.error.message}</CTAMessage>
-      {#if $deployerStatus.error.quotaError}
-        <CTAButton href={upgradeHref}>Upgrade</CTAButton>
-      {:else}
-        <CTAButton variant="secondary" on:click={onContactUs}>
-          Contact us
-        </CTAButton>
-      {/if}
-      <CTANeedHelp />
+    {:else if $deployerStatus.error}
+      <DeployError
+        error={$deployerStatus.error}
+        org={$org}
+        adminUrl={$metadata.data?.adminUrl ?? ""}
+        onRetry={() => {}}
+      />
     {/if}
   </CTAContentContainer>
 </CTALayoutContainer>

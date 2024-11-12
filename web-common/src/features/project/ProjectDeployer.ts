@@ -1,7 +1,10 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
-import { extractDeployError } from "@rilldata/web-common/features/project/deploy-errors";
+import {
+  DeployErrorType,
+  extractDeployError,
+} from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -176,7 +179,7 @@ export class ProjectDeployer {
         return resp.frontendUrl;
       } catch (e) {
         const err = extractDeployError(e);
-        if (err.noAccess && checkNextOrg) {
+        if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
           i++;
         } else {
           throw e;

@@ -109,9 +109,11 @@
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
-  <AlertDialogContent>
+  <AlertDialogContent class="min-w-[600px]">
     <div class="flex flex-row">
-      <DeployIcon size="150px" />
+      <div class="w-[150px]">
+        <DeployIcon size="150px" />
+      </div>
       <div class="flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
@@ -125,8 +127,7 @@
               30-day FREE trial
             </a>
             of Rill Cloud, where you can set alerts, share dashboards, and more.
-            The trial grants you 1 project up to 10GB. You’re about to deploy to
-            Rill Cloud, where you can set alerts, share dashboards, and more.
+            The trial grants you 1 project up to 10GB.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
