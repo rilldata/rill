@@ -85,7 +85,8 @@
             {/if}
           </Button>
         </div>
-        {#if showOrganizationSection}
+        <!-- TODO: Revisit when groups management is implemented -->
+        <!-- {#if showOrganizationSection}
           <div class="mt-4">
             <div class="text-xs text-gray-500 font-semibold uppercase">
               Organization
@@ -105,14 +106,13 @@
             <div class="text-xs text-gray-500 font-semibold uppercase">
               Groups
             </div>
-            <!-- 52 * 5 = 260px -->
             <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
               {#each projectMemberUserGroupsList as group}
                 <UsergroupItem {organization} {project} {group} canManage />
               {/each}
             </div>
           </div>
-        {/if}
+        {/if} -->
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
         <CreatePublicURLForm />

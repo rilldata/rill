@@ -63,13 +63,8 @@
         </span>
       {/if}
       {#if canManage}
-        <button
-          class="text-xs text-primary-600 font-medium cursor-pointer"
-          on:click={() => {
-            // TODO: redirect to user management page, open the user modal
-            goto(`/${organization}/-/users`);
-          }}
-        >
+        <!-- FIXME: onClick https://www.figma.com/design/Qt6EyotCBS3V6O31jVhMQ7/RILL-Latest?node-id=17077-830426&node-type=frame&t=VQugAVqX0LGPrjVJ-0 -->
+        <button class="text-xs text-primary-600 font-medium cursor-pointer">
           Manage
         </button>
       {/if}
