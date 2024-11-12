@@ -2204,6 +2204,62 @@ func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, envi
 	return err
 }
 
+func (c *connection) FindProvisionerResourcesForProject(ctx context.Context, projectID string) ([]*database.ProvisionerResource, error) {
+	var res []*provisionerResourceDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM provisioner_resources WHERE project_id = $1`, projectID)
+	if err != nil {
+		return nil, parseErr("provisioner resources", err)
+	}
+	return c.provisionerResourcesFromDTOs(res)
+}
+
+func (c *connection) InsertProvisionerResource(ctx context.Context, opts *database.InsertProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &provisionerResourceDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO provisioner_resources (id, project_id, "type", name, status, status_message, provisioner, args_json, state_json, config_json)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.ID, opts.ProjectID, opts.Type, opts.Name, opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) UpdateProvisionerResourceStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.ProvisionerResource, error) {
+	res := &provisionerResourceDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE provisioner_resources SET status = $1, status_message = $2 WHERE id = $3 RETURNING *`,
+		status, message, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM provisioner_resources WHERE id = $1", id)
+	return checkDeleteRow("provisioner resource", res, err)
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -2232,55 +2288,40 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
-// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
-func (c *connection) encrypt(text []byte) ([]byte, string, error) {
-	if len(c.encKeyring) == 0 {
-		return text, "", nil
-	}
-	// use the first key in the keyring for encryption
-	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+// provisionerResourceDTO wraps database.ProvisionerResource, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type provisionerResourceDTO struct {
+	*database.ProvisionerResource
+	Args   pgtype.JSON `db:"args_json"`
+	State  pgtype.JSON `db:"state_json"`
+	Config pgtype.JSON `db:"config_json"`
+}
+
+func (c *connection) provisionerResourceFromDTO(dto *provisionerResourceDTO) (*database.ProvisionerResource, error) {
+	err := dto.Args.AssignTo(&dto.ProvisionerResource.Args)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return encrypted, c.encKeyring[0].ID, nil
+	err = dto.State.AssignTo(&dto.ProvisionerResource.State)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.Config.AssignTo(&dto.ProvisionerResource.Config)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ProvisionerResource, nil
 }
 
-// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
-func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
-	if encKeyID == "" {
-		return text, nil
-	}
-	var encKey *database.EncryptionKey
-	for _, key := range c.encKeyring {
-		if key.ID == encKeyID {
-			encKey = key
-			break
-		}
-	}
-	if encKey == nil {
-		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-	}
-	return decrypt(text, encKey.Secret)
-}
-
-func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
-	for _, v := range res {
-		if v.ValueEncryptionKeyID == "" {
-			continue
-		}
-		dec, err := base64.StdEncoding.DecodeString(v.Value)
+func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO) ([]*database.ProvisionerResource, error) {
+	res := make([]*database.ProvisionerResource, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = c.provisionerResourceFromDTO(dto)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
-		if err != nil {
-			return err
-		}
-
-		v.Value = string(decryptedValue)
 	}
-	return nil
+	return res, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2421,6 +2462,57 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError
+}
+
+func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
+	for _, v := range res {
+		if v.ValueEncryptionKeyID == "" {
+			continue
+		}
+		dec, err := base64.StdEncoding.DecodeString(v.Value)
+		if err != nil {
+			return err
+		}
+
+		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
+		if err != nil {
+			return err
+		}
+
+		v.Value = string(decryptedValue)
+	}
+	return nil
+}
+
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encrypt(text []byte) ([]byte, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return nil, "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

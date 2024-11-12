@@ -286,6 +286,11 @@ type DB interface {
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
+
+	FindProvisionerResourcesForProject(ctx context.Context, projectID string) ([]*ProvisionerResource, error)
+	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
+	UpdateProvisionerResourceStatus(ctx context.Context, id string, status DeploymentStatus, message string) (*ProvisionerResource, error)
+	DeleteProvisionerResource(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -1114,4 +1119,34 @@ type UpsertBillingIssueOptions struct {
 	Type      BillingIssueType `validate:"required"`
 	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
+}
+
+// ProvisionerResource represents a resource created by a provisioner in admin/provisioner.
+type ProvisionerResource struct {
+	ID            string           `db:"id"`
+	ProjectID     string           `db:"project_id"`
+	Type          string           `db:"type"`
+	Name          string           `db:"name"`
+	Status        DeploymentStatus `db:"status"`
+	StatusMessage string           `db:"status_message"`
+	Provisioner   string           `db:"provisioner"`
+	Args          map[string]any   `db:"args_json"`
+	State         map[string]any   `db:"state_json"`
+	Config        map[string]any   `db:"config_json"`
+	CreatedOn     time.Time        `db:"created_on"`
+	UpdatedOn     time.Time        `db:"updated_on"`
+}
+
+// InsertProvisionerResourceOptions defines options for inserting a new ProvisionerResource.
+type InsertProvisionerResourceOptions struct {
+	ID            string
+	ProjectID     string
+	Type          string
+	Name          string
+	Status        DeploymentStatus
+	StatusMessage string
+	Provisioner   string
+	Args          map[string]any
+	State         map[string]any
+	Config        map[string]any
 }
