@@ -264,7 +264,7 @@
   $: tableWidth =
     firstColumnWidth +
     columnWidths.value +
-    (!!comparisonTimeRange
+    (comparisonTimeRange
       ? columnWidths.delta + columnWidths.deltaPercent
       : isValidPercentOfTotal
         ? columnWidths.percentOfTotal
