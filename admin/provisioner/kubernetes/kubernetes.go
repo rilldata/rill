@@ -1,4 +1,4 @@
-package provisioner
+package kubernetes
 
 import (
 	"bytes"
@@ -17,7 +17,10 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	k8serrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,6 +31,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+func init() {
+	provisioner.Register("kubernetes", NewKubernetes)
+}
 
 type KubernetesSpec struct {
 	Host           string                   `json:"host"`
@@ -53,6 +60,8 @@ type KubernetesProvisioner struct {
 	templatesChecksum string
 }
 
+var _ provisioner.Provisioner = (*KubernetesProvisioner)(nil)
+
 type TemplateData struct {
 	Image        string
 	ImageTag     string
@@ -73,10 +82,10 @@ type ResourceNames struct {
 	PVC         string
 }
 
-func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
+func NewKubernetes(specJSON []byte, db database.DB, logger *zap.Logger) (provisioner.Provisioner, error) {
 	// Parse the Kubernetes provisioner spec
 	ksp := &KubernetesSpec{}
-	err := json.Unmarshal(spec, ksp)
+	err := json.Unmarshal(specJSON, ksp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse kubernetes provisioner spec: %w", err)
 	}
@@ -130,23 +139,38 @@ func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
 	}, nil
 }
 
-func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
+func (p *KubernetesProvisioner) Type() string {
+	return "kubernetes"
+}
+
+func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *provisioner.ProvisionOptions) (*provisioner.Resource, error) {
+	// Can only provision runtime resources
+	if opts.Type != provisioner.ResourceTypeRuntime {
+		return nil, provisioner.ErrResourceTypeNotSupported
+	}
+
+	// Parse args
+	args, err := provisioner.NewRuntimeArgs(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get Kubernetes resource names
-	names := p.getResourceNames(opts.ProvisionID)
+	names := p.getResourceNames(opts.ID)
 
 	// Create unique host
-	host := p.getHost(opts.ProvisionID)
+	host := p.getHost(opts.ID)
 
 	// Define template data
 	data := &TemplateData{
-		ImageTag:     opts.RuntimeVersion,
+		ImageTag:     args.Version,
 		Image:        p.Spec.Image,
 		Names:        names,
 		Host:         strings.Split(host, "//")[1], // Remove protocol
-		CPU:          1 * opts.Slots,
-		MemoryGB:     4 * opts.Slots,
-		StorageBytes: 40 * int64(opts.Slots) * int64(datasize.GB),
-		Slots:        opts.Slots,
+		CPU:          1 * args.Slots,
+		MemoryGB:     4 * args.Slots,
+		StorageBytes: 40 * int64(args.Slots) * int64(datasize.GB),
+		Slots:        args.Slots,
 		Annotations:  opts.Annotations,
 	}
 
@@ -183,7 +207,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 	applyOptions := metav1.ApplyOptions{FieldManager: "rill-cloud-admin", Force: true}
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by": "rill-cloud-admin",
-		"app.kubernetes.io/instance":   opts.ProvisionID,
+		"app.kubernetes.io/instance":   opts.ID,
 	}
 	annotations := map[string]string{
 		"checksum/templates": p.templatesChecksum,
@@ -228,18 +252,24 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		return nil, err
 	}
 
-	return &Allocation{
+	cfg := &provisioner.RuntimeConfig{
 		Host:         host,
 		Audience:     host,
 		CPU:          data.CPU,
 		MemoryGB:     data.MemoryGB,
 		StorageBytes: data.StorageBytes,
+	}
+
+	return &provisioner.Resource{
+		ID:     opts.ID,
+		Type:   opts.Type,
+		Config: cfg.AsMap(),
 	}, nil
 }
 
-func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID string) error {
+func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(provisionID)
+	names := p.getResourceNames(r.ID)
 
 	// Common delete options
 	delPolicy := metav1.DeletePropagationForeground
@@ -274,9 +304,9 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID str
 	return multierr.Combine(errs...)
 }
 
-func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID string) error {
+func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(provisionID)
+	names := p.getResourceNames(r.ID)
 
 	// Wait for the deployment to be ready (with timeout)
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Duration(p.Spec.TimeoutSeconds)*time.Second, true, func(ctx context.Context) (done bool, err error) {
@@ -296,7 +326,7 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	retryClient.RetryWaitMin = 2 * time.Second
 	retryClient.RetryWaitMax = 10 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
-	pingURL, err := url.JoinPath(p.getHost(provisionID), "/v1/ping")
+	pingURL, err := url.JoinPath(p.getHost(r.ID), "/v1/ping")
 	if err != nil {
 		return err
 	}
@@ -309,31 +339,27 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	return nil
 }
 
-func (p *KubernetesProvisioner) CheckCapacity(ctx context.Context) error {
+func (p *KubernetesProvisioner) Check(ctx context.Context) error {
 	// No-op
 	return nil
 }
 
-func (p *KubernetesProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
+func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(provisionID)
+	names := p.getResourceNames(r.ID)
 
 	// Get the deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// Compare the provisioned templates checksum with the current one
 	if depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum {
-		return false, nil
+		return fmt.Errorf("kubernetes provisioner: templates checksum mismatch")
 	}
 
-	return true, nil
-}
-
-func (p *KubernetesProvisioner) Type() string {
-	return "kubernetes"
+	return nil
 }
 
 func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNames {

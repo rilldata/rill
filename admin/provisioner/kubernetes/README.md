@@ -1,27 +1,11 @@
-# provisioner
-This directory contains the provisioner package. On a high level the provisioner's main responsibility is to allocate resources on a runtime to a deployment. Currently there is two different types of provisioners, `static` and `kubernetes`. The `static` type will allocate a runtime from a statically pre-defined pool of runtimes and the `kubernetes` type will dynamically provision a dedicated runtime in Kubernetes and allocate it to the deployment.
+# `provisioner/kubernetes`
 
 ## Configuration
-The provisioner is configured using `RILL_ADMIN_PROVISIONER_SET_JSON` with a named set of provisioners using a format like the following example. More provisioners of the same type can be configured, this is a useful for example to support deployments to different Kubernetes clusters. Furthermore the name of the default provisioner needs to be specified with `RILL_ADMIN_DEFAULT_PROVISIONER`, this provisioner will be used for all deployed projects where a provisioner is not explicitly chosen.
-```
-{
-  "static-example":
-    {
-      "type": "static",
-      "spec":
-        {
-          "runtimes":
-            [
-              {
-                "host": "http://localhost:9091",          // Runtime host
-                "slots": 50,                              // Amount of slots in the pre-provisioned runtime
-                "data_dir": "/mnt/data",                  // Directory to use for data storage like DB files etc.
-                "audience_url": "http://localhost:8081"   // Audience URL (JWT)
-              }
-            ]
-        }
-    },
 
+Example provisioner spec for the Kubernetes provisioner:
+
+```json
+{
   "kubernetes-example":
     {
       "type": "kubernetes",

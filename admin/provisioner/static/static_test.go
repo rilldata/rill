@@ -1,19 +1,22 @@
-package provisioner
+package static
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/admin/database/postgres"
 )
 
-func Test_staticProvisioner_Provision(t *testing.T) {
+func TestProvision(t *testing.T) {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
@@ -84,62 +87,60 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	tests := []struct {
 		name    string
 		spec    *StaticSpec
-		opts    *ProvisionOptions
-		want    *Allocation
+		args    *provisioner.RuntimeArgs
+		wantCfg *provisioner.RuntimeConfig
 		wantErr bool
 	}{
 		{
-			name:    "all applicable ",
+			name:    "all applicable",
 			spec:    spec,
-			opts:    &ProvisionOptions{Slots: 1},
-			want:    &Allocation{CPU: 1, MemoryGB: 4, StorageBytes: int64(40) * int64(datasize.GB)},
+			args:    &provisioner.RuntimeArgs{Slots: 1},
+			wantCfg: &provisioner.RuntimeConfig{CPU: 1, MemoryGB: 4, StorageBytes: int64(40) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
-			name:    "one applicable ",
+			name:    "one applicable",
 			spec:    spec,
-			opts:    &ProvisionOptions{Slots: 4},
-			want:    &Allocation{CPU: 4, MemoryGB: 16, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
+			args:    &provisioner.RuntimeArgs{Slots: 4},
+			wantCfg: &provisioner.RuntimeConfig{CPU: 4, MemoryGB: 16, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
 			wantErr: false,
 		},
 		{
-			name:    "none applicable ",
+			name:    "none applicable",
 			spec:    spec,
-			opts:    &ProvisionOptions{Slots: 5},
-			want:    nil,
+			args:    &provisioner.RuntimeArgs{Slots: 5},
+			wantCfg: nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &StaticProvisioner{
-				Spec: tt.spec,
-				db:   db,
+			specJSON, err := json.Marshal(tt.spec)
+			require.NoError(t, err)
+
+			p, err := NewStatic(specJSON, db, zap.NewNop())
+			require.NoError(t, err)
+
+			opts := &provisioner.ProvisionOptions{
+				ID:   uuid.NewString(),
+				Type: provisioner.ResourceTypeRuntime,
+				Args: tt.args.AsMap(),
 			}
-			got, err := p.Provision(ctx, tt.opts)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("staticProvisioner.Provision() error = %v, wantErr %v", err, tt.wantErr)
+			res, err := p.Provision(ctx, opts)
+			if tt.wantErr {
+				require.Error(t, err)
 				return
 			}
-			if !compareAllocation(got, tt.want) {
-				t.Errorf("staticProvisioner.Provision() = %v, want %v", got, tt.want)
+
+			// Since host assignment is random, if the host is not set in the expected config, we ignore it.
+			if tt.wantCfg.Host == "" {
+				require.NotEmpty(t, res.Config["host"])
+				res.Config["host"] = ""
 			}
+
+			require.Equal(t, opts.ID, res.ID)
+			require.Equal(t, opts.Type, res.Type)
+			require.Equal(t, tt.wantCfg.AsMap(), res.Config)
 		})
 	}
-}
-
-func compareAllocation(got, want *Allocation) bool {
-	if (got != nil) != (want != nil) {
-		return false
-	}
-
-	if got == nil {
-		return true
-	}
-
-	if want.Host != "" && want.Host != got.Host {
-		return false
-	}
-
-	return got.CPU == want.CPU && got.MemoryGB == want.MemoryGB && got.StorageBytes == want.StorageBytes
 }

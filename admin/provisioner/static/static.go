@@ -1,4 +1,4 @@
-package provisioner
+package static
 
 import (
 	"context"
@@ -8,9 +8,14 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
+
+func init() {
+	provisioner.Register("static", NewStatic)
+}
 
 type StaticSpec struct {
 	Runtimes []*StaticRuntimeSpec `json:"runtimes"`
@@ -28,7 +33,9 @@ type StaticProvisioner struct {
 	logger *zap.Logger
 }
 
-func NewStatic(spec json.RawMessage, db database.DB, logger *zap.Logger) (*StaticProvisioner, error) {
+var _ provisioner.Provisioner = (*StaticProvisioner)(nil)
+
+func NewStatic(spec []byte, db database.DB, logger *zap.Logger) (provisioner.Provisioner, error) {
 	sps := &StaticSpec{}
 	err := json.Unmarshal(spec, sps)
 	if err != nil {
@@ -42,7 +49,22 @@ func NewStatic(spec json.RawMessage, db database.DB, logger *zap.Logger) (*Stati
 	}, nil
 }
 
-func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
+func (p *StaticProvisioner) Type() string {
+	return "static"
+}
+
+func (p *StaticProvisioner) Provision(ctx context.Context, opts *provisioner.ProvisionOptions) (*provisioner.Resource, error) {
+	// Can only provision runtime resources
+	if opts.Type != provisioner.ResourceTypeRuntime {
+		return nil, provisioner.ErrResourceTypeNotSupported
+	}
+
+	// Parse args
+	args, err := provisioner.NewRuntimeArgs(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+
 	// Get slots currently used
 	stats, err := p.db.ResolveRuntimeSlotsUsed(ctx)
 	if err != nil {
@@ -57,7 +79,7 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	// Find runtime with available capacity
 	targets := make([]*StaticRuntimeSpec, 0)
 	for _, candidate := range p.Spec.Runtimes {
-		if hostToSlotsUsed[candidate.Host]+opts.Slots <= candidate.Slots {
+		if hostToSlotsUsed[candidate.Host]+args.Slots <= candidate.Slots {
 			targets = append(targets, candidate)
 		}
 	}
@@ -68,13 +90,30 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 
 	// nolint:gosec // We don't need cryptographically secure random numbers
 	target := targets[rand.Intn(len(targets))]
-	return &Allocation{
+	cfg := &provisioner.RuntimeConfig{
 		Host:         target.Host,
 		Audience:     target.Audience,
-		CPU:          1 * opts.Slots,
-		MemoryGB:     4 * opts.Slots,
-		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
+		CPU:          1 * args.Slots,
+		MemoryGB:     4 * args.Slots,
+		StorageBytes: int64(args.Slots) * 40 * int64(datasize.GB),
+	}
+
+	// Done
+	return &provisioner.Resource{
+		ID:     opts.ID,
+		Type:   opts.Type,
+		Config: cfg.AsMap(),
 	}, nil
+}
+
+func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
+	// No-op
+	return nil
+}
+
+func (p *StaticProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {
+	// No-op
+	return nil
 }
 
 func (p *StaticProvisioner) Check(ctx context.Context) error {
@@ -115,21 +154,7 @@ func (p *StaticProvisioner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (p *StaticProvisioner) Deprovision(ctx context.Context, provisionID string) error {
+func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) error {
 	// No-op
 	return nil
-}
-
-func (p *StaticProvisioner) AwaitReady(ctx context.Context, provisionID string) error {
-	// No-op
-	return nil
-}
-
-func (p *StaticProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
-	// No-op
-	return true, nil
-}
-
-func (p *StaticProvisioner) Type() string {
-	return "static"
 }

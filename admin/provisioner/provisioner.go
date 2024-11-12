@@ -10,10 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// ErrServiceNotSupported should be returned by Provision if the provisioner does not support the requested service type.
+// ErrResourceTypeNotSupported should be returned by Provision if the provisioner does not support the requested resource type.
 //
 // By checking for this error, we can iterate over the chain of provisioners until we find a provisioner capable of provisioning the requested service.
-var ErrServiceNotSupported = errors.New("provisioner: service not supported")
+var ErrResourceTypeNotSupported = errors.New("provisioner: resource type not supported")
 
 // ProvisionerInitializer creates a new provisioner.
 type ProvisionerInitializer func(specJSON []byte, db database.DB, logger *zap.Logger) (Provisioner, error)
@@ -29,7 +29,7 @@ func Register(typ string, fn ProvisionerInitializer) {
 	Initializers[typ] = fn
 }
 
-// Provisioner is able to provision resources for one or more service types.
+// Provisioner is able to provision resources for one or more resource types.
 type Provisioner interface {
 	// Type returns the type of the provisioner.
 	Type() string
@@ -52,9 +52,9 @@ type ProvisionOptions struct {
 	// ID is a UUID generated for the resource to be provisioned.
 	// It will stay the same if there are retries, enabling idempotency.
 	ID string
-	// The service type being requested. See services.go for supported services.
-	Service string
-	// Service-specific arguments for the provisioner. See services.go for supported arguments.
+	// The resource type being requested. See resources.go for supported types.
+	Type ResourceType
+	// Service-specific arguments for the provisioner. See resources.go for supported arguments.
 	Args map[string]any
 	// Annotations for the project the resource belongs to.
 	Annotations map[string]string
@@ -64,8 +64,8 @@ type ProvisionOptions struct {
 type Resource struct {
 	// ID uniquely identifies the provisioned resource.
 	ID string
-	// Service is the service type of the provisioned resource.
-	Service string
+	// Type describes what type of service the resource is.
+	Type ResourceType
 	// Config contains access details for clients that use the resource.
 	Config map[string]any
 	// State contains state about the provisioned resource for use by the provisioner.
