@@ -128,12 +128,14 @@
     $form.newVariables = [...$form.newVariables, { key: "", value: "" }];
   }
 
-  function handleKeyChange(index: number, e: any) {
-    $form.newVariables[index].key = e.target.value;
+  function handleKeyChange(index: number, event: Event) {
+    const target = event.target as HTMLInputElement;
+    $form.newVariables[index].key = target.value;
   }
 
-  function handleValueChange(index: number, e: any) {
-    $form.newVariables[index].value = e.target.value;
+  function handleValueChange(index: number, event: Event) {
+    const target = event.target as HTMLInputElement;
+    $form.newVariables[index].value = target.value;
   }
 
   function handleDelete(index: number) {
@@ -260,7 +262,7 @@
                   label=""
                   textClass={inputErrors[index] ? "error-input-wrapper" : ""}
                   placeholder="Key"
-                  on:input={(e) => handleKeyChange(index, e.target.value)}
+                  on:input={(e) => handleKeyChange(index, e)}
                   onBlur={() => {
                     checkForExistingKeys();
                   }}
@@ -270,7 +272,7 @@
                   id={`value-${index}`}
                   label=""
                   placeholder="Value"
-                  on:input={(e) => handleValueChange(index, e.target.value)}
+                  on:input={(e) => handleValueChange(index, e)}
                 />
                 <IconButton
                   on:click={() => {

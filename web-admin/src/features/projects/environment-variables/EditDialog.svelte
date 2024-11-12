@@ -120,8 +120,9 @@
     }
   }
 
-  function handleValueChange(e: any) {
-    $form.value = e.target.value;
+  function handleValueChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    $form.value = target.value;
   }
 
   function handleReset() {
@@ -212,7 +213,7 @@
                 label=""
                 id={`edit-${value}`}
                 placeholder="Value"
-                on:input={(e) => handleValueChange(e.target.value)}
+                on:input={(e) => handleValueChange(e)}
               />
             </div>
             {#if $errors.key || $errors.value || $errors.environment}
