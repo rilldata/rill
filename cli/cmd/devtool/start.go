@@ -46,14 +46,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "start [cloud|local]",
+		Use:   "start [cloud|local|e2e]",
 		Short: "Start a local development environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var preset string
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
-				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local"}, "cloud")
+				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local", "e2e"}, "cloud")
 				if err != nil {
 					return err
 				}
@@ -92,6 +92,8 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
+	case "e2e":
 		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
