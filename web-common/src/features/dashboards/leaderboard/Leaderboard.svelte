@@ -67,7 +67,7 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
-  export let calculateAllLeaderboardWidths: (
+  export let estimateLargestLeaderboardWidth: (
     dimensionName: string,
     aboveTheFold: LeaderboardItemData[],
     belowTheFold: LeaderboardItemData[],
@@ -247,14 +247,11 @@
     ),
   );
 
-  $: firstColumnWidth =
-    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
   $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
 
-  // Calculate column widths for this leaderboard
-
+  // Estimate the common column widths for all leaderboards
   $: if (aboveTheFold.length || belowTheFoldRows.length) {
-    calculateAllLeaderboardWidths(
+    estimateLargestLeaderboardWidth(
       dimensionName,
       aboveTheFold,
       belowTheFoldRows,
@@ -262,7 +259,7 @@
   }
 
   $: tableWidth =
-    firstColumnWidth +
+    columnWidths.dimension +
     columnWidths.value +
     (comparisonTimeRange
       ? columnWidths.delta + columnWidths.deltaPercent
@@ -282,7 +279,7 @@
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
-      <col style:width="{firstColumnWidth}px" />
+      <col style:width="{columnWidths.dimension}px" />
       <col style:width="{columnWidths.value}px" />
       {#if !!comparisonTimeRange}
         <col style:width="{columnWidths.delta}px" />

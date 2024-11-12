@@ -28,6 +28,26 @@ export const columnWidths = writable<ColumnWidths>(
 );
 export const processedDimensions = new Set<string>();
 
+export function calculateAllLeaderboardWidths(
+  dimensionName: string,
+  firstColumnWidth: number,
+  aboveTheFold: LeaderboardItemData[],
+  selectedBelowTheFold: LeaderboardItemData[],
+  measureFormatter:
+    | ((_value: number | undefined) => undefined)
+    | ((value: string | number) => string),
+) {
+  if (!processedDimensions.has(dimensionName) && processedDimensions.size < 6) {
+    const widths = calculateLeaderboardColumnWidth(
+      firstColumnWidth,
+      aboveTheFold,
+      selectedBelowTheFold,
+      measureFormatter,
+    );
+    updateMaxColumnWidths(dimensionName, widths);
+  }
+}
+
 export function updateMaxColumnWidths(
   dimensionName: string,
   newWidths: ColumnWidths,

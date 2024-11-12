@@ -11,11 +11,9 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    calculateLeaderboardColumnWidth,
+    calculateAllLeaderboardWidths,
     columnWidths,
-    processedDimensions,
     resetColumnWidths,
-    updateMaxColumnWidths,
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
@@ -51,25 +49,20 @@
 
   let parentElement: HTMLDivElement;
 
-  function calculateAllLeaderboardWidths(
+  function estimateLargestLeaderboardWidth(
     dimensionName: string,
     aboveTheFold: LeaderboardItemData[],
     selectedBelowTheFold: LeaderboardItemData[],
   ) {
-    if (
-      !processedDimensions.has(dimensionName) &&
-      processedDimensions.size < 6
-    ) {
-      const firstColumnWidth =
-        !!comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
-      const widths = calculateLeaderboardColumnWidth(
-        firstColumnWidth,
-        aboveTheFold,
-        selectedBelowTheFold,
-        $activeMeasureFormatter,
-      );
-      updateMaxColumnWidths(dimensionName, widths);
-    }
+    const firstColumnWidth =
+      !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+    calculateAllLeaderboardWidths(
+      dimensionName,
+      firstColumnWidth,
+      aboveTheFold,
+      selectedBelowTheFold,
+      $activeMeasureFormatter,
+    );
   }
 
   // Reset column widths when relevant data changes
@@ -113,7 +106,7 @@
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
               columnWidths={$columnWidths}
-              {calculateAllLeaderboardWidths}
+              {estimateLargestLeaderboardWidth}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}
