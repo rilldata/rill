@@ -44,8 +44,6 @@
     (variable) => variable.key !== "" || variable.value !== "",
   );
 
-  $: console.log($form.newVariables);
-
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
 
@@ -59,7 +57,7 @@
     object({
       newVariables: array(
         object({
-          key: string().required("Key is required"),
+          key: string().optional(),
           value: string().optional(),
         }),
       ),
@@ -77,8 +75,14 @@
         if (!form.valid) return;
         const values = form.data;
 
+        // Filter out empty variables that are created in the form
+        const filteredVariables = values.newVariables.filter(
+          ({ key, value }) => key !== "" || value !== "",
+        );
+
+        // Flatten the variables to match the schema
         const flatVariables = Object.fromEntries(
-          values.newVariables.map(({ key, value }) => [key, value]),
+          filteredVariables.map(({ key, value }) => [key, value]),
         );
 
         try {
