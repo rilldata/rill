@@ -35,6 +35,7 @@ export type ConnectorServiceS3GetBucketMetadataParams = {
 export type ConnectorServiceOLAPListTablesParams = {
   instanceId?: string;
   connector?: string;
+  searchPattern?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -73,6 +74,12 @@ export type RuntimeServiceListResourcesParams = {
 export type RuntimeServiceGetResourceParams = {
   "name.kind"?: string;
   "name.name"?: string;
+};
+
+export type QueryServiceExportReportBody = {
+  limit?: string;
+  format?: V1ExportFormat;
+  executionTime?: string;
 };
 
 export type QueryServiceQueryBatch200 = {
@@ -342,7 +349,7 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
-export type RuntimeServiceGetModelSplitsParams = {
+export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
   pageSize?: number;
@@ -424,7 +431,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
-  title?: string;
+  displayName?: string;
   force?: boolean;
 };
 
@@ -625,6 +632,8 @@ export interface V1ThemeState {
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
+  primaryColorRaw?: string;
+  secondaryColorRaw?: string;
 }
 
 export interface V1Theme {
@@ -820,6 +829,26 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -835,11 +864,18 @@ If it resolves to false, the other fields are not set. */
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   queryName?: string;
@@ -863,13 +899,6 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -888,36 +917,16 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export interface V1RefreshModelTrigger {
   /** The model to refresh. */
   model?: string;
   /** If true, the current table and state will be dropped before refreshing.
 For non-incremental models, this is equivalent to a normal refresh. */
   full?: boolean;
-  /** Keys of specific splits to refresh. */
-  splits?: string[];
-  /** If true, it will refresh all splits that errored on their last execution. */
-  allErroredSplits?: boolean;
+  /** Keys of specific partitions to refresh. */
+  partitions?: string[];
+  /** If true, it will refresh all partitions that errored on their last execution. */
+  allErroredPartitions?: boolean;
 }
 
 export interface V1RefreshTriggerSpec {
@@ -1146,21 +1155,10 @@ export interface V1ModelState {
   /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
-  /** splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore. */
-  splitsModelId?: string;
-  /** splits_have_errors is true if one or more splits failed to execute. */
-  splitsHaveErrors?: boolean;
-}
-
-export type V1ModelSplitData = { [key: string]: any };
-
-export interface V1ModelSplit {
-  key?: string;
-  data?: V1ModelSplitData;
-  watermark?: string;
-  executedOn?: string;
-  error?: string;
-  elapsedMs?: number;
+  /** partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore. */
+  partitionsModelId?: string;
+  /** partitions_have_errors is true if one or more partitions failed to execute. */
+  partitionsHaveErrors?: boolean;
 }
 
 export type V1ModelSpecOutputProperties = { [key: string]: any };
@@ -1169,7 +1167,7 @@ export type V1ModelSpecStageProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
-export type V1ModelSpecSplitsResolverProperties = { [key: string]: any };
+export type V1ModelSpecPartitionsResolverProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
   [key: string]: any;
@@ -1181,10 +1179,10 @@ export interface V1ModelSpec {
   incremental?: boolean;
   incrementalStateResolver?: string;
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
-  splitsResolver?: string;
-  splitsResolverProperties?: V1ModelSpecSplitsResolverProperties;
-  splitsWatermarkField?: string;
-  splitsConcurrencyLimit?: number;
+  partitionsResolver?: string;
+  partitionsResolverProperties?: V1ModelSpecPartitionsResolverProperties;
+  partitionsWatermarkField?: string;
+  partitionsConcurrencyLimit?: number;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   /** stage_connector is optional. */
@@ -1194,6 +1192,17 @@ export interface V1ModelSpec {
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
   triggerFull?: boolean;
+}
+
+export type V1ModelPartitionData = { [key: string]: any };
+
+export interface V1ModelPartition {
+  key?: string;
+  data?: V1ModelPartitionData;
+  watermark?: string;
+  executedOn?: string;
+  error?: string;
+  elapsedMs?: number;
 }
 
 export interface V1MigrationState {
@@ -1241,11 +1250,6 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewSort {
-  name?: string;
-  ascending?: boolean;
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -1300,7 +1304,7 @@ export interface V1MetricsViewSpec {
   table?: string;
   /** Name of the model the metrics view is based on. Either table or model should be set. */
   model?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -1342,6 +1346,11 @@ export interface V1MetricsViewState {
   /** Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
 It's set to true if the metrics view is based on an externally managed table. */
   streaming?: boolean;
+}
+
+export interface V1MetricsViewSort {
+  name?: string;
+  ascending?: boolean;
 }
 
 export interface V1MetricsViewSearchResponse {
@@ -1619,10 +1628,15 @@ export interface V1IssueDevJWTRequest {
   admin?: boolean;
 }
 
+export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
+
 export interface V1InstanceHealth {
   controllerError?: string;
   olapError?: string;
   repoError?: string;
+  metricsViewErrors?: V1InstanceHealthMetricsViewErrors;
+  parseErrorCount?: number;
+  reconcileErrorCount?: number;
 }
 
 export interface V1InstanceHealthResponse {
@@ -1690,8 +1704,8 @@ export interface V1GetResourceResponse {
   resource?: V1Resource;
 }
 
-export interface V1GetModelSplitsResponse {
-  splits?: V1ModelSplit[];
+export interface V1GetModelPartitionsResponse {
+  partitions?: V1ModelPartition[];
   nextPageToken?: string;
 }
 
@@ -1796,6 +1810,10 @@ export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
 
+export interface V1ExportReportResponse {
+  downloadUrlPath?: string;
+}
+
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -1852,7 +1870,7 @@ If not found in `time_ranges`, it should be added to the list. */
 }
 
 export interface V1ExploreSpec {
-  title?: string;
+  displayName?: string;
   description?: string;
   metricsView?: string;
   /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
@@ -1862,6 +1880,7 @@ export interface V1ExploreSpec {
   measures?: string[];
   measuresSelector?: V1FieldSelector;
   theme?: string;
+  embeddedTheme?: V1ThemeSpec;
   /** List of selectable time ranges with comparison time ranges.
 If the list is empty, a default list should be shown. */
   timeRanges?: V1ExploreTimeRange[];
@@ -1870,6 +1889,8 @@ If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
   defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
@@ -1885,7 +1906,7 @@ export interface V1Explore {
  */
 export interface V1Example {
   name?: string;
-  title?: string;
+  displayName?: string;
   description?: string;
 }
 
@@ -2017,8 +2038,8 @@ export type V1ComponentSpecRendererProperties = { [key: string]: any };
 export type V1ComponentSpecResolverProperties = { [key: string]: any };
 
 export interface V1ComponentSpec {
-  title?: string;
-  subtitle?: string;
+  displayName?: string;
+  description?: string;
   resolver?: string;
   resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
@@ -2175,6 +2196,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2201,10 +2226,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2215,7 +2236,7 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
-  title?: string;
+  displayName?: string;
   columns?: number;
   gap?: number;
   variables?: V1ComponentVariable[];
@@ -2291,6 +2312,15 @@ export interface V1AssertionResult {
   errorMessage?: string;
 }
 
+export interface V1AnalyzedVariable {
+  /** Name of the variable. */
+  name?: string;
+  /** Default value set for the variable in rill.yaml, if any. */
+  defaultValue?: string;
+  /** List of resources that appear to use the connector. */
+  usedBy?: V1ResourceName[];
+}
+
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
@@ -2314,6 +2344,10 @@ export interface V1AnalyzedConnector {
   errorMessage?: string;
 }
 
+export interface V1AnalyzeVariablesResponse {
+  variables?: V1AnalyzedVariable[];
+}
+
 export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
@@ -2325,8 +2359,8 @@ export type V1AlertSpecQueryForAttributes = { [key: string]: any };
 export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
+  displayName?: string;
   trigger?: boolean;
-  title?: string;
   refreshSchedule?: V1Schedule;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
   watermarkInherit?: boolean;
@@ -2513,14 +2547,14 @@ export const MetricsViewSpecMeasureType = {
 
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   expression?: string;
   type?: MetricsViewSpecMeasureType;
   window?: MetricsViewSpecMeasureWindow;
   perDimensions?: MetricsViewSpecDimensionSelector[];
   requiredDimensions?: MetricsViewSpecDimensionSelector[];
   referencedMeasures?: string[];
-  label?: string;
-  description?: string;
   formatPreset?: string;
   formatD3?: string;
   validPercentOfTotal?: boolean;
@@ -2528,10 +2562,10 @@ export interface MetricsViewSpecMeasureV2 {
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
+  displayName?: string;
+  description?: string;
   column?: string;
   expression?: string;
-  label?: string;
-  description?: string;
   unnest?: boolean;
   uri?: string;
 }

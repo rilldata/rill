@@ -3,10 +3,11 @@ package examples
 import (
 	"embed"
 	"errors"
-	"gopkg.in/yaml.v2"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
 //go:embed all:embed
@@ -16,7 +17,7 @@ var ErrExampleNotFound = errors.New("example not found")
 
 type Example struct {
 	Name        string
-	Title       string
+	DisplayName string
 	Description string
 }
 
@@ -32,23 +33,26 @@ func List() ([]Example, error) {
 			continue
 		}
 
-		rillYamlContents, err := examplesFS.ReadFile(filepath.Join("embed/dist", entry.Name(), "rill.yaml"))
+		rillYamlContents, err := examplesFS.ReadFile(filepath.Join("embed", "dist", entry.Name(), "rill.yaml"))
 		if err != nil {
 			return nil, err
 		}
 
 		contents := struct {
+			DisplayName string
 			Title       string
 			Description string
 		}{}
-
 		if err := yaml.Unmarshal(rillYamlContents, &contents); err != nil {
 			return nil, err
+		}
+		if contents.DisplayName == "" { // Backwards compatibility
+			contents.DisplayName = contents.Title
 		}
 
 		exampleList = append(exampleList, Example{
 			Name:        entry.Name(),
-			Title:       contents.Title,
+			DisplayName: contents.DisplayName,
 			Description: contents.Description,
 		})
 	}

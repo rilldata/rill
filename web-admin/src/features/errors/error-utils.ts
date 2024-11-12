@@ -1,7 +1,10 @@
 import { page } from "$app/stores";
 import { redirectToLogin } from "@rilldata/web-admin/client/redirect-utils";
-import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
-import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import {
+  isAdminServerQuery,
+  isOrgUsageQuery,
+} from "@rilldata/web-admin/client/utils";
+import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
   isAlertPage,
   isMetricsExplorerPage,
@@ -26,7 +29,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
-    const onPublicURLPage = isPublicURLPage(get(page));
+    const pageState = get(page);
+
+    const onPublicURLPage = isPublicURLPage(pageState);
     if (onPublicURLPage) {
       // When a token is expired, show a specific error page
       if (
@@ -48,9 +53,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      if (await checkUserAccess()) {
-        return;
-      }
+      const didRedirect = await redirectToLoginOrRequestAccess(pageState);
+      if (didRedirect) return;
     }
 
     // If unauthorized to the admin server, redirect to login page
@@ -59,7 +63,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       return;
     }
 
-    const onProjectPage = isProjectPage(get(page));
+    const onProjectPage = isProjectPage(pageState);
 
     // Special handling for some errors on the Project page
     if (onProjectPage) {
@@ -75,7 +79,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         if (
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
-          const [, org, proj] = get(page).url.pathname.split("/");
+          const [, org, proj] = pageState.url.pathname.split("/");
           void queryClient.resetQueries(
             getAdminServiceGetProjectQueryKey(org, proj),
           );
@@ -90,7 +94,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Metrics Explorer page
-    const onMetricsExplorerPage = isMetricsExplorerPage(get(page));
+    const onMetricsExplorerPage = isMetricsExplorerPage(pageState);
     if (onMetricsExplorerPage) {
       // Let the Metrics Explorer page handle errors for runtime queries.
       // Individual components (e.g. a specific line chart or leaderboard) should display a localised error message.
@@ -119,7 +123,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Alerts page
-    const onAlertPage = isAlertPage(get(page));
+    const onAlertPage = isAlertPage(pageState);
     if (onAlertPage) {
       // Don't block on a Metrics View 404
       if (
@@ -132,9 +136,15 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // do not block on request access failures
     if (
-      isProjectRequestAccessPage(get(page)) &&
+      isProjectRequestAccessPage(pageState) &&
       error.response?.status !== 403
     ) {
+      return;
+    }
+
+    // Handle case when usage metrics project is not unavailable for some reason.
+    // We shouldn't block the user in this case.
+    if (isOrgUsageQuery(query)) {
       return;
     }
 

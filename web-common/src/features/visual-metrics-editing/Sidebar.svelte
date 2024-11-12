@@ -88,7 +88,7 @@
         fields: [
           {
             key: "label",
-            hint: "Used on dashboards and charts",
+            hint: "Used on dashboards and charts. Inferred from name when not provided",
 
             label: "Label",
           },
@@ -180,7 +180,7 @@
         fields: [
           {
             key: "label",
-            hint: "Used on dashboards and charts",
+            hint: "Used on dashboards and charts. Inferred from name when not provided",
 
             label: "Label",
           },

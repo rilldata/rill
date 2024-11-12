@@ -41,7 +41,7 @@ import type { DimensionTableConfig } from "./DimensionTableConfig";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
-  filterForDimension: V1Expression | undefined,
+  filterForDimension: V1Expression,
   searchText: string,
   dimensionName: string,
 ): V1Expression | undefined {
@@ -86,10 +86,9 @@ export function getDimensionFilterWithSearch(
   searchText: string,
   dimensionName: string,
 ) {
-  let filterForDimension = getFiltersForOtherDimensions(filters, dimensionName);
-  if (filters && !filterForDimension) {
-    filterForDimension = createAndExpression([]); // create an empty query for consistency
-  }
+  const filterForDimension =
+    getFiltersForOtherDimensions(filters, dimensionName) ??
+    createAndExpression([]);
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }
@@ -313,7 +312,7 @@ export function prepareVirtualizedDimTableColumns(
         columnOut = {
           name,
           type: "INT",
-          label: measure?.label || measure?.expression,
+          label: measure?.displayName || measure?.expression,
           description: measure?.description,
           total: measureTotals[measure?.name ?? ""] || 0,
           enableResize: false,
@@ -326,7 +325,7 @@ export function prepareVirtualizedDimTableColumns(
         columnOut = {
           name,
           type: "VARCHAR",
-          label: dimension?.label,
+          label: dimension?.displayName,
           enableResize: true,
           highlight,
           sorted,

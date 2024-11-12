@@ -17,7 +17,7 @@
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
     <button
-      on:click={row.getToggleExpandedHandler()}
+      on:click|stopPropagation={row.getToggleExpandedHandler()}
       class="cursor-pointer p-1 -m-1 pointer-events-auto"
     >
       <div class:rotate={row.getIsExpanded()} class="transition-transform">

@@ -29,9 +29,9 @@ type ModelOutputProperties struct {
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
-	if opts.Incremental || opts.SplitRun {
+	if opts.Incremental || opts.PartitionRun {
 		if p.Materialize != nil && !*p.Materialize {
-			return fmt.Errorf("incremental or split models must be materialized")
+			return fmt.Errorf("incremental or partitioned models must be materialized")
 		}
 		p.Materialize = boolPtr(true)
 	}
@@ -133,9 +133,9 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	return olap.DropTable(ctx, table.Name, table.View)
 }
 
-func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
 	if a.Table != b.Table {
-		return nil, fmt.Errorf("cannot merge split results that output to different table names (table %q is not %q)", a.Table, b.Table)
+		return nil, fmt.Errorf("cannot merge partitioned results that output to different table names (table %q is not %q)", a.Table, b.Table)
 	}
 	return a, nil
 }

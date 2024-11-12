@@ -107,7 +107,6 @@ export function getSanitizedDashboardStateParam(
         ? DashboardState_ActivePage.DEFAULT
         : dashboard.activePage,
     selectedTimezone: dashboard.selectedTimezone,
-    dimensionSearchText: dashboard.dimensionSearchText,
     showTimeComparison: dashboard.showTimeComparison,
     leaderboardContextColumn: dashboard.leaderboardContextColumn,
     contextColumnWidths: dashboard.contextColumnWidths,

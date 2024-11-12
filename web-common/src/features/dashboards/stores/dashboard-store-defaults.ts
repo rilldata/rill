@@ -169,14 +169,13 @@ export function getDefaultMetricsExplorerEntity(
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
     selectedTimezone: "UTC",
-    selectedTimeRange: null,
+    selectedTimeRange: undefined,
 
     activePage: DashboardState_ActivePage.DEFAULT,
     selectedComparisonDimension: undefined,
     selectedDimensionName: undefined,
 
     showTimeComparison: false,
-    dimensionSearchText: "",
     temporaryFilterName: null,
     tdd: {
       chartType: TDDChart.DEFAULT,

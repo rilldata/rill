@@ -54,12 +54,12 @@
 
   $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
 
-  $: measureLabel = measure?.label ?? "";
+  $: measureLabel = measure?.displayName ?? "";
 
   let dimensionLabel = "";
   $: if (comparing === "dimension") {
     dimensionLabel =
-      $allDimensions.find((d) => d.name === dimensionName)?.label ?? "";
+      $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
   } else if (comparing === "time") {
     dimensionLabel = "Time";
   } else if (comparing === "none") {
@@ -198,10 +198,7 @@
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
     {exploreName}
-    on:search={(e) => {
-      metricsExplorerStore.setSearchText(exploreName, e.detail);
-    }}
-    on:toggle-all-search-items={() => toggleAllSearchItems()}
+    onToggleSearchItems={toggleAllSearchItems}
   />
 
   {#if $timeDimensionDataStore?.isError}

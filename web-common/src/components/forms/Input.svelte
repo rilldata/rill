@@ -2,10 +2,9 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import InfoCircle from "../icons/InfoCircle.svelte";
-  import Tooltip from "../tooltip/Tooltip.svelte";
-  import TooltipContent from "../tooltip/TooltipContent.svelte";
   import Select from "./Select.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import FieldSwitcher from "./FieldSwitcher.svelte";
 
   const voidFunction = () => {};
 
@@ -93,40 +92,13 @@
 
 <div class="component-wrapper" class:w-full={full} style:width>
   {#if label}
-    <div class="label-wrapper">
-      <label for={id} class="line-clamp-1">
-        {label}
-        {#if optional}
-          <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
-        {/if}
-      </label>
-      {#if hint}
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            {@html hint}
-          </TooltipContent>
-        </Tooltip>
-      {/if}
-    </div>
+    <InputLabel {label} {optional} {id} {hint}>
+      <slot name="mode-switch" slot="mode-switch" />
+    </InputLabel>
   {/if}
 
   {#if fields && fields?.length > 1}
-    <div class="option-wrapper">
-      {#each fields as field, i (field)}
-        <button
-          on:click={() => {
-            selected = i;
-          }}
-          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-          class:selected={selected === i}
-        >
-          {field}
-        </button>
-      {/each}
-    </div>
+    <FieldSwitcher {fields} {selected} />
   {/if}
 
   {#if !options}
@@ -203,7 +175,7 @@
       {id}
       bind:selectElement
       bind:value
-      options={options ?? []}
+      {options}
       {onChange}
       fontSize={14}
       {truncate}
@@ -233,18 +205,6 @@
 <style lang="postcss">
   .component-wrapper {
     @apply flex  flex-col gap-y-1 h-fit justify-center;
-  }
-
-  .label-wrapper {
-    @apply flex items-center gap-x-1;
-  }
-
-  label {
-    @apply text-sm font-medium text-gray-800;
-  }
-
-  .option-wrapper {
-    @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
   }
 
   .sm {
@@ -306,9 +266,5 @@
 
   .toggle:active {
     @apply bg-primary-100;
-  }
-
-  .option-wrapper > .selected {
-    @apply border-primary-500 z-50 text-primary-500;
   }
 </style>

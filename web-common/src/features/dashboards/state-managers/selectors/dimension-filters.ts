@@ -1,7 +1,6 @@
 import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
-  createAndExpression,
   forEachIdentifier,
   getValuesInExpression,
   matchExpressionByName,
@@ -13,22 +12,6 @@ import type {
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
-
-export const getFiltersForOtherDimensions = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-): ((dimName: string) => V1Expression) => {
-  return (dimName: string) => {
-    const exprIdx = getWhereFilterExpressionIndex(dashData)(dimName);
-    if (exprIdx === undefined || exprIdx === -1)
-      return dashData.dashboard.whereFilter;
-
-    return createAndExpression(
-      dashData.dashboard.whereFilter.cond?.exprs?.filter(
-        (e) => !matchExpressionByName(e, dimName),
-      ) ?? [],
-    );
-  };
-};
 
 export const selectedDimensionValues = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -195,13 +178,6 @@ export const hasAtLeastOneDimensionFilter = (
 };
 
 export const dimensionFilterSelectors = {
-  /**
-   * Returns a function that can be used to get
-   * a copy of the dashboard's V1MetricsViewFilter that does not include
-   * the filters for the specified dimension name.
-   */
-  getFiltersForOtherDimensions,
-
   /**
    * Returns a function that can be used to get the selected values
    * for the specified dimension name.

@@ -1,8 +1,8 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import auth0, { WebAuth } from "auth0-js";
+  import type { AuthOptions } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
@@ -11,12 +11,36 @@
   import SSOForm from "./SSOForm.svelte";
   import { getConnectionFromEmail } from "./utils";
 
+  type InternalOptions = {
+    protocol: string;
+    response_type: string;
+    prompt: string;
+    scope: string;
+    _csrf: string;
+    leeway: number;
+  };
+
+  type Config = {
+    auth0Domain: string;
+    clientID: string;
+    auth0Tenant: string;
+    authorizationServer: {
+      issuer: string;
+    };
+    callbackURL: string;
+    internalOptions: InternalOptions;
+    extraParams?: { screen_hint?: string };
+  };
+
   export let configParams: string;
   export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
-  const connectionMapObj = JSON.parse(connectionMap);
+  const connectionMapObj = JSON.parse(connectionMap) as Record<
+    string,
+    string[]
+  >;
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
@@ -34,9 +58,9 @@
   function initConfig() {
     const config = JSON.parse(
       decodeURIComponent(escape(window.atob(configParams))),
-    );
+    ) as Config;
 
-    if (config?.extraParams?.screen_hint === "signup") {
+    if (config.extraParams?.screen_hint === "signup") {
       isLoginPage = false;
     }
 
@@ -44,11 +68,11 @@
       isRillCloud = true;
     }
 
-    const params = Object.assign(
+    const params: AuthOptions = Object.assign(
       {
         overrides: {
           __tenant: config.auth0Tenant,
-          __token_issuer: "auth.rilldata.io",
+          __token_issuer: config.authorizationServer.issuer,
         },
         domain: config.auth0Domain,
         clientID: config.clientID,
@@ -113,17 +137,10 @@
             email: email,
             password: password,
           },
-          // explicitly typing as any to avoid missing property TS/svelte-check error
-          (err: any) => {
+          (err) => {
             // Auth0 is not consistent in the naming of the error description field
             const errorText =
-              typeof err?.description === "string"
-                ? err.description
-                : typeof err?.policy === "string"
-                  ? err.policy
-                  : typeof err?.error_description === "string"
-                    ? err.error_description
-                    : err?.message;
+              err?.description ?? err?.policy ?? "Unknown error";
 
             if (err) displayError({ message: errorText });
             isEmailDisabled = false;
@@ -131,7 +148,7 @@
         );
       }
     } catch (err) {
-      displayError({ message: err?.description || err?.message });
+      displayError({ message: err?.description || err?.policy });
       isEmailDisabled = false;
     }
   }
@@ -167,63 +184,61 @@
   });
 </script>
 
-<RillTheme>
-  <AuthContainer>
-    <RillLogoSquareNegative size="84px" />
-    <div class="text-xl my-6">
-      {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
+<AuthContainer>
+  <RillLogoSquareNegative size="84px" />
+  <div class="text-xl my-6">
+    {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
+  </div>
+  <div class="flex flex-col gap-y-4" style:width="400px">
+    {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
+      <CtaButton
+        variant={style === "primary" ? "primary" : "secondary"}
+        on:click={() => authorize(connection)}
+      >
+        <div class="flex justify-center items-center gap-x-2 font-medium">
+          {#if icon}
+            <svelte:component this={icon} />
+          {/if}
+          <div>{label}</div>
+        </div>
+      </CtaButton>
+    {/each}
+
+    <SSOForm
+      disabled={isSSODisabled}
+      on:ssoSubmit={(e) => {
+        handleSSOLogin(e.detail);
+      }}
+    />
+
+    <EmailPassForm
+      {isLoginPage}
+      disabled={isEmailDisabled}
+      on:submit={(e) => {
+        handleEmailSubmit(e.detail.email, e.detail.password);
+      }}
+      on:resetPass={(e) => {
+        handleResetPassword(e.detail.email);
+      }}
+    />
+  </div>
+
+  {#if errorText}
+    <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+      {errorText}
     </div>
-    <div class="flex flex-col gap-y-4" style:width="400px">
-      {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
-        <CtaButton
-          variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorize(connection)}
-        >
-          <div class="flex justify-center items-center gap-x-2 font-medium">
-            {#if icon}
-              <svelte:component this={icon} />
-            {/if}
-            <div>{label}</div>
-          </div>
-        </CtaButton>
-      {/each}
+  {/if}
 
-      <SSOForm
-        disabled={isSSODisabled}
-        on:ssoSubmit={(e) => {
-          handleSSOLogin(e.detail);
-        }}
-      />
+  <Disclaimer />
 
-      <EmailPassForm
-        {isLoginPage}
-        disabled={isEmailDisabled}
-        on:submit={(e) => {
-          handleEmailSubmit(e.detail.email, e.detail.password);
-        }}
-        on:resetPass={(e) => {
-          handleResetPassword(e.detail.email);
-        }}
-      />
+  {#if isRillCloud}
+    <div class="mt-6 text-sm text-slate-500">
+      {isLoginPage ? "Don't" : "Already"} have an account?
+
+      <!-- svelte-ignore a11y-invalid-attribute -->
+      <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
+        {isLoginPage ? "Sign up" : "Log in"}</a
+      >
     </div>
-
-    {#if errorText}
-      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
-        {errorText}
-      </div>
-    {/if}
-
-    <Disclaimer />
-
-    {#if isRillCloud}
-      <div class="mt-6 text-sm text-slate-500">
-        {isLoginPage ? "Don't" : "Already"} have an account?
-
-        <!-- svelte-ignore a11y-invalid-attribute -->
-        <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
-          {isLoginPage ? "Sign up" : "Log in"}</a
-        >
-      </div>
-    {/if}
-  </AuthContainer>
-</RillTheme>
+  {/if}
+</AuthContainer>

@@ -4,6 +4,7 @@
     createAdminServiceGetOrganization,
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
+    getAdminServiceListOrganizationsQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseUpdateOrgError } from "@rilldata/web-admin/features/organizations/settings/errors";
@@ -56,6 +57,10 @@
               description: values.description,
             },
           });
+
+          await queryClient.invalidateQueries(
+            getAdminServiceListOrganizationsQueryKey(),
+          );
         } catch (err) {
           const parsedErr = parseUpdateOrgError(err);
           if (parsedErr.duplicateOrg) {
@@ -112,6 +117,7 @@
       id="name"
       label="Name"
       description={`Your org URL will be https://ui.rilldata.com/${sanitizeOrgName($form.name)}, to comply with our naming rules.`}
+      textClass="text-sm"
       alwaysShowError
     />
     <Input
@@ -120,6 +126,7 @@
       id="description"
       label="Description"
       placeholder="Describe your organization"
+      textClass="text-sm"
     />
   </form>
   {#if error?.message}
@@ -140,6 +147,6 @@
 
 <style lang="postcss">
   .update-org-form {
-    @apply flex flex-col gap-y-5 w-full mt-2;
+    @apply flex flex-col gap-y-5 w-full;
   }
 </style>

@@ -6,12 +6,12 @@ timeseries: timestamp
 smallest_time_grain: 
 
 dimensions:
-  - label: tuuid
+  - display_name: tuuid
     property: tuuid
     description: ""
 
 measures:
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
     description: ""
     format_preset: humanize

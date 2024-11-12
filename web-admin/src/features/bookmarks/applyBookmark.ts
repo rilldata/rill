@@ -4,11 +4,15 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
-export function createBookmarkApplier(instanceId: string, exploreName: string) {
+export function createBookmarkApplier(
+  instanceId: string,
+  metricsViewName: string,
+  exploreName: string,
+) {
   const validExploreSpec = useExploreValidSpec(instanceId, exploreName);
   const metricsSchema = createQueryServiceMetricsViewSchema(
     instanceId,
-    exploreName,
+    metricsViewName,
   );
 
   return (bookmark: V1Bookmark) => {

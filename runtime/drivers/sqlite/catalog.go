@@ -142,11 +142,11 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindModelSplitsOptions) ([]drivers.ModelSplit, error) {
+func (c *catalogStore) FindModelPartitions(ctx context.Context, opts *drivers.FindModelPartitionsOptions) ([]drivers.ModelPartition, error) {
 	var qry strings.Builder
 	var args []any
 
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=?")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=?")
 	args = append(args, c.instanceID, opts.ModelID)
 
 	if opts.WhereErrored {
@@ -175,10 +175,10 @@ func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindMo
 	}
 	defer rows.Close()
 
-	var res []drivers.ModelSplit
+	var res []drivers.ModelPartition
 	for rows.Next() {
 		var elapsedMs int64
-		r := drivers.ModelSplit{}
+		r := drivers.ModelPartition{}
 		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
 		if err != nil {
 			return nil, err
@@ -194,11 +194,11 @@ func (c *catalogStore) FindModelSplits(ctx context.Context, opts *drivers.FindMo
 	return res, nil
 }
 
-func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+func (c *catalogStore) FindModelPartitionsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelPartition, error) {
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any
-	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_partitions WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
 	qry.Grow(len(keys)*2 + 14) // Makes room for one ",?" per key plus the ORDER BY clause
@@ -218,10 +218,10 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	}
 	defer rows.Close()
 
-	var res []drivers.ModelSplit
+	var res []drivers.ModelPartition
 	for rows.Next() {
 		var elapsedMs int64
-		r := drivers.ModelSplit{}
+		r := drivers.ModelPartition{}
 		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
 		if err != nil {
 			return nil, err
@@ -237,10 +237,10 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	return res, nil
 }
 
-func (c *catalogStore) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+func (c *catalogStore) CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error) {
 	rows, err := c.db.QueryContext(
 		ctx,
-		"SELECT 1 FROM model_splits WHERE instance_id=? AND model_id=? AND error != '' LIMIT 1",
+		"SELECT 1 FROM model_partitions WHERE instance_id=? AND model_id=? AND error != '' LIMIT 1",
 		c.instanceID,
 		modelID,
 	)
@@ -261,19 +261,19 @@ func (c *catalogStore) CheckModelSplitsHaveErrors(ctx context.Context, modelID s
 	return hasErrors, nil
 }
 
-func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+func (c *catalogStore) InsertModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO model_splits(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO model_partitions(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		c.instanceID,
 		modelID,
-		split.Key,
-		split.DataJSON,
-		split.Index,
-		split.Watermark,
-		split.ExecutedOn,
-		split.Error,
-		split.Elapsed.Milliseconds(),
+		partition.Key,
+		partition.DataJSON,
+		partition.Index,
+		partition.Watermark,
+		partition.ExecutedOn,
+		partition.Error,
+		partition.Elapsed.Milliseconds(),
 	)
 	if err != nil {
 		return err
@@ -282,19 +282,19 @@ func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, spl
 	return nil
 }
 
-func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+func (c *catalogStore) UpdateModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE model_splits SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
-		split.DataJSON,
-		split.Index,
-		split.Watermark,
-		split.ExecutedOn,
-		split.Error,
-		split.Elapsed.Milliseconds(),
+		"UPDATE model_partitions SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
+		partition.DataJSON,
+		partition.Index,
+		partition.Watermark,
+		partition.ExecutedOn,
+		partition.Error,
+		partition.Elapsed.Milliseconds(),
 		c.instanceID,
 		modelID,
-		split.Key,
+		partition.Key,
 	)
 	if err != nil {
 		return err
@@ -303,13 +303,13 @@ func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, spl
 	return nil
 }
 
-func (c *catalogStore) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+func (c *catalogStore) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
+		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND key=?",
 		c.instanceID,
 		modelID,
-		splitKey,
+		partitionKey,
 	)
 	if err != nil {
 		return err
@@ -318,10 +318,10 @@ func (c *catalogStore) UpdateModelSplitPending(ctx context.Context, modelID, spl
 	return nil
 }
 
-func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
+func (c *catalogStore) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
+		"UPDATE model_partitions SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
 		c.instanceID,
 		modelID,
 	)
@@ -332,11 +332,28 @@ func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, mode
 	return nil
 }
 
-func (c *catalogStore) DeleteModelSplits(ctx context.Context, modelID string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM model_splits WHERE instance_id=? AND model_id=?", c.instanceID, modelID)
+func (c *catalogStore) DeleteModelPartitions(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM model_partitions WHERE instance_id=? AND model_id=?", c.instanceID, modelID)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (c *catalogStore) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	var h drivers.InstanceHealth
+	err := c.db.QueryRowContext(ctx, "SELECT health_json, updated_on FROM instance_health WHERE instance_id=?", instanceID).Scan(&h.HealthJSON, &h.UpdatedOn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &h, nil
+}
+
+func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
+	_, err := c.db.ExecContext(ctx, `INSERT INTO instance_health(instance_id, health_json, updated_on) Values (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(instance_id) DO UPDATE SET health_json=excluded.health_json, updated_on=excluded.updated_on;
+	`, h.InstanceID, h.HealthJSON)
+	return err
 }

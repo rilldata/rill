@@ -8,8 +8,8 @@ import {
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
-
 import { SortType } from "../proto-state/derived-types";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
 export type LeaderboardItemData = {
   /**
@@ -62,7 +62,7 @@ export type LeaderboardItemData = {
 const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
-function cleanUpComparisonValue(
+export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,
   dimensionName: string,
   measureName: string,
@@ -98,8 +98,38 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
   dimensionValue: string;
 };
 
+function getApiSortName(activeMeasureName: string, sortType: SortType) {
+  switch (sortType) {
+    case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+      return (activeMeasureName += ComparisonDeltaAbsoluteSuffix);
+
+    case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+      return (activeMeasureName += ComparisonDeltaRelativeSuffix);
+
+    default:
+      return activeMeasureName;
+  }
+}
+
+export function getSort(
+  ascending: boolean,
+  type: SortType,
+  activeMeasureName: string,
+  dimensionName: string,
+) {
+  return [
+    {
+      desc: !ascending,
+      name:
+        type === SortType.DIMENSION || !activeMeasureName
+          ? dimensionName
+          : getApiSortName(activeMeasureName, type),
+    },
+  ];
+}
+
 export function prepareLeaderboardItemData(
-  values: V1MetricsViewAggregationResponseDataItem[],
+  values: V1MetricsViewAggregationResponseDataItem[] | undefined,
   dimensionName: string,
   measureName: string,
   numberAboveTheFold: number,
@@ -107,76 +137,46 @@ export function prepareLeaderboardItemData(
   // The total of the measure for the current period,
   // or null if the measure is not valid_percent_of_total
   total: number | null,
-): {
-  aboveTheFold: LeaderboardItemData[];
-  selectedBelowTheFold: LeaderboardItemData[];
-  noAvailableValues: boolean;
-  showExpandTable: boolean;
-} {
+) {
+  if (values?.length === 0 || !values) {
+    return {
+      aboveTheFold: [],
+      belowTheFoldValues: [],
+      noAvailableValues: true,
+      showExpandTable: false,
+    };
+  }
+
   const aboveTheFold: LeaderboardItemData[] = [];
-  const selectedBelowTheFold: LeaderboardItemData[] = [];
+  const belowTheFoldValues = new Set(selectedValues);
 
-  // we keep a copy of the selected values array to keep
-  // track of values that the user has selected but that
-  // are not included in the latest filtered results returned
-  // by the API. We'll filter this list as we encounter
-  // selected values that _are_ in the API results.
-  //
-  // We also need to retain the original selection indices
-  const selectedButNotInAPIResults = new Set<number>();
-  selectedValues.map((v, i) => selectedButNotInAPIResults.add(i));
+  for (const value of values) {
+    if (aboveTheFold.length === numberAboveTheFold) break;
 
-  values.forEach((v, i) => {
+    const dimensionValue = value[dimensionName] as string;
+
+    belowTheFoldValues.delete(dimensionValue);
+
     const selectedIndex = selectedValues.findIndex((value) =>
-      compareLeaderboardValues(value, v[dimensionName]),
+      compareLeaderboardValues(value, dimensionValue),
     );
-    // if we have found this selected value in the API results,
-    // remove it from the selectedButNotInAPIResults array
-    if (selectedIndex > -1) selectedButNotInAPIResults.delete(selectedIndex);
 
     const cleanValue = cleanUpComparisonValue(
-      v,
+      value,
       dimensionName,
       measureName,
       total,
       selectedIndex,
     );
 
-    if (i < numberAboveTheFold) {
-      aboveTheFold.push(cleanValue);
-    } else if (selectedIndex > -1) {
-      // Note: if selectedIndex is > -1, it represents the
-      // selected value must be included in the below-the-fold list.
-      selectedBelowTheFold.push(cleanValue);
-    }
-  });
-
-  // FIXME: note that it is possible for some values to be selected
-  // but not included in the results returned by the API, for example
-  // if a dimension value is selected and then a filter is applied
-  // that pushes it out of the top N. In that case, we will follow
-  // the previous strategy, and just push a dummy value with only
-  // the dimension value and nulls for all measure values.
-  for (const selectedIndex of selectedButNotInAPIResults) {
-    selectedBelowTheFold.push({
-      dimensionValue: selectedValues[selectedIndex],
-      selectedIndex,
-      value: null,
-      pctOfTotal: null,
-      prevValue: null,
-      deltaRel: null,
-      deltaAbs: null,
-    });
+    aboveTheFold.push(cleanValue);
   }
-
-  const noAvailableValues = values.length === 0;
-  const showExpandTable = values.length > numberAboveTheFold;
 
   return {
     aboveTheFold,
-    selectedBelowTheFold,
-    noAvailableValues,
-    showExpandTable,
+    belowTheFoldValues: Array.from(belowTheFoldValues),
+    noAvailableValues: values.length === 0,
+    showExpandTable: values.length > numberAboveTheFold,
   };
 }
 

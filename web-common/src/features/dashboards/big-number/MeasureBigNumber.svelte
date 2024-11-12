@@ -54,7 +54,7 @@
     "unabridged",
   );
 
-  $: name = measure?.label || measure?.expression;
+  $: name = measure?.displayName || measure?.expression;
 
   $: if (value === undefined) {
     value = null;

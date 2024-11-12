@@ -33,6 +33,7 @@ type Biller interface {
 	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
 	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 	UpdateCustomerEmail(ctx context.Context, customerID, email string) error
+	DeleteCustomer(ctx context.Context, customerID string) error
 
 	// CreateSubscription creates a subscription for the given organization. Subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
@@ -49,6 +50,9 @@ type Biller interface {
 	GetInvoice(ctx context.Context, invoiceID string) (*Invoice, error)
 	IsInvoiceValid(ctx context.Context, invoice *Invoice) bool
 	IsInvoicePaid(ctx context.Context, invoice *Invoice) bool
+
+	MarkCustomerTaxExempt(ctx context.Context, customerID string) error
+	UnmarkCustomerTaxExempt(ctx context.Context, customerID string) error
 
 	ReportUsage(ctx context.Context, usage []*Usage) error
 

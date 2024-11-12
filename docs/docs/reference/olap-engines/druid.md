@@ -59,7 +59,7 @@ Please see our [Using Multiple OLAP Engines](multiple-olap.md) page.
 
 When using Rill for local development, there are two options to configure Rill to enable Druid as an OLAP engine:
 - You can set `connector.druid.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connector.druid.dsn` as a variable to `rill start` directly (e.g. `rill start --var connector.druid.dsn=...`)
+- You can pass in `connector.druid.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.druid.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -82,4 +82,4 @@ Note that you must `cd` into the Git repository that your project was deployed f
 ## Additional Notes
 
 - At the moment, we do not support modeling with Druid. If this is something you're interested in, please [contact us](../../contact.md).
-- For dashboards powered by Druid, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.
+- For dashboards powered by Druid, [measure definitions](/build/metrics-view/metrics-view.md#measures) are required to follow standard [Druid SQL](https://druid.apache.org/docs/latest/querying/sql/) syntax.

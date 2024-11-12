@@ -1,6 +1,7 @@
 {
   "name": "web-admin",
-  "version": "0.0.1",
+  "private": true,
+  "version": "0.0.0",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && cp _redirects build",
@@ -14,10 +15,10 @@
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^4.5.0",
-    "@playwright/test": "^1.25.0",
+    "@playwright/test": "^1.33.0",
     "@rilldata/svelte-query": "^4.29.20-0.0.3",
     "@sveltejs/adapter-static": "^3.0.5",
-    "@sveltejs/kit": "^2.6.1",
+    "@sveltejs/kit": "^2.7.1",
     "@tanstack/svelte-query": "npm:@rilldata/svelte-query@4.29.20-0.0.3",
     "@tanstack/svelte-table": "^8.11.8",
     "autoprefixer": "^10.4.20",
@@ -29,6 +30,7 @@
     "svelte-check": "^4.0.4",
     "svelte-preprocess": "^6.0.3",
     "tailwindcss": "^3.4.13",
+    "vitest": "^2.1.3",
     "web-common": "*"
   },
   "type": "module"

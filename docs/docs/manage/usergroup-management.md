@@ -1,38 +1,45 @@
 ---
-title: User Group Management
-sidebar_label: User Groups
-sidebar_position: 22
+title: User group Permissions
+sidebar_label: User Group Management 
+sidebar_position: 24
 ---
 
 import ComingSoon from '@site/src/components/ComingSoon';
 
-## Managing User groups 
+Creating user groups in Rill allows administrators to easily grant permission to multiple projects at different access levels. It is possible to mix and match viewer and administrator permission in a single group and users can be part of mulitple groups. However, please keep in mind that the higher permission will be applied.
 
-In Rill Cloud, access to projects can be granted via user groups via the CLI. 
+## Managing User groups Permissions
+There are two ways to set up user groups in Rill.
 
+1. Administrator via Rill Cloud (Coming soon!)
+2. Administrator via CLI 
+
+### How to Manage User Groups in Rill Cloud
+<ComingSoon />
+
+<div class='contents_to_overlay'>
+a
+</div>
+
+### How to Manage User Groups via the CLI
 ```
 rill usergroup
+Manage user groups
 
-      Available Commands:
-      create      Create a user group
-      rename      Rename a user group
-      edit        Edit a user group
-      show        Show a user group
-      list        List user groups
-      delete      Delete a user group
-      add         Add role to a user group in an organization or project
-      set         Set role to a user group in an organization or project
-      remove      Remove role of a user group in an organization or prodject
+Usage:
+  rill usergroup [command]
+
+Available Commands:
+  list        List groups
+  show        Show group
+  create      Create a group
+  rename      Rename a group
+  edit        Edit a group
+  delete      Delete a group
+  add         Add a group to a project or organization
+  set-role    Change a group's role on a project or organization
+  remove      Remove a group's role on a project or organization
 ```
-
-
-## Install and authenticate the Rill CLI
-
-To manage cloud permissions with the Rill CLI, you must first authenticate it. If you have not already done so, run:
-```
-rill login
-```
-
 
 ## Creating the User group
 
@@ -56,8 +63,7 @@ rill usergroup add --project <project_name>
 ```
 You will be prompted for the role and the name of the group you are editing. If you want to specify a specific project, please use the --project flag. If no project flag is defined, you will be setting permission on the organization level.
 
-- **Viewers** can view the project's dashboards
-- **Admins** can additionally edit the project, and view and edit project members
+If you have any questions on permission levels, please review the [Roles and Permissions page](roles-permissions.md).
 
 ### Add a member to the group
 
@@ -74,10 +80,20 @@ rill user list --group <group_name>
 ```
 
 
-### Other actions
-Run `rill usergroup --help` to show commands for listing members or changing access.
+## Reference: Walking through access levels
 
 
-:::note
-Currently, users outside of the organization are unable to be added to usergroups.
-:::
+In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
+
+
+<img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
+
+
+### Key things to note
+1. There are **three** levels of access: organizations, projects, and groups.
+2. User groups can _only exist_ within an organization.
+    - In the case of adding a user who is not part of the organization to a user group, you will prompted to add them first.
+3. User groups permissions can either be added for the organization as a whole, or specific projects.
+    - `rill usergroup create [--project project_name]`    
+4. All users added to an organization must have at least `viewer` privilege. 
+    - In the above diagram, `User 5` is redundant as there's already `viewer` access.

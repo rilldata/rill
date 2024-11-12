@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"go.uber.org/zap"
 )
 
@@ -49,7 +50,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress, org.BillingCustomerID == "") // noop biller will have customer id as "" so do not raise never subscribed billing error for them
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,11 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	var pc *payment.Customer
 	var err error
 
-	bc, err = s.Biller.FindCustomer(ctx, org.ID)
+	bcid := org.BillingCustomerID // for safety in case the method is called with org which has billing customer id, currently there is no such call
+	if bcid == "" {
+		bcid = org.ID
+	}
+	bc, err = s.Biller.FindCustomer(ctx, bcid)
 	if err != nil && !errors.Is(err, billing.ErrNotFound) {
 		return nil, nil, fmt.Errorf("error finding billing customer: %w", err)
 	}
@@ -135,7 +140,14 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
-	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress)
+	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		if !errors.Is(err, billing.ErrNotFound) {
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
+		}
+	}
+
+	err = s.RaiseNewOrgBillingIssues(ctx, org.ID, org.CreatedOn, pc.HasPaymentMethod, pc.HasBillableAddress, sub != nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -144,18 +156,22 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		return org, nil, nil
 	}
 
-	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		if !errors.Is(err, billing.ErrNotFound) {
-			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
-		}
-	}
-
 	var updatedOrg *database.Organization
 	if sub == nil {
 		updatedOrg, sub, err = s.StartTrial(ctx, org)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to start trial: %w", err)
+		}
+
+		// send trial started email
+		err = s.Email.SendTrialStarted(&email.TrialStarted{
+			ToEmail:      org.BillingEmail,
+			ToName:       org.Name,
+			OrgName:      org.Name,
+			TrialEndDate: sub.TrialEndDate,
+		})
+		if err != nil {
+			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
@@ -194,13 +210,15 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
+			if errors.Is(err, billing.ErrCustomerIDRequired) {
+				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
 	}
 
 	if sub != nil && sub.Plan.ID != plan.ID {
-		s.Logger.Named("billing").Warn("subscription already exists for org with different plan, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-		return nil, nil, nil
+		return nil, nil, errors.New("subscription exists with non-trial plan")
 	}
 
 	if sub == nil {
@@ -219,11 +237,10 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 
 	if sub.ID == "" || sub.Plan.ID == "" {
 		// happens with noop biller
-		s.Logger.Named("billing").Warn("no subscription or plan ID provided, skipping org and billing issues update", zap.String("org_id", org.ID))
 		return org, sub, nil
 	}
 
-	s.Logger.Named("billing").Info("started trial", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
+	s.Logger.Named("billing").Info("started trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("trial_end_date", sub.TrialEndDate.String()))
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
@@ -250,14 +267,20 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		return nil, nil, err
 	}
 
+	err = s.CleanupTrialBillingIssues(ctx, org.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// raise on-trial billing warning
 	_, err = s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 		OrgID: org.ID,
 		Type:  database.BillingIssueTypeOnTrial,
 		Metadata: &database.BillingIssueMetadataOnTrial{
-			SubID:   sub.ID,
-			PlanID:  sub.Plan.ID,
-			EndDate: sub.TrialEndDate,
+			SubID:              sub.ID,
+			PlanID:             sub.Plan.ID,
+			EndDate:            sub.TrialEndDate,
+			GracePeriodEndDate: sub.TrialEndDate.AddDate(0, 0, database.BillingGracePeriodDays),
 		},
 		EventTime: sub.StartDate,
 	})
@@ -269,7 +292,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 }
 
 // RaiseNewOrgBillingIssues raises billing issues for a new organization
-func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, creationTime time.Time, hasPaymentMethod, hasBillableAddress bool) error {
+func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, creationTime time.Time, hasPaymentMethod, hasBillableAddress, hasSubscription bool) error {
 	if !hasPaymentMethod {
 		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
 			OrgID:     orgID,
@@ -287,6 +310,18 @@ func (s *Service) RaiseNewOrgBillingIssues(ctx context.Context, orgID string, cr
 			OrgID:     orgID,
 			Type:      database.BillingIssueTypeNoBillableAddress,
 			Metadata:  &database.BillingIssueMetadataNoBillableAddress{},
+			EventTime: creationTime,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+	}
+
+	if !hasSubscription {
+		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     orgID,
+			Type:      database.BillingIssueTypeNeverSubscribed,
+			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
 			EventTime: creationTime,
 		})
 		if err != nil {
@@ -363,7 +398,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 			}
 		}
 
-		if earliestGracePeriodEndDate.AddDate(0, 0, 1).After(time.Now()) || earliestGracePeriodEndDate.IsZero() {
+		if earliestGracePeriodEndDate.Before(time.Now()) || earliestGracePeriodEndDate.IsZero() {
 			return fmt.Errorf("payment overdue")
 		}
 	}
@@ -375,7 +410,7 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 		}
 	}
 
-	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.AddDate(0, 0, 1).After(time.Now()) {
+	if be != nil && be.Metadata.(*database.BillingIssueMetadataSubscriptionCancelled).EndDate.Before(time.Now()) {
 		return fmt.Errorf("subscription cancelled")
 	}
 

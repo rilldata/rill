@@ -13,12 +13,13 @@ import (
 
 type ExploreYAML struct {
 	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title       string                 `yaml:"title"`
+	DisplayName string                 `yaml:"display_name"`
+	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
-	Theme       string                 `yaml:"theme"`
+	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
 	Defaults    *struct {
@@ -28,6 +29,9 @@ type ExploreYAML struct {
 		ComparisonMode      string             `yaml:"comparison_mode"`
 		ComparisonDimension string             `yaml:"comparison_dimension"`
 	} `yaml:"defaults"`
+	Embeds struct {
+		HidePivot bool `yaml:"hide_pivot"`
+	} `yaml:"embeds"`
 	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
@@ -125,6 +129,11 @@ func (p *Parser) parseExplore(node *Node) error {
 		return fmt.Errorf("explores cannot have a connector")
 	}
 
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
 	// Validate metrics_view
 	if tmp.MetricsView == "" {
 		return errors.New("metrics_view is required")
@@ -143,9 +152,14 @@ func (p *Parser) parseExplore(node *Node) error {
 		measuresSelector = tmp.Measures.Proto()
 	}
 
-	// Add theme to refs
-	if tmp.Theme != "" {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.Theme})
+	// Parse theme if present.
+	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
+	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
+	if err != nil {
+		return err
+	}
+	if themeName != "" && themeSpec == nil {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
 	// Build and validate time ranges
@@ -243,18 +257,57 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.ExploreSpec.Title = tmp.Title
+	r.ExploreSpec.DisplayName = tmp.DisplayName
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
 	r.ExploreSpec.Dimensions = dimensions
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
-	r.ExploreSpec.Theme = tmp.Theme
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
+	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
+	if themeName != "" && themeSpec == nil {
+		r.ExploreSpec.Theme = themeName
+	}
+
+	if themeSpec != nil {
+		r.ExploreSpec.EmbeddedTheme = themeSpec
+	}
+
 	return nil
+}
+
+func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if n == nil || n.IsZero() {
+		return "", nil, nil
+	}
+
+	switch n.Kind {
+	case yaml.ScalarNode: // It's the name of an existing theme
+		var name string
+		err := n.Decode(&name)
+		if err != nil {
+			return "", nil, err
+		}
+		return name, nil, nil
+	case yaml.MappingNode: // It's an inline definition of a new theme
+		tmp := &ThemeYAML{}
+		err := n.Decode(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		spec, err := p.parseThemeYAML(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return "", spec, nil
+	default:
+		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
+	}
 }

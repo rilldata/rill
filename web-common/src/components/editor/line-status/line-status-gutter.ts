@@ -48,8 +48,14 @@ export const createStatusLineGutter = () =>
       // get the line statuses.
       const lineStatuses = view.state
         .field(lineStatusesStateField)
-        // remove any line statuses that are greater than the total lines
-        .filter((ls) => ls?.line && ls.line !== null && ls.line <= totalLines);
+        // remove any line statuses that are greater than the total lines or global errors with line = -1
+        .filter(
+          (ls) =>
+            ls?.line &&
+            ls.line !== null &&
+            ls.line <= totalLines &&
+            ls.line >= 0,
+        );
 
       if (!lineStatuses?.length || isEmpty) return builder.finish();
 

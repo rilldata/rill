@@ -2418,14 +2418,14 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SplitsResolver
+	// no validation rules for PartitionsResolver
 
 	if all {
-		switch v := interface{}(m.GetSplitsResolverProperties()).(type) {
+		switch v := interface{}(m.GetPartitionsResolverProperties()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "SplitsResolverProperties",
+					field:  "PartitionsResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2433,25 +2433,25 @@ func (m *ModelSpec) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "SplitsResolverProperties",
+					field:  "PartitionsResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetSplitsResolverProperties()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetPartitionsResolverProperties()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelSpecValidationError{
-				field:  "SplitsResolverProperties",
+				field:  "PartitionsResolverProperties",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
 
-	// no validation rules for SplitsWatermarkField
+	// no validation rules for PartitionsWatermarkField
 
-	// no validation rules for SplitsConcurrencyLimit
+	// no validation rules for PartitionsConcurrencyLimit
 
 	// no validation rules for InputConnector
 
@@ -2775,9 +2775,9 @@ func (m *ModelState) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for SplitsModelId
+	// no validation rules for PartitionsModelId
 
-	// no validation rules for SplitsHaveErrors
+	// no validation rules for PartitionsHaveErrors
 
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
@@ -3046,7 +3046,7 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for Model
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4167,7 +4167,7 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4233,6 +4233,35 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for Theme
 
+	if all {
+		switch v := interface{}(m.GetEmbeddedTheme()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ExploreSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEmbeddedTheme()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExploreSpecValidationError{
+				field:  "EmbeddedTheme",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	for idx, item := range m.GetTimeRanges() {
 		_, _ = idx, item
 
@@ -4295,6 +4324,8 @@ func (m *ExploreSpec) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for EmbedsHidePivot
 
 	for idx, item := range m.GetSecurityRules() {
 		_, _ = idx, item
@@ -5768,9 +5799,9 @@ func (m *ReportSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -6494,9 +6525,9 @@ func (m *AlertSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Trigger
+	// no validation rules for DisplayName
 
-	// no validation rules for Title
+	// no validation rules for Trigger
 
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
@@ -8287,7 +8318,7 @@ func (m *RefreshModelTrigger) validate(all bool) error {
 
 	// no validation rules for Full
 
-	// no validation rules for AllErroredSplits
+	// no validation rules for AllErroredPartitions
 
 	if len(errors) > 0 {
 		return RefreshModelTriggerMultiError(errors)
@@ -9050,6 +9081,10 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for PrimaryColorRaw
+
+	// no validation rules for SecondaryColorRaw
+
 	if m.PrimaryColor != nil {
 
 		if all {
@@ -9471,9 +9506,9 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
-	// no validation rules for Subtitle
+	// no validation rules for Description
 
 	// no validation rules for Resolver
 
@@ -10124,7 +10159,7 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Columns
 
@@ -12046,13 +12081,13 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Column
 
 	// no validation rules for Expression
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for Unnest
 
@@ -12415,6 +12450,10 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for DisplayName
+
+	// no validation rules for Description
+
 	// no validation rules for Expression
 
 	// no validation rules for Type
@@ -12515,10 +12554,6 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 		}
 
 	}
-
-	// no validation rules for Label
-
-	// no validation rules for Description
 
 	// no validation rules for FormatPreset
 

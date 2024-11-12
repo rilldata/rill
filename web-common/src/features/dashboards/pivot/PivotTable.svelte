@@ -34,6 +34,7 @@
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-store";
@@ -49,7 +50,7 @@
 
   const stateManagers = getStateManagers();
 
-  const { dashboardStore, metricsViewName } = stateManagers;
+  const { dashboardStore, exploreName } = stateManagers;
 
   const config = getPivotConfig(stateManagers);
 
@@ -209,13 +210,12 @@
       { description: "View raw data for aggregated cell", shortcut: "Click" },
     ];
   }
-
   function onExpandedChange(updater: Updater<ExpandedState>) {
     // Something is off with tanstack's types
     //@ts-expect-error-free
     //eslint-disable-next-line
     expanded = updater(expanded);
-    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+    metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
   function onSortingChange(updater: Updater<SortingState>) {
@@ -224,7 +224,7 @@
     } else {
       sorting = updater;
     }
-    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
+    metricsExplorerStore.setPivotSort($exploreName, sorting);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -234,17 +234,23 @@
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
 
-      // Fetch more data when scrolling near the bottom end
-      if (
-        bottomEndDistance < ROW_THRESHOLD &&
-        rows.length >= NUM_ROWS_PER_PAGE &&
-        !$pivotDataStore.isFetching &&
-        !reachedEndForRows
-      ) {
-        metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
+      const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
+      const canFetchMoreData =
+        !$pivotDataStore.isFetching && !reachedEndForRows;
+      const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
+
+      if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
+        metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
     }
   };
+
+  onMount(() => {
+    // wait for layout to be calculated
+    requestAnimationFrame(() => {
+      handleScroll(containerRefElement);
+    });
+  });
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
@@ -278,7 +284,7 @@
     const rowId = cell.row.id;
     const columnId = cell.column.id;
 
-    metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
+    metricsExplorerStore.setPivotActiveCell($exploreName, rowId, columnId);
   }
 
   function handleHover(

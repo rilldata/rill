@@ -12,12 +12,14 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
+  getExpandedQueryErrors,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
 import {
@@ -39,6 +41,8 @@ import {
 } from "./pivot-table-transformations";
 import {
   canEnablePivotComparison,
+  getErrorFromResponses,
+  getErrorState,
   getFilterForPivotTable,
   getFiltersForCell,
   getPivotConfigKey,
@@ -53,10 +57,10 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  type PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
+  type PivotFilter,
   type PivotTimeConfig,
 } from "./types";
 
@@ -350,6 +354,9 @@ export function createPivotDataStore(
             totalColumns: 0,
           });
         }
+        if (columnDimensionAxes?.error && columnDimensionAxes?.error.length) {
+          return columnSet(getErrorState(columnDimensionAxes.error));
+        }
         const anchorDimension = rowDimensionNames[0];
 
         const {
@@ -383,11 +390,11 @@ export function createPivotDataStore(
 
         let globalTotalsQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         let totalsRowQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
@@ -446,6 +453,19 @@ export function createPivotDataStore(
               });
             }
 
+            // check for errors in the responses
+            const totalErrors = getErrorFromResponses([
+              globalTotalsResponse,
+              totalsRowResponse,
+            ]);
+
+            if (totalErrors.length || rowDimensionAxes?.error?.length) {
+              const allErrors = totalErrors.concat(
+                rowDimensionAxes?.error || [],
+              );
+              return axesSet(getErrorState(allErrors));
+            }
+
             /**
              * If there are no axes values, return an empty table
              */
@@ -491,7 +511,7 @@ export function createPivotDataStore(
 
             let initialTableCellQuery:
               | Readable<null>
-              | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+              | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
@@ -538,6 +558,20 @@ export function createPivotDataStore(
                     totalColumns,
                     totalsRowData: displayTotalsRow ? totalsRowData : undefined,
                   });
+                }
+
+                const tableCellQueryError = getErrorFromResponses([
+                  initialTableCellData,
+                ]);
+
+                if (
+                  tableCellQueryError.length ||
+                  rowMeasureTotalsAxesQuery?.error?.length
+                ) {
+                  const allErrors = tableCellQueryError.concat(
+                    rowMeasureTotalsAxesQuery?.error || [],
+                  );
+                  return cellSet(getErrorState(allErrors));
                 }
 
                 const mergedRowTotals = mergeRowTotalsInOrder(
@@ -602,6 +636,11 @@ export function createPivotDataStore(
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
+                      const queryErrors = getExpandedQueryErrors(
+                        expandedRowMeasureValues,
+                      );
+                      if (queryErrors.length) return getErrorState(queryErrors);
+
                       tableDataExpanded = addExpandedDataToPivot(
                         config,
                         pivotData,

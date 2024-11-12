@@ -14,78 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type HandlePlanChangeBillingIssuesArgs struct {
-	OrgID     string
-	SubID     string
-	PlanID    string
-	StartDate time.Time // just for deduplication
-}
-
-func (HandlePlanChangeBillingIssuesArgs) Kind() string { return "handle_plan_change_billing_issues" }
-
-type HandlePlanChangeBillingIssues struct {
-	river.WorkerDefaults[HandlePlanChangeBillingIssuesArgs]
-	admin  *admin.Service
-	logger *zap.Logger
-}
-
-// Work handles the billing issues for the org after a plan change
-func (w *HandlePlanChangeBillingIssues) Work(ctx context.Context, job *river.Job[HandlePlanChangeBillingIssuesArgs]) error {
-	org, err := w.admin.DB.FindOrganization(ctx, job.Args.OrgID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// org got deleted, ignore
-			return nil
-		}
-		return fmt.Errorf("failed to find organization: %w", err)
-	}
-
-	// check if the org has any active subscription
-	sub, err := w.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
-	if err != nil {
-		return fmt.Errorf("failed to get subscriptions for org %q: %w", org.Name, err)
-	}
-
-	if sub.ID != job.Args.SubID || sub.Plan.ID != job.Args.PlanID {
-		// subscription or plan have changed, ignore
-		w.logger.Warn("plan change api worker - subscription or plan changed before job could run, doing nothing, please check manually", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
-		return nil
-	}
-
-	// delete any trial related billing issues, irrespective of the new plan.
-	err = w.admin.CleanupTrialBillingIssues(ctx, org.ID)
-	if err != nil {
-		w.logger.Error("failed to cleanup trial billing issues", zap.String("org_id", org.ID), zap.Error(err))
-		return fmt.Errorf("failed to cleanup trial billing errors and warnings: %w", err)
-	}
-
-	// delete any subscription related billing issues
-	err = w.admin.CleanupSubscriptionBillingIssues(ctx, org.ID)
-	if err != nil {
-		w.logger.Error("failed to cleanup subscription billing issues", zap.String("org_id", org.ID), zap.Error(err))
-		return fmt.Errorf("failed to cleanup subscription cancellation errors: %w", err)
-	}
-
-	// if the new plan is still a trial plan, raise on-trial billing issue. Can happen if manually assigned new trial plan for example to extend trial period for a customer
-	if sub.TrialEndDate.After(time.Now().Truncate(24*time.Hour).AddDate(0, 0, 1)) {
-		_, err = w.admin.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
-			OrgID: org.ID,
-			Type:  database.BillingIssueTypeOnTrial,
-			Metadata: &database.BillingIssueMetadataOnTrial{
-				SubID:   sub.ID,
-				PlanID:  sub.Plan.ID,
-				EndDate: sub.TrialEndDate,
-			},
-			EventTime: sub.StartDate,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to upsert billing warning: %w", err)
-		}
-	}
-
-	return nil
-}
-
 type SubscriptionCancellationCheckArgs struct{}
 
 func (SubscriptionCancellationCheckArgs) Kind() string { return "subscription_cancellation_check" }
@@ -185,7 +113,7 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 			OrgName: org.Name,
 		})
 		if err != nil {
-			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 
 		w.logger.Warn("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))

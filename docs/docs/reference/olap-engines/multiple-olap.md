@@ -35,7 +35,7 @@ Before getting started, you'll need to first configure the appopriate connection
 
 **For Rill Developer:**
 - You can set these variables in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- Alternatively, you can pass in these connector DSN variables to `rill start` directly when starting Rill (e.g. `rill start --var connector.druid.dsn=... --var connector.clickhouse.dsn=...`)
+- Alternatively, you can pass in these connector DSN variables to `rill start` directly when starting Rill (e.g. `rill start --env connector.druid.dsn=... --env connector.clickhouse.dsn=...`)
 
 :::tip Getting DSN errors in dashboards after setting `.env`?
 
@@ -69,7 +69,7 @@ For more information about available configurations for `rill.yaml`, please see 
 
 ### Setting the OLAP Engine in the dashboard YAML
 
-For each dashboard that is using a separate OLAP engine (than the default), you'll want to set the `connector` and `table` properties in the underlying [dashboard YAML](../project-files/dashboards.md) configuration to the OLAP engine and corresponding [external table](../../concepts/OLAP#external-olap-tables) that exists in your OLAP store respectively.
+For each dashboard that is using a separate OLAP engine (than the default), you'll want to set the `connector` and `table` properties in the underlying [dashboard YAML](../project-files/explore-dashboards.md) configuration to the OLAP engine and corresponding [external table](../../concepts/OLAP#external-olap-tables) that exists in your OLAP store respectively.
 
 ```yaml
 type: metrics_view

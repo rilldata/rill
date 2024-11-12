@@ -88,8 +88,6 @@ function syncMeasures(
       !measuresSet.has(metricsExplorer.leaderboardMeasureName))
   ) {
     metricsExplorer.leaderboardMeasureName = explore.measures[0];
-  } else if (!explore.measures?.length) {
-    metricsExplorer.leaderboardMeasureName = undefined;
   }
 
   if (metricsExplorer.allMeasuresVisible) {
@@ -424,7 +422,7 @@ const metricsViewReducers = {
 
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.selectedDimensionName = dimensionName;
+      metricsExplorer.selectedDimensionName = dimensionName ?? undefined;
       if (dimensionName) {
         metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
       } else {
@@ -469,16 +467,9 @@ const metricsViewReducers = {
     });
   },
 
-  setSearchText(name: string, searchText: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.dimensionSearchText = searchText;
-    });
-  },
-
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showTimeComparison = showTimeComparison;
-      metricsExplorer.selectedComparisonDimension = undefined;
     });
   },
 
@@ -576,3 +567,5 @@ function getPinIndexForDimension(
   // 1st entry in the expression is the identifier. hence the -2 here.
   return dimExpr.cond.exprs.length - 2;
 }
+
+export const dimensionSearchText = writable("");

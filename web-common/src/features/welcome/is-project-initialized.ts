@@ -24,9 +24,7 @@ export async function isProjectInitialized(instanceId: string) {
   }
 }
 
-export async function handleUninitializedProject(
-  instanceId: string,
-): Promise<boolean> {
+export async function handleUninitializedProject(instanceId: string) {
   // If the project is not initialized, determine what page to route to dependent on the OLAP connector
   const instance = await runtimeServiceGetInstance(instanceId, {
     sensitive: true,
@@ -38,14 +36,15 @@ export async function handleUninitializedProject(
   }
 
   // DuckDB-backed projects should head to the Welcome page for user-guided initialization
-  if (olapConnector === "duckdb") {
-    return true;
-  } else {
+  if (olapConnector !== "duckdb") {
     // Clickhouse and Druid-backed projects should be initialized immediately
     await runtimeServiceUnpackEmpty(instanceId, {
-      title: EMPTY_PROJECT_TITLE,
+      displayName: EMPTY_PROJECT_TITLE,
       force: true,
     });
-    return false;
+
+    return true;
   }
+
+  return false;
 }

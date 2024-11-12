@@ -189,34 +189,42 @@ func (c *connection) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
-func (c *connection) FindModelSplits(ctx context.Context, opts *drivers.FindModelSplitsOptions) ([]drivers.ModelSplit, error) {
+func (c *connection) FindModelPartitions(ctx context.Context, opts *drivers.FindModelPartitionsOptions) ([]drivers.ModelPartition, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
-func (c *connection) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+func (c *connection) FindModelPartitionsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelPartition, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
-func (c *connection) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+func (c *connection) CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error) {
 	return false, drivers.ErrNotImplemented
 }
 
-func (c *connection) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+func (c *connection) InsertModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	return drivers.ErrNotImplemented
 }
 
-func (c *connection) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+func (c *connection) UpdateModelPartition(ctx context.Context, modelID string, partition drivers.ModelPartition) error {
 	return drivers.ErrNotImplemented
 }
 
-func (c *connection) UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error {
+func (c *connection) UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error {
 	return drivers.ErrNotImplemented
 }
 
-func (c *connection) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
+func (c *connection) UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error {
 	return drivers.ErrNotImplemented
 }
 
-func (c *connection) DeleteModelSplits(ctx context.Context, modelID string) error {
+func (c *connection) DeleteModelPartitions(ctx context.Context, modelID string) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) FindInstanceHealth(ctx context.Context, instanceID string) (*drivers.InstanceHealth, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (c *connection) UpsertInstanceHealth(ctx context.Context, h *drivers.InstanceHealth) error {
 	return drivers.ErrNotImplemented
 }

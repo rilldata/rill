@@ -39,14 +39,17 @@ type CatalogStore interface {
 	DeleteResource(ctx context.Context, v int64, k, n string) error
 	DeleteResources(ctx context.Context) error
 
-	FindModelSplits(ctx context.Context, opts *FindModelSplitsOptions) ([]ModelSplit, error)
-	FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelSplit, error)
-	CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error)
-	InsertModelSplit(ctx context.Context, modelID string, split ModelSplit) error
-	UpdateModelSplit(ctx context.Context, modelID string, split ModelSplit) error
-	UpdateModelSplitPending(ctx context.Context, modelID, splitKey string) error
-	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
-	DeleteModelSplits(ctx context.Context, modelID string) error
+	FindModelPartitions(ctx context.Context, opts *FindModelPartitionsOptions) ([]ModelPartition, error)
+	FindModelPartitionsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelPartition, error)
+	CheckModelPartitionsHaveErrors(ctx context.Context, modelID string) (bool, error)
+	InsertModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
+	UpdateModelPartition(ctx context.Context, modelID string, partition ModelPartition) error
+	UpdateModelPartitionPending(ctx context.Context, modelID, partitionKey string) error
+	UpdateModelPartitionsPendingIfError(ctx context.Context, modelID string) error
+	DeleteModelPartitions(ctx context.Context, modelID string) error
+
+	FindInstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error)
+	UpsertInstanceHealth(ctx context.Context, h *InstanceHealth) error
 }
 
 // Resource is an entry in a catalog store
@@ -56,34 +59,41 @@ type Resource struct {
 	Data []byte
 }
 
-// ModelSplit represents a single executable unit of a model.
-// Splits are an advanced feature that enables splitting and parallelizing execution of a model.
-type ModelSplit struct {
-	// Key is a unique identifier for the split. It should be a hash of DataJSON.
+// ModelPartition represents a single executable unit of a model.
+// Partitions are an advanced feature that enables splitting and parallelizing execution of a model.
+type ModelPartition struct {
+	// Key is a unique identifier for the partition. It should be a hash of DataJSON.
 	Key string
-	// DataJSON is the serialized parameters of the split.
+	// DataJSON is the serialized parameters of the partition.
 	DataJSON []byte
-	// Index is used to order the execution of splits.
+	// Index is used to order the execution of partitions.
 	// Since it's just a guide and execution order usually is not critical,
-	// it's okay if it's not unique or not always correct (e.g. for incrementally computed splits).
+	// it's okay if it's not unique or not always correct (e.g. for incrementally computed partitions).
 	Index int
-	// Watermark represents the time when the underlying data that the split references was last updated.
-	// If a split's watermark advances, we automatically schedule it for re-execution.
+	// Watermark represents the time when the underlying data that the partition references was last updated.
+	// If a partition's watermark advances, we automatically schedule it for re-execution.
 	Watermark *time.Time
-	// ExecutedOn is the time when the split was last executed. If it is nil, the split is considered pending.
+	// ExecutedOn is the time when the partition was last executed. If it is nil, the partition is considered pending.
 	ExecutedOn *time.Time
-	// Error is the last error that occurred when executing the split.
+	// Error is the last error that occurred when executing the partition.
 	Error string
-	// Elapsed is the duration of the last execution of the split.
+	// Elapsed is the duration of the last execution of the partition.
 	Elapsed time.Duration
 }
 
-// FindModelSplitsOptions is used to filter model splits.
-type FindModelSplitsOptions struct {
+// FindModelPartitionsOptions is used to filter model partitions.
+type FindModelPartitionsOptions struct {
 	ModelID      string
 	Limit        int
 	WherePending bool
 	WhereErrored bool
 	AfterIndex   int
 	AfterKey     string
+}
+
+// InstanceHealth represents the health of an instance.
+type InstanceHealth struct {
+	InstanceID string    `db:"instance_id"`
+	HealthJSON []byte    `db:"health_json"`
+	UpdatedOn  time.Time `db:"updated_on"`
 }

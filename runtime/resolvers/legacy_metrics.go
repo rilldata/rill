@@ -263,7 +263,7 @@ func (r *legacyMetricsResolver) getComparisonMeasureLabelAndFormatter(measureNam
 		return effectiveMeasure, nil
 	}
 
-	measureLabel := measure.Label
+	measureLabel := measure.DisplayName
 	if measureLabel == "" {
 		measureLabel = measureName
 	}
@@ -310,7 +310,7 @@ func (r *legacyMetricsResolver) getMeasureLabelAndFormatter(measureName string, 
 		return measureName, nil
 	}
 
-	measureLabel := measure.Label
+	measureLabel := measure.DisplayName
 	if measureLabel == "" {
 		measureLabel = measureName
 	}

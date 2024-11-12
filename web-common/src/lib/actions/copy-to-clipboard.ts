@@ -12,6 +12,6 @@ export function isClipboardApiSupported(): boolean {
 export function copyToClipboard(value: string, message?: string) {
   navigator.clipboard.writeText(value).catch(console.error);
   eventBus.emit("notification", {
-    message: message || `copied ${value} to clipboard`,
+    message: message || `Copied ${value} to clipboard`,
   });
 }

@@ -11,7 +11,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
-  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
+  import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";

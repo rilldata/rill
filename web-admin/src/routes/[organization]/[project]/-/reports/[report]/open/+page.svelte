@@ -22,19 +22,19 @@
 
   $: report = useReport($runtime.instanceId, reportId);
   $: exploreName = getExploreName(
-    $report.data?.resource?.report?.spec?.annotations?.web_open_path,
+    $report?.data?.resource?.report?.spec?.annotations?.web_open_path,
   );
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
     exploreName,
-    $report.data?.resource?.report?.spec?.queryName,
-    $report.data?.resource?.report?.spec?.queryArgsJson,
+    $report?.data?.resource?.report?.spec?.queryName,
+    $report?.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
-    $report.data?.resource?.report?.spec?.annotations ?? {},
+    $report?.data?.resource?.report?.spec?.annotations ?? {},
   );
 
-  $: if ($dashboardStateForReport.data) {
+  $: if ($dashboardStateForReport?.data) {
     void goto(
       getExplorePageUrl(
         $page.url,

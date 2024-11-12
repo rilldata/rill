@@ -25,11 +25,11 @@ postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify a connection string when running Rill using the `--var` flag.
+When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify a connection string when running Rill using the `--env` flag.
 An example of using this syntax in terminal:
 
 ```bash
-rill start --var connector.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
+rill start --env connector.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
 ```
 
 Alternatively, you can include the connection string directly in the source YAML definition by adding the `database_url` parameter. 
