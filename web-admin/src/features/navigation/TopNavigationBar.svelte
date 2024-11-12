@@ -211,11 +211,7 @@
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
-              <ShareDashboardPopover
-                {createMagicAuthTokens}
-                {organization}
-                {project}
-              />
+              <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>
         {/key}

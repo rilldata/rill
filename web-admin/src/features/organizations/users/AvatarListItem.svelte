@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import { getRandomBgColor } from "@rilldata/web-common/features/themes/color-config";
   import { cn } from "@rilldata/web-common/lib/shadcn";
@@ -14,8 +12,6 @@
   export let count: number = 0;
   export let isEveryoneFromText: boolean = false;
   export let canManage: boolean = false;
-
-  $: organization = $page.params.organization;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();

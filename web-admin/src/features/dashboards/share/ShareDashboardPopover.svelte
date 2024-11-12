@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createAdminServiceListProjectMemberUsergroups } from "@rilldata/web-admin/client";
   import CreatePublicURLForm from "@rilldata/web-admin/features/public-urls/CreatePublicURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
@@ -14,13 +13,9 @@
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
-  import OrganizationItem from "../../projects/user-management/OrganizationItem.svelte";
-  import UsergroupItem from "../../projects/user-management/UsergroupItem.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   export let createMagicAuthTokens: boolean;
-  export let organization: string;
-  export let project: string;
 
   let isOpen = false;
   let copied = false;
@@ -33,22 +28,6 @@
       copied = false;
     }, 2_000);
   }
-
-  $: listProjectMemberUsergroups =
-    createAdminServiceListProjectMemberUsergroups(organization, project);
-  $: projectMemberUserGroupsList =
-    $listProjectMemberUsergroups.data?.members ?? [];
-
-  $: showOrganizationSection = projectMemberUserGroupsList.some(
-    (group) => group.groupName === "all-users",
-  );
-  $: showAllUsersGroup = projectMemberUserGroupsList.find(
-    (group) => group.groupName === "all-users",
-  );
-  $: showGroupsSection =
-    projectMemberUserGroupsList.length > 0 &&
-    projectMemberUserGroupsList.length === 1 &&
-    projectMemberUserGroupsList[0].groupName !== "all-users";
 </script>
 
 <Popover bind:open={isOpen}>
