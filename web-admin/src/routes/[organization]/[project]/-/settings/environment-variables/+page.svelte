@@ -12,19 +12,16 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { EnvironmentTypes } from "@rilldata/web-admin/features/projects/environment-variables/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createRuntimeServiceAnalyzeVariables } from "@rilldata/web-common/runtime-client";
 
   let open = false;
   let searchText = "";
   let isDropdownOpen = false;
   let filterByEnvironment: EnvironmentTypes = "";
 
-  // TODO: revisit this
-  // AnalyzeVariables scans Source, Model and Connector resources in the catalog for use of an environment variable
-  // TODO: how do i use the variables in the cloud?
-  $: ({ instanceId } = $runtime);
-  $: analyzeVariables = createRuntimeServiceAnalyzeVariables(instanceId);
+  // FIXME
+  // $: ({ instanceId } = $runtime);
+  // $: analyzeVariables = createRuntimeServiceAnalyzeVariables(instanceId);
+  // $: console.log("analyzeVariables: ", $analyzeVariables.data);
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

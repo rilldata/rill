@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { Trash2Icon } from "lucide-svelte";
