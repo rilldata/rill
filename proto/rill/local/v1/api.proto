@@ -28,6 +28,9 @@ service LocalService {
 
   // GetCurrentProject returns the rill cloud project connected to the local project
   rpc GetCurrentProject(GetCurrentProjectRequest) returns (GetCurrentProjectResponse) {}
+
+  // GetUserOrgMetadata returns metadata about the current user's orgs.
+  rpc GetUserOrgMetadata(GetUserOrgMetadataRequest) returns (GetUserOrgMetadataResponse) {}
 }
 
 message PingRequest {}
@@ -107,4 +110,16 @@ message GetCurrentProjectRequest {}
 message GetCurrentProjectResponse {
   string local_project_name = 1;
   admin.v1.Project project = 2;
+}
+
+message GetUserOrgMetadataRequest {}
+
+message GetUserOrgMetadataResponse {
+  message OrgMetadata {
+    string name = 1;
+    bool is_admin = 2;
+    repeated admin.v1.BillingIssue issues = 3;
+  }
+
+  repeated OrgMetadata orgs = 1;
 }

@@ -541,6 +541,41 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	}), nil
 }
 
+func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[localv1.GetUserOrgMetadataRequest]) (*connect.Response[localv1.GetUserOrgMetadataResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{PageSize: 1000})
+	if err != nil {
+		return nil, err
+	}
+
+	orgsMetadata := make([]*localv1.GetUserOrgMetadataResponse_OrgMetadata, len(resp.Organizations))
+	for _, org := range resp.Organizations {
+		issues, err := c.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
+			Organization: org.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		orgsMetadata = append(orgsMetadata, &localv1.GetUserOrgMetadataResponse_OrgMetadata{
+			Name:   org.Name,
+			Issues: issues.Issues,
+		})
+	}
+
+	return connect.NewResponse(&localv1.GetUserOrgMetadataResponse{
+		Orgs: orgsMetadata,
+	}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"

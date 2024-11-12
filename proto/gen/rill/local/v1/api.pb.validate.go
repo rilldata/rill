@@ -1811,3 +1811,385 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCurrentProjectResponseValidationError{}
+
+// Validate checks the field values on GetUserOrgMetadataRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetUserOrgMetadataRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUserOrgMetadataRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetUserOrgMetadataRequestMultiError, or nil if none found.
+func (m *GetUserOrgMetadataRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUserOrgMetadataRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return GetUserOrgMetadataRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUserOrgMetadataRequestMultiError is an error wrapping multiple validation
+// errors returned by GetUserOrgMetadataRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GetUserOrgMetadataRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUserOrgMetadataRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUserOrgMetadataRequestMultiError) AllErrors() []error { return m }
+
+// GetUserOrgMetadataRequestValidationError is the validation error returned by
+// GetUserOrgMetadataRequest.Validate if the designated constraints aren't met.
+type GetUserOrgMetadataRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUserOrgMetadataRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUserOrgMetadataRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUserOrgMetadataRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUserOrgMetadataRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUserOrgMetadataRequestValidationError) ErrorName() string {
+	return "GetUserOrgMetadataRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetUserOrgMetadataRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUserOrgMetadataRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUserOrgMetadataRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUserOrgMetadataRequestValidationError{}
+
+// Validate checks the field values on GetUserOrgMetadataResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetUserOrgMetadataResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUserOrgMetadataResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetUserOrgMetadataResponseMultiError, or nil if none found.
+func (m *GetUserOrgMetadataResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUserOrgMetadataResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetOrgs() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetUserOrgMetadataResponseValidationError{
+						field:  fmt.Sprintf("Orgs[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetUserOrgMetadataResponseValidationError{
+						field:  fmt.Sprintf("Orgs[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetUserOrgMetadataResponseValidationError{
+					field:  fmt.Sprintf("Orgs[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetUserOrgMetadataResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUserOrgMetadataResponseMultiError is an error wrapping multiple
+// validation errors returned by GetUserOrgMetadataResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetUserOrgMetadataResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUserOrgMetadataResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUserOrgMetadataResponseMultiError) AllErrors() []error { return m }
+
+// GetUserOrgMetadataResponseValidationError is the validation error returned
+// by GetUserOrgMetadataResponse.Validate if the designated constraints aren't met.
+type GetUserOrgMetadataResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUserOrgMetadataResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUserOrgMetadataResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUserOrgMetadataResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUserOrgMetadataResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUserOrgMetadataResponseValidationError) ErrorName() string {
+	return "GetUserOrgMetadataResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetUserOrgMetadataResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUserOrgMetadataResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUserOrgMetadataResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUserOrgMetadataResponseValidationError{}
+
+// Validate checks the field values on GetUserOrgMetadataResponse_OrgMetadata
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *GetUserOrgMetadataResponse_OrgMetadata) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// GetUserOrgMetadataResponse_OrgMetadata with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// GetUserOrgMetadataResponse_OrgMetadataMultiError, or nil if none found.
+func (m *GetUserOrgMetadataResponse_OrgMetadata) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for IsAdmin
+
+	for idx, item := range m.GetIssues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetUserOrgMetadataResponse_OrgMetadataValidationError{
+						field:  fmt.Sprintf("Issues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetUserOrgMetadataResponse_OrgMetadataValidationError{
+						field:  fmt.Sprintf("Issues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetUserOrgMetadataResponse_OrgMetadataValidationError{
+					field:  fmt.Sprintf("Issues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetUserOrgMetadataResponse_OrgMetadataMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUserOrgMetadataResponse_OrgMetadataMultiError is an error wrapping
+// multiple validation errors returned by
+// GetUserOrgMetadataResponse_OrgMetadata.ValidateAll() if the designated
+// constraints aren't met.
+type GetUserOrgMetadataResponse_OrgMetadataMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUserOrgMetadataResponse_OrgMetadataMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUserOrgMetadataResponse_OrgMetadataMultiError) AllErrors() []error { return m }
+
+// GetUserOrgMetadataResponse_OrgMetadataValidationError is the validation
+// error returned by GetUserOrgMetadataResponse_OrgMetadata.Validate if the
+// designated constraints aren't met.
+type GetUserOrgMetadataResponse_OrgMetadataValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) ErrorName() string {
+	return "GetUserOrgMetadataResponse_OrgMetadataValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUserOrgMetadataResponse_OrgMetadata.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUserOrgMetadataResponse_OrgMetadataValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUserOrgMetadataResponse_OrgMetadataValidationError{}
