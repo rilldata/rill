@@ -13,4 +13,9 @@
   $: activityText = formatText();
 </script>
 
-<span class="text-xs text-gray-500">{activityText}</span>
+<span
+  class="text-xs text-gray-500"
+  title={new Date(updatedOn || createdOn).toLocaleString()}
+>
+  {activityText}
+</span>

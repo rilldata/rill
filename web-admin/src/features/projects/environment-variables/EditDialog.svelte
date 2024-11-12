@@ -23,7 +23,6 @@
   import { object, string } from "yup";
   import { EnvironmentType, type EnvironmentTypes } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { onMount } from "svelte";
 
   export let open = false;
   export let id: string;
@@ -31,12 +30,15 @@
   export let name: string;
   export let value: string;
 
-  let isDevelopment = false;
-  let isProduction = false;
   let processedEnvironment: EnvironmentTypes;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  // TODO: revisit when we allow key changes in edit dialog, check for duplicates
+  $: hasChanges = $form.environment !== environment || $form.value !== value;
+
+  $: console.log("$form: ", $form);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -127,22 +129,15 @@
 
   function handleReset() {
     $form = initialValues;
-
-    isDevelopment = true;
-    isProduction = true;
   }
 
-  onMount(() => {
-    if ($form.environment === "") {
-      isDevelopment = true;
-      isProduction = true;
-    }
-  });
+  $: isDevelopment =
+    $form.environment === EnvironmentType.UNDEFINED ||
+    $form.environment === EnvironmentType.DEVELOPMENT;
 
-  // $: hasChanges =
-  //   $form.value !== value || $form.environment !== processedEnvironment;
-
-  // $: console.log("$form: ", $form);
+  $: isProduction =
+    $form.environment === EnvironmentType.UNDEFINED ||
+    $form.environment === EnvironmentType.PRODUCTION;
 </script>
 
 <Dialog bind:open onOutsideClick={() => handleReset()}>
@@ -171,26 +166,18 @@
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
-              onCheckedChange={(checked) => {
-                // if (checked) {
-                //   isDevelopment = true;
-                // } else {
-                //   isDevelopment = false;
-                // }
-                isDevelopment = checked;
+              onCheckedChange={() => {
+                // FIXME
+                $form.environment = EnvironmentType.DEVELOPMENT;
               }}
               id="development"
               label="Development"
             />
             <Checkbox
               bind:checked={isProduction}
-              onCheckedChange={(checked) => {
-                // if (checked) {
-                //   isProduction = true;
-                // } else {
-                //   isProduction = false;
-                // }
-                isProduction = checked;
+              onCheckedChange={() => {
+                // FIXME
+                $form.environment = EnvironmentType.PRODUCTION;
               }}
               id="production"
               label="Production"
@@ -236,8 +223,11 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button type="primary" form={$formId} disabled={$submitting} submitForm
-        >Edit</Button
+      <Button
+        type="primary"
+        form={$formId}
+        disabled={$submitting || !hasChanges}
+        submitForm>Edit</Button
       >
     </DialogFooter>
   </DialogContent>
