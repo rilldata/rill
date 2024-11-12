@@ -8,10 +8,11 @@
   import {
     getDashboardNameFromReport,
     getInitialValues,
+    type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { defaults, superForm } from "sveltekit-superforms";
   import { array, object, string } from "yup";
-  import { yup } from "sveltekit-superforms/adapters";
+  import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
   import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
@@ -54,9 +55,9 @@
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
     }),
-  );
+  ) as ValidationAdapter<ReportValues>;
 
-  async function handleSubmit(values: ReturnType<typeof getInitialValues>) {
+  async function handleSubmit(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
       values.frequency,
       values.dayOfWeek,
@@ -136,7 +137,7 @@
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
-        return handleSubmit(values as ReturnType<typeof getInitialValues>);
+        return handleSubmit(values);
       },
       validationMethod: "oninput",
     },

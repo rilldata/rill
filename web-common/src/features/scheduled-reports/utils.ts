@@ -49,6 +49,8 @@ export function getInitialValues(
   };
 }
 
+export type ReportValues = ReturnType<typeof getInitialValues>;
+
 export function getDashboardNameFromReport(
   reportSpec: V1ReportSpec | undefined,
 ): string | null {

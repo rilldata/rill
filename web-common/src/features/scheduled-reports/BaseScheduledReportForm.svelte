@@ -4,16 +4,18 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
+  import type { SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;
-  export let data: Readable<any>;
-  export let errors: Readable<any>;
+  export let data: Readable<ReportValues>;
+  export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
   export let exploreName: string;
