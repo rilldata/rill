@@ -22,6 +22,6 @@ export const formattingSelectors = {
       return (_value: number | undefined) => undefined;
     }
 
-    return createMeasureValueFormatter<null | undefined>(measure);
+    return createMeasureValueFormatter(measure);
   },
 };

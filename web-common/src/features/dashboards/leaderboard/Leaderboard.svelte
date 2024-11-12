@@ -66,7 +66,6 @@
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let dimensionName: string;
   export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
   export let calculateAllLeaderboardWidths: (
     dimensionName: string,
