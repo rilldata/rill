@@ -9,7 +9,6 @@
     getDashboardNameFromReport,
     getInitialValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
-  import { createForm } from "svelte-forms-lib";
   import { defaults, superForm } from "sveltekit-superforms";
   import { array, object, string } from "yup";
   import { yup } from "sveltekit-superforms/adapters";
@@ -137,7 +136,7 @@
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
-        return handleSubmit(values);
+        return handleSubmit(values as ReturnType<typeof getInitialValues>);
       },
       validationMethod: "oninput",
     },

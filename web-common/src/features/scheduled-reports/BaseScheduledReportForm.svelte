@@ -1,5 +1,4 @@
 <script lang="ts">
-  import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";

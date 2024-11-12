@@ -10,12 +10,10 @@ import {
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
-  type V1AlertSpec,
   V1ExportFormat,
   type V1Notifier,
   type V1ReportSpec,
 } from "@rilldata/web-common/runtime-client";
-import { string } from "yup";
 
 export function getInitialValues(
   reportSpec: V1ReportSpec | undefined,
