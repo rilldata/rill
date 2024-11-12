@@ -154,7 +154,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26642.549999999974 -4348.7299999999705 -14%",
+        name: "null 26,643 -4,349 -14%",
       }),
     ).toBeVisible();
 
@@ -194,7 +194,7 @@ dimensions:
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^26642\.549999999974$/ })
+        .filter({ hasText: /^26,643$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
@@ -202,7 +202,7 @@ dimensions:
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^-4348\.7299999999705$/ })
+        .filter({ hasText: /^-4,349$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 

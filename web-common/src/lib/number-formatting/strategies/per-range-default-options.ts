@@ -27,7 +27,7 @@ export const defaultNoFormattingOptions: FormatterOptionsCommon &
       maxDigitsRight: 2,
       baseMagnitude: 0,
       useTrailingDot: false,
-      padWithInsignificantZeros: true,
+      padWithInsignificantZeros: false,
     },
     {
       minMag: 3,
