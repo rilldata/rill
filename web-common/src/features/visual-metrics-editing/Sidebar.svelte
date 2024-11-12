@@ -101,14 +101,10 @@
           {
             label: "Simple",
             key: "format_preset",
-            options: Object.values(FormatPreset)
-              .map((value) => ({
-                value,
-                label: value,
-              }))
-              // TODO: we need to think about how to expose the no formatting option in the
-              // visual metrics editor
-              .filter((presets) => presets.value !== FormatPreset.DEFAULT),
+            options: Object.values(FormatPreset).map((value) => ({
+              value,
+              label: value,
+            })),
             placeholder: "Select a format",
           },
           {

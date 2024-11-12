@@ -2,16 +2,13 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import { format as d3format } from "d3-format";
 import {
   FormatPreset,
-  formatPresetToNumberKind,
   NumberKind,
-  type FormatterFactoryOptions,
-  type FormatterType,
+  type FormatterContext,
 } from "./humanizer-types";
 import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,
 } from "./strategies/intervals";
-import { NonFormatter } from "./strategies/none";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultCurrencyOptions,
@@ -38,25 +35,11 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
     return JSON.stringify(value);
   }
 
-  const numberKind = formatPresetToNumberKind(preset);
-
-  let options: FormatterFactoryOptions;
-
-  if (preset === FormatPreset.NONE) {
-    options = {
-      numberKind,
-      padWithInsignificantZeros: false,
-    };
-  } else {
-    options = {
-      numberKind,
-    };
-  }
-
   switch (preset) {
     case FormatPreset.NONE:
-      return new NonFormatter(options).stringFormat(value);
-
+      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
+        value,
+      );
     case FormatPreset.CURRENCY_USD:
       return new PerRangeFormatter(
         defaultCurrencyOptions(NumberKind.DOLLAR),
@@ -78,14 +61,9 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
         value,
       );
 
-    case FormatPreset.DEFAULT:
-      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
-        value,
-      );
-
     default:
       console.warn(
-        "Unknown format preset, using default formatter. All number kinds should be handled.",
+        "Unknown format preset, using none formatter. All number kinds should be handled.",
       );
       return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
         value,
@@ -149,7 +127,6 @@ function humanizeDataTypeForTooltip(
       return formatMsToDuckDbIntervalString(value);
 
     case FormatPreset.HUMANIZE:
-    case FormatPreset.DEFAULT:
     case FormatPreset.NONE:
       return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
         value,
@@ -157,7 +134,7 @@ function humanizeDataTypeForTooltip(
 
     default:
       console.warn(
-        "Unknown format preset, using default formatter. All number kinds should be handled.",
+        "Unknown format preset, using none formatter. All number kinds should be handled.",
       );
       return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
         value,
@@ -181,7 +158,7 @@ function humanizeDataTypeForTooltip(
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
-  type: FormatterType = "default",
+  type: FormatterContext = "table",
 ): (value: number | string | T) => string | T {
   const useUnabridged = type === "unabridged";
   const isBigNumber = type === "big-number";
@@ -239,13 +216,9 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   let formatPreset =
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
-      : FormatPreset.DEFAULT;
+      : FormatPreset.NONE;
 
-  if (
-    isBigNumber &&
-    (formatPreset === FormatPreset.NONE ||
-      formatPreset === FormatPreset.DEFAULT)
-  ) {
+  if (isBigNumber && formatPreset === FormatPreset.NONE) {
     formatPreset = FormatPreset.HUMANIZE;
   }
 

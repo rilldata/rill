@@ -6,12 +6,10 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
  */
 export enum FormatPreset {
   /**
-   * The default format preset is only for internal use and is applied
-   * when there is no preset or d3 format string defined
+   * In absence of a format preset, none is applied.
    */
-  DEFAULT = "default",
-  HUMANIZE = "humanize",
   NONE = "none",
+  HUMANIZE = "humanize",
   CURRENCY_USD = "currency_usd",
   CURRENCY_EUR = "currency_eur",
   PERCENTAGE = "percentage",
@@ -101,7 +99,6 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
       return NumberKind.INTERVAL;
 
     case FormatPreset.NONE:
-    case FormatPreset.DEFAULT:
     case FormatPreset.HUMANIZE:
       return NumberKind.ANY;
     default:
@@ -306,4 +303,8 @@ export interface Formatter {
   partsFormat(x: number): NumberParts;
 }
 
-export type FormatterType = "default" | "unabridged" | "big-number" | "tooltip";
+export type FormatterContext =
+  | "table"
+  | "unabridged"
+  | "big-number"
+  | "tooltip";
