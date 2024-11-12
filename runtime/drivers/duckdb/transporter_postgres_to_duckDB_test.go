@@ -97,8 +97,9 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	me := &postgresToSelfExecutor{
-		c: duckDB.(*connection),
+	me := &sqlStoreToSelfExecutor{
+		c:      duckDB.(*connection),
+		driver: "postgres",
 	}
 	opts := &drivers.ModelExecuteOptions{
 		ModelExecutorOptions: &drivers.ModelExecutorOptions{
