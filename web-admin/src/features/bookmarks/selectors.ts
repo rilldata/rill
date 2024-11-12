@@ -152,7 +152,6 @@ export function getHomeBookmarkData(
 }
 
 export function getPrettySelectedTimeRange(
-  queryClient: QueryClient,
   instanceId: string,
   metricsViewName: string,
   exploreName: string,
@@ -160,17 +159,13 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {
-        query: { queryClient },
-      }),
       getTimeRanges(exploreName),
       useExploreStore(metricsViewName),
     ],
-    ([validSpec, timeRangeSummary, timeRanges, metricsExplorerEntity]) => {
+    ([validSpec, timeRanges, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([
         validSpec.data?.metricsView ?? {},
         validSpec.data?.explore ?? {},
-        timeRangeSummary,
         timeRanges,
         metricsExplorerEntity,
       ]);

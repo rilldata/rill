@@ -146,7 +146,7 @@ export function createStateManagers({
         "inf",
         ...(defaultPreset.timeRange ? [defaultPreset.timeRange] : []),
         ...(explore.timeRanges?.length
-          ? explore.timeRanges.map((t) => t.range)
+          ? explore.timeRanges.map((t) => t.range!)
           : []),
       ]);
 

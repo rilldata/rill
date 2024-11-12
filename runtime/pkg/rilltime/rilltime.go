@@ -251,6 +251,7 @@ func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *Time
 		isTruncate = r.isComplete
 	} else if tm.Earliest {
 		t = resolverCtx.MinTime.In(r.timeZone)
+		isTruncate = true
 	} else if tm.Latest {
 		t = resolverCtx.MaxTime.In(r.timeZone)
 		isTruncate = r.isComplete
@@ -288,6 +289,7 @@ func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *Time
 		}
 
 		grain = grainMap[g]
+		isTruncate = true
 	}
 
 	if isTruncate {

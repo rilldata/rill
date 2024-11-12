@@ -101,7 +101,6 @@ export function getPivotConfig(
       const timeControl = timeControlStateSelector([
         metricsView,
         explore,
-        timeRangeSummary,
         timeRanges,
         dashboardStore,
       ]);

@@ -11,7 +11,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
@@ -31,7 +30,6 @@
   };
 
   $: selectedTimeRange = getPrettySelectedTimeRange(
-    queryClient,
     $runtime?.instanceId,
     metricsViewName,
     exploreName,
