@@ -84,8 +84,8 @@ const sidebars = {
               ]
           },
 */  
-/*
-            { some changes to syntax and adding 'tasks'
+
+            { 
               type: 'category',
               label: 'Incremental Models',
               
@@ -93,19 +93,19 @@ const sidebars = {
                 'tutorials/rill_advanced_features/incremental_models/introduction',
                 {
                   type: 'category',
-                  label: 'Basic Incremental and Split Model Examples',
+                  label: 'Basic Incremental and Partitions Model Examples',
                   items: [
                     'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/split_now',
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partitions_now',
                   ]
                 },
                 'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
-                'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
+ //               'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 
               ]
             },
-            */
+            
             {
               type: 'category',
               label: 'Custom APIs',
