@@ -37,7 +37,7 @@
       {#if $resources.isRefetching}
         Refreshing...
       {:else}
-        Refresh
+        Refresh all sources and models
       {/if}
     </Button>
   </div>
