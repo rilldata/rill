@@ -3,7 +3,6 @@
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     resourceIsLoading,
     ResourceKind,
@@ -45,7 +44,6 @@
       newTitle,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.Explore),
     );
     if (newRoute) await goto(newRoute);
   }
