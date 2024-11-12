@@ -50,6 +50,7 @@
   const formId = "add-environment-variables-form";
 
   const initialValues = {
+    // TODO: can set environment here
     newVariables: [{ key: "", value: "" }],
   };
 
@@ -149,10 +150,13 @@
 
   function handleRemove(index: number) {
     $form.newVariables = $form.newVariables.filter((_, i) => i !== index);
+    checkForExistingKeys();
   }
 
   function handleReset() {
     $form.newVariables = [{ key: "", value: "" }];
+    isDevelopment = false;
+    isProduction = false;
     inputErrors = {};
     isKeyAlreadyExists = false;
   }
