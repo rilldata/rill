@@ -1,1 +1,1 @@
-module.exports = require("../web-common/postcss.config.cjs")
+module.exports = require("../web-common/postcss.config.cjs");
