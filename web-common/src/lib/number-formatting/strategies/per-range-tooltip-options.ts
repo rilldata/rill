@@ -13,8 +13,8 @@ const tooltipRangeSpec: RangeFormatSpec[] = [
     baseMagnitude: 0,
     overrideValue: {
       int: "",
-      dot: ".",
-      frac: "00",
+      dot: "",
+      frac: "0",
       prefix: "~",
       suffix: "",
     },
