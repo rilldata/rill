@@ -95,7 +95,7 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 
 var dotenvURLs = map[string]string{
 	"cloud": "gs://rill-devtool/dotenv/cloud-dev.env",
-	"e2e": "gs://rill-devtool/dotenv/cloud-e2e.env",
+	"e2e":   "gs://rill-devtool/dotenv/cloud-e2e.env",
 }
 
 func checkDotenv() error {
