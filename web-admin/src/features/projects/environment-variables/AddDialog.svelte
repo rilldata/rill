@@ -40,6 +40,11 @@
   $: project = $page.params.project;
 
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
+  $: hasNewChanges = $form.newVariables.some(
+    (variable) => variable.key !== "" || variable.value !== "",
+  );
+
+  $: console.log($form.newVariables);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -138,7 +143,7 @@
     $form.newVariables[index].value = target.value;
   }
 
-  function handleDelete(index: number) {
+  function handleRemove(index: number) {
     $form.newVariables = $form.newVariables.filter((_, i) => i !== index);
   }
 
@@ -276,8 +281,9 @@
                 />
                 <IconButton
                   on:click={() => {
+                    // Do not allow to remove the last variable
                     if (index !== $form.newVariables.length - 1) {
-                      handleDelete(index);
+                      handleRemove(index);
                     } else {
                       handleReset();
                     }
@@ -314,7 +320,7 @@
       <Button
         type="primary"
         form={formId}
-        disabled={$submitting || hasExistingKeys}
+        disabled={$submitting || hasExistingKeys || !hasNewChanges}
         submitForm>Create</Button
       >
     </DialogFooter>
