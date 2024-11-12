@@ -12,7 +12,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const queryClient = useQueryClient();
-  const triggerMutation = createRuntimeServiceCreateTrigger();
+  const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isReconciling = false;
 
@@ -29,7 +29,6 @@
               resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
           );
         },
-        enabled: true,
         refetchOnMount: true,
         refetchInterval: isReconciling ? 500 : false,
       },
@@ -47,7 +46,7 @@
   function refreshAllSourcesAndModels() {
     isReconciling = true;
 
-    void $triggerMutation.mutateAsync({
+    void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         allSourcesModelsFull: true,
