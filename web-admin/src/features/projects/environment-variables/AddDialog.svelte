@@ -75,9 +75,9 @@
         if (!form.valid) return;
         const values = form.data;
 
-        // Filter out empty variables that are created in the form
+        // Omit draft variables that do not have a key
         const filteredVariables = values.newVariables.filter(
-          ({ key, value }) => key !== "" || value !== "",
+          ({ key }) => key !== "",
         );
 
         // Flatten the variables to match the schema
