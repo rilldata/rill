@@ -738,7 +738,7 @@ func prepareStripeConfig() error {
 	}
 
 	// Create the output file
-	out, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	out, err := os.Create(outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
