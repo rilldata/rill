@@ -75,7 +75,7 @@
   }
 
   .banner-cta {
-    @apply text-primary-600 cursor-pointer;
+    @apply text-primary-600 cursor-pointer font-medium;
   }
 
   .banner-message :global(a:hover) {

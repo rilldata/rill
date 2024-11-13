@@ -10954,6 +10954,98 @@ export class ListPublicBillingPlansResponse extends Message<ListPublicBillingPla
 }
 
 /**
+ * @generated from message rill.admin.v1.GetBillingProjectCredentialsRequest
+ */
+export class GetBillingProjectCredentialsRequest extends Message<GetBillingProjectCredentialsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  constructor(data?: PartialMessage<GetBillingProjectCredentialsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingProjectCredentialsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingProjectCredentialsRequest {
+    return new GetBillingProjectCredentialsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingProjectCredentialsRequest {
+    return new GetBillingProjectCredentialsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingProjectCredentialsRequest {
+    return new GetBillingProjectCredentialsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingProjectCredentialsRequest | PlainMessage<GetBillingProjectCredentialsRequest> | undefined, b: GetBillingProjectCredentialsRequest | PlainMessage<GetBillingProjectCredentialsRequest> | undefined): boolean {
+    return proto3.util.equals(GetBillingProjectCredentialsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetBillingProjectCredentialsResponse
+ */
+export class GetBillingProjectCredentialsResponse extends Message<GetBillingProjectCredentialsResponse> {
+  /**
+   * @generated from field: string runtime_host = 1;
+   */
+  runtimeHost = "";
+
+  /**
+   * @generated from field: string instance_id = 2;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string access_token = 3;
+   */
+  accessToken = "";
+
+  /**
+   * @generated from field: uint32 ttl_seconds = 4;
+   */
+  ttlSeconds = 0;
+
+  constructor(data?: PartialMessage<GetBillingProjectCredentialsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingProjectCredentialsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingProjectCredentialsResponse {
+    return new GetBillingProjectCredentialsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingProjectCredentialsResponse {
+    return new GetBillingProjectCredentialsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingProjectCredentialsResponse {
+    return new GetBillingProjectCredentialsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingProjectCredentialsResponse | PlainMessage<GetBillingProjectCredentialsResponse> | undefined, b: GetBillingProjectCredentialsResponse | PlainMessage<GetBillingProjectCredentialsResponse> | undefined): boolean {
+    return proto3.util.equals(GetBillingProjectCredentialsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.TelemetryRequest
  */
 export class TelemetryRequest extends Message<TelemetryRequest> {

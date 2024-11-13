@@ -4,7 +4,6 @@
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
@@ -18,10 +17,10 @@
     useIsModelingSupportedForDefaultOlapDriver,
     useIsModelingSupportedForOlapDriver,
   } from "../connectors/olap/selectors";
+  import PreviewButton from "../explores/PreviewButton.svelte";
   import GoToDashboardButton from "../metrics-views/GoToDashboardButton.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualMetrics from "./VisualMetrics.svelte";
-  import PreviewButton from "../explores/PreviewButton.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -30,13 +29,14 @@
     hasUnsavedChanges,
     autoSave,
     path: filePath,
+    resourceName,
     remoteContent,
     fileName,
   } = fileArtifact);
 
   $: workspace = workspaces.get(filePath);
 
-  $: metricsViewName = getNameFromFile(filePath);
+  $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(metricsViewName);
 
@@ -68,7 +68,6 @@
       newTitle,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     if (newRoute) await goto(newRoute);
   }

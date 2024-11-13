@@ -12,6 +12,7 @@
   import DeployProjectCTA from "@rilldata/web-common/features/dashboards/workspace/DeployProjectCTA.svelte";
   import ExplorePreviewCTAs from "@rilldata/web-common/features/explores/ExplorePreviewCTAs.svelte";
   import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import { parseDocument } from "yaml";
@@ -29,6 +30,7 @@
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
+  $: onDeployPage = isDeployPage($page);
 
   $: exploresQuery = useValidExplores(instanceId);
   $: canvasQuery = useValidCanvases(instanceId);
@@ -111,7 +113,9 @@
         <ExplorePreviewCTAs exploreName={dashboardName} />
       {/if}
     {/if}
-    <DeployProjectCTA {hasValidDashboard} />
+    {#if !onDeployPage}
+      <DeployProjectCTA {hasValidDashboard} />
+    {/if}
     <LocalAvatarButton />
   </div>
 </header>

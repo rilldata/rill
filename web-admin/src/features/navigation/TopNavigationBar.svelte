@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
@@ -31,6 +30,7 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
+    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
@@ -58,6 +58,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -101,7 +102,7 @@
     (map, { name, displayName }) =>
       map.set(name.toLowerCase(), {
         label: displayName || name,
-        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+        pill: $plan?.data?.displayName,
       }),
     new Map<string, PathOption>(),
   );
@@ -170,7 +171,10 @@
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div class="flex items-center w-full pr-4 pl-2 py-1">
+<div
+  class="flex items-center w-full pr-4 pl-2 py-1"
+  class:border-b={!onProjectPage && !onOrgPage}
+>
   <!-- Left side -->
   <a
     href={rillLogoHref}

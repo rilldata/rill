@@ -971,15 +971,15 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/models/{model}/splits:
+  /v1/instances/{instanceId}/models/{model}/partitions:
     get:
-      summary: GetModelSplits returns the splits of a model
-      operationId: RuntimeService_GetModelSplits
+      summary: GetModelPartitions returns the partitions of a model
+      operationId: RuntimeService_GetModelPartitions
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetModelSplitsResponse'
+            $ref: '#/definitions/v1GetModelPartitionsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -4167,6 +4167,8 @@ definitions:
       theme:
         type: string
         title: Theme to use
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
       timeRanges:
         type: array
         items:
@@ -4186,6 +4188,9 @@ definitions:
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
         description: Preset UI state to show by default.
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
       securityRules:
         type: array
         items:
@@ -4366,14 +4371,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
-  v1GetModelSplitsResponse:
+  v1GetModelPartitionsResponse:
     type: object
     properties:
-      splits:
+      partitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ModelSplit'
+          $ref: '#/definitions/v1ModelPartition'
       nextPageToken:
         type: string
   v1GetResourceResponse:
@@ -5339,6 +5344,24 @@ definitions:
       version:
         type: integer
         format: int64
+  v1ModelPartition:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelSpec:
     type: object
     properties:
@@ -5353,13 +5376,13 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
-      splitsResolver:
+      partitionsResolver:
         type: string
-      splitsResolverProperties:
+      partitionsResolverProperties:
         type: object
-      splitsWatermarkField:
+      partitionsWatermarkField:
         type: string
-      splitsConcurrencyLimit:
+      partitionsConcurrencyLimit:
         type: integer
         format: int64
       inputConnector:
@@ -5379,24 +5402,6 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
-  v1ModelSplit:
-    type: object
-    properties:
-      key:
-        type: string
-      data:
-        type: object
-      watermark:
-        type: string
-        format: date-time
-      executedOn:
-        type: string
-        format: date-time
-      error:
-        type: string
-      elapsedMs:
-        type: integer
-        format: int64
   v1ModelState:
     type: object
     properties:
@@ -5428,12 +5433,12 @@ definitions:
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
         description: incremental_state_schema contains a schema for the data in incremental_state.
-      splitsModelId:
+      partitionsModelId:
         type: string
-        description: splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
-      splitsHaveErrors:
+        description: partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore.
+      partitionsHaveErrors:
         type: boolean
-        description: splits_have_errors is true if one or more splits failed to execute.
+        description: partitions_have_errors is true if one or more partitions failed to execute.
   v1ModelV2:
     type: object
     properties:
@@ -5732,14 +5737,14 @@ definitions:
         description: |-
           If true, the current table and state will be dropped before refreshing.
           For non-incremental models, this is equivalent to a normal refresh.
-      splits:
+      partitions:
         type: array
         items:
           type: string
-        description: Keys of specific splits to refresh.
-      allErroredSplits:
+        description: Keys of specific partitions to refresh.
+      allErroredPartitions:
         type: boolean
-        description: If true, it will refresh all splits that errored on their last execution.
+        description: If true, it will refresh all partitions that errored on their last execution.
   v1RefreshTrigger:
     type: object
     properties:
@@ -6242,6 +6247,10 @@ definitions:
         $ref: '#/definitions/v1Color'
       secondaryColor:
         $ref: '#/definitions/v1Color'
+      primaryColorRaw:
+        type: string
+      secondaryColorRaw:
+        type: string
   v1ThemeState:
     type: object
   v1TimeGrain:

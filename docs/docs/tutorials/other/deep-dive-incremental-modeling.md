@@ -13,7 +13,7 @@ In order to follow all the contets this guide, you will need access to a cloud b
 
 ## Getting Started
 
-Before starting the guide, it is a good idea to review the documentation on [incremental modeling](  and [splits](. I will assume that you've already have gone through the trial and have some basic understanding of the concepts. 
+Before starting the guide, it is a good idea to review the documentation on [incremental modeling] and partitions. I will assume that you've already have gone through the trial and have some basic understanding of the concepts. 
 
 Ensure that you have python installed on your system so that we can use some basic scripts to write files / run SQL queries to update the data manually.
 
@@ -48,15 +48,15 @@ Now, lets open Rill and create an Incremental Model.
 type: model
 incremental: true
 
-splits:
+partitions:
   glob: glob: gs://rendo-test/**/rilldata-incremental-model.csv
 
-sql: SELECT * FROM read_csv('{{ .split.uri }}', auto_detect=true, ignore_errors=1, header=true)
+sql: SELECT * FROM read_csv('{{ .partition.uri }}', auto_detect=true, ignore_errors=1, header=true)
 ```
 
-Let's take a minute to check out the split that was just created when reading in the initial data.
+Let's take a minute to check out the partition that was just created when reading in the initial data.
 ```bash
-rill project splits  deepdive --local 
+rill project partitions  deepdive --local 
   KEY                                DATA                                                                                                                                       EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------ ---------------------- --------- ------- 
   591d2ae89c74e7c11516097fbf3c1723   {"path":"2024/09/30/17/38/44/rilldata-incremental-model.csv","uri":"gs://rendo-test/2024/09/30/17/38/44/rilldata-incremental-model.csv"}   2024-09-30T23:49:39Z   319ms     
@@ -72,7 +72,7 @@ Refresh initiated. Check the project logs for status updates.
 ```
 
 ```bash
-rill project splits  deepdive --local                  
+rill project partitions  deepdive --local                  
   KEY                                DATA                                                                                                                                       EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------ ---------------------- --------- ------- 
   591d2ae89c74e7c11516097fbf3c1723   {"path":"2024/09/30/17/38/44/rilldata-incremental-model.csv","uri":"gs://rendo-test/2024/09/30/17/38/44/rilldata-incremental-model.csv"}   2024-09-30T23:49:39Z   319ms            
@@ -82,7 +82,7 @@ rill project splits  deepdive --local
 What about if we create several files and refresh them all together?
 
 ```bash
- rill project splits  deepdive --local        
+ rill project partitions  deepdive --local        
   KEY (5)                            DATA                                                                                                                                       EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------ ---------------------- --------- ------- 
   591d2ae89c74e7c11516097fbf3c1723   {"path":"2024/09/30/17/38/44/rilldata-incremental-model.csv","uri":"gs://rendo-test/2024/09/30/17/38/44/rilldata-incremental-model.csv"}   2024-09-30T23:49:39Z   319ms            
@@ -107,7 +107,7 @@ refresh:
 
 Depending on your use case and how your data is set up, there are a few things to consider for how you set up your file hierarchy and incremental modeling. 
 
-The current setup, creates a split per file. This doesn't have any adverse affects as we only have 1 file in each directory. But what if you had mulitple files in a directory that when modified, you want to ensure that **all** the files in the directory are refreshed and synced?
+The current setup, creates a partition per file. This doesn't have any adverse affects as we only have 1 file in each directory. But what if you had mulitple files in a directory that when modified, you want to ensure that **all** the files in the directory are refreshed and synced?
 
   ```yaml
 glob:

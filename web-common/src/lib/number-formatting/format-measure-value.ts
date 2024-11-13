@@ -101,7 +101,7 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
     return JSON.stringify(value);
   }
   if (type === FormatPreset.INTERVAL) {
-    return formatMsToDuckDbIntervalString(value as number);
+    return formatMsToDuckDbIntervalString(value);
   }
   return value.toString();
 }
@@ -142,20 +142,23 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   // otherwise, use the humanize formatter.
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
-      const formatter = d3format(measureSpec.formatD3);
+      const d3formatter = d3format(measureSpec.formatD3);
       const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
+      const hasPercentSymbol = measureSpec.formatD3.includes("%");
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
+        // For the Big Number, override the d3formatter
         if (isBigNumber) {
-          // For Big Number always use the humanizer
           if (hasCurrencySymbol) {
             return humanizer(value, FormatPreset.CURRENCY_USD);
+          } else if (hasPercentSymbol) {
+            return humanizer(value, FormatPreset.PERCENTAGE);
           } else {
             return humanizer(value, FormatPreset.HUMANIZE);
           }
         }
-        return formatter(value);
+        return d3formatter(value);
       };
     } catch {
       return (value: number | string | T) =>

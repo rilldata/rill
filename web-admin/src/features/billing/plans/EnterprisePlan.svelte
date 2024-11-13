@@ -8,12 +8,10 @@
   export let plan: V1BillingPlan;
 </script>
 
-<SettingsContainer title="Enterprise plan">
+<SettingsContainer title={plan?.displayName}>
   <div slot="body">
     <div>You’re currently on a custom contract.</div>
-    {#if plan}
-      <PlanQuotas {organization} quotas={plan.quotas} />
-    {/if}
+    <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
     <span>To make changes to your contract,</span>

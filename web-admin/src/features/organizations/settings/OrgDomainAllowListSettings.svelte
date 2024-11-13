@@ -92,7 +92,6 @@
           {#each $allowedDomains.data.domains as { domain } (domain)}
             <div class="text-gray-500 font-normal">@{domain}</div>
           {/each}
-          <div class="text-gray-500 font-normal">@aditya</div>
         </div>
       {:else}
         <div class="text-gray-500">none</div>

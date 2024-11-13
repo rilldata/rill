@@ -9,7 +9,6 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
 import {
@@ -22,7 +21,6 @@ import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -161,7 +159,6 @@ export function getDefaultMetricsExplorerEntity(
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
 
-    dimensionSearchText: "",
     temporaryFilterName: null,
     contextColumnWidths: { ...contextColWidthDefaults },
 

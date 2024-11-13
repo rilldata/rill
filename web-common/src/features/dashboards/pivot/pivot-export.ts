@@ -102,6 +102,9 @@ export function getPivotExportArgs(ctx: StateManagers) {
       rows,
       columns,
     ]) => {
+      if (!validSpecStore.data?.explore || !timeControlState.ready)
+        return undefined;
+
       const enableComparison = configStore.enableComparison;
       const comparisonTime = configStore.comparisonTime;
       const pivotState = configStore.pivot;

@@ -94,14 +94,21 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 		for _, m := range u {
 			reportedOrgs[m.OrgID] = struct{}{}
 
+			customerID := m.OrgID
+			if m.BillingCustomerID != nil && *m.BillingCustomerID != "" {
+				// org might have been deleted or recently created in both cases billing customer id will be null. If billing not initialized for the org, then it will be empty string
+				// in all cases just use org ID to report in hope that org ID will be set as billing customer id in the future if not reported values will be ignored
+				customerID = *m.BillingCustomerID
+			}
+
 			usage = append(usage, &billing.Usage{
-				CustomerID:     m.OrgID,
+				CustomerID:     customerID,
 				MetricName:     m.EventName,
 				Value:          m.MaxValue,
 				ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 				StartTime:      m.StartTime,
 				EndTime:        m.EndTime,
-				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID},
+				Metadata:       map[string]interface{}{"org_id": m.OrgID, "project_id": m.ProjectID, "project_name": m.ProjectName},
 			})
 		}
 
@@ -147,11 +154,11 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 			// count the projects which are not hibernated and created before the given time
 			count, err := w.admin.DB.CountBillingProjectsForOrganization(ctx, org, endTime)
 			if err != nil {
-				w.logger.Warn("failed to validate active projects for org", zap.String("org", org), zap.Error(err))
+				w.logger.Warn("failed to validate active projects for org", zap.String("org_id", org), zap.Error(err))
 				continue
 			}
 			if count > 0 {
-				w.logger.Warn("skipping usage reporting for org: no usage data available", zap.String("org", org), zap.Time("start_time", startTime), zap.Time("end_time", endTime))
+				w.logger.Warn("skipped usage reporting for org as no usage data was available", zap.String("org_id", org), zap.Time("start_time", startTime), zap.Time("end_time", endTime))
 			}
 		}
 	}

@@ -25,12 +25,6 @@ export const selectedMeasureNames = (
   return [...dashData.dashboard.visibleMeasureKeys];
 };
 
-export const isAnyMeasureSelected = (
-  dashData: DashboardDataSources,
-): boolean => {
-  return selectedMeasureNames(dashData).length > 0;
-};
-
 export const isValidPercentOfTotal = (
   dashData: DashboardDataSources,
 ): boolean => {
@@ -59,11 +53,6 @@ export const activeMeasureSelectors = {
    * names of the currently selected measures
    */
   selectedMeasureNames,
-
-  /**
-   * Whether any measure is currently selected
-   */
-  isAnyMeasureSelected,
 
   /**
    * Does the currently active measure have `valid_percent_of_total: true`

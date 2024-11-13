@@ -39,7 +39,7 @@
       <StateManagersProvider {exploreName} {metricsViewName}>
         <DashboardURLStateSyncWrapper>
           <DashboardThemeProvider>
-            <Dashboard {exploreName} {metricsViewName} />
+            <Dashboard {exploreName} {metricsViewName} isEmbedded />
           </DashboardThemeProvider>
         </DashboardURLStateSyncWrapper>
       </StateManagersProvider>

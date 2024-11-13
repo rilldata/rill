@@ -43,7 +43,7 @@ export const load = async ({ params, url, route }) => {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
       }
-      // Use without access to anything withing the org will hit this, so redirect to access page here.
+      // Use without access to anything within the org will hit this, so redirect to access page here.
       const didRedirect = await redirectToLoginIfNotLoggedIn();
       if (!didRedirect) {
         return {

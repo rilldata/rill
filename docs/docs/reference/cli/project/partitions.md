@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill project splits
+title: rill project partitions
 ---
-## rill project splits
+## rill project partitions
 
-List splits for a model
+List partitions for a model
 
 ```
-rill project splits [<project>] <model> [flags]
+rill project partitions [<project>] <model> [flags]
 ```
 
 ### Flags
@@ -16,8 +16,10 @@ rill project splits [<project>] <model> [flags]
       --project string      Project Name
       --path string         Project directory (default ".")
       --model string        Model Name
+      --pending             Only fetch pending partitions
+      --errored             Only fetch errored partitions
       --local               Target locally running Rill
-      --page-size uint32    Number of splits to return per page (default 50)
+      --page-size uint32    Number of partitions to return per page (default 50)
       --page-token string   Pagination token
 ```
 

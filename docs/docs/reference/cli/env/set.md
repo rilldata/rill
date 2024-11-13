@@ -13,8 +13,9 @@ rill env set <key> <value> [flags]
 ### Flags
 
 ```
-      --path string      Project directory (default ".")
-      --project string   Cloud project name (will attempt to infer from Git remote if not provided)
+      --environment string   Optional environment to resolve for (options: dev, prod)
+      --path string          Project directory (default ".")
+      --project string       Cloud project name (will attempt to infer from Git remote if not provided)
 ```
 
 ### Global flags
