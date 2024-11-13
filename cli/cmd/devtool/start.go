@@ -389,7 +389,8 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 }
 
 func (s cloud) runDeps(ctx context.Context, verbose bool) error {
-	logInfo.Printf("Starting dependencies\n")
+	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
+	logInfo.Printf("Starting dependencies: docker compose -f %s up\n", composeFile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -397,7 +398,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
+	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up", "--no-recreate")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -413,7 +414,7 @@ func (s cloud) awaitPostgres(ctx context.Context) error {
 		conn, err := pgx.Connect(ctx, dbURL)
 		if err == nil {
 			conn.Close(ctx)
-			logInfo.Printf("Postgres ready\n")
+			logInfo.Printf("Postgres ready at %s\n", dbURL)
 			return nil
 		}
 
@@ -442,7 +443,7 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 		res, err := c.Echo(ctx, "hello").Result()
 		c.Close()
 		if err == nil && res == "hello" {
-			logInfo.Printf("Redis ready\n")
+			logInfo.Printf("Redis ready at %s\n", dbURL)
 			return nil
 		}
 
@@ -479,7 +480,7 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("Admin ready\n")
+				logInfo.Printf("Admin ready at %s\n", pingURL)
 				return nil
 			}
 		}
@@ -517,7 +518,7 @@ func (s cloud) awaitRuntime(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("Runtime ready\n")
+				logInfo.Printf("Runtime ready at %s\n", pingURL)
 				return nil
 			}
 		}
@@ -536,7 +537,7 @@ func (s cloud) runUIInstall(ctx context.Context) (err error) {
 		if err == nil {
 			logInfo.Printf("Finished `npm install -w web-admin`\n")
 		} else {
-			logErr.Printf("Failed running `npm install -w web-admin`: %v", err)
+			logErr.Printf("Failed running `npm install -w web-admin`: %v\n", err)
 		}
 	}()
 
@@ -561,7 +562,7 @@ func (s cloud) awaitUI(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("UI ready\n")
+				logInfo.Printf("UI ready at %s\n", uiURL)
 				return nil
 			}
 		}
@@ -737,7 +738,7 @@ func prepareStripeConfig() error {
 	}
 
 	// Create the output file
-	out, err := os.Create(outputFile)
+	out, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}

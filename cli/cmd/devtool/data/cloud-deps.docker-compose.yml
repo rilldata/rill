@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:17
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -15,13 +15,13 @@ services:
     ports:
       - '6379:6379'
   zipkin:
-    image: openzipkin/zipkin:latest
+    image: openzipkin/zipkin:3
     restart: always
     ports:
       - "9411:9411"
   prometheus:
     container_name: prometheus
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.55.1
     restart: always
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
@@ -36,7 +36,7 @@ services:
     ports:
       - 7070:8080
   otel-collector:
-    image: otel/opentelemetry-collector:latest
+    image: otel/opentelemetry-collector:0.90.0
     restart: always
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
@@ -50,7 +50,7 @@ services:
     depends_on:
       - zipkin
   stripe-cli:
-    image: stripe/stripe-cli:latest
+    image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
-      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml
+      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml:ro
