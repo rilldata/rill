@@ -557,7 +557,7 @@ func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[loca
 	}
 
 	orgsMetadata := make([]*localv1.GetUserOrgMetadataResponse_OrgMetadata, len(resp.Organizations))
-	for _, org := range resp.Organizations {
+	for i, org := range resp.Organizations {
 		issues, err := c.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
 			Organization: org.Name,
 		})
@@ -565,10 +565,10 @@ func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[loca
 			return nil, err
 		}
 
-		orgsMetadata = append(orgsMetadata, &localv1.GetUserOrgMetadataResponse_OrgMetadata{
+		orgsMetadata[i] = &localv1.GetUserOrgMetadataResponse_OrgMetadata{
 			Name:   org.Name,
 			Issues: issues.Issues,
-		})
+		}
 	}
 
 	return connect.NewResponse(&localv1.GetUserOrgMetadataResponse{

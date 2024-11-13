@@ -4,7 +4,6 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import type { V1BillingIssue } from "@rilldata/web-admin/client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
@@ -39,7 +38,7 @@
   $: isDeployed = !!$currentProject.data?.project;
   $: isFirstTimeDeploy =
     !isDeployed &&
-    $orgMetadata.data?.orgs?.some((o) => getNeverSubscribedIssue(o.issues));
+    $orgMetadata.data?.orgs?.every((o) => getNeverSubscribedIssue(o.issues));
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 

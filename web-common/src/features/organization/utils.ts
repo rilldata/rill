@@ -3,6 +3,7 @@
 export function buildPlanUpgradeUrl(
   org: string,
   adminUrl: string,
+  isEmptyOrg: boolean,
   curUrl: URL,
 ) {
   let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
@@ -12,8 +13,12 @@ export function buildPlanUpgradeUrl(
   }
 
   const url = new URL(cloudUrl);
-  // TODO: this should be to general settings page
-  url.pathname = `/${org}/-/settings/billing`;
+  if (isEmptyOrg) {
+    // Empty org wont have billing related options so show the general setting page in the background
+    url.pathname = `/${org}/-/settings`;
+  } else {
+    url.pathname = `/${org}/-/settings/billing`;
+  }
   url.searchParams.set("upgrade", "true");
   // set the org to avoid showing the org selector
   const newCurUrl = new URL(curUrl);

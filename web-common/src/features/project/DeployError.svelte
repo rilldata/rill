@@ -16,6 +16,7 @@
   export let org: string;
   export let error: DeployError;
   export let adminUrl: string;
+  export let isEmptyOrg: boolean;
   export let onRetry: () => void;
 
   $: isQuotaError =
@@ -23,7 +24,7 @@
     error.type === DeployErrorType.OrgLimitHit ||
     error.type === DeployErrorType.SubscriptionEnded;
 
-  $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, $page.url);
+  $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, isEmptyOrg, $page.url);
 </script>
 
 {#if isQuotaError}

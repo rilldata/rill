@@ -23,15 +23,27 @@
   const project = deployer.project;
   const deployerStatus = deployer.getStatus();
   const promptOrgSelection = deployer.promptOrgSelection;
+  // This org is set by the deployer.
+  // 1. When there is no org is present it is auto created based on user's email.
+  // 2. Otherwise, it will be the based on the selection. Will be equal to 'selectedOrg' in this case.
   const org = deployer.org;
+  let isEmptyOrg = false;
+  $: {
+    const om = orgMetadata.orgs.find((o) => o.name === $org);
+    isEmptyOrg = !!om?.issues && !!getNeverSubscribedIssue(om.issues);
+  }
 
   $: orgParam = $page.url.searchParams.get("org");
+  // This is specifically the org selected using the OrgSelector.
+  // Used to retrigger the deploy after the user confirms deploy on an empty org.
   let selectedOrg = "";
   let deployConfirmOpen = false;
 
   function onOrgSelect(org: string) {
     const om = orgMetadata.orgs.find((o) => o.name === org);
     if (om?.issues && getNeverSubscribedIssue(om.issues)) {
+      // if the selected org is empty, show the trial starting dialog
+      // We need this since we wouldn't have shown it in DeployCTA
       deployConfirmOpen = true;
       selectedOrg = org;
       return;
@@ -42,11 +54,10 @@
   }
 
   function onOrgConfirm() {
+    console.log("??", selectedOrg);
     promptOrgSelection.set(false);
     return deployer.deploy(selectedOrg);
   }
-
-  // TODO: show pricing modal when selecting a fresh org
 
   onMount(() => {
     if (orgParam) {
@@ -85,6 +96,7 @@
         error={$deployerStatus.error}
         org={$org}
         adminUrl={$metadata.data?.adminUrl ?? ""}
+        {isEmptyOrg}
         onRetry={() => {}}
       />
     {/if}
