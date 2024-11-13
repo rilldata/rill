@@ -178,7 +178,7 @@ func (e *sqlStoreToSelfExecutor) ingestFromMySQL(ctx context.Context, inputProps
 		}
 	}()
 
-	// ingest in a temp table since CRUD APIs can't be called from a WithConnection
+	// ingest from mysql
 	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
 	query := fmt.Sprintf("SELECT * FROM mysql_query('mysql_db', %s)", safeSQLString(userQuery))
 	if opts.IncrementalRun {
