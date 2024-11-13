@@ -190,9 +190,9 @@ func (e *sqlStoreToSelfExecutor) ingestFromMySQL(ctx context.Context, inputProps
 			return fmt.Errorf("failed to install/load mysql extension: %w", err)
 		}
 
-		// Attach postgres database to duckdb
+		// Attach database to duckdb
 		err = e.c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("ATTACH %s AS mysql_db (TYPE MYSQL)", safeSQLString(inputProps.DSN)),
+			Query: fmt.Sprintf("ATTACH %s AS mysql_db (TYPE MYSQL, READ_ONLY)", safeSQLString(inputProps.DSN)),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to attach mysql database: %w", err)
