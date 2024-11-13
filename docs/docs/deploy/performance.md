@@ -29,7 +29,7 @@ In such scenarios, we recommend [materializing these models as tables](/referenc
 
 :::tip Materialize models powering dashboards
 
-We strongly recommend materializing final models that are being used directly in dashboards to ensure this data is served more quickly. In fact, we automatically detect and enable the materialization of models that are backing dashboards in projects deployed to Rill Cloud!
+We strongly recommend materializing final models that are being used directly in dashboards to ensure this data is served more quickly. 
 
 :::
 

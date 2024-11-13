@@ -13,9 +13,9 @@ rill env configure [flags]
 ### Flags
 
 ```
-      --path string      Project directory (default ".")
-      --project string   
-      --redeploy         Redeploy project
+      --path string          Project directory (default ".")
+      --project string       
+      --environment string   Optional environment to resolve for (options: dev, prod)
 ```
 
 ### Global flags

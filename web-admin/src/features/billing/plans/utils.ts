@@ -3,15 +3,19 @@ import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/mem
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
 
-export function formatDataSizeQuota(
+export function formatUsageVsQuota(
+  usageInBytes: number,
   storageLimitBytesPerDeployment: string,
 ): string {
-  if (
-    Number.isNaN(Number(storageLimitBytesPerDeployment)) ||
-    storageLimitBytesPerDeployment === "-1"
-  )
-    return "";
-  return `Max ${formatMemorySize(Number(storageLimitBytesPerDeployment))} / Project`;
+  const quota = Number(storageLimitBytesPerDeployment);
+  if (Number.isNaN(quota) || storageLimitBytesPerDeployment === "-1") return "";
+  const formattedUsage = formatMemorySize(usageInBytes);
+  const formattedQuota = formatMemorySize(quota);
+  const percent =
+    formattedUsage > formattedQuota
+      ? "100+"
+      : Math.round((usageInBytes * 100) / quota) + "";
+  return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
 export function isTrialPlan(plan: V1BillingPlan) {
@@ -37,19 +41,6 @@ export function getSubscriptionResumedText(endDate: string) {
   }
   const resumeDate = date.plus({ day: 1 });
   return "on " + resumeDate.toLocaleString(DateTime.DATE_MED);
-}
-
-export function getPlanDisplayName(plan: V1BillingPlan) {
-  if (isTrialPlan(plan)) {
-    return "Trial Plan";
-  }
-  if (isTeamPlan(plan)) {
-    return "Team Plan";
-  }
-  if (isPOCPlan(plan)) {
-    return "POC Plan";
-  }
-  return "Enterprise Plan";
 }
 
 // Since this could be triggered in a route that could be navigated from,

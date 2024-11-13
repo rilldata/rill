@@ -73,7 +73,7 @@ func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.
 	if err != nil {
 		return nil, err
 	}
-	if resp.Exceptions != nil && len(resp.Exceptions) > 0 {
+	if len(resp.Exceptions) > 0 {
 		if len(resp.Exceptions) == 1 {
 			return nil, fmt.Errorf("query error: %q: %q", resp.Exceptions[0].ErrorCode, resp.Exceptions[0].Message)
 		}

@@ -36,6 +36,7 @@ import {
   prepareTimeSeries,
   transformAggregateDimensionData,
 } from "./utils";
+import { dimensionSearchText } from "../stores/dashboard-stores";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -77,8 +78,9 @@ export function getDimensionValuesForComparison(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      dimensionSearchText,
     ],
-    ([runtime, name, dashboardStore, timeControls], set) => {
+    ([runtime, name, dashboardStore, timeControls, searchText], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -125,7 +127,7 @@ export function getDimensionValuesForComparison(
                   dashboardStore,
                   getDimensionFilterWithSearch(
                     dashboardStore?.whereFilter,
-                    dashboardStore?.dimensionSearchText ?? "",
+                    searchText,
                     dimensionName,
                   ),
                 ),

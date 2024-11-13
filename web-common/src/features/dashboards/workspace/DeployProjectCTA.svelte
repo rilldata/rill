@@ -114,17 +114,19 @@
       <DeployIcon size="150px" />
       <div class="flex flex-col">
         <AlertDialogHeader>
-          <AlertDialogTitle>Deploy this project</AlertDialogTitle>
+          <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
           <AlertDialogDescription>
-            You’re about to deploy to Rill Cloud, where you can set alerts,
-            share dashboards, and more.
+            You’re about to start a
             <a
               href="https://www.rilldata.com/pricing"
               target="_blank"
               class="text-primary-600"
             >
-              See pricing details
+              30-day FREE trial
             </a>
+            of Rill Cloud, where you can set alerts, share dashboards, and more.
+            The trial grants you 1 project up to 10GB. You’re about to deploy to
+            Rill Cloud, where you can set alerts, share dashboards, and more.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">

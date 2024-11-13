@@ -1,24 +1,24 @@
 ---
-title: "Split Models"
+title: "Partition Models"
 description:  "Start with basics"
-sidebar_label: "Basic Split Models"
+sidebar_label: "Basic Partition Models"
 sidebar_position: 2
 ---
 
-As mentioned, we can define a split by adding the `splits:` key with some defining parameters. Splits are a special case of incremental model states. Let's look at the following example.
+As mentioned, we can define a partitioning scheme by adding the `partitions:` key with some defining parameters. Partitions are a special case of incremental model states. Let's look at the following example.
 
 ```yaml
 type: model
 
-splits:
+partitions:
   sql: SELECT range AS num FROM range(0,10)
-sql: SELECT {{ .split.num }} AS num, now() AS inserted_on
+sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 ```
 
-In this simple example, we set up 10 splits [range(0,10)] that have a single row with the same now() function as defined earlier. To confirm this we can run the following:
+In this simple example, we set up 10 partitions [range(0,10)] that have a single row with the same now() function as defined earlier. To confirm this we can run the following:
 
 ```bash
-rill project splits splits_range --local
+rill project partitions partitions_range --local
   KEY (10)                           DATA        EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ----------- ---------------------- --------- ------- 
   ff7416f774dfb086006d0b4696c214e1   {"num":0}   2024-09-18T02:32:01Z   145ms            
@@ -33,20 +33,20 @@ rill project splits splits_range --local
   727d91a916260837579d5e42ad696dd9   {"num":9}   2024-09-18T02:32:01Z   0s       
   ```
 
-  If you try to refresh a single split, you'll receive the following error:
+If you try to refresh a single partition, you'll receive the following error:
   
   ```bash
-rill project refresh --model splits_range --split ff7416f774dfb086006d0b4696c214e1 --local
-Error: can't refresh splits on model "splits_range" because it is not incremental
+rill project refresh --model partitions_range --partition ff7416f774dfb086006d0b4696c214e1 --local
+Error: can't refresh partitions on model "partitions_range" because it is not incremental
 ```
 
-### Incremental Split Model
+### Incremental Partition Model
 ```yaml
 type: model
 
-splits:
+partitions:
   sql: SELECT range AS num FROM range(0,10)
-sql: SELECT {{ .split.num }} AS num, now() AS inserted_on
+sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 incremental: true
 
 output:
@@ -54,10 +54,10 @@ output:
   unique_key: [num]
 ```
 
-Similarily to the above, let's run `rill project splits <model_name>` to get the key_ids.
+Similarily to the above, let's run `rill project partitions <model_name>` to get the key_ids.
 
 ```bash
-rill project splits splits_range_incremental --local
+rill project partitions partitions_range_incremental --local
   KEY (10)                           DATA        EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ----------- ---------------------- --------- ------- 
   ff7416f774dfb086006d0b4696c214e1   {"num":0}   2024-09-18T03:17:16Z   103ms            
@@ -72,16 +72,16 @@ rill project splits splits_range_incremental --local
   727d91a916260837579d5e42ad696dd9   {"num":9}   2024-09-18T03:17:16Z   0s       
 ```
 
-Using the above information, we'll refresh the top split.
+Using the above information, we'll refresh the top partition.
 
 ```bash
-rill project refresh --model splits_range_incremental --split ff7416f774dfb086006d0b4696c214e1 --local 
+rill project refresh --model partitions_range_incremental --partition ff7416f774dfb086006d0b4696c214e1 --local 
 Refresh initiated. Check the project logs for status updates.
 ```
 
-Then, rerun the splits command to see that the EXECUTED ON columns has been updated.
+Then, rerun the partitions command to see that the EXECUTED ON columns has been updated.
 ```bash
-royendo@Roys-MacBook-Pro-2 modeling % rill project splits splits_range_incremental --local
+royendo@Roys-MacBook-Pro-2 modeling % rill project partitions partitions_range_incremental --local
   KEY (10)                           DATA        EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ----------- ---------------------- --------- ------- 
   ff7416f774dfb086006d0b4696c214e1   {"num":0}   2024-09-18T03:17:58Z   1ms              
@@ -97,7 +97,7 @@ royendo@Roys-MacBook-Pro-2 modeling % rill project splits splits_range_increment
 ```
 
 
-The above is a static model. The split is defined by a set range(0,10) so there is no reason for us to put a refresh key-pair on this. However, real data is likely not static and will require some sort of refresh when you push to Rill Cloud.
+The above is a static model. The partition is defined by a set range(0,10) so there is no reason for us to put a refresh key-pair on this. However, real data is likely not static and will require some sort of refresh when you push to Rill Cloud.
 
 Let's take a look at a more realistic example, our ClickHouse project.
 

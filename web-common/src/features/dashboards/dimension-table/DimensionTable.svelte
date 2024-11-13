@@ -25,7 +25,6 @@ TableCells – the cell contents.
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: string[];
-
   export let dimensionName: string;
   export let isFetching: boolean;
 
@@ -228,7 +227,7 @@ TableCells – the cell contents.
             {selectedIndex}
             {isBeingCompared}
             {excludeMode}
-            on:toggle-dimension-comparison
+            {dimensionName}
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader

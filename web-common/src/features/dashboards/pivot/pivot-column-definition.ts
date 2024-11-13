@@ -2,6 +2,7 @@ import PercentageChange from "@rilldata/web-common/components/data-types/Percent
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
 import {
   addZoneOffset,
   removeLocalTimezoneOffset,
@@ -91,7 +92,10 @@ function createColumnDefinitionForDimensions(
         ) {
           const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
           const dt = addZoneOffset(
-            removeLocalTimezoneOffset(new Date(value)),
+            removeLocalTimezoneOffset(
+              new Date(value),
+              timeGrainToDuration(timeGrain),
+            ),
             timeConfig?.timeZone,
           );
           const timeFormatter = timeFormat(
@@ -147,10 +151,13 @@ function formatRowDimensionValue(
 ) {
   const dimension = rowDimensionNames?.[depth];
   if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
-    if (value === "Total") return "Total";
+    if (value === "Total" || value === "LOADING_CELL") return value;
     const timeGrain = getTimeGrainFromDimension(dimension);
     const dt = addZoneOffset(
-      removeLocalTimezoneOffset(new Date(value)),
+      removeLocalTimezoneOffset(
+        new Date(value),
+        timeGrainToDuration(timeGrain),
+      ),
       timeConfig?.timeZone,
     );
     const timeFormatter = timeFormat(
