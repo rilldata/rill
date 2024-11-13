@@ -156,6 +156,9 @@ dimensions:
 measures:
   - name: b
     expression: count(*)
+    format_d3: "0,0"
+    format_d3_locale:
+        currency: ["£", ""]
 first_day_of_week: 7
 first_month_of_year: 3
 `,
@@ -277,7 +280,13 @@ schema: default
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{
+						Name:           "b",
+						Expression:     "count(*)",
+						Type:           runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+						FormatD3:       "0,0",
+						FormatD3Locale: must(structpb.NewStruct(map[string]any{"currency": []any{"£", ""}})),
+					},
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
