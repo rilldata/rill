@@ -316,7 +316,7 @@ function fromPivotUrlParams(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
     preset.pivotRows = validRows;
-    const missingRows = getMissingValues(rows, validRows);
+    const missingRows = getMissingValues(validRows, rows);
     if (missingRows.length) {
       errors.push(getMultiFieldError("pivot row", missingRows));
     }
@@ -331,7 +331,7 @@ function fromPivotUrlParams(
         c in FromURLParamTimeDimensionMap,
     );
     preset.pivotCols = validCols;
-    const missingCols = getMissingValues(cols, validCols);
+    const missingCols = getMissingValues(validCols, cols);
     if (missingCols.length) {
       errors.push(getMultiFieldError("pivot column", missingCols));
     }

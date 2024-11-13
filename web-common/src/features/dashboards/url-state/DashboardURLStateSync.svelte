@@ -51,8 +51,6 @@
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {
       void goto(newUrl);
-    } else {
-      console.log("same", newUrl);
     }
   }
 

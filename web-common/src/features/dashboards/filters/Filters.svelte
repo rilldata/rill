@@ -2,8 +2,10 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import FiltersInput from "@rilldata/web-common/features/dashboards/filters/FiltersInput.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
@@ -31,6 +33,7 @@
         toggleDimensionValueSelection,
         removeDimensionFilter,
         toggleDimensionFilterMode,
+        setFilters,
       },
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters },
@@ -46,6 +49,7 @@
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
     },
+    dashboardStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -86,6 +90,12 @@
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, $metricsViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
+
+  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+  let isFreeFormEdit = false;
+  $: if (isComplexFilter) {
+    isFreeFormEdit = true;
+  }
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -132,6 +142,11 @@
         >
           No filters selected
         </div>
+      {:else if isFreeFormEdit}
+        <FiltersInput
+          filter={$dashboardStore.whereFilter}
+          onChange={(filters) => setFilters(filters)}
+        />
       {:else}
         {#each allDimensionFilters as { name, label, selectedValues } (name)}
           {@const dimension = dimensions.find(
@@ -175,6 +190,14 @@
       that enables clearing all filters -->
         {#if hasFilters}
           <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+        {/if}
+        {#if !isComplexFilter}
+          <Button
+            type="text"
+            on:click={() => (isFreeFormEdit = !isFreeFormEdit)}
+          >
+            {#if isFreeFormEdit}Back{:else}Edit{/if}
+          </Button>
         {/if}
       {/if}
     </div>

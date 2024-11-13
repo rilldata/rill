@@ -1,5 +1,7 @@
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
@@ -30,8 +32,20 @@ export const load = async ({ url, parent }) => {
   ) {
     // Initial load of the dashboard.
     // Merge home token state to url if present and there are no params in the url
+    // convert legacy state to new readable url format
+    const metricsEntity = getDashboardStateFromUrl(
+      token.state,
+      metricsViewSpec,
+      exploreSpec,
+      {}, // TODO
+    );
     const newUrl = new URL(url);
-    newUrl.searchParams.set("state", token.state);
+    convertMetricsEntityToURLSearchParams(
+      metricsEntity,
+      newUrl.searchParams,
+      exploreSpec,
+      basePreset,
+    );
     throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
   }
 

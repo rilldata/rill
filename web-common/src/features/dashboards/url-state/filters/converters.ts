@@ -53,7 +53,7 @@ function convertJoinerExpressionToFilterParam(
   expr: V1Expression,
   depth: number,
 ) {
-  const joiner = expr.cond?.op === V1Operation.OPERATION_AND ? "AND" : "OR";
+  const joiner = expr.cond?.op === V1Operation.OPERATION_AND ? " AND " : " OR ";
 
   const parts = expr.cond?.exprs
     ?.map((e) => convertExpressionToFilterParam(e, depth + 1))
@@ -78,7 +78,7 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
     // TODO: support `NIN <subquery>`
     const having = convertExpressionToFilterParam(
       expr.cond.exprs[1]?.subquery?.having,
-      depth + 1,
+      0,
     );
     if (having) return `${column} having (${having})`;
   }

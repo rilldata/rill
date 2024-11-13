@@ -1,3 +1,4 @@
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   createInExpression,
   getValueIndexInExpression,
@@ -156,6 +157,16 @@ export function deselectItemsInFilter(
   }
 }
 
+export function setFilters(
+  { dashboard }: DashboardMutables,
+  filter: V1Expression,
+) {
+  const { dimensionFilters, dimensionThresholdFilters } =
+    splitWhereFilter(filter);
+  dashboard.whereFilter = dimensionFilters;
+  dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
+}
+
 export const dimensionFilterActions = {
   /**
    * Toggles whether the given dimension value is selected in the
@@ -170,4 +181,5 @@ export const dimensionFilterActions = {
   removeDimensionFilter,
   selectItemsInFilter,
   deselectItemsInFilter,
+  setFilters,
 };

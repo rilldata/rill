@@ -305,3 +305,36 @@ export function isExpressionIncomplete(expression: V1Expression): boolean {
   // If the operation is specified and a defined, non-empty val is found, the expression is complete
   return false;
 }
+
+export function isJoinerExpression(expression: V1Expression | undefined) {
+  return (
+    expression?.cond?.op &&
+    (expression.cond.op === V1Operation.OPERATION_AND ||
+      expression.cond.op === V1Operation.OPERATION_OR)
+  );
+}
+
+export function isExpressionUnsupported(expression: V1Expression) {
+  if (
+    !expression.cond ||
+    !expression.cond.exprs ||
+    expression.cond?.op !== V1Operation.OPERATION_AND
+  ) {
+    return true;
+  }
+
+  for (const expr of expression.cond.exprs) {
+    if (expr.cond?.op !== V1Operation.OPERATION_IN) return true;
+
+    const subqueryExpr = expr.cond?.exprs?.[1];
+    if (
+      subqueryExpr?.subquery?.having?.cond?.exprs?.length &&
+      isJoinerExpression(subqueryExpr.subquery.having) &&
+      subqueryExpr.subquery.having.cond.exprs.length > 1
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}

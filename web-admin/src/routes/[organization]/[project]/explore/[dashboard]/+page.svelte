@@ -10,6 +10,7 @@
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { PageData } from "./$types";
 
@@ -18,7 +19,19 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ basePreset, partialMetrics } = data);
+  $: ({ basePreset, partialMetrics, errors } = data);
+  $: if (errors?.length) {
+    console.log(errors);
+    setTimeout(() => {
+      eventBus.emit("notification", {
+        type: "error",
+        message: errors[0].message,
+        options: {
+          persisted: false,
+        },
+      });
+    }, 100);
+  }
   $: instanceId = $runtime?.instanceId;
 
   $: ({

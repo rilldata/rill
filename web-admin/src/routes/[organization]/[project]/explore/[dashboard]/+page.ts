@@ -22,6 +22,7 @@ export const load = async ({ url, parent, params }) => {
     );
     partialMetrics = entity;
     errors.push(...errorsFromConvert);
+    console.log(partialMetrics.whereFilter);
   }
 
   if (

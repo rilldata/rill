@@ -27,6 +27,7 @@
   import {
     createAndExpression,
     createOrExpression,
+    isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
@@ -100,13 +101,17 @@
     uri,
   } = dimension);
 
-  $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilter(
-      getFiltersForOtherDimensions(whereFilter, dimensionName),
-      dimensionThresholdFilters,
-    ),
-    undefined,
-  );
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
+  $: where = isComplexFilter
+    ? whereFilter
+    : sanitiseExpression(
+        mergeDimensionAndMeasureFilter(
+          getFiltersForOtherDimensions(whereFilter, dimensionName),
+          dimensionThresholdFilters,
+        ),
+        undefined,
+      );
+  $: console.log(isComplexFilter, where);
 
   $: measures = getIndependentMeasures(
     metricsView,

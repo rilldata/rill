@@ -35,7 +35,7 @@
   $: project = $page.params.project;
   $: dashboard = useExploreStore(exploreName);
   $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
-  $: exploreSpec = $validExploreSpec.data.explore ?? {};
+  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: basePreset = getBasePreset(
     exploreSpec,
     getLocalUserPreferencesState(exploreName),
@@ -55,7 +55,7 @@
     $bookmarks.data,
     `/${organization}/${project}/explore/${exploreName}`,
     $dashboard,
-    $validExploreSpec.data.explore ?? {},
+    exploreSpec,
     basePreset,
   );
   $: filteredBookmarks = searchBookmarks(filledInBookmarks, searchText);

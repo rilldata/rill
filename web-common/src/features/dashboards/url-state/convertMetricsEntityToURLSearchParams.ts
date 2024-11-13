@@ -113,23 +113,27 @@ function toOverviewUrl(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const measures = [...metrics.visibleMeasureKeys];
-  const presetMeasures = preset.measures ?? explore.measures ?? [];
-  if (!arrayUnorderedEquals(measures, presetMeasures)) {
-    if (metrics.allMeasuresVisible) {
-      searchParams.set("o.m", "*");
-    } else {
-      searchParams.set("o.m", measures.join(","));
+  if (metrics.visibleMeasureKeys) {
+    const measures = [...metrics.visibleMeasureKeys];
+    const presetMeasures = preset.measures ?? explore.measures ?? [];
+    if (!arrayUnorderedEquals(measures, presetMeasures)) {
+      if (metrics.allMeasuresVisible) {
+        searchParams.set("o.m", "*");
+      } else {
+        searchParams.set("o.m", measures.join(","));
+      }
     }
   }
 
-  const dimensions = [...metrics.visibleDimensionKeys];
-  const presetDimensions = preset.dimensions ?? explore.dimensions ?? [];
-  if (!arrayUnorderedEquals(dimensions, presetDimensions)) {
-    if (metrics.allDimensionsVisible) {
-      searchParams.set("o.d", "*");
-    } else {
-      searchParams.set("o.d", dimensions.join(","));
+  if (metrics.visibleDimensionKeys) {
+    const dimensions = [...metrics.visibleDimensionKeys];
+    const presetDimensions = preset.dimensions ?? explore.dimensions ?? [];
+    if (!arrayUnorderedEquals(dimensions, presetDimensions)) {
+      if (metrics.allDimensionsVisible) {
+        searchParams.set("o.d", "*");
+      } else {
+        searchParams.set("o.d", dimensions.join(","));
+      }
     }
   }
 
