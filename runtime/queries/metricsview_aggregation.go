@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"io"
 	"os"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type MetricsViewAggregation struct {

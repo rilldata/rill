@@ -3,13 +3,13 @@ package metricsview
 import (
 	"errors"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // AST is the abstract syntax tree for a metrics SQL query.
