@@ -46,6 +46,8 @@
       decodeURIComponent(escape(window.atob(configParams))),
     ) as Config;
 
+    // Entry point: FIXME - There is no way to tell if the user is signing up unless we ask them to make a selection
+    // Entry point: Email invite redirect to signup
     const isSignup = config?.extraParams?.screen_hint === "signup";
 
     if (isSignup) {
