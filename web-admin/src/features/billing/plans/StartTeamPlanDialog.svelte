@@ -78,6 +78,7 @@
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
+  $: redirect = $page.url.searchParams.get("redirect");
 
   let loading = false;
 
@@ -126,6 +127,11 @@
     }
     void invalidateBillingInfo(organization);
     open = false;
+    if (redirect) {
+      // redirect param could be on a different domain like the rill developer instance
+      // so using goto won't work
+      window.open(redirect, "_self");
+    }
   }
 </script>
 

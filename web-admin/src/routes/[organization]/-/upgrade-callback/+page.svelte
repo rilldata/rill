@@ -25,6 +25,7 @@
 
   export let data: PageData;
   $: ({ cancelled, paymentIssues } = data);
+  $: redirect = $page.url.searchParams.get("redirect");
 
   /**
    * Landing page to upgrade a user to team plan.
@@ -80,7 +81,13 @@
     } catch {
       // TODO
     }
-    return goto(`/${organization}`);
+    if (redirect) {
+      // redirect param could be on a different domain like the rill developer instance
+      // so using goto won't work
+      window.open(redirect, "_self");
+    } else {
+      return goto(`/${organization}`);
+    }
   }
 
   onMount(() => upgrade());

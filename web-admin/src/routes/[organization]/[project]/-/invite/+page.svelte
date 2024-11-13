@@ -5,6 +5,7 @@
     createAdminServiceCreateProjectWhitelistedDomain,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import { showWelcomeToRillDialog } from "@rilldata/web-admin/features/billing/plans/utils";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-management/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,
@@ -16,9 +17,20 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+
+  $: ({ showWelcomeDialog } = data);
+
+  $: if (showWelcomeDialog) {
+    showWelcomeToRillDialog.set(true);
+  }
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  // TODO: check args and show welcome page
 
   let allowDomain = false;
   $: userDomain = getUserDomain();

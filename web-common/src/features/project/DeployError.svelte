@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -22,7 +23,7 @@
     error.type === DeployErrorType.OrgLimitHit ||
     error.type === DeployErrorType.SubscriptionEnded;
 
-  $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl);
+  $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, $page.url);
 </script>
 
 {#if isQuotaError}

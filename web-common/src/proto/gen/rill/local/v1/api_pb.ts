@@ -754,6 +754,11 @@ export class GetUserOrgMetadataRequest extends Message<GetUserOrgMetadataRequest
  * @generated from message rill.local.v1.GetUserOrgMetadataResponse
  */
 export class GetUserOrgMetadataResponse extends Message<GetUserOrgMetadataResponse> {
+  /**
+   * @generated from field: repeated rill.local.v1.GetUserOrgMetadataResponse.OrgMetadata orgs = 1;
+   */
+  orgs: GetUserOrgMetadataResponse_OrgMetadata[] = [];
+
   constructor(data?: PartialMessage<GetUserOrgMetadataResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -762,6 +767,7 @@ export class GetUserOrgMetadataResponse extends Message<GetUserOrgMetadataRespon
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.GetUserOrgMetadataResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "orgs", kind: "message", T: GetUserOrgMetadataResponse_OrgMetadata, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUserOrgMetadataResponse {

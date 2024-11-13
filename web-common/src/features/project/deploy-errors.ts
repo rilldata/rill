@@ -15,8 +15,25 @@ export enum DeployErrorType {
   LargeProject,
   ProjectLimitHit,
   OrgLimitHit,
+  TrialEnded,
   SubscriptionEnded,
 }
+const ErrorMessageVariants = {
+  [DeployErrorType.OrgLimitHit]: {
+    title: "To deploy to more organizations, start a Team plan",
+    message: "",
+  },
+  [DeployErrorType.TrialEnded]: {
+    title: "To deploy this project, start a Team plan",
+    message:
+      "Your trial has ended. In order to deploy this project, start a Team plan.",
+  },
+  [DeployErrorType.SubscriptionEnded]: {
+    title: "To deploy this project, start a Team plan",
+    message:
+      "Your subscription has ended. In order to deploy this project, renew Team plan.",
+  },
+};
 
 export type DeployError = {
   type: DeployErrorType;
@@ -32,7 +49,7 @@ export function extractDeployError(error: ConnectError): DeployError {
       message: "",
     };
   }
-  const title = "Oops! An error occurred";
+  let title = "Oops! An error occurred";
 
   const match = RPCErrorExtractor.exec(error.message);
   if (!match) {
@@ -50,7 +67,8 @@ export function extractDeployError(error: ConnectError): DeployError {
       message: error.message,
     };
   }
-  const [, code, message] = match;
+  const [, code, desc] = match;
+  let message = desc;
 
   if (code === "PermissionDenied") {
     return {
@@ -60,7 +78,7 @@ export function extractDeployError(error: ConnectError): DeployError {
     };
   }
 
-  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(message);
+  const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(desc);
   if (projectQuotaMatch?.length) {
     const projectQuota = Number(projectQuotaMatch[1]);
     return {
@@ -70,24 +88,29 @@ export function extractDeployError(error: ConnectError): DeployError {
     };
   }
 
-  if (OrgQuotaErrorMatcher.test(message)) {
-    return {
-      type: DeployErrorType.OrgLimitHit,
-      title: "To deploy to more organizations, start a Team plan",
-      message: "",
-    };
+  let type = DeployErrorType.Unknown;
+
+  switch (true) {
+    case OrgQuotaErrorMatcher.test(desc):
+      type = DeployErrorType.OrgLimitHit;
+      break;
+
+    case TrialEndedMatcher.test(desc):
+      type = DeployErrorType.TrialEnded;
+      break;
+
+    case SubEndedMatcher.test(desc):
+      type = DeployErrorType.SubscriptionEnded;
+      break;
   }
 
-  if (SubEndedMatcher.test(message) || TrialEndedMatcher.test(message)) {
-    return {
-      type: DeployErrorType.SubscriptionEnded,
-      title: "To deploy this project, start a Team plan",
-      message: "",
-    };
+  if (type in ErrorMessageVariants) {
+    title = ErrorMessageVariants[type].title;
+    message = ErrorMessageVariants[type].message;
   }
 
   return {
-    type: DeployErrorType.Unknown,
+    type,
     title,
     message,
   };

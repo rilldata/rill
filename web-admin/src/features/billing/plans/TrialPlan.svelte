@@ -42,7 +42,8 @@
     }
   }
 
-  $: title = plan?.displayName + (trialEnded ? " expired" : "");
+  $: title =
+    (plan?.displayName ?? "Trial plan") + (trialEnded ? " expired" : "");
 
   let open = showUpgradeDialog;
   $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
