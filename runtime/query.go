@@ -118,7 +118,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	key := queryCacheKey{
 		instanceID:    instanceID,
 		queryKey:      qk,
-		dependencyKey: depKey,
+		dependencyKey: depKey + time.Now().Format(time.RFC3339),
 	}.String()
 
 	// Try to get from cache

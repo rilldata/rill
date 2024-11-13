@@ -1025,6 +1025,11 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   exact = false;
 
+  /**
+   * @generated from field: bool null_fill = 21;
+   */
+  nullFill = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1053,6 +1058,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "null_fill", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {

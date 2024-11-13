@@ -1320,6 +1320,8 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+              nullFill:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -4708,6 +4710,8 @@ definitions:
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
       exact:
+        type: boolean
+      nullFill:
         type: boolean
   v1MetricsViewAggregationResponse:
     type: object

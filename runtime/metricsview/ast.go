@@ -3,6 +3,7 @@ package metricsview
 import (
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"strings"
 	"time"
 
@@ -57,6 +58,7 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
+	CrossJoin            *SelectNode      // Sub-select to cross join onto FromSelect
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -688,8 +690,49 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		return n, nil
 	}
 
-	if spine.TimeRange != nil {
-		return nil, errors.New("time_range not yet supported in spine")
+	if spine.TimeRange != nil && a.dialect == drivers.DialectDuckDB {
+		// if spine generates more than 1000 values then ignore
+		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
+		if bins > 1000 {
+			return nil, errors.New("time spine generates more than 1000 values")
+		}
+
+		from := fmt.Sprintf("range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", spine.TimeRange.Start.Format(time.RFC3339), spine.TimeRange.End.Format(time.RFC3339), spine.TimeRange.Grain)
+		rangeSelect := &SelectNode{
+			Alias: alias,
+			DimFields: []FieldNode{
+				{
+					Name:        spine.TimeRange.Alias,
+					DisplayName: spine.TimeRange.Alias,
+					Expr:        "range",
+				},
+			},
+			FromTable: &from,
+		}
+		if len(a.dimFields) == 1 {
+			return rangeSelect, nil
+		}
+
+		var newDims []FieldNode
+		for _, f := range a.dimFields {
+			if f.Name != spine.TimeRange.Alias {
+				newDims = append(newDims, f)
+			}
+		}
+
+		// there are other dimensions in the query, so cross join the spine time range with the other dimensions
+		crossSelect := &SelectNode{
+			Alias:     alias,
+			DimFields: newDims,
+			FromTable: a.underlyingTable,
+			Where:     a.underlyingWhere,
+			Group:     true,
+			CrossJoin: rangeSelect,
+		}
+
+		a.wrapSelect(crossSelect, a.generateIdentifier())
+
+		return crossSelect, nil
 	}
 
 	return nil, errors.New("unhandled spine type")
@@ -982,6 +1025,14 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		})
 	}
 
+	if s.CrossJoin != nil {
+		s.DimFields = append(s.DimFields, FieldNode{
+			Name:        s.CrossJoin.DimFields[0].Name,
+			DisplayName: s.CrossJoin.DimFields[0].DisplayName,
+			Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.DimFields[0].Name),
+		})
+	}
+
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
@@ -1008,6 +1059,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
+	s.CrossJoin = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.

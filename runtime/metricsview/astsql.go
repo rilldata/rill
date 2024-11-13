@@ -90,6 +90,10 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
+	if n.CrossJoin != nil {
+		b.out.WriteString("( ")
+	}
+
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -212,6 +216,15 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	if n.Offset != nil {
 		b.out.WriteString(" OFFSET ")
 		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
+	}
+
+	if n.CrossJoin != nil {
+		b.out.WriteString(" ) CROSS JOIN ( ")
+		err := b.writeSelect(n.CrossJoin)
+		if err != nil {
+			return err
+		}
+		b.out.WriteString(" )")
 	}
 
 	return nil
