@@ -9,7 +9,6 @@
   import EmailPasswordForm from "./EmailPasswordForm.svelte";
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
-  import SSOForm from "./SSOForm.svelte";
   import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
@@ -75,28 +74,30 @@
     webAuth = new auth0.WebAuth(authOptions);
   }
 
+  function authorizeSSO(email: string, connectionName: string) {
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
+  }
+
   function processEmailSubmission(event) {
     email = event.detail.email;
 
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     if (connectionName) {
-      step = AuthStep.SSO;
+      authorizeSSO(email, connectionName);
     } else {
       step = AuthStep.Login;
     }
   }
 
   function getHeadingText(step: AuthStep): string {
-    if (isLegacy) {
-      return "Log in";
-    }
-
     switch (step) {
       case AuthStep.Base:
         return "Log in or sign up";
-      case AuthStep.SSO:
-        return "Log in with SSO";
       case AuthStep.Login:
         return "Log in with email";
       case AuthStep.SignUp:
@@ -107,19 +108,15 @@
         return "";
     }
   }
-  $: headingText = getHeadingText(step);
 
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
-      case AuthStep.SSO:
-        return `SAML SSO enabled workspace is associated with <span class="font-medium">${email}</span>`;
       case AuthStep.Login:
         return `Log in using <span class="font-medium">${email}</span>`;
       default:
         return "";
     }
   }
-  $: subheadingText = getSubheadingText(step, email);
 
   function backToBaseStep() {
     step = AuthStep.Base;
@@ -128,6 +125,9 @@
   onMount(() => {
     initConfig();
   });
+
+  $: headingText = getHeadingText(step);
+  $: subheadingText = getSubheadingText(step, email);
 </script>
 
 <AuthContainer>
@@ -167,10 +167,6 @@
       <OrSeparator />
 
       <EmailSubmissionForm on:submit={processEmailSubmission} />
-    {/if}
-
-    {#if step === AuthStep.SSO}
-      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
     {/if}
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
