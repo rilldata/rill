@@ -34,7 +34,7 @@ rill project partitions partitions_range --local
   727d91a916260837579d5e42ad696dd9   {"num":9}   2024-11-12T20:12:54Z   0s                  
   ```
 
-If you try to refresh a single split, you'll receive the following error:
+If you try to refresh a single partition, you'll receive the following error:
   
 ```bash
 rill project refresh --model partitions_range --partition ff7416f774dfb086006d0b4696c214e1 --local          
@@ -50,7 +50,7 @@ type: model
 
 partitions:
   sql: SELECT range AS num FROM range(0,10)
-sql: SELECT {{ .split.num }} AS num, now() AS inserted_on
+sql: SELECT {{ .partition.num }} AS num, now() AS inserted_on
 incremental: true
 
 output:
@@ -76,7 +76,7 @@ rill project partitions partitions_range --local
   727d91a916260837579d5e42ad696dd9   {"num":9}   2024-11-12T20:12:54Z   0s          
 ```
 
-Using the above information, we'll refresh the top split.
+Using the above information, we'll refresh the top partition.
 
 ```bash
 rill project refresh --model partitions_range_incremental --partition ff7416f774dfb086006d0b4696c214e1 --local          
@@ -101,7 +101,7 @@ rill project partitions partitions_range_incremental --local
 ```
 
 
-The above is a static model. The split is defined by a set range(0,10) so there is no reason for us to put a automated refresh on this model. However, real data is likely not static and will require some sort of refresh when you push to Rill Cloud.
+The above is a static model. The partition is defined by a set range(0,10) so there is no reason for us to put a automated refresh on this model. However, real data is likely not static and will require some sort of refresh when you push to Rill Cloud.
 
 Now that we've gone over the basics, let's take a look at a more realistic example, our ClickHouse project.
 

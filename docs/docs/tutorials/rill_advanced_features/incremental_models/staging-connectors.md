@@ -13,9 +13,9 @@ In order to successfully follow this course, you will need to create an account 
 
 Snowflake: We will be using a sampled dataset, Horror movies, but you can use any dataset with a date column.
 
-AWS: In order to use the staging table with S3, you need to have an access key setup with read/write access to S3. In my case, I have access to `s3://rilldata-public`.
+AWS: In order to use the staging table with S3, you need to have an access key setup with read/write access to S3. In this tutorial, my AWS credentrials have access to `s3://rilldata-public`.
 
-ClickHouse: You will write the output dataset from Snowflake to ClickHouse Cloud, or local so you will need to setup a ClickHouse connector.
+ClickHouse: You will write the output dataset from Snowflake to ClickHouse Cloud, or ClickHouse local so you will need to [setup a ClickHouse connector](https://docs.rilldata.com/reference/olap-engines/clickhouse#connection-string-dsn).
 :::
 
 

@@ -17,12 +17,40 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 Rill supports connecting to an existing ClickHouse instance and using it as an OLAP engine to power Rill dashboards built against [external tables](../../concepts/OLAP#external-olap-tables). This is particularly useful when working with extremely large datasets (hundreds of GBs or even TB+ in size).
 
 
-![Rill on ClickHouse](/img/reference/olap-engines/clickhouse/clickhouse.gif)
 
-## Supported versions
-
+:::note Supported Versions
 Rill supports connecting to ClickHouse v22.7 or newer versions.
+:::
 
+## Configuring Rill Developer
+
+When using Rill for local development, there are a few options to configure Rill to enable ClickHouse as an OLAP engine:
+1. Connect to an OLAP engine via Add Data. This will automatically create the `clickhouse.yaml` file in your `connectors` folder and populate the `.env` file with `connector.clickhouse.password`.
+
+![img](/img/reference/olap-engines/clickhouse/connect-clickhouse.png)
+
+```yaml
+# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector
+
+driver: clickhouse
+host: <HOSTNAME>
+port: <PORT>
+username: "default"
+password: "{{ .env.connector.clickhouse.password }}"
+ssl: true #required for ClickHouse Cloud
+```
+2. You can create/edit the `.env` file manually in the project directory and add [`connector.clickhouse.dsn`](#connection-string-dsn)
+3. If this project has already been deployed to Rill Cloud, you can  try pulling existing credentials locally using `rill env pull`.
+4. You can pass in `connector.clickhouse.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.clickhouse.dsn=...`)
+
+:::tip Getting DSN errors in dashboards after setting `.env`?
+
+If you are facing issues related to DSN connection errors in your dashboards even after setting the connection string via the project's `.env` file, try restarting Rill using the `rill start --reset` command.
+
+:::
 
 ## Connection string (DSN)
 
@@ -68,19 +96,24 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 
 :::
 
-## Setting the default OLAP connection
 
-You'll also need to update the `olap_connector` property in your project's `rill.yaml` to change the default OLAP engine to ClickHouse:
+## Configuring Rill Cloud
+
+When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
+1.  If you have followed the UI to create your ClickHouse connector, the password should already exist in the .env file. During the deployment process, this `.env` file is automatically pushed with the deployment.
+2.  If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command.
+3. If you manually passed the connector when running `rill start`, you will need to use the `rill env configure` command to set `connector.clickhouse.dsn` onto Rill Cloud, as well. 
+
+:::info
+Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+:::
+
+## Setting the default OLAP connection
+Creating a connection to a OLAP engine will automatically add the `olap_connector` property in your project's [rill.YAML](../project-files/rill-yaml.md) and change the default OLAP engine to ClickHouse:
 
 ```yaml
 olap_connector: clickhouse
 ```
-
-:::note
-
-For more information about available properties in `rill.yaml`, see our [project YAML](../project-files/rill-yaml.md) documentation.
-
-:::
 
 :::info Interested in using multiple OLAP engines in the same project?
 
@@ -94,29 +127,7 @@ Rill supports reading from multiple schemas in ClickHouse from within the same p
 
 ![ClickHouse multiple schemas](/img/reference/olap-engines/clickhouse/clickhouse-multiple-schemas.png)
 
-## Configuring Rill Developer
 
-When using Rill for local development, there are two options to configure Rill to enable ClickHouse as an OLAP engine:
-- You can set `connector.clickhouse.dsn` in your project's `.env` file or try pulling existing credentials locally using `rill env pull` if the project has already been deployed to Rill Cloud
-- You can pass in `connector.clickhouse.dsn` as a variable to `rill start` directly (e.g. `rill start --env connector.clickhouse.dsn=...`)
-
-:::tip Getting DSN errors in dashboards after setting `.env`?
-
-If you are facing issues related to DSN connection errors in your dashboards even after setting the connection string via the project's `.env` file, try restarting Rill using the `rill start --reset` command.
-
-:::
-
-## Configuring Rill Cloud
-
-When deploying a ClickHouse-backed project to Rill Cloud, you have the following options to pass the appropriate connection string to Rill Cloud:
-- Use the `rill env configure` command to set `connector.clickhouse.dsn` after deploying the project
-- If `connector.clickhouse.dsn` has already been set in your project `.env`, you can push and update these variables directly in your cloud deployment by using the `rill env push` command
-
-:::info
-
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-
-:::
 
 ## Additional Notes
 

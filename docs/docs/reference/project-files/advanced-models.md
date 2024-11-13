@@ -25,6 +25,8 @@ In some cases, advanced models will be required when implementing advanced featu
 
 **`partitions`** - refers to the special state that is defined by the a predefined partition. In the case of partitions, your data needs to already be in a supported format. 
   - **`sql/glob`** - refers to the location of the data depending if the data is cloud storage or a data warehouse.
+  - **`path`** - 
+  - **`partition`** - 
 
 **`partitions_watermark`** - 
 

@@ -51,10 +51,10 @@ incremental: true
 partitions:
   glob: glob: gs://rendo-test/**/rilldata-incremental-model.csv
 
-sql: SELECT * FROM read_csv('{{ .split.uri }}', auto_detect=true, ignore_errors=1, header=true)
+sql: SELECT * FROM read_csv('{{ .partition.uri }}', auto_detect=true, ignore_errors=1, header=true)
 ```
 
-Let's take a minute to check out the split that was just created when reading in the initial data.
+Let's take a minute to check out the partition that was just created when reading in the initial data.
 ```bash
 rill project partitions  deepdive --local 
   KEY                                DATA                                                                                                                                       EXECUTED ON            ELAPSED   ERROR  
@@ -107,7 +107,7 @@ refresh:
 
 Depending on your use case and how your data is set up, there are a few things to consider for how you set up your file hierarchy and incremental modeling. 
 
-The current setup, creates a split per file. This doesn't have any adverse affects as we only have 1 file in each directory. But what if you had mulitple files in a directory that when modified, you want to ensure that **all** the files in the directory are refreshed and synced?
+The current setup, creates a partition per file. This doesn't have any adverse affects as we only have 1 file in each directory. But what if you had mulitple files in a directory that when modified, you want to ensure that **all** the files in the directory are refreshed and synced?
 
   ```yaml
 glob:
