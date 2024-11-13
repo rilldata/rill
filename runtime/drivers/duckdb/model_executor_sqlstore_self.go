@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -125,118 +124,65 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 }
 
 func (e *sqlStoreToSelfExecutor) ingestFromPgx(ctx context.Context, inputProps *sqlStoreToSelfInputProps, outputProps *ModelOutputProperties, opts *drivers.ModelExecuteOptions, table string) error {
-	safeTmpTable := safeName(fmt.Sprintf("__%s_tmp_sqlstore", table))
-	err := e.c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Attach postgres database to duckdb
-		err := e.c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("ATTACH %s AS pgx_db (TYPE POSTGRES, READ_ONLY)", safeSQLString(inputProps.DSN)),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to attach postgres database: %w", err)
-		}
-
-		defer func() {
-			// detach postgres database
-			err := e.c.Exec(ensuredCtx, &drivers.Statement{
-				Query: "DETACH pgx_db",
-			})
-			if err != nil {
-				e.c.logger.Error("failed to detach postgres database", zap.Error(err))
-			}
-		}()
-
-		// ingest from postgres
-		// ingest in a temp table since CRUD APIs can't be called from a WithConnection
-		userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS SELECT * FROM postgres_query('pgx_db', %s)", safeTmpTable, safeSQLString(userQuery))
-		err = e.c.Exec(ctx, &drivers.Statement{
-			Query: query,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to ingest from postgres: %w", err)
-		}
-		return nil
+	// Attach postgres database to duckdb
+	err := e.c.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("ATTACH %s AS pgx_db (TYPE POSTGRES, READ_ONLY)", safeSQLString(inputProps.DSN)),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to attach postgres database: %w", err)
 	}
 
 	defer func() {
-		// ensure temporary table is cleaned
+		// detach postgres database
 		err := e.c.Exec(context.Background(), &drivers.Statement{
-			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTmpTable),
-			Priority:    1,
-			LongRunning: true,
+			Query: "DETACH pgx_db",
 		})
 		if err != nil {
-			e.c.logger.Error("failed to drop temp table", zap.String("table", safeTmpTable), zap.Error(err))
+			e.c.logger.Error("failed to detach postgres database", zap.Error(err))
 		}
 	}()
 
+	// ingest from postgres
+	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
+	query := fmt.Sprintf("SELECT * FROM postgres_query('pgx_db', %s)", safeSQLString(userQuery))
 	if opts.IncrementalRun {
-		return e.c.InsertTableAsSelect(ctx, table, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+		return e.c.InsertTableAsSelect(ctx, table, query, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 	}
-	return e.c.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), nil)
+	return e.c.CreateTableAsSelect(ctx, table, false, query, nil)
 }
 
 func (e *sqlStoreToSelfExecutor) ingestFromMySQL(ctx context.Context, inputProps *sqlStoreToSelfInputProps, outputProps *ModelOutputProperties, opts *drivers.ModelExecuteOptions, table string) error {
-	safeTmpTable := safeName(fmt.Sprintf("__%s_tmp_sqlstore", table))
-	err := e.c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Install and load extension. Does not auto load.
-		err := e.c.Exec(ctx, &drivers.Statement{
-			Query: "INSTALL MYSQL; LOAD MYSQL;",
-		})
-		if err != nil {
-			return fmt.Errorf("failed to install/load mysql extension: %w", err)
-		}
-
-		// Attach database to duckdb
-		err = e.c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("ATTACH %s AS mysql_db (TYPE MYSQL, READ_ONLY)", safeSQLString(inputProps.DSN)),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to attach mysql database: %w", err)
-		}
-
-		defer func() {
-			// detach database
-			err := e.c.Exec(ensuredCtx, &drivers.Statement{
-				Query: "DETACH mysql_db",
-			})
-			if err != nil {
-				e.c.logger.Error("failed to detach mysql database", zap.Error(err))
-			}
-		}()
-
-		// ingest in a temp table since CRUD APIs can't be called from a WithConnection
-		userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS SELECT * FROM mysql_query('mysql_db', %s)", safeTmpTable, safeSQLString(userQuery))
-		err = e.c.Exec(ctx, &drivers.Statement{
-			Query: query,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to ingest from mysql: %w", err)
-		}
-		return nil
+	// Install and load extension. Does not auto load.
+	err := e.c.Exec(ctx, &drivers.Statement{
+		Query: "INSTALL MYSQL; LOAD MYSQL;",
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to install/load mysql extension: %w", err)
+	}
+
+	// Attach database to duckdb
+	err = e.c.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("ATTACH %s AS mysql_db (TYPE MYSQL, READ_ONLY)", safeSQLString(inputProps.DSN)),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to attach mysql database: %w", err)
 	}
 
 	defer func() {
-		// ensure temporary table is cleaned
+		// detach database
 		err := e.c.Exec(context.Background(), &drivers.Statement{
-			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTmpTable),
-			Priority:    1,
-			LongRunning: true,
+			Query: "DETACH mysql_db",
 		})
 		if err != nil {
-			e.c.logger.Error("failed to drop temp table", zap.String("table", safeTmpTable), zap.Error(err))
+			e.c.logger.Error("failed to detach mysql database", zap.Error(err))
 		}
 	}()
 
+	// ingest in a temp table since CRUD APIs can't be called from a WithConnection
+	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
+	query := fmt.Sprintf("SELECT * FROM mysql_query('mysql_db', %s)", safeSQLString(userQuery))
 	if opts.IncrementalRun {
-		return e.c.InsertTableAsSelect(ctx, table, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+		return e.c.InsertTableAsSelect(ctx, table, query, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 	}
-	return e.c.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", safeTmpTable), nil)
+	return e.c.CreateTableAsSelect(ctx, table, false, query, nil)
 }
