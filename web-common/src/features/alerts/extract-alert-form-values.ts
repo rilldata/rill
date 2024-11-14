@@ -7,12 +7,12 @@ import {
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  type V1AlertSpec,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
-  type V1Notifier,
   V1Operation,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -92,42 +92,34 @@ export type AlertNotificationValues = Pick<
   | "emailRecipients"
 >;
 
-export function extractNotification(
-  notifiers: V1Notifier[] | undefined,
+export function extractAlertNotification(
+  alertSpec: V1AlertSpec,
 ): AlertNotificationValues {
-  const slackNotifier = notifiers?.find((n) => n.connector === "slack");
-  const slackChannels = mapAndAddEmptyEntry(
-    slackNotifier?.properties?.channels as string[] | undefined,
-    "channel",
+  const slackNotifier = alertSpec.notifiers?.find(
+    (n) => n.connector === "slack",
   );
-  const slackUsers = mapAndAddEmptyEntry(
-    slackNotifier?.properties?.users as string[] | undefined,
-    "email",
-  );
+  const slackChannels: string[] | undefined =
+    slackNotifier?.properties?.channels;
+  const slackUsers: string[] | undefined = slackNotifier?.properties?.users;
 
-  const emailNotifier = notifiers?.find((n) => n.connector === "email");
-  const emailRecipients = mapAndAddEmptyEntry(
-    emailNotifier?.properties?.recipients as string[] | undefined,
-    "email",
+  const emailNotifier = alertSpec.notifiers?.find(
+    (n) => n.connector === "email",
   );
+  const emailRecipients: string[] | undefined =
+    emailNotifier?.properties?.recipients;
 
   return {
     enableSlackNotification: !!slackNotifier,
-    slackChannels,
-    slackUsers,
+    slackChannels: mapAndAddEmptyEntry(slackChannels, "channel"),
+    slackUsers: mapAndAddEmptyEntry(slackUsers, "email"),
 
     enableEmailNotification: !!emailNotifier,
-    emailRecipients,
+    emailRecipients: mapAndAddEmptyEntry(emailRecipients, "email"),
   };
 }
 
-function mapAndAddEmptyEntry<K extends string>(
-  entries: string[] | undefined,
-  key: K,
-) {
+function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {
   const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
   mappedEntries.push({ [key]: "" });
-  return mappedEntries as {
-    [KEY in K]: string;
-  }[];
+  return mappedEntries as R;
 }

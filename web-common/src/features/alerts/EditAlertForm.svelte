@@ -4,7 +4,7 @@
   import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
   import {
     extractAlertFormValues,
-    extractNotification,
+    extractAlertNotification,
   } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsViewTimeRange,
@@ -63,7 +63,7 @@
       exploreName: exploreName ?? metricsViewName,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
-      ...extractNotification(alertSpec.notifiers, undefined, true),
+      ...extractAlertNotification(alertSpec),
       ...extractAlertFormValues(
         queryArgsJson,
         $metricsViewSpec?.data ?? {},
