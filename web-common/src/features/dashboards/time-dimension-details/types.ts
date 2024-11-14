@@ -1,4 +1,4 @@
-import { ExpandedState, SortingState } from "@tanstack/svelte-table";
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 
 export enum TDDChart {
   DEFAULT = "default",

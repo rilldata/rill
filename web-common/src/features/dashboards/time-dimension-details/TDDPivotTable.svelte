@@ -5,7 +5,7 @@
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-  import { PivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import type { PivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getTDDConfig } from "@rilldata/web-common/features/dashboards/time-dimension-details/tdd-table-config";
@@ -18,8 +18,8 @@
     flexRender,
     getCoreRowModel,
     getExpandedRowModel,
-    SortingState,
-    Updater,
+    type SortingState,
+    type Updater,
   } from "@tanstack/svelte-table";
   import {
     createVirtualizer,

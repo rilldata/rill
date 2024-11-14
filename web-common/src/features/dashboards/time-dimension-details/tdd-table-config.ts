@@ -1,17 +1,18 @@
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { derived, Readable } from "svelte/store";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { derived, type Readable } from "svelte/store";
 
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { getPivotConfigKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
+import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 
 let lastKey: string | undefined = undefined;
 
@@ -19,11 +20,11 @@ export function getTDDConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([metricsView, timeRangeSummary, dashboardStore]) => {
+    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([validSpec, timeRangeSummary, dashboardStore]) => {
       if (
-        !metricsView.data?.measures ||
-        !metricsView.data?.dimensions ||
+        !validSpec?.data?.metricsView ||
+        !validSpec?.data?.explore ||
         timeRangeSummary.isFetching
       ) {
         return {
@@ -39,10 +40,12 @@ export function getTDDConfig(
           enableComparison: false,
         };
       }
+      const { metricsView, explore } = validSpec.data;
 
       // This indirection makes sure only one update of dashboard store triggers this
       const timeControl = timeControlStateSelector([
         metricsView,
+        explore,
         timeRangeSummary,
         dashboardStore,
       ]);
@@ -51,7 +54,7 @@ export function getTDDConfig(
         timeStart: timeControl.selectedTimeRange?.start.toISOString(),
         timeEnd: timeControl.selectedTimeRange?.end.toISOString(),
         timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView?.data?.timeDimension || "",
+        timeDimension: metricsView.timeDimension || "",
       };
 
       const enableComparison = Boolean(
@@ -94,8 +97,14 @@ export function getTDDConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: metricsView.data?.measures || [],
-        allDimensions: metricsView.data?.dimensions || [],
+        allMeasures: allMeasures({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
+        allDimensions: allDimensions({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
         whereFilter: mergeMeasureFilters(dashboardStore),
         pivot: dashboardStore.pivot,
         enableComparison,
