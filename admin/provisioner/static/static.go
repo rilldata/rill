@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -28,9 +30,10 @@ type StaticRuntimeSpec struct {
 }
 
 type StaticProvisioner struct {
-	Spec   *StaticSpec
-	db     database.DB
-	logger *zap.Logger
+	Spec    *StaticSpec
+	db      database.DB
+	logger  *zap.Logger
+	nextIdx atomic.Int64
 }
 
 var _ provisioner.Provisioner = (*StaticProvisioner)(nil)
@@ -42,11 +45,16 @@ func NewStatic(spec []byte, db database.DB, logger *zap.Logger) (provisioner.Pro
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	return &StaticProvisioner{
+	p := &StaticProvisioner{
 		Spec:   sps,
 		db:     db,
 		logger: logger,
-	}, nil
+	}
+
+	// Initialize the round-robin index to a random value.
+	p.nextIdx.Store(rand.Int63n(1000)) // nolint:gosec // We don't need secure random numbers
+
+	return p, nil
 }
 
 func (p *StaticProvisioner) Type() string {
@@ -66,30 +74,38 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *provisioner.Pro
 	}
 
 	// Get slots currently used
-	stats, err := p.db.ResolveRuntimeSlotsUsed(ctx)
+	stats, err := p.db.ResolveStaticRuntimeSlotsUsed(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	hostToSlotsUsed := make(map[string]int, len(stats))
 	for _, stat := range stats {
-		hostToSlotsUsed[stat.RuntimeHost] = stat.SlotsUsed
+		hostToSlotsUsed[stat.Host] = stat.Slots
 	}
 
-	// Find runtime with available capacity
+	// Find runtimes with available capacity
 	targets := make([]*StaticRuntimeSpec, 0)
 	for _, candidate := range p.Spec.Runtimes {
 		if hostToSlotsUsed[candidate.Host]+args.Slots <= candidate.Slots {
 			targets = append(targets, candidate)
 		}
 	}
-
 	if len(targets) == 0 {
 		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
 	}
 
-	// nolint:gosec // We don't need cryptographically secure random numbers
-	target := targets[rand.Intn(len(targets))]
+	// Select an eligible runtime using an approximate round-robin strategy
+	idx := int((p.nextIdx.Add(1) - 1)) % len(targets)
+	target := targets[idx]
+
+	// Increment slots used
+	err = p.db.IncrementStaticRuntimeSlotsUsed(ctx, target.Host, args.Slots)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build resource
 	cfg := &provisioner.RuntimeConfig{
 		Host:         target.Host,
 		Audience:     target.Audience,
@@ -97,18 +113,35 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *provisioner.Pro
 		MemoryGB:     4 * args.Slots,
 		StorageBytes: int64(args.Slots) * 40 * int64(datasize.GB),
 	}
-
-	// Done
+	state := &runtimeState{
+		Slots: args.Slots,
+	}
 	return &provisioner.Resource{
 		ID:     opts.ID,
 		Type:   opts.Type,
 		Config: cfg.AsMap(),
+		State:  state.AsMap(),
 	}, nil
 }
 
 func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
-	// No-op
-	return nil
+	// Check it's a runtime resource
+	if r.Type != provisioner.ResourceTypeRuntime {
+		return fmt.Errorf("unexpected resource type %q", r.Type)
+	}
+
+	// Parse config and state
+	cfg, err := provisioner.NewRuntimeConfig(r.Config)
+	if err != nil {
+		return err
+	}
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return err
+	}
+
+	// Decrement slots used
+	return p.db.IncrementStaticRuntimeSlotsUsed(ctx, cfg.Host, -state.Slots)
 }
 
 func (p *StaticProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {
@@ -117,7 +150,7 @@ func (p *StaticProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resou
 }
 
 func (p *StaticProvisioner) Check(ctx context.Context) error {
-	slotsUsedByRuntime, err := p.db.ResolveRuntimeSlotsUsed(ctx)
+	slotsUsedByRuntime, err := p.db.ResolveStaticRuntimeSlotsUsed(ctx)
 	if err != nil {
 		return err
 	}
@@ -128,9 +161,9 @@ func (p *StaticProvisioner) Check(ctx context.Context) error {
 	for _, runtime := range p.Spec.Runtimes {
 		slotsTotal += runtime.Slots
 		for _, status := range slotsUsedByRuntime {
-			if runtime.Host == status.RuntimeHost {
-				slotsUsed += status.SlotsUsed
-				pctUsed := float64(status.SlotsUsed) / float64(runtime.Slots)
+			if runtime.Host == status.Host {
+				slotsUsed += status.Slots
+				pctUsed := float64(status.Slots) / float64(runtime.Slots)
 				if pctUsed < minPctUsed {
 					minPctUsed = pctUsed
 				}
@@ -154,7 +187,30 @@ func (p *StaticProvisioner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) error {
+func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
 	// No-op
-	return nil
+	return r, nil
+}
+
+// runtimeState describes the static provisioner's state for a provisioned runtime resource.
+type runtimeState struct {
+	Slots int `mapstructure:"slots"`
+}
+
+func newRuntimeState(state map[string]any) (*runtimeState, error) {
+	res := &runtimeState{}
+	err := mapstructure.Decode(state, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse static runtime state: %w", err)
+	}
+	return res, nil
+}
+
+func (r *runtimeState) AsMap() map[string]any {
+	res := make(map[string]any)
+	err := mapstructure.Decode(r, &res)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }

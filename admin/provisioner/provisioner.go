@@ -44,7 +44,8 @@ type Provisioner interface {
 	Check(ctx context.Context) error
 	// CheckResource is called periodically to health check a specific resource.
 	// The provided context should have a generous timeout to allow the provisioner to perform maintenance tasks for the resource.
-	CheckResource(ctx context.Context, r *Resource) error
+	// The resource's state map will be updated to match that of the returned value.
+	CheckResource(ctx context.Context, r *Resource) (*Resource, error)
 }
 
 // ProvisionOptions represents a request to provision a new resource.

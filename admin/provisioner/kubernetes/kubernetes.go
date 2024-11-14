@@ -344,22 +344,22 @@ func (p *KubernetesProvisioner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) error {
+func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
 	// Get Kubernetes resource names
 	names := p.getResourceNames(r.ID)
 
 	// Get the deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Compare the provisioned templates checksum with the current one
 	if depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum {
-		return fmt.Errorf("kubernetes provisioner: templates checksum mismatch")
+		return nil, fmt.Errorf("kubernetes provisioner: templates checksum mismatch")
 	}
 
-	return nil
+	return r, nil
 }
 
 func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNames {

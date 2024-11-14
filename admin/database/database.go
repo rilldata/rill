@@ -104,12 +104,15 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
-	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
-	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+	// IncrementStaticRuntimeSlotsUsed increments or decrements the slots registered for a runtime host.
+	// It is used by the "static" runtime provisioner to track slot usage on each host.
+	IncrementStaticRuntimeSlotsUsed(ctx context.Context, host string, slots int) error
+	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by IncrementStaticRuntimeSlotsUsed.
+	ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*StaticRuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
@@ -289,7 +292,7 @@ type DB interface {
 
 	FindProvisionerResourcesForProject(ctx context.Context, projectID string) ([]*ProvisionerResource, error)
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
-	UpdateProvisionerResourceStatus(ctx context.Context, id string, status DeploymentStatus, message string) (*ProvisionerResource, error)
+	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
 }
 
@@ -458,10 +461,6 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
-	Provisioner       string           `db:"provisioner"`
-	ProvisionID       string           `db:"provision_id"`
-	RuntimeVersion    string           `db:"runtime_version"`
-	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -476,10 +475,6 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
-	Provisioner       string `validate:"required"`
-	ProvisionID       string
-	RuntimeVersion    string
-	Slots             int
 	Branch            string
 	RuntimeHost       string `validate:"required"`
 	RuntimeInstanceID string `validate:"required"`
@@ -488,10 +483,10 @@ type InsertDeploymentOptions struct {
 	StatusMessage     string
 }
 
-// RuntimeSlotsUsed is the result of a ResolveRuntimeSlotsUsed query.
-type RuntimeSlotsUsed struct {
-	RuntimeHost string `db:"runtime_host"`
-	SlotsUsed   int    `db:"slots_used"`
+// StaticRuntimeSlotsUsed is the result of a ResolveStaticRuntimeSlotsUsed query.
+type StaticRuntimeSlotsUsed struct {
+	Host  string `db:"host"`
+	Slots int    `db:"slots"`
 }
 
 // User is a person registered in Rill.
@@ -1121,32 +1116,63 @@ type UpsertBillingIssueOptions struct {
 	EventTime time.Time `validate:"required"`
 }
 
+// ProvisionerResourceStatus is an enum representing the state of a provisioner resource
+type ProvisionerResourceStatus int
+
+const (
+	ProvisionerResourceStatusUnspecified ProvisionerResourceStatus = 0
+	ProvisionerResourceStatusPending     ProvisionerResourceStatus = 1
+	ProvisionerResourceStatusOK          ProvisionerResourceStatus = 2
+	ProvisionerResourceStatusError       ProvisionerResourceStatus = 4
+)
+
+func (d ProvisionerResourceStatus) String() string {
+	switch d {
+	case ProvisionerResourceStatusPending:
+		return "Pending"
+	case ProvisionerResourceStatusOK:
+		return "OK"
+	case ProvisionerResourceStatusError:
+		return "Error"
+	default:
+		return "Unspecified"
+	}
+}
+
 // ProvisionerResource represents a resource created by a provisioner in admin/provisioner.
 type ProvisionerResource struct {
-	ID            string           `db:"id"`
-	ProjectID     string           `db:"project_id"`
-	Type          string           `db:"type"`
-	Name          string           `db:"name"`
-	Status        DeploymentStatus `db:"status"`
-	StatusMessage string           `db:"status_message"`
-	Provisioner   string           `db:"provisioner"`
-	Args          map[string]any   `db:"args_json"`
-	State         map[string]any   `db:"state_json"`
-	Config        map[string]any   `db:"config_json"`
-	CreatedOn     time.Time        `db:"created_on"`
-	UpdatedOn     time.Time        `db:"updated_on"`
+	ID            string                    `db:"id"`
+	DeploymentID  string                    `db:"deployment_id"`
+	Type          string                    `db:"type"`
+	Name          string                    `db:"name"`
+	Status        ProvisionerResourceStatus `db:"status"`
+	StatusMessage string                    `db:"status_message"`
+	Provisioner   string                    `db:"provisioner"`
+	Args          map[string]any            `db:"args_json"`
+	State         map[string]any            `db:"state_json"`
+	Config        map[string]any            `db:"config_json"`
+	CreatedOn     time.Time                 `db:"created_on"`
+	UpdatedOn     time.Time                 `db:"updated_on"`
 }
 
 // InsertProvisionerResourceOptions defines options for inserting a new ProvisionerResource.
 type InsertProvisionerResourceOptions struct {
 	ID            string
-	ProjectID     string
+	DeploymentID  string
 	Type          string
 	Name          string
-	Status        DeploymentStatus
+	Status        ProvisionerResourceStatus
 	StatusMessage string
 	Provisioner   string
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any
+}
+
+// UpdateProvisionerResourceOptions defines options for updating a ProvisionerResource.
+type UpdateProvisionerResourceOptions struct {
+	Args          map[string]any
+	State         map[string]any
+	Status        ProvisionerResourceStatus
+	StatusMessage string
 }

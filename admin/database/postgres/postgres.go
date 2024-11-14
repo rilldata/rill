@@ -525,9 +525,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, provisioner, provision_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, runtime_version, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-		opts.ProjectID, opts.Provisioner, opts.ProvisionID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.RuntimeVersion, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ProjectID, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -543,15 +543,6 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET runtime_version=$1, updated_on=now() WHERE id=$2 RETURNING *", version, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -585,9 +576,17 @@ func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID 
 	return res, nil
 }
 
-func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.RuntimeSlotsUsed, error) {
-	var res []*database.RuntimeSlotsUsed
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
+func (c *connection) IncrementStaticRuntimeSlotsUsed(ctx context.Context, host string, slots int) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_slots (host, slots) VALUES ($1, $2) ON CONFLICT (host) DO UPDATE SET slots = static_runtime_slots.slots + EXCLUDED.slots", host, slots)
+	if err != nil {
+		return parseErr("slots used", err)
+	}
+	return nil
+}
+
+func (c *connection) ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*database.StaticRuntimeSlotsUsed, error) {
+	var res []*database.StaticRuntimeSlotsUsed
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT s.host, s.slots FROM static_runtime_slots s")
 	if err != nil {
 		return nil, parseErr("slots used", err)
 	}
@@ -2233,9 +2232,9 @@ func (c *connection) InsertProvisionerResource(ctx context.Context, opts *databa
 
 	res := &provisionerResourceDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO provisioner_resources (id, project_id, "type", name, status, status_message, provisioner, args_json, state_json, config_json)
+		INSERT INTO provisioner_resources (id, deployment_id, "type", name, status, status_message, provisioner, args_json, state_json, config_json)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-		opts.ID, opts.ProjectID, opts.Type, opts.Name, opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config,
+		opts.ID, opts.DeploymentID, opts.Type, opts.Name, opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("provisioner resource", err)
@@ -2243,11 +2242,20 @@ func (c *connection) InsertProvisionerResource(ctx context.Context, opts *databa
 	return c.provisionerResourceFromDTO(res)
 }
 
-func (c *connection) UpdateProvisionerResourceStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.ProvisionerResource, error) {
+func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, opts *database.UpdateProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+
 	res := &provisionerResourceDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE provisioner_resources SET status = $1, status_message = $2 WHERE id = $3 RETURNING *`,
-		status, message, id,
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4 WHERE id = $5 RETURNING *`,
+		opts.Status, opts.StatusMessage, args, state, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("provisioner resource", err)

@@ -2263,7 +2263,6 @@ enum DeploymentStatus {
 message Deployment {
   string id = 1;
   string project_id = 2;
-  int64 slots = 3;
   string branch = 4;
   string runtime_host = 5;
   string runtime_instance_id = 6;

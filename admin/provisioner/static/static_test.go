@@ -28,53 +28,6 @@ func TestProvision(t *testing.T) {
 	ctx := context.Background()
 	require.NoError(t, db.Migrate(ctx))
 
-	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name: "test",
-	})
-	require.NoError(t, err)
-
-	p1, err := db.InsertProject(ctx, &database.InsertProjectOptions{
-		OrganizationID: org.ID,
-		Name:           "p-q",
-		ProdBranch:     "main",
-		ProdSlots:      1,
-	})
-	require.NoError(t, err)
-
-	// insert data
-	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         p1.ID,
-		Provisioner:       "static",
-		ProvisionID:       uuid.NewString(),
-		Slots:             2,
-		Branch:            "main",
-		RuntimeHost:       "host_1",
-		RuntimeInstanceID: uuid.NewString(),
-	})
-
-	require.NoError(t, err)
-	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         p1.ID,
-		Provisioner:       "static",
-		ProvisionID:       uuid.NewString(),
-		Slots:             5,
-		Branch:            "main",
-		RuntimeHost:       "host_2",
-		RuntimeInstanceID: uuid.NewString(),
-	})
-	require.NoError(t, err)
-
-	_, err = db.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         p1.ID,
-		Provisioner:       "static",
-		ProvisionID:       uuid.NewString(),
-		Slots:             4,
-		Branch:            "main",
-		RuntimeHost:       "host_3",
-		RuntimeInstanceID: uuid.NewString(),
-	})
-	require.NoError(t, err)
-
 	// spec
 	spec := &StaticSpec{
 		Runtimes: []*StaticRuntimeSpec{
@@ -95,20 +48,20 @@ func TestProvision(t *testing.T) {
 			name:    "all applicable",
 			spec:    spec,
 			args:    &provisioner.RuntimeArgs{Slots: 1},
-			wantCfg: &provisioner.RuntimeConfig{CPU: 1, MemoryGB: 4, StorageBytes: int64(40) * int64(datasize.GB)},
+			wantCfg: &provisioner.RuntimeConfig{Host: "host_1", CPU: 1, MemoryGB: 4, StorageBytes: int64(40) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
-			name:    "one applicable",
+			name:    "some applicable",
 			spec:    spec,
-			args:    &provisioner.RuntimeArgs{Slots: 4},
-			wantCfg: &provisioner.RuntimeConfig{CPU: 4, MemoryGB: 16, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
+			args:    &provisioner.RuntimeArgs{Slots: 6},
+			wantCfg: &provisioner.RuntimeConfig{Host: "host_2", CPU: 6, MemoryGB: 24, StorageBytes: int64(240) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
 			name:    "none applicable",
 			spec:    spec,
-			args:    &provisioner.RuntimeArgs{Slots: 5},
+			args:    &provisioner.RuntimeArgs{Slots: 8},
 			wantCfg: nil,
 			wantErr: true,
 		},
@@ -119,6 +72,7 @@ func TestProvision(t *testing.T) {
 			require.NoError(t, err)
 
 			p, err := NewStatic(specJSON, db, zap.NewNop())
+			p.(*StaticProvisioner).nextIdx.Store(0) // Make host assignment deterministic
 			require.NoError(t, err)
 
 			opts := &provisioner.ProvisionOptions{
@@ -131,12 +85,7 @@ func TestProvision(t *testing.T) {
 				require.Error(t, err)
 				return
 			}
-
-			// Since host assignment is random, if the host is not set in the expected config, we ignore it.
-			if tt.wantCfg.Host == "" {
-				require.NotEmpty(t, res.Config["host"])
-				res.Config["host"] = ""
-			}
+			require.NoError(t, err)
 
 			require.Equal(t, opts.ID, res.ID)
 			require.Equal(t, opts.Type, res.Type)

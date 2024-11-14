@@ -1216,7 +1216,6 @@ export const V1DeploymentStatus = {
 export interface V1Deployment {
   id?: string;
   projectId?: string;
-  slots?: string;
   branch?: string;
   runtimeHost?: string;
   runtimeInstanceId?: string;
