@@ -1,5 +1,4 @@
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-import type { AlertNotificationValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
 import {
   getDayOfWeekFromCronExpression,
   getFrequencyFromCronExpression,
@@ -68,61 +67,21 @@ export function getDashboardNameFromReport(
   );
 }
 
-export function extractNotification(
-  notifiers: V1Notifier[] | undefined,
-  userEmail: string | undefined,
-  isEdit: boolean,
-): AlertNotificationValues {
-  const slackNotifier = notifiers?.find((n) => n.connector === "slack");
-  const slackChannels = mapAndAddEmptyEntry(
-    slackNotifier?.properties?.channels as string[] | undefined,
-    "channel",
-  );
-  const slackUsers = mapAndAddEmptyEntry(
-    slackNotifier?.properties?.users as string[] | undefined,
-    "email",
-  );
-
-  const emailNotifier = notifiers?.find((n) => n.connector === "email");
-  const emailRecipients = mapAndAddEmptyEntry(
-    emailNotifier?.properties?.recipients as string[] | undefined,
-    "email",
-  );
-
-  if (userEmail && !isEdit) {
-    slackUsers.push({
-      email: userEmail,
-    });
-    emailRecipients.push({
-      email: userEmail,
-    });
-  }
-
-  return {
-    enableSlackNotification: isEdit ? !!slackNotifier : true,
-    slackChannels,
-    slackUsers,
-
-    enableEmailNotification: isEdit ? !!emailNotifier : true,
-    emailRecipients,
-  };
-}
-
 export function extractNotificationV2(
   notifiers: V1Notifier[] | undefined,
   userEmail: string | undefined,
   isEdit: boolean,
 ) {
   const slackNotifier = notifiers?.find((n) => n.connector === "slack");
-  const slackChannels = mapAndAddEmptyEntryV2(
+  const slackChannels = mapAndAddEmptyEntry(
     slackNotifier?.properties?.channels as string[],
   );
-  const slackUsers = mapAndAddEmptyEntryV2(
+  const slackUsers = mapAndAddEmptyEntry(
     slackNotifier?.properties?.users as string[],
   );
 
   const emailNotifier = notifiers?.find((n) => n.connector === "email");
-  const emailRecipients = mapAndAddEmptyEntryV2(
+  const emailRecipients = mapAndAddEmptyEntry(
     emailNotifier?.properties?.recipients as string[],
   );
 
@@ -141,18 +100,7 @@ export function extractNotificationV2(
   };
 }
 
-function mapAndAddEmptyEntry<K extends string>(
-  entries: string[] | undefined,
-  key: K,
-) {
-  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
-  mappedEntries.push({ [key]: "" });
-  return mappedEntries as {
-    [KEY in K]: string;
-  }[];
-}
-
-function mapAndAddEmptyEntryV2(entries: string[] | undefined) {
+function mapAndAddEmptyEntry(entries: string[] | undefined) {
   const finalEntries = entries ? [...entries] : [];
   finalEntries.push("");
   return finalEntries;

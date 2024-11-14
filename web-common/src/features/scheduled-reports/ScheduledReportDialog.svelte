@@ -99,7 +99,8 @@
         },
       });
 
-      if (reportSpec) {
+      const isEdit = !!reportSpec;
+      if (isEdit) {
         await queryClient.invalidateQueries(
           getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
             "name.name": reportName,

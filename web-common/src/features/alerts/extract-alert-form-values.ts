@@ -12,6 +12,7 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1Notifier,
   V1Operation,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -90,3 +91,43 @@ export type AlertNotificationValues = Pick<
   | "enableEmailNotification"
   | "emailRecipients"
 >;
+
+export function extractNotification(
+  notifiers: V1Notifier[] | undefined,
+): AlertNotificationValues {
+  const slackNotifier = notifiers?.find((n) => n.connector === "slack");
+  const slackChannels = mapAndAddEmptyEntry(
+    slackNotifier?.properties?.channels as string[] | undefined,
+    "channel",
+  );
+  const slackUsers = mapAndAddEmptyEntry(
+    slackNotifier?.properties?.users as string[] | undefined,
+    "email",
+  );
+
+  const emailNotifier = notifiers?.find((n) => n.connector === "email");
+  const emailRecipients = mapAndAddEmptyEntry(
+    emailNotifier?.properties?.recipients as string[] | undefined,
+    "email",
+  );
+
+  return {
+    enableSlackNotification: !!slackNotifier,
+    slackChannels,
+    slackUsers,
+
+    enableEmailNotification: !!emailNotifier,
+    emailRecipients,
+  };
+}
+
+function mapAndAddEmptyEntry<K extends string>(
+  entries: string[] | undefined,
+  key: K,
+) {
+  const mappedEntries = entries?.map((e) => ({ [key]: e })) ?? [];
+  mappedEntries.push({ [key]: "" });
+  return mappedEntries as {
+    [KEY in K]: string;
+  }[];
+}

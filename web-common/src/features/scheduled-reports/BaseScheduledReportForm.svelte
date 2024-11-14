@@ -99,9 +99,9 @@
   />
   <MultiInput
     id="emailRecipients"
-    label="Recipients"
+    label="Email Recipients"
     hint="Recipients will receive different views based on their security policy.
-        Recipients without project access can't view the report."
+        Recipients without project access can only download the report."
     bind:values={$data["emailRecipients"]}
     errors={$errors["emailRecipients"]}
     singular="email"
@@ -131,8 +131,8 @@
         hint="We’ll alert them with direct messages in Slack."
         bind:values={$data["slackUsers"]}
         errors={$errors["slackUsers"]}
-        singular="email"
-        plural="emails"
+        singular="user"
+        plural="users"
         placeholder="Enter an email address"
       />
     </FormSection>

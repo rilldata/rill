@@ -2,12 +2,14 @@
   import { page } from "$app/stores";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
   import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-  import { extractAlertFormValues } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
+  import {
+    extractAlertFormValues,
+    extractNotification,
+  } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     useMetricsViewTimeRange,
     useMetricsViewValidSpec,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { extractNotification } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
