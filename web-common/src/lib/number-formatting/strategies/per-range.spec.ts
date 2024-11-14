@@ -1,6 +1,6 @@
+import { describe, expect, it } from "vitest";
 import { type FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { PerRangeFormatter } from "./per-range";
-import { describe, it, expect } from "vitest";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {
   rangeSpecs: [
@@ -152,9 +152,9 @@ const mar2ProposalTestCases: [number, string][] = [
 
   [0.00095, "0.001"],
   [0.000999999, "0.001"],
-  [0.00012335234, "123.35e-6"],
+  [0.00012335234, "1.23e-4"],
   [0.000_000_999999, "1.00e-6"],
-  [0.000_000_02341253, "23.41e-9"],
+  [0.000_000_02341253, "2.34e-8"],
   [0.000_000_000_999999, "1.00e-9"],
 
   // padding with insignificant zeros
@@ -162,7 +162,8 @@ const mar2ProposalTestCases: [number, string][] = [
   [9.12, "9.120"],
 ];
 
-describe("range formatter, using options for 2022-03-02 proposal `.stringFormat()`", () => {
+// Based on the proposal: Formatting the display of metrics for higher precision in tables and other contexts
+describe("range formatter, using options for 2024-18-09 proposal `.stringFormat()`", () => {
   mar2ProposalTestCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
       const formatter = new PerRangeFormatter(mar2ProposalOptions);

@@ -16,9 +16,13 @@ dimensions:
 measures:
   - display_name: "Number of bids"
     expression: count(*)
+    format_preset: humanize
   - display_name: "Total volume"
     expression: sum(volume)
+    format_preset: humanize
   - display_name: "Total impressions"
     expression: sum(impressions)
+    format_preset: humanize
   - display_name: "Total clicks"
     expression: sum(clicks)
+    format_preset: humanize
