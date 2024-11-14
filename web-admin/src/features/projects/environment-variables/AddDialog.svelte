@@ -161,7 +161,6 @@
   }
 
   function handleReset() {
-    console.log("handleReset");
     $form.newVariables = [{ key: "", value: "" }];
     isDevelopment = true;
     isProduction = true;
@@ -169,6 +168,7 @@
     isKeyAlreadyExists = false;
   }
 
+  // TODO: do we only check for name? do we also need to check for name and environment?
   function checkForExistingKeys() {
     const existingKeys = $form.newVariables.map((variable) => variable.key);
     inputErrors = {};

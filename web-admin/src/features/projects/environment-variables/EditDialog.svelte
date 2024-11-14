@@ -23,6 +23,7 @@
   import { object, string } from "yup";
   import { EnvironmentType, type EnvironmentTypes } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { onMount } from "svelte";
 
   export let open = false;
   export let id: string;
@@ -30,15 +31,13 @@
   export let name: string;
   export let value: string;
 
-  let processedEnvironment: EnvironmentTypes;
+  let isDevelopment: boolean;
+  let isProduction: boolean;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  // TODO: revisit when we allow key changes in edit dialog, check for duplicates
-  $: hasChanges = $form.environment !== environment || $form.value !== value;
-
-  // $: console.log("$form: ", $form);
+  // $: hasChanges = $form.value !== value;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -82,16 +81,21 @@
     },
   );
 
-  function processFormEnvironment() {
-    if (!$form.environment && !$form.environment) {
-      return "";
-    } else if ($form.environment === EnvironmentType.DEVELOPMENT) {
+  function processEnvironment() {
+    if (isDevelopment && isProduction) {
+      return undefined;
+    }
+
+    if (isDevelopment) {
       return EnvironmentType.DEVELOPMENT;
-    } else if ($form.environment === EnvironmentType.PRODUCTION) {
+    }
+
+    if (isProduction) {
       return EnvironmentType.PRODUCTION;
     }
+
+    return undefined;
   }
-  $: processedEnvironment = processFormEnvironment();
 
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -101,7 +105,7 @@
         organization,
         project,
         data: {
-          environment: processedEnvironment,
+          environment: processEnvironment(),
           variables: flatVariable,
         },
       });
@@ -131,13 +135,24 @@
     $form = initialValues;
   }
 
-  $: isDevelopment =
-    $form.environment === EnvironmentType.UNDEFINED ||
-    $form.environment === EnvironmentType.DEVELOPMENT;
+  function setInitialCheckboxState() {
+    if ($form.environment === EnvironmentType.DEVELOPMENT) {
+      isDevelopment = true;
+    }
 
-  $: isProduction =
-    $form.environment === EnvironmentType.UNDEFINED ||
-    $form.environment === EnvironmentType.PRODUCTION;
+    if ($form.environment === EnvironmentType.PRODUCTION) {
+      isProduction = true;
+    }
+
+    if ($form.environment === EnvironmentType.UNDEFINED) {
+      isDevelopment = true;
+      isProduction = true;
+    }
+  }
+
+  onMount(() => {
+    setInitialCheckboxState();
+  });
 </script>
 
 <Dialog bind:open onOutsideClick={() => handleReset()}>
@@ -166,19 +181,11 @@
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
               bind:checked={isDevelopment}
-              onCheckedChange={() => {
-                // FIXME
-                $form.environment = EnvironmentType.DEVELOPMENT;
-              }}
               id="development"
               label="Development"
             />
             <Checkbox
               bind:checked={isProduction}
-              onCheckedChange={() => {
-                // FIXME
-                $form.environment = EnvironmentType.PRODUCTION;
-              }}
               id="production"
               label="Production"
             />
@@ -223,11 +230,8 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button
-        type="primary"
-        form={$formId}
-        disabled={$submitting || !hasChanges}
-        submitForm>Edit</Button
+      <Button type="primary" form={$formId} disabled={$submitting} submitForm
+        >Edit</Button
       >
     </DialogFooter>
   </DialogContent>
