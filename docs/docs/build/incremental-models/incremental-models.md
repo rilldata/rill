@@ -58,18 +58,18 @@ Incremental models with neither `state` nor `partition` defined will append data
 :::
 ### Incremental Models with State defined
 
-If your data is not [partitioned](partitions.md), you can define the incremental model with a predefined `state` parameter.
+If your data is not [partitioned](#what-are-partitions), you can define the incremental model with a predefined `state` parameter.
 
 ```yaml
 type: model
 incremental: true
 
+state:
+  sql: SELECT MAX(date) as date FROM TABLE
+
 sql: |
      SELECT * FROM TABLE
         {{ if incremental }} WHERE COL_DATE = TO_DATE( '{{ .state.date }}', 'YYYY-MM-DD') + INTERVAL '1 day' {{ end }} 
-
-state:
-  sql: SELECT MAX(date) as date FROM TABLE
 ```
 
 Once state is defined in an incremental model, its value can be used as a variable in your SQL statement. In the above example, the state returns the most recent `date` value from `TABLE` and adds an additional day. Then, the SQL statement will run based on the WHERE clause.

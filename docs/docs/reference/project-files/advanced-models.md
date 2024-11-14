@@ -5,7 +5,9 @@ sidebar_position: 35
 hide_table_of_contents: true
 ---
 
-In some cases, advanced models will be required when implementing advanced features such as incremental partitioned models or staging models.  
+In some cases, advanced models will be required when implementing advanced features such as incremental partitioned models or staging models. 
+
+
 ## Properties
 
 **`type`** - refers to the resource type and must be 'model'_(required)_ 

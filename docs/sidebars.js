@@ -87,7 +87,7 @@ const sidebars = {
 
             { 
               type: 'category',
-              label: 'Incremental Models',
+              label: 'Advanced Models',
               
               items: [
                 'tutorials/rill_advanced_features/incremental_models/introduction',
