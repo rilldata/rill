@@ -720,119 +720,113 @@ export class GetCurrentProjectResponse extends Message<GetCurrentProjectResponse
 }
 
 /**
- * @generated from message rill.local.v1.GetUserOrgMetadataRequest
+ * @generated from message rill.local.v1.ListOrganizationsAndBillingMetadataRequest
  */
-export class GetUserOrgMetadataRequest extends Message<GetUserOrgMetadataRequest> {
-  constructor(data?: PartialMessage<GetUserOrgMetadataRequest>) {
+export class ListOrganizationsAndBillingMetadataRequest extends Message<ListOrganizationsAndBillingMetadataRequest> {
+  constructor(data?: PartialMessage<ListOrganizationsAndBillingMetadataRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.GetUserOrgMetadataRequest";
+  static readonly typeName = "rill.local.v1.ListOrganizationsAndBillingMetadataRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUserOrgMetadataRequest {
-    return new GetUserOrgMetadataRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationsAndBillingMetadataRequest {
+    return new ListOrganizationsAndBillingMetadataRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUserOrgMetadataRequest {
-    return new GetUserOrgMetadataRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataRequest {
+    return new ListOrganizationsAndBillingMetadataRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUserOrgMetadataRequest {
-    return new GetUserOrgMetadataRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataRequest {
+    return new ListOrganizationsAndBillingMetadataRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetUserOrgMetadataRequest | PlainMessage<GetUserOrgMetadataRequest> | undefined, b: GetUserOrgMetadataRequest | PlainMessage<GetUserOrgMetadataRequest> | undefined): boolean {
-    return proto3.util.equals(GetUserOrgMetadataRequest, a, b);
+  static equals(a: ListOrganizationsAndBillingMetadataRequest | PlainMessage<ListOrganizationsAndBillingMetadataRequest> | undefined, b: ListOrganizationsAndBillingMetadataRequest | PlainMessage<ListOrganizationsAndBillingMetadataRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationsAndBillingMetadataRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.local.v1.GetUserOrgMetadataResponse
+ * @generated from message rill.local.v1.ListOrganizationsAndBillingMetadataResponse
  */
-export class GetUserOrgMetadataResponse extends Message<GetUserOrgMetadataResponse> {
+export class ListOrganizationsAndBillingMetadataResponse extends Message<ListOrganizationsAndBillingMetadataResponse> {
   /**
-   * @generated from field: repeated rill.local.v1.GetUserOrgMetadataResponse.OrgMetadata orgs = 1;
+   * @generated from field: repeated rill.local.v1.ListOrganizationsAndBillingMetadataResponse.OrgMetadata orgs = 1;
    */
-  orgs: GetUserOrgMetadataResponse_OrgMetadata[] = [];
+  orgs: ListOrganizationsAndBillingMetadataResponse_OrgMetadata[] = [];
 
-  constructor(data?: PartialMessage<GetUserOrgMetadataResponse>) {
+  constructor(data?: PartialMessage<ListOrganizationsAndBillingMetadataResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.GetUserOrgMetadataResponse";
+  static readonly typeName = "rill.local.v1.ListOrganizationsAndBillingMetadataResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "orgs", kind: "message", T: GetUserOrgMetadataResponse_OrgMetadata, repeated: true },
+    { no: 1, name: "orgs", kind: "message", T: ListOrganizationsAndBillingMetadataResponse_OrgMetadata, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUserOrgMetadataResponse {
-    return new GetUserOrgMetadataResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationsAndBillingMetadataResponse {
+    return new ListOrganizationsAndBillingMetadataResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUserOrgMetadataResponse {
-    return new GetUserOrgMetadataResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataResponse {
+    return new ListOrganizationsAndBillingMetadataResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUserOrgMetadataResponse {
-    return new GetUserOrgMetadataResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataResponse {
+    return new ListOrganizationsAndBillingMetadataResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetUserOrgMetadataResponse | PlainMessage<GetUserOrgMetadataResponse> | undefined, b: GetUserOrgMetadataResponse | PlainMessage<GetUserOrgMetadataResponse> | undefined): boolean {
-    return proto3.util.equals(GetUserOrgMetadataResponse, a, b);
+  static equals(a: ListOrganizationsAndBillingMetadataResponse | PlainMessage<ListOrganizationsAndBillingMetadataResponse> | undefined, b: ListOrganizationsAndBillingMetadataResponse | PlainMessage<ListOrganizationsAndBillingMetadataResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationsAndBillingMetadataResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.local.v1.GetUserOrgMetadataResponse.OrgMetadata
+ * @generated from message rill.local.v1.ListOrganizationsAndBillingMetadataResponse.OrgMetadata
  */
-export class GetUserOrgMetadataResponse_OrgMetadata extends Message<GetUserOrgMetadataResponse_OrgMetadata> {
+export class ListOrganizationsAndBillingMetadataResponse_OrgMetadata extends Message<ListOrganizationsAndBillingMetadataResponse_OrgMetadata> {
   /**
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * @generated from field: bool is_admin = 2;
-   */
-  isAdmin = false;
-
-  /**
    * @generated from field: repeated rill.admin.v1.BillingIssue issues = 3;
    */
   issues: BillingIssue[] = [];
 
-  constructor(data?: PartialMessage<GetUserOrgMetadataResponse_OrgMetadata>) {
+  constructor(data?: PartialMessage<ListOrganizationsAndBillingMetadataResponse_OrgMetadata>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.GetUserOrgMetadataResponse.OrgMetadata";
+  static readonly typeName = "rill.local.v1.ListOrganizationsAndBillingMetadataResponse.OrgMetadata";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "is_admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "issues", kind: "message", T: BillingIssue, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUserOrgMetadataResponse_OrgMetadata {
-    return new GetUserOrgMetadataResponse_OrgMetadata().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationsAndBillingMetadataResponse_OrgMetadata {
+    return new ListOrganizationsAndBillingMetadataResponse_OrgMetadata().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUserOrgMetadataResponse_OrgMetadata {
-    return new GetUserOrgMetadataResponse_OrgMetadata().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataResponse_OrgMetadata {
+    return new ListOrganizationsAndBillingMetadataResponse_OrgMetadata().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUserOrgMetadataResponse_OrgMetadata {
-    return new GetUserOrgMetadataResponse_OrgMetadata().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationsAndBillingMetadataResponse_OrgMetadata {
+    return new ListOrganizationsAndBillingMetadataResponse_OrgMetadata().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetUserOrgMetadataResponse_OrgMetadata | PlainMessage<GetUserOrgMetadataResponse_OrgMetadata> | undefined, b: GetUserOrgMetadataResponse_OrgMetadata | PlainMessage<GetUserOrgMetadataResponse_OrgMetadata> | undefined): boolean {
-    return proto3.util.equals(GetUserOrgMetadataResponse_OrgMetadata, a, b);
+  static equals(a: ListOrganizationsAndBillingMetadataResponse_OrgMetadata | PlainMessage<ListOrganizationsAndBillingMetadataResponse_OrgMetadata> | undefined, b: ListOrganizationsAndBillingMetadataResponse_OrgMetadata | PlainMessage<ListOrganizationsAndBillingMetadataResponse_OrgMetadata> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationsAndBillingMetadataResponse_OrgMetadata, a, b);
   }
 }
 

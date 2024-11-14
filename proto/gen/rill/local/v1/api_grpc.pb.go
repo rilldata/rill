@@ -19,15 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LocalService_Ping_FullMethodName               = "/rill.local.v1.LocalService/Ping"
-	LocalService_GetMetadata_FullMethodName        = "/rill.local.v1.LocalService/GetMetadata"
-	LocalService_GetVersion_FullMethodName         = "/rill.local.v1.LocalService/GetVersion"
-	LocalService_PushToGithub_FullMethodName       = "/rill.local.v1.LocalService/PushToGithub"
-	LocalService_DeployProject_FullMethodName      = "/rill.local.v1.LocalService/DeployProject"
-	LocalService_RedeployProject_FullMethodName    = "/rill.local.v1.LocalService/RedeployProject"
-	LocalService_GetCurrentUser_FullMethodName     = "/rill.local.v1.LocalService/GetCurrentUser"
-	LocalService_GetCurrentProject_FullMethodName  = "/rill.local.v1.LocalService/GetCurrentProject"
-	LocalService_GetUserOrgMetadata_FullMethodName = "/rill.local.v1.LocalService/GetUserOrgMetadata"
+	LocalService_Ping_FullMethodName                                = "/rill.local.v1.LocalService/Ping"
+	LocalService_GetMetadata_FullMethodName                         = "/rill.local.v1.LocalService/GetMetadata"
+	LocalService_GetVersion_FullMethodName                          = "/rill.local.v1.LocalService/GetVersion"
+	LocalService_PushToGithub_FullMethodName                        = "/rill.local.v1.LocalService/PushToGithub"
+	LocalService_DeployProject_FullMethodName                       = "/rill.local.v1.LocalService/DeployProject"
+	LocalService_RedeployProject_FullMethodName                     = "/rill.local.v1.LocalService/RedeployProject"
+	LocalService_GetCurrentUser_FullMethodName                      = "/rill.local.v1.LocalService/GetCurrentUser"
+	LocalService_GetCurrentProject_FullMethodName                   = "/rill.local.v1.LocalService/GetCurrentProject"
+	LocalService_ListOrganizationsAndBillingMetadata_FullMethodName = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -50,8 +50,8 @@ type LocalServiceClient interface {
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
 	GetCurrentProject(ctx context.Context, in *GetCurrentProjectRequest, opts ...grpc.CallOption) (*GetCurrentProjectResponse, error)
-	// GetUserOrgMetadata returns metadata about the current user's orgs.
-	GetUserOrgMetadata(ctx context.Context, in *GetUserOrgMetadataRequest, opts ...grpc.CallOption) (*GetUserOrgMetadataResponse, error)
+	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
+	ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error)
 }
 
 type localServiceClient struct {
@@ -142,10 +142,10 @@ func (c *localServiceClient) GetCurrentProject(ctx context.Context, in *GetCurre
 	return out, nil
 }
 
-func (c *localServiceClient) GetUserOrgMetadata(ctx context.Context, in *GetUserOrgMetadataRequest, opts ...grpc.CallOption) (*GetUserOrgMetadataResponse, error) {
+func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Context, in *ListOrganizationsAndBillingMetadataRequest, opts ...grpc.CallOption) (*ListOrganizationsAndBillingMetadataResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUserOrgMetadataResponse)
-	err := c.cc.Invoke(ctx, LocalService_GetUserOrgMetadata_FullMethodName, in, out, cOpts...)
+	out := new(ListOrganizationsAndBillingMetadataResponse)
+	err := c.cc.Invoke(ctx, LocalService_ListOrganizationsAndBillingMetadata_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +172,8 @@ type LocalServiceServer interface {
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
 	GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error)
-	// GetUserOrgMetadata returns metadata about the current user's orgs.
-	GetUserOrgMetadata(context.Context, *GetUserOrgMetadataRequest) (*GetUserOrgMetadataResponse, error)
+	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
+	ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -208,8 +208,8 @@ func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurre
 func (UnimplementedLocalServiceServer) GetCurrentProject(context.Context, *GetCurrentProjectRequest) (*GetCurrentProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentProject not implemented")
 }
-func (UnimplementedLocalServiceServer) GetUserOrgMetadata(context.Context, *GetUserOrgMetadataRequest) (*GetUserOrgMetadataResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetUserOrgMetadata not implemented")
+func (UnimplementedLocalServiceServer) ListOrganizationsAndBillingMetadata(context.Context, *ListOrganizationsAndBillingMetadataRequest) (*ListOrganizationsAndBillingMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationsAndBillingMetadata not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 func (UnimplementedLocalServiceServer) testEmbeddedByValue()                      {}
@@ -376,20 +376,20 @@ func _LocalService_GetCurrentProject_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_GetUserOrgMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUserOrgMetadataRequest)
+func _LocalService_ListOrganizationsAndBillingMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationsAndBillingMetadataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LocalServiceServer).GetUserOrgMetadata(ctx, in)
+		return srv.(LocalServiceServer).ListOrganizationsAndBillingMetadata(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LocalService_GetUserOrgMetadata_FullMethodName,
+		FullMethod: LocalService_ListOrganizationsAndBillingMetadata_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).GetUserOrgMetadata(ctx, req.(*GetUserOrgMetadataRequest))
+		return srv.(LocalServiceServer).ListOrganizationsAndBillingMetadata(ctx, req.(*ListOrganizationsAndBillingMetadataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -434,8 +434,8 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_GetCurrentProject_Handler,
 		},
 		{
-			MethodName: "GetUserOrgMetadata",
-			Handler:    _LocalService_GetUserOrgMetadata_Handler,
+			MethodName: "ListOrganizationsAndBillingMetadata",
+			Handler:    _LocalService_ListOrganizationsAndBillingMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

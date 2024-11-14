@@ -7,7 +7,7 @@ import {
   GetCurrentProjectRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
-  GetUserOrgMetadataRequest,
+  ListOrganizationsAndBillingMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
   RedeployProjectRequest,
@@ -213,18 +213,23 @@ export function createLocalServiceGetCurrentProject<
   });
 }
 
-export function localServiceGetUserOrgMetadataRequest() {
-  return getClient().getUserOrgMetadata(new GetUserOrgMetadataRequest());
+export function localServiceListOrganizationsAndBillingMetadataRequest() {
+  return getClient().listOrganizationsAndBillingMetadata(
+    new ListOrganizationsAndBillingMetadataRequest(),
+  );
 }
-export const getLocalServiceGetUserOrgMetadataRequestQueryKey = () => [
-  `/v1/local/get-org-metadata`,
-];
-export function createLocalServiceGetUserOrgMetadataRequest<
-  TData = Awaited<ReturnType<typeof localServiceGetUserOrgMetadataRequest>>,
+export const getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey =
+  () => [`/v1/local/get-org-metadata`];
+export function createLocalServiceListOrganizationsAndBillingMetadataRequest<
+  TData = Awaited<
+    ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>
+  >,
   TError = ConnectError,
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof localServiceGetUserOrgMetadataRequest>>,
+    Awaited<
+      ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>
+    >,
     TError,
     TData
   >;
@@ -234,7 +239,9 @@ export function createLocalServiceGetUserOrgMetadataRequest<
     ...queryOptions,
     queryKey:
       queryOptions?.queryKey ??
-      getLocalServiceGetUserOrgMetadataRequestQueryKey(),
-    queryFn: queryOptions?.queryFn ?? localServiceGetUserOrgMetadataRequest,
+      getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey(),
+    queryFn:
+      queryOptions?.queryFn ??
+      localServiceListOrganizationsAndBillingMetadataRequest,
   });
 }

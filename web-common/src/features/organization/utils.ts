@@ -4,7 +4,7 @@ export function buildPlanUpgradeUrl(
   org: string,
   adminUrl: string,
   isEmptyOrg: boolean,
-  curUrl: URL,
+  currentUrl: URL,
 ) {
   let cloudUrl = adminUrl.replace("admin.rilldata", "ui.rilldata");
   // hack for dev env
@@ -20,9 +20,9 @@ export function buildPlanUpgradeUrl(
     url.pathname = `/${org}/-/settings/billing`;
   }
   url.searchParams.set("upgrade", "true");
-  // set the org to avoid showing the org selector
-  const newCurUrl = new URL(curUrl);
-  newCurUrl.searchParams.set("org", org);
-  url.searchParams.set("redirect", newCurUrl.toString());
+  const redirectUrl = new URL(currentUrl);
+  // set the org to avoid showing the org selector again
+  redirectUrl.searchParams.set("org", org);
+  url.searchParams.set("redirect", redirectUrl.toString());
   return url.toString();
 }

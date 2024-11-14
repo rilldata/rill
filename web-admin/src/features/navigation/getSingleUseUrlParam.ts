@@ -15,12 +15,6 @@ export function getSingleUseUrlParam(
     }
     const redirectUrl = new URL(url);
     redirectUrl.searchParams.delete(param);
-    if (url.searchParams.has("redirect")) {
-      redirectUrl.searchParams.set(
-        "redirect",
-        url.searchParams.get("redirect"),
-      );
-    }
     throw redirect(307, redirectUrl.pathname + redirectUrl.search);
   }
 

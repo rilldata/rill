@@ -55,23 +55,23 @@ const (
 	// LocalServiceGetCurrentProjectProcedure is the fully-qualified name of the LocalService's
 	// GetCurrentProject RPC.
 	LocalServiceGetCurrentProjectProcedure = "/rill.local.v1.LocalService/GetCurrentProject"
-	// LocalServiceGetUserOrgMetadataProcedure is the fully-qualified name of the LocalService's
-	// GetUserOrgMetadata RPC.
-	LocalServiceGetUserOrgMetadataProcedure = "/rill.local.v1.LocalService/GetUserOrgMetadata"
+	// LocalServiceListOrganizationsAndBillingMetadataProcedure is the fully-qualified name of the
+	// LocalService's ListOrganizationsAndBillingMetadata RPC.
+	LocalServiceListOrganizationsAndBillingMetadataProcedure = "/rill.local.v1.LocalService/ListOrganizationsAndBillingMetadata"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	localServiceServiceDescriptor                  = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
-	localServicePingMethodDescriptor               = localServiceServiceDescriptor.Methods().ByName("Ping")
-	localServiceGetMetadataMethodDescriptor        = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
-	localServiceGetVersionMethodDescriptor         = localServiceServiceDescriptor.Methods().ByName("GetVersion")
-	localServicePushToGithubMethodDescriptor       = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
-	localServiceDeployProjectMethodDescriptor      = localServiceServiceDescriptor.Methods().ByName("DeployProject")
-	localServiceRedeployProjectMethodDescriptor    = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
-	localServiceGetCurrentUserMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
-	localServiceGetCurrentProjectMethodDescriptor  = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
-	localServiceGetUserOrgMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("GetUserOrgMetadata")
+	localServiceServiceDescriptor                                   = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
+	localServicePingMethodDescriptor                                = localServiceServiceDescriptor.Methods().ByName("Ping")
+	localServiceGetMetadataMethodDescriptor                         = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
+	localServiceGetVersionMethodDescriptor                          = localServiceServiceDescriptor.Methods().ByName("GetVersion")
+	localServicePushToGithubMethodDescriptor                        = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
+	localServiceDeployProjectMethodDescriptor                       = localServiceServiceDescriptor.Methods().ByName("DeployProject")
+	localServiceRedeployProjectMethodDescriptor                     = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
+	localServiceGetCurrentUserMethodDescriptor                      = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
+	localServiceGetCurrentProjectMethodDescriptor                   = localServiceServiceDescriptor.Methods().ByName("GetCurrentProject")
+	localServiceListOrganizationsAndBillingMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("ListOrganizationsAndBillingMetadata")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -92,8 +92,8 @@ type LocalServiceClient interface {
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
-	// GetUserOrgMetadata returns metadata about the current user's orgs.
-	GetUserOrgMetadata(context.Context, *connect.Request[v1.GetUserOrgMetadataRequest]) (*connect.Response[v1.GetUserOrgMetadataResponse], error)
+	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
+	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -154,10 +154,10 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		getUserOrgMetadata: connect.NewClient[v1.GetUserOrgMetadataRequest, v1.GetUserOrgMetadataResponse](
+		listOrganizationsAndBillingMetadata: connect.NewClient[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse](
 			httpClient,
-			baseURL+LocalServiceGetUserOrgMetadataProcedure,
-			connect.WithSchema(localServiceGetUserOrgMetadataMethodDescriptor),
+			baseURL+LocalServiceListOrganizationsAndBillingMetadataProcedure,
+			connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -165,15 +165,15 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // localServiceClient implements LocalServiceClient.
 type localServiceClient struct {
-	ping               *connect.Client[v1.PingRequest, v1.PingResponse]
-	getMetadata        *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
-	getVersion         *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
-	pushToGithub       *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
-	deployProject      *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
-	redeployProject    *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
-	getCurrentUser     *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
-	getCurrentProject  *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
-	getUserOrgMetadata *connect.Client[v1.GetUserOrgMetadataRequest, v1.GetUserOrgMetadataResponse]
+	ping                                *connect.Client[v1.PingRequest, v1.PingResponse]
+	getMetadata                         *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
+	getVersion                          *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
+	pushToGithub                        *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
+	deployProject                       *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
+	redeployProject                     *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
+	getCurrentUser                      *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	getCurrentProject                   *connect.Client[v1.GetCurrentProjectRequest, v1.GetCurrentProjectResponse]
+	listOrganizationsAndBillingMetadata *connect.Client[v1.ListOrganizationsAndBillingMetadataRequest, v1.ListOrganizationsAndBillingMetadataResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -216,9 +216,10 @@ func (c *localServiceClient) GetCurrentProject(ctx context.Context, req *connect
 	return c.getCurrentProject.CallUnary(ctx, req)
 }
 
-// GetUserOrgMetadata calls rill.local.v1.LocalService.GetUserOrgMetadata.
-func (c *localServiceClient) GetUserOrgMetadata(ctx context.Context, req *connect.Request[v1.GetUserOrgMetadataRequest]) (*connect.Response[v1.GetUserOrgMetadataResponse], error) {
-	return c.getUserOrgMetadata.CallUnary(ctx, req)
+// ListOrganizationsAndBillingMetadata calls
+// rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata.
+func (c *localServiceClient) ListOrganizationsAndBillingMetadata(ctx context.Context, req *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
+	return c.listOrganizationsAndBillingMetadata.CallUnary(ctx, req)
 }
 
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
@@ -239,8 +240,8 @@ type LocalServiceHandler interface {
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 	// GetCurrentProject returns the rill cloud project connected to the local project
 	GetCurrentProject(context.Context, *connect.Request[v1.GetCurrentProjectRequest]) (*connect.Response[v1.GetCurrentProjectResponse], error)
-	// GetUserOrgMetadata returns metadata about the current user's orgs.
-	GetUserOrgMetadata(context.Context, *connect.Request[v1.GetUserOrgMetadataRequest]) (*connect.Response[v1.GetUserOrgMetadataResponse], error)
+	// ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
+	ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -297,10 +298,10 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetCurrentProjectMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	localServiceGetUserOrgMetadataHandler := connect.NewUnaryHandler(
-		LocalServiceGetUserOrgMetadataProcedure,
-		svc.GetUserOrgMetadata,
-		connect.WithSchema(localServiceGetUserOrgMetadataMethodDescriptor),
+	localServiceListOrganizationsAndBillingMetadataHandler := connect.NewUnaryHandler(
+		LocalServiceListOrganizationsAndBillingMetadataProcedure,
+		svc.ListOrganizationsAndBillingMetadata,
+		connect.WithSchema(localServiceListOrganizationsAndBillingMetadataMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -321,8 +322,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetCurrentUserHandler.ServeHTTP(w, r)
 		case LocalServiceGetCurrentProjectProcedure:
 			localServiceGetCurrentProjectHandler.ServeHTTP(w, r)
-		case LocalServiceGetUserOrgMetadataProcedure:
-			localServiceGetUserOrgMetadataHandler.ServeHTTP(w, r)
+		case LocalServiceListOrganizationsAndBillingMetadataProcedure:
+			localServiceListOrganizationsAndBillingMetadataHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -364,6 +365,6 @@ func (UnimplementedLocalServiceHandler) GetCurrentProject(context.Context, *conn
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentProject is not implemented"))
 }
 
-func (UnimplementedLocalServiceHandler) GetUserOrgMetadata(context.Context, *connect.Request[v1.GetUserOrgMetadataRequest]) (*connect.Response[v1.GetUserOrgMetadataResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetUserOrgMetadata is not implemented"))
+func (UnimplementedLocalServiceHandler) ListOrganizationsAndBillingMetadata(context.Context, *connect.Request[v1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[v1.ListOrganizationsAndBillingMetadataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata is not implemented"))
 }

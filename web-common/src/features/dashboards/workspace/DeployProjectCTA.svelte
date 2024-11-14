@@ -16,7 +16,7 @@
     createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
-    createLocalServiceGetUserOrgMetadataRequest,
+    createLocalServiceListOrganizationsAndBillingMetadataRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
   import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
@@ -29,7 +29,8 @@
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
-  $: orgMetadata = createLocalServiceGetUserOrgMetadataRequest();
+  $: orgMetadata =
+    createLocalServiceListOrganizationsAndBillingMetadataRequest();
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
       refetchOnWindowFocus: true,
@@ -62,14 +63,14 @@
       return;
     }
 
-    window.open(deployCTAUrl, "_target");
+    window.open(deployCTAUrl, "_blank");
   }
 
   function onShowDeploy() {
     if (!isFirstTimeDeploy) {
       // do not show the confirmation dialog for successive deploys
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
-      window.open(deployCTAUrl, "_target");
+      window.open(deployCTAUrl, "_blank");
       return;
     }
 

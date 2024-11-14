@@ -541,7 +541,7 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	}), nil
 }
 
-func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[localv1.GetUserOrgMetadataRequest]) (*connect.Response[localv1.GetUserOrgMetadataResponse], error) {
+func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *connect.Request[localv1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[localv1.ListOrganizationsAndBillingMetadataResponse], error) {
 	// Get authenticated admin client
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("must authenticate before performing this action")
@@ -556,7 +556,7 @@ func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[loca
 		return nil, err
 	}
 
-	orgsMetadata := make([]*localv1.GetUserOrgMetadataResponse_OrgMetadata, len(resp.Organizations))
+	orgsMetadata := make([]*localv1.ListOrganizationsAndBillingMetadataResponse_OrgMetadata, len(resp.Organizations))
 	for i, org := range resp.Organizations {
 		issues, err := c.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
 			Organization: org.Name,
@@ -565,13 +565,13 @@ func (s *Server) GetUserOrgMetadata(ctx context.Context, r *connect.Request[loca
 			return nil, err
 		}
 
-		orgsMetadata[i] = &localv1.GetUserOrgMetadataResponse_OrgMetadata{
+		orgsMetadata[i] = &localv1.ListOrganizationsAndBillingMetadataResponse_OrgMetadata{
 			Name:   org.Name,
 			Issues: issues.Issues,
 		}
 	}
 
-	return connect.NewResponse(&localv1.GetUserOrgMetadataResponse{
+	return connect.NewResponse(&localv1.ListOrganizationsAndBillingMetadataResponse{
 		Orgs: orgsMetadata,
 	}), nil
 }

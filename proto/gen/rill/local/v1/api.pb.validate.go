@@ -1812,22 +1812,24 @@ var _ interface {
 	ErrorName() string
 } = GetCurrentProjectResponseValidationError{}
 
-// Validate checks the field values on GetUserOrgMetadataRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetUserOrgMetadataRequest) Validate() error {
+// Validate checks the field values on
+// ListOrganizationsAndBillingMetadataRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationsAndBillingMetadataRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetUserOrgMetadataRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetUserOrgMetadataRequestMultiError, or nil if none found.
-func (m *GetUserOrgMetadataRequest) ValidateAll() error {
+// ValidateAll checks the field values on
+// ListOrganizationsAndBillingMetadataRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ListOrganizationsAndBillingMetadataRequestMultiError, or nil if none found.
+func (m *ListOrganizationsAndBillingMetadataRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetUserOrgMetadataRequest) validate(all bool) error {
+func (m *ListOrganizationsAndBillingMetadataRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1835,19 +1837,20 @@ func (m *GetUserOrgMetadataRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return GetUserOrgMetadataRequestMultiError(errors)
+		return ListOrganizationsAndBillingMetadataRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetUserOrgMetadataRequestMultiError is an error wrapping multiple validation
-// errors returned by GetUserOrgMetadataRequest.ValidateAll() if the
-// designated constraints aren't met.
-type GetUserOrgMetadataRequestMultiError []error
+// ListOrganizationsAndBillingMetadataRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// ListOrganizationsAndBillingMetadataRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListOrganizationsAndBillingMetadataRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetUserOrgMetadataRequestMultiError) Error() string {
+func (m ListOrganizationsAndBillingMetadataRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1856,11 +1859,12 @@ func (m GetUserOrgMetadataRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetUserOrgMetadataRequestMultiError) AllErrors() []error { return m }
+func (m ListOrganizationsAndBillingMetadataRequestMultiError) AllErrors() []error { return m }
 
-// GetUserOrgMetadataRequestValidationError is the validation error returned by
-// GetUserOrgMetadataRequest.Validate if the designated constraints aren't met.
-type GetUserOrgMetadataRequestValidationError struct {
+// ListOrganizationsAndBillingMetadataRequestValidationError is the validation
+// error returned by ListOrganizationsAndBillingMetadataRequest.Validate if
+// the designated constraints aren't met.
+type ListOrganizationsAndBillingMetadataRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1868,24 +1872,24 @@ type GetUserOrgMetadataRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetUserOrgMetadataRequestValidationError) Field() string { return e.field }
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetUserOrgMetadataRequestValidationError) Reason() string { return e.reason }
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetUserOrgMetadataRequestValidationError) Cause() error { return e.cause }
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetUserOrgMetadataRequestValidationError) Key() bool { return e.key }
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetUserOrgMetadataRequestValidationError) ErrorName() string {
-	return "GetUserOrgMetadataRequestValidationError"
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) ErrorName() string {
+	return "ListOrganizationsAndBillingMetadataRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetUserOrgMetadataRequestValidationError) Error() string {
+func (e ListOrganizationsAndBillingMetadataRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1897,14 +1901,14 @@ func (e GetUserOrgMetadataRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetUserOrgMetadataRequest.%s: %s%s",
+		"invalid %sListOrganizationsAndBillingMetadataRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetUserOrgMetadataRequestValidationError{}
+var _ error = ListOrganizationsAndBillingMetadataRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1912,24 +1916,26 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetUserOrgMetadataRequestValidationError{}
+} = ListOrganizationsAndBillingMetadataRequestValidationError{}
 
-// Validate checks the field values on GetUserOrgMetadataResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetUserOrgMetadataResponse) Validate() error {
+// Validate checks the field values on
+// ListOrganizationsAndBillingMetadataResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationsAndBillingMetadataResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetUserOrgMetadataResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetUserOrgMetadataResponseMultiError, or nil if none found.
-func (m *GetUserOrgMetadataResponse) ValidateAll() error {
+// ValidateAll checks the field values on
+// ListOrganizationsAndBillingMetadataResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// ListOrganizationsAndBillingMetadataResponseMultiError, or nil if none found.
+func (m *ListOrganizationsAndBillingMetadataResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetUserOrgMetadataResponse) validate(all bool) error {
+func (m *ListOrganizationsAndBillingMetadataResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1943,7 +1949,7 @@ func (m *GetUserOrgMetadataResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetUserOrgMetadataResponseValidationError{
+					errors = append(errors, ListOrganizationsAndBillingMetadataResponseValidationError{
 						field:  fmt.Sprintf("Orgs[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1951,7 +1957,7 @@ func (m *GetUserOrgMetadataResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetUserOrgMetadataResponseValidationError{
+					errors = append(errors, ListOrganizationsAndBillingMetadataResponseValidationError{
 						field:  fmt.Sprintf("Orgs[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1960,7 +1966,7 @@ func (m *GetUserOrgMetadataResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetUserOrgMetadataResponseValidationError{
+				return ListOrganizationsAndBillingMetadataResponseValidationError{
 					field:  fmt.Sprintf("Orgs[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1971,19 +1977,20 @@ func (m *GetUserOrgMetadataResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetUserOrgMetadataResponseMultiError(errors)
+		return ListOrganizationsAndBillingMetadataResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetUserOrgMetadataResponseMultiError is an error wrapping multiple
-// validation errors returned by GetUserOrgMetadataResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GetUserOrgMetadataResponseMultiError []error
+// ListOrganizationsAndBillingMetadataResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// ListOrganizationsAndBillingMetadataResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListOrganizationsAndBillingMetadataResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetUserOrgMetadataResponseMultiError) Error() string {
+func (m ListOrganizationsAndBillingMetadataResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1992,11 +1999,12 @@ func (m GetUserOrgMetadataResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetUserOrgMetadataResponseMultiError) AllErrors() []error { return m }
+func (m ListOrganizationsAndBillingMetadataResponseMultiError) AllErrors() []error { return m }
 
-// GetUserOrgMetadataResponseValidationError is the validation error returned
-// by GetUserOrgMetadataResponse.Validate if the designated constraints aren't met.
-type GetUserOrgMetadataResponseValidationError struct {
+// ListOrganizationsAndBillingMetadataResponseValidationError is the validation
+// error returned by ListOrganizationsAndBillingMetadataResponse.Validate if
+// the designated constraints aren't met.
+type ListOrganizationsAndBillingMetadataResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2004,24 +2012,24 @@ type GetUserOrgMetadataResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetUserOrgMetadataResponseValidationError) Field() string { return e.field }
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetUserOrgMetadataResponseValidationError) Reason() string { return e.reason }
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetUserOrgMetadataResponseValidationError) Cause() error { return e.cause }
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetUserOrgMetadataResponseValidationError) Key() bool { return e.key }
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetUserOrgMetadataResponseValidationError) ErrorName() string {
-	return "GetUserOrgMetadataResponseValidationError"
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) ErrorName() string {
+	return "ListOrganizationsAndBillingMetadataResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetUserOrgMetadataResponseValidationError) Error() string {
+func (e ListOrganizationsAndBillingMetadataResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2033,14 +2041,14 @@ func (e GetUserOrgMetadataResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetUserOrgMetadataResponse.%s: %s%s",
+		"invalid %sListOrganizationsAndBillingMetadataResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetUserOrgMetadataResponseValidationError{}
+var _ error = ListOrganizationsAndBillingMetadataResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2048,26 +2056,27 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetUserOrgMetadataResponseValidationError{}
+} = ListOrganizationsAndBillingMetadataResponseValidationError{}
 
-// Validate checks the field values on GetUserOrgMetadataResponse_OrgMetadata
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *GetUserOrgMetadataResponse_OrgMetadata) Validate() error {
+// Validate checks the field values on
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadata with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationsAndBillingMetadataResponse_OrgMetadata) Validate() error {
 	return m.validate(false)
 }
 
 // ValidateAll checks the field values on
-// GetUserOrgMetadataResponse_OrgMetadata with the rules defined in the proto
-// definition for this message. If any rules are violated, the result is a
-// list of violation errors wrapped in
-// GetUserOrgMetadataResponse_OrgMetadataMultiError, or nil if none found.
-func (m *GetUserOrgMetadataResponse_OrgMetadata) ValidateAll() error {
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadata with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError, or nil
+// if none found.
+func (m *ListOrganizationsAndBillingMetadataResponse_OrgMetadata) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
+func (m *ListOrganizationsAndBillingMetadataResponse_OrgMetadata) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2076,8 +2085,6 @@ func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for IsAdmin
-
 	for idx, item := range m.GetIssues() {
 		_, _ = idx, item
 
@@ -2085,7 +2092,7 @@ func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetUserOrgMetadataResponse_OrgMetadataValidationError{
+					errors = append(errors, ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError{
 						field:  fmt.Sprintf("Issues[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2093,7 +2100,7 @@ func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetUserOrgMetadataResponse_OrgMetadataValidationError{
+					errors = append(errors, ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError{
 						field:  fmt.Sprintf("Issues[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2102,7 +2109,7 @@ func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetUserOrgMetadataResponse_OrgMetadataValidationError{
+				return ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError{
 					field:  fmt.Sprintf("Issues[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2113,20 +2120,20 @@ func (m *GetUserOrgMetadataResponse_OrgMetadata) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return GetUserOrgMetadataResponse_OrgMetadataMultiError(errors)
+		return ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetUserOrgMetadataResponse_OrgMetadataMultiError is an error wrapping
-// multiple validation errors returned by
-// GetUserOrgMetadataResponse_OrgMetadata.ValidateAll() if the designated
-// constraints aren't met.
-type GetUserOrgMetadataResponse_OrgMetadataMultiError []error
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError is an
+// error wrapping multiple validation errors returned by
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadata.ValidateAll() if
+// the designated constraints aren't met.
+type ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetUserOrgMetadataResponse_OrgMetadataMultiError) Error() string {
+func (m ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2135,12 +2142,15 @@ func (m GetUserOrgMetadataResponse_OrgMetadataMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetUserOrgMetadataResponse_OrgMetadataMultiError) AllErrors() []error { return m }
+func (m ListOrganizationsAndBillingMetadataResponse_OrgMetadataMultiError) AllErrors() []error {
+	return m
+}
 
-// GetUserOrgMetadataResponse_OrgMetadataValidationError is the validation
-// error returned by GetUserOrgMetadataResponse_OrgMetadata.Validate if the
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError is
+// the validation error returned by
+// ListOrganizationsAndBillingMetadataResponse_OrgMetadata.Validate if the
 // designated constraints aren't met.
-type GetUserOrgMetadataResponse_OrgMetadataValidationError struct {
+type ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2148,24 +2158,32 @@ type GetUserOrgMetadataResponse_OrgMetadataValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Field() string { return e.field }
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) Field() string {
+	return e.field
+}
 
 // Reason function returns reason value.
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Reason() string { return e.reason }
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) Reason() string {
+	return e.reason
+}
 
 // Cause function returns cause value.
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Cause() error { return e.cause }
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) Cause() error {
+	return e.cause
+}
 
 // Key function returns key value.
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Key() bool { return e.key }
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) Key() bool {
+	return e.key
+}
 
 // ErrorName returns error name.
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) ErrorName() string {
-	return "GetUserOrgMetadataResponse_OrgMetadataValidationError"
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) ErrorName() string {
+	return "ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Error() string {
+func (e ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2177,14 +2195,14 @@ func (e GetUserOrgMetadataResponse_OrgMetadataValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetUserOrgMetadataResponse_OrgMetadata.%s: %s%s",
+		"invalid %sListOrganizationsAndBillingMetadataResponse_OrgMetadata.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetUserOrgMetadataResponse_OrgMetadataValidationError{}
+var _ error = ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError{}
 
 var _ interface {
 	Field() string
@@ -2192,4 +2210,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetUserOrgMetadataResponse_OrgMetadataValidationError{}
+} = ListOrganizationsAndBillingMetadataResponse_OrgMetadataValidationError{}

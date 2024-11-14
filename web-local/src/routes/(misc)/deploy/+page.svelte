@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -17,7 +16,7 @@
   export let data: PageData;
   $: ({ orgMetadata } = data);
 
-  const deployer = new ProjectDeployer();
+  const deployer = new ProjectDeployer(data.orgParam);
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;
@@ -33,7 +32,6 @@
     isEmptyOrg = !!om?.issues && !!getNeverSubscribedIssue(om.issues);
   }
 
-  $: orgParam = $page.url.searchParams.get("org");
   // This is specifically the org selected using the OrgSelector.
   // Used to retrigger the deploy after the user confirms deploy on an empty org.
   let selectedOrg = "";
@@ -54,19 +52,12 @@
   }
 
   function onOrgConfirm() {
-    console.log("??", selectedOrg);
     promptOrgSelection.set(false);
     return deployer.deploy(selectedOrg);
   }
 
   onMount(() => {
-    if (orgParam) {
-      // org param is sent as a callback after starting a team plan.
-      // so directly deploy using that org
-      void deployer.deploy(orgParam);
-    } else {
-      void deployer.loginOrDeploy();
-    }
+    void deployer.loginOrDeploy();
   });
 </script>
 

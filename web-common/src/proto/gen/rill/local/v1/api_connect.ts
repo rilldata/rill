@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetUserOrgMetadataRequest, GetUserOrgMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, GetCurrentProjectRequest, GetCurrentProjectResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, ListOrganizationsAndBillingMetadataRequest, ListOrganizationsAndBillingMetadataResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -101,14 +101,14 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * GetUserOrgMetadata returns metadata about the current user's orgs.
+     * ListOrganizationsAndBillingMetadata returns metadata about the current user's orgs.
      *
-     * @generated from rpc rill.local.v1.LocalService.GetUserOrgMetadata
+     * @generated from rpc rill.local.v1.LocalService.ListOrganizationsAndBillingMetadata
      */
-    getUserOrgMetadata: {
-      name: "GetUserOrgMetadata",
-      I: GetUserOrgMetadataRequest,
-      O: GetUserOrgMetadataResponse,
+    listOrganizationsAndBillingMetadata: {
+      name: "ListOrganizationsAndBillingMetadata",
+      I: ListOrganizationsAndBillingMetadataRequest,
+      O: ListOrganizationsAndBillingMetadataResponse,
       kind: MethodKind.Unary,
     },
   }
