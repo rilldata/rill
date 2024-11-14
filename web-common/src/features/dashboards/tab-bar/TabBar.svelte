@@ -20,6 +20,7 @@
     exploreName,
     selectors: {
       pivot: { showPivot },
+      canvas: { showCanvas },
     },
   } = StateManagers;
 
@@ -38,9 +39,14 @@
             beta: false,
           },
         ]),
+    {
+      label: "Canvas",
+      Icon: Chart,
+      beta: true,
+    },
   ];
 
-  $: currentTabIndex = $showPivot ? 1 : 0;
+  $: currentTabIndex = $showPivot ? 1 : $showCanvas ? 2 : 0;
 
   function handleTabChange(index: number) {
     if (currentTabIndex === index) return;
@@ -51,13 +57,18 @@
       selectedTab.label === "Pivot",
     );
 
+    metricsExplorerStore.setCanvasMode(
+      $exploreName,
+      selectedTab.label === "Canvas",
+    );
+
     // We do not have behaviour events in cloud
     behaviourEvent?.fireNavigationEvent(
       $exploreName,
       BehaviourEventMedium.Tab,
       MetricsEventSpace.Workspace,
       MetricsEventScreenName.Dashboard,
-      selectedTab.label === "Pivot"
+      selectedTab.label === "Pivot" // canvas-todo
         ? MetricsEventScreenName.Pivot
         : MetricsEventScreenName.Explore,
     );

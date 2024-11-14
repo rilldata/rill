@@ -199,6 +199,9 @@ export function getDefaultMetricsExplorerEntity(
       columnPage: 1,
       activeCell: null,
     },
+    canvas: {
+      active: false,
+    },
     contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff

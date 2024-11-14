@@ -5,20 +5,20 @@
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import {
+    getDimensionDisplayName,
+    getMeasureDisplayName,
+  } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { createEventDispatcher } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { getMeasureDisplayName } from "./getDisplayName";
   const {
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { dimensionHasFilter },
       measures: { filteredSimpleMeasures },
-      measureFilters: { measureHasFilter },
-    },
-    actions: {
-      filters: { setTemporaryFilterName },
     },
   } = getStateManagers();
+
+  const dispatch = createEventDispatcher();
 
   let open = false;
 
@@ -26,22 +26,18 @@
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
-        $filteredSimpleMeasures()
-          ?.map((m) => ({
-            name: m.name as string,
-            label: getMeasureDisplayName(m),
-          }))
-          .filter((m) => !$measureHasFilter(m.name)) ?? [],
+        $filteredSimpleMeasures()?.map((m) => ({
+          name: m.name as string,
+          label: getMeasureDisplayName(m),
+        })) ?? [],
     },
     <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
       items:
-        $allDimensions
-          ?.map((d) => ({
-            name: (d.name || d.column) as string,
-            label: getDimensionDisplayName(d),
-          }))
-          .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
+        $allDimensions?.map((d) => ({
+          name: (d.name || d.column) as string,
+          label: getDimensionDisplayName(d),
+        })) ?? [],
     },
   ];
 </script>
@@ -52,14 +48,14 @@
       <button class:active={open} use:builder.action {...builder}>
         <Add size="17px" />
       </button>
-      <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
+      <TooltipContent slot="tooltip-content">Add field</TooltipContent>
     </Tooltip>
   </DropdownMenu.Trigger>
 
   <SearchableMenuContent
     allowMultiSelect={false}
     onSelect={(name) => {
-      setTemporaryFilterName(name);
+      dispatch("addField", name);
     }}
     {selectableGroups}
     selectedItems={[]}
@@ -68,7 +64,7 @@
 
 <style lang="postcss">
   button {
-    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply w-[24px] h-[24px] rounded-xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
     @apply bg-white;

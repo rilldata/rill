@@ -1,5 +1,6 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import CanvasDisplay from "@rilldata/web-common/features/dashboards/canvas/CanvasDisplay.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
@@ -14,10 +15,10 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
-  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { useTimeControlStore } from "../time-controls/time-control-store";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -51,6 +52,7 @@
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
   $: showPivot = $exploreStore?.pivot?.active;
+  $: showCanvas = $exploreStore?.canvas?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,
@@ -113,6 +115,8 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
+  {:else if showCanvas}
+    <CanvasDisplay />
   {:else if showPivot}
     <PivotDisplay />
   {:else}

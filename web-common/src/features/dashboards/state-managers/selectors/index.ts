@@ -1,3 +1,4 @@
+import { canvasSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/canvas";
 import { chartSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
@@ -146,6 +147,14 @@ export const createStateManagerReadables = (
      */
     charts: createReadablesFromSelectors(
       chartSelectors,
+      dashboardDataReadables,
+    ),
+
+    /**
+     * Readables related to canvas dashboard state
+     */
+    canvas: createReadablesFromSelectors(
+      canvasSelectors,
       dashboardDataReadables,
     ),
   };
