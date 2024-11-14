@@ -11,7 +11,6 @@
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
   export let isEveryoneFromText: boolean = false;
-  export let canManage: boolean = false;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -57,12 +56,6 @@
         <span class="text-xs text-gray-500">
           {count} user{count > 1 ? "s" : ""}
         </span>
-      {/if}
-      {#if canManage}
-        <!-- FIXME: onClick https://www.figma.com/design/Qt6EyotCBS3V6O31jVhMQ7/RILL-Latest?node-id=17077-830426&node-type=frame&t=VQugAVqX0LGPrjVJ-0 -->
-        <button class="text-xs text-primary-600 font-medium cursor-pointer">
-          Manage
-        </button>
       {/if}
     </div>
   </div>
