@@ -73,8 +73,8 @@
   let scrubEnd;
 
   let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
+  let startValue: Date | undefined;
+  let endValue: Date | undefined;
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];

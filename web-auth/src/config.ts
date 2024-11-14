@@ -1,5 +1,5 @@
 import Google from "@rilldata/web-common/components/icons/Google.svelte";
-import Microsoft from "@rilldata/web-common/components//icons/Microsoft.svelte";
+import Microsoft from "@rilldata/web-common/components/icons/Microsoft.svelte";
 
 export const LOGIN_OPTIONS = [
   {

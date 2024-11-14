@@ -61,8 +61,8 @@ export function patchSpecForTDD(
   spec,
   chartType: TDDAlternateCharts,
   timeGrain: V1TimeGrain,
-  xMin: Date,
-  xMax: Date,
+  xMin: Date | undefined,
+  xMax: Date | undefined,
   isTimeComparison: boolean,
   measureName: string,
   selectedDimensionValues: (string | null)[] = [],
@@ -87,9 +87,11 @@ export function patchSpecForTDD(
 
     colorEncoding = sanitizedSpec.encoding?.color;
 
-    xEncoding.scale = {
-      domain: [xMin.toISOString(), xMax.toISOString()],
-    };
+    if (xMin && xMax) {
+      xEncoding.scale = {
+        domain: [xMin.toISOString(), xMax.toISOString()],
+      };
+    }
   }
 
   if (!xEncoding || !yEncoding) {
@@ -104,11 +106,12 @@ export function patchSpecForTDD(
     };
   }
 
-  // Set extents for x-axis
-  xEncoding.scale = {
-    domain: [xMin.toISOString(), xMax.toISOString()],
-  };
-
+  if (xMin && xMax) {
+    // Set extents for x-axis
+    xEncoding.scale = {
+      domain: [xMin.toISOString(), xMax.toISOString()],
+    };
+  }
   const timeLabelFormat = TIME_GRAIN[timeGrain]?.d3format as string;
   // Remove titles from axes
   xEncoding.axis = {
