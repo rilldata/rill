@@ -28,7 +28,7 @@ export const columnWidths = writable<ColumnWidths>(
 );
 export const processedDimensions = new Set<string>();
 
-export function calculateAllLeaderboardWidths(
+export function calculateAndUpdateAllLeaderboardWidths(
   dimensionName: string,
   firstColumnWidth: number,
   aboveTheFold: LeaderboardItemData[],

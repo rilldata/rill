@@ -11,7 +11,7 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    calculateAllLeaderboardWidths,
+    calculateAndUpdateAllLeaderboardWidths,
     columnWidths,
     resetColumnWidths,
   } from "./leaderboard-widths";
@@ -49,14 +49,14 @@
 
   let parentElement: HTMLDivElement;
 
-  function estimateLargestLeaderboardWidth(
+  function estimateAndUpdateLeaderboardWidths(
     dimensionName: string,
     aboveTheFold: LeaderboardItemData[],
     selectedBelowTheFold: LeaderboardItemData[],
   ) {
     const firstColumnWidth =
       !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
-    calculateAllLeaderboardWidths(
+    calculateAndUpdateAllLeaderboardWidths(
       dimensionName,
       firstColumnWidth,
       aboveTheFold,
@@ -106,7 +106,7 @@
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
               columnWidths={$columnWidths}
-              {estimateLargestLeaderboardWidth}
+              {estimateAndUpdateLeaderboardWidths}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}

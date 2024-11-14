@@ -67,7 +67,7 @@
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
   export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
-  export let estimateLargestLeaderboardWidth: (
+  export let estimateAndUpdateLeaderboardWidths: (
     dimensionName: string,
     aboveTheFold: LeaderboardItemData[],
     belowTheFold: LeaderboardItemData[],
@@ -251,7 +251,7 @@
 
   // Estimate the common column widths for all leaderboards
   $: if (aboveTheFold.length || belowTheFoldRows.length) {
-    estimateLargestLeaderboardWidth(
+    estimateAndUpdateLeaderboardWidths(
       dimensionName,
       aboveTheFold,
       belowTheFoldRows,

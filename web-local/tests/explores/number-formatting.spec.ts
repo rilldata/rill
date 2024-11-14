@@ -24,7 +24,7 @@ title: "AdBids_model_dashboard"
 model: "AdBids_model"
 timeseries: "timestamp"
 measures:
-- label: default format
+- label: no preset format
   expression: count(*)
   name: total_rows
   description: Total number of records present
@@ -82,7 +82,7 @@ dimensions:
      * check big nums
      ******************/
     for (const [name, bignum, tooltip_num] of [
-      ["default format", "100.0k", "100,000"],
+      ["no preset format", "100.0k", "100,000"],
       ["USD", "$300.6k", "$300,576.84"],
       ["humanized chosen", "300.6k", "300,576.84"],
       ["No Format", "300.6k", "300,576.84"],
@@ -166,7 +166,7 @@ dimensions:
      ******************/
     await page.getByText("Publisher").click();
 
-    // default format
+    // no preset format
     await expect(
       page
         .locator("div")
