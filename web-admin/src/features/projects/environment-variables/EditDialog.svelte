@@ -38,7 +38,7 @@
   // TODO: revisit when we allow key changes in edit dialog, check for duplicates
   $: hasChanges = $form.environment !== environment || $form.value !== value;
 
-  $: console.log("$form: ", $form);
+  // $: console.log("$form: ", $form);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();

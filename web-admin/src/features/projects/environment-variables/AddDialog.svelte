@@ -32,8 +32,8 @@
   export let inputErrors: { [key: number]: boolean } = {};
 
   let isKeyAlreadyExists = false;
-  let isDevelopment = false;
-  let isProduction = false;
+  let isDevelopment = true;
+  let isProduction = true;
   let fileInput: HTMLInputElement;
 
   $: organization = $page.params.organization;
@@ -97,12 +97,19 @@
   );
 
   function processEnvironment() {
-    return isDevelopment
-      ? EnvironmentType.DEVELOPMENT
-      : isProduction
-        ? EnvironmentType.PRODUCTION
-        : // If empty, the variable(s) will be used as defaults for all environments.
-          undefined;
+    if (isDevelopment && isProduction) {
+      return undefined;
+    }
+
+    if (isDevelopment) {
+      return EnvironmentType.DEVELOPMENT;
+    }
+
+    if (isProduction) {
+      return EnvironmentType.PRODUCTION;
+    }
+
+    return undefined;
   }
 
   async function handleUpdateProjectVariables(
@@ -154,9 +161,10 @@
   }
 
   function handleReset() {
+    console.log("handleReset");
     $form.newVariables = [{ key: "", value: "" }];
-    isDevelopment = false;
-    isProduction = false;
+    isDevelopment = true;
+    isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
   }
