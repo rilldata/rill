@@ -70,7 +70,11 @@
 <section class="flex flex-col gap-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
-    <Button type="secondary" on:click={refreshAllSourcesAndModels}>
+    <Button
+      type="secondary"
+      on:click={refreshAllSourcesAndModels}
+      disabled={isReconciling}
+    >
       {#if isReconciling}
         Refreshing...
       {:else}
@@ -78,11 +82,8 @@
       {/if}
     </Button>
   </div>
-  {#if $resources.isLoading || $resources.isRefetching}
-    <DelayedSpinner
-      isLoading={$resources.isLoading || $resources.isRefetching}
-      size="16px"
-    />
+  {#if $resources.isLoading}
+    <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
       Error loading resources: {$resources.error?.message}
