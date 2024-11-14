@@ -92,9 +92,9 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv,"cloud", services)
 	case "e2e":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv,"e2e", services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -224,7 +224,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
 	if reset {
 		err := s.resetState(ctx)
 		if err != nil {
@@ -239,7 +239,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	if refreshDotenv {
-		err := downloadDotenv(ctx, "cloud")
+		err := downloadDotenv(ctx, preset)
 		if err != nil {
 			return fmt.Errorf("failed to refresh .env: %w", err)
 		}
@@ -722,8 +722,7 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	outputDir := "dev-cloud-state"
-	outputFile := filepath.Join(outputDir, "stripe-config.toml")
+	outputFile := filepath.Join(stateDirCloud, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
 
