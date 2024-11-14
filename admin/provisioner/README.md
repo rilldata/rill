@@ -38,7 +38,8 @@ The provisioner is configured using `RILL_ADMIN_PROVISIONER_SET_JSON` with a nam
               "http_ingress": "templates/http_ingress.yaml",  // Ingress resource template for HTTP
               "grpc_ingress": "templates/grpc_ingress.yaml",  // Ingress resource template for GRCP
               "service": "templates/service.yaml",            // Service resource template
-              "statefulset": "templates/statefulset.yaml"     // Statefulset resource template
+              "deployment": "templates/deployment.yaml",      // Deployment resource template
+              "pvc": "templates/pvc.yaml"                     // PVC resource template
             }
         }
     }
@@ -55,35 +56,28 @@ The Kubernetes resource templates provides a high level of flexibility, but they
 
 Note: For internal Rill users refer to our private infra repos containing environment specific configurations and templates.
 
-### statefulset.yaml
+### deployment.yaml
 ```
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 spec:
-  persistentVolumeClaimRetentionPolicy:
-    whenDeleted: Delete
-    whenScaled: Retain
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      resources:
-        requests:
-          storage: {{ .StorageBytes }}
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Names.StatefulSet }}
-  serviceName: cloud-runtime
+      app.kubernetes.io/name: {{ .Names.Deployment }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Names.StatefulSet }}
+        app.kubernetes.io/name: {{ .Names.Deployment }}
     spec:
       securityContext:
         fsGroup: 1000
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Names.PVC }}
       containers:
       - args:
         - runtime
@@ -153,7 +147,7 @@ spec:
     port: 9090
     targetPort: 9090
   selector:
-    app.kubernetes.io/name: {{ .Names.StatefulSet }}
+    app.kubernetes.io/name: {{ .Names.Deployment }}
 ```
 
 ### grpc_ingress.yaml
@@ -196,4 +190,17 @@ spec:
               number: 8080
         path: /v1
         pathType: Prefix
+```
+
+### pvc.yaml
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .StorageBytes }}
+  storageClassName: storageclass-example
 ```

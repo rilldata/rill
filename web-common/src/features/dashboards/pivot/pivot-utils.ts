@@ -6,25 +6,30 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  AvailableTimeGrain,
+  type AvailableTimeGrain,
   Period,
   TimeOffsetType,
-  TimeRangeString,
+  type TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
-  PivotFilter,
-  PivotState,
   type PivotDataRow,
+  type PivotDataState,
   type PivotDataStoreConfig,
+  type PivotFilter,
+  type PivotQueryError,
+  type PivotState,
   type PivotTimeConfig,
   type TimeFilters,
 } from "./types";
@@ -478,8 +483,8 @@ export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 5 measures
-  if (pivotState.columns.measure.length >= 5) {
+  // Disable if more than 10 measures
+  if (pivotState.columns.measure.length > 10) {
     return false;
   }
   // Disable if time comparison is not present
@@ -582,4 +587,35 @@ export function getFiltersForCell(
   const filters = mergeFilters(cellFilters, config.whereFilter);
 
   return { filters, timeRange };
+}
+
+export function getErrorFromResponse(
+  queryResult: QueryObserverResult<V1MetricsViewAggregationResponse, HTTPError>,
+): PivotQueryError {
+  return {
+    statusCode: queryResult?.error?.response?.status || null,
+    message: queryResult?.error?.response?.data?.message,
+  };
+}
+
+export function getErrorFromResponses(
+  queryResults: (QueryObserverResult<
+    V1MetricsViewAggregationResponse,
+    HTTPError
+  > | null)[],
+): PivotQueryError[] {
+  return queryResults
+    .filter((result) => result?.isError)
+    .map(getErrorFromResponse);
+}
+
+export function getErrorState(errors: PivotQueryError[]): PivotDataState {
+  return {
+    error: errors,
+    isFetching: false,
+    data: [],
+    columnDef: [],
+    assembled: false,
+    totalColumns: 0,
+  };
 }

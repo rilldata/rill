@@ -1,6 +1,6 @@
 import {
   Period,
-  RelativeTimeTransformation,
+  type RelativeTimeTransformation,
   TimeOffsetType,
   TimeTruncationType,
 } from "../types";

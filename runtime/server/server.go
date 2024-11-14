@@ -347,7 +347,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 		limitKey := ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
 		if err := s.limiter.Limit(ctx, limitKey, ratelimit.Public); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {
-				return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+				return ctx, status.Error(codes.ResourceExhausted, err.Error())
 			}
 			return ctx, err
 		}

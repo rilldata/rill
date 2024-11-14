@@ -9,8 +9,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/fatih/color"
@@ -26,7 +28,7 @@ import (
 )
 
 const (
-	minGoVersion   = "1.22"
+	minGoVersion   = "1.23"
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
@@ -388,6 +390,11 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	logInfo.Printf("Starting dependencies\n")
 	defer logInfo.Printf("Stopped dependencies\n")
 
+	err := prepareStripeConfig()
+	if err != nil {
+		return fmt.Errorf("failed to prepare stripe config: %w", err)
+	}
+
 	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
 	if verbose {
 		cmd.Stdout = os.Stdout
@@ -684,7 +691,7 @@ func (s local) runUI(ctx context.Context) (err error) {
 	logInfo.Printf("Starting UI\n")
 	defer logInfo.Printf("Stopped UI\n")
 
-	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local")
+	cmd := newCmd(ctx, "npm", "run", "dev", "-w", "web-local", "--", "--port", "3001")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
@@ -708,6 +715,39 @@ func (s local) awaitUI(ctx context.Context) error {
 			return ctx.Err()
 		}
 	}
+}
+
+func prepareStripeConfig() error {
+	templateFile := "cli/cmd/devtool/data/stripe-config.template"
+	outputDir := "dev-cloud-state"
+	outputFile := filepath.Join(outputDir, "stripe-config.toml")
+
+	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
+
+	if apiKey == "" {
+		logWarn.Printf("No Stripe API key found in .env, Stripe webhook events will not be processed\n")
+	}
+
+	// Parse the template
+	tmpl, err := template.ParseFiles(templateFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Create the output file
+	out, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer out.Close()
+
+	// Execute the template, writing to the output file
+	err = tmpl.Execute(out, map[string]string{"APIKey": apiKey})
+	if err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
 }
 
 // awaitClose waits for all of the given channels to close.

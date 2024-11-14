@@ -78,7 +78,7 @@ func (s *stripeWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) er
 		} else {
 			// we just care about address update, so check if address was update and now customer has a valid address
 			if _, ok := event.Data.PreviousAttributes["address"]; ok && customer.Address != nil {
-				err = s.handleCustomerAddressUpdated(r.Context(), event.ID, &customer)
+				err = s.handleCustomerAddressUpdated(r.Context(), event.ID, time.UnixMilli(event.Created*1000), &customer)
 				if err != nil {
 					return httputil.Errorf(http.StatusInternalServerError, "error handling customer.updated event: %w", err)
 				}
@@ -117,8 +117,8 @@ func (s *stripeWebhook) handlePaymentMethodRemoved(ctx context.Context, eventID,
 	return nil
 }
 
-func (s *stripeWebhook) handleCustomerAddressUpdated(ctx context.Context, eventID string, customer *stripe.Customer) error {
-	res, err := s.jobs.CustomerAddressUpdated(ctx, customer.ID, time.UnixMilli(customer.Created*1000))
+func (s *stripeWebhook) handleCustomerAddressUpdated(ctx context.Context, eventID string, eventTime time.Time, customer *stripe.Customer) error {
+	res, err := s.jobs.CustomerAddressUpdated(ctx, customer.ID, eventTime)
 	if err != nil {
 		return fmt.Errorf("failed to add customer updated event: %w", err)
 	}

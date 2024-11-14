@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 
 	// Load IANA time zone data
@@ -16,8 +17,8 @@ import (
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title             string           `yaml:"title"`
-	DisplayName       string           `yaml:"display_name"` // Backwards compatibility
+	DisplayName       string           `yaml:"display_name"`
+	Title             string           `yaml:"title"` // Deprecated: use display_name
 	Description       string           `yaml:"description"`
 	Model             string           `yaml:"model"`
 	Database          string           `yaml:"database"`
@@ -30,30 +31,33 @@ type MetricsViewYAML struct {
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name        string
-		Label       string
+		DisplayName string `yaml:"display_name"`
+		Label       string // Deprecated: use display_name
+		Description string
 		Column      string
 		Expression  string
 		Property    string // For backwards compatibility
-		Description string
-		Ignore      bool `yaml:"ignore"` // Deprecated
+		Ignore      bool   `yaml:"ignore"` // Deprecated
 		Unnest      bool
 		URI         string
 	}
 	Measures []*struct {
 		Name                string
-		Label               string
+		DisplayName         string `yaml:"display_name"`
+		Label               string // Deprecated: use display_name
+		Description         string
 		Type                string
 		Expression          string
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
-		Description         string
-		FormatPreset        string `yaml:"format_preset"`
-		FormatD3            string `yaml:"format_d3"`
-		Ignore              bool   `yaml:"ignore"` // Deprecated
-		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
+		FormatPreset        string         `yaml:"format_preset"`
+		FormatD3            string         `yaml:"format_d3"`
+		FormatD3Locale      map[string]any `yaml:"format_d3_locale"`
+		Ignore              bool           `yaml:"ignore"` // Deprecated
+		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 	}
-	Security *MetricsViewSecurityPolicyYAML
+	Security *SecurityPolicyYAML
 
 	// DEPRECATED FIELDS
 	DefaultTimeRange   string   `yaml:"default_time_range"`
@@ -191,7 +195,7 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
-type MetricsViewSecurityPolicyYAML struct {
+type SecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
@@ -202,10 +206,10 @@ type MetricsViewSecurityPolicyYAML struct {
 		Condition string    `yaml:"if"`
 		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
-	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+	Rules []*SecurityRuleYAML `yaml:"rules"`
 }
 
-func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+func (p *SecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
 	var rules []*runtimev1.SecurityRule
 	if p == nil {
 		return rules, nil
@@ -355,7 +359,7 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	return rules, nil
 }
 
-type MetricsViewSecurityRuleYAML struct {
+type SecurityRuleYAML struct {
 	Type   string
 	Action string
 	If     string
@@ -364,7 +368,7 @@ type MetricsViewSecurityRuleYAML struct {
 	SQL    string
 }
 
-func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+func (r *SecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	condition := r.If
 	if condition != "" {
 		tmp, err := ResolveTemplate(condition, validationTemplateData)
@@ -459,7 +463,7 @@ const (
 	nameIsDimension uint8 = 2
 )
 
-// parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
+// parseMetricsView parses a metrics view definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
@@ -469,8 +473,8 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// Backwards compatibility
-	if tmp.DisplayName != "" && tmp.Title == "" {
-		tmp.Title = tmp.DisplayName
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
 	}
 
 	if tmp.Table != "" && tmp.Model != "" {
@@ -521,6 +525,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 		}
 
+		// Backwards compatibility
+		if dim.Label != "" && dim.DisplayName == "" {
+			dim.DisplayName = dim.Label
+		}
+
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -549,6 +558,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			measure.Name = fmt.Sprintf("measure_%d", i)
 		}
 
+		// Backwards compatibility
+		if measure.Label != "" && measure.DisplayName == "" {
+			measure.DisplayName = measure.Label
+		}
+
 		lower := strings.ToLower(measure.Name)
 		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
@@ -557,6 +571,18 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
+		}
+
+		var formatD3Locale *structpb.Struct
+		if measure.FormatD3Locale != nil {
+			if measure.FormatD3 == "" {
+				return fmt.Errorf(`"format_d3_locale" can only be set if "format_d3" is set`)
+			}
+
+			formatD3Locale, err = structpb.NewStruct(measure.FormatD3Locale)
+			if err != nil {
+				return fmt.Errorf(`invalid "format_d3_locale": %w`, err)
+			}
 		}
 
 		var perDimensions []*runtimev1.MetricsViewSpec_DimensionSelector
@@ -658,16 +684,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		measures = append(measures, &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:                measure.Name,
+			DisplayName:         measure.DisplayName,
+			Description:         measure.Description,
 			Expression:          measure.Expression,
 			Type:                typ,
 			Window:              window,
 			PerDimensions:       perDimensions,
 			RequiredDimensions:  requiredDimensions,
 			ReferencedMeasures:  referencedMeasures,
-			Label:               measure.Label,
-			Description:         measure.Description,
 			FormatPreset:        measure.FormatPreset,
 			FormatD3:            measure.FormatD3,
+			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}
@@ -755,7 +782,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.DatabaseSchema = tmp.DatabaseSchema
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
-	spec.Title = tmp.Title
+	spec.DisplayName = tmp.DisplayName
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
@@ -770,10 +797,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
+			DisplayName: dim.DisplayName,
+			Description: dim.Description,
 			Column:      dim.Column,
 			Expression:  dim.Expression,
-			Label:       dim.Label,
-			Description: dim.Description,
 			Unnest:      dim.Unnest,
 			Uri:         dim.URI,
 		})
@@ -829,17 +856,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return nil
 	}
 
-	e.ExploreSpec.Title = spec.Title
+	e.ExploreSpec.DisplayName = spec.DisplayName
 	e.ExploreSpec.Description = spec.Description
 	e.ExploreSpec.MetricsView = node.Name
 	for _, dim := range spec.Dimensions {
 		e.ExploreSpec.Dimensions = append(e.ExploreSpec.Dimensions, dim.Name)
 	}
-	e.ExploreSpec.DimensionsExclude = false
+	e.ExploreSpec.DimensionsSelector = nil
 	for _, m := range spec.Measures {
 		e.ExploreSpec.Measures = append(e.ExploreSpec.Measures, m.Name)
 	}
-	e.ExploreSpec.MeasuresExclude = false
+	e.ExploreSpec.MeasuresSelector = nil
 	e.ExploreSpec.Theme = spec.DefaultTheme
 	for _, tr := range tmp.AvailableTimeRanges {
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
@@ -864,16 +891,23 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	case runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION:
 		exploreComparisonMode = runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION
 	}
-	e.ExploreSpec.Presets = []*runtimev1.ExplorePreset{{
-		Label:               "Default",
+
+	var presetDimensionsSelector, presetMeasuresSelector *runtimev1.FieldSelector
+	if len(spec.DefaultDimensions) == 0 {
+		presetDimensionsSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	if len(spec.DefaultMeasures) == 0 {
+		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
+	}
+	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
-		DimensionsExclude:   len(spec.DefaultDimensions) == 0,
+		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
-		MeasuresExclude:     len(spec.DefaultMeasures) == 0,
+		MeasuresSelector:    presetMeasuresSelector,
 		TimeRange:           spec.DefaultTimeRange,
 		ComparisonMode:      exploreComparisonMode,
 		ComparisonDimension: spec.DefaultComparisonDimension,
-	}}
+	}
 
 	return nil
 }

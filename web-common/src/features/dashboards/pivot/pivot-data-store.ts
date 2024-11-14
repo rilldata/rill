@@ -1,7 +1,8 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
+import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
+import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -11,12 +12,14 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
-import { Readable, derived, readable } from "svelte/store";
+import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
+  getExpandedQueryErrors,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
 import {
@@ -38,6 +41,8 @@ import {
 } from "./pivot-table-transformations";
 import {
   canEnablePivotComparison,
+  getErrorFromResponses,
+  getErrorState,
   getFilterForPivotTable,
   getFiltersForCell,
   getPivotConfigKey,
@@ -52,10 +57,10 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
-  PivotFilter,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
+  type PivotFilter,
   type PivotTimeConfig,
 } from "./types";
 
@@ -68,11 +73,11 @@ export function getPivotConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([metricsView, timeRangeSummary, dashboardStore]) => {
+    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
+    ([validSpec, timeRangeSummary, dashboardStore]) => {
       if (
-        !metricsView.data?.measures ||
-        !metricsView.data?.dimensions ||
+        !validSpec?.data?.metricsView ||
+        !validSpec?.data?.explore ||
         timeRangeSummary.isFetching
       ) {
         return {
@@ -89,9 +94,12 @@ export function getPivotConfig(
         };
       }
 
+      const { metricsView, explore } = validSpec.data;
+
       // This indirection makes sure only one update of dashboard store triggers this
       const timeControl = timeControlStateSelector([
         metricsView,
+        explore,
         timeRangeSummary,
         dashboardStore,
       ]);
@@ -100,7 +108,7 @@ export function getPivotConfig(
         timeStart: timeControl.timeStart,
         timeEnd: timeControl.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView?.data?.timeDimension || "",
+        timeDimension: metricsView.timeDimension || "",
       };
 
       const enableComparison =
@@ -151,8 +159,14 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: metricsView.data?.measures || [],
-        allDimensions: metricsView.data?.dimensions || [],
+        allMeasures: allMeasures({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
+        allDimensions: allDimensions({
+          validMetricsView: metricsView,
+          validExplore: explore,
+        }),
         whereFilter: mergeMeasureFilters(dashboardStore),
         pivot: dashboardStore.pivot,
         enableComparison,
@@ -340,6 +354,9 @@ export function createPivotDataStore(
             totalColumns: 0,
           });
         }
+        if (columnDimensionAxes?.error && columnDimensionAxes?.error.length) {
+          return columnSet(getErrorState(columnDimensionAxes.error));
+        }
         const anchorDimension = rowDimensionNames[0];
 
         const {
@@ -373,11 +390,11 @@ export function createPivotDataStore(
 
         let globalTotalsQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         let totalsRowQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
@@ -436,6 +453,19 @@ export function createPivotDataStore(
               });
             }
 
+            // check for errors in the responses
+            const totalErrors = getErrorFromResponses([
+              globalTotalsResponse,
+              totalsRowResponse,
+            ]);
+
+            if (totalErrors.length || rowDimensionAxes?.error?.length) {
+              const allErrors = totalErrors.concat(
+                rowDimensionAxes?.error || [],
+              );
+              return axesSet(getErrorState(allErrors));
+            }
+
             /**
              * If there are no axes values, return an empty table
              */
@@ -481,7 +511,7 @@ export function createPivotDataStore(
 
             let initialTableCellQuery:
               | Readable<null>
-              | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+              | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
@@ -528,6 +558,20 @@ export function createPivotDataStore(
                     totalColumns,
                     totalsRowData: displayTotalsRow ? totalsRowData : undefined,
                   });
+                }
+
+                const tableCellQueryError = getErrorFromResponses([
+                  initialTableCellData,
+                ]);
+
+                if (
+                  tableCellQueryError.length ||
+                  rowMeasureTotalsAxesQuery?.error?.length
+                ) {
+                  const allErrors = tableCellQueryError.concat(
+                    rowMeasureTotalsAxesQuery?.error || [],
+                  );
+                  return cellSet(getErrorState(allErrors));
                 }
 
                 const mergedRowTotals = mergeRowTotalsInOrder(
@@ -592,6 +636,11 @@ export function createPivotDataStore(
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
+                      const queryErrors = getExpandedQueryErrors(
+                        expandedRowMeasureValues,
+                      );
+                      if (queryErrors.length) return getErrorState(queryErrors);
+
                       tableDataExpanded = addExpandedDataToPivot(
                         config,
                         pivotData,

@@ -49,10 +49,6 @@
         <slot />
       </div>
     </button>
-
-    <div class="contextual-information justify-self-stretch text-right">
-      <slot name="contextual-information" />
-    </div>
   </div>
   <TooltipContent slot="tooltip-content">
     <SlidingWords {active}>

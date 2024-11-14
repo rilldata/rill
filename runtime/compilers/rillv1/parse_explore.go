@@ -13,84 +13,26 @@ import (
 
 type ExploreYAML struct {
 	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title       string                 `yaml:"title"`
+	DisplayName string                 `yaml:"display_name"`
+	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
 	MetricsView string                 `yaml:"metrics_view"`
-	Dimensions  *NamesYAML             `yaml:"dimensions"`
-	Measures    *NamesYAML             `yaml:"measures"`
-	Theme       string                 `yaml:"theme"`
+	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
+	Measures    *FieldSelectorYAML     `yaml:"measures"`
+	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
-	Presets     []*struct {
-		Label               string     `yaml:"label"`
-		Dimensions          *NamesYAML `yaml:"dimensions"`
-		Measures            *NamesYAML `yaml:"measures"`
-		TimeRange           string     `yaml:"time_range"`
-		ComparisonMode      string     `yaml:"comparison_mode"`
-		ComparisonDimension string     `yaml:"comparison_dimension"`
-	} `yaml:"presets"`
-}
-
-// NamesYAML parses a list of names with support for a '*' scalar for all names,
-// and support for a nested "exclude:" list for selecting all except the listed names.
-//
-// Note that '*' is represented by setting Exclude to true and leaving Names nil.
-// (Because excluding nothing is the same as including everything.)
-type NamesYAML struct {
-	Names   []string
-	Exclude bool
-}
-
-func (y *NamesYAML) UnmarshalYAML(v *yaml.Node) error {
-	if v == nil {
-		return nil
-	}
-	switch v.Kind {
-	case yaml.ScalarNode:
-		if v.Value == "*" {
-			y.Exclude = true
-			return nil
-		}
-		return fmt.Errorf("unexpected scalar %q", v.Value)
-	case yaml.SequenceNode:
-		y.Names = make([]string, len(v.Content))
-		for i, c := range v.Content {
-			if c.Kind != yaml.ScalarNode {
-				return fmt.Errorf("unexpected non-string list entry on line %d", c.Line)
-			}
-			y.Names[i] = c.Value
-		}
-	case yaml.MappingNode:
-		tmp := &struct {
-			Exclude yaml.Node `yaml:"exclude"`
-		}{}
-		err := v.Decode(tmp)
-		if err != nil {
-			return err
-		}
-		if tmp.Exclude.IsZero() {
-			return errors.New("expected '*', list of names, or `exclude` field")
-		}
-
-		// Exclude should also be '*' or a list of names.
-		// For simpliciy, we can just recurse on it and invert the result.
-		err = y.UnmarshalYAML(&tmp.Exclude)
-		if err != nil {
-			return fmt.Errorf("error parsing `exclude` field: %w", err)
-		}
-		y.Exclude = !y.Exclude // Oh the irony
-	default:
-		return fmt.Errorf("expected '*', list of names, or `exclude` field, got type %q", v.Kind)
-	}
-	return nil
-}
-
-func (y *NamesYAML) Safe() NamesYAML {
-	if y == nil {
-		// If not specified, default to '*' (include all).
-		return NamesYAML{Names: nil, Exclude: true}
-	}
-	return *y
+	Defaults    *struct {
+		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
+		Measures            *FieldSelectorYAML `yaml:"measures"`
+		TimeRange           string             `yaml:"time_range"`
+		ComparisonMode      string             `yaml:"comparison_mode"`
+		ComparisonDimension string             `yaml:"comparison_dimension"`
+	} `yaml:"defaults"`
+	Embeds struct {
+		HidePivot bool `yaml:"hide_pivot"`
+	} `yaml:"embeds"`
+	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -187,15 +129,37 @@ func (p *Parser) parseExplore(node *Node) error {
 		return fmt.Errorf("explores cannot have a connector")
 	}
 
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
 	// Validate metrics_view
 	if tmp.MetricsView == "" {
 		return errors.New("metrics_view is required")
 	}
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
-	// Add theme to refs
-	if tmp.Theme != "" {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.Theme})
+	// Parse the dimensions and measures selectors
+	var dimensionsSelector *runtimev1.FieldSelector
+	dimensions, ok := tmp.Dimensions.TryResolve()
+	if !ok {
+		dimensionsSelector = tmp.Dimensions.Proto()
+	}
+	var measuresSelector *runtimev1.FieldSelector
+	measures, ok := tmp.Measures.TryResolve()
+	if !ok {
+		measuresSelector = tmp.Measures.Proto()
+	}
+
+	// Parse theme if present.
+	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
+	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
+	if err != nil {
+		return err
+	}
+	if themeName != "" && themeSpec == nil {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
 	}
 
 	// Build and validate time ranges
@@ -231,41 +195,59 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Build and validate presets
-	var presets []*runtimev1.ExplorePreset
-	for _, p := range tmp.Presets {
-		if p == nil {
-			continue
-		}
-
-		if p.TimeRange != "" {
-			if err := validateISO8601(p.TimeRange, false, false); err != nil {
-				return fmt.Errorf("invalid time range %q: %w", p.TimeRange, err)
+	var defaultPreset *runtimev1.ExplorePreset
+	if tmp.Defaults != nil {
+		if tmp.Defaults.TimeRange != "" {
+			if err := validateISO8601(tmp.Defaults.TimeRange, false, false); err != nil {
+				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}
 
 		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
-		if p.ComparisonMode != "" {
+		if tmp.Defaults.ComparisonMode != "" {
 			var ok bool
-			mode, ok = exploreComparisonModes[p.ComparisonMode]
+			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
 			if !ok {
-				return fmt.Errorf("invalid comparison mode %q (options: %s)", p.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
 			}
 		}
 
-		if p.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
+		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
 			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
 		}
 
-		presets = append(presets, &runtimev1.ExplorePreset{
-			Label:               p.Label,
-			Dimensions:          p.Dimensions.Safe().Names,
-			DimensionsExclude:   p.Dimensions.Safe().Exclude,
-			Measures:            p.Measures.Safe().Names,
-			MeasuresExclude:     p.Measures.Safe().Exclude,
-			TimeRange:           p.TimeRange,
+		var presetDimensionsSelector *runtimev1.FieldSelector
+		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
+		if !ok {
+			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
+		}
+
+		var presetMeasuresSelector *runtimev1.FieldSelector
+		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
+		if !ok {
+			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
+		}
+
+		defaultPreset = &runtimev1.ExplorePreset{
+			Dimensions:          presetDimensions,
+			DimensionsSelector:  presetDimensionsSelector,
+			Measures:            presetMeasures,
+			MeasuresSelector:    presetMeasuresSelector,
+			TimeRange:           tmp.Defaults.TimeRange,
 			ComparisonMode:      mode,
-			ComparisonDimension: p.ComparisonDimension,
-		})
+			ComparisonDimension: tmp.Defaults.ComparisonDimension,
+		}
+	}
+
+	// Build security rules
+	rules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'explore' resource type only supports 'access' security rules")
+		}
 	}
 
 	// Track explore
@@ -275,17 +257,57 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.ExploreSpec.Title = tmp.Title
+	r.ExploreSpec.DisplayName = tmp.DisplayName
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
-	r.ExploreSpec.Dimensions = tmp.Dimensions.Safe().Names
-	r.ExploreSpec.DimensionsExclude = tmp.Dimensions.Safe().Exclude
-	r.ExploreSpec.Measures = tmp.Measures.Safe().Names
-	r.ExploreSpec.MeasuresExclude = tmp.Measures.Safe().Exclude
-	r.ExploreSpec.Theme = tmp.Theme
+	r.ExploreSpec.Dimensions = dimensions
+	r.ExploreSpec.DimensionsSelector = dimensionsSelector
+	r.ExploreSpec.Measures = measures
+	r.ExploreSpec.MeasuresSelector = measuresSelector
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
-	r.ExploreSpec.Presets = presets
+	r.ExploreSpec.DefaultPreset = defaultPreset
+	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
+	r.ExploreSpec.SecurityRules = rules
+
+	if themeName != "" && themeSpec == nil {
+		r.ExploreSpec.Theme = themeName
+	}
+
+	if themeSpec != nil {
+		r.ExploreSpec.EmbeddedTheme = themeSpec
+	}
 
 	return nil
+}
+
+func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+	if n == nil || n.IsZero() {
+		return "", nil, nil
+	}
+
+	switch n.Kind {
+	case yaml.ScalarNode: // It's the name of an existing theme
+		var name string
+		err := n.Decode(&name)
+		if err != nil {
+			return "", nil, err
+		}
+		return name, nil, nil
+	case yaml.MappingNode: // It's an inline definition of a new theme
+		tmp := &ThemeYAML{}
+		err := n.Decode(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		spec, err := p.parseThemeYAML(tmp)
+		if err != nil {
+			return "", nil, err
+		}
+
+		return "", spec, nil
+	default:
+		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got kind %q", n.Kind)
+	}
 }

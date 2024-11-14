@@ -6,8 +6,12 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
-  import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import {
+    calculateFirstColumnWidth,
+    calculateMeasureWidth,
+    COLUMN_WIDTH_CONSTANTS as WIDTHS,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -15,13 +19,12 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
-    Cell,
-    ExpandedState,
-    SortingState,
-    TableOptions,
-    Updater,
+    type Cell,
+    type ExpandedState,
+    type SortingState,
+    type TableOptions,
+    type Updater,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
@@ -31,10 +34,10 @@
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-store";
-  import { isTimeDimension } from "./pivot-utils";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   // Distance threshold (in pixels) for triggering data fetch
@@ -42,19 +45,12 @@
   const OVERSCAN = 60;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
-  const MEASURE_PADDING = 20;
-  const MIN_COL_WIDTH = 150;
-  const MAX_COL_WIDTH = 600;
-  const MAX_INIT_COL_WIDTH = 400;
-  const MIN_MEASURE_WIDTH = 70;
-  const MAX_MEAUSRE_WIDTH = 300;
-  const INIT_MEASURE_WIDTH = 100;
 
   export let pivotDataStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
 
-  const { dashboardStore, metricsViewName } = stateManagers;
+  const { dashboardStore, exploreName } = stateManagers;
 
   const config = getPivotConfig(stateManagers);
 
@@ -109,23 +105,31 @@
     sorting,
     rowPage,
     rows: rowPills,
+    columns: columnPills,
     activeCell,
   } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
+  $: hasColumnDimension = columnPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
+  $: dataRows = $pivotDataStore.data;
+  $: totalsRow = $pivotDataStore.totalsRowData;
 
   $: measures = getMeasureColumnProps($config);
   $: measureCount = measures.length;
-  $: measures.forEach(({ name, label }) => {
+  $: measures.forEach(({ name, label, formatter }) => {
     if (!$measureLengths.has(name)) {
+      const estimatedWidth = calculateMeasureWidth(
+        name,
+        label,
+        formatter,
+        totalsRow,
+        dataRows,
+      );
       measureLengths.update((measureLengths) => {
-        return measureLengths.set(
-          name,
-          Math.max(MIN_MEASURE_WIDTH, label.length * 7 + MEASURE_PADDING),
-        );
+        return measureLengths.set(name, estimatedWidth);
       });
     }
   });
@@ -161,7 +165,7 @@
     : null;
   $: firstColumnWidth =
     hasDimension && firstColumnName
-      ? calculateFirstColumnWidth(firstColumnName)
+      ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
 
   $: rows = $table.getRowModel().rows;
@@ -206,13 +210,12 @@
       { description: "View raw data for aggregated cell", shortcut: "Click" },
     ];
   }
-
   function onExpandedChange(updater: Updater<ExpandedState>) {
     // Something is off with tanstack's types
     //@ts-expect-error-free
     //eslint-disable-next-line
     expanded = updater(expanded);
-    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+    metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
   function onSortingChange(updater: Updater<SortingState>) {
@@ -221,7 +224,7 @@
     } else {
       sorting = updater;
     }
-    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
+    metricsExplorerStore.setPivotSort($exploreName, sorting);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -231,38 +234,23 @@
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
 
-      // Fetch more data when scrolling near the bottom end
-      if (
-        bottomEndDistance < ROW_THRESHOLD &&
-        rows.length >= NUM_ROWS_PER_PAGE &&
-        !$pivotDataStore.isFetching &&
-        !reachedEndForRows
-      ) {
-        metricsExplorerStore.setPivotRowPage($metricsViewName, rowPage + 1);
+      const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
+      const canFetchMoreData =
+        !$pivotDataStore.isFetching && !reachedEndForRows;
+      const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
+
+      if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
+        metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
     }
   };
 
-  function calculateFirstColumnWidth(firstColumnName: string) {
-    const rows = $pivotDataStore.data;
-
-    // Dates are displayed as shorter values
-    if (isTimeDimension(firstColumnName, timeDimension)) return MIN_COL_WIDTH;
-
-    const samples = extractSamples(
-      rows.map((row) => row[firstColumnName]),
-    ).filter((v): v is string => typeof v === "string");
-
-    const maxValueLength = samples.reduce((max, value) => {
-      return Math.max(max, value.length);
-    }, 0);
-
-    const finalBasis = Math.max(firstColumnName.length, maxValueLength);
-    const pixelLength = finalBasis * 7;
-    const final = clamp(MIN_COL_WIDTH, pixelLength + 16, MAX_INIT_COL_WIDTH);
-
-    return final;
-  }
+  onMount(() => {
+    // wait for layout to be calculated
+    requestAnimationFrame(() => {
+      handleScroll(containerRefElement);
+    });
+  });
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
@@ -296,7 +284,7 @@
     const rowId = cell.row.id;
     const columnId = cell.column.id;
 
-    metricsExplorerStore.setPivotActiveCell($metricsViewName, rowId, columnId);
+    metricsExplorerStore.setPivotActiveCell($exploreName, rowId, columnId);
   }
 
   function handleHover(
@@ -359,6 +347,7 @@
 <div
   class="table-wrapper relative"
   class:with-row-dimension={hasDimension}
+  class:with-col-dimension={hasColumnDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
@@ -378,8 +367,8 @@
       <Resizer
         side="right"
         direction="EW"
-        min={MIN_COL_WIDTH}
-        max={MAX_COL_WIDTH}
+        min={WIDTHS.MIN_COL_WIDTH}
+        max={WIDTHS.MAX_COL_WIDTH}
         dimension={firstColumnWidth}
         onUpdate={(d) => (firstColumnWidth = d)}
         onMouseDown={(e) => {
@@ -399,7 +388,8 @@
     {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
         {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
           {@const last =
             i === subHeaders.length - 1 &&
             groupIndex === measureGroups.length - 1}
@@ -407,8 +397,8 @@
             <Resizer
               side="right"
               direction="EW"
-              min={MIN_MEASURE_WIDTH}
-              max={MAX_MEAUSRE_WIDTH}
+              min={WIDTHS.MIN_MEASURE_WIDTH}
+              max={WIDTHS.MAX_MEASURE_WIDTH}
               dimension={length}
               justify={last ? "end" : "center"}
               hang={!last}
@@ -451,7 +441,8 @@
 
       {#each measureGroups as { subHeaders }, i (i)}
         {#each subHeaders as { column: { columnDef: { name } } } (name)}
-          {@const length = $measureLengths.get(name) ?? INIT_MEASURE_WIDTH}
+          {@const length =
+            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
       {/each}
@@ -649,7 +640,10 @@
   }
 
   .totals-column {
-    @apply bg-slate-50 font-semibold;
+    @apply bg-slate-50;
+  }
+  .with-col-dimension .totals-column {
+    @apply font-semibold;
   }
   .interactive-cell {
     @apply cursor-pointer;

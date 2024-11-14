@@ -1,8 +1,8 @@
 <script lang="ts">
   import NavDirectoryEntry from "@rilldata/web-common/features/file-explorer/NavDirectoryEntry.svelte";
   import {
-    NavDragData,
     navEntryDragDropStore,
+    type NavDragData,
   } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import NavFile from "./NavFile.svelte";
   import { directoryState } from "./directory-store";
@@ -10,6 +10,7 @@
 
   export let directory: Directory;
   export let onRename: (filePath: string, isDir: boolean) => void;
+  export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
@@ -35,7 +36,7 @@
   on:contextmenu={() => navEntryDragDropStore.resetDrag()}
 >
   {#if directory.path !== "/"}
-    <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />
+    <NavDirectoryEntry dir={directory} {onRename} {onDelete} {onMouseDown} />
   {/if}
 
   {#if expanded}
@@ -45,6 +46,7 @@
         <svelte:self
           directory={dir}
           {onRename}
+          {onDuplicate}
           {onDelete}
           {onGenerateChart}
           {onMouseDown}
@@ -58,6 +60,7 @@
       <NavFile
         {filePath}
         {onRename}
+        {onDuplicate}
         {onDelete}
         {onGenerateChart}
         {onMouseDown}

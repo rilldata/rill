@@ -6,7 +6,7 @@
     NamedRange,
     ISODurationString,
   } from "../../new-time-controls";
-  import { CustomEventHandler } from "bits-ui";
+  import type { CustomEventHandler } from "bits-ui";
   import { RILL_TO_LABEL, ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
 
   export let ranges: RangeBuckets;

@@ -7,7 +7,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { TIME_GRAIN } from "../config";
 import { getTimeWidth } from "../transforms";
-import type { TimeGrain } from "../types";
+import type { AvailableTimeGrain, TimeGrain } from "../types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -164,4 +164,25 @@ export function mapDurationToGrain(duration: string): V1TimeGrain {
     }
   }
   return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+}
+
+export function timeGrainToDuration(timeGrain: V1TimeGrain): string {
+  if (isAvailableTimeGrain(timeGrain)) {
+    const grainConfig = TIME_GRAIN[timeGrain];
+    return grainConfig.duration;
+  } else {
+    console.warn("Requested duration for invalid time grain: ", timeGrain);
+    // Default to 1 day if the time grain is invalid to fail gracefully
+    return "P1D";
+  }
+}
+
+export function isAvailableTimeGrain(
+  grain: V1TimeGrain,
+): grain is AvailableTimeGrain {
+  return (
+    grain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
+    grain !== V1TimeGrain.TIME_GRAIN_MILLISECOND &&
+    grain !== V1TimeGrain.TIME_GRAIN_SECOND
+  );
 }

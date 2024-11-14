@@ -3,12 +3,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
-    dashboardVariablesStore,
+    canvasVariablesStore,
     useVariable,
-  } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
-  import { SwitchProperties } from "@rilldata/web-common/features/templates/types";
-
-  import {
+  } from "@rilldata/web-common/features/canvas/variables-store";
+  import type { SwitchProperties } from "@rilldata/web-common/features/templates/types";
+  import type {
     V1ComponentSpecRendererProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
@@ -17,9 +16,9 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let output: V1ComponentVariable | undefined;
 
-  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
+  $: canvasName = getContext("rill::canvas:name") as string;
   $: outputVariableName = output?.name || "";
-  $: outputVariableValue = useVariable(dashboardName, outputVariableName);
+  $: outputVariableValue = useVariable(canvasName, outputVariableName);
   $: switchProperties = rendererProperties as SwitchProperties;
 
   $: value = (value || $outputVariableValue || output?.defaultValue) as boolean;
@@ -37,8 +36,8 @@
       checked={value}
       on:click={() => {
         value = !value;
-        dashboardVariablesStore.updateVariable(
-          dashboardName,
+        canvasVariablesStore.updateVariable(
+          canvasName,
           outputVariableName,
           value,
         );

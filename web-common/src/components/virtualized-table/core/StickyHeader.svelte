@@ -53,9 +53,9 @@
   on:focus={focus}
   on:blur={blur}
   on:click={modified({ shift: onShiftClick, click: onClick })}
-  style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
+  style:transform="translate{position === 'left' ? 'Y' : 'X'}({header.start}px)"
   style:width="{header.size}px"
-  style:height="{position === "left"
+  style:height="{position === 'left'
     ? config.rowHeight
     : config.columnHeaderHeight}px"
   class="block {positionClasses}

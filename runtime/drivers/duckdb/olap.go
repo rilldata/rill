@@ -621,6 +621,10 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	return err
 }
 
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
 func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	var byNameClause string
 	if byName {
@@ -645,6 +649,28 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		})
 		if err != nil {
 			return err
+		}
+
+		// check the count of the new data
+		// skip if the count is 0
+		// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp)),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		var empty bool
+		for res.Next() {
+			if err := res.Scan(&empty); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if empty {
+			return nil
 		}
 
 		// Drop the rows from the target table where the unique key is present in the temporary table
@@ -705,7 +731,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 			existingTyp = "TABLE"
 		}
 
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, newName)})
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(newName))})
 		if err != nil {
 			return err
 		}

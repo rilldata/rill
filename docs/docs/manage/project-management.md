@@ -1,5 +1,5 @@
 ---
-title: "Organizations and Projects (Rill Cloud)"
+title: "Organizations and Projects in Rill Cloud"
 description: Basic managment from projects 
 sidebar_label: "Organizations and Projects"
 sidebar_position: 19
@@ -9,42 +9,67 @@ Once a project is ready to be deployed onto Rill Cloud, as an admin, you will ne
 
 ## Organization
 
-An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Projects exist within an organization, which itself contains sources, models, dashboards, and other resources that belong to your standalone Rill projects.
+![img](/img/manage/project-management/org-view.png)
 
-If you'd like to create, edit, modify, or delete an organization, you can do this either via the CLI or UI.
+An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards and more.
 
-### CLI
+If you'd like to create, edit, modify, or delete an organization from the CLI, run the following command.
+
 ```
-rill org 
+rill org
+Manage organisations
+
+Usage:
+  rill org [command]
+
+Available Commands:
+  create      Create organization
+  edit        Edit organization details
+  switch      Switch to other organization
+  list        List all organizations
+  delete      Delete organization
+  rename      Rename organization
+
+Global Flags:
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
+  -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
 ```
-
-
-### UI
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-a
-</div>
 
 :::tip
 
-[Access to Rill can be granted on the organization level](user-management.md#adding-a-member-to-the-organization).
+Access to Rill can be granted on the [organization level](/manage/user-management#how-to-add-an-organization-user), [project level](/manage/user-management#how-to-add-a-project-user), and [user group level](/manage/user-management#how-to-add-a-user-to-a-usergroup).
 
 :::
 
 ## Project
 
-A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or the UI.
+![project](/img/manage/project-management/project-view.png) 
 
-### CLI
+A project is a single deployed instance from Rill Developer (or what we refer to as a Rill project). Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI or via Rill Cloud.
+
+## Rill Cloud
+
+### Checking deployment status
+After deploying to Rill Cloud, you will be navigating to the status page. Here you will be able to see your component's status and if there are any issues with loading or parsing.
+
+![img](/img/manage/project-management/status.png)
+
+
+### Deploying from a branch other than `main`
+If you have already setup your connection to GitHub, you can edit the branch from where the project is deployed from.
+
+![img](/img/manage/project-management/main-branch.png)
+
+
+## CLI
 Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc using the following:
 ```
 rill  project 
 ```
 
-#### Updating the deployment
+### Refreshing the deployment
 
 Your project on Rill Cloud will automatically redeploy every time you git push changes to Github. To manually refresh data sources without pushing code changes (or redeploying your project), run the following command:
 
@@ -53,37 +78,20 @@ rill project refresh
 ```
 
 
-#### Checking deployment status
+### Checking deployment status
 
 In case you need to check the project status via the CLI, you can run the following:
 ```
 rill project status
 ```
 
-#### Deploying from a branch other than `main`
+### Deploying from a branch other than `main`
 A branch from which continuous deployment is setup can be changed while editing the project. To change the branch, run the following command:
 ```
 rill project edit
 ```
 
-### UI
 
-#### Checking deployment status
-After deploying to Rill Cloud, you will be navigating to the status page. Here you will be able to see your component's status and if there are any issues with loading or parsing.
-
-![img](/img/manage/project-management/status.png)
-
-
-#### Deploying from a branch other than `main`
-If you have already setup your connection to GitHub, you can edit the branch from where the project is deployed from.
-
-![img](/img/manage/project-management/main-branch.png)
-
-:::tip
-
-[Access to Rill can be granted from the project level](user-management.md#adding-a-member-to-a-specific-project).
-
-:::
 
 
 ## Make a project public

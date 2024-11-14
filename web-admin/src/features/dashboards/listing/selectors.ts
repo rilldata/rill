@@ -1,5 +1,6 @@
 import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
+import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -12,7 +13,7 @@ export function useDashboardsLastUpdated(
 ) {
   return derived(
     [
-      useValidDashboards(instanceId),
+      useValidExplores(instanceId),
       createAdminServiceGetProject(organization, project),
     ],
     ([dashboardsResp, projResp]) => {
@@ -47,17 +48,34 @@ export interface DashboardResource {
 
 function getDashboardRefreshedOn(
   dashboard: V1Resource,
-  allResources: V1Resource[],
+  allResources: Map<string, V1Resource>,
 ): string | undefined {
   if (!dashboard) return undefined;
 
-  const refName = dashboard.meta.refs[0];
-  const refTable = allResources.find(
-    (r) => r.meta?.name?.name === refName?.name,
+  const metricsViewRefName = dashboard.meta.refs[0];
+  const refTable = allResources.get(
+    `${metricsViewRefName?.kind}_${metricsViewRefName?.name}`,
   );
   return (
     refTable?.model?.state.refreshedOn || refTable?.source?.state.refreshedOn
   );
+}
+
+function getExploreRefreshedOn(
+  explore: V1Resource,
+  allResources: Map<string, V1Resource>,
+): string | undefined {
+  if (!explore) return undefined;
+
+  // 1st get the metrics view for the explore
+  const exploreRefName = explore.meta.refs[0];
+  const metricsView = allResources.get(
+    `${exploreRefName?.kind}_${exploreRefName?.name}`,
+  );
+  if (!metricsView) return undefined;
+
+  // next get the referenced table resource
+  return getDashboardRefreshedOn(metricsView, allResources);
 }
 
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
@@ -67,15 +85,31 @@ export function useDashboardsV2(
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
-        // Filter for Metrics Explorers and Custom Dashboards
-        const resources = data.resources.filter(
-          (res) => res.metricsView || res.dashboard,
+        // create a map since we are potentially looking up twice per explore
+        const allResources = getMapFromArray(
+          data.resources,
+          (r) => `${r.meta.name.kind}_${r.meta.name.name}`,
         );
-        // Add `refreshedOn` to each resource
-        return resources.map((resource) => {
-          const refreshedOn = getDashboardRefreshedOn(resource, data.resources);
-          return { resource, refreshedOn };
-        });
+        const allDashboards: DashboardResource[] = [];
+        // filter canvas dashboards
+        const canvasDashboards = data.resources.filter((res) => res.canvas);
+        allDashboards.push(
+          ...canvasDashboards.map((resource) => {
+            // Add `refreshedOn` to each resource
+            const refreshedOn = getDashboardRefreshedOn(resource, allResources);
+            return { resource, refreshedOn };
+          }),
+        );
+        // filter explores
+        const explores = data.resources.filter((res) => res.explore);
+        allDashboards.push(
+          ...explores.map((resource) => {
+            // Add `refreshedOn` to each resource
+            const refreshedOn = getExploreRefreshedOn(resource, allResources);
+            return { resource, refreshedOn };
+          }),
+        );
+        return allDashboards;
       },
     },
   });
@@ -92,11 +126,22 @@ export function useDashboardV2(
       select: (data) => {
         if (!name) return;
 
-        const dashboard = data.resources.find(
+        const resource = data.resources.find(
           (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
         );
-        const refreshedOn = getDashboardRefreshedOn(dashboard, data.resources);
-        return { resource: dashboard, refreshedOn };
+        // create a map since we are potentially looking up twice per explore
+        const allResources = getMapFromArray(
+          data.resources,
+          (r) => `${r.meta.name.kind}_${r.meta.name.name}`,
+        );
+
+        if (resource.canvas) {
+          const refreshedOn = getDashboardRefreshedOn(resource, allResources);
+          return { resource, refreshedOn };
+        }
+
+        const refreshedOn = getExploreRefreshedOn(resource, allResources);
+        return { resource, refreshedOn };
       },
     },
   });

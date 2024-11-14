@@ -1,50 +1,51 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
-    RpcStatus,
-    V1ConnectorDriver,
+    type RpcStatus,
+    type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
-  import { createForm } from "svelte-forms-lib";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
-  import { AddDataFormType } from "./types";
+  import type { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
-
-  const queryClient = useQueryClient();
-  const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
+  export let onBack: () => void;
+  export let onClose: () => void;
 
   $: formId = `add-data-${connector.name}-form`;
 
   $: isSourceForm = formType === "source";
   $: isConnectorForm = formType === "connector";
   $: properties = isConnectorForm
-    ? connector.configProperties ?? []
-    : connector.sourceProperties ?? [];
+    ? (connector.configProperties ?? [])
+    : (connector.sourceProperties ?? []);
 
   let rpcError: RpcStatus | null = null;
 
-  const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
-    createForm({
-      initialValues: isSourceForm ? { name: "" } : {},
-      validationSchema: getYupSchema(connector),
-      onSubmit: async (values) => {
-        // Sources
+  const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
+
+  const { form, errors, enhance, tainted, submit, submitting } = superForm(
+    defaults(schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
         if (isSourceForm) {
           try {
             await submitAddDataForm(queryClient, formType, connector, values);
-            await goto(`/files/sources/${values.name}.yaml`);
-            dispatch("close");
+            onClose();
           } catch (e) {
             rpcError = e?.response?.data;
           }
@@ -54,22 +55,29 @@
         // Connectors
         try {
           await submitAddDataForm(queryClient, formType, connector, values);
-          await goto(`/files/connectors/${connector.name}.yaml`);
-          dispatch("close");
+          onClose();
         } catch (e) {
           rpcError = e?.response?.data;
         }
       },
-    });
+    },
+  );
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
 
     if (name === "path") {
-      if ($touched.name) return;
+      if ($tainted?.name) return;
       const name = inferSourceName(connector, value);
-      $form.name = name ? name : $form.name;
+      if (name)
+        form.update(
+          ($form) => {
+            $form.name = name;
+            return $form;
+          },
+          { taint: false },
+        );
     }
   }
 </script>
@@ -78,7 +86,8 @@
   <form
     class="pb-5 flex-grow overflow-y-auto"
     id={formId}
-    on:submit|preventDefault={handleSubmit}
+    use:enhance
+    on:submit|preventDefault={submit}
   >
     <div class="pb-2 text-slate-500">
       Need help? Refer to our
@@ -113,8 +122,7 @@
               hint={property.hint}
               errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              onInput={onStringInputChange}
-              onChange={handleChange}
+              onInput={(_, e) => onStringInputChange(e)}
               alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
@@ -138,10 +146,9 @@
       {/if}
     {/each}
   </form>
-  <div class="flex items-center space-x-2">
-    <div class="grow" />
-    <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
-    <Button disabled={$isSubmitting} form={formId} submitForm type="primary">
+  <div class="flex items-center space-x-2 ml-auto">
+    <Button on:click={onBack} type="secondary">Back</Button>
+    <Button disabled={$submitting} form={formId} submitForm type="primary">
       Add data
     </Button>
   </div>

@@ -1,31 +1,27 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
-  import { useVariableInputParams } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
+  import { useVariableInputParams } from "@rilldata/web-common/features/canvas/variables-store";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     createQueryServiceResolveComponent,
-    V1ComponentSpecResolverProperties,
-    V1ComponentVariable,
+    type V1ComponentSpecResolverProperties,
+    type V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
 
   export let componentName: string;
   export let tablePercentage = 0.45;
-  export let containerHeight: number;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
   export let input: V1ComponentVariable[] | undefined;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  const canvasName = getContext("rill::canvas:name") as string;
 
   $: ({ instanceId } = $runtime);
 
-  $: tableHeight = tablePercentage * containerHeight;
-
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+  $: inputVariableParams = useVariableInputParams(canvasName, input);
 
   $: componentDataQuery = resolverProperties
     ? createQueryServiceResolveComponent(instanceId, componentName, {
@@ -40,17 +36,9 @@
 
 {#if resolverProperties}
   <div
-    class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
+    class="w-full h-48 relative flex-none border rounded-[2px] overflow-hidden"
     style:height="{tablePercentage * 100}%"
   >
-    <Resizer
-      direction="NS"
-      dimension={tableHeight}
-      min={100}
-      max={0.65 * containerHeight}
-      onUpdate={(height) => (tablePercentage = height / containerHeight)}
-    />
-
     {#if isFetching}
       <div class="flex flex-col gap-y-2 size-full justify-center items-center">
         <Spinner size="2em" status={EntityStatus.Running} />

@@ -837,9 +837,20 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
   instanceId = "";
 
   /**
+   * Connector to list tables from.
+   *
    * @generated from field: string connector = 2;
    */
   connector = "";
+
+  /**
+   * Optional search pattern to filter tables by.
+   * Has the same syntax and behavior as ILIKE in SQL.
+   * If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
+   *
+   * @generated from field: string search_pattern = 3;
+   */
+  searchPattern = "";
 
   constructor(data?: PartialMessage<OLAPListTablesRequest>) {
     super();
@@ -851,6 +862,7 @@ export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "search_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesRequest {

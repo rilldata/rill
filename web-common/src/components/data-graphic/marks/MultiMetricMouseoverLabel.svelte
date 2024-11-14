@@ -110,7 +110,7 @@ It is probably not the most up to date code; but it works very well in practice.
           ? plotRight
           : flipAtEdge === "graphic"
             ? width
-            : false);
+            : -Infinity);
   }
   $: if (
     direction === "right" &&
@@ -132,7 +132,7 @@ It is probably not the most up to date code; but it works very well in practice.
   /** the full text width */
   let transitionalTimeoutForCalculatingLabelWidth;
 
-  $: if (container && locations && $xScale && $yScale) {
+  $: if (container && locations) {
     clearTimeout(transitionalTimeoutForCalculatingLabelWidth);
     transitionalTimeoutForCalculatingLabelWidth = setTimeout(() => {
       if (container) {
@@ -274,7 +274,11 @@ It is probably not the most up to date code; but it works very well in practice.
                 fill={location.pointColor}
                 stroke="white"
                 stroke-width="3"
-                opacity={location?.yOverride ? 0.7 : 1}
+                opacity={location?.yOverride
+                  ? 0.7
+                  : location.pointOpacity
+                    ? location.pointOpacity
+                    : 1}
               />
             {/if}
           </WithTween>

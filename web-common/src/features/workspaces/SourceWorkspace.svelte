@@ -3,15 +3,14 @@
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     ResourceKind,
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import WorkspaceInspector from "@rilldata/web-common/features/models/inspector/WorkspaceInspector.svelte";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
-  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
@@ -57,12 +56,13 @@
   $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: resource = $resourceQuery.data?.source;
-  $: connector = (resource as V1SourceV2)?.spec?.sinkConnector as string;
+  $: resource = $resourceQuery.data;
+  $: source = $resourceQuery.data?.source;
+  $: connector = (source as V1SourceV2)?.spec?.sinkConnector as string;
   const database = ""; // Sources are ingested into the default database
   const databaseSchema = ""; // Sources are ingested into the default database schema
-  $: tableName = (resource as V1SourceV2)?.state?.table as string;
-  $: refreshedOn = resource?.state?.refreshedOn;
+  $: tableName = (source as V1SourceV2)?.state?.table as string;
+  $: refreshedOn = source?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
@@ -72,20 +72,12 @@
     await replaceSourceWithUploadedFile(instanceId, filePath);
   }
 
-  async function handleNameChange(
-    e: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    },
-  ) {
+  async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
       instanceId,
-      e.currentTarget,
+      newTitle,
       filePath,
       fileName,
-      [
-        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -136,15 +128,17 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    {filePath}
+    resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}
     showTableToggle
     hasUnsavedChanges={$hasUnsavedChanges}
-    on:change={handleNameChange}
+    onTitleChange={handleNameChange}
   >
     <svelte:fragment slot="workspace-controls">
       <p
-        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        class="ui-copy-muted line-clamp-1 text-[11px]"
         transition:fade={{ duration: 200 }}
       >
         {#if refreshedOn}
@@ -153,13 +147,11 @@
       </p>
     </svelte:fragment>
 
-    <svelte:fragment slot="cta" let:width>
-      {@const collapse = width < 800}
-
+    <svelte:fragment slot="cta">
       <div class="flex gap-x-2 items-center">
         <SourceCTAs
+          sourceName={assetName}
           hasUnsavedChanges={$hasUnsavedChanges}
-          {collapse}
           hasErrors={$hasErrors}
           {isLocalFileConnector}
           on:save-source={fileArtifact.saveLocalContent}
@@ -179,7 +171,7 @@
     </WorkspaceEditorContainer>
 
     {#if $tableVisible}
-      <WorkspaceTableContainer fade={$hasUnsavedChanges}>
+      <WorkspaceTableContainer {filePath} fade={$hasUnsavedChanges}>
         {#if allErrors[0]?.message}
           <ErrorPane {filePath} errorMessage={allErrors[0].message} />
         {:else if !allErrors.length}
@@ -196,13 +188,14 @@
   <svelte:fragment slot="inspector">
     {#if connector && tableName && resource}
       <WorkspaceInspector
+        {filePath}
         {connector}
         {database}
         {databaseSchema}
         {tableName}
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}
-        source={resource}
+        {resource}
         isEmpty={!$remoteContent?.length}
         sourceIsReconciling={resourceIsReconciling}
       />

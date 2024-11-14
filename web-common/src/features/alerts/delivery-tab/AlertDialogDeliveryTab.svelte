@@ -22,7 +22,7 @@
       alwaysShowError
       errors={$errors["name"]}
       id="name"
-      onChange={handleChange}
+      onInput={(_, e) => handleChange(e)}
       placeholder="My alert"
       value={$form["name"]}
     />

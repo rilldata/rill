@@ -26,7 +26,7 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-title: mv1
+display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -36,7 +36,7 @@ measures:
 `,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: MetricsView
   name: mv1
@@ -80,7 +80,7 @@ email:
 		Resource: &runtimev1.Resource_Alert{
 			Alert: &runtimev1.Alert{
 				Spec: &runtimev1.AlertSpec{
-					Title:                "Test Alert",
+					DisplayName:          "Test Alert",
 					RefreshSchedule:      &runtimev1.Schedule{RefUpdate: true},
 					WatermarkInherit:     true,
 					IntervalsIsoDuration: "P1D",
@@ -187,7 +187,7 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-title: mv1
+display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -197,7 +197,7 @@ measures:
 `,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: MetricsView
   name: mv1
@@ -242,7 +242,7 @@ notify:
 		Resource: &runtimev1.Resource_Alert{
 			Alert: &runtimev1.Alert{
 				Spec: &runtimev1.AlertSpec{
-					Title:                "Test Alert",
+					DisplayName:          "Test Alert",
 					RefreshSchedule:      &runtimev1.Schedule{RefUpdate: true},
 					WatermarkInherit:     true,
 					IntervalsIsoDuration: "P1D",
@@ -346,7 +346,7 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 `,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: Model
   name: bar
@@ -376,13 +376,13 @@ notify:
 		Resource: &runtimev1.Resource_Alert{
 			Alert: &runtimev1.Alert{
 				Spec: &runtimev1.AlertSpec{
-					Title:                  "Test Alert",
+					DisplayName:            "Test Alert",
 					RefreshSchedule:        &runtimev1.Schedule{RefUpdate: true},
 					WatermarkInherit:       true,
 					IntervalsIsoDuration:   "P1D",
 					IntervalsCheckUnclosed: true,
 					Resolver:               "sql",
-					ResolverProperties:     must(structpb.NewStruct(map[string]any{"connector": "", "sql": "select * from bar where country <> 'Denmark'"})),
+					ResolverProperties:     must(structpb.NewStruct(map[string]any{"sql": "select * from bar where country <> 'Denmark'"})),
 					NotifyOnRecover:        false,
 					NotifyOnFail:           true,
 					NotifyOnError:          false,
@@ -472,7 +472,7 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-title: mv1
+display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -482,7 +482,7 @@ measures:
 `,
 		"/alerts/a1.yaml": `
 type: alert
-title: Test Alert
+display_name: Test Alert
 refs:
 - type: MetricsView
   name: mv1
@@ -514,7 +514,7 @@ notify:
 		Resource: &runtimev1.Resource_Alert{
 			Alert: &runtimev1.Alert{
 				Spec: &runtimev1.AlertSpec{
-					Title:                "Test Alert",
+					DisplayName:          "Test Alert",
 					RefreshSchedule:      &runtimev1.Schedule{RefUpdate: true},
 					WatermarkInherit:     true,
 					IntervalsIsoDuration: "P1D",
@@ -580,7 +580,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
-			Title:         name,
+			DisplayName:   name,
 			TimeDimension: timeDim,
 			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 			Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -590,7 +590,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 				Connector:     "duckdb",
 				Table:         model,
 				Model:         model,
-				Title:         name,
+				DisplayName:   name,
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 				Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),

@@ -2,7 +2,11 @@ import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/Met
 import type { Page } from "@sveltejs/kit";
 
 export function isOrganizationPage(page: Page): boolean {
-  return page.route.id === "/[organization]";
+  return (
+    page.route.id === "/[organization]" ||
+    !!page.route?.id?.startsWith("/[organization]/-/users") ||
+    !!page.route?.id?.startsWith("/[organization]/-/settings")
+  );
 }
 
 export function withinOrganization(page: Page): boolean {
@@ -15,6 +19,8 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status" ||
+    page.route.id === "/[organization]/[project]/-/settings" ||
+    page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
     !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
 }
@@ -25,12 +31,13 @@ export function withinProject(page: Page): boolean {
 
 export function isMetricsExplorerPage(page: Page): boolean {
   return (
-    page.route.id === "/[organization]/[project]/[dashboard]" ||
+    page.route.id === "/[organization]/[project]/explore/[dashboard]" ||
     page.route.id === "/-/embed"
   );
 }
 
 export function isCanvasDashboardPage(page: Page): boolean {
+  // TODO: Change the route to canvas
   return page.route.id === "/[organization]/[project]/-/dashboards/[dashboard]";
 }
 
@@ -57,7 +64,18 @@ export function isReportExportPage(page: Page): boolean {
 }
 
 export function isPublicURLPage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/-/share/[token]";
+  return (
+    page.route.id === "/[organization]/[project]/-/share/[token]" ||
+    isPublicReportPage(page)
+  );
+}
+
+export function isPublicReportPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/reports/[report]",
+    ) && page.url.searchParams.has("token")
+  );
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
@@ -70,6 +88,10 @@ export function isProjectInvitePage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/invite";
 }
 
+export function isBillingUpgradePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/upgrade-callback";
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):
@@ -78,6 +100,8 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
       return MetricsEventScreenName.Project;
     case isMetricsExplorerPage(page):
       return MetricsEventScreenName.Dashboard;
+    case isCanvasDashboardPage(page):
+      return MetricsEventScreenName.Canvas;
     case isReportPage(page):
       return MetricsEventScreenName.Report;
     case isAlertPage(page):

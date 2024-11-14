@@ -2,14 +2,13 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { useModelHasTimeSeries } from "../selectors";
-  import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
@@ -21,28 +20,35 @@
   export let readOnly = false;
 
   /** the height of a row of chips */
-  const ROW_HEIGHT = "28px";
+  const ROW_HEIGHT = "26px";
 
   const StateManagers = getStateManagers();
   const {
     metricsViewName,
+    exploreName,
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
         removeDimensionFilter,
+        toggleDimensionFilterMode,
       },
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters },
     },
     selectors: {
-      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      dimensions: { allDimensions },
+      dimensionFilters: {
+        getDimensionFilterItems,
+        getAllDimensionFilterItems,
+        isFilterExcludeMode,
+      },
+      measures: { allMeasures },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
     },
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
-  const metricsView = useMetricsView(StateManagers);
 
   $: ({
     selectedTimeRange,
@@ -54,13 +60,13 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: dimensions = $metricsView.data?.dimensions ?? [];
+  $: dimensions = $allDimensions;
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
-  $: measures = $metricsView.data?.measures ?? [];
+  $: measures = $allMeasures;
   $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
@@ -107,7 +113,7 @@
           {selectedComparisonTimeRange}
         />
         {#if !$showPivot && minTimeGrain}
-          <TimeGrainSelector metricViewName={$metricsViewName} />
+          <TimeGrainSelector exploreName={$exploreName} />
         {/if}
       {/if}
     </div>
@@ -135,12 +141,15 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
+                {readOnly}
                 {name}
                 {label}
                 {selectedValues}
-                on:remove={() => removeDimensionFilter(name)}
-                on:apply={(event) =>
-                  toggleDimensionValueSelection(name, event.detail, true)}
+                excludeMode={$isFilterExcludeMode(name)}
+                onRemove={() => removeDimensionFilter(name)}
+                onToggleFilterMode={() => toggleDimensionFilterMode(name)}
+                onSelect={(value) =>
+                  toggleDimensionValueSelection(name, value, true)}
               />
             {/if}
           </div>

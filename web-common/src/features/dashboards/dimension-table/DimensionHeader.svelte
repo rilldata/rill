@@ -14,41 +14,45 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
+  import exportToplist from "./export-toplist";
+  import {
+    createQueryServiceExport,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
+  import { onDestroy } from "svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
+  export let searchText: string;
+  export let onToggleSearchItems: () => void;
 
-  const dispatch = createEventDispatcher();
+  const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-      dimensionTable: { dimensionTableSearchString },
+
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
     },
     actions: {
       sorting: { toggleSort },
-      dimensionTable: {
-        setDimensionTableSearchString,
-        clearDimensionTableSearchString,
-      },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
     dashboardStore,
-    metricsViewName,
+    exploreName,
   } = stateManagers;
 
   const { adminServer, exports } = featureFlags;
@@ -58,26 +62,18 @@
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
+  $: metricsViewProto = $dashboardStore.proto;
+
   let searchBarOpen = false;
 
-  // FIXME: this extra `searchText` variable should be eliminated,
-  // but there is no way to make the <Search> component a fully
-  // "controlled" component for now, so we have to go through the
-  // `value` binding it exposes.
-  let searchText: string | undefined = undefined;
-  $: searchText = $dimensionTableSearchString;
-  function onSearch() {
-    setDimensionTableSearchString(searchText);
-  }
-
   function closeSearchBar() {
-    clearDimensionTableSearchString();
+    searchText = "";
     searchBarOpen = false;
   }
 
   function onSubmit() {
     if (!areAllTableRowsSelected) {
-      dispatch("toggle-all-search-items");
+      onToggleSearchItems();
       closeSearchBar();
     }
   }
@@ -125,13 +121,13 @@
       .map((m) => {
         return {
           id: m.name as string,
-          title: m.label || (m.name as string),
+          title: m.displayName || (m.name as string),
           type: PivotChipType.Measure,
         };
       });
 
     metricsExplorerStore.createPivot(
-      $metricsViewName,
+      $exploreName,
       { dimension: rowDimensions },
       {
         dimension: [],
@@ -140,8 +136,19 @@
     );
   }
 
+  const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
+
+  const handleExportTopList = async (format: V1ExportFormat) => {
+    await exportToplist({
+      ctx: stateManagers,
+      query: exportDash,
+      format,
+      searchText,
+    });
+  };
+
   onDestroy(() => {
-    clearDimensionTableSearchString();
+    searchText = "";
   });
 </script>
 
@@ -167,11 +174,7 @@
         transition:slideRight={{ leftOffset: 8 }}
         class="flex items-center gap-x-2 p-1.5"
       >
-        <Search
-          bind:value={searchText}
-          on:input={onSearch}
-          on:submit={onSubmit}
-        />
+        <Search bind:value={searchText} on:submit={onSubmit} />
         <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
           <Close />
         </button>
@@ -207,7 +210,14 @@
     </Tooltip>
 
     {#if $exports}
-      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+      <ExportMenu
+        label="Export dimension table data"
+        onExport={handleExportTopList}
+        includeScheduledReport={$adminServer}
+        queryArgs={$scheduledReportsQueryArgs}
+        {metricsViewProto}
+        exploreName={$exploreName}
+      />
     {/if}
     <button
       class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
@@ -222,8 +232,8 @@
 
 <ReplacePivotDialog
   open={showReplacePivotModal}
-  on:close={() => {
+  onCancel={() => {
     showReplacePivotModal = false;
   }}
-  on:replace={() => createPivot()}
+  onReplace={createPivot}
 />

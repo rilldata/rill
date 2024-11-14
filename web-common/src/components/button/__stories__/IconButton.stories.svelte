@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
+  import { Story, Template } from "@storybook/addon-svelte-csf";
 
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import SummaryStatistics from "@rilldata/web-common/components/icons/SummaryStatistics.svelte";
+
+  export const meta = {
+    title: 'Icon Button stories"',
+    component: IconButton,
+  };
 
   type ButtonProps = {
     disabled: boolean;
@@ -32,8 +37,6 @@
     }
   }
 </script>
-
-<Meta title="Icon Button stories" />
 
 <Template>
   <table>

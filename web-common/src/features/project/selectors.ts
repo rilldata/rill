@@ -4,24 +4,32 @@ import { createRuntimeServiceGetFile } from "../../runtime-client";
 export function useProjectTitle(instanceId: string) {
   return createRuntimeServiceGetFile(
     instanceId,
-    { path: "rill.yaml" },
+    { path: "/rill.yaml" },
     {
       query: {
         select: (data) => {
-          let projectData: { title?: string; name?: string } = {};
+          let projectData: {
+            display_name?: string;
+            title?: string;
+            name?: string;
+          } = {};
           try {
             projectData = parse(data.blob as string, {
               logLevel: "silent",
             }) as {
+              display_name?: string;
               title?: string;
               name?: string;
             };
-          } catch (e) {
+          } catch {
             // Ignore
           }
 
           return (
-            projectData?.title || projectData?.name || "Untitled Rill Project"
+            projectData?.display_name ||
+            projectData?.title ||
+            projectData?.name ||
+            "Untitled Rill Project"
           );
         },
       },

@@ -1,19 +1,18 @@
 <script lang="ts">
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import {
-    dashboardVariablesStore,
+    canvasVariablesStore,
     useVariable,
-  } from "@rilldata/web-common/features/canvas-dashboards/variables-store";
-  import { SelectProperties } from "@rilldata/web-common/features/templates/types";
-
-  import {
+  } from "@rilldata/web-common/features/canvas/variables-store";
+  import type { SelectProperties } from "@rilldata/web-common/features/templates/types";
+  import type {
     V1ComponentSpecRendererProperties,
     V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { getContext } from "svelte";
 
   const MAX_OPTIONS = 250;
-  $: dashboardName = getContext("rill::canvas-dashboard:name") as string;
+  const canvasName = getContext("rill::canvas:name") as string;
 
   export let componentName: string;
   export let data: any[] | undefined;
@@ -21,7 +20,7 @@
   export let output: V1ComponentVariable | undefined;
 
   $: outputVariableName = output?.name || "";
-  $: outputVariableValue = useVariable(dashboardName, outputVariableName);
+  $: outputVariableValue = useVariable(canvasName, outputVariableName);
   $: selectProperties = rendererProperties as SelectProperties;
 
   $: value = (value || $outputVariableValue || output?.defaultValue) as string;
@@ -36,11 +35,11 @@
     .slice(0, MAX_OPTIONS);
 </script>
 
-<div class="m-1 p-1">
+<div>
   <Select
     on:change={(e) =>
-      dashboardVariablesStore.updateVariable(
-        dashboardName,
+      canvasVariablesStore.updateVariable(
+        canvasName,
         outputVariableName,
         e.detail,
       )}

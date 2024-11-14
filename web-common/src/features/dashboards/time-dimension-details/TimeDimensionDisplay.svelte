@@ -3,7 +3,6 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -21,13 +20,16 @@
   } from "./time-dimension-data-store";
   import type { TDDComparison, TableData } from "./types";
 
-  export let metricViewName: string;
+  export let exploreName: string;
+  export let expandedMeasureName: string;
 
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
     selectors: {
+      dimensions: { allDimensions },
       dimensionFilters: { unselectedDimensionValues },
+      measures: { allMeasures },
     },
     actions: {
       dimensionsFilter: {
@@ -42,26 +44,21 @@
   const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
   const timeControlStore = useTimeControlStore(stateManagers);
 
-  $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
-  $: expandedMeasureName = $dashboardStore?.tdd.expandedMeasureName;
   $: comparing = $timeDimensionDataStore?.comparing;
 
   $: pinIndex = $dashboardStore?.tdd.pinIndex;
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
-  $: measure = $metricsView?.data?.measures?.find(
-    (m) => m.name === expandedMeasureName,
-  );
+  $: measure = $allMeasures.find((m) => m.name === expandedMeasureName);
 
-  $: measureLabel = measure?.label ?? "";
+  $: measureLabel = measure?.displayName ?? "";
 
   let dimensionLabel = "";
   $: if (comparing === "dimension") {
     dimensionLabel =
-      $metricsView?.data?.dimensions?.find((d) => d.name === dimensionName)
-        ?.label ?? "";
+      $allDimensions.find((d) => d.name === dimensionName)?.displayName ?? "";
   } else if (comparing === "time") {
     dimensionLabel = "Time";
   } else if (comparing === "none") {
@@ -174,7 +171,7 @@
     else if (pinIndex === -1) {
       newPinIndex = formattedData?.selectedValues?.length - 1;
     }
-    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+    metricsExplorerStore.setPinIndex(exploreName, newPinIndex);
   }
 
   function handleKeyDown(e) {
@@ -200,14 +197,12 @@
   <TDDHeader
     {areAllTableRowsSelected}
     {comparing}
+    {expandedMeasureName}
     {dimensionName}
     isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
     isRowsEmpty={!rowHeaderLabels.length}
-    {metricViewName}
-    on:search={(e) => {
-      metricsExplorerStore.setSearchText(metricViewName, e.detail);
-    }}
-    on:toggle-all-search-items={() => toggleAllSearchItems()}
+    {exploreName}
+    onToggleSearchItems={toggleAllSearchItems}
   />
 
   {#if $timeDimensionDataStore?.isError}

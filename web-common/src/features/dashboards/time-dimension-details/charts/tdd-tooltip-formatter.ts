@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { TDDAlternateCharts, TDDChart } from "../types";
+import { type TDDAlternateCharts, TDDChart } from "../types";
 
 export function escapeHTML(value: any): string {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -23,7 +23,7 @@ function createColorMap(
 
   colorMap[measureLabel] = MainLineColor;
 
-  if (isTimeComparison) {
+  if (isTimeComparison && selectedDimensionValues.length === 0) {
     colorMap["current_period"] = MainLineColor;
     colorMap["comparison_period"] = MainAreaColorGradientDark;
   }
@@ -141,6 +141,8 @@ function generateTableContent(
     content += "<table>";
 
     const selectedValuesLength = !!selectedDimensionValues.length;
+    const isNonDimensionalTimeComparison =
+      isTimeComparison && !selectedValuesLength;
     if (
       chartType === TDDChart.STACKED_AREA &&
       (selectedValuesLength || isTimeComparison)
@@ -149,7 +151,7 @@ function generateTableContent(
         keys,
         rest,
         colorMap,
-        isTimeComparison,
+        isNonDimensionalTimeComparison,
       );
     } else {
       content += generateBarContent(

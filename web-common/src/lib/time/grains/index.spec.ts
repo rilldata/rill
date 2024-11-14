@@ -7,7 +7,7 @@ import {
   getDefaultTimeGrain,
 } from "../grains";
 import { describe, it, expect } from "vitest";
-import { Period, TimeGrain } from "../types";
+import { Period, type TimeGrain } from "../types";
 
 const allowedGrainTests = [
   {

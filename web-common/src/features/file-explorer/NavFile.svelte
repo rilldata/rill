@@ -6,7 +6,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
+  import type { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
@@ -18,23 +18,28 @@
     MetricsEventSpace,
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { Save } from "lucide-svelte";
-  import { Readable } from "svelte/store";
+  import { Save, Settings } from "lucide-svelte";
+  import type { Readable } from "svelte/store";
+  import CopyIcon from "../../components/icons/CopyIcon.svelte";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
-  import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import { getTopLevelFolder } from "../entity-management/file-path-utils";
-  import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
+  import {
+    resourceColorMapping,
+    resourceIconMapping,
+  } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
+  import MetricsViewMenuItems from "../metrics-views/MetricsViewMenuItems.svelte";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
+  export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
   export let onGenerateChart: (data: {
     table?: string;
@@ -53,8 +58,14 @@
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ resourceName, hasUnsavedChanges, saveLocalContent } = fileArtifact);
-  $: resourceKind = $resourceName?.kind as ResourceKind;
+  $: ({
+    resourceName,
+    hasUnsavedChanges,
+    saveLocalContent,
+    inferredResourceKind,
+  } = fileArtifact);
+  $: resourceKind = ($resourceName?.kind ??
+    $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
@@ -102,8 +113,13 @@
   >
     <div class="flex-none">
       <svelte:component
-        this={resourceKind ? resourceIconMapping[resourceKind] : File}
+        this={resourceKind
+          ? resourceIconMapping[resourceKind]
+          : filePath === "/.env" || filePath === "/rill.yaml"
+            ? Settings
+            : File}
         size="14px"
+        color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
       />
     </div>
     <span class="truncate w-full" class:text-red-600={$hasErrors}>
@@ -143,7 +159,7 @@
             />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
-            <DashboardMenuItems
+            <MetricsViewMenuItems
               {filePath}
               on:generate-chart={({ detail }) => onGenerateChart(detail)}
             />
@@ -159,6 +175,10 @@
         <NavigationMenuItem on:click={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />
           Rename...
+        </NavigationMenuItem>
+        <NavigationMenuItem on:click={() => onDuplicate(filePath, false)}>
+          <CopyIcon slot="icon" />
+          Duplicate
         </NavigationMenuItem>
         <NavigationMenuItem on:click={() => onDelete(filePath, false)}>
           <Cancel slot="icon" />

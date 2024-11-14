@@ -2,17 +2,17 @@
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import {
     PivotChipType,
-    PivotDataStore,
-    PivotDataStoreConfig,
-    PivotState,
+    type PivotDataStore,
+    type PivotDataStoreConfig,
+    type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import TableRenderer from "@rilldata/web-common/features/templates/table/TableRenderer.svelte";
-  import { TableProperties } from "@rilldata/web-common/features/templates/types";
-  import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import type { TableProperties } from "@rilldata/web-common/features/templates/types";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { Readable, writable } from "svelte/store";
+  import { type Readable, writable } from "svelte/store";
   import { getTableConfig, hasValidTableSchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
@@ -68,6 +68,7 @@
   $: if (isValidSchema) {
     const stateManagerContext = createStateManagers({
       queryClient,
+      exploreName: "TODO", // Historically, State Managers have only been used for Explore, not Canvas.
       metricsViewName: tableProperties.metrics_view,
       extraKeyPrefix: TABLE_PREFIX,
     });

@@ -72,11 +72,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
   }
 
-  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
-  }
-
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
     option (google.api.http) = {
@@ -98,13 +93,18 @@ service AdminService {
     };
   }
 
-  // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+  // GetProjectVariables returns project variables.
+  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
+  }
+  
+  // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{name}/variables",
+      put: "/v1/organizations/{organization}/projects/{project}/variables",
       body: "*"
     };
-  }
+  }  
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
@@ -476,6 +476,14 @@ service AdminService {
     };
   }
 
+  // SudoExtendTrial extends the trial period for an organization
+  rpc SudoExtendTrial(SudoExtendTrialRequest) returns (SudoExtendTrialResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/organization/trial/extend",
+      body: "*"
+    };
+  }
+
   // SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
   // It only updates the custom domain in the database, which is used to ensure correct redirects.
   // The DNS records and ingress TLS must be configured separately.
@@ -507,6 +515,14 @@ service AdminService {
   rpc SudoDeleteOrganizationBillingIssue(SudoDeleteOrganizationBillingIssueRequest) returns (SudoDeleteOrganizationBillingIssueResponse) {
     option (google.api.http) = {
       delete: "/v1/superuser/organizations/{organization}/billing/issues/{type}",
+    };
+  }
+
+  // SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+  rpc SudoTriggerBillingRepair(SudoTriggerBillingRepairRequest) returns (SudoTriggerBillingRepairResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/billing/repair",
+      body: "*"
     };
   }
 
@@ -761,10 +777,18 @@ service AdminService {
     };
   }
 
-  // CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+  // CancelBillingSubscription cancels the billing subscription for the organization
   rpc CancelBillingSubscription(CancelBillingSubscriptionRequest) returns (CancelBillingSubscriptionResponse) {
     option (google.api.http) = {
       delete: "/v1/organizations/{organization}/billing/subscriptions",
+    };
+  }
+
+  // RenewBillingSubscription renews the billing plan for the organization once cancelled
+  rpc RenewBillingSubscription(RenewBillingSubscriptionRequest) returns (RenewBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/billing/subscriptions/renew",
+      body: "*"
     };
   }
 
@@ -776,6 +800,14 @@ service AdminService {
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
+  }
+
+  // GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+  rpc GetBillingProjectCredentials(GetBillingProjectCredentialsRequest) returns (GetBillingProjectCredentialsResponse) {
+    option (google.api.http) = {
+      post: "/v1/billing/metrics-project-credentials",
+      body: "*"
+    };
   }
 
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
@@ -916,12 +948,61 @@ message SearchProjectNamesResponse {
 }
 
 message GetProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
+  // Organization the project belongs to.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to get variables for.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // Environment to get the variables for.
+  // If empty, only variables shared across all environments are returned.
+  string environment = 3;
+  // If true, return variable values for all environments.
+  // Can't be used together with the "environment" option.
+  bool for_all_environments = 4;
 }
 
 message GetProjectVariablesResponse {
-  map<string, string> variables = 1;
+  repeated ProjectVariable variables = 2;
+  // Deprecated: Populated for backwards compatibility.
+  // (Renamed from "variables" to "variables_map").
+  map<string, string> variables_map = 1;
+}
+
+message ProjectVariable {
+  // Internal ID.
+  string id = 1;
+  // Variable name (case insensitive).
+  string name = 2;
+  // Variable value.
+  string value = 3;
+  // Environment the variable is set for.
+  // If empty, the variable is shared for all environments.
+  string environment = 4;
+  // User ID that most recently updated the variable. May be empty.
+  string updated_by_user_id = 5;
+  // Timestamp when the variable was created.
+  google.protobuf.Timestamp created_on = 6;
+  // Timestamp when the variable was last updated.
+  google.protobuf.Timestamp updated_on = 7;
+}
+
+message UpdateProjectVariablesRequest {
+  // Organization the project belongs to.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to update variables for.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // Environment to set the variables for.
+  // If empty, the variable(s) will be used as defaults for all environments.
+  string environment = 4;
+  // New variable values.
+  // It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+  map<string, string> variables = 3;
+  // Variables to delete.
+  repeated string unset_variables = 5;
+}
+
+message UpdateProjectVariablesResponse {
+  // Variables that were created or updated by the request.
+  repeated ProjectVariable variables = 2;
 }
 
 message SearchProjectUsersRequest {
@@ -975,7 +1056,9 @@ message GetIFrameRequest {
     // If set, will use the provided attributes outright.
     google.protobuf.Struct attributes = 11;
   }
-  // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+  // Type of resource to embed. If not set, defaults to "rill.runtime.v1.Explore".
+  string type = 14;
+  // Deprecated: Alias for `type`.
   string kind = 4;
   // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
@@ -1049,7 +1132,6 @@ message CreateProjectRequest {
   string github_url = 10;
   // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
   string archive_asset_id = 14;
-  map<string, string> variables = 11;
   string prod_version = 13;
 }
 
@@ -1084,16 +1166,6 @@ message UpdateProjectRequest {
 
 message UpdateProjectResponse {
   Project project = 1;
-}
-
-message UpdateProjectVariablesRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string name = 2 [(validate.rules).string.min_len = 1];
-  map<string, string> variables = 3;
-}
-
-message UpdateProjectVariablesResponse {
-  map<string, string> variables = 1;
 }
 
 message CreateAssetRequest {
@@ -1250,12 +1322,22 @@ message SudoUpdateOrganizationQuotasResponse {
 
 message SudoUpdateOrganizationBillingCustomerRequest {
   string organization = 1;
-  string billing_customer_id = 2;
+  optional string billing_customer_id = 2;
+  optional string payment_customer_id = 3;
 }
 
 message SudoUpdateOrganizationBillingCustomerResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
+}
+
+message SudoExtendTrialRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  int32 days = 2 [(validate.rules).int32 = {gt: 0, lte: 30}];
+}
+
+message SudoExtendTrialResponse {
+  google.protobuf.Timestamp trial_end = 1;
 }
 
 message SudoUpdateOrganizationCustomDomainRequest {
@@ -1270,6 +1352,7 @@ message SudoUpdateOrganizationCustomDomainResponse {
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional int32 singleuser_orgs = 2;
+  optional int32 trial_orgs = 3;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1300,6 +1383,10 @@ message SudoDeleteOrganizationBillingIssueRequest {
 }
 
 message SudoDeleteOrganizationBillingIssueResponse {}
+
+message SudoTriggerBillingRepairRequest {}
+
+message SudoTriggerBillingRepairResponse {}
 
 message ListProjectMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1622,7 +1709,6 @@ message ListServiceAuthTokensResponse {
   repeated ServiceToken tokens = 1;
 }
 
-
 message IssueMagicAuthTokenRequest {
   // Organization that owns the project.
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1630,15 +1716,20 @@ message IssueMagicAuthTokenRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
   int64 ttl_minutes = 3;
-  // Metrics view the token will provide access to.
-  string metrics_view = 4;
-  // Optional filter to apply to all queries to the metrics view.
-  rill.runtime.v1.Expression metrics_view_filter = 5;
-  // Optional list of names of dimensions and measures to limit access to.
-  // If empty, all dimensions and measures are accessible.
-  repeated string metrics_view_fields = 6;
+  // Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+  string resource_type = 8;
+  // Name of the resource to grant access to.
+  string resource_name = 9;
+  // Optional filter to apply as a row filter in queries.
+  // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
+  rill.runtime.v1.Expression filter = 5;
+  // Optional list of fields to limit access to. If empty, no field access rule will be added.
+  // This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which currently applies to dimension and measure names for explores and metrics views.
+  repeated string fields = 6;
   // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
   string state = 7;
+  // Optional display name to store with the token.
+  string display_name = 10;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1824,14 +1915,20 @@ message GetReportMetaRequest {
   string project_id = 1;
   string branch = 2;
   string report = 3;
-  map<string, string> annotations = 4;
-  google.protobuf.Timestamp execution_time = 5;
+  string owner_id = 5;
+  google.protobuf.Timestamp execution_time = 6;
+  repeated string email_recipients = 7;
+  reserved 4;
 }
 
 message GetReportMetaResponse {
-  string open_url = 1;
-  string export_url = 2;
-  string edit_url = 3;
+  message URLs {
+    string open_url = 1;
+    string export_url = 2;
+    string edit_url = 3;
+  }
+  URLs base_urls = 1;
+  map<string, URLs> recipient_urls = 2;
 }
 
 message GetAlertMetaRequest {
@@ -1964,7 +2061,7 @@ message GetAlertYAMLResponse {
 }
 
 message GetBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message GetBillingSubscriptionResponse {
@@ -1974,24 +2071,36 @@ message GetBillingSubscriptionResponse {
 }
 
 message UpdateBillingSubscriptionRequest {
-  string organization = 1;
-  string plan_name = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
 }
 
 message CancelBillingSubscriptionRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 message CancelBillingSubscriptionResponse {}
 
-message UpdateBillingSubscriptionResponse {
+message RenewBillingSubscriptionRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string plan_name = 2 [(validate.rules).string.min_len = 1];
+  bool superuser_force_access = 3;
+}
+
+message RenewBillingSubscriptionResponse {
   Organization organization = 1;
-  repeated Subscription subscriptions = 2;
+  Subscription subscription = 2;
 }
 
 message GetPaymentsPortalURLRequest {
-  string organization = 1;
-  string return_url = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string return_url = 2 [(validate.rules).string.min_len = 1];
 }
 
 message GetPaymentsPortalURLResponse {
@@ -2002,6 +2111,17 @@ message ListPublicBillingPlansRequest {}
 
 message ListPublicBillingPlansResponse {
   repeated BillingPlan plans = 1;
+}
+
+message GetBillingProjectCredentialsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetBillingProjectCredentialsResponse {
+  string runtime_host = 1;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
 }
 
 message TelemetryRequest {
@@ -2086,18 +2206,17 @@ message Organization {
 
 message Subscription {
   string id = 1;
-  string plan_id = 2;
-  string plan_name = 3;
-  string plan_display_name = 4;
-  google.protobuf.Timestamp start_date = 5;
-  google.protobuf.Timestamp end_date = 6;
-  google.protobuf.Timestamp current_billing_cycle_start_date = 7;
-  google.protobuf.Timestamp current_billing_cycle_end_date = 8;
-  google.protobuf.Timestamp trial_end_date = 9;
+  BillingPlan plan = 2;
+  google.protobuf.Timestamp start_date = 3;
+  google.protobuf.Timestamp end_date = 4;
+  google.protobuf.Timestamp current_billing_cycle_start_date = 5;
+  google.protobuf.Timestamp current_billing_cycle_end_date = 6;
+  google.protobuf.Timestamp trial_end_date = 7;
 }
 
 message UserQuotas {
   int32 singleuser_orgs = 1;
+  int32 trial_orgs = 2;
 }
 
 message OrganizationQuotas {
@@ -2189,6 +2308,7 @@ message MemberUser {
   string user_id = 1;
   string user_email = 3;
   string user_name = 2;
+  string user_photo_url = 7;
   string role_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
@@ -2237,10 +2357,12 @@ message MagicAuthToken {
   string created_by_user_id = 6;
   string created_by_user_email = 7;
   google.protobuf.Struct attributes = 8;
-  string metrics_view = 9;
-  rill.runtime.v1.Expression metrics_view_filter = 10;
-  repeated string metrics_view_fields = 11;
+  string resource_type = 15;
+  string resource_name = 9;
+  rill.runtime.v1.Expression filter = 10;
+  repeated string fields = 11;
   string state = 12;
+  string display_name = 16;
 }
 
 message VirtualFile {
@@ -2251,7 +2373,7 @@ message VirtualFile {
 }
 
 message ReportOptions {
-  string title = 1;
+  string display_name = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
   string interval_duration = 13;
@@ -2268,7 +2390,7 @@ message ReportOptions {
 }
 
 message AlertOptions {
-  string title = 1;
+  string display_name = 1;
   string interval_duration = 2;
   string resolver = 13;
   google.protobuf.Struct resolver_properties = 14;
@@ -2295,6 +2417,7 @@ message BillingPlan {
   uint32 trial_period_days = 5;
   bool default = 6;
   Quotas quotas = 7;
+  bool public = 8;
   // TODO expose pricing information
 }
 
@@ -2331,6 +2454,7 @@ enum BillingIssueType {
   BILLING_ISSUE_TYPE_NO_BILLABLE_ADDRESS = 4;
   BILLING_ISSUE_TYPE_PAYMENT_FAILED = 5;
   BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED = 6;
+  BILLING_ISSUE_TYPE_NEVER_SUBSCRIBED = 7;
 }
 
 enum BillingIssueLevel {
@@ -2356,15 +2480,18 @@ message BillingIssueMetadata {
     BillingIssueMetadataNoBillableAddress no_billable_address = 4;
     BillingIssueMetadataPaymentFailed payment_failed = 5;
     BillingIssueMetadataSubscriptionCancelled subscription_cancelled = 6;
+    BillingIssueMetadataNeverSubscribed never_subscribed = 7;
   }
 }
 
 message BillingIssueMetadataOnTrial {
   google.protobuf.Timestamp end_date = 1;
+  google.protobuf.Timestamp grace_period_end_date = 2;
 }
 
 message BillingIssueMetadataTrialEnded {
-  google.protobuf.Timestamp grace_period_end_date = 1;
+  google.protobuf.Timestamp end_date = 1;
+  google.protobuf.Timestamp grace_period_end_date = 2;
 }
 
 message BillingIssueMetadataNoPaymentMethod {}
@@ -2389,3 +2516,5 @@ message BillingIssueMetadataPaymentFailedMeta {
 message BillingIssueMetadataSubscriptionCancelled {
   google.protobuf.Timestamp end_date = 1;
 }
+
+message BillingIssueMetadataNeverSubscribed {}

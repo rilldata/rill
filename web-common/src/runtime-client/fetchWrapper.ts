@@ -49,6 +49,10 @@ export async function fetchWrapper({
     signal,
   });
 
+  const contentType = resp.headers?.get("content-type");
+  if (!contentType?.includes("application/json") && resp.ok) {
+    return resp;
+  }
   const json = await resp.json();
 
   if (resp.ok) return json;

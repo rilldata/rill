@@ -9,23 +9,35 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { LeaderboardItemData } from "./leaderboard-utils";
+  import type { LeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let isValidPercentOfTotal: boolean;
-  export let isTimeComparisonActive: boolean;
-  export let tableWidth: number;
-  export let borderTop = false;
-  export let borderBottom = false;
   export let uri: string | undefined;
+  export let tableWidth: number;
   export let firstColumnWidth: number;
   export let columnWidth: number;
   export let gutterWidth: number;
+  export let borderTop = false;
+  export let borderBottom = false;
+  export let isSummableMeasure: boolean;
+  export let isBeingCompared: boolean;
+  export let filterExcludeMode: boolean;
+  export let atLeastOneActive: boolean;
+  export let isValidPercentOfTotal: boolean;
+  export let isTimeComparisonActive: boolean;
+  export let toggleDimensionValueSelection: (
+    dimensionName: string,
+    dimensionValue: string,
+    keepPillVisible?: boolean | undefined,
+    isExclusiveFilter?: boolean | undefined,
+  ) => void;
+  export let formatter:
+    | ((_value: number | undefined) => undefined)
+    | ((value: string | number) => string);
 
   let hovered = false;
 
@@ -39,22 +51,6 @@
 
   $: selected = selectedIndex >= 0;
 
-  const {
-    selectors: {
-      activeMeasure: { isSummableMeasure },
-      numberFormat: { activeMeasureFormatter },
-      dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
-      comparison: { isBeingCompared: isBeingComparedReadable },
-    },
-    actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
-    },
-  } = getStateManagers();
-
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
-  $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
-  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
-
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
@@ -64,29 +60,16 @@
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
-      ? $activeMeasureFormatter(comparisonValue)
+      ? formatter(comparisonValue)
       : undefined;
 
-  $: formattedValue = measureValue
-    ? $activeMeasureFormatter(measureValue)
-    : null;
+  $: formattedValue = measureValue ? formatter(measureValue) : null;
 
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
 
-  function shiftClickHandler(label: string) {
-    let truncatedLabel = label?.toString();
-    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-    }
-    copyToClipboard(
-      label,
-      `copied dimension value "${truncatedLabel}" to clipboard`,
-    );
-  }
-
   $: href = makeHref(uri);
 
-  $: percentOfTotal = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+  $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
   $: barLength = (tableWidth - gutterWidth) * percentOfTotal;
 
@@ -151,6 +134,17 @@
     } else {
       return uri;
     }
+  }
+
+  function shiftClickHandler(label: string) {
+    let truncatedLabel = label?.toString();
+    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
+      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
+    }
+    copyToClipboard(
+      label,
+      `copied dimension value "${truncatedLabel}" to clipboard`,
+    );
   }
 </script>
 
@@ -228,9 +222,7 @@
     <td style:background={thirdCellGradient}>
       <FormattedDataType
         type="INTEGER"
-        value={itemData.deltaAbs
-          ? $activeMeasureFormatter(itemData.deltaAbs)
-          : null}
+        value={itemData.deltaAbs ? formatter(itemData.deltaAbs) : null}
         customStyle={negativeChange ? "text-red-500" : ""}
       />
     </td>

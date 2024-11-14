@@ -7,6 +7,8 @@ sidebar_position: 00
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
+<img src = '/img/tutorials/102/Adding-Data.gif' class='rounded-gif' />
+<br />
 
 Rill supports a multitude of connectors to ingest data from various sources: local files, S3 or GCS buckets, download using HTTP(S), databases, data warehouses, and the list goes on. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). This can be done either through the UI directly, when working with Rill Developer, or by pushing the logic into the [source YAML](../../reference/project-files/sources.md) definition directly (see _Using Code_ sections below).
 

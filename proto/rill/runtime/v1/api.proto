@@ -185,9 +185,9 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/explore"};
   }
 
-  // GetModelSplits returns the splits of a model
-  rpc GetModelSplits(GetModelSplitsRequest) returns (GetModelSplitsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/splits"};
+  // GetModelPartitions returns the partitions of a model
+  rpc GetModelPartitions(GetModelPartitionsRequest) returns (GetModelPartitionsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/models/{model}/partitions"};
   }
   
   // CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
@@ -227,6 +227,13 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Variables
+
+  // AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+  rpc AnalyzeVariables(AnalyzeVariablesRequest) returns (AnalyzeVariablesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/variables/analyze"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -263,6 +270,9 @@ message InstanceHealth {
   string controller_error = 1;
   string olap_error = 2;
   string repo_error = 3;
+  map<string, string> metrics_view_errors = 4;
+  int32 parse_error_count = 5;
+  int32 reconcile_error_count = 6;
 }
 
 // **********
@@ -484,7 +494,7 @@ message RenameFileResponse {}
 // Example contains metadata about an example project that is available for unpacking.
 message Example {
   string name = 1;
-  string title = 2;
+  string display_name = 2;
   string description = 3;
 }
 
@@ -509,7 +519,7 @@ message UnpackExampleResponse {}
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string title = 2;
+  string display_name = 2;
   bool force = 3;
 }
 
@@ -585,7 +595,7 @@ enum ResourceEvent {
   RESOURCE_EVENT_DELETE = 2;
 }
 
-message ModelSplit {
+message ModelPartition {
   string key = 1;
   google.protobuf.Struct data = 2;
   google.protobuf.Timestamp watermark = 3;
@@ -661,15 +671,17 @@ message GetExploreResponse {
   Resource metrics_view = 2;
 }
 
-message GetModelSplitsRequest {
+message GetModelPartitionsRequest {
   string instance_id = 1;
   string model = 2;
+  bool pending = 5;
+  bool errored = 6;
   uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 10000}];
   string page_token = 4;
 }
 
-message GetModelSplitsResponse {
-  repeated ModelSplit splits = 1;
+message GetModelPartitionsResponse {
+  repeated ModelPartition partitions = 1;
   string next_page_token = 2;
 }
 
@@ -818,4 +830,23 @@ message IssueDevJWTRequest {
 // Response message for RuntimeService.IssueDevJWT
 message IssueDevJWTResponse {
   string jwt = 1;
+}
+
+// Request message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.AnalyzeVariables
+message AnalyzeVariablesResponse {
+  repeated AnalyzedVariable variables = 1;
+}
+
+message AnalyzedVariable {
+  // Name of the variable.
+  string name = 1;
+  // Default value set for the variable in rill.yaml, if any.
+  string default_value = 2;
+  // List of resources that appear to use the connector.
+  repeated ResourceName used_by = 8;
 }

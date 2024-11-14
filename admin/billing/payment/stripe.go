@@ -42,11 +42,7 @@ func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Orga
 		return nil, err
 	}
 
-	return &Customer{
-		ID:    c.ID,
-		Name:  c.Name,
-		Email: c.Email,
-	}, nil
+	return getPaymentCustomerFromStripeCustomer(c), nil
 }
 
 func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
@@ -59,21 +55,12 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 		return nil, err
 	}
 
-	i := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
-		Customer: stripe.String(c.ID),
-	})
-
-	return &Customer{
-		ID:               c.ID,
-		Name:             c.Name,
-		Email:            c.Email,
-		HasPaymentMethod: i.Next(),
-	}, nil
+	return getPaymentCustomerFromStripeCustomer(c), nil
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
 	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
-	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
+	searchEnd := organization.CreatedOn.Add(501 * time.Minute)  // search 15 minutes after the org creation time
 	params := &stripe.CustomerListParams{
 		Email: stripe.String(billing.Email(organization)),
 		CreatedRange: &stripe.RangeQueryParams{
@@ -86,16 +73,7 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 	for i.Next() {
 		c := i.Customer()
 		if c.Name == organization.ID {
-			it := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
-				Customer: stripe.String(c.ID),
-			})
-
-			return &Customer{
-				ID:               c.ID,
-				Name:             c.Name,
-				Email:            c.Email,
-				HasPaymentMethod: it.Next(),
-			}, nil
+			return getPaymentCustomerFromStripeCustomer(c), nil
 		}
 	}
 
@@ -135,4 +113,19 @@ func (s *Stripe) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputi
 	}
 	sw := &stripeWebhook{stripe: s, jobs: jc}
 	return sw.handleWebhook
+}
+
+func getPaymentCustomerFromStripeCustomer(c *stripe.Customer) *Customer {
+	i := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
+		Customer: stripe.String(c.ID),
+	})
+
+	return &Customer{
+		ID:                 c.ID,
+		Name:               c.Name,
+		Email:              c.Email,
+		HasPaymentMethod:   i.Next(),
+		HasBillableAddress: c.Address != nil && c.Address.PostalCode != "",
+		TaxExempt:          c.Address != nil && c.Address.Country != "US" && c.Address.Country != "CA",
+	}
 }

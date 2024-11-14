@@ -6,7 +6,13 @@
   export let inTable = false;
   export let dark = false;
   export let customStyle = "";
-  export let value: number | undefined | null | NumberParts | PERC_DIFF;
+  export let value:
+    | string
+    | number
+    | undefined
+    | null
+    | NumberParts
+    | PERC_DIFF;
   export let tabularNumber = true;
   export let assembled = true;
 

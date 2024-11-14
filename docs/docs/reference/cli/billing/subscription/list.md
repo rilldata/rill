@@ -10,12 +10,6 @@ List subscription for an organization
 rill billing subscription list [flags]
 ```
 
-### Flags
-
-```
-      --org string   Organization Name
-```
-
 ### Global flags
 
 ```
@@ -23,6 +17,7 @@ rill billing subscription list [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

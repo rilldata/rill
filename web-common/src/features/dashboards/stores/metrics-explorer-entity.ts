@@ -1,11 +1,11 @@
-import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { type TDDState } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -113,14 +113,6 @@ export interface MetricsExplorerEntity {
    * user selected timezone, should default to "UTC" if no other value is set
    */
   selectedTimezone: string;
-
-  /**
-   * Search text state for dimension tables. This search text state
-   * is shared by both the dimension detail table AND the time
-   * detailed dimension table, so that the same filter will be
-   * applied when switching between those views.
-   */
-  dimensionSearchText?: string;
 
   /**
    * flag to show/hide time comparison based on user preference.

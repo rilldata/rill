@@ -13,7 +13,9 @@ It will show an error message if passed in.
   export let error: LineStatus | V1ParseError | undefined = undefined;
 </script>
 
-<div class="flex flex-col size-full bg-white">
+<div
+  class="flex flex-col size-full bg-white border rounded-[2px] overflow-hidden"
+>
   <div
     class="overflow-auto size-full border-white"
     class:border-b-hidden={error}

@@ -1,7 +1,7 @@
 import {
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
-  MeasureFilterEntry,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   MeasureFilterOperation,
@@ -12,7 +12,10 @@ import {
   createBinaryExpression,
   createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
 const TestCases: [

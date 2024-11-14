@@ -77,18 +77,14 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 			p.Typ = "VIEW"
 		}
 	}
-	if opts.Incremental || opts.SplitRun {
+	if opts.Incremental || opts.PartitionRun {
 		if p.Typ != "" && p.Typ != "TABLE" {
-			return fmt.Errorf("incremental or split models must be materialized")
+			return fmt.Errorf("incremental or partitioned models must be materialized")
 		}
 		p.Typ = "TABLE"
 	}
 	if p.Typ == "" {
 		p.Typ = "VIEW"
-	}
-
-	if p.Typ == "DICTIONARY" && p.Columns == "" {
-		return fmt.Errorf("model materialized as dictionary must specify columns")
 	}
 
 	switch p.IncrementalStrategy {
@@ -120,6 +116,8 @@ func (p *ModelOutputProperties) tblConfig() string {
 	// order_by
 	if p.OrderBy != "" {
 		fmt.Fprintf(&sb, " ORDER BY %s", p.OrderBy)
+	} else if p.PrimaryKey != "" {
+		fmt.Fprintf(&sb, " ORDER BY %s", p.PrimaryKey)
 	} else if engine == "MergeTree" {
 		// need ORDER BY for MergeTree
 		// it is optional for many other engines
@@ -217,9 +215,9 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	return c.DropTable(ctx, table.Name, table.View)
 }
 
-func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
 	if a.Table != b.Table {
-		return nil, fmt.Errorf("cannot merge split results that output to different table names (%q != %q)", a.Table, b.Table)
+		return nil, fmt.Errorf("cannot merge partitioned results that output to different table names (%q != %q)", a.Table, b.Table)
 	}
 	return a, nil
 }

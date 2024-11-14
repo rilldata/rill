@@ -13,7 +13,6 @@ type Provisioner interface {
 	Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error)
 	Deprovision(ctx context.Context, provisionID string) error
 	AwaitReady(ctx context.Context, provisionID string) error
-	Update(ctx context.Context, provisionID string, newVersion string) error
 	CheckCapacity(ctx context.Context) error
 	ValidateConfig(ctx context.Context, provisionID string) (bool, error)
 	Type() string

@@ -15,45 +15,25 @@ There could be a few reasons to have separate logic for sources, models, and das
 
 ## Default dev and prod environments
 
-Rill comes with a default `dev` and `prod` property defined, corresponding to Rill Developer and Rill Cloud respectively. Any environment specific YAML overrides or custom templated SQL logic can reference these environments without any additional configuration needed.
+Rill comes with default `dev` and `prod` properties defined, corresponding to Rill Developer and Rill Cloud respectively. You can use these keys to set environment-specific YAML overrides or SQL logic.
 
-:::tip Shortcut to specify dev and prod in YAML files
-
-For the built-in `dev` and `prod` environments **specifically**, Rill provides a shorthand where you can specify properties for these environments directly under `dev` / `prod` without first nesting it under a parent `env` key. For example, if you had the following `rill.yaml`:
-```yaml
-env:
-  dev:
-    sources:
-      path: s3://path/to/bucket/Y=2024/M=01/*.parquet
-  prod:
-    models:
-      materialize: true
-```
-
-This would be exactly equivalent to (within the same `rill.yaml`):
+For example, the following `rill.yaml` file explicitly sets the default materialization setting for models to `false` in development and `true` in production:
 ```yaml
 dev:
-  sources:
-    path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+  models:
+    materialize: false
+
 prod:
   models:
     materialize: true
 ```
 
-For other custom environments that you are defining manually, you will still need to pass them in using the standard environment YAML syntax:
-```yaml
-env:
-  custom_env:
-    property: value
-```
-:::
-
 ### Specifying a custom environment
 
-When using Rill Developer, you can specify a custom environment for your local instance (instead of defaulting to `dev`) by using the following command:
+When using Rill Developer, instead of defaulting to `dev`, you can run your project in production mode using the following command:
 
 ```bash
-rill start --env <name_of_environment>
+rill start --environment prod
 ```
 
 ## Specifying environment specific YAML overrides
@@ -64,26 +44,24 @@ Environment overrides can be applied to source properties in the [YAML configura
 type: source
 connector: s3
 path: s3://path/to/bucket/*.parquet
-env:
-  dev:
-    path: s3://path/to/bucket/Y=2024/M=01/*.parquet
+dev:
+  path: s3://path/to/bucket/Y=2024/M=01/*.parquet
 ```
 
 Similarly, if you wanted to set a project-wide default in `rill.yaml` where models are [materialized](/reference/project-files/models.md#model-materialization) only on Rill Cloud (i.e. `prod) and dashboards use a different default [theme](../dashboards/customize.md#changing-themes--colors) in production compared to locally, you could do this by:
 
 ```yaml
-env:
-  prod:
-    models:
-      materialize: true
-    dashboards:
-      theme: <name_of_theme>
+prod:
+  models:
+    materialize: true
+  explores:
+    theme: <name_of_theme>
 ```
 
 :::info Hierarchy of inheritance and property overrides
 
 As a general rule of thumb, properties that have been specified at a more _granular_ level will supercede or override higher level properties that have been inherited. Therefore, in order of inheritance, Rill will prioritize properties in the following order:
-1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
+1. Individual [source](/reference/project-files/sources.md)/[model](/reference/project-files/models.md)/[dashboard](/reference/project-files/explore-dashboards.md) object level properties (e.g. `source.yaml` or `dashboard.yaml`)
 2. [Environment](/docs/build/models/environments.md) level properties (e.g. a specific property that have been set for `dev`)
 3. [Project-wide defaults](/reference/project-files/rill-yaml.md#project-wide-defaults) for a specific property and resource type
 

@@ -372,6 +372,21 @@ export class InstanceHealth extends Message<InstanceHealth> {
    */
   repoError = "";
 
+  /**
+   * @generated from field: map<string, string> metrics_view_errors = 4;
+   */
+  metricsViewErrors: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: int32 parse_error_count = 5;
+   */
+  parseErrorCount = 0;
+
+  /**
+   * @generated from field: int32 reconcile_error_count = 6;
+   */
+  reconcileErrorCount = 0;
+
   constructor(data?: PartialMessage<InstanceHealth>) {
     super();
     proto3.util.initPartial(data, this);
@@ -383,6 +398,9 @@ export class InstanceHealth extends Message<InstanceHealth> {
     { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "metrics_view_errors", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "parse_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "reconcile_error_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {
@@ -1811,9 +1829,9 @@ export class Example extends Message<Example> {
   name = "";
 
   /**
-   * @generated from field: string title = 2;
+   * @generated from field: string display_name = 2;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: string description = 3;
@@ -1829,7 +1847,7 @@ export class Example extends Message<Example> {
   static readonly typeName = "rill.runtime.v1.Example";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -2018,9 +2036,9 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string title = 2;
+   * @generated from field: string display_name = 2;
    */
-  title = "";
+  displayName = "";
 
   /**
    * @generated from field: bool force = 3;
@@ -2036,7 +2054,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   static readonly typeName = "rill.runtime.v1.UnpackEmptyRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -2466,9 +2484,9 @@ export class Log extends Message<Log> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ModelSplit
+ * @generated from message rill.runtime.v1.ModelPartition
  */
-export class ModelSplit extends Message<ModelSplit> {
+export class ModelPartition extends Message<ModelPartition> {
   /**
    * @generated from field: string key = 1;
    */
@@ -2499,13 +2517,13 @@ export class ModelSplit extends Message<ModelSplit> {
    */
   elapsedMs = 0;
 
-  constructor(data?: PartialMessage<ModelSplit>) {
+  constructor(data?: PartialMessage<ModelPartition>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ModelSplit";
+  static readonly typeName = "rill.runtime.v1.ModelPartition";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "data", kind: "message", T: Struct },
@@ -2515,20 +2533,20 @@ export class ModelSplit extends Message<ModelSplit> {
     { no: 6, name: "elapsed_ms", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSplit {
-    return new ModelSplit().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelPartition {
+    return new ModelPartition().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelSplit {
-    return new ModelSplit().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ModelPartition {
+    return new ModelPartition().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelSplit {
-    return new ModelSplit().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ModelPartition {
+    return new ModelPartition().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ModelSplit | PlainMessage<ModelSplit> | undefined, b: ModelSplit | PlainMessage<ModelSplit> | undefined): boolean {
-    return proto3.util.equals(ModelSplit, a, b);
+  static equals(a: ModelPartition | PlainMessage<ModelPartition> | undefined, b: ModelPartition | PlainMessage<ModelPartition> | undefined): boolean {
+    return proto3.util.equals(ModelPartition, a, b);
   }
 }
 
@@ -3079,9 +3097,9 @@ export class GetExploreResponse extends Message<GetExploreResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.GetModelSplitsRequest
+ * @generated from message rill.runtime.v1.GetModelPartitionsRequest
  */
-export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
+export class GetModelPartitionsRequest extends Message<GetModelPartitionsRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -3093,6 +3111,16 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
   model = "";
 
   /**
+   * @generated from field: bool pending = 5;
+   */
+  pending = false;
+
+  /**
+   * @generated from field: bool errored = 6;
+   */
+  errored = false;
+
+  /**
    * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
@@ -3102,77 +3130,79 @@ export class GetModelSplitsRequest extends Message<GetModelSplitsRequest> {
    */
   pageToken = "";
 
-  constructor(data?: PartialMessage<GetModelSplitsRequest>) {
+  constructor(data?: PartialMessage<GetModelPartitionsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GetModelSplitsRequest";
+  static readonly typeName = "rill.runtime.v1.GetModelPartitionsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "pending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "errored", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsRequest {
-    return new GetModelSplitsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelPartitionsRequest {
+    return new GetModelPartitionsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined, b: GetModelSplitsRequest | PlainMessage<GetModelSplitsRequest> | undefined): boolean {
-    return proto3.util.equals(GetModelSplitsRequest, a, b);
+  static equals(a: GetModelPartitionsRequest | PlainMessage<GetModelPartitionsRequest> | undefined, b: GetModelPartitionsRequest | PlainMessage<GetModelPartitionsRequest> | undefined): boolean {
+    return proto3.util.equals(GetModelPartitionsRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.GetModelSplitsResponse
+ * @generated from message rill.runtime.v1.GetModelPartitionsResponse
  */
-export class GetModelSplitsResponse extends Message<GetModelSplitsResponse> {
+export class GetModelPartitionsResponse extends Message<GetModelPartitionsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.ModelSplit splits = 1;
+   * @generated from field: repeated rill.runtime.v1.ModelPartition partitions = 1;
    */
-  splits: ModelSplit[] = [];
+  partitions: ModelPartition[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<GetModelSplitsResponse>) {
+  constructor(data?: PartialMessage<GetModelPartitionsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GetModelSplitsResponse";
+  static readonly typeName = "rill.runtime.v1.GetModelPartitionsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "splits", kind: "message", T: ModelSplit, repeated: true },
+    { no: 1, name: "partitions", kind: "message", T: ModelPartition, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelSplitsResponse {
-    return new GetModelSplitsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetModelPartitionsResponse {
+    return new GetModelPartitionsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined, b: GetModelSplitsResponse | PlainMessage<GetModelSplitsResponse> | undefined): boolean {
-    return proto3.util.equals(GetModelSplitsResponse, a, b);
+  static equals(a: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined, b: GetModelPartitionsResponse | PlainMessage<GetModelPartitionsResponse> | undefined): boolean {
+    return proto3.util.equals(GetModelPartitionsResponse, a, b);
   }
 }
 
@@ -4024,6 +4054,139 @@ export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
 
   static equals(a: IssueDevJWTResponse | PlainMessage<IssueDevJWTResponse> | undefined, b: IssueDevJWTResponse | PlainMessage<IssueDevJWTResponse> | undefined): boolean {
     return proto3.util.equals(IssueDevJWTResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.AnalyzeVariables
+ *
+ * @generated from message rill.runtime.v1.AnalyzeVariablesRequest
+ */
+export class AnalyzeVariablesRequest extends Message<AnalyzeVariablesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<AnalyzeVariablesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzeVariablesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzeVariablesRequest {
+    return new AnalyzeVariablesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzeVariablesRequest | PlainMessage<AnalyzeVariablesRequest> | undefined, b: AnalyzeVariablesRequest | PlainMessage<AnalyzeVariablesRequest> | undefined): boolean {
+    return proto3.util.equals(AnalyzeVariablesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.AnalyzeVariables
+ *
+ * @generated from message rill.runtime.v1.AnalyzeVariablesResponse
+ */
+export class AnalyzeVariablesResponse extends Message<AnalyzeVariablesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.AnalyzedVariable variables = 1;
+   */
+  variables: AnalyzedVariable[] = [];
+
+  constructor(data?: PartialMessage<AnalyzeVariablesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzeVariablesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables", kind: "message", T: AnalyzedVariable, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzeVariablesResponse {
+    return new AnalyzeVariablesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzeVariablesResponse | PlainMessage<AnalyzeVariablesResponse> | undefined, b: AnalyzeVariablesResponse | PlainMessage<AnalyzeVariablesResponse> | undefined): boolean {
+    return proto3.util.equals(AnalyzeVariablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AnalyzedVariable
+ */
+export class AnalyzedVariable extends Message<AnalyzedVariable> {
+  /**
+   * Name of the variable.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Default value set for the variable in rill.yaml, if any.
+   *
+   * @generated from field: string default_value = 2;
+   */
+  defaultValue = "";
+
+  /**
+   * List of resources that appear to use the connector.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResourceName used_by = 8;
+   */
+  usedBy: ResourceName[] = [];
+
+  constructor(data?: PartialMessage<AnalyzedVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AnalyzedVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "default_value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AnalyzedVariable {
+    return new AnalyzedVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AnalyzedVariable | PlainMessage<AnalyzedVariable> | undefined, b: AnalyzedVariable | PlainMessage<AnalyzedVariable> | undefined): boolean {
+    return proto3.util.equals(AnalyzedVariable, a, b);
   }
 }
 

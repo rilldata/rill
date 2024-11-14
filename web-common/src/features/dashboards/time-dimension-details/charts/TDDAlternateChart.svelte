@@ -1,18 +1,24 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
+  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
+  import {
+    resolveSignalField,
+    resolveSignalIntervalField,
+    resolveSignalTimeField,
+  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import type { TimeSeriesDatum } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import {
-    MetricsViewSpecMeasureV2,
+    type MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onDestroy } from "svelte";
-  import { VegaSpec, View } from "svelte-vega";
-  import { TopLevelSpec } from "vega-lite";
-  import { TDDAlternateCharts } from "../types";
+  import type { VegaSpec, View } from "svelte-vega";
+  import type { TopLevelSpec } from "vega-lite";
+  import type { TDDAlternateCharts } from "../types";
   import { patchSpecForTDD } from "./patch-vega-spec";
   import { tddTooltipFormatter } from "./tdd-tooltip-formatter";
   import {
@@ -22,19 +28,13 @@
     updateChartOnTableCellHover,
   } from "./utils";
   import { VegaSignalManager } from "./vega-signal-manager";
-  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
-  import {
-    resolveSignalField,
-    resolveSignalTimeField,
-    resolveSignalIntervalField,
-  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
 
   export let totalsData: TimeSeriesDatum[];
   export let dimensionData: DimensionDataItem[];
   export let expandedMeasureName: string;
   export let chartType: TDDAlternateCharts;
-  export let xMin: Date;
-  export let xMax: Date;
+  export let xMin: Date | undefined;
+  export let xMax: Date | undefined;
   export let timeGrain: V1TimeGrain | undefined;
   export let isTimeComparison: boolean;
   export let isScrubbing: boolean;
@@ -56,7 +56,7 @@
   $: expandedMeasureLabel = $measureLabel(expandedMeasureName);
   $: measure = $getMeasureByName(expandedMeasureName);
   $: comparedDimensionLabel =
-    $comparisonDimension?.label || $comparisonDimension?.name;
+    $comparisonDimension?.displayName || $comparisonDimension?.name;
 
   $: hoveredTime = $tableInteractionStore.time;
   $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;

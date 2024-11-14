@@ -2,6 +2,8 @@ package admin
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -134,6 +136,33 @@ func (h *Handle) Stat(ctx context.Context, filePath string) (*drivers.RepoObject
 		LastUpdated: info.ModTime(),
 		IsDir:       info.IsDir(),
 	}, nil
+}
+
+func (h *Handle) FileHash(ctx context.Context, paths []string) (string, error) {
+	err := h.rlockEnsureCloned(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer h.repoMu.RUnlock()
+
+	hasher := md5.New()
+	for _, path := range paths {
+		path = filepath.Join(h.projPath, path)
+		file, err := os.Open(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return "", err
+		}
+
+		if _, err := io.Copy(hasher, file); err != nil {
+			file.Close()
+			return "", err
+		}
+		file.Close()
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func (h *Handle) Put(ctx context.Context, filePath string, reader io.Reader) error {

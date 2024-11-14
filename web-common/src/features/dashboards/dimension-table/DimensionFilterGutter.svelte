@@ -7,26 +7,19 @@
     COMPARIONS_COLORS,
     SELECTED_NOT_COMPARED_COLOR,
   } from "@rilldata/web-common/features/dashboards/config";
-
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import DimensionCompareMenu from "@rilldata/web-common/features/dashboards/leaderboard/DimensionCompareMenu.svelte";
   import { getContext } from "svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let totalHeight: number;
   export let virtualRowItems;
   export let selectedIndex: number[] = [];
   export let excludeMode = false;
   export let isBeingCompared = false;
+  export let dimensionName: string;
 
-  const {
-    selectors: {
-      dimensions: { dimensionTableDimName },
-    },
-  } = getStateManagers();
-
-  function getColor(i) {
+  function getColor(i: number) {
     const posInSelection = selectedIndex.indexOf(i);
     if (posInSelection >= 7) return SELECTED_NOT_COMPARED_COLOR;
     return COMPARIONS_COLORS[posInSelection];
@@ -44,7 +37,7 @@
     style:height="{config.columnHeaderHeight}px"
     class="sticky left-0 top-0 surface z-40 flex items-center"
   >
-    <DimensionCompareMenu dimensionName={$dimensionTableDimName} />
+    <DimensionCompareMenu {dimensionName} />
   </div>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const isSelected = selectedIndex.includes(row.index)}

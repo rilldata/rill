@@ -36,7 +36,7 @@ func (w *PaymentMethodAddedWorker) Work(ctx context.Context, job *river.Job[Paym
 	}
 
 	// check for no payment method billing error
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoPaymentMethod)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNoPaymentMethod)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -128,7 +128,7 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 	}
 
 	// look for no billable address billing error and remove it
-	be, err := w.admin.DB.FindBillingIssueByType(ctx, org.ID, database.BillingIssueTypeNoBillableAddress)
+	be, err := w.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNoBillableAddress)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return fmt.Errorf("failed to find billing errors: %w", err)
@@ -139,6 +139,24 @@ func (w *CustomerAddressUpdatedWorker) Work(ctx context.Context, job *river.Job[
 		err = w.admin.DB.DeleteBillingIssue(ctx, be.ID)
 		if err != nil {
 			return fmt.Errorf("failed to delete billing error: %w", err)
+		}
+	}
+
+	// fetch the customer again to get the latest address status
+	c, err := w.admin.PaymentProvider.FindCustomer(ctx, job.Args.PaymentCustomerID)
+	if err != nil {
+		return fmt.Errorf("failed to find customer: %w", err)
+	}
+
+	if c.TaxExempt {
+		err = w.admin.Biller.MarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to set organization tax exempt: %w", err)
+		}
+	} else {
+		err = w.admin.Biller.UnmarkCustomerTaxExempt(ctx, org.BillingCustomerID)
+		if err != nil {
+			return fmt.Errorf("failed to unset organization tax exempt: %w", err)
 		}
 	}
 

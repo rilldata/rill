@@ -4,11 +4,13 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import {
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceAnalyzeConnectorsQueryKey,
+  getRuntimeServiceGetExploreQueryKey,
+  getRuntimeServiceGetModelPartitionsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1Resource,
+  type V1Resource,
   V1ResourceEvent,
-  V1WatchResourcesResponse,
+  type V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateComponentData,
@@ -44,9 +46,6 @@ export class WatchResourcesClient {
     if (!res?.event || !res?.name || !res?.name?.name || !res?.name?.kind) {
       return;
     }
-
-    // temporarily ignore Explore. a future PR will refactor to incorporate it
-    if (res.name.kind === ResourceKind.Explore) return;
 
     // Get the previous resource from the query cache
     const previousResource = queryClient.getQueryData<{
@@ -182,6 +181,16 @@ export class WatchResourcesClient {
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
 
+            // Invalidate the model partitions query
+            if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
+              void queryClient.invalidateQueries(
+                getRuntimeServiceGetModelPartitionsQueryKey(
+                  this.instanceId,
+                  res.name.name,
+                ),
+              );
+            }
+
             // Invalidate profiling queries
             const failed = !!res.resource.meta?.reconcileError;
             void invalidateProfilingQueries(queryClient, tableName, failed);
@@ -195,6 +204,26 @@ export class WatchResourcesClient {
             void invalidateMetricsViewData(queryClient, res.name.name, failed);
 
             // Done
+            return;
+          }
+
+          case ResourceKind.Explore: {
+            const failed = !!res.resource.meta?.reconcileError;
+            if (res.resource.explore?.state?.validSpec?.metricsView) {
+              void invalidateMetricsViewData(
+                queryClient,
+                res.resource.explore.state.validSpec.metricsView,
+                failed,
+              );
+            }
+
+            queryClient
+              .invalidateQueries(
+                getRuntimeServiceGetExploreQueryKey(this.instanceId, {
+                  name: res.name.name,
+                }),
+              )
+              .catch(console.error);
             return;
           }
 

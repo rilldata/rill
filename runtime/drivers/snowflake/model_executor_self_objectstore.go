@@ -2,10 +2,10 @@ package snowflake
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/url"
 
+	"github.com/XSAM/otelsql"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -70,10 +70,10 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 	} else if e.c.configProperties.DSN != "" { // get from driver configs
 		dsn = e.c.configProperties.DSN
 	} else {
-		return "", fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
+		return "", fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--env connector.snowflake.dsn=...' to 'rill start'")
 	}
 
-	db, err := sql.Open("snowflake", dsn)
+	db, err := otelsql.Open("snowflake", dsn)
 	if err != nil {
 		return "", err
 	}

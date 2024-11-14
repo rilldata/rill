@@ -33,7 +33,7 @@ func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !cmd.Flags().Changed("project") && len(args) == 2 && ch.Interactive {
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
@@ -111,8 +111,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindTheme
 	case "component":
 		return runtime.ResourceKindComponent
-	case "dashboard":
-		return runtime.ResourceKindDashboard
+	case "canvas":
+		return runtime.ResourceKindCanvas
 	case "api":
 		return runtime.ResourceKindAPI
 	case "connector":

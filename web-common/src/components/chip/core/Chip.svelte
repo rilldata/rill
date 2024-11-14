@@ -1,138 +1,171 @@
-<!-- Chips have two areas:
-  = left (icon) – used primarily for icons, action buttons, and small images
-  - center (text) – used primarily for label information
--->
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import { slideRight } from "../../../lib/transitions";
-  import { defaultChipColors } from "../chip-types";
-  import RemoveChipButton from "./RemoveChipButton.svelte";
+  import type { Writable } from "svelte/store";
+  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import CancelCircle from "../../icons/CancelCircle.svelte";
+  import TooltipContent from "../../tooltip/TooltipContent.svelte";
+  import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
 
   export let removable = false;
   export let active = false;
-  export let outline = false;
   export let readOnly = false;
+  export let type: "measure" | "dimension" | "time" | "special" = "dimension";
+  export let exclude = false;
   export let grab = false;
-  export let slideDuration = 150;
-
-  /** chip style props */
-  export let extraRounded = true;
-  export let extraPadding = true;
-
-  /** color elements elements */
-  export let bgBaseClass = defaultChipColors.bgBaseClass;
-  export let bgHoverClass = defaultChipColors.bgHoverClass;
-  export let textClass = defaultChipColors.textClass;
-  export let bgActiveClass = defaultChipColors.bgActiveClass;
-  export let outlineBaseClass = defaultChipColors.outlineBaseClass;
-  export let outlineHoverClass = defaultChipColors.outlineHoverClass;
-  export let outlineActiveClass = defaultChipColors.outlineActiveClass;
-
-  /** if removable is true, these props control the tooltip positioning */
-  export let supressTooltip = false;
-  export let removeButtonTooltipLocation = "bottom";
-  export let removeButtonTooltipAlignment = "start";
-  export let removeButtonTooltipDistance = 12;
-
-  export let label: string | undefined = undefined;
-
+  export let compact = false;
   export let builders: Builder[] = [];
-
-  /** the maximum width for the tooltip of the main chip */
+  export let caret = builders.length > 0;
+  export let slideDuration = 150;
+  export let supressTooltip = false;
+  export let label: string | undefined = undefined;
+  export let removeTooltipText: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
+
+  const tooltipSuppression = getContext<Writable<boolean>>(
+    "rill:app:childRequestedTooltipSuppression",
+  );
+
+  function focusOnRemove() {
+    if ($tooltipSuppression) tooltipSuppression.set(true);
+  }
+  function blurOnRemove() {
+    if ($tooltipSuppression) tooltipSuppression.set(false);
+  }
 </script>
 
 <div in:slideRight={{ duration: slideDuration }}>
-  {#if readOnly}
-    <div
-      class="
-      grid gap-x-2 items-center
-      py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'}
-      {textClass}
-      {active ? bgActiveClass : bgBaseClass}
-      {outline ? outlineBaseClass : ''}
-      {active && outline ? outlineActiveClass : ''} 
-      "
-      style:grid-template-columns="{$$slots.icon || removable
-        ? "max-content"
-        : ""}
-      {$$slots.body ? "max-content" : ""}"
-      aria-label={label}
-    >
-      <!-- body -->
-      {#if $$slots.body}
-        <div>
-          <slot name="body" />
-        </div>
-      {/if}
-    </div>
-  {:else}
-    <div
-      class="w-fit
-    grid items-center
-      py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'} cursor-pointer
-    {textClass}
-    {bgHoverClass} 
-    {active ? bgActiveClass : bgBaseClass}
-    {outline ? outlineBaseClass + ' ' + outlineHoverClass : ''}
-    {active && outline ? outlineActiveClass : ''} 
-  "
-      style:grid-template-columns="{$$slots.icon || removable
-        ? "max-content"
-        : ""}
-      {$$slots.body ? "max-content" : ""}"
-      aria-label={label}
-      {...getAttrs(builders)}
-      use:builderActions={{ builders }}
-    >
-      <!-- a cancelable element, e.g. filter buttons -->
-      {#if removable}
-        <RemoveChipButton
-          {textClass}
-          tooltipLocation={removeButtonTooltipLocation}
-          tooltipAlignment={removeButtonTooltipAlignment}
-          tooltipDistance={removeButtonTooltipDistance}
-          {supressTooltip}
-          on:remove
-        >
-          <svelte:fragment slot="remove-tooltip">
-            {#if $$slots["remove-tooltip"]}
-              <slot name="remove-tooltip" />
-            {/if}
-          </svelte:fragment>
-        </RemoveChipButton>
-      {:else if $$slots.icon}
-        <!-- if there is a left icon, render it here -->
+  <div
+    class="chip {type}"
+    class:active
+    class:grab
+    class:exclude
+    class:compact
+    class:pointer-events-none={readOnly}
+    aria-label={label}
+    {...getAttrs(builders)}
+    use:builderActions={{ builders }}
+  >
+    {#if removable && !readOnly}
+      <Tooltip
+        alignment="start"
+        distance={12}
+        suppress={supressTooltip || !removeTooltipText}
+      >
         <button
-          on:click|stopPropagation={() => {
-            dispatch("click-icon");
-          }}
+          class="text-inherit mr-0.5"
+          aria-label="Remove"
+          on:mouseover={focusOnRemove}
+          on:focus={focusOnRemove}
+          on:mouseleave={blurOnRemove}
+          on:blur={blurOnRemove}
+          on:click|stopPropagation={() => dispatch("remove")}
         >
-          <slot name="icon" />
+          <CancelCircle size="16px" />
         </button>
-      {/if}
-      <!-- body -->
-      {#if $$slots.body}
-        <button
-          on:click
-          on:mousedown
-          class="px-2 pr-{extraPadding
-            ? '4'
-            : '2'} text-inherit w-full select-none"
-          class:grab
-          aria-label={label}
-        >
-          <slot name="body" />
-        </button>
-      {/if}
-    </div>
-  {/if}
+
+        <TooltipContent maxWidth="300px" slot="tooltip-content">
+          {removeTooltipText}
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+
+    {#if $$slots.body}
+      <button
+        on:click
+        on:mousedown
+        aria-label={label}
+        class="text-inherit w-full select-none flex items-center gap-x-1 px-0.5"
+      >
+        <slot name="body" />
+
+        {#if caret}
+          <span class="transition-transform -mr-0.5" class:-rotate-180={active}>
+            <CaretDownIcon size="10px" />
+          </span>
+        {/if}
+      </button>
+    {/if}
+  </div>
 </div>
 
 <style lang="postcss">
   .grab {
     @apply cursor-grab;
+  }
+
+  .chip {
+    @apply flex flex-none gap-x-1;
+    @apply items-center justify-center;
+    @apply px-2 py-[3px] border w-fit;
+  }
+
+  .dimension {
+    @apply rounded-2xl;
+    @apply bg-primary-50 border-primary-200 text-primary-800;
+  }
+
+  .dimension:hover,
+  .dimension:active,
+  .dimension.active {
+    @apply bg-primary-100;
+  }
+
+  .dimension:active,
+  .dimension.active {
+    @apply border-primary-400;
+  }
+
+  .measure {
+    @apply rounded-sm;
+    @apply bg-secondary-50 border-secondary-200 text-secondary-800;
+  }
+
+  .measure:hover,
+  .measure:active,
+  .measure.active {
+    @apply bg-secondary-100;
+  }
+
+  .measure:active,
+  .measure.active {
+    @apply border-secondary-400;
+  }
+
+  .exclude {
+    @apply bg-gray-50 border-gray-200 text-gray-600;
+  }
+
+  .exclude:hover,
+  .exclude:active,
+  .exclude.active {
+    @apply bg-gray-100;
+  }
+
+  .exclude:active,
+  .exclude.active {
+    @apply border-gray-400;
+  }
+
+  .time {
+    @apply rounded-2xl;
+    @apply bg-white border-slate-200 text-slate-800;
+  }
+
+  .time:hover,
+  .time.active,
+  .time:active {
+    @apply bg-slate-50;
+  }
+
+  .time.active,
+  .time:active {
+    @apply border-slate-400;
+  }
+
+  .compact {
+    @apply py-0;
   }
 </style>

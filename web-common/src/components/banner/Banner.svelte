@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BannerMessage } from "../../lib/event-bus/events";
+  import type { BannerMessage } from "../../lib/event-bus/events";
   import AlertCircleIcon from "../icons/AlertCircleOutline.svelte";
   import CheckCircleOutline from "../icons/CheckCircleOutline.svelte";
   import LoadingCircleOutline from "../icons/LoadingCircleOutline.svelte";
@@ -14,7 +14,13 @@
     loading: LoadingCircleOutline,
   };
 
-  function dummyClickHandler() {}
+  let loading = false;
+  async function clickHandler() {
+    if (!banner?.cta?.onClick) return;
+    loading = true;
+    await banner.cta.onClick();
+    loading = false;
+  }
 </script>
 
 <header class="{banner.type} app-banner">
@@ -29,14 +35,16 @@
     {/if}
     {#if banner.cta}
       {#if banner.cta.type === "link"}
-        <a href={banner.cta.url} target={banner.cta.target} class="banner-cta">
+        <a
+          href={banner.cta.url}
+          target={banner.cta.target}
+          on:click={clickHandler}
+          class="banner-cta"
+        >
           {banner.cta.text}
         </a>
       {:else if banner.cta.type === "button"}
-        <button
-          on:click={banner.cta.onClick ?? dummyClickHandler}
-          class="banner-cta"
-        >
+        <button on:click={clickHandler} class="banner-cta" disabled={loading}>
           {banner.cta.text}
         </button>
       {/if}
@@ -67,7 +75,7 @@
   }
 
   .banner-cta {
-    @apply text-primary-600 cursor-pointer;
+    @apply text-primary-600 cursor-pointer font-medium;
   }
 
   .banner-message :global(a:hover) {

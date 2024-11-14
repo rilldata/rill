@@ -5,7 +5,7 @@ import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
-  RelativeTimeTransformation,
+  type RelativeTimeTransformation,
   TimeComparisonOption,
   TimeOffsetType,
   TimeRangePreset,

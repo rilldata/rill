@@ -1,11 +1,12 @@
-import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { viteSingleFile } from "vite-plugin-singlefile";
 import dns from "dns";
-import type { UserConfig } from "vite";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
-const config: UserConfig = {
+export default defineConfig({
   resolve: {
     alias: {
       "@rilldata/web-auth": "/src",
@@ -14,11 +15,12 @@ const config: UserConfig = {
       "@rilldata/web-local": "/../web-local/src",
     },
   },
+  plugins: [svelte(), viteSingleFile({ removeViteModuleLoader: true })],
   server: {
     port: 3000,
     strictPort: true,
   },
-  plugins: [sveltekit()],
-};
-
-export default config;
+  build: {
+    target: "es2019",
+  },
+});

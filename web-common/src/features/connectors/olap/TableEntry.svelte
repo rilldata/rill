@@ -12,6 +12,7 @@
     makeFullyQualifiedTableName,
     makeTablePreviewHref,
   } from "./olap-config";
+  import type { ConnectorExplorerStore } from "../connector-explorer-store";
 
   export let instanceId: string;
   export let driver: string;
@@ -20,9 +21,14 @@
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
   export let table: string;
   export let hasUnsupportedDataTypes: boolean;
+  export let store: ConnectorExplorerStore;
 
   let contextMenuOpen = false;
-  let showSchema = false;
+
+  $: expandedStore = store.getItem(connector, database, databaseSchema, table);
+  $: showSchema = $expandedStore;
+
+  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
@@ -38,25 +44,47 @@
     databaseSchema,
     table,
   );
+
   $: open = $page.url.pathname === href;
+
+  $: element = allowNavigateToTable ? "a" : "button";
 </script>
 
 <li aria-label={tableId} class="table-entry group" class:open>
-  <div class="table-entry-header {database ? 'pl-[58px]' : 'pl-[40px]'}">
-    <button on:click={() => (showSchema = !showSchema)}>
-      <CaretDownIcon
-        className="transform transition-transform text-gray-400 {showSchema
-          ? 'rotate-0'
-          : '-rotate-90'}"
-        size="14px"
-      />
-    </button>
-    <a class="clickable-text" {href}>
+  <div
+    class:pl-[58px]={database || !allowShowSchema}
+    class="table-entry-header pl-10"
+  >
+    {#if allowShowSchema}
+      <button
+        on:click={() => {
+          store.toggleItem(connector, database, databaseSchema, table);
+        }}
+      >
+        <CaretDownIcon
+          className="flex-none transform transition-transform text-gray-400 {!showSchema &&
+            '-rotate-90'}"
+          size="14px"
+        />
+      </button>
+    {/if}
+
+    <svelte:element
+      this={element}
+      class="clickable-text"
+      {...allowNavigateToTable ? { href } : {}}
+      role="menuitem"
+      tabindex="0"
+      on:click={() => {
+        store.toggleItem(connector, database, databaseSchema, table);
+      }}
+    >
       <TableIcon size="14px" className="shrink-0 text-gray-400" />
       <span class="truncate">
         {table}
       </span>
-    </a>
+    </svelte:element>
+
     {#if hasUnsupportedDataTypes}
       <UnsupportedTypesIndicator
         {instanceId}
@@ -66,30 +94,33 @@
         {table}
       />
     {/if}
-    <DropdownMenu.Root bind:open={contextMenuOpen}>
-      <DropdownMenu.Trigger asChild let:builder>
-        <ContextButton
-          id="more-actions-{tableId}"
-          tooltipText="More actions"
-          label="{tableId} actions menu trigger"
-          builders={[builder]}
-          suppressTooltip={contextMenuOpen}
+
+    {#if allowContextMenu}
+      <DropdownMenu.Root bind:open={contextMenuOpen}>
+        <DropdownMenu.Trigger asChild let:builder>
+          <ContextButton
+            id="more-actions-{tableId}"
+            tooltipText="More actions"
+            label="{tableId} actions menu trigger"
+            builders={[builder]}
+            suppressTooltip={contextMenuOpen}
+          >
+            <MoreHorizontal />
+          </ContextButton>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content
+          class="border-none bg-gray-800 text-white min-w-60"
+          align="start"
+          side="right"
+          sideOffset={16}
         >
-          <MoreHorizontal />
-        </ContextButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content
-        class="border-none bg-gray-800 text-white min-w-60"
-        align="start"
-        side="right"
-        sideOffset={16}
-      >
-        <TableMenuItems {connector} {database} {databaseSchema} {table} />
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+          <TableMenuItems {connector} {database} {databaseSchema} {table} />
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    {/if}
   </div>
 
-  {#if showSchema}
+  {#if allowShowSchema && showSchema}
     <TableSchema {connector} {database} {databaseSchema} {table} />
   {/if}
 </li>
@@ -116,5 +147,9 @@
   .clickable-text {
     @apply flex grow items-center gap-x-1;
     @apply text-gray-900 truncate;
+  }
+
+  .selected:hover {
+    @apply bg-slate-200;
   }
 </style>

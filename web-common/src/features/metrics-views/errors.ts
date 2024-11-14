@@ -21,7 +21,6 @@ export enum SourceModelValidationStatus {
 export enum ConfigErrors {
   SourceNotSelected = "metrics view source not selected",
   SourceNotFound = "metrics view source not found",
-  SouceNotSelected = "metrics view source not selected",
   TimestampNotSelected = "metrics view timestamp not selected",
   TimestampNotFound = "metrics view selected timestamp not found",
   MissingDimension = "at least one dimension should be present",
@@ -30,14 +29,17 @@ export enum ConfigErrors {
   InvalidTimeGrainForSmallest = "invalid time grain",
 }
 
-export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
+export function runtimeErrorToLine(
+  message: string | undefined,
+  yaml: string,
+): LineStatus {
   const lines = yaml.split("\n");
-  if (message === ConfigErrors.SouceNotSelected) {
+  if (message === ConfigErrors.SourceNotSelected) {
     /** if this is undefined, then the field isn't here either. */
     const line = lines.findIndex((line) => line.startsWith("model: "));
     return { line: line + 1, message, level: "error" };
   }
-  if (message.startsWith(ConfigErrors.InvalidTimeGrainForSmallest)) {
+  if (message?.startsWith(ConfigErrors.InvalidTimeGrainForSmallest)) {
     const line = lines.findIndex((line) =>
       line.startsWith("smallest_time_grain:"),
     );
@@ -55,11 +57,11 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
     const line = lines.findIndex((line) => line.startsWith("dimensions:"));
     return { line: line + 1, message, level: "error" };
   }
-  if (message.startsWith("yaml: line")) {
+  if (message?.startsWith("yaml: line")) {
     const line = parseInt(message.split("yaml: line ")[1].split(":")[0]);
     return { line: line, message, level: "error" };
   }
-  return { line: null, message, level: "error" };
+  return { line: 0, message, level: "error" };
 }
 
 // TODO: double check error
@@ -73,7 +75,7 @@ export function mapParseErrorsToLines(
       if (error.startLocation) {
         // if line is provided, no need to parse
         // TODO: check if we need to strip anything
-        return {
+        return <LineStatus>{
           line: error.startLocation.line,
           message: error.message,
           level: "error",

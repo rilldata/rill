@@ -40,4 +40,5 @@ func TestGenerateMetricsView(t *testing.T) {
 
 	require.Contains(t, data, "model: ad_bids")
 	require.Contains(t, data, "measures:")
+	require.Contains(t, data, "format_preset: humanize")
 }

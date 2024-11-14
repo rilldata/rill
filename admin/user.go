@@ -27,6 +27,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			GithubUsername:      user.GithubUsername,
 			GithubRefreshToken:  user.GithubRefreshToken,
 			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+			QuotaTrialOrgs:      user.QuotaTrialOrgs,
 			PreferenceTimeZone:  user.PreferenceTimeZone,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
@@ -61,6 +62,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		DisplayName:         name,
 		PhotoURL:            photoURL,
 		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
+		QuotaTrialOrgs:      database.DefaultQuotaTrialOrgs,
 		Superuser:           isFirstUser,
 	}
 
@@ -226,6 +228,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		BillingEmail:                        email,
 		BillingCustomerID:                   "", // Populated later
 		PaymentCustomerID:                   "", // Populated later
+		CreatedByUserID:                     &userID,
 	})
 	if err != nil {
 		return nil, err
@@ -243,14 +246,27 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
-	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
-	updatedOrg, _, err := s.InitOrganizationBilling(ctx, org)
+	// raise never subscribed billing issue in sync to prevent race condition where first project is deployed before issue is raised and thus start trial job not submitted
+	if s.Biller.Name() != "noop" {
+		_, err := s.DB.UpsertBillingIssue(ctx, &database.UpsertBillingIssueOptions{
+			OrgID:     org.ID,
+			Type:      database.BillingIssueTypeNeverSubscribed,
+			Metadata:  database.BillingIssueMetadataNeverSubscribed{},
+			EventTime: org.CreatedOn,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to upsert billing error: %w", err)
+		}
+	}
+
+	// Submit job to init org billing // TODO modify river client to allow job submission as part of transaction
+	_, err = s.Jobs.InitOrgBilling(ctx, org.ID)
 	if err != nil {
-		s.Logger.Error("failed to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
+		s.Logger.Named("billing").Error("failed to submit job to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
 		return org, nil
 	}
 
-	return updatedOrg, nil
+	return org, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {

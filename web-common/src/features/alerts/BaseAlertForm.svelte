@@ -5,7 +5,7 @@
     generateAlertName,
     getTouched,
   } from "@rilldata/web-common/features/alerts/utils";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { X } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
@@ -15,9 +15,9 @@
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
   import {
-    type AlertFormValues,
-    checkIsTabValid,
     FieldsByTab,
+    checkIsTabValid,
+    type AlertFormValues,
   } from "./form-utils";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
@@ -44,7 +44,10 @@
   let currentTabIndex = 0;
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(
+    $runtime.instanceId,
+    metricsViewName,
+  );
 
   function handleCancel() {
     if (getTouched($touched)) {

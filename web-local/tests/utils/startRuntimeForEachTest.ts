@@ -41,10 +41,10 @@ export function startRuntimeForEachTest() {
     childProcess.on("close", () => {
       rillShutdown = true;
     });
-    childProcess.stdout?.on("data", (chunk: Buffer) => {
+    childProcess.stdout?.on("data", (chunk: Uint8Array) => {
       process.stdout?.write(chunk);
     });
-    childProcess.stderr?.on("data", (chunk: Buffer) => {
+    childProcess.stderr?.on("data", (chunk: Uint8Array) => {
       process.stdout?.write(chunk);
     });
 
@@ -55,7 +55,7 @@ export function startRuntimeForEachTest() {
           `http://localhost:${TEST_PORT}/v1/ping`,
         );
         return response.status === 200;
-      } catch (err) {
+      } catch {
         return false;
       }
     });

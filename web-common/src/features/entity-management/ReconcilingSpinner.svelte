@@ -13,13 +13,14 @@
   const userFriendlyPhrases: Partial<Record<ResourceKind, string>> = {
     [ResourceKind.API]: "Building API",
     [ResourceKind.Alert]: "Building alert",
+    [ResourceKind.Canvas]: "Building canvas",
     [ResourceKind.Component]: "Building chart",
-    [ResourceKind.Dashboard]: "Building dashboard",
-    [ResourceKind.MetricsView]: "Building dashboard",
+    [ResourceKind.Connector]: "Building connector",
+    [ResourceKind.Explore]: "Building explore",
+    [ResourceKind.MetricsView]: "Building metrics view",
     [ResourceKind.Model]: "Building model",
     [ResourceKind.Report]: "Building report",
     [ResourceKind.Source]: "Ingesting source",
-    [ResourceKind.Connector]: "Building connector",
     [ResourceKind.Theme]: "Building theme",
   };
 </script>

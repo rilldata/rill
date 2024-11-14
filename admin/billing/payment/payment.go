@@ -24,8 +24,10 @@ type Provider interface {
 }
 
 type Customer struct {
-	ID               string
-	Name             string
-	Email            string
-	HasPaymentMethod bool
+	ID                 string
+	Name               string
+	Email              string
+	HasPaymentMethod   bool
+	HasBillableAddress bool
+	TaxExempt          bool // if country not US or Canada, customer is tax-exempt
 }

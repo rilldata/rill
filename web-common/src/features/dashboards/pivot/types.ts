@@ -1,4 +1,4 @@
-import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -19,6 +19,7 @@ export const COMPARISON_PERCENT = "__comparison_percent";
 
 export interface PivotDataState {
   isFetching: boolean;
+  error?: PivotQueryError[];
   data: PivotDataRow[];
   columnDef: ColumnDef<PivotDataRow>[];
   assembled: boolean;
@@ -80,6 +81,11 @@ export interface PivotTimeConfig {
   timeDimension: string;
 }
 
+export interface PivotQueryError {
+  statusCode: number | null;
+  message?: string;
+}
+
 /**
  * This is the config that is passed to the pivot data store methods
  */
@@ -102,6 +108,7 @@ export interface PivotAxesData {
   totals?:
     | Record<string, V1MetricsViewAggregationResponseDataItem[]>
     | undefined;
+  error?: PivotQueryError[];
 }
 
 export interface PivotFilter {
@@ -155,6 +162,7 @@ export type PivotChipData = {
   id: string;
   title: string;
   type: PivotChipType;
+  description?: string;
 };
 
 export enum PivotChipType {

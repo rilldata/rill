@@ -1,15 +1,20 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import auth0, { WebAuth } from "auth0-js";
+  import type { AuthOptions } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
-  import Disclaimer from "./Disclaimer.svelte";
-  import EmailPassForm from "./EmailPassForm.svelte";
-  import SSOForm from "./SSOForm.svelte";
+  import EmailPasswordForm from "./EmailPasswordForm.svelte";
   import { getConnectionFromEmail } from "./utils";
+  import OrSeparator from "./OrSeparator.svelte";
+  import SSOForm from "./SSOForm.svelte";
+  import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
+  import Disclaimer from "./Disclaimer.svelte";
+  import Spacer from "./Spacer.svelte";
+  import { AuthStep, type Config } from "../types";
+  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
   export let configParams: string;
   export let cloudClientIDs = "";
@@ -20,35 +25,42 @@
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
-  // By default show the LogIn page
-  $: isLoginPage = true;
   $: errorText = "";
-  $: isRillCloud = false;
 
-  let isSSODisabled = false;
-  let isEmailDisabled = false;
-
+  let email = "";
+  let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
-  const databaseConnection = "Username-Password-Authentication";
+
+  $: isLegacy = false;
+
+  function isDomainDisabled(email: string): boolean {
+    return disableForgotPassDomainsArr.some((domain) =>
+      email.toLowerCase().endsWith(domain.toLowerCase()),
+    );
+  }
+
+  $: domainDisabled = isDomainDisabled(email);
 
   function initConfig() {
     const config = JSON.parse(
       decodeURIComponent(escape(window.atob(configParams))),
-    );
+    ) as Config;
 
-    if (config?.extraParams?.screen_hint === "signup") {
-      isLoginPage = false;
+    const isSignup = config?.extraParams?.screen_hint === "signup";
+
+    if (isSignup) {
+      step = AuthStep.SignUp;
     }
 
     if (cloudClientIDsArr.includes(config?.clientID)) {
-      isRillCloud = true;
+      isLegacy = true;
     }
 
-    const params = Object.assign(
+    const authOptions: AuthOptions = Object.assign(
       {
         overrides: {
           __tenant: config.auth0Tenant,
-          __token_issuer: "auth.rilldata.io",
+          __token_issuer: config.authorizationServer.issuer,
         },
         domain: config.auth0Domain,
         clientID: config.clientID,
@@ -58,108 +70,57 @@
       config.internalOptions,
     );
 
-    webAuth = new auth0.WebAuth(params);
+    webAuth = new auth0.WebAuth(authOptions);
   }
 
-  function displayError(err: any) {
-    errorText = err.message;
-  }
-
-  function authorize(connection: string) {
-    webAuth.authorize({ connection });
-  }
-
-  function handleSSOLogin(email: string) {
-    isSSODisabled = true;
-    errorText = "";
+  function processEmailSubmission(event) {
+    email = event.detail.email;
 
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
-    if (!connectionName) {
-      displayError({
-        message: `IDP for the email ${email} not found. Please contact your administrator.`,
-      });
-      isSSODisabled = false;
-      return;
-    }
-
-    webAuth.authorize({
-      connection: connectionName,
-      login_hint: email,
-      prompt: "login",
-    });
-  }
-
-  function handleEmailSubmit(email: string, password: string) {
-    isEmailDisabled = true;
-    errorText = "";
-    try {
-      if (isLoginPage) {
-        webAuth.login(
-          {
-            realm: databaseConnection,
-            username: email,
-            password: password,
-          },
-          (err) => {
-            if (err) displayError({ message: err?.description });
-            isEmailDisabled = false;
-          },
-        );
-      } else {
-        webAuth.redirect.signupAndLogin(
-          {
-            connection: databaseConnection,
-            email: email,
-            password: password,
-          },
-          // explicitly typing as any to avoid missing property TS/svelte-check error
-          (err: any) => {
-            // Auth0 is not consistent in the naming of the error description field
-            const errorText =
-              typeof err?.description === "string"
-                ? err.description
-                : typeof err?.policy === "string"
-                  ? err.policy
-                  : typeof err?.error_description === "string"
-                    ? err.error_description
-                    : err?.message;
-
-            if (err) displayError({ message: errorText });
-            isEmailDisabled = false;
-          },
-        );
-      }
-    } catch (err) {
-      displayError({ message: err?.description || err?.message });
-      isEmailDisabled = false;
+    if (connectionName) {
+      step = AuthStep.SSO;
+    } else {
+      step = AuthStep.Login;
     }
   }
 
-  function handleResetPassword(email: string) {
-    errorText = "";
-    if (!email) return displayError({ message: "Please enter an email" });
-
-    if (
-      disableForgotPassDomainsArr.some((domain) =>
-        email.toLowerCase().endsWith(domain.toLowerCase()),
-      )
-    ) {
-      return displayError({
-        message: "Password reset is not available. Please contact your admin.",
-      });
+  function getHeadingText(step: AuthStep): string {
+    if (isLegacy) {
+      return "Log in";
     }
 
-    webAuth.changePassword(
-      {
-        connection: databaseConnection,
-        email: email,
-      },
-      (err, resp) => {
-        if (err) displayError({ message: err?.description });
-        else alert(resp);
-      },
-    );
+    switch (step) {
+      case AuthStep.Base:
+        return "Log in or sign up";
+      case AuthStep.SSO:
+        return "Log in with SSO";
+      case AuthStep.Login:
+        return "Log in with email";
+      case AuthStep.SignUp:
+        return "Sign up with email";
+      case AuthStep.Thanks:
+        return "Thanks for signing up!";
+      default:
+        return "";
+    }
+  }
+  $: headingText = getHeadingText(step);
+
+  function getSubheadingText(step: AuthStep, email: string): string {
+    switch (step) {
+      case AuthStep.SSO:
+        return `SAML SSO enabled workspace is associated with <span class="font-medium">${email}</span>`;
+      case AuthStep.Login:
+        return `Log in using <span class="font-medium">${email}</span>`;
+      default:
+        return "";
+    }
+  }
+  $: subheadingText = getSubheadingText(step, email);
+
+  function backToBaseStep() {
+    step = AuthStep.Base;
   }
 
   onMount(() => {
@@ -167,17 +128,30 @@
   });
 </script>
 
-<RillTheme>
-  <AuthContainer>
-    <RillLogoSquareNegative size="84px" />
-    <div class="text-xl my-6">
-      {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
+<AuthContainer>
+  <RillLogoSquareNegative size="84px" />
+  <Spacer />
+  <div class="flex flex-col items-center gap-y-2 text-center">
+    <div class="text-xl text-slate-800">
+      {headingText}
     </div>
-    <div class="flex flex-col gap-y-4" style:width="400px">
+    {#if subheadingText}
+      <div class="text-base text-gray-500">
+        {@html subheadingText}
+      </div>
+    {:else}
+      <Spacer />
+    {/if}
+  </div>
+
+  <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
+    {#if step === AuthStep.Base}
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
-          on:click={() => authorize(connection)}
+          on:click={() => {
+            webAuth.authorize({ connection });
+          }}
         >
           <div class="flex justify-center items-center gap-x-2 font-medium">
             {#if icon}
@@ -188,42 +162,36 @@
         </CtaButton>
       {/each}
 
-      <SSOForm
-        disabled={isSSODisabled}
-        on:ssoSubmit={(e) => {
-          handleSSOLogin(e.detail);
-        }}
-      />
+      <OrSeparator />
 
-      <EmailPassForm
-        {isLoginPage}
-        disabled={isEmailDisabled}
-        on:submit={(e) => {
-          handleEmailSubmit(e.detail.email, e.detail.password);
-        }}
-        on:resetPass={(e) => {
-          handleResetPassword(e.detail.email);
-        }}
+      <EmailSubmissionForm on:submit={processEmailSubmission} />
+    {/if}
+
+    {#if step === AuthStep.SSO}
+      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
+    {/if}
+
+    {#if step === AuthStep.Login || step === AuthStep.SignUp}
+      <EmailPasswordForm
+        {step}
+        {email}
+        {isLegacy}
+        showForgetPassword={step === AuthStep.Login}
+        isDomainDisabled={domainDisabled}
+        {webAuth}
+        on:back={backToBaseStep}
       />
+    {/if}
+  </div>
+
+  {#if errorText}
+    <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+      {errorText}
     </div>
+  {/if}
 
-    {#if errorText}
-      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
-        {errorText}
-      </div>
-    {/if}
-
-    <Disclaimer />
-
-    {#if isRillCloud}
-      <div class="mt-6 text-sm text-slate-500">
-        {isLoginPage ? "Don't" : "Already"} have an account?
-
-        <!-- svelte-ignore a11y-invalid-attribute -->
-        <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
-          {isLoginPage ? "Sign up" : "Log in"}</a
-        >
-      </div>
-    {/if}
-  </AuthContainer>
-</RillTheme>
+  <Disclaimer />
+  <div class="mt-6 text-center">
+    <CtaNeedHelp />
+  </div>
+</AuthContainer>

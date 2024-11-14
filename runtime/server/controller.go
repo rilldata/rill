@@ -249,8 +249,8 @@ func (s *Server) GetExplore(ctx context.Context, req *runtimev1.GetExploreReques
 	}, nil
 }
 
-// GetModelSplits implements runtimev1.RuntimeServiceServer
-func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSplitsRequest) (*runtimev1.GetModelSplitsResponse, error) {
+// GetModelPartitions implements runtimev1.RuntimeServiceServer
+func (s *Server) GetModelPartitions(ctx context.Context, req *runtimev1.GetModelPartitionsRequest) (*runtimev1.GetModelPartitionsResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
@@ -283,12 +283,12 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
-	splitsModelID := r.GetModel().State.SplitsModelId
-	if splitsModelID == "" {
-		return &runtimev1.GetModelSplitsResponse{}, nil
+	partitionsModelID := r.GetModel().State.PartitionsModelId
+	if partitionsModelID == "" {
+		return &runtimev1.GetModelPartitionsResponse{}, nil
 	}
 
-	afterIdx := -1
+	afterIdx := 0
 	afterKey := ""
 	if req.PageToken != "" {
 		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
@@ -303,19 +303,28 @@ func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSpli
 	}
 	defer release()
 
-	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	opts := &drivers.FindModelPartitionsOptions{
+		ModelID:      partitionsModelID,
+		WherePending: req.Pending,
+		WhereErrored: req.Errored,
+		AfterIndex:   afterIdx,
+		AfterKey:     afterKey,
+		Limit:        validPageSize(req.PageSize),
+	}
+
+	partitions, err := catalog.FindModelPartitions(ctx, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var nextPageToken string
-	if len(splits) == validPageSize(req.PageSize) {
-		last := splits[len(splits)-1]
+	if len(partitions) == validPageSize(req.PageSize) {
+		last := partitions[len(partitions)-1]
 		nextPageToken = marshalPageToken(last.Index, last.Key)
 	}
 
-	return &runtimev1.GetModelSplitsResponse{
-		Splits:        modelSplitsToPB(splits),
+	return &runtimev1.GetModelPartitionsResponse{
+		Partitions:    modelPartitionsToPB(partitions),
 		NextPageToken: nextPageToken,
 	}, nil
 }
@@ -487,8 +496,8 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	if spec == nil {
 		return r
 	}
-	if spec.DimensionsExclude || spec.MeasuresExclude {
-		// If the ValidSpec has exclude flags set, we don't know what the available fields, so we can't filter it correctly.
+	if spec.DimensionsSelector != nil || spec.MeasuresSelector != nil {
+		// If the ValidSpec has dynamic selectors, we don't know what the available fields, so we can't filter it correctly.
 		// This should never happen because the Explore reconciler should have resolved the fields and removed the exclude flags.
 		panic(fmt.Errorf("the ValidSpec for an explore should not have exclude flags set"))
 	}
@@ -515,7 +524,9 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	spec.Measures = ms
 
 	// Filter the dimensions and measures in the presets
-	for _, p := range spec.Presets {
+	if spec.DefaultPreset != nil {
+		p := spec.DefaultPreset
+
 		var dims []string
 		for _, dim := range p.Dimensions {
 			if security.CanAccessField(dim) {
@@ -543,37 +554,37 @@ func (s *Server) applyExploreSecurity(r *runtimev1.Resource, security *runtime.R
 	}
 }
 
-// modelSplitsToPB converts a slice of drivers.ModelSplit to a slice of runtimev1.ModelSplit.
-func modelSplitsToPB(splits []drivers.ModelSplit) []*runtimev1.ModelSplit {
-	pbs := make([]*runtimev1.ModelSplit, len(splits))
-	for i, split := range splits {
-		pbs[i] = modelSplitToPB(split)
+// modelPartitionsToPB converts a slice of drivers.ModelPartition to a slice of runtimev1.ModelPartition.
+func modelPartitionsToPB(partitions []drivers.ModelPartition) []*runtimev1.ModelPartition {
+	pbs := make([]*runtimev1.ModelPartition, len(partitions))
+	for i, partition := range partitions {
+		pbs[i] = modelPartitionToPB(partition)
 	}
 	return pbs
 }
 
-// modelSplitToPB converts a drivers.ModelSplit to a runtimev1.ModelSplit.
-func modelSplitToPB(split drivers.ModelSplit) *runtimev1.ModelSplit {
+// modelPartitionToPB converts a drivers.ModelPartition to a runtimev1.ModelPartition.
+func modelPartitionToPB(partition drivers.ModelPartition) *runtimev1.ModelPartition {
 	var data map[string]interface{}
-	if err := json.Unmarshal(split.DataJSON, &data); err != nil {
+	if err := json.Unmarshal(partition.DataJSON, &data); err != nil {
 		panic(err)
 	}
 
 	var watermark, executedOn *timestamppb.Timestamp
-	if split.Watermark != nil {
-		watermark = timestamppb.New(*split.Watermark)
+	if partition.Watermark != nil {
+		watermark = timestamppb.New(*partition.Watermark)
 	}
-	if split.ExecutedOn != nil {
-		executedOn = timestamppb.New(*split.ExecutedOn)
+	if partition.ExecutedOn != nil {
+		executedOn = timestamppb.New(*partition.ExecutedOn)
 	}
 
-	return &runtimev1.ModelSplit{
-		Key:        split.Key,
+	return &runtimev1.ModelPartition{
+		Key:        partition.Key,
 		Data:       must(structpb.NewStruct(data)),
 		Watermark:  watermark,
 		ExecutedOn: executedOn,
-		Error:      split.Error,
-		ElapsedMs:  uint32(split.Elapsed.Milliseconds()),
+		Error:      partition.Error,
+		ElapsedMs:  uint32(partition.Elapsed.Milliseconds()),
 	}
 }
 

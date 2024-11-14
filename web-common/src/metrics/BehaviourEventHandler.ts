@@ -2,7 +2,7 @@ import type {
   BehaviourEventAction,
   BehaviourEventMedium,
 } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
+import type { GithubEventFields } from "@rilldata/web-common/metrics/service/GithubEventTypes";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,

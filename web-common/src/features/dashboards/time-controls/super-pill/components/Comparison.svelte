@@ -3,7 +3,7 @@
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
   } from "@rilldata/web-common/lib/time/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";

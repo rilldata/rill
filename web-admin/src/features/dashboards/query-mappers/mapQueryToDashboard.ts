@@ -6,10 +6,10 @@ import type {
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewTimeRange,
@@ -21,7 +21,7 @@ import { derived, get, readable } from "svelte/store";
 
 type DashboardStateForQuery = {
   state?: string;
-  metricsView?: string;
+  exploreName?: string;
 };
 
 /**
@@ -29,6 +29,7 @@ type DashboardStateForQuery = {
  * Used to show the relevant dashboard for a report/alert.
  */
 export function mapQueryToDashboard(
+  exploreName: string,
   queryName: string | undefined,
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
@@ -76,12 +77,14 @@ export function mapQueryToDashboard(
         "Failed to find metrics view name. Please check the format of the report.",
     });
   }
+  // backwards compatibility for older alerts created on metrics explore directly
+  if (!exploreName) exploreName = metricsViewName;
 
   const instanceId = get(runtime).instanceId;
 
   return derived(
     [
-      useMetricsView(instanceId, metricsViewName),
+      useExploreValidSpec(instanceId, exploreName),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
         get(runtime).instanceId,
@@ -89,8 +92,12 @@ export function mapQueryToDashboard(
         {},
       ),
     ],
-    ([metricsViewResource, timeRangeSummary], set) => {
-      if (!metricsViewResource.data || !timeRangeSummary.data) {
+    ([validSpecResp, timeRangeSummary], set) => {
+      if (
+        !validSpecResp.data?.metricsView ||
+        !validSpecResp.data?.explore ||
+        !timeRangeSummary.data
+      ) {
         set({
           isFetching: true,
           error: "",
@@ -98,21 +105,23 @@ export function mapQueryToDashboard(
         return;
       }
 
-      if (metricsViewResource.error || timeRangeSummary.error) {
+      if (validSpecResp.error || timeRangeSummary.error) {
         // error state
         set({
           isFetching: false,
           error:
-            metricsViewResource.error?.message ??
-            timeRangeSummary.error?.message,
+            validSpecResp.error?.message ?? timeRangeSummary.error?.message,
         });
         return;
       }
 
+      const { metricsView, explore } = validSpecResp.data;
+
       initLocalUserPreferenceStore(metricsViewName);
       const defaultDashboard = getDefaultMetricsExplorerEntity(
         metricsViewName,
-        metricsViewResource.data,
+        metricsView,
+        explore,
         timeRangeSummary.data,
       );
       getDashboardState({
@@ -120,7 +129,8 @@ export function mapQueryToDashboard(
         instanceId,
         dashboard: defaultDashboard,
         req,
-        metricsView: metricsViewResource.data,
+        metricsView,
+        explore,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
         annotations,
@@ -131,7 +141,7 @@ export function mapQueryToDashboard(
             error: "",
             data: {
               state: getProtoFromDashboardState(newDashboard),
-              metricsView: metricsViewName,
+              exploreName,
             },
           });
         })

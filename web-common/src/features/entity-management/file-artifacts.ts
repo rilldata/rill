@@ -19,12 +19,13 @@ export class FileArtifacts {
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
-        case ResourceKind.Source:
         case ResourceKind.Connector:
+        case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
+        case ResourceKind.Explore:
         case ResourceKind.Component:
-        case ResourceKind.Dashboard:
+        case ResourceKind.Canvas:
           // set query data for GetResource to avoid refetching data we already have
           queryClient.setQueryData(
             getRuntimeServiceGetResourceQueryKey(instanceId, {
@@ -57,19 +58,7 @@ export class FileArtifacts {
 
   updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateAll(resource);
-    });
-  }
-
-  updateReconciling(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateReconciling(resource);
-    });
-  }
-
-  updateLastUpdated(resource: V1Resource) {
-    resource.meta?.filePaths?.forEach((filePath) => {
-      this.getFileArtifact(filePath)?.updateLastUpdated(resource);
+      this.getFileArtifact(filePath)?.updateResource(resource);
     });
   }
 

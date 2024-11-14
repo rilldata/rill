@@ -1,16 +1,16 @@
 <script lang="ts">
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { Button } from "@rilldata/web-common/components/button";
-  import { BellPlusIcon } from "lucide-svelte";
-  import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
+  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
   import {
     DialogContent,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog-v2/index";
-  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
+  import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { BellPlusIcon } from "lucide-svelte";
 
   const {
     selectors: {
@@ -20,7 +20,10 @@
     metricsViewName,
   } = getStateManagers();
 
-  $: metricsView = useMetricsView($runtime?.instanceId, $metricsViewName);
+  $: metricsView = useMetricsViewValidSpec(
+    $runtime?.instanceId,
+    $metricsViewName,
+  );
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;

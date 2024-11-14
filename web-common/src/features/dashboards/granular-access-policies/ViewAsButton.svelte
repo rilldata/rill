@@ -1,7 +1,7 @@
 <script lang="ts">
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-  import { IconSpaceFixer } from "../../../components/button";
+
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
@@ -42,39 +42,23 @@
         removable
         slideDuration={0}
         active={viewAsMenuOpen}
+        removeTooltipText="Clear view"
         on:remove={() => {
           updateDevJWT(queryClient, null);
         }}
       >
-        <div slot="body" class="flex gap-x-2">
-          <div>
-            Viewing as <span class="font-bold"
-              >{$selectedMockUserStore.email}</span
-            >
-          </div>
-          <div class="flex items-center">
-            <IconSpaceFixer pullRight>
-              <div
-                class="transition-transform"
-                class:-rotate-180={viewAsMenuOpen}
-              >
-                <CaretDownIcon size="14px" />
-              </div>
-            </IconSpaceFixer>
-          </div>
+        <div slot="body">
+          Viewing as <b>{$selectedMockUserStore.email}</b>
         </div>
-        <svelte:fragment slot="remove-tooltip">
-          <slot name="remove-tooltip-content">Clear view</slot>
-        </svelte:fragment>
       </Chip>
     {/if}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content>
+  <DropdownMenu.Content align="start">
     {#if !$mockUsers.data || $mockUsers.data?.length === 0}
       <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
     {:else if $mockUsers.data?.length > 0}
-      {#each $mockUsers.data as user}
+      {#each $mockUsers.data as user (user?.email)}
         <DropdownMenu.Item
           on:click={() => {
             updateDevJWT(queryClient, user);

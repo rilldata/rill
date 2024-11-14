@@ -55,6 +55,8 @@ export default [
       "@typescript-eslint/await-thenable": "warn",
       "@typescript-eslint/no-implied-eval": "warn",
       "@typescript-eslint/no-base-to-string": "warn",
+      "@typescript-eslint/no-unused-expressions": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
     },
   },
   {
@@ -87,6 +89,7 @@ export default [
       // WARNINGS (some will be promoted to errors)
       "svelte/no-at-html-tags": "warn",
       "svelte/no-target-blank": "warn",
+      "svelte/no-unused-svelte-ignore": "warn",
       "svelte/require-each-key": "warn",
       "svelte/prefer-destructured-store-props": "warn",
       "svelte/require-optimized-style-attribute": "warn",

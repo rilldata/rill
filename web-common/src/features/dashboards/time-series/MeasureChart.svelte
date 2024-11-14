@@ -10,7 +10,7 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
@@ -23,13 +23,12 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import {
-    DashboardTimeControls,
+    type DashboardTimeControls,
     TimeComparisonOption,
     TimeRangePreset,
     TimeRoundingStrategy,
@@ -42,9 +41,10 @@
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let metricViewName: string;
+  export let exploreName: string;
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
   export let xMin: Date | undefined = undefined;
@@ -70,6 +70,8 @@
   export let scrubStart;
   export let scrubEnd;
 
+  const { validSpecStore } = getStateManagers();
+
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
 
@@ -77,7 +79,7 @@
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x"));
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   let hovered: boolean = false;
   let scrub;
@@ -87,17 +89,19 @@
   $: hoveredTime =
     (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
     $tableInteractionStore.time;
+  $: hoveredDimensionValue = $tableInteractionStore.dimensionValue;
+
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
-  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: mouseOverCords = mouseoverValue?.x && $xScale(mouseoverValue?.x);
 
   let isOverStart = false;
   let isOverEnd = false;
   let isInsideScrub = false;
 
-  $: if (mouseOverCords && scrubStartCords && scrubEndCords) {
+  $: if (mouseOverCords !== undefined && scrubStartCords && scrubEndCords) {
     const min = Math.min(scrubStartCords, scrubEndCords);
     const max = Math.max(scrubStartCords, scrubEndCords);
 
@@ -163,14 +167,12 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
-  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
-
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
 
   function resetScrub() {
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+    metricsExplorerStore.setSelectedScrubRange(exploreName, undefined);
   }
 
   function zoomScrub() {
@@ -180,7 +182,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+    metricsExplorerStore.setSelectedTimeRange(exploreName, {
       name: TimeRangePreset.CUSTOM,
       start: adjustedStart,
       end: adjustedEnd,
@@ -191,7 +193,7 @@
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, {
+    metricsExplorerStore.setSelectedScrubRange(exploreName, {
       start: adjustedStart,
       end: adjustedEnd,
       isScrubbing: isScrubbing,
@@ -212,11 +214,11 @@
       : undefined;
 
     metricsExplorerStore.selectTimeRange(
-      metricViewName,
+      exploreName,
       timeRange,
       timeGrain,
       comparisonTimeRange,
-      $metricsView.data ?? {},
+      $validSpecStore.data?.metricsView ?? {},
     );
   }
 
@@ -273,7 +275,7 @@
       <ChartBody
         {data}
         {dimensionData}
-        dimensionValue={$tableInteractionStore?.dimensionValue}
+        dimensionValue={hoveredDimensionValue}
         isHovering={Boolean(hoveredTime)}
         {scrubEnd}
         {scrubStart}
@@ -337,7 +339,8 @@
                   {xAccessor}
                   {yAccessor}
                   {dimensionData}
-                  dimensionValue={$tableInteractionStore?.dimensionValue}
+                  hasTimeComparison={showComparison}
+                  dimensionValue={hoveredDimensionValue}
                   {validPercTotal}
                   {mouseoverFormat}
                   {hovered}

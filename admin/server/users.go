@@ -149,6 +149,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  user.GithubRefreshToken,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		QuotaTrialOrgs:      user.QuotaTrialOrgs,
 		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
 	if err != nil {
@@ -288,6 +289,9 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 	if req.SingleuserOrgs != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
 	}
+	if req.TrialOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.trial_orgs", int(*req.TrialOrgs)))
+	}
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
@@ -306,6 +310,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		GithubUsername:      user.GithubUsername,
 		GithubRefreshToken:  user.GithubRefreshToken,
 		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, int32(user.QuotaSingleuserOrgs))),
+		QuotaTrialOrgs:      int(valOrDefault(req.TrialOrgs, int32(user.QuotaTrialOrgs))),
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
@@ -369,6 +374,7 @@ func userToPB(u *database.User) *adminv1.User {
 		PhotoUrl:    u.PhotoURL,
 		Quotas: &adminv1.UserQuotas{
 			SingleuserOrgs: int32(u.QuotaSingleuserOrgs),
+			TrialOrgs:      int32(u.QuotaTrialOrgs),
 		},
 		CreatedOn: timestamppb.New(u.CreatedOn),
 		UpdatedOn: timestamppb.New(u.UpdatedOn),
@@ -377,12 +383,13 @@ func userToPB(u *database.User) *adminv1.User {
 
 func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
 	return &adminv1.MemberUser{
-		UserId:    m.ID,
-		UserEmail: m.Email,
-		UserName:  m.DisplayName,
-		RoleName:  m.RoleName,
-		CreatedOn: timestamppb.New(m.CreatedOn),
-		UpdatedOn: timestamppb.New(m.UpdatedOn),
+		UserId:       m.ID,
+		UserEmail:    m.Email,
+		UserName:     m.DisplayName,
+		UserPhotoUrl: m.PhotoURL,
+		RoleName:     m.RoleName,
+		CreatedOn:    timestamppb.New(m.CreatedOn),
+		UpdatedOn:    timestamppb.New(m.UpdatedOn),
 	}
 }
 

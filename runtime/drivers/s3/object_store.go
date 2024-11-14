@@ -160,15 +160,15 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 
 			anonIt, anonErr := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 			if anonErr == nil {
-				it = anonIt
-				err = nil
+				return anonIt, nil
 			}
 		}
 
 		// check again
-		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
+		if failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest {
 			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", failureErr))
 		}
+		return nil, err
 	}
 
 	return it, err

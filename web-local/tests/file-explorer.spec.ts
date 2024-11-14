@@ -3,7 +3,9 @@ import { test } from "./utils/test";
 
 test.describe("File Explorer", () => {
   test.describe("File CRUD Operations", () => {
-    test("should create, rename, edit, and delete a file", async ({ page }) => {
+    test("should create, rename, edit, copy, and delete a file", async ({
+      page,
+    }) => {
       // Create a new file
       await page.getByLabel("Add Asset").click();
       await page.getByRole("menuitem", { name: "More" }).hover();
@@ -12,10 +14,11 @@ test.describe("File Explorer", () => {
         page.getByRole("link", { name: "untitled_file" }),
       ).toBeVisible();
       await expect(
-        page.getByLabel("untitled_file", { exact: true }),
+        page.getByRole("heading", { name: "untitled_file", exact: true }),
       ).toBeVisible();
 
       // Rename the file
+      await page.getByRole("listitem", { name: "/untitled_file" }).hover();
       await page.getByLabel("/untitled_file actions menu").click();
       await page.getByRole("menuitem", { name: "Rename..." }).click();
       await page.getByLabel("File name").click();
@@ -38,7 +41,19 @@ test.describe("File Explorer", () => {
         page.getByText("Here's a README.md file for the e2e test!"),
       ).toBeVisible();
 
+      // Duplicate the file
+      await page.getByRole("listitem", { name: "/README.md" }).hover();
+      await page.getByLabel("/README.md actions menu").click();
+      await page.getByRole("menuitem", { name: "Duplicate" }).click();
+      await expect(
+        page.getByRole("link", { name: "README (copy).md" }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Here's a README.md file for the e2e test!"),
+      ).toBeVisible();
+
       // Delete the file
+      await page.getByRole("listitem", { name: "/README.md" }).hover();
       await page.getByLabel("/README.md actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
       await expect(
@@ -68,6 +83,9 @@ test.describe("File Explorer", () => {
       await page.getByLabel("Folder name").fill("my-directory");
       await page.getByLabel("Folder name").press("Enter");
 
+      // Page reloads in test environment
+      await page.waitForTimeout(2000);
+
       // Add something to the folder
       await page.getByRole("directory", { name: "my-directory" }).hover();
       await page.getByLabel("my-directory actions menu").click();
@@ -88,7 +106,11 @@ test.describe("File Explorer", () => {
         }),
       ).toBeVisible();
 
+      await page.waitForTimeout(2000);
       // Delete the folder
+      await page
+        .getByRole("button", { name: "my-directory my-directory" })
+        .hover();
       await page.getByLabel("my-directory actions menu").click();
       await page.getByRole("menuitem", { name: "Delete" }).click();
       await page.getByRole("button", { name: "Delete" }).click();

@@ -41,9 +41,7 @@ export enum MetricsEventScreenName {
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
   Chart = "chart",
-  // Preserving for backward compatibility
-  CustomDashboard = "custom-dashboard",
-  CanvasDashboard = "canvas-dashboard",
+  Canvas = "canvas",
   CLI = "cli",
   Splash = "splash",
   Home = "home",
@@ -73,7 +71,7 @@ export const ResourceKindToScreenMap: Partial<
   [ResourceKind.Model]: MetricsEventScreenName.Model,
   [ResourceKind.MetricsView]: MetricsEventScreenName.Dashboard,
   [ResourceKind.Component]: MetricsEventScreenName.Chart,
-  [ResourceKind.Dashboard]: MetricsEventScreenName.CanvasDashboard,
+  [ResourceKind.Canvas]: MetricsEventScreenName.Canvas,
 };
 
 export interface ActiveEvent extends MetricsEvent {

@@ -17,6 +17,7 @@
     formatDataType,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
+  import type { Location } from "@rilldata/web-common/lib/place-element";
   import type { TopKEntry } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
@@ -55,11 +56,14 @@
       .join("")}${str}`;
   }
 
-  function getCopyValue(type, value) {
+  function getCopyValue(type: string, value) {
     return isNested(type) ? formatDataType(value, type) : value;
   }
 
-  let tooltipProps = { location: "right", distance: 16 };
+  let tooltipProps: { location: Location; distance: number } = {
+    location: "right",
+    distance: 16,
+  };
 
   function handleFocus(value: TopKEntry) {
     return () => dispatch("focus-top-k", value);

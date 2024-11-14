@@ -1,4 +1,8 @@
 <script lang="ts">
+  import type {
+    Alignment,
+    Location,
+  } from "@rilldata/web-common/lib/place-element";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
@@ -11,8 +15,8 @@
   export let disableHover = false;
 
   export let tooltipDistance = 8;
-  export let tooltipLocation = "bottom";
-  export let tooltipAlignment = "center";
+  export let tooltipLocation: Location = "bottom";
+  export let tooltipAlignment: Alignment = "middle";
   export let marginClasses = "";
   export let ariaLabel = "";
 </script>
@@ -29,13 +33,13 @@
     class:cursor-auto={disabled}
     class:rounded
     class="{marginClasses} grid place-items-center
-{active ? 'bg-gray-200 dark:bg-gray-800' : ''}
+{active ? 'bg-gray-100 dark:bg-gray-800' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
 {disableHover || disabled
       ? ''
       : bgDark
         ? 'hover:bg-gray-600'
-        : 'hover:bg-gray-100'}"
+        : 'hover:bg-gray-50'}"
     style:width="{compact ? 20 : 24}px"
     style:height="{compact ? 20 : 24}px"
     style:font-size="18px"

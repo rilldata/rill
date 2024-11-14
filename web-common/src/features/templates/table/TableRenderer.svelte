@@ -5,7 +5,7 @@
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-  import {
+  import type {
     PivotDataStore,
     PivotDataStoreConfig,
     PivotState,
@@ -16,18 +16,18 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     createSvelteTable,
-    ExpandedState,
+    type ExpandedState,
     flexRender,
     getCoreRowModel,
     getExpandedRowModel,
-    SortingState,
-    Updater,
+    type SortingState,
+    type Updater,
   } from "@tanstack/svelte-table";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
-  import { derived, Writable } from "svelte/store";
+  import { derived, type Writable } from "svelte/store";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;

@@ -197,47 +197,50 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 }
 
 type UpdateDeploymentOptions struct {
-	Version         string
-	Branch          string
+	Version string
+	Branch  string
+	// Variables to be set on the deployment instance. If empty map is passed then the existing variables are not changed by Runtime.
 	Variables       map[string]string
 	Annotations     DeploymentAnnotations
 	EvictCachedRepo bool // Set to true if config returned by GetRepoMeta has changed such that the runtime should do a fresh clone instead of a pull.
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
-	// Update the provisioned runtime if the version has changed
-	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
-		// Get provisioner from the set
-		p, ok := s.ProvisionerSet[depl.Provisioner]
-		if !ok {
-			return fmt.Errorf("provisioner: %q is not in the provisioner set", depl.Provisioner)
-		}
+	// Get provisioner from the set
+	p, ok := s.ProvisionerSet[depl.Provisioner]
+	if !ok {
+		return fmt.Errorf("provisioner: %q is not in the provisioner set", depl.Provisioner)
+	}
 
-		// Update the runtime
-		err := p.Update(ctx, depl.ProvisionID, opts.Version)
-		if err != nil {
-			s.Logger.Error("provisioner: failed to update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-			return err
-		}
+	// Update the runtime
+	_, err := p.Provision(ctx, &provisioner.ProvisionOptions{
+		ProvisionID:    depl.ProvisionID,
+		Slots:          depl.Slots,
+		RuntimeVersion: opts.Version,
+		Annotations:    opts.Annotations.ToMap(),
+	})
+	if err != nil {
+		s.Logger.Error("provisioner: failed to update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		return err
+	}
 
-		// Wait for the runtime to be ready after update
-		err = p.AwaitReady(ctx, depl.ProvisionID)
-		if err != nil {
-			s.Logger.Error("provisioner: failed awaiting runtime to be ready after update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-			// Mark deployment error
-			_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-			return multierr.Combine(err, err2)
-		}
+	// Wait for the runtime to be ready after update
+	err = p.AwaitReady(ctx, depl.ProvisionID)
+	if err != nil {
+		s.Logger.Error("provisioner: failed awaiting runtime to be ready after update", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		// Mark deployment error
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return multierr.Combine(err, err2)
+	}
 
-		// Update the deployment runtime version
-		_, err = s.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, opts.Version)
-		if err != nil {
-			// NOTE: If the update was triggered by a scheduled job like 'upgrade_latest_version_projects',
-			// then this error will cause the update to be retried on the next job invocation and it should eventually become consistent.
+	// Update the deployment runtime version
+	_, err = s.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, opts.Version)
+	if err != nil {
+		// NOTE: If the update was triggered by a scheduled job like 'validate_deployments',
+		// then this error will cause the update to be retried on the next job invocation and it should eventually become consistent.
 
-			// TODO: Handle inconsistent state when a manually triggered update failed, where we can't rely on job retries.
-			return err
-		}
+		// TODO: Handle inconsistent state when a manually triggered update failed, where we can't rely on job retries.
+		return err
 	}
 
 	rt, err := s.OpenRuntimeClient(depl)
@@ -337,7 +340,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
 			Subpath:              proj.Subpath,
-			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,

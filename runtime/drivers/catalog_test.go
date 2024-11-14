@@ -12,55 +12,55 @@ import (
 )
 
 func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
-	t.Run("Splits", func(t *testing.T) { testCatalogSplits(t, catalog) })
+	t.Run("Partitions", func(t *testing.T) { testCatalogPartitions(t, catalog) })
 }
 
-func testCatalogSplits(t *testing.T, catalog drivers.CatalogStore) {
+func testCatalogPartitions(t *testing.T, catalog drivers.CatalogStore) {
 	ctx := context.Background()
 	modelID := uuid.NewString()
 
 	now, err := time.Parse(time.RFC3339, "2021-01-01T00:00:00Z")
 	require.NoError(t, err)
 
-	splits, err := catalog.FindModelSplitsByKeys(ctx, modelID, []string{})
+	partitions, err := catalog.FindModelPartitionsByKeys(ctx, modelID, []string{})
 	if errors.Is(err, drivers.ErrNotImplemented) {
-		t.Skip("Split management not implemented")
+		t.Skip("Partition management not implemented")
 	}
 	require.NoError(t, err)
-	require.Len(t, splits, 0)
+	require.Len(t, partitions, 0)
 
-	split := drivers.ModelSplit{
+	partition := drivers.ModelPartition{
 		Key:       "hello",
 		DataJSON:  []byte(`{"hello": "world"}`),
 		Watermark: &now,
 		Index:     2,
 	}
 
-	err = catalog.InsertModelSplit(ctx, modelID, split)
+	err = catalog.InsertModelPartition(ctx, modelID, partition)
 	require.NoError(t, err)
 
-	splits, err = catalog.FindModelSplitsByPending(ctx, modelID, 10)
+	partitions, err = catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{ModelID: modelID, WherePending: true, Limit: 10})
 	require.NoError(t, err)
-	require.Len(t, splits, 1)
-	requireSplitEqual(t, split, splits[0])
+	require.Len(t, partitions, 1)
+	requirePartitionEqual(t, partition, partitions[0])
 
-	split.ExecutedOn = &now
-	split.Error = "something"
-	split.Elapsed = time.Second
+	partition.ExecutedOn = &now
+	partition.Error = "something"
+	partition.Elapsed = time.Second
 
-	err = catalog.UpdateModelSplit(ctx, modelID, split)
+	err = catalog.UpdateModelPartition(ctx, modelID, partition)
 	require.NoError(t, err)
 
-	splits, err = catalog.FindModelSplitsByKeys(ctx, modelID, []string{split.Key})
+	partitions, err = catalog.FindModelPartitionsByKeys(ctx, modelID, []string{partition.Key})
 	require.NoError(t, err)
-	require.Len(t, splits, 1)
-	requireSplitEqual(t, split, splits[0])
+	require.Len(t, partitions, 1)
+	requirePartitionEqual(t, partition, partitions[0])
 
-	err = catalog.DeleteModelSplits(ctx, modelID)
+	err = catalog.DeleteModelPartitions(ctx, modelID)
 	require.NoError(t, err)
 }
 
-func requireSplitEqual(t *testing.T, expected, actual drivers.ModelSplit) {
+func requirePartitionEqual(t *testing.T, expected, actual drivers.ModelPartition) {
 	t.Helper()
 	require.Equal(t, expected.Key, actual.Key)
 	require.Equal(t, expected.DataJSON, actual.DataJSON)

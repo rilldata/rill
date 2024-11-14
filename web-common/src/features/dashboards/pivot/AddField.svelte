@@ -1,7 +1,7 @@
 <script lang="ts" context="module">
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import type { PivotChipData } from "./types";
@@ -14,19 +14,19 @@
     selectors: {
       pivot: { dimensions, measures },
     },
-    metricsViewName,
+    exploreName,
   } = getStateManagers();
 
   let open = false;
 
   function handleSelectValue(data: PivotChipData) {
-    metricsExplorerStore.addPivotField($metricsViewName, data, zone === "rows");
+    metricsExplorerStore.addPivotField($exploreName, data, zone === "rows");
   }
 </script>
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild let:builder>
-    <Button builders={[builder]} type="add" selected={open}>
+    <Button builders={[builder]} type="add" selected={open} label="add-field">
       <Add size="17px" />
     </Button>
   </DropdownMenu.Trigger>

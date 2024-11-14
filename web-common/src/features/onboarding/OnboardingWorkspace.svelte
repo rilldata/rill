@@ -1,5 +1,4 @@
 <script lang="ts">
-  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
@@ -73,12 +72,6 @@
   ];
 </script>
 
-<!-- temporary until we have a global header -->
-<header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
-  <div class="flex gap-2 flex-shrink-0 ml-auto">
-    <LocalAvatarButton />
-  </div>
-</header>
 <div
   class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 size-full"
 >
@@ -110,9 +103,3 @@
     {/if}
   </ol>
 </div>
-
-<style>
-  header {
-    height: var(--header-height);
-  }
-</style>

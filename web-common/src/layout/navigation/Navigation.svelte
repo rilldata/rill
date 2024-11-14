@@ -1,29 +1,42 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const store = writable(true);
+    const { subscribe, update, set } = writable(true);
     return {
-      subscribe: store.subscribe,
-      toggle: () => store.update((open) => !open),
+      toggle: () => update((open) => !open),
+      set,
+      subscribe,
     };
   })();
 </script>
 
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
   import Resizer from "../Resizer.svelte";
-  import { DEFAULT_NAV_WIDTH } from "../config";
+  import { DEFAULT_NAV_WIDTH, MAX_NAV_WIDTH, MIN_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+  import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/connector-explorer-store";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+
+  const DEFAULT_PERCENTAGE = 0.4;
 
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
   let resizing = false;
-  let navWrapperHeight: number;
+  let resizingConnector = false;
+  let connectorHeightPercentage = DEFAULT_PERCENTAGE;
+  let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  let connectorWrapper: HTMLDivElement;
+
+  $: navWrapperHeight = contentRect.height;
+
+  let showConnectors = true;
+
+  $: connectorSectionHeight = navWrapperHeight * connectorHeightPercentage;
 
   $: ({ unsavedFiles } = fileArtifacts);
   $: ({ size: unsavedFileCount } = $unsavedFiles);
@@ -43,7 +56,16 @@
   }
 </script>
 
-<svelte:window on:resize={handleResize} />
+<svelte:window
+  on:resize={handleResize}
+  on:keydown={(e) => {
+    const isMac = window.navigator.userAgent.includes("Macintosh");
+
+    if (e[isMac ? "metaKey" : "ctrlkey"] && e.key === "b") {
+      navigationOpen.toggle();
+    }
+  }}
+/>
 
 <nav
   class="sidebar"
@@ -52,25 +74,82 @@
   style:width="{width}px"
 >
   <Resizer
-    min={DEFAULT_NAV_WIDTH}
+    min={MIN_NAV_WIDTH}
     basis={DEFAULT_NAV_WIDTH}
-    max={440}
+    max={MAX_NAV_WIDTH}
     bind:dimension={width}
     bind:resizing
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <ProjectTitle {unsavedFileCount} />
-
-    <div class="p-2 pt-1 w-full">
+    <div class="p-2 w-full pr-10">
       <AddAssetButton />
     </div>
     <div class="scroll-container">
-      <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
-        <FileExplorer hasUnsaved={unsavedFileCount > 0} />
-        <div class="grow" />
+      <div class="nav-wrapper" bind:contentRect>
+        <section class="size-full overflow-y-auto pb-4">
+          <FileExplorer hasUnsaved={unsavedFileCount > 0} />
+        </section>
+
         {#if navWrapperHeight}
-          <ConnectorExplorer containerHeight={navWrapperHeight} />
+          <section class="connector-section">
+            {#if showConnectors}
+              <Resizer
+                dimension={connectorSectionHeight}
+                onUpdate={(height) => {
+                  connectorHeightPercentage = height / navWrapperHeight;
+                }}
+                direction="NS"
+                side="top"
+                min={0}
+                basis={navWrapperHeight * DEFAULT_PERCENTAGE}
+                max={navWrapperHeight * 0.9}
+                bind:resizing={resizingConnector}
+              />
+            {/if}
+
+            <button
+              on:click={() => {
+                const open = showConnectors;
+
+                if (!open) showConnectors = true;
+
+                connectorWrapper.animate(
+                  [
+                    {
+                      height: `${open ? connectorSectionHeight : 0}px`,
+                    },
+                    {
+                      height: `${open ? 0 : connectorSectionHeight}px`,
+                    },
+                  ],
+                  {
+                    duration: 200,
+                    easing: "ease-out",
+                  },
+                ).onfinish = () => {
+                  if (open) showConnectors = false;
+                };
+              }}
+            >
+              <CaretDownIcon
+                size="14px"
+                className="text-gray-400 transition-transform {!showConnectors &&
+                  '-rotate-90'}"
+              />
+              <h3>Connectors</h3>
+            </button>
+
+            <div
+              class="connector-wrapper"
+              bind:this={connectorWrapper}
+              style:height="{showConnectors ? connectorSectionHeight : 0}px"
+            >
+              {#if showConnectors}
+                <ConnectorExplorer store={connectorExplorerStore} />
+              {/if}
+            </div>
+          </section>
         {/if}
       </div>
     </div>
@@ -82,13 +161,14 @@
   {resizing}
   navWidth={width}
   navOpen={$navigationOpen}
-  on:click={navigationOpen.toggle}
+  onClick={navigationOpen.toggle}
 />
 
 <style lang="postcss">
   .sidebar {
     @apply flex flex-col flex-none relative overflow-hidden;
     @apply h-full border-r z-0;
+    @apply select-none;
     transition-property: width;
     will-change: width;
   }
@@ -99,7 +179,7 @@
   }
 
   .nav-wrapper {
-    @apply flex flex-col h-full w-full gap-y-2;
+    @apply flex flex-col size-full;
   }
 
   .scroll-container {
@@ -108,11 +188,34 @@
   }
 
   .sidebar:not(.resizing) {
-    transition-duration: 400ms;
+    transition-duration: 300ms;
     transition-timing-function: ease-in-out;
   }
 
   .hide {
     width: 0px !important;
+  }
+
+  .connector-section {
+    @apply flex flex-col flex-none h-fit;
+    @apply border-t border-t-gray-200 relative;
+  }
+
+  .connector-wrapper {
+    @apply overflow-y-auto;
+  }
+
+  button {
+    @apply flex gap-x-1 items-center w-full;
+    @apply pl-2 pr-3.5 py-1.5 cursor-pointer;
+    @apply text-gray-500;
+  }
+
+  button:hover {
+    @apply bg-slate-100;
+  }
+
+  h3 {
+    @apply font-semibold text-[10px] uppercase;
   }
 </style>

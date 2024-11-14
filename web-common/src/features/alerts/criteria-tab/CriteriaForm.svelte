@@ -1,22 +1,22 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getTypeOptions } from "@rilldata/web-common/features/alerts/criteria-tab/getTypeOptions";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
-  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
 
   const { form, errors, validateField } = formState;
 
-  $: metricsView = useMetricsView(
+  $: metricsView = useMetricsViewValidSpec(
     $runtime.instanceId,
     $form["metricsViewName"],
   );
@@ -27,9 +27,9 @@
   $: measureOptions = [
     {
       value: $form["measure"],
-      label: measure?.label?.length
-        ? measure.label
-        : measure?.expression ?? $form["measure"],
+      label: measure?.displayName?.length
+        ? measure.displayName
+        : (measure?.expression ?? $form["measure"]),
     },
   ];
   $: selectedMeasure = $metricsView.data?.measures?.find(
@@ -86,6 +86,7 @@
     id="value"
     onInput={valueUpdater}
     placeholder={"0"}
+    width="auto"
   />
 </div>
 {#if groupErr}

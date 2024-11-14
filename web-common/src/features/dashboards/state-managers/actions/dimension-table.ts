@@ -29,13 +29,6 @@ export const handleMeasureColumnHeaderClick = (
   }
 };
 
-export const setDimensionTableSearchString = (
-  generalArgs: DashboardMutables,
-  searchString: string | undefined,
-) => {
-  generalArgs.dashboard.dimensionSearchText = searchString;
-};
-
 export const dimensionTableActions = {
   /**
    * handles clicking on a measure column header in the dimension
@@ -44,16 +37,4 @@ export const dimensionTableActions = {
    * by the selected measure (or context column).
    */
   handleMeasureColumnHeaderClick,
-
-  /**
-   * Sets the dimension table search string
-   */
-  setDimensionTableSearchString,
-
-  /**
-   * Clears the dimension table search string
-   */
-  clearDimensionTableSearchString: (generalArgs: DashboardMutables) => {
-    setDimensionTableSearchString(generalArgs, undefined);
-  },
 };

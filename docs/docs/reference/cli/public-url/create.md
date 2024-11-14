@@ -7,7 +7,7 @@ title: rill public-url create
 Create a public URL
 
 ```
-rill public-url create [<project-name>] <metrics view> [flags]
+rill public-url create [<project-name>] <explore> [flags]
 ```
 
 ### Flags

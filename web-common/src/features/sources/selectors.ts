@@ -3,12 +3,12 @@ import {
   useClientFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  V1ProfileColumn,
+  type V1ProfileColumn,
   createQueryServiceTableColumns,
   createRuntimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
-import { Readable, derived } from "svelte/store";
+import { type Readable, derived } from "svelte/store";
 import { parse } from "yaml";
 
 export type SourceFromYaml = {
@@ -86,7 +86,7 @@ export function useAllSourceColumns(
           r.source?.state?.connector ?? "",
           "",
           "",
-          r.meta.name.name,
+          r.meta?.name?.name ?? "",
         ),
       ),
       (sourceColumnResponses) =>
@@ -107,7 +107,7 @@ export function createTableColumnsWithName(
   database: string,
   databaseSchema: string,
   tableName: string,
-): CreateQueryResult<TableColumnsWithName> {
+) {
   return createQueryServiceTableColumns(
     instanceId,
     tableName,

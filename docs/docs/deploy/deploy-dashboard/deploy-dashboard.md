@@ -17,7 +17,7 @@ Cloud datastores will typically require service keys to access data. Make sure t
 
 The flow diagram below shows two options for deploying an existing project. 
 
-**Deploy via the UI or CLI using `rill project upload`**: 
+**Deploy via the UI or CLI using `rill project deploy`**: 
 ```mermaid
 graph LR;
     A(Local code files);
@@ -40,7 +40,7 @@ graph LR;
 ```
     
 ## Deploying a project via the UI
-Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer's UI to Rill Cloud_. On the dashboard page, you can select the `deploy to share` button and follow the steps to deploy to Rill Cloud.
+Starting from **v0.48**, we have introduced the possibility to push dashboards _directly from Rill Developer's UI to Rill Cloud_. On the dashboard page, you can select the `Deploy` button and follow the steps to deploy to Rill Cloud.
 
 <img src = '/img/deploy/existing-project/deploy-ui.gif' class='rounded-gif' />
 <br />
@@ -60,7 +60,7 @@ You can easily check the version of Rill that you are using in Rill Developer by
 rill --version
 ```
 
-If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade) to the latest version.
+If you are on an older version of Rill, it is **strongly recommended** to [upgrade](home/install.md#upgrade-to-the-newest-version) to the latest version.
 
 :::
 
@@ -101,7 +101,7 @@ Once completed, you'll see the newly updated repository on the UI of your status
 ## Deploying a project via the CLI
 
 :::note
-Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project upload` and `rill project connect-github`. For more information on the `rill deploy` command click [here](#deprecated-rill-deploy).
+Starting from v0.49, we have deprecated `rill deploy` in favor of `rill project deploy` and `rill project connect-github`. For more information on the `rill deploy` command click [here](#deprecated-rill-deploy).
 :::
 
 ### Deploy project without GitHub Repository
@@ -188,7 +188,7 @@ Likewise, if using the UI by selecting the `Update` button, Rill will detect the
 
 :::tip Interested in using Gitlab?
 
-Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-ci.md)!
+Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-cli.md)!
 
 :::
 

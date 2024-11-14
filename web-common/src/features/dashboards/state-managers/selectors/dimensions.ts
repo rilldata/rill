@@ -2,25 +2,28 @@ import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-cl
 import type { DashboardDataSources } from "./types";
 
 export const allDimensions = ({
-  metricsSpecQueryResult,
-}: DashboardDataSources): MetricsViewSpecDimensionV2[] | undefined => {
-  return metricsSpecQueryResult.data?.dimensions;
+  validMetricsView,
+  validExplore,
+}: Pick<
+  DashboardDataSources,
+  "validMetricsView" | "validExplore"
+>): MetricsViewSpecDimensionV2[] => {
+  return (
+    validMetricsView?.dimensions?.filter((d) =>
+      validExplore?.dimensions?.includes(d.name ?? ""),
+    ) ?? []
+  );
 };
 
 export const visibleDimensions = ({
-  metricsSpecQueryResult,
+  validMetricsView,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
-  const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
-    (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
+  return (
+    validMetricsView?.dimensions?.filter(
+      (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
+    ) ?? []
   );
-  return dimensions === undefined ? [] : dimensions;
-};
-
-export const dimensionTableDimName = ({
-  dashboard,
-}: DashboardDataSources): string | undefined => {
-  return dashboard.selectedDimensionName;
 };
 
 export const dimensionTableColumnName = (
@@ -47,16 +50,7 @@ export const getDimensionDisplayName = (
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
-    return (dim?.label?.length ? dim?.label : dim?.name) ?? name;
-  };
-};
-
-export const getDimensionDescription = (
-  dashData: DashboardDataSources,
-): ((name: string) => string) => {
-  return (name: string) => {
-    const dim = getDimensionByName(dashData)(name);
-    return dim?.description || "";
+    return (dim?.displayName?.length ? dim?.displayName : dim?.name) ?? name;
   };
 };
 
@@ -87,24 +81,12 @@ export const dimensionSelectors = {
    * given its "key" name.
    */
   getDimensionDisplayName,
-  /**
-   * Returns a function that can be used to get a dimension's description
-   * given its "key" name. Returns an empty string if the dimension has no description.
-   */
-  getDimensionDescription,
 
   /**
    * Gets the dimension that is currently being compared.
    * Returns undefined otherwise.
    */
   comparisonDimension,
-
-  /**
-   * Gets the name of the dimension that is currently selected in the dimension table.
-   * Returns undefined if no dimension is selected, in which case the dimension table
-   * is not shown.
-   */
-  dimensionTableDimName,
 
   /**
    * Gets the name of the column that is currently selected in the dimension table.

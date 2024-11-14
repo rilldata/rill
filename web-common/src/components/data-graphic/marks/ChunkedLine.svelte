@@ -31,8 +31,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let xAccessor: string;
   export let yAccessor: string;
 
-  export let isComparingDimension = false;
-
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
@@ -41,6 +39,9 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   // FIXME – this is a different prop than elsewhere
   export let lineColor = LineMutedColor;
   export let areaGradientColors: [string, string] | null = null;
+
+  export let lineOpacity = 1;
+  export let lineWidth = 1;
 
   $: area = areaGradientColors !== null;
 
@@ -129,7 +130,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        stroke-width={isComparingDimension ? 1.5 : 1}
+        opacity={lineOpacity}
+        stroke-width={lineWidth}
         stroke={lineColor}
         d={dt}
         id="segments-line"
@@ -175,7 +177,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
           {@const x = $xScale(segment[0][xAccessor])}
           {@const width =
             $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
-          <rect {x} y={0} height={$yScale.range()[0]} {width} />
+          <rect {x} y={0} height={Number($yScale.range()[0])} {width} />
         {/each}
       </clipPath>
     </defs>

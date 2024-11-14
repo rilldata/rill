@@ -35,6 +35,14 @@ service QueryService {
     };
   }
 
+  // ExportReport builds a URL to download the results of a query as a file.
+  rpc ExportReport(ExportReportRequest) returns (ExportReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/reports/{report}/export",
+      body: "*"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -145,7 +153,7 @@ service QueryService {
     };
   }
 
-  // Dashboard APIs
+  // Canvas APIs
 
   // ResolveComponent resolves the data and renderer for a Component resource.
   rpc ResolveComponent(ResolveComponentRequest) returns (ResolveComponentResponse) {
@@ -269,10 +277,22 @@ message ExportRequest {
   int64 limit = 2;
   ExportFormat format = 3;
   Query query = 4;
-  string baked_query = 5;
+  string baked_query = 5 [deprecated = true];
 }
 
 message ExportResponse {
+  string download_url_path = 1;
+}
+
+message ExportReportRequest {
+  string instance_id = 1;
+  string report = 2;
+  int64 limit = 3;
+  ExportFormat format = 4;
+  google.protobuf.Timestamp execution_time = 5;
+}
+
+message ExportReportResponse {
   string download_url_path = 1;
 }
 
@@ -751,7 +771,7 @@ message MetricsViewSearchResponse {
 }
 
 // **********
-// Dashboard APIs
+// Canvas APIs
 // **********
 
 message ResolveComponentRequest {

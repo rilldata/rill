@@ -5,7 +5,7 @@ import type {
 import { get } from "svelte/store";
 import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "./constants";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
-import { JWT, runtime } from "./runtime-store";
+import { type JWT, runtime } from "./runtime-store";
 
 /**
  * Runtime base URL

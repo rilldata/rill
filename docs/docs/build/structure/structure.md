@@ -7,9 +7,10 @@ sidebar_position: 00
 After creating your initial set of sources, models, and dashboards, you may have noticed the following _native_ folders that exist in your Rill project directory:
 - [Sources](/reference/project-files/sources)
 - [Models](/reference/project-files/models)
-- [Dashboards](/reference/project-files/dashboards)
+- [Metrics View](/reference/project-files/metrics-view)
+- [Dashboards](/reference/project-files/explore-dashboards)
 
-By default, any new sources, models, and dashboards will be created in their respective native folder. However, this does not necessarily have to be the case and Rill Developer allows a flexible project directory structure, including nested folders or even storing objects in non-native folders. This is a powerful feature that allows you as a developer to organize your project to meet your specific team needs.
+By default, any new sources, models, metrics view and dashboards will be created in their respective native folder. However, this does not necessarily have to be the case and Rill Developer allows a flexible project directory structure, including nested folders or even storing objects in non-native folders. This is a powerful feature that allows you as a developer to organize your project to meet your specific team needs.
 
 ## Adding new resources or parent folders
 

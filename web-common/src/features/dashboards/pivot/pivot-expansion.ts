@@ -11,8 +11,9 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { CreateQueryResult } from "@tanstack/svelte-query";
-import { Readable, derived, readable, writable } from "svelte/store";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { type Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -23,6 +24,7 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
+  getErrorFromResponses,
   getFilterForPivotTable,
   getSortFilteredMeasureBody,
   getSortForAccessor,
@@ -31,7 +33,12 @@ import {
   isTimeDimension,
   mergeTimeStrings,
 } from "./pivot-utils";
-import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
+import type {
+  PivotDataRow,
+  PivotDataStoreConfig,
+  PivotQueryError,
+  TimeFilters,
+} from "./types";
 
 /**
  * Extracts and organizes dimension values from a nested array structure
@@ -139,9 +146,24 @@ export function createSubTableCellQuery(
 interface ExpandedRowMeasureValues {
   isFetching: boolean;
   expandIndex: string;
+  error?: PivotQueryError[];
   rowDimensionValues: string[];
   data: V1MetricsViewAggregationResponseDataItem[];
   totals: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export function getExpandedErrorState(
+  errors: PivotQueryError[],
+  expandIndex: string,
+): ExpandedRowMeasureValues {
+  return {
+    isFetching: false,
+    error: errors,
+    expandIndex,
+    rowDimensionValues: [],
+    totals: [],
+    data: [],
+  };
 }
 
 /**
@@ -270,6 +292,11 @@ export function queryExpandedRowMeasureValues(
           ),
         ],
         ([expandIndex, subRowDimensions], axisSet) => {
+          if (subRowDimensions?.error?.length) {
+            return axisSet(
+              getExpandedErrorState(subRowDimensions.error, expandIndex),
+            );
+          }
           if (subRowDimensions?.isFetching) {
             const rowMeasureValuesEmpty: ExpandedRowMeasureValues = {
               isFetching: true,
@@ -300,7 +327,7 @@ export function queryExpandedRowMeasureValues(
 
           let subTableQuery:
             | Readable<null>
-            | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+            | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
             readable(null);
 
           if (config.colDimensionNames.length) {
@@ -319,6 +346,13 @@ export function queryExpandedRowMeasureValues(
           return derived(
             [subRowAxesQueryForMeasureTotals, subTableQuery],
             ([subRowTotals, subTableData]) => {
+              const subTableQueryError = getErrorFromResponses([subTableData]);
+              if (subTableQueryError.length || subRowTotals?.error?.length) {
+                const allErrors = subTableQueryError.concat(
+                  subRowTotals?.error || [],
+                );
+                return getExpandedErrorState(allErrors, expandIndex);
+              }
               if (subRowTotals?.isFetching) {
                 const rowMeasureValueWithoutSubTable: ExpandedRowMeasureValues =
                   {
@@ -469,4 +503,12 @@ export function addExpandedDataToPivot(
     }
   });
   return pivotData;
+}
+
+export function getExpandedQueryErrors(
+  expandedRowMeasureValues: ExpandedRowMeasureValues[],
+): PivotQueryError[] {
+  return expandedRowMeasureValues
+    .flatMap((expandedRow) => expandedRow.error || [])
+    .filter((error) => error !== undefined);
 }

@@ -1,4 +1,4 @@
-import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
+import type { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec, multiLayerBaseSpec } from "./utils";
 import {
   ScrubBoxColor,

@@ -7,14 +7,14 @@ const replacePunctuationWithSpace = (str: string) => {
   return str.replace(/[^a-zA-Z0-9 ]/g, " ");
 };
 
-export function shorthandTitle(str: string) {
+export function shorthandTitle(str: string | undefined) {
   if (!str) return;
   if (str.length === 1) return str.toUpperCase();
   const out = replacePunctuationWithSpace(str)
     .toUpperCase()
     .split(" ")
     .filter(filterStrings("AND", "OR", "THE"))
-    .filter((word: string) => word !== "") as string[];
+    .filter((word: string) => word !== "");
 
   if (out.length === 1) {
     // take first two letters

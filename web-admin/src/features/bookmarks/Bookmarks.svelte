@@ -4,26 +4,27 @@
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
+  import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
+  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
+  import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
+  import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
+  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
+  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
-  import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
-  import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
-  import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
-  import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let metricsViewName: string;
+  export let exploreName: string;
 
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
@@ -31,13 +32,18 @@
   $: bookmarkApplier = createBookmarkApplier(
     $runtime?.instanceId,
     metricsViewName,
+    exploreName,
   );
 
-  $: dashboardStore = useDashboardStore(metricsViewName);
+  $: exploreStore = useExploreStore(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
 
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier($runtime?.instanceId);
+  $: homeBookmarkModifier = createHomeBookmarkModifier(
+    $runtime?.instanceId,
+    metricsViewName,
+    exploreName,
+  );
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   function selectBookmark(bookmark: BookmarkEntry) {
@@ -45,15 +51,15 @@
   }
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(getBookmarkDataForDashboard($dashboardStore));
+    await homeBookmarkModifier(getBookmarkDataForDashboard($exploreStore));
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.MetricsView,
-        resourceName: metricsViewName,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
       }),
     );
   }
@@ -69,8 +75,8 @@
     return queryClient.refetchQueries(
       getAdminServiceListBookmarksQueryKey({
         projectId: $projectId.data ?? "",
-        resourceKind: ResourceKind.MetricsView,
-        resourceName: metricsViewName,
+        resourceKind: ResourceKind.Explore,
+        resourceName: exploreName,
       }),
     );
   }
@@ -98,6 +104,7 @@
     }}
     on:select={({ detail }) => selectBookmark(detail)}
     {metricsViewName}
+    {exploreName}
   />
 </DropdownMenu>
 
@@ -105,6 +112,7 @@
   <BookmarkDialog
     {bookmark}
     {metricsViewName}
+    {exploreName}
     onClose={() => {
       showDialog = false;
       bookmark = null;

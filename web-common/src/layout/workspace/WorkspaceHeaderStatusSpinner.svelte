@@ -30,7 +30,7 @@
 
 <div>
   <div class="text-gray-400">
-    <Tooltip alignment="center" distance={8} location="bottom">
+    <Tooltip distance={8} location="bottom">
       <Spinner size="18px" status={applicationStatus || EntityStatus.Idle} />
       <TooltipContent slot="tooltip-content"
         >{applicationStatusTooltip}

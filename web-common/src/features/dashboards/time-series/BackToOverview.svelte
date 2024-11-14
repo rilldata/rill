@@ -4,11 +4,11 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
-  export let metricViewName;
+  export let exploreName: string;
   export let isFetching = false;
 
   function goBackToOverview() {
-    metricsExplorerStore.setExpandedMeasureName(metricViewName, undefined);
+    metricsExplorerStore.setExpandedMeasureName(exploreName, undefined);
   }
 </script>
 

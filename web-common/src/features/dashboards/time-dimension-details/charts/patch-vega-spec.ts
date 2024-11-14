@@ -5,8 +5,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { VisualizationSpec } from "svelte-vega";
-import { TDDAlternateCharts, TDDChart } from "../types";
+import type { VisualizationSpec } from "svelte-vega";
+import { type TDDAlternateCharts, TDDChart } from "../types";
 
 function patchSpecForTimeComparison(
   sanitizedSpec,
@@ -61,8 +61,8 @@ export function patchSpecForTDD(
   spec,
   chartType: TDDAlternateCharts,
   timeGrain: V1TimeGrain,
-  xMin: Date,
-  xMax: Date,
+  xMin: Date | undefined,
+  xMax: Date | undefined,
   isTimeComparison: boolean,
   measureName: string,
   selectedDimensionValues: (string | null)[] = [],
@@ -87,9 +87,11 @@ export function patchSpecForTDD(
 
     colorEncoding = sanitizedSpec.encoding?.color;
 
-    xEncoding.scale = {
-      domain: [xMin.toISOString(), xMax.toISOString()],
-    };
+    if (xMin && xMax) {
+      xEncoding.scale = {
+        domain: [xMin.toISOString(), xMax.toISOString()],
+      };
+    }
   }
 
   if (!xEncoding || !yEncoding) {
@@ -104,11 +106,12 @@ export function patchSpecForTDD(
     };
   }
 
-  // Set extents for x-axis
-  xEncoding.scale = {
-    domain: [xMin.toISOString(), xMax.toISOString()],
-  };
-
+  if (xMin && xMax) {
+    // Set extents for x-axis
+    xEncoding.scale = {
+      domain: [xMin.toISOString(), xMax.toISOString()],
+    };
+  }
   const timeLabelFormat = TIME_GRAIN[timeGrain]?.d3format as string;
   // Remove titles from axes
   xEncoding.axis = {
@@ -124,7 +127,7 @@ export function patchSpecForTDD(
   const timeUnit = timeGrainToVegaTimeUnitMap[timeGrain];
   xEncoding.timeUnit = timeUnit;
 
-  if (isTimeComparison) {
+  if (isTimeComparison && !selectedValuesLength) {
     patchSpecForTimeComparison(
       sanitizedSpec,
       chartType,

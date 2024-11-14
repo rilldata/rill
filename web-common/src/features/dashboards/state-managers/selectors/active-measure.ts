@@ -5,12 +5,11 @@ import { isSummableMeasure } from "../../dashboard-utils";
 export const activeMeasure = (
   dashData: DashboardDataSources,
 ): MetricsViewSpecMeasureV2 | undefined => {
-  const measures = dashData.metricsSpecQueryResult.data?.measures;
-  if (!measures) {
+  if (!dashData.validMetricsView?.measures) {
     return undefined;
   }
 
-  const activeMeasure = measures.find(
+  const activeMeasure = dashData.validMetricsView.measures.find(
     (measure) => measure.name === activeMeasureName(dashData),
   );
   return activeMeasure;
@@ -24,12 +23,6 @@ export const selectedMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
   return [...dashData.dashboard.visibleMeasureKeys];
-};
-
-export const isAnyMeasureSelected = (
-  dashData: DashboardDataSources,
-): boolean => {
-  return selectedMeasureNames(dashData).length > 0;
 };
 
 export const isValidPercentOfTotal = (
@@ -60,11 +53,6 @@ export const activeMeasureSelectors = {
    * names of the currently selected measures
    */
   selectedMeasureNames,
-
-  /**
-   * Whether any measure is currently selected
-   */
-  isAnyMeasureSelected,
 
   /**
    * Does the currently active measure have `valid_percent_of_total: true`

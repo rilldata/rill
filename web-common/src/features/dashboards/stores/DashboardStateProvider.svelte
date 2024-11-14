@@ -6,9 +6,9 @@
 
   const dashboardStoreReady = createDashboardStateSync(getStateManagers());
 
-  export let metricViewName: string;
+  export let exploreName: string;
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: initLocalUserPreferenceStore(exploreName);
 </script>
 
 {#if $dashboardStoreReady.isFetching}

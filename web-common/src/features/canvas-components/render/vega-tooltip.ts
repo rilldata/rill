@@ -2,14 +2,18 @@ import {
   mouseLocationToBoundingRect,
   placeElement,
 } from "@rilldata/web-common/lib/place-element";
-import { View } from "svelte-vega";
-import { VLTooltipFormatter } from "../types";
+import type {
+  Alignment,
+  Location,
+} from "@rilldata/web-common/lib/place-element";
+import type { View } from "svelte-vega";
+import type { VLTooltipFormatter } from "../types";
 
 const TOOLTIP_ID = "rill-vg-tooltip";
 
 export class VegaLiteTooltipHandler {
-  location = "left";
-  alignment = "middle";
+  location: Location = "left";
+  alignment: Alignment = "middle";
   distance = 0;
   pad = 8;
   public valueFormatter: VLTooltipFormatter;

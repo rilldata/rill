@@ -96,6 +96,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
+		AdminUrl:         s.app.ch.AdminURL(),
 	}), nil
 }
 
@@ -404,9 +405,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
 	}
 	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-		OrganizationName: r.Msg.Org,
-		Name:             r.Msg.ProjectName,
-		Variables:        parser.DotEnv,
+		Organization: r.Msg.Org,
+		Project:      r.Msg.ProjectName,
+		Variables:    parser.DotEnv,
 	})
 	if err != nil {
 		return nil, err
@@ -487,7 +488,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	}
 
 	// get rill user orgs
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{PageSize: 1000})
 	if err != nil {
 		return nil, err
 	}
