@@ -92,9 +92,9 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv,"cloud", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
 	case "e2e":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv,"e2e", services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
