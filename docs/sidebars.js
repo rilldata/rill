@@ -187,7 +187,6 @@ const sidebars = {
    //         'tutorials/other/create-map-component',
    //         'tutorials/other/component-variable-freedom',
             'tutorials/other/embed-dashboard',
-      //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
       //      'tutorials/other/Rill Cloud/views',
       //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',

@@ -1,7 +1,7 @@
 ---
-title: "Partitions with Cloud Storage"
+title: "Incremental Partitioned Models on Cloud Storage"
 description:  "Getting Started with Partitions"
-sidebar_label: "Cloud Storage: Partitions and Incremental Models"
+sidebar_label: "Cloud Storage: Incremental Partitioned Models"
 sidebar_position: 12
 ---
 
@@ -9,7 +9,7 @@ Now that we understand what Incremental Models and Partitions are, let's apply t
 
 Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's sql select statements.
 
-### Let's create a basic partition model.
+### Let's create a basic partitioned model.
 In the previous courses, we used a GCS connection to import ClickHouse's repository commit history. Let's go ahead and assume we are using the same folder structure.
 
 ```
@@ -27,7 +27,7 @@ type: model
 partitions:
   glob:
     connector: gcs
-    path: gs://rilldata-public/github-analytics/Clickhouse/*/*/commits_*.parquet
+    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*/commits_*.parquet
 ```
 3. Set the SQL statement to user the URI.
 ```yaml
@@ -37,9 +37,9 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}')
 Once you save the file, Rill will start to ingest all the partitions from GCS. This may take a few minutes. You can see the progress of the ingestion from the CLI.
 
 ```bash
-2024-11-12T13:41:43.355 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "3c4cdfc819f8a64ecaeecbc9ae9702af", "data": {"path":"github-analytics/Clickhouse/2019/01/commits_2019_01.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2019/01/commits_2019_01.parquet"}, "elapsed": "903.89675ms"}
-2024-11-12T13:41:44.158 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "ecd933fe9b5089f940e592d500b168a0", "data": {"path":"github-analytics/Clickhouse/2019/02/commits_2019_02.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2019/02/commits_2019_02.parquet"}, "elapsed": "802.034542ms"}
-2024-11-12T13:41:44.945 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "0a5023cdd0a340aa95f387bb20c1a942", "data": {"path":"github-analytics/Clickhouse/2019/03/commits_2019_03.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2019/03/commits_2019_03.parquet"}, "elapsed": "786.159292ms"}
+2024-11-12T13:41:43.355 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "3c4cdfc819f8a64ecaeecbc9ae9702af", "data": {"path":"github-analytics/Clickhouse/2024/01/commits_2024_01.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2024/01/commits_2024_01.parquet"}, "elapsed": "903.89675ms"}
+2024-11-12T13:41:44.158 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "ecd933fe9b5089f940e592d500b168a0", "data": {"path":"github-analytics/Clickhouse/2024/02/commits_2024_02.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2024/02/commits_2024_02.parquet"}, "elapsed": "802.034542ms"}
+2024-11-12T13:41:44.945 INFO    Executed model partition        {"model": "partitions_tutorial", "key": "0a5023cdd0a340aa95f387bb20c1a942", "data": {"path":"github-analytics/Clickhouse/2024/03/commits_2024_03.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2024/03/commits_2024_03.parquet"}, "elapsed": "786.159292ms"}
 ```
 
 
@@ -61,6 +61,7 @@ rill project partitions <model_name> --local
   KEY (50)                           DATA                                                                                                                                                              EXECUTED ON            ELAPSED   ERROR  
  ---------------------------------- ----------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------- --------- ------- 
   9a71c41f9c9b268e7ca3bedfe4c2774b   {"path":"github-analytics/Clickhouse/2014/01/commits_2014_01.parquet","uri":"gs://rilldata-public/github-analytics/Clickhouse/2014/01/commits_2014_01.parquet"}   2024-11-12T20:40:55Z   667ms    
+  ...
 ```
 
 

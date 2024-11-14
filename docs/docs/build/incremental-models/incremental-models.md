@@ -83,6 +83,12 @@ When you are testing with incremental models in Rill Developer, you will notice 
 
 ![img](/img/tutorials/302/now-incremental.png)
 
+:::tip What's the difference?
+Once increments are enabled on a model, this grants you the ability to refresh the model in increments, instead of loading the full data each time. This is handy when you're data is massive and reingesting the data may take time. For a project on production, this allows for less downtime when needing to update your dashboards when the source data is updated. 
+
+There are times where a full refresh may be required. In these cases, running the full refresh is equiavalent to running a normal refresh with incremental disabled.
+:::
+
 When selecting to refresh incrementally what is being run in the CLI is:
 
 ```bash

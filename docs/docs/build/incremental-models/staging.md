@@ -7,7 +7,7 @@ sidebar_position: 10
 Staging models are required for situations where the input and output type are not supported, such as Snowflake to ClickHouse. 
 
 :::note Supported 
-Staging Models is in ongoing development, while we do have support for the following, please reach out to us if you have any specific requirements.
+Staging Models is in ongoing development, while we do have support for the following, please [reach out to us](contact.md) if you have any specific requirements.
 
 Snowflake --> S3 --> ClickHouse
 
@@ -21,7 +21,7 @@ Snowflake --> S3 --> ClickHouse
 
 In the above example, during the ingestion from Snowflake to Clickhouse, we use the temporary staging table in S3 to write from Snowflake to S3, then from S3 to ClickHouse. Once this procedure is complete, we clear the temporary data from S3.
 
-### Example:
+### Sample YAML:
 
 ```yaml
 # Use DuckDB to generate a range of days from 1st Jan to today
@@ -41,7 +41,9 @@ stage:
   connector: s3
   path: s3://bucket/temp-data
 
-# Produce the final output into ClickHouse
+# Produce the final output into ClickHouse, requires a clickhouse.yaml connector defined.
 output:
   connector: clickhouse
 ```
+
+

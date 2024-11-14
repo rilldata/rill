@@ -8,8 +8,10 @@ sidebar_position: 05
 
 Putting the two concepts together, it is possible to create a incremental partitioned model. Doing so will allow you to not only partition the model but refresh only the partition that you need and incrementally ingest partitions 
 
-:::tip
+:::note
+If you need any assistance with setting up a incremental partitioned model, [reach out](contact.md) to us for assistance! 
 
+If you're looking for a working example, take a look at [my-rill-tutorial in our examples repository](https://github.com/rilldata/rill-examples).
 :::
 
 
@@ -53,23 +55,21 @@ Refresh initiated. Check the project logs for status updates.
 ## How Incremental Partitioned Models Work
 
 ### Initial Ingestion:
-When a model is first created, an intial ingestion will occur to bring in all of the data. This is also what occurs when you run a `Full Refresh`.
+When a model is first created, an intial ingestion will occur to bring in all of the data. This is also what occurs when you run a `Full Refresh`. Note in the below image, all **gray** portions of the partitioned source are saved in separate partitions in the partitioned model.
 
 <div style={{ textAlign: "center" }}>
 <img src="/img/build/advanced-models/initial-ingestion.png" width="600" />
 </div>
 
 ### Additional Partition:
-If you add an additional partition to the source table, on the next refresh, Rill will detect the new partition and **only** add the additional partition to the model, as you can see in the diagram. If the other partitions have not been modified, these will not be touched. 
+If you add an additional partition to the source table, on the next refresh, Rill will detect the new partition and **only** add the additional partition to the model, as you can see in the diagram, the **blue** additional partition is added in its own partition in the partitioned model. If the other partitions have not been modified, these will not be touched. 
 <div style={{ textAlign: "center" }}>
-
 <img src="/img/build/advanced-models/addition-partition.png" width="600" />
 </div>
 
 ### Modify Existing Partition:
-If you modify any of the already existing partitions, Rill will reingest just the modified file during the scheduled refresh by checking the `last_modified_date` parameter.
+If you modify any of the already existing partition, **yellow**, Rill will reingest just the modified file during the scheduled refresh by checking the `last_modified_date` parameter.
 <div style={{ textAlign: "center" }}>
-
 <img src="/img/build/advanced-models/modified-partition.png" width="600" />
 </div>
 
