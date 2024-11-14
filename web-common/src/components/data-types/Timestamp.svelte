@@ -1,14 +1,14 @@
-<script>
+<script lang="ts">
   import { formatDataType } from "../../lib/formatters";
   import Base from "./Base.svelte";
   export let isNull = false;
   export let inTable = false;
   export const textAlign = "text-right";
   export let customStyle = "";
-  export let dark;
-  export let type;
+  export let dark: boolean;
+  export let type: string;
   export let value;
-  export let truncate;
+  export let truncate: boolean;
 </script>
 
 <Base

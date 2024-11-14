@@ -5,8 +5,11 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
  * used in the `format_preset` field of a measure definition.
  */
 export enum FormatPreset {
-  HUMANIZE = "humanize",
+  /**
+   * In absence of a format preset, none is applied.
+   */
   NONE = "none",
+  HUMANIZE = "humanize",
   CURRENCY_USD = "currency_usd",
   CURRENCY_EUR = "currency_eur",
   PERCENTAGE = "percentage",
@@ -133,6 +136,7 @@ export type NumberParts = {
   dot: "" | ".";
   frac: string;
   suffix: string;
+  prefix?: string;
   percent?: "%";
   approxZero?: boolean;
 };
@@ -244,6 +248,12 @@ export type RangeFormatSpec = {
    * will be formatted as just "123", with no decimal point.
    */
   useTrailingDot?: boolean;
+
+  /**
+   * If set, all numbers within the range use the number parts provided
+   * ignoring all other spec instructions
+   */
+  overrideValue?: NumberParts;
 };
 
 /**
@@ -292,3 +302,9 @@ export interface Formatter {
   stringFormat(x: number): string;
   partsFormat(x: number): NumberParts;
 }
+
+export type FormatterContext =
+  | "table"
+  | "unabridged"
+  | "big-number"
+  | "tooltip";

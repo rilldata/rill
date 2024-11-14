@@ -28,11 +28,11 @@ When connecting to MySQL, an appropriate Data Source Name (DSN) will need to be 
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify a connection string when running Rill using the `--var` flag.
+When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify a connection string when running Rill using the `--env` flag.
 An example of passing the connection DSN to Rill via the terminal:
 
 ```bash
-rill start --var connector.mysql.dsn="mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
+rill start --env connector.mysql.dsn="mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
 ```
 
 Alternatively, you can include the connection string directly in the source YAML definition by adding the `database_url` parameter. 

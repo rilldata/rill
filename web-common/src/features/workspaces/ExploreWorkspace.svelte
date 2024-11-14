@@ -3,8 +3,10 @@
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    resourceIsLoading,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
@@ -22,14 +24,19 @@
     path: filePath,
     resourceName,
     fileName,
+    getResource,
+    getAllErrors,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: resourceQuery = getResource(queryClient, instanceId);
+
+  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
+  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -37,7 +44,6 @@
       newTitle,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.Explore),
     );
     if (newRoute) await goto(newRoute);
   }
@@ -56,7 +62,8 @@
     <PreviewButton
       slot="cta"
       href="/explore/{exploreName}"
-      disabled={allErrors.length > 0}
+      disabled={allErrors.length > 0 || resourceIsReconciling}
+      reconciling={resourceIsReconciling}
     />
   </WorkspaceHeader>
 

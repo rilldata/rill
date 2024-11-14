@@ -141,7 +141,7 @@
 </script>
 
 <div
-  class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
+  class="relative w-full flex-none overflow-hidden flex flex-col bg-gray-100"
 >
   <Resizer
     disabled={!isOpen}

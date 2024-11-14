@@ -1,6 +1,7 @@
 {
   "name": "web-common",
-  "version": "0.0.1",
+  "private": true,
+  "version": "0.0.0",
   "scripts": {
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
@@ -49,7 +50,6 @@
     "@types/d3-time-format": "^4.0.3",
     "@types/dompurify": "^3.0.5",
     "@types/luxon": "^3.4.2",
-    "@vitest/coverage-c8": "^0.31.0",
     "autoprefixer": "^10.4.20",
     "bits-ui": "^0.21.15",
     "chroma-js": "^2.4.2",

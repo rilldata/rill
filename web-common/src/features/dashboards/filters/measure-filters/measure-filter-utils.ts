@@ -25,9 +25,10 @@ export function mergeMeasureFilters(
 }
 
 export function mergeDimensionAndMeasureFilter(
-  whereFilter: V1Expression,
+  whereFilter: V1Expression | undefined,
   dimensionThresholdFilters: DimensionThresholdFilter[],
 ) {
+  if (!whereFilter) return createAndExpression([]);
   const where =
     filterExpressions(whereFilter, () => true) ?? createAndExpression([]);
   where.cond?.exprs?.push(

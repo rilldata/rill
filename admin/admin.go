@@ -47,7 +47,7 @@ type Service struct {
 	issuer              *auth.Issuer
 	VersionNumber       string
 	VersionCommit       string
-	metricsProjectID    string
+	MetricsProjectID    string
 	AutoscalerCron      string
 	ScaleDownConstraint int
 	Biller              billing.Biller
@@ -122,7 +122,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		issuer:              issuer,
 		VersionNumber:       opts.VersionNumber,
 		VersionCommit:       opts.VersionCommit,
-		metricsProjectID:    metricsProjectID,
+		MetricsProjectID:    metricsProjectID,
 		AutoscalerCron:      opts.AutoscalerCron,
 		ScaleDownConstraint: opts.ScaleDownConstraint,
 		Biller:              biller,

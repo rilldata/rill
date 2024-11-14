@@ -9,7 +9,6 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { slide } from "svelte/transition";
-  import { getStateManagers } from "../state-managers/state-managers";
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
@@ -17,15 +16,33 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let isValidPercentOfTotal: boolean;
-  export let isTimeComparisonActive: boolean;
+  export let uri: string | undefined;
   export let tableWidth: number;
+  export let columnWidths: {
+    dimension: number;
+    value: number;
+    percentOfTotal: number;
+    delta: number;
+    deltaPercent: number;
+  };
+  export let gutterWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
-  export let uri: string | undefined;
-  export let firstColumnWidth: number;
-  export let columnWidth: number;
-  export let gutterWidth: number;
+  export let isSummableMeasure: boolean;
+  export let isBeingCompared: boolean;
+  export let filterExcludeMode: boolean;
+  export let atLeastOneActive: boolean;
+  export let isValidPercentOfTotal: boolean;
+  export let isTimeComparisonActive: boolean;
+  export let toggleDimensionValueSelection: (
+    dimensionName: string,
+    dimensionValue: string,
+    keepPillVisible?: boolean | undefined,
+    isExclusiveFilter?: boolean | undefined,
+  ) => void;
+  export let formatter:
+    | ((_value: number | undefined) => undefined)
+    | ((value: string | number) => string);
 
   let hovered = false;
 
@@ -39,22 +56,6 @@
 
   $: selected = selectedIndex >= 0;
 
-  const {
-    selectors: {
-      activeMeasure: { isSummableMeasure },
-      numberFormat: { activeMeasureFormatter },
-      dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
-      comparison: { isBeingCompared: isBeingComparedReadable },
-    },
-    actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
-    },
-  } = getStateManagers();
-
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
-  $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
-  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
-
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
@@ -64,29 +65,16 @@
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
-      ? $activeMeasureFormatter(comparisonValue)
+      ? formatter(comparisonValue)
       : undefined;
 
-  $: formattedValue = measureValue
-    ? $activeMeasureFormatter(measureValue)
-    : null;
+  $: formattedValue = measureValue ? formatter(measureValue) : null;
 
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
 
-  function shiftClickHandler(label: string) {
-    let truncatedLabel = label?.toString();
-    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-    }
-    copyToClipboard(
-      label,
-      `copied dimension value "${truncatedLabel}" to clipboard`,
-    );
-  }
-
   $: href = makeHref(uri);
 
-  $: percentOfTotal = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+  $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
   $: barLength = (tableWidth - gutterWidth) * percentOfTotal;
 
@@ -96,21 +84,36 @@
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";
 
-  // Bar gradient has to be split up across cells because of a bug in Safari
-  // This is not necessary in other browsers, but doing it this way ensures consistency
-
-  $: secondCellBarLength = clamp(0, barLength - firstColumnWidth, columnWidth);
-  $: thirdCellBarLength = clamp(
+  $: secondCellBarLength = clamp(
     0,
-    barLength - (firstColumnWidth + columnWidth),
-    columnWidth,
+    barLength - columnWidths.dimension,
+    columnWidths.value,
   );
-  $: fourthCellBarLength = clamp(
-    0,
-    Math.max(barLength - (firstColumnWidth + columnWidth * 2), 0),
-    columnWidth,
-  );
+  $: thirdCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength - columnWidths.dimension - columnWidths.value,
+        columnWidths.delta,
+      )
+    : isValidPercentOfTotal
+      ? clamp(
+          0,
+          barLength - columnWidths.dimension - columnWidths.value,
+          columnWidths.percentOfTotal,
+        )
+      : 0;
+  $: fourthCellBarLength = isTimeComparisonActive
+    ? clamp(
+        0,
+        barLength -
+          columnWidths.dimension -
+          columnWidths.value -
+          columnWidths.delta,
+        columnWidths.deltaPercent,
+      )
+    : 0;
 
+  // Update the gradients
   $: firstCellGradient = `linear-gradient(to right, ${barColor}
     ${barLength}px, transparent ${barLength}px)`;
 
@@ -129,7 +132,7 @@
     ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
     : undefined;
 
-  $: showZigZag = barLength > tableWidth;
+  $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
   function makeHref(uriTemplateOrBoolean: string | undefined) {
@@ -151,6 +154,17 @@
     } else {
       return uri;
     }
+  }
+
+  function shiftClickHandler(label: string) {
+    let truncatedLabel = label?.toString();
+    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
+      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
+    }
+    copyToClipboard(
+      label,
+      `copied dimension value "${truncatedLabel}" to clipboard`,
+    );
   }
 </script>
 
@@ -228,9 +242,7 @@
     <td style:background={thirdCellGradient}>
       <FormattedDataType
         type="INTEGER"
-        value={itemData.deltaAbs
-          ? $activeMeasureFormatter(itemData.deltaAbs)
-          : null}
+        value={itemData.deltaAbs ? formatter(itemData.deltaAbs) : null}
         customStyle={negativeChange ? "text-red-500" : ""}
       />
     </td>

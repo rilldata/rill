@@ -5,8 +5,8 @@ import "context"
 // ModelExecutor executes models.
 // A ModelExecutor may either be the a model's input or output connector.
 type ModelExecutor interface {
-	// Execute runs the model. The execution may be a full, incremental, or split run.
-	// For split runs, Execute may be called concurrently by multiple workers.
+	// Execute runs the model. The execution may be a full, incremental, or partition run.
+	// For partition runs, Execute may be called concurrently by multiple workers.
 	Execute(ctx context.Context, opts *ModelExecuteOptions) (*ModelResult, error)
 
 	// Concurrency returns the number of concurrent calls that may be made to Execute given a user-provided desired concurrency.
@@ -27,8 +27,8 @@ type ModelManager interface {
 	// Delete removes the result from the connector.
 	Delete(ctx context.Context, res *ModelResult) error
 
-	// MergeSplitResults merges two results produced by concurrent incremental split runs.
-	MergeSplitResults(a, b *ModelResult) (*ModelResult, error)
+	// MergePartitionResults merges two results produced by concurrent incremental partition runs.
+	MergePartitionResults(a, b *ModelResult) (*ModelResult, error)
 }
 
 // ModelExecutorOptions are options passed when acquiring a ModelExecutor.
@@ -67,11 +67,13 @@ type ModelExecuteOptions struct {
 	Incremental bool
 	// IncrementalRun is true if the execution is an incremental run.
 	IncrementalRun bool
-	// SplitRun is true if the execution is a split run.
-	SplitRun bool
+	// PartitionRun is true if the execution is a partition run.
+	PartitionRun bool
 	// PreviousResult is the result of a previous execution.
-	// For concurrent split execution, it may not be the most recent previous result.
+	// For concurrent partition execution, it may not be the most recent previous result.
 	PreviousResult *ModelResult
+	// TempDir is a temporary directory for storing intermediate data.
+	TempDir string
 }
 
 // ModelEnv contains contextual info about the model's instance.

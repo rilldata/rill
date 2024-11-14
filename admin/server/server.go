@@ -39,8 +39,9 @@ import (
 var (
 	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
 	_minCliVersionByMethod = map[string]*version.Version{
-		"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
-		"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateProject":          version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateOrganization":     version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateProjectVariables": version.Must(version.NewVersion("0.51.0")),
 	}
 )
 
@@ -316,7 +317,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 
 	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+			return ctx, status.Error(codes.ResourceExhausted, err.Error())
 		}
 		return ctx, err
 	}
@@ -446,7 +447,7 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	if v.LessThan(minVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for this operation, run `rill upgrade` to upgrade to the latest version", v))
 	}
 
 	return ctx, nil

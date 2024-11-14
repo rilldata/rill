@@ -39,18 +39,22 @@
 
   $: measureValueFormatter = createMeasureValueFormatter<null>(
     measure,
-    false,
-    true,
+    "big-number",
   );
 
   // this is used to show the full value in tooltips when the user hovers
   // over the number. If not present, we'll use the string "no data"
-  $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
+  $: measureValueFormatterTooltip = createMeasureValueFormatter<null>(
     measure,
-    true,
+    "tooltip",
   );
 
-  $: name = measure?.label || measure?.expression;
+  $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
+    measure,
+    "unabridged",
+  );
+
+  $: name = measure?.displayName || measure?.expression;
 
   $: if (value === undefined) {
     value = null;
@@ -75,7 +79,8 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
+  $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
+  $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
@@ -103,7 +108,7 @@
     slot="tooltip-content"
     {measure}
     {isMeasureExpanded}
-    value={hoveredValue}
+    value={tooltipValue}
   />
 
   <svelte:element
@@ -114,7 +119,7 @@
     class:shadow-grad={!isMeasureExpanded}
     class:cursor-pointer={!isMeasureExpanded}
     on:click={modified({
-      shift: () => shiftClickHandler(hoveredValue),
+      shift: () => shiftClickHandler(copyValue),
       click: () => {
         suppressTooltip = true;
         handleExpandMeasure();
@@ -147,11 +152,11 @@
                 class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
                 class:font-semibold={isComparisonPositive}
                 on:mouseenter={() =>
-                  (hoveredValue =
-                    measureValueFormatterUnabridged(diff) ?? "no data")}
+                  (tooltipValue =
+                    measureValueFormatterTooltip(diff) ?? "no data")}
                 on:mouseleave={() =>
-                  (hoveredValue =
-                    measureValueFormatterUnabridged(value) ?? "no data")}
+                  (tooltipValue =
+                    measureValueFormatterTooltip(value) ?? "no data")}
               >
                 {#if !noChange}
                   {formattedDiff}
@@ -167,13 +172,13 @@
               <div
                 role="complementary"
                 on:mouseenter={() =>
-                  (hoveredValue = numberPartsToString(
+                  (tooltipValue = numberPartsToString(
                     formatMeasurePercentageDifference(
                       comparisonPercChange ?? 0,
                     ),
                   ))}
                 on:mouseleave={() =>
-                  (hoveredValue =
+                  (tooltipValue =
                     measureValueFormatterUnabridged(value) ?? "no data")}
                 class="w-fit ui-copy-inactive"
                 class:text-red-500={!isComparisonPositive}

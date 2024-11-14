@@ -747,7 +747,7 @@ paths:
           schema:
             type: object
             properties:
-              title:
+              displayName:
                 type: string
               force:
                 type: boolean
@@ -971,15 +971,15 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/models/{model}/splits:
+  /v1/instances/{instanceId}/models/{model}/partitions:
     get:
-      summary: GetModelSplits returns the splits of a model
-      operationId: RuntimeService_GetModelSplits
+      summary: GetModelPartitions returns the partitions of a model
+      operationId: RuntimeService_GetModelPartitions
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetModelSplitsResponse'
+            $ref: '#/definitions/v1GetModelPartitionsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2386,6 +2386,44 @@ paths:
                   $ref: '#/definitions/v1Query'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/reports/{report}/export:
+    post:
+      summary: ExportReport builds a URL to download the results of a query as a file.
+      operationId: QueryService_ExportReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ExportReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: report
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              limit:
+                type: string
+                format: int64
+              format:
+                $ref: '#/definitions/v1ExportFormat'
+              executionTime:
+                type: string
+                format: date-time
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/resource:
     get:
       summary: GetResource looks up a specific catalog resource
@@ -2561,6 +2599,26 @@ paths:
                   Will trigger models with RefreshModelTrigger.full set to true.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/variables/analyze:
+    get:
+      summary: AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+      operationId: RuntimeService_AnalyzeVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AnalyzeVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/olap/tables:
     get:
       summary: OLAPListTables list all tables across all databases on motherduck
@@ -2580,6 +2638,15 @@ paths:
           required: false
           type: string
         - name: connector
+          description: Connector to list tables from.
+          in: query
+          required: false
+          type: string
+        - name: searchPattern
+          description: |-
+            Optional search pattern to filter tables by.
+            Has the same syntax and behavior as ILIKE in SQL.
+            If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
           in: query
           required: false
           type: string
@@ -2873,13 +2940,13 @@ definitions:
     properties:
       name:
         type: string
+      displayName:
+        type: string
+      description:
+        type: string
       column:
         type: string
       expression:
-        type: string
-      label:
-        type: string
-      description:
         type: string
       unnest:
         type: boolean
@@ -2899,6 +2966,10 @@ definitions:
     type: object
     properties:
       name:
+        type: string
+      displayName:
+        type: string
+      description:
         type: string
       expression:
         type: string
@@ -2920,14 +2991,12 @@ definitions:
         type: array
         items:
           type: string
-      label:
-        type: string
-      description:
-        type: string
       formatPreset:
         type: string
       formatD3:
         type: string
+      formatD3Locale:
+        type: object
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
@@ -3149,10 +3218,10 @@ definitions:
   v1AlertSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       watermarkInherit:
@@ -3232,6 +3301,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1AnalyzedConnector'
     title: Response message for RuntimeService.AnalyzeConnectors
+  v1AnalyzeVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AnalyzedVariable'
+    title: Response message for RuntimeService.AnalyzeVariables
   v1AnalyzedConnector:
     type: object
     properties:
@@ -3274,6 +3352,21 @@ definitions:
         type: string
         title: Error message if the connector is misconfigured
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
+  v1AnalyzedVariable:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Name of the variable.
+      defaultValue:
+        type: string
+        description: Default value set for the variable in rill.yaml, if any.
+      usedBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+        description: List of resources that appear to use the connector.
   v1AssertionResult:
     type: object
     properties:
@@ -3375,7 +3468,7 @@ definitions:
   v1CanvasSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       columns:
         type: integer
@@ -3728,9 +3821,9 @@ definitions:
   v1ComponentSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-      subtitle:
+      description:
         type: string
       resolver:
         type: string
@@ -3949,7 +4042,7 @@ definitions:
     properties:
       name:
         type: string
-      title:
+      displayName:
         type: string
       description:
         type: string
@@ -4014,9 +4107,9 @@ definitions:
   v1ExploreSpec:
     type: object
     properties:
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -4042,6 +4135,8 @@ definitions:
       theme:
         type: string
         title: Theme to use
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
       timeRanges:
         type: array
         items:
@@ -4061,6 +4156,9 @@ definitions:
       defaultPreset:
         $ref: '#/definitions/v1ExplorePreset'
         description: Preset UI state to show by default.
+      embedsHidePivot:
+        type: boolean
+        description: If true, the pivot tab will be hidden when the explore is embedded.
       securityRules:
         type: array
         items:
@@ -4094,6 +4192,11 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
+  v1ExportReportResponse:
+    type: object
+    properties:
+      downloadUrlPath:
+        type: string
   v1ExportResponse:
     type: object
     properties:
@@ -4227,14 +4330,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
-  v1GetModelSplitsResponse:
+  v1GetModelPartitionsResponse:
     type: object
     properties:
-      splits:
+      partitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ModelSplit'
+          $ref: '#/definitions/v1ModelPartition'
       nextPageToken:
         type: string
   v1GetResourceResponse:
@@ -4901,9 +5004,9 @@ definitions:
       model:
         type: string
         description: Name of the model the metrics view is based on. Either table or model should be set.
-      title:
+      displayName:
         type: string
-        title: User-facing title
+        title: User-facing name
       description:
         type: string
         title: User-facing description
@@ -5200,6 +5303,24 @@ definitions:
       version:
         type: integer
         format: int64
+  v1ModelPartition:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelSpec:
     type: object
     properties:
@@ -5214,13 +5335,13 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
-      splitsResolver:
+      partitionsResolver:
         type: string
-      splitsResolverProperties:
+      partitionsResolverProperties:
         type: object
-      splitsWatermarkField:
+      partitionsWatermarkField:
         type: string
-      splitsConcurrencyLimit:
+      partitionsConcurrencyLimit:
         type: integer
         format: int64
       inputConnector:
@@ -5240,24 +5361,6 @@ definitions:
         type: boolean
       triggerFull:
         type: boolean
-  v1ModelSplit:
-    type: object
-    properties:
-      key:
-        type: string
-      data:
-        type: object
-      watermark:
-        type: string
-        format: date-time
-      executedOn:
-        type: string
-        format: date-time
-      error:
-        type: string
-      elapsedMs:
-        type: integer
-        format: int64
   v1ModelState:
     type: object
     properties:
@@ -5289,12 +5392,12 @@ definitions:
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
         description: incremental_state_schema contains a schema for the data in incremental_state.
-      splitsModelId:
+      partitionsModelId:
         type: string
-        description: splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
-      splitsHaveErrors:
+        description: partitions_model_id is a randomly generated ID used to store the model's partitions in the CatalogStore.
+      partitionsHaveErrors:
         type: boolean
-        description: splits_have_errors is true if one or more splits failed to execute.
+        description: partitions_have_errors is true if one or more partitions failed to execute.
   v1ModelV2:
     type: object
     properties:
@@ -5593,14 +5696,14 @@ definitions:
         description: |-
           If true, the current table and state will be dropped before refreshing.
           For non-incremental models, this is equivalent to a normal refresh.
-      splits:
+      partitions:
         type: array
         items:
           type: string
-        description: Keys of specific splits to refresh.
-      allErroredSplits:
+        description: Keys of specific partitions to refresh.
+      allErroredPartitions:
         type: boolean
-        description: If true, it will refresh all splits that errored on their last execution.
+        description: If true, it will refresh all partitions that errored on their last execution.
   v1RefreshTrigger:
     type: object
     properties:
@@ -5656,10 +5759,10 @@ definitions:
   v1ReportSpec:
     type: object
     properties:
+      displayName:
+        type: string
       trigger:
         type: boolean
-      title:
-        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
@@ -6103,6 +6206,10 @@ definitions:
         $ref: '#/definitions/v1Color'
       secondaryColor:
         $ref: '#/definitions/v1Color'
+      primaryColorRaw:
+        type: string
+      secondaryColorRaw:
+        type: string
   v1ThemeState:
     type: object
   v1TimeGrain:

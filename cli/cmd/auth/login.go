@@ -71,7 +71,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	}
 
 	ch.PrintfBold("\nConfirmation Code: ")
-	ch.PrintfSuccess(deviceVerification.UserCode + "\n")
+	ch.PrintfSuccess("%s\n", deviceVerification.UserCode)
 
 	ch.PrintfBold("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
 

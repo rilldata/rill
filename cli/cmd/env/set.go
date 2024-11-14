@@ -1,6 +1,8 @@
 package env
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -8,7 +10,7 @@ import (
 
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, environment string
 
 	setCmd := &cobra.Command{
 		Use:   "set <key> <value>",
@@ -27,30 +29,15 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			if projectName == "" {
 				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
-			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-			})
-			if err != nil {
-				return err
-			}
-
-			if val, ok := resp.Variables[key]; ok && val == value {
-				return nil
-			}
-
-			if resp.Variables == nil {
-				resp.Variables = make(map[string]string)
-			}
-			resp.Variables[key] = value
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-				Variables:        resp.Variables,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
+				Variables:    map[string]string{key: value},
 			})
 			if err != nil {
 				return err
@@ -63,6 +50,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	setCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return setCmd
 }

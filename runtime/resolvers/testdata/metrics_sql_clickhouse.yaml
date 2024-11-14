@@ -1,0 +1,67 @@
+connectors:
+  - clickhouse
+project_files:
+  ad_bids_mini.yaml:
+    type: model
+    connector: clickhouse
+    materialize: true
+    sql: |
+      SELECT 0::UInt32 AS id, parseDateTimeBestEffort('2022-01-01T14:49:50.459Z') AS timestamp, NULL::Nullable(varchar) AS publisher, 'msn.com'::varchar AS domain, 2::Float32 AS bid_price, 1::UInt8 AS volume, 2::UInt8 AS impressions, 'cars'::varchar AS ad_words, NULL::Nullable(Float32) AS clicks, 'iphone'::Nullable(varchar) AS device
+      UNION ALL
+      SELECT 2, parseDateTimeBestEffort('2022-01-03T14:49:50.459Z'), NULL, 'msn.com', 2.5, 10, 1, 'cars', NULL, 'iphone'
+      UNION ALL
+      SELECT 1, parseDateTimeBestEffort('2022-01-02T11:58:12.475Z'), 'Yahoo', 'yahoo.com', 2, 100, 1, 'cars', 1, NULL
+      UNION ALL
+      SELECT 3, parseDateTimeBestEffort('2022-01-04T11:58:12.475Z'), 'Yahoo', 'yahoo.com', 2.5, 200, 2, 'cars', 1.5, NULL
+  metrics_with_policy.yaml:
+    type: metrics_view
+    model: ad_bids_mini
+    timeseries: timestamp
+    dimensions:
+      - column: publisher
+      - column: domain
+    measures:
+      - name: bid's number
+        expression: count(*)
+      - name: total volume
+        expression: sum(volume)
+      - name: total impressions
+        expression: sum(impressions)
+      - name: total click"s
+        expression: sum(clicks)
+    security:
+      access: true
+      row_filter: "domain = '{{ .user.domain }}'"
+      exclude:
+        - if: "'{{ .user.domain }}' != 'msn.com'"
+          names: [total volume]
+tests:
+  - name: empty
+    resolver: metrics_sql
+    properties:
+      sql: select publisher, domain, "total impressions" FROM metrics_with_policy
+    user_attributes:
+      domain: google.com
+      email: user@google.com
+  - name: msn
+    resolver: metrics_sql
+    properties:
+      sql: select publisher, domain, "total impressions" FROM metrics_with_policy
+    user_attributes:
+      domain: msn.com
+      email: user@msn.com
+    result:
+      - domain: msn.com
+        publisher: null
+        total impressions: 3
+  - name: simple
+    resolver: metrics_sql
+    properties:
+      sql: select publisher, domain, "total impressions" from metrics_with_policy
+    user_attributes:
+      domain: yahoo.com
+      email: user@yahoo.com
+    result:
+      - domain: yahoo.com
+        publisher: Yahoo
+        total impressions: 3

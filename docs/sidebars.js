@@ -99,8 +99,9 @@ const sidebars = {
                     'tutorials/rill_advanced_features/incremental_models/simple-examples/partitions_now',
                   ]
                 },
-                'tutorials/rill_advanced_features/incremental_models/cloud-storage-splits',
- //               'tutorials/rill_advanced_features/incremental_models/data-warehouse-splits',
+                'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
+ //               'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
+
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 
               ]
@@ -141,7 +142,7 @@ const sidebars = {
               items: [
                 'tutorials/administration/project/project-maintanence',
                 'tutorials/administration/project/alerts',
-                'tutorials/administration/project/credential-envvariable-mangement',
+                'tutorials/administration/project/credentials-env-variable-management',
                 'tutorials/administration/project/github',
               ]
             },

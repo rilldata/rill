@@ -6,38 +6,40 @@ timeseries: timestamp
 smallest_time_grain: 
 
 dimensions:
-  - label: Publisher
+  - display_name: Publisher
     property: publisher
     description: ""
-  - label: Domain Label
+  - display_name: Domain Label
     property: domain
     description: ""
-  - label: Id
+  - display_name: Id
     property: id
-  - label: Numeric Dim
+  - display_name: Numeric Dim
     property: numeric_dim
-  - label: Device
+  - display_name: Device
     property: device
-  - label: Ad Words
+  - display_name: Ad Words
     property: ad words
-  - label: Domain Parts
+  - display_name: Domain Parts
     name: domain_parts
     expression: "string_split(domain, '.')"
     unnest: true
-  - label: TLD
+  - display_name: TLD
     name: tld
     expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
 
 measures:
-  - label: "Number of bids"
+  - display_name: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: ""
-  - label: "Total volume"
+    format_preset: humanize
+  - display_name: "Total volume"
     expression: sum(volume)
     description: ""
-    format_preset: ""
-  - label: "Total impressions"
+    format_preset: humanize
+  - display_name: "Total impressions"
     expression: sum(impressions)
-  - label: "Total clicks"
+    format_preset: humanize
+  - display_name: "Total clicks"
     expression: sum(clicks)
+    format_preset: humanize

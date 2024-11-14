@@ -5,7 +5,9 @@ sidebar_label: "Partitions and Incremental Models"
 sidebar_position: 1
 ---
 
+
 In order to help with data ingestion into Rill, we will introduce the concepts of [partitions](https://docs.rilldata.com/build/incremental-models/#what-are-partitions) and [incremental models](https://docs.rilldata.com/build/incremental-models/#what-is-an-incremental-model) Before diving into our ClickHouse project, let's understand what each of these are used for and do.
+
 
 
 :::tip Review the Reference! 
@@ -24,6 +26,7 @@ Once this is enabled, Rill will configure the model YAML as an incrementing mode
 In some of the examples, we will use both a time based incremental and glob based increments. 
 
 ## [Partitioned Model](https://docs.rilldata.com/build/incremental-models/#what-are-partitions)
+
 
 Partitions in models are enabled by defining the partition parameter as seen below:
 

@@ -13,7 +13,6 @@ rill billing subscription edit [flags]
 ### Flags
 
 ```
-      --org string    Organization name
       --plan string   Plan Name to change subscription to
 ```
 
@@ -24,6 +23,7 @@ rill billing subscription edit [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

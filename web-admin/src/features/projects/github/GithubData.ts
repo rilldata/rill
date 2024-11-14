@@ -6,7 +6,7 @@ import {
   getAdminServiceListGithubUserReposQueryKey,
   type RpcStatus,
 } from "@rilldata/web-admin/client";
-import { openPopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
+import { PopupWindow } from "@rilldata/web-common/lib/openPopupWindow";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { getContext, setContext } from "svelte";
@@ -41,8 +41,7 @@ export class GithubData {
     >
   >;
 
-  private userPromptWindow: Window | null = null;
-  private windowCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private userPromptWindow = new PopupWindow();
 
   public readonly status = derived(
     [this.userStatus, this.userRepos],
@@ -82,7 +81,9 @@ export class GithubData {
       return;
     }
 
-    this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
+    this.userPromptWindow
+      .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
+      .then(() => this.refetch());
   }
 
   public async ensureGithubAccess() {
@@ -92,31 +93,9 @@ export class GithubData {
       return;
     }
 
-    this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
-  }
-
-  private openUserGithubConnectWindow(url: string) {
-    try {
-      // safeguard try catch
-      this.userPromptWindow?.close();
-    } catch {
-      // no-op
-    }
-    if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
-    this.userPromptWindow = openPopupWindow(
-      // add `remote` to indicate the callback success dialog should auto close
-      `${url}?remote=autoclose`,
-      "githubWindow",
-    );
-
-    // periodically check if the new window was closed
-    this.windowCheckTimer = setInterval(() => {
-      if (!this.userPromptWindow?.closed) return;
-      if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
-      this.windowCheckTimer = null;
-      this.userPromptWindow = null;
-      void this.refetch();
-    }, 200);
+    this.userPromptWindow
+      .openAndWaitForClose(userStatus.grantAccessUrl + "?remote=autoclose")
+      .then(() => this.refetch());
   }
 
   private async refetch() {

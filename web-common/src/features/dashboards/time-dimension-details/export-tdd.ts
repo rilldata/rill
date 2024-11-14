@@ -14,11 +14,13 @@ export default async function exportTDD({
   query,
   format,
   timeDimension,
+  searchText,
 }: {
   ctx: StateManagers;
   query: ReturnType<typeof createQueryServiceExport>;
   format: V1ExportFormat;
   timeDimension: string;
+  searchText: string;
 }) {
   const metricsView = get(ctx.metricsViewName);
   const dashboard = get(ctx.dashboardStore);
@@ -33,7 +35,7 @@ export default async function exportTDD({
       dashboard,
       getDimensionFilterWithSearch(
         dashboard?.whereFilter,
-        dashboard?.dimensionSearchText ?? "",
+        searchText,
         dimensionName,
       ),
     ),

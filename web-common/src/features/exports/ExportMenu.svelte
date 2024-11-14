@@ -79,7 +79,7 @@
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport}
+    {#if includeScheduledReport && queryArgs}
       <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
         Create scheduled report...
       </DropdownMenu.Item>
@@ -99,7 +99,7 @@
 
 <style lang="postcss">
   button {
-    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-gray-700;
+    @apply h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm text-gray-700 pointer-events-auto;
   }
 
   button:hover {

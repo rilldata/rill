@@ -46,12 +46,13 @@ const (
 	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
 	RuntimeService_GetExplore_FullMethodName              = "/rill.runtime.v1.RuntimeService/GetExplore"
-	RuntimeService_GetModelSplits_FullMethodName          = "/rill.runtime.v1.RuntimeService/GetModelSplits"
+	RuntimeService_GetModelPartitions_FullMethodName      = "/rill.runtime.v1.RuntimeService/GetModelPartitions"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
+	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -116,8 +117,8 @@ type RuntimeServiceClient interface {
 	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
 	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
 	GetExplore(ctx context.Context, in *GetExploreRequest, opts ...grpc.CallOption) (*GetExploreResponse, error)
-	// GetModelSplits returns the splits of a model
-	GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error)
+	// GetModelPartitions returns the partitions of a model
+	GetModelPartitions(ctx context.Context, in *GetModelPartitionsRequest, opts ...grpc.CallOption) (*GetModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
@@ -131,6 +132,8 @@ type RuntimeServiceClient interface {
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
+	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+	AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -438,10 +441,10 @@ func (c *runtimeServiceClient) GetExplore(ctx context.Context, in *GetExploreReq
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error) {
+func (c *runtimeServiceClient) GetModelPartitions(ctx context.Context, in *GetModelPartitionsRequest, opts ...grpc.CallOption) (*GetModelPartitionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetModelSplitsResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GetModelSplits_FullMethodName, in, out, cOpts...)
+	out := new(GetModelPartitionsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetModelPartitions_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -492,6 +495,16 @@ func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueDevJWTResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_IssueDevJWT_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) AnalyzeVariables(ctx context.Context, in *AnalyzeVariablesRequest, opts ...grpc.CallOption) (*AnalyzeVariablesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AnalyzeVariablesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_AnalyzeVariables_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -560,8 +573,8 @@ type RuntimeServiceServer interface {
 	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
 	// GetExplore is a convenience RPC that combines looking up an Explore resource and its underlying MetricsView into one network call.
 	GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error)
-	// GetModelSplits returns the splits of a model
-	GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error)
+	// GetModelPartitions returns the partitions of a model
+	GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error)
 	// CreateTrigger submits a refresh trigger, which will asynchronously refresh the specified resources.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
@@ -575,6 +588,8 @@ type RuntimeServiceServer interface {
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
+	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
+	AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -666,8 +681,8 @@ func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResour
 func (UnimplementedRuntimeServiceServer) GetExplore(context.Context, *GetExploreRequest) (*GetExploreResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetExplore not implemented")
 }
-func (UnimplementedRuntimeServiceServer) GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetModelSplits not implemented")
+func (UnimplementedRuntimeServiceServer) GetModelPartitions(context.Context, *GetModelPartitionsRequest) (*GetModelPartitionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetModelPartitions not implemented")
 }
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
@@ -683,6 +698,9 @@ func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context,
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
+}
+func (UnimplementedRuntimeServiceServer) AnalyzeVariables(context.Context, *AnalyzeVariablesRequest) (*AnalyzeVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeVariables not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 func (UnimplementedRuntimeServiceServer) testEmbeddedByValue()                        {}
@@ -1170,20 +1188,20 @@ func _RuntimeService_GetExplore_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GetModelSplits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetModelSplitsRequest)
+func _RuntimeService_GetModelPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelPartitionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetModelSplits(ctx, in)
+		return srv.(RuntimeServiceServer).GetModelPartitions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RuntimeService_GetModelSplits_FullMethodName,
+		FullMethod: RuntimeService_GetModelPartitions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetModelSplits(ctx, req.(*GetModelSplitsRequest))
+		return srv.(RuntimeServiceServer).GetModelPartitions(ctx, req.(*GetModelPartitionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1274,6 +1292,24 @@ func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).IssueDevJWT(ctx, req.(*IssueDevJWTRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_AnalyzeVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AnalyzeVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).AnalyzeVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_AnalyzeVariables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).AnalyzeVariables(ctx, req.(*AnalyzeVariablesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1382,8 +1418,8 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_GetExplore_Handler,
 		},
 		{
-			MethodName: "GetModelSplits",
-			Handler:    _RuntimeService_GetModelSplits_Handler,
+			MethodName: "GetModelPartitions",
+			Handler:    _RuntimeService_GetModelPartitions_Handler,
 		},
 		{
 			MethodName: "CreateTrigger",
@@ -1404,6 +1440,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IssueDevJWT",
 			Handler:    _RuntimeService_IssueDevJWT_Handler,
+		},
+		{
+			MethodName: "AnalyzeVariables",
+			Handler:    _RuntimeService_AnalyzeVariables_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

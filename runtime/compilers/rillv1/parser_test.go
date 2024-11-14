@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -23,7 +24,7 @@ func TestRillYAML(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: `
-title: Hello world
+display_name: Hello world
 description: This project says hello to the world
 
 connectors:
@@ -32,7 +33,7 @@ connectors:
   defaults:
     region: us-east-1
 
-vars:
+env:
   foo: bar
 `,
 	})
@@ -40,7 +41,7 @@ vars:
 	res, err := ParseRillYAML(ctx, repo, "")
 	require.NoError(t, err)
 
-	require.Equal(t, res.Title, "Hello world")
+	require.Equal(t, res.DisplayName, "Hello world")
 	require.Equal(t, res.Description, "This project says hello to the world")
 
 	require.Len(t, res.Connectors, 1)
@@ -155,13 +156,16 @@ dimensions:
 measures:
   - name: b
     expression: count(*)
+    format_d3: "0,0"
+    format_d3_locale:
+        currency: ["£", ""]
 first_day_of_week: 7
 first_month_of_year: 3
 `,
 		// explore e1
 		`explores/e1.yaml`: `
 type: explore
-title: E1
+display_name: E1
 metrics_view: d1
 measures:
   - b
@@ -276,7 +280,13 @@ schema: default
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{
+						Name:           "b",
+						Expression:     "count(*)",
+						Type:           runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+						FormatD3:       "0,0",
+						FormatD3Locale: must(structpb.NewStruct(map[string]any{"currency": []any{"£", ""}})),
+					},
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
@@ -288,7 +298,7 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "d1"}},
 			Paths: []string{"/explores/e1.yaml"},
 			ExploreSpec: &runtimev1.ExploreSpec{
-				Title:              "E1",
+				DisplayName:        "E1",
 				MetricsView:        "d1",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				Measures:           []string{"b"},
@@ -304,7 +314,10 @@ schema: default
 					},
 				},
 				DefaultPreset: &runtimev1.ExplorePreset{
-					TimeRange: "P4W",
+					DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+					TimeRange:          "P4W",
+					ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 				},
 			},
 		},
@@ -1108,22 +1121,21 @@ func TestEnvironmentOverrides(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: `
-env:
-  test:
-    sources:
-      limit: 10000
+dev:
+  sources:
+    limit: 10000
 `,
 		// source s1
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
 sql: SELECT 10
-env:
-  test:
-    path: world
-    sql: SELECT 20 # Override a property from commonYAML
-    refresh:
-      cron: "0 0 * * *"
+dev:
+  path: world
+  sql: SELECT 20 # Override a property from commonYAML
+  refresh:
+    cron: "0 0 * * *"
+    run_in_dev: true
 `,
 	})
 
@@ -1154,8 +1166,8 @@ env:
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
 
-	// Parse in environment "test"
-	p, err = Parse(ctx, repo, "", "test", "duckdb")
+	// Parse in environment "dev"
+	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
@@ -1247,7 +1259,7 @@ func TestReport(t *testing.T) {
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1277,7 +1289,7 @@ annotations:
 `,
 		`reports/r2.yaml`: `
 type: report
-title: My Report
+display_name: My Report
 
 refresh:
   cron: 0 * * * *
@@ -1319,7 +1331,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
 			Paths: []string{"/reports/r1.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1343,7 +1355,7 @@ annotations:
 			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
 			Paths: []string{"/reports/r2.yaml"},
 			ReportSpec: &runtimev1.ReportSpec{
-				Title: "My Report",
+				DisplayName: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
 					RefUpdate: true,
 					Cron:      "0 * * * *",
@@ -1378,7 +1390,7 @@ func TestAlert(t *testing.T) {
 		`models/m1.sql`: `SELECT 1`,
 		`alerts/a1.yaml`: `
 type: alert
-title: My Alert
+display_name: My Alert
 
 refs:
   - model/m1
@@ -1430,7 +1442,7 @@ annotations:
 			Paths: []string{"/alerts/a1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			AlertSpec: &runtimev1.AlertSpec{
-				Title: "My Alert",
+				DisplayName: "My Alert",
 				RefreshSchedule: &runtimev1.Schedule{
 					Cron:      "0 * * * *",
 					RefUpdate: false,
@@ -1504,12 +1516,27 @@ func TestTheme(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
+		// Theme resource
 		`themes/t1.yaml`: `
 type: theme
 
 colors:
   primary: red
   secondary: grey
+`,
+		// Explore referencing the external theme resource
+		`explores/e1.yaml`: `
+type: explore
+metrics_view: missing
+theme: t1
+`,
+		// Explore that defines an inline theme
+		`explores/e2.yaml`: `
+type: explore
+metrics_view: missing
+theme:
+  colors:
+    primary: red
 `,
 	})
 
@@ -1530,6 +1557,38 @@ colors:
 					Blue:  0.5019608,
 					Alpha: 1,
 				},
+				PrimaryColorRaw:   "red",
+				SecondaryColorRaw: "grey",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e1"},
+			Paths: []string{"/explores/e1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				Theme:              "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e2"},
+			Paths: []string{"/explores/e2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
+				},
 			},
 		},
 	}
@@ -1540,7 +1599,7 @@ colors:
 }
 
 func TestComponentsAndCanvas(t *testing.T) {
-	vegaLiteSpec := `
+	vegaLiteSpec := normalizeJSON(t, `
   {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "A simple bar chart with embedded data.",
@@ -1552,7 +1611,7 @@ func TestComponentsAndCanvas(t *testing.T) {
       "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
       "y": {"field": "total_sales", "type": "quantitative"}
     }
-  }`
+  }`)
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
@@ -1562,7 +1621,8 @@ data:
   api: MetricsViewAggregation
   args:
     metrics_view: foo
-vega_lite: |%s
+vega_lite: >
+  %s
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
@@ -1570,7 +1630,8 @@ data:
   api: MetricsViewAggregation
   args:
     metrics_view: bar
-vega_lite: |%s
+vega_lite: >
+  %s
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
@@ -1651,7 +1712,7 @@ items:
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
-					{Component: "d1--component-2"},
+					{Component: "d1--component-2", DefinedInCanvas: true},
 				},
 			},
 		},
@@ -1974,10 +2035,15 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ExploreSpec, got.ExploreSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
-				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
 				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
 				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ComponentSpec, got.ComponentSpec, "for resource %q", want.Name)
+				require.Equal(t, want.CanvasSpec, got.CanvasSpec, "for resource %q", want.Name)
+				require.Equal(t, want.APISpec, got.APISpec, "for resource %q", want.Name)
+				require.Equal(t, want.ConnectorSpec, got.ConnectorSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
@@ -2018,4 +2084,12 @@ func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 
 func asPtr[T any](val T) *T {
 	return &val
+}
+
+func normalizeJSON(t *testing.T, s string) string {
+	var v interface{}
+	require.NoError(t, json.Unmarshal([]byte(s), &v))
+	b, err := json.Marshal(v)
+	require.NoError(t, err)
+	return string(b)
 }

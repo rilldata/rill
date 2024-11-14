@@ -18,7 +18,7 @@ import (
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, environment string
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -51,7 +51,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
@@ -60,28 +60,11 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to get variables: %w", err)
 			}
 
-			// get existing variables
-			varResp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to list existing variables %w", err)
-			}
-
-			if varResp.Variables == nil {
-				varResp.Variables = make(map[string]string)
-			}
-
-			// update with new variables
-			for key, value := range variables {
-				varResp.Variables[key] = value
-			}
-
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: ch.Org,
-				Name:             projectName,
-				Variables:        varResp.Variables,
+				Organization: ch.Org,
+				Project:      projectName,
+				Environment:  environment,
+				Variables:    variables,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
@@ -95,6 +78,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
+	configureCommand.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return configureCommand
 }

@@ -10,12 +10,13 @@ import (
 )
 
 type CanvasYAML struct {
-	commonYAML `yaml:",inline"`         // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string                   `yaml:"title"`
-	Columns    uint32                   `yaml:"columns"`
-	Gap        uint32                   `yaml:"gap"`
-	Variables  []*ComponentVariableYAML `yaml:"variables"`
-	Items      []*struct {
+	commonYAML  `yaml:",inline"`         // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	DisplayName string                   `yaml:"display_name"`
+	Title       string                   `yaml:"title"` // Deprecated: use display_name
+	Columns     uint32                   `yaml:"columns"`
+	Gap         uint32                   `yaml:"gap"`
+	Variables   []*ComponentVariableYAML `yaml:"variables"`
+	Items       []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
 		X         *uint32   `yaml:"x"`
 		Y         *uint32   `yaml:"y"`
@@ -41,8 +42,16 @@ func (p *Parser) parseCanvas(node *Node) error {
 		return fmt.Errorf("canvases cannot have a connector")
 	}
 
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
 	// Parse variable definitions.
-	variables := make([]*runtimev1.ComponentVariable, len(tmp.Variables))
+	var variables []*runtimev1.ComponentVariable
+	if len(tmp.Variables) > 0 {
+		variables = make([]*runtimev1.ComponentVariable, len(tmp.Variables))
+	}
 	for i, v := range tmp.Variables {
 		variables[i], err = v.Proto()
 		if err != nil {
@@ -99,7 +108,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.CanvasSpec.Title = tmp.Title
+	r.CanvasSpec.DisplayName = tmp.DisplayName
 	r.CanvasSpec.Columns = tmp.Columns
 	r.CanvasSpec.Gap = tmp.Gap
 	r.CanvasSpec.Variables = variables

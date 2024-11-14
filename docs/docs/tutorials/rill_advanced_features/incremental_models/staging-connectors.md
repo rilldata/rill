@@ -51,6 +51,7 @@ partitions:
 
 connector: snowflake
 sql: SELECT * FROM RILLQA.PUBLIC.HORROR_MOVIES where date_trunc('day', release_date) = '{{.partition.day}}' limit 10
+
 ```
 
 Since Snowflake cannot write directly to ClickHouse and vice-versa, we use a S3 staging connector that has capabilities to write/read from ClickHouse and Snowflake.

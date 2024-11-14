@@ -24,7 +24,7 @@ title: "AdBids_model_dashboard"
 model: "AdBids_model"
 timeseries: "timestamp"
 measures:
-- label: humanized default
+- label: no preset format
   expression: count(*)
   name: total_rows
   description: Total number of records present
@@ -82,13 +82,13 @@ dimensions:
      * check big nums
      ******************/
     for (const [name, bignum, tooltip_num] of [
-      ["humanized default", "100.0k", "100000"],
-      ["USD", "$300.6k", "300576.83999999857"],
-      ["humanized chosen", "300.6k", "300576.83999999857"],
-      ["No Format", "300.6k", "300576.83999999857"],
-      ["percentage", "30.1M%", "300576.83999999857"],
+      ["no preset format", "100.0k", "100,000"],
+      ["USD", "$300.6k", "$300,576.84"],
+      ["humanized chosen", "300.6k", "300,576.84"],
+      ["No Format", "300.6k", "300,576.84"],
+      ["percentage", "30.1M%", "30.1M%"],
       ["interval_ms", "5 m", "5m 576ms"],
-      ["d3 fixed", "300.6k", "300576.840"],
+      ["d3 fixed", "300.6k", "300,576.84"],
     ]) {
       // check bignum with correct format exists/is visible
       await expect(
@@ -154,7 +154,7 @@ dimensions:
 
     await expect(
       page.getByRole("row", {
-        name: "null 26642.549999999974 -4348.7299999999705 -14%",
+        name: "null 26,643 -4,349 -14%",
       }),
     ).toBeVisible();
 
@@ -166,11 +166,11 @@ dimensions:
      ******************/
     await page.getByText("Publisher").click();
 
-    // humanized default
+    // no preset format
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^8\.9k$/ })
+        .filter({ hasText: /^8,868$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
@@ -194,7 +194,7 @@ dimensions:
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^26642\.549999999974$/ })
+        .filter({ hasText: /^26,643$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
@@ -202,7 +202,7 @@ dimensions:
     await expect(
       page
         .locator("div")
-        .filter({ hasText: /^-4348\.7299999999705$/ })
+        .filter({ hasText: /^-4,349$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 

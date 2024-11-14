@@ -32,6 +32,27 @@ paths:
             $ref: '#/definitions/v1CompleteRequest'
       tags:
         - AIService
+  /v1/billing/metrics-project-credentials:
+    post:
+      summary: GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+      operationId: AdminService_GetBillingProjectCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetBillingProjectCredentialsRequest'
+      tags:
+        - AdminService
   /v1/billing/plans:
     get:
       summary: ListPublicBillingPlans lists all public billing plans
@@ -399,7 +420,7 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: CancelBillingSubscription cancels the billing subscription for the organization and puts them on default plan
+      summary: CancelBillingSubscription cancels the billing subscription for the organization
       operationId: AdminService_CancelBillingSubscription
       responses:
         "200":
@@ -1563,9 +1584,9 @@ paths:
               state:
                 type: string
                 description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
-              title:
+              displayName:
                 type: string
-                description: Optional public url title to store with the token.
+                description: Optional display name to store with the token.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -1732,6 +1753,94 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/variables:
+    get:
+      summary: GetProjectVariables returns project variables.
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          description: Organization the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to get variables for.
+          in: path
+          required: true
+          type: string
+        - name: environment
+          description: |-
+            Environment to get the variables for.
+            If empty, only variables shared across all environments are returned.
+          in: query
+          required: false
+          type: string
+        - name: forAllEnvironments
+          description: |-
+            If true, return variable values for all environments.
+            Can't be used together with the "environment" option.
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - AdminService
+    put:
+      summary: UpdateProjectVariables updates variables for a project.
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          description: Organization the project belongs to.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to update variables for.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              environment:
+                type: string
+                description: |-
+                  Environment to set the variables for.
+                  If empty, the variable(s) will be used as defaults for all environments.
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
+                description: |-
+                  New variable values.
+                  It is NOT NECESSARY to pass all variables, existing variables not included in the request will be left unchanged.
+              unsetVariables:
+                type: array
+                items:
+                  type: string
+                description: Variables to delete.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/whitelisted:
@@ -2358,10 +2467,6 @@ paths:
               archiveAssetId:
                 type: string
                 description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
               prodVersion:
                 type: string
       tags:
@@ -2473,63 +2578,6 @@ paths:
                 format: int64
               prodVersion:
                 type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organizationName}/projects/{name}/variables:
-    get:
-      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
-      operationId: AdminService_GetProjectVariables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetProjectVariablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
-    put:
-      summary: 'UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn''t update variables.'
-      operationId: AdminService_UpdateProjectVariables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services:
@@ -2933,13 +2981,15 @@ paths:
                 type: string
               report:
                 type: string
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
+              ownerId:
+                type: string
               executionTime:
                 type: string
                 format: date-time
+              emailRecipients:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -2960,6 +3010,27 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/superuser/billing/repair:
+    post:
+      summary: SudoTriggerBillingRepair triggers billing repair jobs for orgs that doesn't have billing info and puts them on trial
+      operationId: AdminService_SudoTriggerBillingRepair
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoTriggerBillingRepairRequest'
       tags:
         - AdminService
   /v1/superuser/deployments/manager-token:
@@ -3502,6 +3573,15 @@ paths:
       tags:
         - AdminService
 definitions:
+  GetReportMetaResponseURLs:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
   ListGithubUserReposResponseRepo:
     type: object
     properties:
@@ -3565,7 +3645,7 @@ definitions:
   v1AlertOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       intervalDuration:
         type: string
@@ -3984,6 +4064,23 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetBillingProjectCredentialsRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+  v1GetBillingProjectCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
   v1GetBillingSubscriptionResponse:
     type: object
     properties:
@@ -4125,9 +4222,17 @@ definitions:
     type: object
     properties:
       variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+      variablesMap:
         type: object
         additionalProperties:
           type: string
+        description: |-
+          Deprecated: Populated for backwards compatibility.
+          (Renamed from "variables" to "variables_map").
   v1GetRepoMetaResponse:
     type: object
     properties:
@@ -4146,12 +4251,12 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      openUrl:
-        type: string
-      exportUrl:
-        type: string
-      editUrl:
-        type: string
+      baseUrls:
+        $ref: '#/definitions/GetReportMetaResponseURLs'
+      recipientUrls:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/GetReportMetaResponseURLs'
   v1GetUserResponse:
     type: object
     properties:
@@ -4410,7 +4515,7 @@ definitions:
           type: string
       state:
         type: string
-      title:
+      displayName:
         type: string
   v1MemberUser:
     type: object
@@ -4631,6 +4736,34 @@ definitions:
         type: boolean
       manageBookmarks:
         type: boolean
+  v1ProjectVariable:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Internal ID.
+      name:
+        type: string
+        description: Variable name (case insensitive).
+      value:
+        type: string
+        description: Variable value.
+      environment:
+        type: string
+        description: |-
+          Environment the variable is set for.
+          If empty, the variable is shared for all environments.
+      updatedByUserId:
+        type: string
+        description: User ID that most recently updated the variable. May be empty.
+      createdOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was created.
+      updatedOn:
+        type: string
+        format: date-time
+        description: Timestamp when the variable was last updated.
   v1PullVirtualRepoResponse:
     type: object
     properties:
@@ -4695,7 +4828,7 @@ definitions:
   v1ReportOptions:
     type: object
     properties:
-      title:
+      displayName:
         type: string
       refreshCron:
         type: string
@@ -4893,6 +5026,10 @@ definitions:
     properties:
       token:
         type: string
+  v1SudoTriggerBillingRepairRequest:
+    type: object
+  v1SudoTriggerBillingRepairResponse:
+    type: object
   v1SudoUpdateAnnotationsRequest:
     type: object
     properties:
@@ -5044,9 +5181,11 @@ definitions:
     type: object
     properties:
       variables:
-        type: object
-        additionalProperties:
-          type: string
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ProjectVariable'
+        description: Variables that were created or updated by the request.
   v1UpdateServiceResponse:
     type: object
     properties:
