@@ -1,6 +1,6 @@
 import { getSingleUseUrlParam } from "@rilldata/web-admin/features/navigation/getSingleUseUrlParam";
 
-export const load: PageLoad = async ({ url }) => {
+export const load = async ({ url }) => {
   const showWelcomeDialog = !!getSingleUseUrlParam(
     url,
     "welcome",

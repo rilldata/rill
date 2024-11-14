@@ -7,9 +7,10 @@ export function getSingleUseUrlParam(
 ) {
   // Save the state in localStorage and redirect to the url without it.
   // This prevents a refresh or saving the url from re-triggering in the page
-  if (url.searchParams.has(param)) {
+  const paramValue = url.searchParams.get(param);
+  if (paramValue) {
     try {
-      localStorage.setItem(storageKey, url.searchParams.get(param));
+      localStorage.setItem(storageKey, paramValue);
     } catch {
       // no-op
     }
@@ -18,7 +19,7 @@ export function getSingleUseUrlParam(
     throw redirect(307, redirectUrl.pathname + redirectUrl.search);
   }
 
-  const value = localStorage.getItem(storageKey);
+  const localStorageValue = localStorage.getItem(storageKey);
   localStorage.removeItem(storageKey);
-  return value;
+  return localStorageValue;
 }
