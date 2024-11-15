@@ -10,50 +10,59 @@
 
   export let selectedItems: Set<string>;
   export let keyNotSet: boolean;
-  export let onSelectMode: (
-    mode: "custom" | "default",
-    defaults: string[],
-  ) => void;
   export let onSelectCustomItem: (item: string) => void;
   export let setTimeZones: (timeZones: string[]) => void;
 
-  $: hasDefaultsSelected =
+  let hasDefaultsSelected =
     keyNotSet ||
     (defaultSet.size === selectedItems.size &&
       defaultSet.isSubsetOf(selectedItems));
 
-  $: mode = hasDefaultsSelected ? "default" : "custom";
+  let selected: 0 | 1 = hasDefaultsSelected ? 0 : 1;
 
-  $: selected = mode === "custom" ? 1 : 0;
+  let selectedProxy = new Set(selectedItems);
 </script>
 
 <div class="flex flex-col gap-y-1">
   <InputLabel
     capitalize={false}
-    label="Available time zones"
+    label="Time zones"
     id="visual-explore-zone"
+    hint="Time zones selectable via the dashboard filter bar"
   />
   <FieldSwitcher
-    fields={["Default", "Custom"]}
+    fields={["default", "custom"]}
     {selected}
     onClick={(_, field) => {
-      if (field === "Custom") {
-        mode = "custom";
-        onSelectMode("custom", DEFAULT_TIMEZONES);
-      } else if (field === "Default") {
-        onSelectMode("default", DEFAULT_TIMEZONES);
-        mode = "default";
+      if (field === "custom") {
+        selected = 1;
+        setTimeZones(Array.from(selectedProxy));
+      } else if (field === "default") {
+        selected = 0;
+        setTimeZones(DEFAULT_TIMEZONES);
       }
     }}
   />
 
-  {#if mode === "custom"}
+  {#if selected === 1}
     <SelectionDropdown
       {searchableItems}
       allItems={defaultSet}
       {selectedItems}
-      onSelect={onSelectCustomItem}
-      setItems={setTimeZones}
+      onSelect={(item) => {
+        const deleted = selectedProxy.delete(item);
+        if (!deleted) {
+          selectedProxy.add(item);
+        }
+
+        selectedProxy = selectedProxy;
+
+        onSelectCustomItem(item);
+      }}
+      setItems={(ranges) => {
+        selectedProxy = new Set(ranges);
+        setTimeZones(ranges);
+      }}
       let:item
       type="time zones"
     >

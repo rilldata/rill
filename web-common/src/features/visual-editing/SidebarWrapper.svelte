@@ -1,14 +1,11 @@
 <script lang="ts">
   export let title: string;
-
-  export let width: number | undefined = undefined;
 </script>
 
 <div
-  style:width="{width}px"
-  class="border size-full bg-background flex-none flex flex-col select-none rounded-[2px]"
+  class="size-full bg-background flex-none flex flex-col select-none rounded-[2px] w-full"
 >
-  <h1 class="pt-6 px-5">{title}</h1>
+  <h1>{title}</h1>
 
   <div
     class="px-5 flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
@@ -23,7 +20,8 @@
 
 <style lang="postcss">
   h1 {
-    @apply text-lg font-semibold mb-4;
+    @apply text-lg font-semibold mb-2;
+    @apply pt-6 px-5 mb-2;
   }
 
   /* h2 {

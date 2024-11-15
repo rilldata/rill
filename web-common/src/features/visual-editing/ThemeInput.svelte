@@ -9,25 +9,41 @@
   import type { V1ThemeSpec } from "@rilldata/web-common/runtime-client";
   import { useTheme } from "../themes/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
 
   const defaultTheme: V1ThemeSpec = {
     primaryColorRaw: `hsl(${defaultPrimaryColors[500].split(" ").join(",")})`,
     secondaryColorRaw: `hsl(${defaultSecondaryColors[500].split(" ").join(",")})`,
   };
 
-  export let themeName: string | "Custom" | "Default" | undefined;
+  const fallbackCustomTheme: V1ThemeSpec = {
+    primaryColorRaw: "hsl(180, 100%, 50%)",
+    secondaryColorRaw: "lightgreen",
+  };
+
   export let themeNames: string[];
-  export let theme: V1ThemeSpec | undefined;
-  export let onModeChange: (mode: string) => void;
+  export let theme: string | V1ThemeSpec | undefined;
+  export let onThemeChange: (themeName: string | undefined) => void;
   export let onColorChange: (primary: string, secondary: string) => void;
+
+  let themeProxy: V1ThemeSpec =
+    typeof theme === "string" || theme === undefined
+      ? fallbackCustomTheme
+      : theme;
+  let presetProxy: string | undefined =
+    typeof theme === "string" ? theme : undefined;
 
   $: ({ instanceId } = $runtime);
 
-  $: themeQuery = useTheme(instanceId, themeName ?? "");
+  $: themeQuery =
+    typeof theme === "string" ? useTheme(instanceId, theme) : undefined;
 
-  $: fetchedTheme = $themeQuery?.data?.theme?.spec;
+  $: fetchedTheme = themeQuery && $themeQuery?.data?.theme?.spec;
 
-  $: theme = theme ?? fetchedTheme ?? defaultTheme;
+  $: currentTheme =
+    fetchedTheme ?? (theme === undefined ? defaultTheme : themeProxy);
+
+  $: presetMode = theme === undefined || typeof theme === "string";
 </script>
 
 <div class="flex flex-col gap-y-1">
@@ -36,33 +52,61 @@
     id="visual-explore-theme"
     hint="Colors may be adjusted for legibility"
   />
+
+  <FieldSwitcher
+    fields={["Presets", "Custom"]}
+    selected={presetMode ? 0 : 1}
+    onClick={(_, field) => {
+      if (field === "Custom") {
+        onColorChange(
+          themeProxy.primaryColorRaw ?? "",
+          themeProxy.secondaryColorRaw ?? "",
+        );
+        currentTheme = themeProxy;
+      } else if (field === "Presets") {
+        onThemeChange(presetProxy);
+      }
+    }}
+  />
   <div class="gap-y-2 flex flex-col">
-    <Select
-      fontSize={14}
-      sameWidth
-      onChange={onModeChange}
-      value={themeName}
-      options={["Default", ...themeNames, "Custom"].map((value) => ({
-        value,
-        label: value,
-      }))}
-      id="theme"
-    />
+    {#if typeof theme === "string" || theme === undefined}
+      <Select
+        fontSize={14}
+        sameWidth
+        onChange={(value) => {
+          if (value === "Default") {
+            onThemeChange(undefined);
+            presetProxy = undefined;
+          } else {
+            onThemeChange(value);
+            presetProxy = value;
+          }
+        }}
+        value={theme ?? "Default"}
+        options={["Default", ...themeNames].map((value) => ({
+          value,
+          label: value,
+        }))}
+        id="theme"
+      />
+    {/if}
 
     <ColorInput
-      stringColor={theme.primaryColorRaw}
+      stringColor={currentTheme.primaryColorRaw}
       label="Primary"
-      disabled={themeName !== "Custom" && themeName !== "default"}
+      disabled={presetMode}
       onChange={(color) => {
-        onColorChange(color, theme.secondaryColorRaw ?? "");
+        onColorChange(color, themeProxy.secondaryColorRaw ?? "");
+        themeProxy.primaryColorRaw = color;
       }}
     />
     <ColorInput
-      stringColor={theme.secondaryColorRaw}
+      stringColor={currentTheme.secondaryColorRaw}
       label="Secondary"
-      disabled={themeName !== "Custom" && themeName !== "default"}
+      disabled={presetMode}
       onChange={(color) => {
-        onColorChange(theme.primaryColorRaw ?? "", color);
+        onColorChange(themeProxy.primaryColorRaw ?? "", color);
+        themeProxy.secondaryColorRaw = color;
       }}
     />
   </div>

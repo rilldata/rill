@@ -32,6 +32,7 @@
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
   export let disabled = false;
+  export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
   export let lockTooltip: string | undefined = undefined;
@@ -95,7 +96,14 @@
 
 <div class="component-wrapper" class:w-full={full} style:width>
   {#if label}
-    <InputLabel {label} {optional} {id} {hint} capitalize={capitalizeLabel}>
+    <InputLabel
+      {label}
+      {optional}
+      {id}
+      {hint}
+      {link}
+      capitalize={capitalizeLabel}
+    >
       <slot name="mode-switch" slot="mode-switch" />
     </InputLabel>
   {/if}

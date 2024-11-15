@@ -14,26 +14,39 @@
   export let items: (MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2)[];
   export let selectedItems: Set<string> | undefined;
   export let onSelectAll: () => void;
-  export let onSelectSubset: () => void;
   export let onSelectSubsetItem: (item: string) => void;
   export let onSelectExpression: () => void;
   export let onExpressionBlur: (value: string) => void;
   export let setItems: (items: string[]) => void;
 
+  let selectedProxy = new Set(selectedItems);
+
   $: selected = mode === "all" ? 0 : mode === "subset" ? 1 : 2;
+
+  function isString(value: unknown): value is string {
+    return typeof value === "string";
+  }
 </script>
 
 <div class="flex flex-col gap-y-1">
-  <InputLabel label={type} id="visual-explore-{type}" />
+  <InputLabel
+    label={type}
+    id="visual-explore-{type}"
+    hint="Selection of {type} from the underlying metrics view for inclusion on the dashboard"
+  />
   <FieldSwitcher
-    fields={["All", "Subset", "Expression"]}
+    fields={["all", "subset", "expression"]}
     {selected}
     onClick={async (i, field) => {
-      if (field === "All") {
+      if (field === "all") {
         onSelectAll();
-      } else if (field === "Subset") {
-        onSelectSubset();
-      } else {
+      } else if (field === "subset") {
+        if (selectedProxy.size) {
+          setItems(Array.from(selectedProxy));
+        } else {
+          setItems(items.map(({ name }) => name).filter(isString));
+        }
+      } else if (field === "expression") {
         onSelectExpression();
       }
     }}
@@ -55,8 +68,20 @@
     <SelectionDropdown
       allItems={new Set(items.map((m) => m.name ?? ""))}
       selectedItems={new Set(selectedItems)}
-      onSelect={onSelectSubsetItem}
-      {setItems}
+      onSelect={(item) => {
+        const deleted = selectedProxy.delete(item);
+        if (!deleted) {
+          selectedProxy.add(item);
+        }
+
+        selectedProxy = selectedProxy;
+
+        onSelectSubsetItem(item);
+      }}
+      setItems={(items) => {
+        selectedProxy = new Set(items);
+        setItems(items);
+      }}
     />
   {/if}
 </div>

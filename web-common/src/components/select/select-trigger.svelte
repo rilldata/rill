@@ -2,9 +2,8 @@
   import { Select as SelectPrimitive } from "bits-ui";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
-  import Link from "../icons/Link.svelte";
-  // import { Link2, Link2Off } from "lucide-svelte";
-  import LinkBreak from "svelte-radix/LinkBreak2.svelte";
+  import { Lock, UnlockIcon } from "lucide-svelte";
+
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   // import Link2 from "svelte-radix/Link1.svelte";
@@ -32,7 +31,7 @@
   bind:el
   disabled={locked}
   class={cn(
-    "flex h-8 w-full items-center relative justify-between rounded-[2px] border border-gray-300 bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-50 [&>span]:line-clamp-1",
+    "flex h-8 w-full items-center relative justify-between rounded-[2px] border border-gray-300 bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 [&>span]:line-clamp-1",
     className,
   )}
   {...$$restProps}
@@ -46,8 +45,8 @@
         }}
         class="group active:bg-gray-50 grid bg-background place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
       >
-        <Link size="14px" className="fill-gray-600 group-hover:hidden" />
-        <LinkBreak
+        <Lock size="14px" class="text-gray-600 group-hover:hidden" />
+        <UnlockIcon
           class="text-primary-600 hidden group-hover:block"
           size="14px"
         />

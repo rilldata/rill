@@ -19,49 +19,62 @@
 
   export let selectedItems: Set<string>;
   export let keyNotSet: boolean;
-  export let onSelectMode: (
-    mode: "custom" | "default",
-    defaults: string[],
-  ) => void;
   export let onSelectCustomItem: (item: string) => void;
   export let setTimeRanges: (timeRanges: string[]) => void;
 
-  $: hasDefaultsSelected =
+  let hasDefaultsSelected =
     keyNotSet ||
     (defaultSet.size === selectedItems.size &&
       defaultSet.isSubsetOf(selectedItems));
 
-  $: mode = hasDefaultsSelected ? "default" : "custom";
+  let selected: 0 | 1 = hasDefaultsSelected ? 0 : 1;
 
-  $: selected = mode === "custom" ? 1 : 0;
+  let selectedProxy = new Set(selectedItems);
+
+  $: if (keyNotSet) {
+    selected = 0;
+  }
 </script>
 
 <div class="flex flex-col gap-y-1">
   <InputLabel
     capitalize={false}
-    label="Available time ranges"
+    label="Time ranges"
     id="visual-explore-range"
+    hint="Time range shortcuts available via the dashboard filter bar"
   />
   <FieldSwitcher
-    fields={["Default", "Custom"]}
+    fields={["default", "custom"]}
     {selected}
     onClick={(_, field) => {
-      if (field === "Custom") {
-        mode = "custom";
-        onSelectMode("custom", ranges);
-      } else if (field === "Default") {
-        onSelectMode("default", ranges);
-        mode = "default";
+      if (field === "custom") {
+        selected = 1;
+        setTimeRanges(Array.from(selectedProxy));
+      } else if (field === "default") {
+        selected = 0;
+        setTimeRanges(ranges);
       }
     }}
   />
 
-  {#if mode === "custom"}
+  {#if selected === 1}
     <SelectionDropdown
       allItems={defaultSet}
       {selectedItems}
-      onSelect={onSelectCustomItem}
-      setItems={setTimeRanges}
+      onSelect={(item) => {
+        const deleted = selectedProxy.delete(item);
+        if (!deleted) {
+          selectedProxy.add(item);
+        }
+
+        selectedProxy = selectedProxy;
+
+        onSelectCustomItem(item);
+      }}
+      setItems={(ranges) => {
+        selectedProxy = new Set(ranges);
+        setTimeRanges(ranges);
+      }}
       let:item
       type="time ranges"
     >

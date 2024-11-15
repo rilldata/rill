@@ -187,6 +187,7 @@
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
   class:text-gray-400={disabled}
+  class:text-gray-500={!disabled}
 >
   <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
@@ -258,7 +259,7 @@
   }
 
   p {
-    @apply text-sm text-gray-500;
+    @apply text-sm;
   }
 
   input {

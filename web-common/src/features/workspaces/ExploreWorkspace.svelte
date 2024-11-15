@@ -17,6 +17,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import ViewSelector from "../canvas/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
+  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -63,11 +64,10 @@
   }
 </script>
 
-<WorkspaceContainer inspector={false}>
+<WorkspaceContainer>
   <WorkspaceHeader
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
-    showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
     {filePath}
@@ -92,18 +92,29 @@
         {fileArtifact}
         {allErrors}
       />
-    {:else if exploreResource && metricsViewName}
+    {:else if $selectedView === "viz"}
       {#key fileArtifact}
-        <VisualExploreEditing
-          {exploreResource}
-          {metricsViewName}
-          {exploreName}
-          {fileArtifact}
-          switchView={() => {
-            $selectedView = "code";
-          }}
-        />
+        <div
+          class="size-full border overflow-hidden rounded-[2px] bg-background flex flex-col items-center justify-center"
+        >
+          {#if metricsViewName && exploreName}
+            <DashboardWithProviders {exploreName} {metricsViewName} />
+          {/if}
+        </div>
       {/key}
+    {/if}
+  </svelte:fragment>
+
+  <svelte:fragment slot="inspector">
+    {#if exploreResource && metricsViewName}
+      <VisualExploreEditing
+        {exploreResource}
+        {metricsViewName}
+        {exploreName}
+        {fileArtifact}
+        viewingDashboard={$selectedView === "viz"}
+        switchView={() => selectedView.set("code")}
+      />
     {/if}
   </svelte:fragment>
 </WorkspaceContainer>
