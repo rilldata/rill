@@ -166,10 +166,11 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	}
 
 	// Get Kubernetes resource names
-	names := p.getResourceNames(r.ID)
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
 
 	// Create unique host
-	host := p.getHost(r.ID)
+	host := p.getHost(provisionID)
 
 	// Define template data
 	data := &TemplateData{
@@ -217,7 +218,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	applyOptions := metav1.ApplyOptions{FieldManager: "rill-cloud-admin", Force: true}
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by": "rill-cloud-admin",
-		"app.kubernetes.io/instance":   r.ID,
+		"app.kubernetes.io/instance":   provisionID,
 	}
 	annotations := map[string]string{
 		"checksum/templates": p.templatesChecksum,
@@ -285,7 +286,8 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 
 func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(r.ID)
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
 
 	// Common delete options
 	delPolicy := metav1.DeletePropagationForeground
@@ -322,7 +324,8 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.
 
 func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(r.ID)
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
 
 	// Wait for the deployment to be ready (with timeout)
 	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Duration(p.Spec.TimeoutSeconds)*time.Second, true, func(ctx context.Context) (done bool, err error) {
@@ -342,7 +345,7 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, r *provisioner.R
 	retryClient.RetryWaitMin = 2 * time.Second
 	retryClient.RetryWaitMax = 10 * time.Second
 	retryClient.Logger = nil // Disable inbuilt logger
-	pingURL, err := url.JoinPath(p.getHost(r.ID), "/v1/ping")
+	pingURL, err := url.JoinPath(p.getHost(provisionID), "/v1/ping")
 	if err != nil {
 		return err
 	}
@@ -362,7 +365,8 @@ func (p *KubernetesProvisioner) Check(ctx context.Context) error {
 
 func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// Get Kubernetes resource names
-	names := p.getResourceNames(r.ID)
+	provisionID := getProvisionID(r.ID)
+	names := p.getResourceNames(provisionID)
 
 	// Get the deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
@@ -390,6 +394,10 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 
 func (p *KubernetesProvisioner) getHost(provisionID string) string {
 	return strings.ReplaceAll(p.Spec.Host, "*", provisionID)
+}
+
+func getProvisionID(resourceID string) string {
+	return strings.ReplaceAll(resourceID, "-", "")
 }
 
 // runtimeState describes the Kubernetes provisioner's state for a provisioned runtime resource.

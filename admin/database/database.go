@@ -103,8 +103,8 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
+	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
-	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
@@ -475,6 +475,16 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	Branch            string
+	RuntimeHost       string `validate:"required"`
+	RuntimeInstanceID string `validate:"required"`
+	RuntimeAudience   string
+	Status            DeploymentStatus
+	StatusMessage     string
+}
+
+// UpdateDeploymentOptions defines options for updating a Deployment.
+type UpdateDeploymentOptions struct {
 	Branch            string
 	RuntimeHost       string `validate:"required"`
 	RuntimeInstanceID string `validate:"required"`
@@ -1175,4 +1185,5 @@ type UpdateProvisionerResourceOptions struct {
 	StatusMessage string
 	Args          map[string]any
 	State         map[string]any
+	Config        map[string]any
 }

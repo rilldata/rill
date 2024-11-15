@@ -540,6 +540,20 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
+func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET branch=$1, runtime_host=$2, runtime_instance_id=$3, runtime_audience=$4, status=$5, status_message=$6, updated_on=now()
+		WHERE id=$7 RETURNING *`,
+		opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
@@ -555,15 +569,6 @@ func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) e
 		return parseErr("deployment", err)
 	}
 	return nil
-}
-
-func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET branch=$1, updated_on=now() WHERE id=$2 RETURNING *", branch, id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
-	}
-	return res, nil
 }
 
 func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
@@ -2251,11 +2256,15 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 	if err != nil {
 		return nil, err
 	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
 
 	res := &provisionerResourceDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4 WHERE id = $5 RETURNING *`,
-		opts.Status, opts.StatusMessage, args, state, id,
+		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5 WHERE id = $6 RETURNING *`,
+		opts.Status, opts.StatusMessage, args, state, config, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("provisioner resource", err)
