@@ -506,6 +506,9 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 				if keyNode.Value == "dimensions" || keyNode.Value == "measures" {
 					keyNode.HeadComment = "\n"
 				}
+				if keyNode.Value == "type" {
+					valueNode.LineComment = "\n\n"
+				}
 				insertEmptyLinesInYaml(valueNode)
 			}
 		} else if node.Content[i].Kind == yaml.SequenceNode {
