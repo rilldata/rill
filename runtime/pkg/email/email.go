@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"math"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -176,6 +177,26 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
+type CallToActionNew struct {
+	ToEmail    string
+	ToName     string
+	Subject    string
+	PreButton  template.HTML
+	ButtonText string
+	ButtonLink string
+	PostButton template.HTML
+}
+
+func (c *Client) SendCallToActionNew(opts *CallToActionNew) error {
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("call_to_action_new.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+}
+
 type Informational struct {
 	ToEmail string
 	ToName  string
@@ -187,6 +208,23 @@ type Informational struct {
 func (c *Client) SendInformational(opts *Informational) error {
 	buf := new(bytes.Buffer)
 	err := c.templates.Lookup("informational.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+}
+
+type InformationalNew struct {
+	ToEmail string
+	ToName  string
+	Subject string
+	Body    template.HTML
+}
+
+func (c *Client) SendInformationalNew(opts *InformationalNew) error {
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("informational_new.html").Execute(buf, opts)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
@@ -364,6 +402,7 @@ type InvoicePaymentFailed struct {
 	ToEmail            string
 	ToName             string
 	OrgName            string
+	PlanName           string
 	Currency           string
 	Amount             string
 	PaymentURL         string
@@ -371,12 +410,18 @@ type InvoicePaymentFailed struct {
 }
 
 func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
-	return c.SendCallToAction(&CallToAction{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Payment for %s has failed", opts.OrgName),
-		Title:      fmt.Sprintf("Payment for %s has failed", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("The payment of %s%s for your %q Rill subscription has failed. Your projects will be hibenrated on %s if payment not received.", opts.Currency, opts.Amount, opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+	diff := opts.GracePeriodEndDate.Sub(time.Now())
+	days := int(math.Round(diff.Hours() / 24))
+	// TODO: custom plan name
+	return c.SendCallToActionNew(&CallToActionNew{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Payment for %s failed—Please update your payment method", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi %s, 
+<br /><br />
+We couldn’t process your payment for the %s. You have %d days to update your payment details before your account is <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
+`, opts.ToName, opts.PlanName, days)),
 		ButtonText: "Update Payment Info",
 		ButtonLink: opts.PaymentURL,
 	})
@@ -410,12 +455,15 @@ type InvoiceUnpaid struct {
 
 // SendInvoiceUnpaid sent after the payment grace period has ended
 func (c *Client) SendInvoiceUnpaid(opts *InvoiceUnpaid) error {
-	return c.SendCallToAction(&CallToAction{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
-		Title:      fmt.Sprintf("Payment for %s is overdue", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("The payment for your Rill subscription on %q is overdue. Your projects have been hibernated.", opts.OrgName)),
+	return c.SendCallToActionNew(&CallToActionNew{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your org %s is now hibernated!", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi %s, your account and its projects have been hibernated due to an overdue payment. 
+<br /><br />
+Restore access by updating your payment information today! 
+`, opts.ToName)),
 		ButtonText: "Update Payment Info",
 		ButtonLink: opts.PaymentURL,
 	})
@@ -430,12 +478,17 @@ type SubscriptionCancelled struct {
 }
 
 func (c *Client) SendSubscriptionCancelled(opts *SubscriptionCancelled) error {
-	return c.SendInformational(&Informational{
+	return c.SendInformationalNew(&InformationalNew{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
-		Title:   fmt.Sprintf("Subscription was cancelled %s", opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("You’ve successfully canceled your plan. Your access will continue until %s", opts.EndDate.Format("January 2, 2006"))),
+		Subject: fmt.Sprintf("Your %s for %s is canceled", opts.PlanName, opts.OrgName),
+		Body: template.HTML(fmt.Sprintf(`
+Hi %s, 
+<br /><br />
+You’ve successfully canceled your Team Plan. Your access will continue until %s. If you change your mind, you can always reactivate your subscription!
+<br /><br />
+If you found that our service did not meet your needs, please reply to this email and we’ll do our best to address your feedback and concerns
+`, opts.ToName, opts.EndDate.Format("January 2, 2006"))),
 	})
 }
 
@@ -446,6 +499,7 @@ type SubscriptionEnded struct {
 }
 
 func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
+	// TODO: no email body for this
 	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
@@ -481,12 +535,21 @@ type TrialEndingSoon struct {
 }
 
 func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
-	return c.SendCallToAction(&CallToAction{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
-		Title:      fmt.Sprintf("Your trial for %s is ending soon", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Your trial for %q is ending on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.TrialEndDate.Format("January 2, 2006"))),
+	diff := opts.TrialEndDate.Sub(time.Now())
+	days := int(math.Round(diff.Hours() / 24))
+	return c.SendCallToActionNew(&CallToActionNew{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial for %s is expiring in %d days", opts.OrgName, days),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi %s, How's Rill working out for you? Have you checked out our newest features highlighted in our <a href="https://docs.rilldata.com/notes">Release Notes</a>? 
+<br /><br />
+You have %d days left to explore Rill Cloud. 
+<br /><br />
+Our team is here to help you in any way we can, so don't hesitate to reach out if you have a question, encounter an issue, or need guidance.
+<br /><br />
+If you're ready to upgrade, simply click the button below.
+`, opts.ToName, days)),
 		ButtonText: "Upgrade Now",
 		ButtonLink: opts.UpgradeURL,
 	})
@@ -501,14 +564,26 @@ type TrialEnded struct {
 }
 
 func (c *Client) SendTrialEnded(opts *TrialEnded) error {
-	return c.SendCallToAction(&CallToAction{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
-		Title:      fmt.Sprintf("Your trial for %s has ended", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Your trial for %q has ended. Your projects will be hibernated on %s. Upgrade to a paid plan to continue using Rill.", opts.OrgName, opts.GracePeriodEndDate.Format("January 2, 2006"))),
+	return c.SendCallToActionNew(&CallToActionNew{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your Rill Cloud trial for %s has expired", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi %s, 
+<br /><br />
+Your Rill Cloud trial has now expired. We hope you’ve enjoyed using our software. If you’d like to keep using Rill Cloud, you can upgrade to our Team Plan!
+`, opts.ToName)),
 		ButtonText: "Upgrade to Team Plan",
 		ButtonLink: opts.UpgradeURL,
+		PostButton: template.HTML(fmt.Sprintf(`
+As a reminder, here’s what you get with the Team Plan:
+<br /><br />
+- Unlimited seats and projects (up to 50GB of stored data each)<br />
+- Embedded analytics for client portals<br />
+- Exports and scheduled reports
+<br /><br />
+If you have any questions, feel free to reply to this email.
+`)),
 	})
 }
 
@@ -520,12 +595,15 @@ type TrialGracePeriodEnded struct {
 }
 
 func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
-	return c.SendCallToAction(&CallToAction{
-		ToEmail:    opts.ToEmail,
-		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
-		Title:      fmt.Sprintf("Your trial grace period has ended for %s", opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("Your trial grace period has ended for %q. Your projects have been hibernated. Please visit the billing portal to enter payment method and upgrade your plan to continue using Rill.", opts.OrgName)),
+	return c.SendCallToActionNew(&CallToActionNew{
+		ToEmail: opts.ToEmail,
+		ToName:  opts.ToName,
+		Subject: fmt.Sprintf("Your org %s is now hibernated", opts.OrgName),
+		PreButton: template.HTML(fmt.Sprintf(`
+Hi %s, your org %s and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
+<br /><br />
+Reactivate your account by upgrading to the Team Plan today! 
+`, opts.ToName, opts.OrgName)),
 		ButtonText: "Upgrade to Team Plan",
 		ButtonLink: opts.UpgradeURL,
 	})

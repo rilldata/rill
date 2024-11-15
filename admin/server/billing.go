@@ -257,10 +257,11 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		OrgName: org.Name,
-		EndDate: endDate,
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		PlanName: "Team plan", // TODO
+		EndDate:  endDate,
 	})
 	if err != nil {
 		s.logger.Named("billing").Error("failed to send subscription cancelled email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))

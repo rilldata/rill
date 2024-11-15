@@ -86,6 +86,7 @@ func (w *PaymentFailedWorker) Work(ctx context.Context, job *river.Job[PaymentFa
 		ToEmail:            org.BillingEmail,
 		ToName:             org.Name,
 		OrgName:            org.Name,
+		PlanName:           "Team Plan", // TODO
 		Currency:           job.Args.Currency,
 		Amount:             job.Args.Amount,
 		PaymentURL:         w.admin.URLs.PaymentPortal(org.Name),
