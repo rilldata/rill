@@ -16,13 +16,17 @@
   import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
-  import TimeInput from "../visual-editing/TimeInput.svelte";
-  import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
+  import TimeZoneInput from "../visual-editing/TimeZoneInput.svelte";
   import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
   import { useExploreStore } from "../dashboards/stores/dashboard-stores";
   import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { InfoIcon } from "lucide-svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { range } from "../dashboards/pivot/regular-table-utils";
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -163,14 +167,18 @@
     exploreStore?.selectedTimeRange,
   );
 
-  $: viewingDefaults = Object.entries(defaults).every(([key, value]) => {
-    if (Array.isArray(value) && Array.isArray(newDefaults[key])) {
-      return (
-        JSON.stringify(value.sort()) === JSON.stringify(newDefaults[key].sort())
-      );
-    }
-    return JSON.stringify(value) === JSON.stringify(newDefaults[key]);
-  });
+  $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
+
+  $: viewingDefaults =
+    hasDefaultsSet &&
+    Object.entries(newDefaults).every(([key, value]) => {
+      if (Array.isArray(value) && Array.isArray(defaults[key])) {
+        return (
+          JSON.stringify(value.sort()) === JSON.stringify(defaults[key].sort())
+        );
+      }
+      return JSON.stringify(value) === JSON.stringify(defaults[key]);
+    });
 
   function isString(value: unknown): value is string {
     return typeof value === "string";
@@ -202,12 +210,12 @@
   }
 
   type Defaults = {
-    measures?: string[];
-    dimensions?: string[];
-    comparison_mode?: "time" | "dimension" | "none";
-    comparison_dimension?: string;
-    time_comparison?: boolean;
-    time_range?: string;
+    measures: string[] | undefined;
+    dimensions: string[] | undefined;
+    comparison_mode: "time" | "dimension" | "none" | undefined;
+    comparison_dimension: string | undefined;
+    time_comparison: boolean | undefined;
+    time_range: string | undefined;
   };
 
   function constructDefaultState(
@@ -217,7 +225,14 @@
     visibleMeasureKeys?: Set<string>,
     selectedTimeRange?: DashboardTimeControls | undefined,
   ): Defaults {
-    const newDefaults: Defaults = {};
+    const newDefaults: Defaults = {
+      measures: undefined,
+      dimensions: undefined,
+      comparison_mode: undefined,
+      comparison_dimension: undefined,
+      time_comparison: undefined,
+      time_range: undefined,
+    };
 
     if (showTimeComparison) {
       newDefaults.comparison_mode = "time";
@@ -278,6 +293,7 @@
 
     <Input
       lockable
+      lockTooltip="Unlink metrics view"
       label="Metrics view referenced"
       capitalizeLabel={false}
       bind:value={metricsView}
@@ -287,7 +303,14 @@
         value: name,
       }))}
       onChange={async () => {
-        await updateProperties({ metrics_view: metricsView });
+        await updateProperties(
+          {
+            metrics_view: metricsView,
+            measures: "*",
+            dimensions: "*",
+          },
+          ["defaults"],
+        );
         await asyncWait(3000);
         if (!metricsViewSpec || !exploreSpec) return;
       }}
@@ -327,11 +350,18 @@
       />
     {/each}
 
-    <TimeInput
+    <TimeZoneInput
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
-      onSelectDefault={async () => {
-        await updateProperties({ time_zones: DEFAULT_TIMEZONES });
+      onSelectMode={async (mode, time_zones) => {
+        if (mode === "custom") {
+          if (!rawTimeRanges) {
+            await updateProperties({ time_zones });
+          }
+          return;
+        } else if (mode === "default") {
+          await updateProperties({ time_zones });
+        }
       }}
       onSelectCustomItem={async (item) => {
         const deleted = timeZones.delete(item);
@@ -341,16 +371,23 @@
 
         await updateProperties({ time_zones: Array.from(timeZones) });
       }}
-      restoreDefaults={async () => {
-        await updateProperties({ time_zones: DEFAULT_TIMEZONES });
+      setTimeZones={async (time_zones) => {
+        await updateProperties({ time_zones });
       }}
     />
 
     <TimeRangeInput
       keyNotSet={!rawTimeRanges}
       selectedItems={timeRanges}
-      onSelectDefault={async (time_ranges) => {
-        await updateProperties({ time_ranges });
+      onSelectMode={async (mode, time_ranges) => {
+        if (mode === "custom") {
+          if (!rawTimeRanges) {
+            await updateProperties({ time_ranges });
+          }
+          return;
+        } else if (mode === "default") {
+          await updateProperties({ time_ranges });
+        }
       }}
       onSelectCustomItem={async (item) => {
         const deleted = timeRanges.delete(item);
@@ -400,26 +437,42 @@
 
     <footer
       slot="footer"
-      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-gray-500"
+      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
     >
-      {#if viewingDefaults}
-        <p>Viewing current default state</p>
-      {:else}
-        <button
-          class="text-primary-600 font-medium w-fit"
-          on:click={async () => {
-            await updateProperties({ defaults: newDefaults });
-          }}
-        >
-          Use left settings as defaults
-        </button>
-      {/if}
       <p>
         For more options,
         <button on:click={switchView} class="text-primary-600 font-medium">
           edit in YAML
         </button>
       </p>
+
+      <Button
+        forcedStyle="!mt-auto"
+        disabled={viewingDefaults}
+        type="subtle"
+        large
+        on:click={async () => {
+          await updateProperties({ defaults: newDefaults });
+        }}
+      >
+        {#if viewingDefaults}
+          Viewing default state
+        {:else}
+          Save dashboard state as default
+        {/if}
+        <Tooltip distance={8} location="top">
+          <InfoIcon size="14px" strokeWidth={2} />
+          <TooltipContent slot="tooltip-content">
+            {#if viewingDefaults}
+              The time range, comparison mode and displayed measures/dimensions
+              shown on the dashboard match the default settings
+            {:else}
+              Overwrite default settings for time range, comparison modes and
+              displayed measures/dimensions with the current dashboard view
+            {/if}
+          </TooltipContent>
+        </Tooltip>
+      </Button>
     </footer>
   </SidebarWrapper>
 </div>

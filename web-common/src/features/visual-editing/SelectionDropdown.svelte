@@ -6,15 +6,19 @@
 
   export let allItems: Set<string>;
   export let selectedItems: Set<string>;
+  export let type: string | undefined = undefined;
+  export let searchValue = "";
+  export let searchableItems: string[] | undefined = undefined;
   export let onSelect: (item: string) => void;
   export let setItems: (items: string[]) => void;
 
-  let searchValue = "";
   let open = false;
   let selectedProxy = new Set(selectedItems);
   let allProxy = new Set(allItems);
 
-  $: filteredItems = Array.from(allProxy).filter((item) => {
+  $: filteredItems = (
+    searchableItems && searchValue ? searchableItems : Array.from(allProxy)
+  ).filter((item) => {
     return (
       !selectedProxy.has(item) &&
       item.toLowerCase().includes(searchValue.toLowerCase())
@@ -40,7 +44,12 @@
       class:open
       class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
     >
-      {selectedItems.size} of {allItems.size}
+      {#if type}
+        {selectedItems.size} {type}
+      {:else}
+        {selectedItems.size} of {allItems.size}
+      {/if}
+
       <CaretDownIcon size="12px" className="!fill-gray-600 ml-auto flex-none" />
     </button>
   </DropdownMenu.Trigger>
@@ -59,7 +68,9 @@
               onSelect(item);
             }}
           >
-            {item}
+            <slot {item}>
+              {item}
+            </slot>
           </DropdownMenu.CheckboxItem>
         {/each}
       {/if}
@@ -76,7 +87,9 @@
             onSelect(item);
           }}
         >
-          {item}
+          <slot {item}>
+            {item}
+          </slot>
         </DropdownMenu.CheckboxItem>
       {:else}
         {#if searchValue}

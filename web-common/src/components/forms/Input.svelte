@@ -34,6 +34,7 @@
   export let disabled = false;
   export let lockable = false;
   export let capitalizeLabel = true;
+  export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
@@ -176,6 +177,7 @@
       {sameWidth}
       {id}
       {lockable}
+      {lockTooltip}
       bind:selectElement
       bind:value
       {options}

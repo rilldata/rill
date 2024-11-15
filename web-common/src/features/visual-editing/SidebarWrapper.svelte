@@ -11,10 +11,12 @@
   <h1 class="pt-6 px-5">{title}</h1>
 
   <div
-    class="px-5 flex flex-col gap-y-3 w-full h-fit overflow-y-auto overflow-x-visible"
+    class="px-5 flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
   >
     <slot />
   </div>
+
+  <slot name="bottom" />
 
   <slot name="footer" />
 </div>

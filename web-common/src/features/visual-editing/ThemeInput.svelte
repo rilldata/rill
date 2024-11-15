@@ -36,23 +36,23 @@
     id="visual-explore-theme"
     hint="Colors may be adjusted for legibility"
   />
-  <Select
-    fontSize={14}
-    sameWidth
-    onChange={onModeChange}
-    value={themeName}
-    options={["Default", ...themeNames, "Custom"].map((value) => ({
-      value,
-      label: value,
-    }))}
-    id="theme"
-  />
-
   <div class="gap-y-2 flex flex-col">
+    <Select
+      fontSize={14}
+      sameWidth
+      onChange={onModeChange}
+      value={themeName}
+      options={["Default", ...themeNames, "Custom"].map((value) => ({
+        value,
+        label: value,
+      }))}
+      id="theme"
+    />
+
     <ColorInput
       stringColor={theme.primaryColorRaw}
       label="Primary"
-      disabled={themeName !== "Custom" && themeName !== "Default"}
+      disabled={themeName !== "Custom" && themeName !== "default"}
       onChange={(color) => {
         onColorChange(color, theme.secondaryColorRaw ?? "");
       }}
@@ -60,7 +60,7 @@
     <ColorInput
       stringColor={theme.secondaryColorRaw}
       label="Secondary"
-      disabled={themeName !== "Custom" && themeName !== "Default"}
+      disabled={themeName !== "Custom" && themeName !== "default"}
       onChange={(color) => {
         onColorChange(theme.primaryColorRaw ?? "", color);
       }}

@@ -5,10 +5,13 @@
   import Link from "../icons/Link.svelte";
   // import { Link2, Link2Off } from "lucide-svelte";
   import LinkBreak from "svelte-radix/LinkBreak2.svelte";
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
   // import Link2 from "svelte-radix/Link1.svelte";
 
   type $$Props = SelectPrimitive.TriggerProps & {
     lockable?: boolean;
+    lockTooltip?: string;
     // See: https://www.bits-ui.com/docs/components/select#selecttrigger
     // Converts div to button tag
     class?: string;
@@ -19,6 +22,7 @@
 
   export let el: HTMLButtonElement | undefined = undefined;
   export let lockable = false;
+  export let lockTooltip = "";
   export { className as class };
 
   let locked = lockable;
@@ -35,18 +39,24 @@
 >
   <slot />
   {#if locked}
-    <button
-      on:click={() => {
-        locked = false;
-      }}
-      class="group active:bg-gray-50 grid bg-background place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
-    >
-      <Link size="14px" className="fill-gray-600 group-hover:hidden" />
-      <LinkBreak
-        class="text-primary-600 hidden group-hover:block"
-        size="14px"
-      />
-    </button>
+    <Tooltip>
+      <button
+        on:click={() => {
+          locked = false;
+        }}
+        class="group active:bg-gray-50 grid bg-background place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
+      >
+        <Link size="14px" className="fill-gray-600 group-hover:hidden" />
+        <LinkBreak
+          class="text-primary-600 hidden group-hover:block"
+          size="14px"
+        />
+      </button>
+
+      <TooltipContent slot="tooltip-content">
+        {lockTooltip}
+      </TooltipContent>
+    </Tooltip>
   {/if}
   <div class="caret transition-transform">
     <CaretDownIcon size="12px" className="fill-gray-600" />

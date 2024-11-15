@@ -186,6 +186,7 @@
   class="color-wrapper"
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
+  class:text-gray-400={disabled}
 >
   <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
