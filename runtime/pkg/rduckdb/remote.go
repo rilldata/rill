@@ -2,6 +2,7 @@ package rduckdb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,9 +18,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// syncLocalWithBackup syncs the write path with the backup location.
+// pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
-func (d *db) syncLocalWithBackup(ctx context.Context) error {
+func (d *db) pullFromRemote(ctx context.Context) error {
 	if !d.writeDirty || d.backup == nil {
 		// optimisation to skip sync if write was already synced
 		return nil
@@ -33,7 +34,7 @@ func (d *db) syncLocalWithBackup(ctx context.Context) error {
 		Delimiter: "/", // only list directories with a trailing slash and IsDir set to true
 	})
 
-	tblVersions := make(map[string]string)
+	tblMetas := make(map[string]*tableMeta)
 	for {
 		// Stop the loop if the ctx was cancelled
 		var stop bool
@@ -62,42 +63,42 @@ func (d *db) syncLocalWithBackup(ctx context.Context) error {
 		d.logger.Debug("SyncWithObjectStorage: discovered table", slog.String("table", table))
 
 		// get version of the table
-		var backedUpVersion string
+		var b []byte
 		err = retry(ctx, func() error {
-			res, err := d.backup.ReadAll(ctx, path.Join(table, "version.txt"))
+			res, err := d.backup.ReadAll(ctx, path.Join(table, "meta.json"))
 			if err != nil {
 				return err
 			}
-			backedUpVersion = string(res)
+			b = res
 			return nil
 		})
 		if err != nil {
 			if gcerrors.Code(err) == gcerrors.NotFound {
 				// invalid table directory
 				d.logger.Debug("SyncWithObjectStorage: invalid table directory", slog.String("table", table))
-				_ = d.deleteBackup(ctx, table, "")
+				continue
 			}
 			return err
 		}
-		tblVersions[table] = backedUpVersion
-
-		// check with current version
-		version, exists, _ := tableVersion(d.localPath, table)
-		if exists && version == backedUpVersion {
-			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
+		backedUpMeta := &tableMeta{}
+		err = json.Unmarshal(b, backedUpMeta)
+		if err != nil {
+			d.logger.Debug("SyncWithObjectStorage: failed to unmarshal table metadata", slog.String("table", table), slog.Any("error", err))
 			continue
 		}
 
-		tableDir := filepath.Join(d.localPath, table)
-		// truncate existing table directory
-		if err := os.RemoveAll(tableDir); err != nil {
-			return err
+		// check with current version
+		meta, _ := d.tableMeta(table)
+		if meta != nil && meta.Version == backedUpMeta.Version {
+			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
+			continue
 		}
-		if err := os.MkdirAll(filepath.Join(tableDir, backedUpVersion), os.ModePerm); err != nil {
+		tblMetas[table] = backedUpMeta
+		if err := os.MkdirAll(filepath.Join(d.localPath, table, backedUpMeta.Version), os.ModePerm); err != nil {
 			return err
 		}
 
-		tblIter := d.backup.List(&blob.ListOptions{Prefix: path.Join(table, backedUpVersion)})
+		tblIter := d.backup.List(&blob.ListOptions{Prefix: path.Join(table, backedUpMeta.Version)})
 		// download all objects in the table and current version
 		for {
 			obj, err := tblIter.Next(ctx)
@@ -135,14 +136,14 @@ func (d *db) syncLocalWithBackup(ctx context.Context) error {
 	}
 
 	// Update table versions
-	for table, version := range tblVersions {
-		err = d.setTableVersion(table, version)
+	for table, meta := range tblMetas {
+		err = d.writeTableMeta(table, meta)
 		if err != nil {
 			return err
 		}
 	}
 
-	// remove any tables that are not in backup
+	// mark tables that are not in backup for delete later
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
@@ -151,79 +152,77 @@ func (d *db) syncLocalWithBackup(ctx context.Context) error {
 		if !entry.IsDir() {
 			continue
 		}
-		if _, ok := tblVersions[entry.Name()]; ok {
+		if _, ok := tblMetas[entry.Name()]; ok {
 			continue
 		}
-		err = os.RemoveAll(filepath.Join(d.localPath, entry.Name()))
-		if err != nil {
-			return err
+		// get current meta
+		meta, _ := d.tableMeta(entry.Name())
+		if meta == nil {
+			// cleanup ??
+			continue
 		}
+		meta.Deleted = true
+		_ = d.writeTableMeta(entry.Name(), meta)
 	}
 	return nil
 }
 
-// syncBackupWithLocal syncs the backup location with the local path for given table.
+// pushToRemote syncs the backup location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
-func (d *db) syncBackupWithLocal(ctx context.Context, table, oldVersion string) error {
+func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
 	if d.backup == nil {
 		return nil
 	}
-	d.logger.Debug("syncing table", slog.String("table", table))
-	version, exist, err := tableVersion(d.localPath, table)
-	if err != nil {
-		return err
-	}
 
-	if !exist {
-		return fmt.Errorf("table %q not found", table)
-	}
-
-	localPath := filepath.Join(d.localPath, table, version)
-	entries, err := os.ReadDir(localPath)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
-		// no directory should exist as of now
-		if entry.IsDir() {
-			d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
-			continue
-		}
-
-		wr, err := os.Open(filepath.Join(localPath, entry.Name()))
+	if meta.Type == "TABLE" {
+		localPath := filepath.Join(d.localPath, table, meta.Version)
+		entries, err := os.ReadDir(localPath)
 		if err != nil {
 			return err
 		}
 
-		// upload to cloud storage
-		err = retry(ctx, func() error {
-			return d.backup.Upload(ctx, path.Join(table, version, entry.Name()), wr, &blob.WriterOptions{
-				ContentType: "application/octet-stream",
+		for _, entry := range entries {
+			d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
+			// no directory should exist as of now
+			if entry.IsDir() {
+				d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
+				continue
+			}
+
+			wr, err := os.Open(filepath.Join(localPath, entry.Name()))
+			if err != nil {
+				return err
+			}
+
+			// upload to cloud storage
+			err = retry(ctx, func() error {
+				return d.backup.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
+					ContentType: "application/octet-stream",
+				})
 			})
-		})
-		_ = wr.Close()
-		if err != nil {
-			return err
+			_ = wr.Close()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	// update version.txt
-	// Ideally if this fails it leaves backup in inconsistent state but for now we will rely on retries
-	// ignore context cancellation errors for version.txt updates
-	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	err = retry(context.Background(), func() error {
-		return d.backup.WriteAll(ctxWithTimeout, path.Join(table, "version.txt"), []byte(version), nil)
+	// update table meta
+	// todo :: also use etag to avoid overwriting
+	m, err := json.Marshal(meta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal table metadata: %w", err)
+	}
+	err = retry(ctx, func() error {
+		return d.backup.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
 	})
 	if err != nil {
 		d.logger.Error("failed to update version.txt in backup", slog.Any("error", err))
 	}
 
 	// success -- remove old version
-	if oldVersion != "" {
-		_ = d.deleteBackup(ctx, table, oldVersion)
+	if oldMeta != nil {
+		_ = d.deleteBackup(ctx, table, oldMeta.Version)
 	}
 	return err
 }
@@ -246,10 +245,7 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 			// deleting the entire table
 			prefix = table + "/"
 			// delete version.txt first
-			// also ignore context cancellation errors since it can leave the backup in inconsistent state
-			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			err := retry(context.Background(), func() error { return d.backup.Delete(ctxWithTimeout, "version.txt") })
+			err := retry(ctx, func() error { return d.backup.Delete(ctx, "version.txt") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
 				d.logger.Error("failed to delete version.txt in backup", slog.Any("error", err))
 				return err
@@ -278,17 +274,21 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 func retry(ctx context.Context, fn func() error) error {
 	var err error
 	for i := 0; i < _maxRetries; i++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err() // return on context cancellation
-		case <-time.After(_retryDelay):
-		}
 		err = fn()
 		if err == nil {
 			return nil // success
 		}
 		if !strings.Contains(err.Error(), "stream error: stream ID") {
 			break // break and return error
+		}
+
+		timer := time.NewTimer(_retryDelay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err() // return on context cancellation
+		case <-time.After(_retryDelay):
+			timer.Stop()
 		}
 	}
 	return err
