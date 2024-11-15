@@ -37,7 +37,7 @@ INSERT INTO provisioner_resources (
     status_message,
     provisioner,
     jsonb_build_object('slots', slots, 'version', 'latest') as args_json,
-    jsonb_build_object('version', runtime_version) as state_json,
+    jsonb_build_object('slots', slots, 'version', runtime_version) as state_json,
     jsonb_build_object('host', runtime_host, 'audience', runtime_audience, 'cpu', slots, 'memory_gb', 4*slots, 'storage_bytes', 40*slots) as config_json,
     created_on,
     updated_on

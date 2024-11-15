@@ -75,21 +75,23 @@ func TestProvision(t *testing.T) {
 			p.(*StaticProvisioner).nextIdx.Store(0) // Make host assignment deterministic
 			require.NoError(t, err)
 
-			opts := &provisioner.ProvisionOptions{
+			in := &provisioner.Resource{
 				ID:   uuid.NewString(),
 				Type: provisioner.ResourceTypeRuntime,
+			}
+			opts := &provisioner.ResourceOptions{
 				Args: tt.args.AsMap(),
 			}
-			res, err := p.Provision(ctx, opts)
+			out, err := p.Provision(ctx, in, opts)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 
-			require.Equal(t, opts.ID, res.ID)
-			require.Equal(t, opts.Type, res.Type)
-			require.Equal(t, tt.wantCfg.AsMap(), res.Config)
+			require.Equal(t, in.ID, out.ID)
+			require.Equal(t, in.Type, out.Type)
+			require.Equal(t, tt.wantCfg.AsMap(), out.Config)
 		})
 	}
 }

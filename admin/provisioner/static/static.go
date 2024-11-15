@@ -61,9 +61,9 @@ func (p *StaticProvisioner) Type() string {
 	return "static"
 }
 
-func (p *StaticProvisioner) Provision(ctx context.Context, opts *provisioner.ProvisionOptions) (*provisioner.Resource, error) {
+func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// Can only provision runtime resources
-	if opts.Type != provisioner.ResourceTypeRuntime {
+	if r.Type != provisioner.ResourceTypeRuntime {
 		return nil, provisioner.ErrResourceTypeNotSupported
 	}
 
@@ -117,8 +117,8 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *provisioner.Pro
 		Slots: args.Slots,
 	}
 	return &provisioner.Resource{
-		ID:     opts.ID,
-		Type:   opts.Type,
+		ID:     r.ID,
+		Type:   r.Type,
 		Config: cfg.AsMap(),
 		State:  state.AsMap(),
 	}, nil
@@ -187,7 +187,7 @@ func (p *StaticProvisioner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// No-op
 	return r, nil
 }

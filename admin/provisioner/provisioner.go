@@ -34,7 +34,12 @@ type Provisioner interface {
 	// Type returns the type of the provisioner.
 	Type() string
 	// Provision provisions a new resource.
-	Provision(ctx context.Context, opts *ProvisionOptions) (*Resource, error)
+	// It may be called multiple times for the same ID if:
+	//  - the initial provision is interrupted, or
+	//  - the resource args are updated
+	//
+	// This means Provision should be idempotent for the resource's ID (or otherwise do appropriate garbage collection in calls to Check).
+	Provision(ctx context.Context, r *Resource, opts *ResourceOptions) (*Resource, error)
 	// Deprovision deprovisions a resource.
 	Deprovision(ctx context.Context, r *Resource) error
 	// AwaitReady waits for a resource to be ready.
@@ -45,20 +50,17 @@ type Provisioner interface {
 	// CheckResource is called periodically to health check a specific resource.
 	// The provided context should have a generous timeout to allow the provisioner to perform maintenance tasks for the resource.
 	// The resource's state map will be updated to match that of the returned value.
-	CheckResource(ctx context.Context, r *Resource) (*Resource, error)
+	CheckResource(ctx context.Context, r *Resource, opts *ResourceOptions) (*Resource, error)
 }
 
-// ProvisionOptions represents a request to provision a new resource.
-type ProvisionOptions struct {
-	// ID is a UUID generated for the resource to be provisioned.
-	// It will stay the same if there are retries, enabling idempotency.
-	ID string
-	// The resource type being requested. See resources.go for supported types.
-	Type ResourceType
+// ResourceOptions contains metadata about a resource.
+type ResourceOptions struct {
 	// Service-specific arguments for the provisioner. See resources.go for supported arguments.
 	Args map[string]any
 	// Annotations for the project the resource belongs to.
 	Annotations map[string]string
+	// RillVersion is the current version of Rill.
+	RillVersion string
 }
 
 // Resource represents a provisioned resource.

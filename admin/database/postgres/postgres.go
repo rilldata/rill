@@ -2203,9 +2203,9 @@ func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, envi
 	return err
 }
 
-func (c *connection) FindProvisionerResourcesForProject(ctx context.Context, projectID string) ([]*database.ProvisionerResource, error) {
+func (c *connection) FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*database.ProvisionerResource, error) {
 	var res []*provisionerResourceDTO
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM provisioner_resources WHERE project_id = $1`, projectID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM provisioner_resources WHERE deployment_id = $1`, deploymentID)
 	if err != nil {
 		return nil, parseErr("provisioner resources", err)
 	}

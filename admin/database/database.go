@@ -290,7 +290,7 @@ type DB interface {
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 
-	FindProvisionerResourcesForProject(ctx context.Context, projectID string) ([]*ProvisionerResource, error)
+	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
@@ -483,7 +483,7 @@ type InsertDeploymentOptions struct {
 	StatusMessage     string
 }
 
-// StaticRuntimeSlotsUsed is the result of a ResolveStaticRuntimeSlotsUsed query.
+// StaticRuntimeSlotsUsed is the number of slots currently assigned to a runtime host.
 type StaticRuntimeSlotsUsed struct {
 	Host  string `db:"host"`
 	Slots int    `db:"slots"`
@@ -1123,7 +1123,7 @@ const (
 	ProvisionerResourceStatusUnspecified ProvisionerResourceStatus = 0
 	ProvisionerResourceStatusPending     ProvisionerResourceStatus = 1
 	ProvisionerResourceStatusOK          ProvisionerResourceStatus = 2
-	ProvisionerResourceStatusError       ProvisionerResourceStatus = 4
+	ProvisionerResourceStatusError       ProvisionerResourceStatus = 3
 )
 
 func (d ProvisionerResourceStatus) String() string {
@@ -1139,7 +1139,7 @@ func (d ProvisionerResourceStatus) String() string {
 	}
 }
 
-// ProvisionerResource represents a resource created by a provisioner in admin/provisioner.
+// ProvisionerResource represents a resource created by a provisioner (see admin/provisioner/README.md for details about provisioners).
 type ProvisionerResource struct {
 	ID            string                    `db:"id"`
 	DeploymentID  string                    `db:"deployment_id"`
@@ -1171,8 +1171,8 @@ type InsertProvisionerResourceOptions struct {
 
 // UpdateProvisionerResourceOptions defines options for updating a ProvisionerResource.
 type UpdateProvisionerResourceOptions struct {
-	Args          map[string]any
-	State         map[string]any
 	Status        ProvisionerResourceStatus
 	StatusMessage string
+	Args          map[string]any
+	State         map[string]any
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"go.uber.org/multierr"
@@ -143,9 +144,9 @@ func (p *KubernetesProvisioner) Type() string {
 	return "kubernetes"
 }
 
-func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *provisioner.ProvisionOptions) (*provisioner.Resource, error) {
+func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// Can only provision runtime resources
-	if opts.Type != provisioner.ResourceTypeRuntime {
+	if r.Type != provisioner.ResourceTypeRuntime {
 		return nil, provisioner.ErrResourceTypeNotSupported
 	}
 
@@ -155,15 +156,24 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *provisioner
 		return nil, err
 	}
 
+	// Resolve "latest" version to the current Rill version
+	version := args.Version
+	if version == "" {
+		version = "latest"
+	}
+	if version == "latest" && opts.RillVersion != "" {
+		version = opts.RillVersion
+	}
+
 	// Get Kubernetes resource names
-	names := p.getResourceNames(opts.ID)
+	names := p.getResourceNames(r.ID)
 
 	// Create unique host
-	host := p.getHost(opts.ID)
+	host := p.getHost(r.ID)
 
 	// Define template data
 	data := &TemplateData{
-		ImageTag:     args.Version,
+		ImageTag:     version,
 		Image:        p.Spec.Image,
 		Names:        names,
 		Host:         strings.Split(host, "//")[1], // Remove protocol
@@ -207,7 +217,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *provisioner
 	applyOptions := metav1.ApplyOptions{FieldManager: "rill-cloud-admin", Force: true}
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by": "rill-cloud-admin",
-		"app.kubernetes.io/instance":   opts.ID,
+		"app.kubernetes.io/instance":   r.ID,
 	}
 	annotations := map[string]string{
 		"checksum/templates": p.templatesChecksum,
@@ -260,10 +270,16 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *provisioner
 		StorageBytes: data.StorageBytes,
 	}
 
+	state := &runtimeState{
+		Slots:   data.Slots,
+		Version: version,
+	}
+
 	return &provisioner.Resource{
-		ID:     opts.ID,
-		Type:   opts.Type,
+		ID:     r.ID,
+		Type:   r.Type,
 		Config: cfg.AsMap(),
+		State:  state.AsMap(),
 	}, nil
 }
 
@@ -344,7 +360,7 @@ func (p *KubernetesProvisioner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource) (*provisioner.Resource, error) {
+func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// Get Kubernetes resource names
 	names := p.getResourceNames(r.ID)
 
@@ -374,4 +390,28 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 
 func (p *KubernetesProvisioner) getHost(provisionID string) string {
 	return strings.ReplaceAll(p.Spec.Host, "*", provisionID)
+}
+
+// runtimeState describes the Kubernetes provisioner's state for a provisioned runtime resource.
+type runtimeState struct {
+	Slots   int    `mapstructure:"slots"`
+	Version string `mapstructure:"version"`
+}
+
+func newRuntimeState(state map[string]any) (*runtimeState, error) {
+	res := &runtimeState{}
+	err := mapstructure.Decode(state, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse runtime state: %w", err)
+	}
+	return res, nil
+}
+
+func (r *runtimeState) AsMap() map[string]any {
+	res := make(map[string]any)
+	err := mapstructure.Decode(r, &res)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
