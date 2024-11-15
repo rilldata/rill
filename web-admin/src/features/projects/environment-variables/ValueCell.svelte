@@ -74,7 +74,7 @@
           on:click={onCopy}
         />
       {:else}
-        <button on:click={onCopy}>
+        <button on:click={onCopy} class="truncate max-w-[160.5px]">
           <span
             class="text-sm text-gray-800 font-medium {isEmpty
               ? 'italic'
