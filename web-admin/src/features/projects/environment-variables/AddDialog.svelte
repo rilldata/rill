@@ -39,6 +39,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
   $: hasNewChanges = $form.newVariables.some(
     (variable) => variable.key !== "" || variable.value !== "",
@@ -337,7 +338,10 @@
       <Button
         type="primary"
         form={formId}
-        disabled={$submitting || hasExistingKeys || !hasNewChanges}
+        disabled={$submitting ||
+          hasExistingKeys ||
+          !hasNewChanges ||
+          !isEnvironmentSelected}
         submitForm>Create</Button
       >
     </DialogFooter>

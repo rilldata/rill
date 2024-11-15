@@ -41,13 +41,12 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasChanges =
     $form.key !== initialValues.key ||
     $form.value !== initialValues.value ||
     initialEnvironment?.isDevelopment !== isDevelopment ||
     initialEnvironment?.isProduction !== isProduction;
-
-  $: console.log("initialEnvironment: ", initialEnvironment);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -286,7 +285,7 @@
       <Button
         type="primary"
         form={$formId}
-        disabled={$submitting || !hasChanges}
+        disabled={$submitting || !hasChanges || !isEnvironmentSelected}
         submitForm>Edit</Button
       >
     </DialogFooter>
