@@ -31,13 +31,23 @@
   export let name: string;
   export let value: string;
 
+  let initialEnvironment: {
+    isDevelopment: boolean;
+    isProduction: boolean;
+  };
   let isDevelopment: boolean;
   let isProduction: boolean;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  // $: hasChanges = $form.value !== value;
+  $: hasChanges =
+    $form.key !== initialValues.key ||
+    $form.value !== initialValues.value ||
+    initialEnvironment?.isDevelopment !== isDevelopment ||
+    initialEnvironment?.isProduction !== isProduction;
+
+  $: console.log("initialEnvironment: ", initialEnvironment);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -101,15 +111,48 @@
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
     try {
-      // Create a new variable with the updated values
-      await $updateProjectVariables.mutateAsync({
-        organization,
-        project,
-        data: {
-          environment: processEnvironment(),
-          variables: flatVariable,
-        },
-      });
+      // If the key has changed, remove the old key
+      if (initialValues.key !== $form.key) {
+        await $updateProjectVariables.mutateAsync({
+          organization,
+          project,
+          data: {
+            unsetVariables: [initialValues.key],
+          },
+        });
+
+        await $updateProjectVariables.mutateAsync({
+          organization,
+          project,
+          data: {
+            environment: processEnvironment(),
+            variables: flatVariable,
+          },
+        });
+      }
+
+      // If the key remains the same, update the environment or value
+      if (initialValues.key === $form.key) {
+        // If the environment has changed, remove the old key and add the new key
+        if (initialValues.environment !== processEnvironment()) {
+          await $updateProjectVariables.mutateAsync({
+            organization,
+            project,
+            data: {
+              unsetVariables: [initialValues.key],
+            },
+          });
+        }
+
+        await $updateProjectVariables.mutateAsync({
+          organization,
+          project,
+          data: {
+            environment: processEnvironment(),
+            variables: flatVariable,
+          },
+        });
+      }
 
       await queryClient.invalidateQueries(
         getAdminServiceGetProjectVariablesQueryKey(organization, project),
@@ -125,6 +168,11 @@
         type: "error",
       });
     }
+  }
+
+  function handleKeyChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    $form.key = target.value;
   }
 
   function handleValueChange(event: Event) {
@@ -153,6 +201,10 @@
 
   onMount(() => {
     setInitialCheckboxState();
+    initialEnvironment = {
+      isDevelopment,
+      isProduction,
+    };
   });
 </script>
 
@@ -201,7 +253,7 @@
                 label=""
                 id={`edit-${name}`}
                 placeholder="Key"
-                readonly
+                on:input={(e) => handleKeyChange(e)}
               />
               <Input
                 bind:value={$form.value}
@@ -231,8 +283,11 @@
           handleReset();
         }}>Cancel</Button
       >
-      <Button type="primary" form={$formId} disabled={$submitting} submitForm
-        >Edit</Button
+      <Button
+        type="primary"
+        form={$formId}
+        disabled={$submitting || !hasChanges}
+        submitForm>Edit</Button
       >
     </DialogFooter>
   </DialogContent>
