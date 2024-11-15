@@ -34,6 +34,8 @@
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
+  $: isEdit = !!reportSpec;
+
   const user = createAdminServiceGetCurrentUser();
 
   $: if (!exploreName) {
@@ -43,7 +45,7 @@
 
   $: ({ organization, project, report: reportName } = $page.params);
 
-  $: mutation = reportSpec
+  $: mutation = isEdit
     ? createAdminServiceEditReport()
     : createAdminServiceCreateReport();
 
@@ -99,7 +101,6 @@
         },
       });
 
-      const isEdit = !!reportSpec;
       if (isEdit) {
         await queryClient.invalidateQueries(
           getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
@@ -116,7 +117,7 @@
       open = false;
 
       eventBus.emit("notification", {
-        message: `Report ${reportSpec ? "edited" : "created"}`,
+        message: `Report ${isEdit ? "edited" : "created"}`,
         link: reportSpec
           ? undefined
           : {
@@ -170,7 +171,7 @@
         submitForm
         type="primary"
       >
-        {reportSpec ? "Save" : "Create"}
+        {isEdit ? "Save" : "Create"}
       </Button>
     </div>
   </Dialog.Content>
