@@ -61,13 +61,6 @@ func (w *ResetAllDeploymentsWorker) resetAllDeploymentsForProject(ctx context.Co
 	}
 
 	for _, depl := range depls {
-		// Make sure the deployment provisioner is in the current provisioner set
-		_, ok := w.admin.ProvisionerSet[depl.Provisioner]
-		if !ok {
-			w.admin.Logger.Error("reset all deployments: provisioner is not in the provisioner set", zap.String("provisioner", depl.Provisioner), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-			continue
-		}
-
 		w.admin.Logger.Info("reset all deployments: redeploying deployment", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		_, err = w.admin.RedeployProject(ctx, proj, depl)
 		if err != nil {
