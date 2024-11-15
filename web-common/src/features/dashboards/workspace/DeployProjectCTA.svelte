@@ -29,7 +29,7 @@
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
-  $: orgMetadata =
+  $: orgsMetadata =
     createLocalServiceListOrganizationsAndBillingMetadataRequest();
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
@@ -39,7 +39,12 @@
   $: isDeployed = !!$currentProject.data?.project;
   $: isFirstTimeDeploy =
     !isDeployed &&
-    $orgMetadata.data?.orgs?.every((o) => getNeverSubscribedIssue(o.issues));
+    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues));
+  $: console.log(
+    isDeployed,
+    $orgsMetadata.data?.orgs,
+    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues)),
+  );
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 

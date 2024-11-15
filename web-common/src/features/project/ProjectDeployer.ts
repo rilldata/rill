@@ -40,7 +40,7 @@ export class ProjectDeployer {
 
   public constructor(
     // use a specific org. org could be set in url params as a callback from upgrading to team plan
-    // this marks the deployer to skip promoting for org selection or auto generation
+    // this marks the deployer to skip prompting for org selection or auto generation
     private readonly useOrg: string,
   ) {}
 

@@ -219,7 +219,7 @@ export function localServiceListOrganizationsAndBillingMetadataRequest() {
   );
 }
 export const getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey =
-  () => [`/v1/local/get-org-metadata`];
+  () => [`/v1/local/list-organizations-billing-metadata`];
 export function createLocalServiceListOrganizationsAndBillingMetadataRequest<
   TData = Awaited<
     ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>

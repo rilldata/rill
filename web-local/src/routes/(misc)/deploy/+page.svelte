@@ -51,7 +51,7 @@
     return deployer.deploy(org);
   }
 
-  function onOrgConfirm() {
+  function onStartTrialConfirm() {
     promptOrgSelection.set(false);
     return deployer.deploy(selectedOrg);
   }
@@ -94,4 +94,7 @@
   </CTAContentContainer>
 </CTALayoutContainer>
 
-<TrialDetailsDialog bind:open={deployConfirmOpen} onContinue={onOrgConfirm} />
+<TrialDetailsDialog
+  bind:open={deployConfirmOpen}
+  onContinue={onStartTrialConfirm}
+/>
