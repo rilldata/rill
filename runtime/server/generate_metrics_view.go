@@ -379,6 +379,7 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
 			dims = append(dims, &metricsViewDimensionYAML{
+				Name:        f.Name,
 				DisplayName: identifierToDisplayName(f.Name),
 				Column:      f.Name,
 			})
@@ -447,6 +448,7 @@ type metricsViewYAML struct {
 }
 
 type metricsViewDimensionYAML struct {
+	Name        string `yaml:"name"`
 	DisplayName string `yaml:"display_name"`
 	Column      string `yaml:"column"`
 }
@@ -501,7 +503,7 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 				keyNode := node.Content[i].Content[j]
 				valueNode := node.Content[i].Content[j+1]
 
-				if keyNode.Value == "display_name" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+				if keyNode.Value == "dimensions" || keyNode.Value == "measures" {
 					keyNode.HeadComment = "\n"
 				}
 				insertEmptyLinesInYaml(valueNode)
