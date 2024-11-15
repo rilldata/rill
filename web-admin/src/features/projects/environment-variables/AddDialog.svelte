@@ -96,7 +96,7 @@
     },
   );
 
-  function processEnvironment() {
+  function getCurrentEnvironment() {
     if (isDevelopment && isProduction) {
       return undefined;
     }
@@ -120,7 +120,7 @@
         organization,
         project,
         data: {
-          environment: processEnvironment(),
+          environment: getCurrentEnvironment(),
           variables: flatVariables,
         },
       });
@@ -168,6 +168,7 @@
     isKeyAlreadyExists = false;
   }
 
+  // FIXME: we need to make sure environments are unique
   // TODO: do we only check for name? do we also need to check for name and environment?
   function checkForExistingKeys() {
     const existingKeys = $form.newVariables.map((variable) => variable.key);

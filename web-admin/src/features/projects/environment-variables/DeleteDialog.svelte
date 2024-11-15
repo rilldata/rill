@@ -34,7 +34,6 @@
         project,
         data: {
           environment,
-          // Variables to delete.
           unsetVariables: [deletedName],
         },
       });

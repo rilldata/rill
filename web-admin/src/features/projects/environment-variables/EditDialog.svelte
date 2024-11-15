@@ -21,7 +21,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { EnvironmentType, type EnvironmentTypes } from "./types";
+  import { EnvironmentType } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { onMount } from "svelte";
 
@@ -101,6 +101,7 @@
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
     try {
+      // Create a new variable with the updated values
       await $updateProjectVariables.mutateAsync({
         organization,
         project,

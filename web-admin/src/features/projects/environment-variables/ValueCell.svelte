@@ -47,6 +47,8 @@
       copied = false;
     }, 2_000);
   }
+
+  $: title = displayValue !== "Empty" ? (showValue ? displayValue : "") : "";
 </script>
 
 <div class="flex flex-row gap-[10px] items-center">
@@ -57,19 +59,35 @@
       <EyeOffIcon color="#94A3B8" size="16" />
     {/if}
   </button>
-  <Tooltip distance={8} location="top" suppress={isValueHidden || isEmpty}>
-    <input
-      readonly
-      type={inputType}
-      class="text-sm text-gray-800 font-medium {isEmpty
-        ? 'italic'
-        : ''} outline-none"
-      class:cursor-pointer={showValue}
-      value={displayValue}
-      title={showValue ? displayValue : ""}
-      on:click={onCopy}
-    />
-    <TooltipContent maxWidth="600px" slot="tooltip-content">
+  <Tooltip distance={6} location="top" suppress={isValueHidden || isEmpty}>
+    <div class="w-fit">
+      {#if inputType === "password"}
+        <input
+          readonly
+          type="password"
+          class="text-sm text-gray-800 font-medium {isEmpty
+            ? 'italic'
+            : ''} outline-none"
+          class:cursor-pointer={showValue}
+          value={displayValue}
+          {title}
+          on:click={onCopy}
+        />
+      {:else}
+        <button on:click={onCopy}>
+          <span
+            class="text-sm text-gray-800 font-medium {isEmpty
+              ? 'italic'
+              : ''} outline-none"
+            class:cursor-pointer={showValue}
+            {title}
+          >
+            {displayValue}
+          </span>
+        </button>
+      {/if}
+    </div>
+    <TooltipContent slot="tooltip-content">
       {copied ? "Copied!" : "Click to copy"}
     </TooltipContent>
   </Tooltip>
