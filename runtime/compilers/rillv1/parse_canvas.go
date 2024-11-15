@@ -48,7 +48,10 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 
 	// Parse variable definitions.
-	variables := make([]*runtimev1.ComponentVariable, len(tmp.Variables))
+	var variables []*runtimev1.ComponentVariable
+	if len(tmp.Variables) > 0 {
+		variables = make([]*runtimev1.ComponentVariable, len(tmp.Variables))
+	}
 	for i, v := range tmp.Variables {
 		variables[i], err = v.Proto()
 		if err != nil {

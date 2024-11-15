@@ -416,7 +416,8 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 }
 
 type DruidQueryContext struct {
-	SQLQueryID string `json:"sqlQueryId"`
+	SQLQueryID                 string `json:"sqlQueryId"`
+	EnableTimeBoundaryPlanning bool   `json:"enableTimeBoundaryPlanning"`
 }
 
 type DruidParameter struct {
@@ -448,7 +449,8 @@ func newDruidRequest(query string, args []driver.NamedValue) *DruidRequest {
 		ResultFormat:   "arrayLines",
 		Parameters:     parameters,
 		Context: DruidQueryContext{
-			SQLQueryID: uuid.New().String(),
+			SQLQueryID:                 uuid.New().String(),
+			EnableTimeBoundaryPlanning: true,
 		},
 	}
 }

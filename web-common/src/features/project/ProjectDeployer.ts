@@ -1,7 +1,10 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
-import { extractDeployError } from "@rilldata/web-common/features/project/deploy-errors";
+import {
+  DeployErrorType,
+  extractDeployError,
+} from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -26,12 +29,20 @@ export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
-  public readonly promptOrgSelection = writable(true);
+  public readonly promptOrgSelection = writable(false);
 
+  // exposes the exact org being used to deploy.
+  // this could change based on user's selection or through auto generation based on user's email
   public readonly org = writable("");
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
+
+  public constructor(
+    // use a specific org. org could be set in url params as a callback from upgrading to team plan
+    // this marks the deployer to skip prompting for org selection or auto generation
+    private readonly useOrg: string,
+  ) {}
 
   public get isDeployed() {
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
@@ -115,17 +126,20 @@ export class ProjectDeployer {
       return;
     }
 
+    if (!org && this.useOrg) {
+      org = this.useOrg;
+    }
+
     let checkNextOrg = false;
     if (!org) {
       const { org: inferredOrg, checkNextOrg: inferredCheckNextOrg } =
         await this.inferOrg(get(this.user).data?.rillUserOrgs ?? []);
-      // no org was inferred. right now this is because we have prompted the user for an org
+      // no org was inferred. this is because we have prompted the user for an org
       if (!inferredOrg) return;
       org = inferredOrg;
       checkNextOrg = inferredCheckNextOrg;
     }
 
-    // hardcoded to upload for now
     const frontendUrl = await this.tryDeployWithOrg(
       org,
       projectResp.localProjectName,
@@ -176,7 +190,7 @@ export class ProjectDeployer {
         return resp.frontendUrl;
       } catch (e) {
         const err = extractDeployError(e);
-        if (err.noAccess && checkNextOrg) {
+        if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
           i++;
         } else {
           throw e;

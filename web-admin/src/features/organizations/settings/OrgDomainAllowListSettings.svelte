@@ -54,8 +54,8 @@
     <div class="flex flex-row items-center gap-x-2">
       {#if !$isPublicDomain.data}
         <Label for="allow-domain" class="font-normal text-gray-700 text-sm">
-          Allow any user with a <b>@{$userDomain.data}</b> email address to join
-          this project as a <b>Viewer</b>.
+          Allow existing and new Rill users with a <b>@{$userDomain.data}</b>
+          email address to join this org as a <b>Viewer</b>.
           <a
             target="_blank"
             href="https://docs.rilldata.com/reference/cli/user/whitelist"

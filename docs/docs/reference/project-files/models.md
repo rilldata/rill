@@ -58,7 +58,7 @@ models:
 :::info To materialize or not to materialize? 
 
 There are both pros and cons to materializing your models.
-- Pros can include improved performance for downstream models and dashboards, especially with the SQL is complex and/or the data size is large. We generally recommend _materializing_ final models that power dashboards (we do this automatically in Rill Cloud).
+- Pros can include improved performance for downstream models and dashboards, especially with the SQL is complex and/or the data size is large. We generally recommend _materializing_ final models that power dashboards.
 - Cons can include a degraded keystroke-by-keystroke modeling experience or for specific edge cases, such as when using cross joins.
 
 If unsure, we would generally recommend leaving the defaults and/or [reaching out](contact.md) for further guidance!

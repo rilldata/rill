@@ -10,9 +10,9 @@
     createAdminServiceListUsergroupMemberUsers,
   } from "@rilldata/web-admin/client";
 
+  export let group: V1MemberUsergroup;
   export let organization: string;
   export let project: string;
-  export let group: V1MemberUsergroup;
 
   let isHovered = false;
 
@@ -41,7 +41,7 @@
         shape="square"
         name={organization}
         count={userGroupMemberUsersCount}
-        isEveryFromText
+        isEveryoneFromText
       />
       <UserManagementOrganizationSetRole {organization} {project} {group} />
     </div>

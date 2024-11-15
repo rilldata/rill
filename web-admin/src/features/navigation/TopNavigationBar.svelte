@@ -1,8 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getPlanDisplayName } from "@rilldata/web-admin/features/billing/plans/utils";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
+  import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -103,7 +102,7 @@
     (map, { name, displayName }) =>
       map.set(name.toLowerCase(), {
         label: displayName || name,
-        pill: $plan?.data ? getPlanDisplayName($plan.data) : "",
+        pill: $plan?.data?.displayName,
       }),
     new Map<string, PathOption>(),
   );
@@ -212,7 +211,7 @@
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
-              <ShareDashboardButton {createMagicAuthTokens} />
+              <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>
         {/key}
