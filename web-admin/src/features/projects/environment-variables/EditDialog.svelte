@@ -60,7 +60,7 @@
   const schema = yup(
     object({
       environment: string().optional(),
-      key: string().required("Key is required"),
+      key: string().optional(),
       value: string().optional(),
     }),
   );
@@ -112,6 +112,7 @@
     try {
       // If the key has changed, remove the old key
       if (initialValues.key !== $form.key) {
+        // Unset the old key
         await $updateProjectVariables.mutateAsync({
           organization,
           project,
@@ -120,6 +121,7 @@
           },
         });
 
+        // Update with the new key
         await $updateProjectVariables.mutateAsync({
           organization,
           project,
@@ -132,7 +134,7 @@
 
       // If the key remains the same, update the environment or value
       if (initialValues.key === $form.key) {
-        // If the environment has changed, remove the old key and add the new key
+        // If environment has changed, remove the old key and add the new key
         if (initialValues.environment !== processEnvironment()) {
           await $updateProjectVariables.mutateAsync({
             organization,
