@@ -64,14 +64,18 @@
   const schema = yup(
     object({
       environment: string().optional(),
-      key: string().optional(),
+      key: string()
+        .optional()
+        .matches(
+          /^[a-zA-Z0-9_]+$/,
+          "Key must only contain letters, numbers, and underscores",
+        ),
       value: string().optional(),
     }),
   );
 
-  const { form, enhance, formId, submit, errors, submitting } = superForm(
-    defaults(initialValues, schema),
-    {
+  const { form, enhance, formId, submit, errors, submitting, reset } =
+    superForm(defaults(initialValues, schema), {
       // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
       id: id,
       SPA: true,
@@ -91,8 +95,7 @@
           console.error(error);
         }
       },
-    },
-  );
+    });
 
   function processEnvironment() {
     if (isDevelopment && isProduction) {
@@ -192,7 +195,7 @@
   }
 
   function handleReset() {
-    $form = initialValues;
+    reset();
     isKeyAlreadyExists = false;
   }
 

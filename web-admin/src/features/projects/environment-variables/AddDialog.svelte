@@ -58,14 +58,19 @@
     object({
       newVariables: array(
         object({
-          key: string().optional(),
+          key: string()
+            .optional()
+            .matches(
+              /^[a-zA-Z0-9_]+$/,
+              "Key must only contain letters, numbers, and underscores",
+            ),
           value: string().optional(),
         }),
       ),
     }),
   );
 
-  const { form, enhance, submit, submitting } = superForm(
+  const { form, enhance, submit, submitting, allErrors, reset } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -161,7 +166,7 @@
   }
 
   function handleReset() {
-    $form.newVariables = [{ key: "", value: "" }];
+    reset();
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
@@ -209,6 +214,10 @@
         }
       }
     });
+  }
+
+  function getKeyFromError(error: { path: string; messages: string[] }) {
+    return error.path.split("[")[1].split("]")[0];
   }
 </script>
 
@@ -313,6 +322,18 @@
             <Plus size="16px" />
             <span>Add variable</span>
           </Button>
+          {#if $allErrors.length}
+            <ul class="mt-1">
+              {#each $allErrors as error}
+                <li>
+                  <b>{$form.newVariables[getKeyFromError(error)].key}</b>
+                  <span class="text-xs text-red-600 font-normal"
+                    >{error.messages.join(". ")}</span
+                  >
+                </li>
+              {/each}
+            </ul>
+          {/if}
           {#if isKeyAlreadyExists}
             <div class="mt-1">
               <p class="text-xs text-red-600 font-normal">
