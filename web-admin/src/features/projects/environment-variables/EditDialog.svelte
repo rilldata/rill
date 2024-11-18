@@ -85,7 +85,6 @@
         };
 
         try {
-          checkForExistingKeys();
           await handleUpdateProjectVariables(flatVariables);
           open = false;
         } catch (error) {
@@ -114,6 +113,10 @@
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
+    if ($form.key !== initialValues.key) {
+      checkForExistingKeys();
+    }
+
     try {
       // If the key has changed, remove the old key
       if (initialValues.key !== $form.key) {
