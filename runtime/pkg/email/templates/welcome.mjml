@@ -26,7 +26,7 @@
     <mj-section>
       <mj-column>
         <mj-text>
-          {{ WelcomeText }}
+          {{ .WelcomeText }}
         </mj-text>
         {{ if .IsNew }}
           <mj-button padding-top="32px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .FrontendURL }}">

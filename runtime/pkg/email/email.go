@@ -163,10 +163,10 @@ type CallToAction struct {
 	ToEmail    string
 	ToName     string
 	Subject    string
-	Title      string
-	Body       template.HTML
+	PreButton  template.HTML
 	ButtonText string
 	ButtonLink string
+	PostButton template.HTML
 }
 
 func (c *Client) SendCallToAction(opts *CallToAction) error {
@@ -179,31 +179,10 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
-type CallToActionNew struct {
-	ToEmail    string
-	ToName     string
-	Subject    string
-	PreButton  template.HTML
-	ButtonText string
-	ButtonLink string
-	PostButton template.HTML
-}
-
-func (c *Client) SendCallToActionNew(opts *CallToActionNew) error {
-	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("call_to_action_new.html").Execute(buf, opts)
-	if err != nil {
-		return fmt.Errorf("email template error: %w", err)
-	}
-	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
-}
-
 type Informational struct {
 	ToEmail string
 	ToName  string
 	Subject string
-	Title   string
 	Body    template.HTML
 }
 
@@ -217,27 +196,11 @@ func (c *Client) SendInformational(opts *Informational) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
-type InformationalNew struct {
-	ToEmail string
-	ToName  string
-	Subject string
-	Body    template.HTML
-}
-
-func (c *Client) SendInformationalNew(opts *InformationalNew) error {
-	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("informational_new.html").Execute(buf, opts)
-	if err != nil {
-		return fmt.Errorf("email template error: %w", err)
-	}
-	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
-}
-
 type Welcome struct {
 	ToEmail      string
 	ToName       string
 	Subject      string
+	FrontendURL  string
 	WelcomeText  template.HTML
 	IsNew        bool
 	IsFromDeploy bool
@@ -271,8 +234,7 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("%s invited you to join Rill", opts.InvitedByName),
-		Title:      "Accept your invitation to Rill",
-		Body:       template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
+		PreButton:  template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
 		ButtonText: "Accept invitation",
 		ButtonLink: opts.AcceptURL,
 	})
@@ -296,8 +258,7 @@ func (c *Client) SendOrganizationAddition(opts *OrganizationAddition) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
-		Title:      fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
-		Body:       template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
+		PreButton:  template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
 		ButtonText: "View account",
 		ButtonLink: opts.OpenURL,
 	})
@@ -322,8 +283,7 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("You have been invited to the %s/%s project", opts.OrgName, opts.ProjectName),
-		Title:      fmt.Sprintf("You have been invited to the %s/%s project", opts.OrgName, opts.ProjectName),
-		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s/%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.ProjectName)),
+		PreButton:  template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s/%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.ProjectName)),
 		ButtonText: "Accept invitation",
 		ButtonLink: opts.AcceptURL,
 	})
@@ -348,8 +308,7 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
-		Title:      fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
-		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
+		PreButton:  template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
 		ButtonText: "View account",
 		ButtonLink: opts.OpenURL,
 	})
@@ -395,8 +354,7 @@ func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("Your request to %s/%s has been approved", opts.OrgName, opts.ProjectName),
-		Title:      "",
-		Body:       template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
+		PreButton:  template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
 		ButtonText: "View project in Rill",
 		ButtonLink: opts.OpenURL,
 	})
@@ -414,7 +372,6 @@ func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your request to %s/%s has been denied", opts.OrgName, opts.ProjectName),
-		Title:   "",
 		Body:    template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
 	})
 }
@@ -430,7 +387,7 @@ type InvoicePaymentFailed struct {
 }
 
 func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
-	return c.SendCallToActionNew(&CallToActionNew{
+	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment failed. Please update your payment method"),
@@ -453,7 +410,7 @@ type InvoicePaymentSuccess struct {
 
 // SendInvoicePaymentSuccess Currently Used only when a previously failed invoice payment succeeds
 func (c *Client) SendInvoicePaymentSuccess(opts *InvoicePaymentSuccess) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Successful payment %s", opts.PaymentDate.Format("January 2, 2006 15:04:05 MST")),
@@ -478,7 +435,7 @@ type InvoiceUnpaid struct {
 
 // SendInvoiceUnpaid sent after the payment grace period has ended
 func (c *Client) SendInvoiceUnpaid(opts *InvoiceUnpaid) error {
-	return c.SendCallToActionNew(&CallToActionNew{
+	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("%s is now hibernated", opts.OrgName),
@@ -501,15 +458,15 @@ type SubscriptionCancelled struct {
 }
 
 func (c *Client) SendSubscriptionCancelled(opts *SubscriptionCancelled) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("%s for %s is canceled", opts.PlanName, opts.OrgName),
 		Body: template.HTML(fmt.Sprintf(`
-You’ve successfully canceled the Team plan for %s. Your access will continue until %s. If you change your mind, you can always reactivate your subscription!
+You’ve successfully canceled the %s for %s. Your access will continue until %s. If you change your mind, you can always reactivate your subscription!
 <br /><br />
 If you found that our service did not meet your needs, please reply to this email and we’ll do our best to address your feedback and concerns.
-`, opts.ToName, opts.EndDate.Format(dateFormat))),
+`, opts.PlanName, opts.ToName, opts.EndDate.Format(dateFormat))),
 	})
 }
 
@@ -520,7 +477,7 @@ type SubscriptionEnded struct {
 }
 
 func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("%s is now hibernated", opts.OrgName),
@@ -531,21 +488,25 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 }
 
 type TrialStarted struct {
-	ToEmail       string
-	ToName        string
-	OrgName       string
-	TrialDuration time.Duration
-	TrialEndDate  time.Time
+	ToEmail      string
+	ToName       string
+	OrgName      string
+	FrontendURL  string
+	TrialEndDate time.Time
 }
 
 func (c *Client) SendTrialStarted(opts *TrialStarted) error {
-	days := int(opts.TrialDuration.Hours() * 24)
-	// TODO: welcome
-	return c.SendInformationalNew(&InformationalNew{
-		ToEmail: opts.ToEmail,
-		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("A %d-day free trial for for %s has started", days, opts.OrgName),
-		Body:    template.HTML(fmt.Sprintf("Welcome to Rill! Your trial for %q has started and will end on %s.", opts.OrgName, opts.TrialEndDate.Format(dateFormat))),
+	return c.SendWelcome(&Welcome{
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("A 30-day free trial for for %s has started", opts.OrgName),
+		FrontendURL: opts.FrontendURL,
+		WelcomeText: template.HTML(fmt.Sprintf(`
+Hi %s,
+<br /><br />
+You now have access to Rill Cloud until %s to explore all features. Let us know if you need any help along the way!
+`, opts.ToName, opts.TrialEndDate.Format(dateFormat))),
+		IsNew: true,
 	})
 }
 
@@ -560,7 +521,7 @@ type TrialEndingSoon struct {
 func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
 	diff := opts.TrialEndDate.Sub(time.Now())
 	days := int(math.Round(diff.Hours() / 24))
-	return c.SendCallToActionNew(&CallToActionNew{
+	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your Rill Cloud trial for %s is expiring in %d days", opts.OrgName, days),
@@ -587,7 +548,7 @@ type TrialEnded struct {
 }
 
 func (c *Client) SendTrialEnded(opts *TrialEnded) error {
-	return c.SendCallToActionNew(&CallToActionNew{
+	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your Rill Cloud trial for %s has expired", opts.OrgName),
@@ -610,7 +571,7 @@ type TrialGracePeriodEnded struct {
 }
 
 func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
-	return c.SendCallToActionNew(&CallToActionNew{
+	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("%s is now hibernated", opts.OrgName),
@@ -632,7 +593,7 @@ type TrialExtended struct {
 }
 
 func (c *Client) SendTrialExtended(opts *TrialExtended) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your trial for %s has been extended", opts.OrgName),
@@ -648,7 +609,7 @@ type PlanUpdate struct {
 }
 
 func (c *Client) SendPlanUpdate(opts *PlanUpdate) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your plan for %s has been updated to %s", opts.OrgName, opts.PlanName),
@@ -664,7 +625,7 @@ type SubscriptionRenewed struct {
 }
 
 func (c *Client) SendSubscriptionRenewed(opts *SubscriptionRenewed) error {
-	return c.SendInformationalNew(&InformationalNew{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Your %s subscription for %s has been renewed", opts.PlanName, opts.OrgName),
@@ -676,6 +637,7 @@ type TeamPlan struct {
 	ToEmail          string
 	ToName           string
 	OrgName          string
+	FrontendURL      string
 	PlanName         string
 	BillingStartDate time.Time
 }
@@ -683,9 +645,10 @@ type TeamPlan struct {
 // SendTeamPlanStarted sends customised plan started email for Team Plan
 func (c *Client) SendTeamPlanStarted(opts *TeamPlan) error {
 	return c.SendWelcome(&Welcome{
-		ToEmail: opts.ToEmail,
-		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Welcome to the %s", opts.PlanName),
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("Welcome to the %s", opts.PlanName),
+		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
 Thank you! You’ve successfully upgraded %s to the %s.
 <br /><br />
@@ -697,9 +660,10 @@ Your next billing cycle starts on %s.
 // SendTeamPlanRenewal sends customised plan renewed email for Team Plan
 func (c *Client) SendTeamPlanRenewal(opts *TeamPlan) error {
 	return c.SendWelcome(&Welcome{
-		ToEmail: opts.ToEmail,
-		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your %s subscription for %s has been renewed", opts.PlanName, opts.OrgName),
+		ToEmail:     opts.ToEmail,
+		ToName:      opts.ToName,
+		Subject:     fmt.Sprintf("Your %s subscription for %s has been renewed", opts.PlanName, opts.OrgName),
+		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
 Thank you! You’ve successfully renewed to the %s for %s.
 <br /><br />

@@ -127,6 +127,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToEmail:      org.BillingEmail,
 				ToName:       org.Name,
 				OrgName:      org.Name,
+				FrontendURL:  s.admin.URLs.Frontend(),
 				TrialEndDate: sub.TrialEndDate,
 			})
 			if err != nil {
@@ -200,6 +201,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToEmail:          org.BillingEmail,
 				ToName:           org.Name,
 				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
 				PlanName:         plan.DisplayName,
 				BillingStartDate: sub.CurrentBillingCycleStartDate, // TODO: should this be end date + 1?
 			})
@@ -241,6 +243,11 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -273,7 +280,7 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		ToEmail:  org.BillingEmail,
 		ToName:   org.Name,
 		OrgName:  org.Name,
-		PlanName: "Team plan", // TODO
+		PlanName: sub.Plan.DisplayName,
 		EndDate:  endDate,
 	})
 	if err != nil {
@@ -394,6 +401,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			ToEmail:          org.BillingEmail,
 			ToName:           org.Name,
 			OrgName:          org.Name,
+			FrontendURL:      s.admin.URLs.Frontend(),
 			PlanName:         sub.Plan.DisplayName,
 			BillingStartDate: sub.CurrentBillingCycleStartDate, // TODO: should this be end date + 1?
 		})
