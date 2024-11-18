@@ -26,28 +26,28 @@
     <mj-section>
       <mj-column>
         <mj-text>
-          Hi {{ .User }},{{ if .IsFromDeploy }} thanks for signing up for a free trial!{{ end }}
-          <br /><br />
-          Rill is an operational BI tool that provides fast dashboards that your team will actually use. Data teams build fewer, more flexible dashboards, while business users make faster decisions and perform root cause analysis with fewer ad hoc requests.
-          <br /><br />
-          Let’s get started exploring your environment.
+          {{ WelcomeText }}
         </mj-text>
-        <mj-button padding-top="32px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .FrontendURL }}">
-          Get Started
-        </mj-button>
+        {{ if .IsNew }}
+          <mj-button padding-top="32px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .FrontendURL }}">
+            Get Started
+          </mj-button>
 
-        {{ if .IsFromDeploy }}
-          <mj-text>You now have full access for 30 days to explore all features. Let us know if you need any help along the way. Enjoy!</mj-text>
+          {{ if .IsFromDeploy }}
+            <mj-text>You now have full access for 30 days to explore all features. Let us know if you need any help along the way. Enjoy!</mj-text>
+          {{ end }}
         {{ end }}
       </mj-column>
     </mj-section>
 
     <mj-section>
       <mj-column>
-        <mj-button background-color="#FFF" color="#4736F5" padding="0px" href="https://www.rilldata.com/product" font-weight="600" padding-bottom="0">What is Rill →</mj-button>
-        <mj-text padding-top="0" padding-bottom="32px">
-          Learn more about Rill's product architecture and find out what makes us different.
-        </mj-text>
+        {{ if .IsNew }}
+          <mj-button background-color="#FFF" color="#4736F5" padding="0px" href="https://www.rilldata.com/product" font-weight="600" padding-bottom="0">What is Rill →</mj-button>
+          <mj-text padding-top="0" padding-bottom="32px">
+            Learn more about Rill's product architecture and find out what makes us different.
+          </mj-text>
+        {{ end }}
 
         <mj-button background-color="#FFF" color="#4736F5" padding="0px" href="https://docs.rilldata.com" font-weight="600" padding-bottom="0">Documentation and tutorials →</mj-button>
         <mj-text padding-top="0" padding-bottom="32px">
