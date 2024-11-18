@@ -61,7 +61,9 @@ type DB interface {
 type DBOptions struct {
 	// LocalPath is the path where local db files will be stored. Should be unique for each database.
 	LocalPath string
-	Remote    *blob.Bucket
+	// Remote is the blob storage bucket where the database files will be stored. This is the source of truth.
+	// The local db will be eventually synced with the remote.
+	Remote *blob.Bucket
 
 	// ReadSettings are settings applied the read duckDB handle.
 	ReadSettings map[string]string
@@ -214,6 +216,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	db := &db{
 		opts:       opts,
 		localPath:  opts.LocalPath,
+		remote:     opts.Remote,
 		readMu:     ctxsync.NewRWMutex(),
 		writeSem:   semaphore.NewWeighted(1),
 		localDirty: true,
@@ -221,9 +224,6 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		logger:     opts.Logger,
 		ctx:        bgctx,
 		cancel:     cancel,
-	}
-	if opts.Remote != nil {
-		db.remote = opts.Remote
 	}
 
 	// create local path
@@ -362,7 +362,6 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 		dsn = filepath.Join(newVersionDir, "data.db")
-		newMeta.CreatedVersion = newVersion
 	}
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
@@ -438,7 +437,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("mutate: Table %q not found", name)
 		}
-		return fmt.Errorf("rename: unable to get table meta: %w", err)
+		return fmt.Errorf("mutate: unable to get table meta: %w", err)
 	}
 
 	// create new version directory
@@ -468,7 +467,10 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 
 	// push to remote
-	_ = release()
+	err = release()
+	if err != nil {
+		return fmt.Errorf("mutate: failed to close connection: %w", err)
+	}
 	d.localDirty = true
 	meta := &tableMeta{
 		Name:           name,
@@ -613,14 +615,14 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 
 	// no errors after this point since background goroutine will eventually sync the local db
 
-	// update local meta
+	// update local meta for new table
 	err = d.writeTableMeta(newName, meta)
 	if err != nil {
 		d.logger.Debug("rename: error in writing table meta", slog.String("name", newName), slog.String("error", err.Error()))
 		return nil
 	}
 
-	// mark table as deleted in local
+	// mark old table as deleted in local
 	oldMeta.Deleted = true
 	err = d.writeTableMeta(oldName, oldMeta)
 	if err != nil {
@@ -628,7 +630,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return nil
 	}
 
-	// reopen db handle ignoring old name
+	// reopen db handle
 	err = d.reopen(ctx)
 	if err != nil {
 		d.logger.Debug("rename: error in reopening db", slog.String("error", err.Error()))
@@ -645,7 +647,7 @@ func (d *db) localDBMonitor() {
 			return
 		case <-d.ticker.C:
 			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil && errors.Is(err, context.Canceled) {
+			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
 				continue
 			}
@@ -897,7 +899,7 @@ func (d *db) attachDBs(ctx context.Context, db *sqlx.DB, ignoreTable string) err
 	// sort tables by created_version
 	// this is to ensure that views/tables on which other views depend are attached first
 	slices.SortFunc(tables, func(a, b *tableMeta) int {
-		// all tables should be attached first
+		// all tables should be attached first and can be attached in any order
 		if a.Type == "TABLE" && b.Type == "TABLE" {
 			return 0
 		}
@@ -968,7 +970,7 @@ type tableMeta struct {
 	Name           string `json:"name"`
 	Version        string `json:"version"`
 	CreatedVersion string `json:"created_version"`
-	Type           string `json:"type"` // either table or view
+	Type           string `json:"type"` // either TABLE or VIEW
 	SQL            string `json:"sql"`  // populated for views
 	// Deleted is set to true if the table is deleted.
 	// This is only used for local tables since local copy can only be removed when db handle has been reattached.

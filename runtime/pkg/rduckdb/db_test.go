@@ -150,6 +150,10 @@ func TestMutateTable(t *testing.T) {
 	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'Delhi' AS city", &CreateTableOptions{})
 	require.NoError(t, err)
 
+	// create dependent view
+	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
 	// insert into table
 	err = db.MutateTable(ctx, "test", func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "INSERT INTO test (id, city) VALUES (2, 'NY')")

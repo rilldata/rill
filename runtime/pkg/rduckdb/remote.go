@@ -21,7 +21,7 @@ import (
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
 func (d *db) pullFromRemote(ctx context.Context) error {
-	if !d.localDirty || d.remote == nil {
+	if !d.localDirty {
 		// optimisation to skip sync if write was already synced
 		return nil
 	}
@@ -170,10 +170,6 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 // pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	if d.remote == nil {
-		return nil
-	}
-
 	if meta.Type == "TABLE" {
 		// for views no db files exists, the SQL is stored in meta.json
 		localPath := filepath.Join(d.localPath, table, meta.Version)
@@ -218,7 +214,7 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 		return d.remote.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
 	})
 	if err != nil {
-		d.logger.Error("failed to update version.txt in remote", slog.Any("error", err))
+		d.logger.Error("failed to update meta.json in remote", slog.Any("error", err))
 	}
 
 	// success -- remove old version
@@ -232,9 +228,6 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 // If table is specified, only that table is deleted.
 // If table and version is specified, only that version of the table is deleted.
 func (d *db) deleteRemote(ctx context.Context, table, version string) error {
-	if d.remote == nil {
-		return nil
-	}
 	if table == "" && version != "" {
 		return fmt.Errorf("table must be specified if version is specified")
 	}
@@ -245,15 +238,15 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 		} else {
 			// deleting the entire table
 			prefix = table + "/"
-			// delete version.txt first
-			err := retry(ctx, func() error { return d.remote.Delete(ctx, "version.txt") })
+			// delete meta.json first
+			err := retry(ctx, func() error { return d.remote.Delete(ctx, "meta.json") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
-				d.logger.Error("failed to delete version.txt in remote", slog.Any("error", err))
+				d.logger.Error("failed to delete meta.json in remote", slog.Any("error", err))
 				return err
 			}
 		}
 	}
-	// ignore errors since version.txt is already removed
+	// ignore errors since meta.json is already removed
 
 	iter := d.remote.List(&blob.ListOptions{Prefix: prefix})
 	for {
