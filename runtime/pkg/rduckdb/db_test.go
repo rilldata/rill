@@ -210,7 +210,7 @@ func TestResetLocal(t *testing.T) {
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
 		LocalPath:     localDir,
-		Backup:        bucket,
+		Remote:        bucket,
 		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
 		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
 		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
@@ -232,7 +232,7 @@ func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
 		LocalPath:     localDir,
-		Backup:        bucket,
+		Remote:        bucket,
 		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
 		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
 		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},

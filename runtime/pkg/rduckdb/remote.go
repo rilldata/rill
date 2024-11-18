@@ -21,16 +21,16 @@ import (
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
 func (d *db) pullFromRemote(ctx context.Context) error {
-	if !d.writeDirty || d.backup == nil {
+	if !d.writeDirty || d.remote == nil {
 		// optimisation to skip sync if write was already synced
 		return nil
 	}
-	d.logger.Debug("syncing from backup")
+	d.logger.Debug("syncing from remote")
 	// Create an errgroup for background downloads with limited concurrency.
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
 
-	objects := d.backup.List(&blob.ListOptions{
+	objects := d.remote.List(&blob.ListOptions{
 		Delimiter: "/", // only list directories with a trailing slash and IsDir set to true
 	})
 
@@ -65,7 +65,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		// get version of the table
 		var b []byte
 		err = retry(ctx, func() error {
-			res, err := d.backup.ReadAll(ctx, path.Join(table, "meta.json"))
+			res, err := d.remote.ReadAll(ctx, path.Join(table, "meta.json"))
 			if err != nil {
 				return err
 			}
@@ -98,7 +98,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			return err
 		}
 
-		tblIter := d.backup.List(&blob.ListOptions{Prefix: path.Join(table, backedUpMeta.Version)})
+		tblIter := d.remote.List(&blob.ListOptions{Prefix: path.Join(table, backedUpMeta.Version)})
 		// download all objects in the table and current version
 		for {
 			obj, err := tblIter.Next(ctx)
@@ -116,7 +116,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 					}
 					defer file.Close()
 
-					rdr, err := d.backup.NewReader(ctx, obj.Key, nil)
+					rdr, err := d.remote.NewReader(ctx, obj.Key, nil)
 					if err != nil {
 						return err
 					}
@@ -143,7 +143,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		}
 	}
 
-	// mark tables that are not in backup for delete later
+	// mark tables that are not in remote for delete later
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
@@ -167,14 +167,15 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 	return nil
 }
 
-// pushToRemote syncs the backup location with the local path for given table.
+// pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	if d.backup == nil {
+	if d.remote == nil {
 		return nil
 	}
 
 	if meta.Type == "TABLE" {
+		// for views no db files exists, the SQL is stored in meta.json
 		localPath := filepath.Join(d.localPath, table, meta.Version)
 		entries, err := os.ReadDir(localPath)
 		if err != nil {
@@ -196,7 +197,7 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 
 			// upload to cloud storage
 			err = retry(ctx, func() error {
-				return d.backup.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
+				return d.remote.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
 					ContentType: "application/octet-stream",
 				})
 			})
@@ -208,30 +209,30 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 	}
 
 	// update table meta
-	// todo :: also use etag to avoid overwriting
+	// todo :: also use etag to avoid concurrent writer conflicts
 	m, err := json.Marshal(meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal table metadata: %w", err)
 	}
 	err = retry(ctx, func() error {
-		return d.backup.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
+		return d.remote.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
 	})
 	if err != nil {
-		d.logger.Error("failed to update version.txt in backup", slog.Any("error", err))
+		d.logger.Error("failed to update version.txt in remote", slog.Any("error", err))
 	}
 
 	// success -- remove old version
 	if oldMeta != nil {
-		_ = d.deleteBackup(ctx, table, oldMeta.Version)
+		_ = d.deleteRemote(ctx, table, oldMeta.Version)
 	}
 	return err
 }
 
-// deleteBackup deletes backup.
+// deleteRemote deletes remote.
 // If table is specified, only that table is deleted.
 // If table and version is specified, only that version of the table is deleted.
-func (d *db) deleteBackup(ctx context.Context, table, version string) error {
-	if d.backup == nil {
+func (d *db) deleteRemote(ctx context.Context, table, version string) error {
+	if d.remote == nil {
 		return nil
 	}
 	if table == "" && version != "" {
@@ -245,16 +246,16 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 			// deleting the entire table
 			prefix = table + "/"
 			// delete version.txt first
-			err := retry(ctx, func() error { return d.backup.Delete(ctx, "version.txt") })
+			err := retry(ctx, func() error { return d.remote.Delete(ctx, "version.txt") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
-				d.logger.Error("failed to delete version.txt in backup", slog.Any("error", err))
+				d.logger.Error("failed to delete version.txt in remote", slog.Any("error", err))
 				return err
 			}
 		}
 	}
 	// ignore errors since version.txt is already removed
 
-	iter := d.backup.List(&blob.ListOptions{Prefix: prefix})
+	iter := d.remote.List(&blob.ListOptions{Prefix: prefix})
 	for {
 		obj, err := iter.Next(ctx)
 		if err != nil {
@@ -263,7 +264,7 @@ func (d *db) deleteBackup(ctx context.Context, table, version string) error {
 			}
 			d.logger.Debug("failed to list object", slog.Any("error", err))
 		}
-		err = retry(ctx, func() error { return d.backup.Delete(ctx, obj.Key) })
+		err = retry(ctx, func() error { return d.remote.Delete(ctx, obj.Key) })
 		if err != nil {
 			d.logger.Debug("failed to delete object", slog.String("object", obj.Key), slog.Any("error", err))
 		}
