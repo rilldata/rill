@@ -117,6 +117,7 @@
           organization,
           project,
           data: {
+            environment: initialValues.environment,
             unsetVariables: [initialValues.key],
           },
         });
@@ -140,6 +141,7 @@
             organization,
             project,
             data: {
+              environment: initialValues.environment,
               unsetVariables: [initialValues.key],
             },
           });
