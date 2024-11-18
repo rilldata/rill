@@ -13,13 +13,15 @@
   export let expression: string = "";
   export let items: (MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2)[];
   export let selectedItems: Set<string> | undefined;
+  export let excludeMode: boolean;
   export let onSelectAll: () => void;
   export let onSelectSubsetItem: (item: string) => void;
   export let onSelectExpression: () => void;
   export let onExpressionBlur: (value: string) => void;
-  export let setItems: (items: string[]) => void;
+  export let setItems: (items: string[], exclude?: boolean) => void;
 
   let selectedProxy = new Set(selectedItems);
+  let excludeProxy = excludeMode;
 
   $: selected = mode === "all" ? 0 : mode === "subset" ? 1 : 2;
 
@@ -37,17 +39,19 @@
   <FieldSwitcher
     fields={["all", "subset", "expression"]}
     {selected}
-    onClick={async (i, field) => {
+    onClick={(_, field) => {
       if (field === "all") {
         onSelectAll();
+        excludeProxy = excludeMode;
       } else if (field === "subset") {
         if (selectedProxy.size) {
-          setItems(Array.from(selectedProxy));
+          setItems(Array.from(selectedProxy), excludeProxy);
         } else {
           setItems(items.map(({ name }) => name).filter(isString));
         }
       } else if (field === "expression") {
         onSelectExpression();
+        excludeProxy = excludeMode;
       }
     }}
   />
@@ -66,6 +70,8 @@
     />
   {:else if mode === "subset"}
     <SelectionDropdown
+      excludable
+      {excludeMode}
       allItems={new Set(items.map((m) => m.name ?? ""))}
       selectedItems={new Set(selectedItems)}
       onSelect={(item) => {
@@ -78,9 +84,9 @@
 
         onSelectSubsetItem(item);
       }}
-      setItems={(items) => {
+      setItems={(items, exclude) => {
         selectedProxy = new Set(items);
-        setItems(items);
+        setItems(items, exclude);
       }}
     />
   {/if}

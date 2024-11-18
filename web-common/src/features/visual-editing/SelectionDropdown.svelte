@@ -9,8 +9,10 @@
   export let type: string | undefined = undefined;
   export let searchValue = "";
   export let searchableItems: string[] | undefined = undefined;
+  export let excludable: boolean = false;
+  export let excludeMode: boolean = false;
   export let onSelect: (item: string) => void;
-  export let setItems: (items: string[]) => void;
+  export let setItems: (items: string[], exclude?: boolean) => void;
 
   let open = false;
   let selectedProxy = new Set(selectedItems);
@@ -62,6 +64,7 @@
       {#if !searchValue}
         {#each selectedProxy as item (item)}
           <DropdownMenu.CheckboxItem
+            showXForSelected={excludeMode}
             checked={selectedItems.has(item)}
             class="mx-1 cursor-pointer"
             on:click={() => {
@@ -81,6 +84,7 @@
 
       {#each filteredItems as item (item)}
         <DropdownMenu.CheckboxItem
+          showXForSelected={excludeMode}
           checked={selectedItems.has(item)}
           class="pl-8 mx-1"
           on:click={() => {
@@ -99,6 +103,21 @@
     </div>
 
     <footer>
+      {#if excludable}
+        <Button
+          on:click={() => {
+            setItems(Array.from(selectedItems), !excludeMode);
+          }}
+          type="secondary"
+        >
+          {#if excludeMode}
+            Include
+          {:else}
+            Exclude
+          {/if}
+        </Button>
+      {/if}
+
       <Button
         on:click={() => {
           if (selectedItems.size === allItems.size) {

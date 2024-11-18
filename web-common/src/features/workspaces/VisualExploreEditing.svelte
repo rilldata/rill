@@ -83,8 +83,17 @@
       : [],
   );
 
+  $: rawMeasureSequence = getSequenceItems(rawMeasures);
+  $: rawDimensionSequence = getSequenceItems(rawDimensions);
+
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
   $: metricsView = stringGuard(rawMetricsView);
+
+  $: excludeMode = {
+    measures: rawMeasures instanceof YAMLMap && rawMeasures.has("exclude"),
+    dimensions:
+      rawDimensions instanceof YAMLMap && rawDimensions.has("exclude"),
+  };
 
   let selectedMeasureField: "all" | "subset" | "expression";
   let selectedDimensionField: "all" | "subset" | "expression";
@@ -92,16 +101,28 @@
   $: selectedMeasureField =
     rawMeasures === "*"
       ? "all"
-      : rawMeasures instanceof YAMLSeq
+      : rawMeasures instanceof YAMLSeq || rawMeasures instanceof YAMLMap
         ? "subset"
         : "expression";
 
   $: selectedDimensionField =
     rawDimensions === "*"
       ? "all"
-      : rawDimensions instanceof YAMLSeq
+      : rawDimensions instanceof YAMLSeq || rawDimensions instanceof YAMLMap
         ? "subset"
         : "expression";
+
+  $: subsetMeasures = new Set(
+    rawMeasureSequence.items.every((item) => item instanceof Scalar)
+      ? rawMeasureSequence.items.map((item) => item.toString())
+      : [],
+  );
+
+  $: subsetDimensions = new Set(
+    rawDimensionSequence.items.every((item) => item instanceof Scalar)
+      ? rawDimensionSequence.items.map((item) => item.toString())
+      : [],
+  );
 
   $: fields = {
     measures: selectedMeasureField,
@@ -117,20 +138,6 @@
     measures: measureExpression,
     dimensions: dimensionExpression,
   };
-
-  $: subsetMeasures = new Set(
-    rawMeasures instanceof YAMLSeq &&
-    rawMeasures.items.every((item) => item instanceof Scalar)
-      ? rawMeasures.items.map((item) => item.toString())
-      : [],
-  );
-
-  $: subsetDimensions = new Set(
-    rawDimensions instanceof YAMLSeq &&
-    rawDimensions.items.every((item) => item instanceof Scalar)
-      ? rawDimensions.items.map((item) => item.toString())
-      : [],
-  );
 
   $: defaults = (
     rawDefaults instanceof YAMLMap ? rawDefaults.toJSON() : {}
@@ -280,6 +287,22 @@
 
     await updateProperties(properties);
   }
+
+  function getSequenceItems(node: unknown): YAMLSeq {
+    if (node instanceof YAMLMap) {
+      const exclude = node.get("exclude");
+
+      if (exclude instanceof YAMLSeq) {
+        return exclude;
+      } else {
+        return new YAMLSeq();
+      }
+    } else if (node instanceof YAMLSeq) {
+      return node;
+    } else {
+      return new YAMLSeq();
+    }
+  }
 </script>
 
 <Inspector filePath={path} resizable={false} fixedWidth={320}>
@@ -341,9 +364,14 @@
         {items}
         expression={expressions[type]}
         selectedItems={subsets[type]}
+        excludeMode={excludeMode[type]}
         mode={fields[type]}
-        setItems={(items) => {
-          updateProperties({ [type]: items });
+        setItems={async (items, exclude) => {
+          if (!exclude) {
+            await updateProperties({ [type]: items });
+          } else {
+            await updateProperties({ [type]: { exclude: items } });
+          }
         }}
         onSelectAll={async () => {
           await updateProperties({ [type]: "*" });

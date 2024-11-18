@@ -187,7 +187,6 @@
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
   class:text-gray-400={disabled}
-  class:text-gray-500={!disabled}
 >
   <Popover.Root bind:open>
     <Popover.Trigger asChild let:builder>
@@ -239,7 +238,7 @@
     }}
   />
 
-  <p>{label}</p>
+  <p class:text-gray-500={!disabled}>{label}</p>
 </div>
 
 <style lang="postcss">
