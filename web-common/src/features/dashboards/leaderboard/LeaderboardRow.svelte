@@ -134,7 +134,7 @@
   $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
-  function makeHref(uriTemplateOrBoolean: string | undefined) {
+  function makeHref(uriTemplateOrBoolean: string | null) {
     if (!uriTemplateOrBoolean) {
       return undefined;
     }

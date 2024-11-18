@@ -37,7 +37,6 @@
     getSort,
     prepareLeaderboardItemData,
     type LeaderboardItemData,
-    URI_DIMENSION_SUFFIX,
   } from "./leaderboard-utils";
   import {
     LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
