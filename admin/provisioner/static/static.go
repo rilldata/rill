@@ -188,13 +188,28 @@ func (p *StaticProvisioner) Check(ctx context.Context) error {
 }
 
 func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// No-op
-	return r, nil
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return nil, err
+	}
+
+	if state.Version != opts.RillVersion {
+		// TODO: Instead of always updating the version, we should poll the runtime to check its current version.
+		state.Version = opts.RillVersion
+	}
+
+	return &provisioner.Resource{
+		ID:     r.ID,
+		Type:   r.Type,
+		Config: r.Config,
+		State:  state.AsMap(),
+	}, nil
 }
 
 // runtimeState describes the static provisioner's state for a provisioned runtime resource.
 type runtimeState struct {
-	Slots int `mapstructure:"slots"`
+	Slots   int    `mapstructure:"slots"`
+	Version string `mapstructure:"version"`
 }
 
 func newRuntimeState(state map[string]any) (*runtimeState, error) {
