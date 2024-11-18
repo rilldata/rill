@@ -51,7 +51,6 @@
   const formId = "add-environment-variables-form";
 
   const initialValues = {
-    // TODO: can set environment here
     newVariables: [{ key: "", value: "" }],
   };
 
