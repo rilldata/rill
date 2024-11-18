@@ -25,7 +25,7 @@
   import { EnvironmentType } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import { Trash2Icon } from "lucide-svelte";
+  import { Trash2Icon, UploadIcon } from "lucide-svelte";
 
   export let open = false;
   export let variableNames: string[] = [];
@@ -250,10 +250,11 @@
         <Button
           type="secondary"
           small
-          class="w-fit"
+          class="w-fit flex flex-row items-center gap-x-2"
           on:click={() => fileInput.click()}
         >
-          <span>Import .env file</span>
+          <UploadIcon size="14px" />
+          <span>Import .env</span>
         </Button>
         <input
           type="file"

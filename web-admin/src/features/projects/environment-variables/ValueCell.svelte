@@ -1,8 +1,7 @@
 <script lang="ts">
-  import EyeIcon from "@rilldata/web-common/components/icons/EyeIcon.svelte";
-  import EyeOffIcon from "@rilldata/web-common/components/icons/EyeOffIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EyeIcon, EyeOffIcon } from "lucide-svelte";
 
   export let value: string;
 
