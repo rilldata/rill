@@ -85,6 +85,7 @@
         };
 
         try {
+          checkForExistingKeys();
           await handleUpdateProjectVariables(flatVariables);
           open = false;
         } catch (error) {
@@ -278,6 +279,7 @@
                 bind:value={$form.key}
                 label=""
                 id={`edit-${name}`}
+                textClass={inputErrors[0] ? "error-input-wrapper" : ""}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
                 onBlur={() => {
