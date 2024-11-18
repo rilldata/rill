@@ -347,6 +347,44 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	return nil
 }
 
+func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.ProvisionerResource, annotations DeploymentAnnotations) error {
+	// Find the provisioner
+	p, ok := s.ProvisionerSet[pr.Provisioner]
+	if !ok {
+		return fmt.Errorf("provisioner: %q is not in the provisioner set", pr.Provisioner)
+	}
+
+	// Run a check
+	r := &provisioner.Resource{
+		ID:     pr.ID,
+		Type:   provisioner.ResourceType(pr.Type),
+		State:  pr.State,
+		Config: pr.Config,
+	}
+	r, err := p.CheckResource(ctx, r, &provisioner.ResourceOptions{
+		Args:        pr.Args,
+		Annotations: annotations.ToMap(),
+		RillVersion: s.resolveRillVersion(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// The returned resource's state may have been updated, so we update the database accordingly.
+	pr, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
+		Status:        database.ProvisionerResourceStatusOK,
+		StatusMessage: "",
+		Args:          pr.Args,
+		State:         r.State,
+		Config:        r.Config,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
 	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
 	if err != nil {

@@ -364,19 +364,36 @@ func (p *KubernetesProvisioner) Check(ctx context.Context) error {
 }
 
 func (p *KubernetesProvisioner) CheckResource(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Get Kubernetes resource names
+	// Parse the resource state
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the Kubernetes deployment
 	provisionID := getProvisionID(r.ID)
 	names := p.getResourceNames(provisionID)
-
-	// Get the deployment
 	depl, err := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	// Compare the provisioned templates checksum with the current one
-	if depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum {
-		return nil, fmt.Errorf("kubernetes provisioner: templates checksum mismatch")
+	// Determine if we should re-provision, and exit early if not
+	trigger := false
+	trigger = trigger || state.Version != opts.RillVersion                                        // Version changed
+	trigger = trigger || depl.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum // Templates changed
+	if !trigger {
+		return r, nil
+	}
+
+	// Reprovision the resource
+	r, err = p.Provision(ctx, r, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = p.AwaitReady(ctx, r)
+	if err != nil {
+		return nil, err
 	}
 
 	return r, nil

@@ -2,15 +2,12 @@ package river
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/riverqueue/river"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -27,18 +24,9 @@ func (w *ValidateDeploymentsWorker) Work(ctx context.Context, job *river.Job[Val
 	return work(ctx, w.admin.Logger, job.Kind, w.validateDeployments)
 }
 
-const validateAllDeploymentsForProjectTimeout = 5 * time.Minute
+const validateDeploymentsForProjectTimeout = 5 * time.Minute
 
 func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) error {
-	// Resolve 'latest' version
-	latestVersion := w.admin.ResolveLatestRuntimeVersion()
-
-	// Verify version is valid
-	err := w.admin.ValidateRuntimeVersion(latestVersion)
-	if err != nil {
-		return err
-	}
-
 	// Iterate over batches of projects
 	limit := 100
 	afterName := ""
@@ -58,10 +46,10 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 
 		// Process batch
 		for _, proj := range projs {
-			err := w.reconcileAllDeploymentsForProject(ctx, proj, latestVersion)
+			err := w.validateDeploymentsForProject(ctx, proj)
 			if err != nil {
-				// We log the error, but continues to the next project
-				w.admin.Logger.Error("validate deployments: failed to reconcile project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx), zap.Error(err))
+				// We log the error, but continue to the next project
+				w.admin.Logger.Error("validate deployments: failed to validate project deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 	}
@@ -69,15 +57,18 @@ func (w *ValidateDeploymentsWorker) validateDeployments(ctx context.Context) err
 	return nil
 }
 
-func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx context.Context, proj *database.Project, latestVersion string) error {
+func (w *ValidateDeploymentsWorker) validateDeploymentsForProject(ctx context.Context, proj *database.Project) error {
 	// Apply timeout
-	ctx, cancel := context.WithTimeout(ctx, validateAllDeploymentsForProjectTimeout)
+	ctx, cancel := context.WithTimeout(ctx, validateDeploymentsForProjectTimeout)
 	defer cancel()
 
 	// Get all project deployments
 	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
 		return err
+	}
+	if len(depls) == 0 {
+		return nil
 	}
 
 	// Get project organization, we need this to create the deployment annotations
@@ -86,99 +77,49 @@ func (w *ValidateDeploymentsWorker) reconcileAllDeploymentsForProject(ctx contex
 		return err
 	}
 
+	// Determine the current production deployment, if any
 	var prodDeplID string
 	if proj.ProdDeploymentID != nil {
 		prodDeplID = *proj.ProdDeploymentID
 	}
 
 	for _, depl := range depls {
-		if depl.ID == prodDeplID {
-			// Get deployment provisioner
-			p, ok := w.admin.ProvisionerSet[depl.Provisioner]
-			if !ok {
-				return fmt.Errorf("validate deployments: %q is not in the provisioner set", depl.Provisioner)
-			}
-
-			// Get deployment annotations
-			annotations := w.admin.NewDeploymentAnnotations(org, proj)
-
-			// If project is running 'latest' version then update if needed, skip if 'static' provisioner type
-			if p.Type() != "static" && proj.ProdVersion == "latest" && depl.RuntimeVersion != latestVersion {
-				w.admin.Logger.Info("validate deployments: upgrading deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
-
-				// Update the runtime
-				_, err := p.Provision(ctx, &provisioner.ProvisionOptions{
-					ProvisionID:    depl.ProvisionID,
-					Slots:          depl.Slots,
-					RuntimeVersion: latestVersion,
-					Annotations:    annotations.ToMap(),
-				})
-				if err != nil {
-					w.admin.Logger.Error("validate deployments: provisioner failed to provision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-					return err
-				}
-
-				// Wait for the runtime to be ready after update
-				err = p.AwaitReady(ctx, depl.ProvisionID)
-				if err != nil {
-					w.admin.Logger.Error("validate deployments: failed awaiting runtime to be ready after provision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-					// Mark deployment error
-					_, err2 := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-					return multierr.Combine(err, err2)
-				}
-
-				// Update the deployment runtime version
-				_, err = w.admin.DB.UpdateDeploymentRuntimeVersion(ctx, depl.ID, latestVersion)
-				if err != nil {
-					// NOTE: This error will cause the update to be retried on the next job invocation and it should eventually become consistent.
-					return err
-				}
-
-				w.admin.Logger.Info("validate deployments: upgraded deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
-				continue
-			}
-
-			v, err := p.ValidateConfig(ctx, depl.ProvisionID)
-			if err != nil {
-				w.admin.Logger.Warn("validate deployments: error validating provisioner config", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-				return err
-			}
-
-			// Trigger re-provision if config is no longer valid
-			if !v {
-				w.admin.Logger.Info("validate deployments: config no longer valid, triggering re-provision", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-
-				// Update the runtime
-				_, err := p.Provision(ctx, &provisioner.ProvisionOptions{
-					ProvisionID:    depl.ProvisionID,
-					Slots:          depl.Slots,
-					RuntimeVersion: depl.RuntimeVersion,
-					Annotations:    annotations.ToMap(),
-				})
-				if err != nil {
-					w.admin.Logger.Error("validate deployments: provisioner failed to provision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-					return err
-				}
-
-				// Wait for the runtime to be ready after update
-				err = p.AwaitReady(ctx, depl.ProvisionID)
-				if err != nil {
-					w.admin.Logger.Error("validate deployments: failed awaiting runtime to be ready after provision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-					// Mark deployment error
-					_, err2 := w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-					return multierr.Combine(err, err2)
-				}
-
-				w.admin.Logger.Info("validate deployments: re-provisioned", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), observability.ZapCtx(ctx))
-			}
-		} else if depl.UpdatedOn.Add(3 * time.Hour).Before(time.Now()) {
-			// Teardown old orphan non-prod deployment if more than 3 hours since last update
-			w.admin.Logger.Info("validate deployments: teardown deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
+		// If it appears to be an orphaned deployment, we tear it down.
+		// This might for example happen if a redeploy failed after switching to the new deployment.
+		// We consider a deployment orphaned if it is not the prod deployment and has not been updated in 3 hours.
+		// The 3 hour delay is to ensure we don't tear down a deployment that is in the process of being created and is to become the new prod deployment.
+		if depl.ID != prodDeplID && depl.UpdatedOn.Add(3*time.Hour).Before(time.Now()) {
+			w.admin.Logger.Info("validate deployments: removing deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
 			err = w.admin.TeardownDeployment(ctx, depl)
 			if err != nil {
-				w.admin.Logger.Error("validate deployments: teardown deployment error", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx), zap.Error(err))
+				w.admin.Logger.Error("validate deployments: failed to remove deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx), zap.Error(err))
 				continue
 			}
+			w.admin.Logger.Info("validate deployments: removed deployment", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx))
+			continue
+		}
+
+		// Retrieve the deployment's provisioned resources
+		prs, err := w.admin.DB.FindProvisionerResourcesForDeployment(ctx, depl.ID)
+		if err != nil {
+			return err
+		}
+		if len(prs) == 0 {
+			continue
+		}
+
+		// Build annotations for the deployment
+		annotations := w.admin.NewDeploymentAnnotations(org, proj)
+
+		// Validate each provisioned resource
+		for _, pr := range prs {
+			w.admin.Logger.Info("validate deployments: checking resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), observability.ZapCtx(ctx))
+			err := w.admin.CheckProvisionerResource(ctx, pr, annotations)
+			if err != nil {
+				w.admin.Logger.Error("validate deployments: failed to check resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), zap.Error(err), observability.ZapCtx(ctx))
+				continue
+			}
+			w.admin.Logger.Info("validate deployments: checked resource", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("instance_id", depl.RuntimeInstanceID), zap.String("resource_id", pr.ID), zap.String("provisioner", pr.Provisioner), observability.ZapCtx(ctx))
 		}
 	}
 
