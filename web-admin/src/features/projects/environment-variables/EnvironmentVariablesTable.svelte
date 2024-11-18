@@ -11,6 +11,7 @@
 
   export let data: V1ProjectVariable[];
   export let emptyText: string = "No environment variables";
+  export let variableNames: string[] = [];
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
@@ -48,7 +49,6 @@
         });
       },
     },
-    // TODO: ReferencedByCell - use `createRuntimeServiceAnalyzeVariables`
     {
       accessorKey: "actions",
       header: "",
@@ -58,6 +58,7 @@
           name: row.original.name,
           value: row.original.value,
           environment: row.original.environment,
+          variableNames,
         }),
       enableSorting: false,
       meta: {

@@ -10,6 +10,7 @@
   export let environment: string;
   export let name: string;
   export let value: string;
+  export let variableNames: string[] = [];
 
   let isDropdownOpen = false;
   let isEditDialogOpen = false;
@@ -45,5 +46,12 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<EditDialog bind:open={isEditDialogOpen} {id} {environment} {name} {value} />
+<EditDialog
+  bind:open={isEditDialogOpen}
+  {id}
+  {environment}
+  {name}
+  {value}
+  {variableNames}
+/>
 <DeleteDialog bind:open={isDeleteDialogOpen} {name} {environment} />

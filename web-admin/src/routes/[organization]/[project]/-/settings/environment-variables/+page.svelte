@@ -18,11 +18,6 @@
   let isDropdownOpen = false;
   let filterByEnvironment: EnvironmentTypes = "";
 
-  // FIXME
-  // $: ({ instanceId } = $runtime);
-  // $: analyzeVariables = createRuntimeServiceAnalyzeVariables(instanceId);
-  // $: console.log("analyzeVariables: ", $analyzeVariables.data);
-
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -140,6 +135,7 @@
         <EnvironmentVariablesTable
           data={filteredVariables}
           emptyText={emptyTextWhenNoVariables}
+          {variableNames}
         />
       </div>
     {/if}

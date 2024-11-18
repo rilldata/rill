@@ -30,6 +30,7 @@
   export let environment: string;
   export let name: string;
   export let value: string;
+  export let variableNames: string[] = [];
 
   let initialEnvironment: {
     isDevelopment: boolean;
@@ -37,6 +38,8 @@
   };
   let isDevelopment: boolean;
   let isProduction: boolean;
+  let isKeyAlreadyExists = false;
+  let inputErrors: { [key: number]: boolean } = {};
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -47,6 +50,7 @@
     $form.value !== initialValues.value ||
     initialEnvironment?.isDevelopment !== isDevelopment ||
     initialEnvironment?.isProduction !== isProduction;
+  $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -185,6 +189,21 @@
 
   function handleReset() {
     $form = initialValues;
+    isKeyAlreadyExists = false;
+  }
+
+  function checkForExistingKeys() {
+    const existingKeys = [$form.key];
+    inputErrors = {};
+    isKeyAlreadyExists = false;
+
+    existingKeys.forEach((key, index) => {
+      // Case sensitive
+      if (variableNames.some((existingKey) => existingKey === key)) {
+        inputErrors[index] = true;
+        isKeyAlreadyExists = true;
+      }
+    });
   }
 
   function setInitialCheckboxState() {
@@ -211,7 +230,11 @@
   });
 </script>
 
-<Dialog bind:open onOutsideClick={() => handleReset()}>
+<Dialog
+  bind:open
+  onOpenChange={() => handleReset()}
+  onOutsideClick={() => handleReset()}
+>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -257,6 +280,11 @@
                 id={`edit-${name}`}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
+                onBlur={() => {
+                  if ($form.key !== initialValues.key) {
+                    checkForExistingKeys();
+                  }
+                }}
               />
               <Input
                 bind:value={$form.value}
@@ -270,6 +298,13 @@
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
                   {$errors.key || $errors.value || $errors.environment}
+                </p>
+              </div>
+            {/if}
+            {#if isKeyAlreadyExists}
+              <div class="mt-1">
+                <p class="text-xs text-red-600 font-normal">
+                  This key already exists for this project.
                 </p>
               </div>
             {/if}
@@ -289,7 +324,10 @@
       <Button
         type="primary"
         form={$formId}
-        disabled={$submitting || !hasChanges || !isEnvironmentSelected}
+        disabled={$submitting ||
+          !hasChanges ||
+          !isEnvironmentSelected ||
+          hasExistingKeys}
         submitForm>Edit</Button
       >
     </DialogFooter>

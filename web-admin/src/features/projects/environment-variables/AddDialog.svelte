@@ -29,8 +29,8 @@
 
   export let open = false;
   export let variableNames: string[] = [];
-  export let inputErrors: { [key: number]: boolean } = {};
 
+  let inputErrors: { [key: number]: boolean } = {};
   let isKeyAlreadyExists = false;
   let isDevelopment = true;
   let isProduction = true;
@@ -169,8 +169,6 @@
     isKeyAlreadyExists = false;
   }
 
-  // FIXME: we need to make sure environments are unique
-  // TODO: do we only check for name? do we also need to check for name and environment?
   function checkForExistingKeys() {
     const existingKeys = $form.newVariables.map((variable) => variable.key);
     inputErrors = {};
@@ -319,7 +317,7 @@
           {#if isKeyAlreadyExists}
             <div class="mt-1">
               <p class="text-xs text-red-600 font-normal">
-                These keys already exist for this environment.
+                These keys already exist for this project.
               </p>
             </div>
           {/if}
