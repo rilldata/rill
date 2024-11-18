@@ -62,7 +62,7 @@
             .optional()
             .matches(
               /^[a-zA-Z0-9_]+$/,
-              "Key must only contain letters, numbers, and underscores",
+              "Key must only contain letters, numbers, and underscores.",
             ),
           value: string().optional(),
         }),
@@ -289,7 +289,9 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index] ? "error-input-wrapper" : ""}
+                  textClass={inputErrors[index] || $allErrors[index]
+                    ? "error-input-wrapper"
+                    : ""}
                   placeholder="Key"
                   on:input={(e) => handleKeyChange(index, e)}
                   onBlur={() => {
@@ -328,7 +330,7 @@
                 <li>
                   <b>{$form.newVariables[getKeyFromError(error)].key}</b>
                   <span class="text-xs text-red-600 font-normal"
-                    >{error.messages.join(". ")}</span
+                    >{error.messages}</span
                   >
                 </li>
               {/each}

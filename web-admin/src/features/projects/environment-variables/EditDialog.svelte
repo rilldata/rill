@@ -74,28 +74,36 @@
     }),
   );
 
-  const { form, enhance, formId, submit, errors, submitting, reset } =
-    superForm(defaults(initialValues, schema), {
-      // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
-      id: id,
-      SPA: true,
-      validators: schema,
-      async onUpdate({ form }) {
-        if (!form.valid) return;
-        const values = form.data;
+  const {
+    form,
+    enhance,
+    formId,
+    submit,
+    errors,
+    allErrors,
+    submitting,
+    reset,
+  } = superForm(defaults(initialValues, schema), {
+    // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
+    id: id,
+    SPA: true,
+    validators: schema,
+    async onUpdate({ form }) {
+      if (!form.valid) return;
+      const values = form.data;
 
-        const flatVariables = {
-          [values.key]: values.value,
-        };
+      const flatVariables = {
+        [values.key]: values.value,
+      };
 
-        try {
-          await handleUpdateProjectVariables(flatVariables);
-          open = false;
-        } catch (error) {
-          console.error(error);
-        }
-      },
-    });
+      try {
+        await handleUpdateProjectVariables(flatVariables);
+        open = false;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+  });
 
   function processEnvironment() {
     if (isDevelopment && isProduction) {
@@ -285,7 +293,9 @@
                 bind:value={$form.key}
                 label=""
                 id={`edit-${name}`}
-                textClass={inputErrors[0] ? "error-input-wrapper" : ""}
+                textClass={inputErrors[0] || $allErrors[0]
+                  ? "error-input-wrapper"
+                  : ""}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
                 onBlur={() => {
@@ -302,10 +312,10 @@
                 on:input={(e) => handleValueChange(e)}
               />
             </div>
-            {#if $errors.key || $errors.value || $errors.environment}
+            {#if $errors.key}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  {$errors.key || $errors.value || $errors.environment}
+                  {$errors.key}
                 </p>
               </div>
             {/if}
@@ -335,7 +345,8 @@
         disabled={$submitting ||
           !hasChanges ||
           !isEnvironmentSelected ||
-          hasExistingKeys}
+          hasExistingKeys ||
+          $allErrors.length > 0}
         submitForm>Edit</Button
       >
     </DialogFooter>
