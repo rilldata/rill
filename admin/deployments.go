@@ -127,36 +127,37 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		return d, nil
 	}
 
-	// Prepare instance config
-	var connectors []*runtimev1.Connector
-
-	// Add the admin connector. It gets an access token that it can use to authenticate with the admin server.
+	// Create an access token that it can use to authenticate with the admin server.
 	dat, err := s.IssueDeploymentAuthToken(ctx, d.ID, nil)
 	if err != nil {
 		return nil, err
 	}
-	connectors = append(connectors, &runtimev1.Connector{
-		Name: "admin",
-		Type: "admin",
-		Config: map[string]string{
-			"admin_url":    s.opts.ExternalURL,
-			"access_token": dat.Token().String(),
-			"project_id":   opts.ProjectID,
-			"branch":       opts.Branch,
-			"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
-		},
-	})
 
-	// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
-	connectors = append(connectors, &runtimev1.Connector{
-		Name: "duckdb",
-		Type: "duckdb",
-		Config: map[string]string{
-			"cpu":                 strconv.Itoa(cfg.CPU),
-			"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
-			"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
+	// Prepare connectors
+	connectors := []*runtimev1.Connector{
+		// The admin connector
+		{
+			Name: "admin",
+			Type: "admin",
+			Config: map[string]string{
+				"admin_url":    s.opts.ExternalURL,
+				"access_token": dat.Token().String(),
+				"project_id":   opts.ProjectID,
+				"branch":       opts.Branch,
+				"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
+			},
 		},
-	})
+		// Always configure a DuckDB connector, even if it's not set as the default OLAP connector
+		{
+			Name: "duckdb",
+			Type: "duckdb",
+			Config: map[string]string{
+				"cpu":                 strconv.Itoa(cfg.CPU),
+				"memory_limit_gb":     strconv.Itoa(cfg.MemoryGB),
+				"storage_limit_bytes": strconv.FormatInt(cfg.StorageBytes, 10),
+			},
+		},
+	}
 
 	// Determine the default OLAP connector.
 	// TODO: Remove this because it is deprecated and can now be configured directly using `rill.yaml` and `rill env`.
@@ -280,7 +281,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 	}
 
 	// Write the changed branch and status to the persisted deployment.
-	d, err = s.DB.UpdateDeployment(ctx, d.ID, &database.UpdateDeploymentOptions{
+	_, err = s.DB.UpdateDeployment(ctx, d.ID, &database.UpdateDeploymentOptions{
 		Branch:            opts.Branch,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceID: d.RuntimeInstanceID,
@@ -511,6 +512,8 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 			StatusMessage: "Provisioning...",
 			Provisioner:   opts.Provisioner,
 			Args:          args.AsMap(),
+			State:         nil, // Will be populated after provisioning
+			Config:        nil, // Will be populated after provisioning
 		})
 		if err != nil {
 			return nil, err
