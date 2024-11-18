@@ -70,9 +70,8 @@
     }),
   );
 
-  const { form, enhance, submit, submitting, allErrors, reset } = superForm(
-    defaults(initialValues, schema),
-    {
+  const { form, enhance, submit, submitting, errors, allErrors, reset } =
+    superForm(defaults(initialValues, schema), {
       SPA: true,
       validators: schema,
       // See: https://superforms.rocks/concepts/nested-data
@@ -98,8 +97,7 @@
           console.error(error);
         }
       },
-    },
-  );
+    });
 
   function getCurrentEnvironment() {
     if (isDevelopment && isProduction) {
@@ -219,6 +217,9 @@
   function getKeyFromError(error: { path: string; messages: string[] }) {
     return error.path.split("[")[1].split("]")[0];
   }
+
+  // $: console.log("allErrors: ", $allErrors);
+  $: console.log("errors: ", $errors);
 </script>
 
 <Dialog
@@ -289,7 +290,10 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index] || $allErrors[index]
+                  textClass={inputErrors[index] ||
+                  ($errors.newVariables &&
+                    $errors.newVariables[index] &&
+                    $errors.newVariables[index].key)
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
@@ -324,25 +328,27 @@
             <Plus size="16px" />
             <span>Add variable</span>
           </Button>
-          {#if $allErrors.length}
-            <ul class="mt-1">
-              {#each $allErrors as error}
-                <li>
-                  <b>{$form.newVariables[getKeyFromError(error)].key}</b>
-                  <span class="text-xs text-red-600 font-normal"
-                    >{error.messages}</span
-                  >
-                </li>
-              {/each}
-            </ul>
-          {/if}
-          {#if isKeyAlreadyExists}
-            <div class="mt-1">
-              <p class="text-xs text-red-600 font-normal">
-                These keys already exist for this project.
-              </p>
-            </div>
-          {/if}
+          <div class="mt-1">
+            {#if $allErrors.length}
+              <ul class="flex flex-col gap-y-1">
+                {#each $allErrors as error}
+                  <li>
+                    <b>{$form.newVariables[getKeyFromError(error)].key}</b>
+                    <span class="text-xs text-red-600 font-normal">
+                      {error.messages}
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            {#if isKeyAlreadyExists}
+              <div class="mt-1">
+                <p class="text-xs text-red-600 font-normal">
+                  These keys already exist for this project.
+                </p>
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
     </form>
