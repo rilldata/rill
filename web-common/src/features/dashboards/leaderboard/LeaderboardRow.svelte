@@ -16,7 +16,6 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let uri: string | undefined;
   export let tableWidth: number;
   export let columnWidths: {
     dimension: number;
@@ -72,7 +71,7 @@
 
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
 
-  $: href = makeHref(uri);
+  $: href = makeHref(itemData.uri);
 
   $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 

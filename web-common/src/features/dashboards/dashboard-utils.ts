@@ -4,6 +4,7 @@ import {
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -147,6 +148,17 @@ export function getComparisonRequestMeasures(
       },
     },
   ];
+}
+
+export function getURIRequestMeasure(
+  dimensionName: string,
+): V1MetricsViewAggregationMeasure {
+  return {
+    name: dimensionName + URI_DIMENSION_SUFFIX,
+    uri: {
+      dimension: dimensionName,
+    },
+  };
 }
 
 export function getBreadcrumbOptions(

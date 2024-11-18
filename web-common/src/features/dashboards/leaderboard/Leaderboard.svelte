@@ -14,7 +14,10 @@
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { getComparisonRequestMeasures } from "../dashboard-utils";
+  import {
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import {
@@ -34,6 +37,7 @@
     getSort,
     prepareLeaderboardItemData,
     type LeaderboardItemData,
+    URI_DIMENSION_SUFFIX,
   } from "./leaderboard-utils";
   import {
     LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
@@ -132,7 +136,8 @@
       ...(comparisonTimeRange
         ? getComparisonRequestMeasures(activeMeasureName)
         : []),
-    );
+    )
+    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
 
   $: sort = getSort(
     sortedAscending,
@@ -316,7 +321,6 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            {uri}
             {itemData}
             {isValidPercentOfTotal}
             isTimeComparisonActive={!!comparisonTimeRange}
@@ -335,7 +339,6 @@
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
-          {uri}
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
