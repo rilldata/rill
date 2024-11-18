@@ -367,11 +367,28 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 		RillVersion: s.resolveRillVersion(),
 	})
 	if err != nil {
+		// For cancellations, we exit early without updating the status in the DB
+		if errors.Is(err, ctx.Err()) {
+			return err
+		}
+
+		// Set the status as errored
+		_, err2 := s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
+			Status:        database.ProvisionerResourceStatusError,
+			StatusMessage: fmt.Sprintf("check failed: %s", err.Error()),
+			Args:          pr.Args,
+			State:         pr.State,
+			Config:        pr.Config,
+		})
+		if err2 != nil {
+			return errors.Join(err, err2)
+		}
+
 		return err
 	}
 
 	// The returned resource's state may have been updated, so we update the database accordingly.
-	pr, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
+	_, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 		Status:        database.ProvisionerResourceStatusOK,
 		StatusMessage: "",
 		Args:          pr.Args,
