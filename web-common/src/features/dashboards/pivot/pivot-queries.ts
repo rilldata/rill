@@ -9,15 +9,17 @@ import {
   type V1Expression,
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
-  type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { type Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
 import {
+  getErrorFromResponses,
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
@@ -28,6 +30,7 @@ import {
   COMPARISON_PERCENT,
   type PivotAxesData,
   type PivotDataStoreConfig,
+  type PivotQueryError,
 } from "./types";
 
 /**
@@ -43,7 +46,7 @@ export function createPivotAggregationRowQuery(
   limit = "100",
   offset = "0",
   timeRange: TimeRangeString | undefined = undefined,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   if (!sort.length) {
     sort = [
       {
@@ -177,6 +180,15 @@ export function getAxisForDimensions(
 
       // Wait for all data to populate
       if (data.some((d) => d?.isFetching)) return { isFetching: true };
+
+      // Check for errors in any of the queries
+      const errors: PivotQueryError[] = getErrorFromResponses(data);
+      if (errors.length) {
+        return {
+          isFetching: false,
+          error: errors,
+        };
+      }
 
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];

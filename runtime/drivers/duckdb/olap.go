@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	duckdbreplicator "github.com/rilldata/duckdb-replicator"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -181,36 +181,31 @@ func (c *connection) estimateSize() int64 {
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	return c.db.AddTableColumn(ctx, tableName, columnName, typ)
+	err := c.db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ))
+		return err
+	})
+	return c.checkErr(err)
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	return c.db.AlterTableColumn(ctx, tableName, columnName, newType)
+	err := c.db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), newType))
+		return err
+	})
+	return c.checkErr(err)
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
-	return c.db.CreateTableAsSelect(ctx, name, sql, &duckdbreplicator.CreateTableOptions{View: view})
+	return c.db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: view})
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	var st duckdbreplicator.IncrementalStrategy
-	switch strategy {
-	case drivers.IncrementalStrategyAppend:
-		st = duckdbreplicator.IncrementalStrategyAppend
-	case drivers.IncrementalStrategyMerge:
-		st = duckdbreplicator.IncrementalStrategyMerge
-	default:
-		return fmt.Errorf("incremental insert strategy %q not supported", strategy)
-	}
-	return c.db.InsertTableAsSelect(ctx, name, sql, &duckdbreplicator.InsertTableOptions{
-		ByName:    byName,
-		Strategy:  st,
-		UniqueKey: uniqueKey,
-	})
+	return c.execIncrementalInsert(ctx, name, sql, byName, strategy, uniqueKey)
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -225,6 +220,63 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false
+}
+
+func (c *connection) execIncrementalInsert(ctx context.Context, name, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	var byNameClause string
+	if byName {
+		byNameClause = "BY NAME"
+	}
+
+	if strategy == drivers.IncrementalStrategyAppend {
+		return c.db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
+			return err
+		})
+	}
+
+	if strategy == drivers.IncrementalStrategyMerge {
+		return c.db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+			// Create a temporary table with the new data
+			tmp := uuid.New().String()
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			if err != nil {
+				return err
+			}
+
+			// check the count of the new data
+			// skip if the count is 0
+			// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+			var empty bool
+			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
+			if err != nil {
+				return err
+			}
+			if empty {
+				return nil
+			}
+
+			// Drop the rows from the target table where the unique key is present in the temporary table
+			where := ""
+			for i, key := range uniqueKey {
+				key = safeSQLName(key)
+				if i != 0 {
+					where += " AND "
+				}
+				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
+			}
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where))
+			if err != nil {
+				return err
+			}
+
+			// Insert the new data into the target table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)))
+			return err
+		})
+	}
+
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

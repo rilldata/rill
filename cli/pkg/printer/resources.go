@@ -458,24 +458,24 @@ type usergroupMember struct {
 	Email string `header:"email" json:"email"`
 }
 
-func (p *Printer) PrintModelSplits(splits []*runtimev1.ModelSplit) {
-	if len(splits) == 0 {
-		p.PrintfWarn("No splits found\n")
+func (p *Printer) PrintModelPartitions(partitions []*runtimev1.ModelPartition) {
+	if len(partitions) == 0 {
+		p.PrintfWarn("No partitions found\n")
 		return
 	}
 
-	p.PrintData(toModelSplitsTable(splits))
+	p.PrintData(toModelPartitionsTable(partitions))
 }
 
-func toModelSplitsTable(splits []*runtimev1.ModelSplit) []*modelSplit {
-	res := make([]*modelSplit, 0, len(splits))
-	for _, s := range splits {
-		res = append(res, toModelSplitRow(s))
+func toModelPartitionsTable(partitions []*runtimev1.ModelPartition) []*modelPartition {
+	res := make([]*modelPartition, 0, len(partitions))
+	for _, s := range partitions {
+		res = append(res, toModelPartitionRow(s))
 	}
 	return res
 }
 
-func toModelSplitRow(s *runtimev1.ModelSplit) *modelSplit {
+func toModelPartitionRow(s *runtimev1.ModelPartition) *modelPartition {
 	data, err := json.Marshal(s.Data)
 	if err != nil {
 		panic(err)
@@ -486,7 +486,7 @@ func toModelSplitRow(s *runtimev1.ModelSplit) *modelSplit {
 		executedOn = s.ExecutedOn.AsTime().Format(time.RFC3339)
 	}
 
-	return &modelSplit{
+	return &modelPartition{
 		Key:        s.Key,
 		DataJSON:   string(data),
 		ExecutedOn: executedOn,
@@ -495,7 +495,7 @@ func toModelSplitRow(s *runtimev1.ModelSplit) *modelSplit {
 	}
 }
 
-type modelSplit struct {
+type modelPartition struct {
 	Key        string `header:"key" json:"key"`
 	DataJSON   string `header:"data" json:"data"`
 	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`

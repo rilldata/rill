@@ -61,8 +61,8 @@ import type {
   RuntimeServiceGetLogsParams,
   RuntimeServiceWatchLogs200,
   RuntimeServiceWatchLogsParams,
-  V1GetModelSplitsResponse,
-  RuntimeServiceGetModelSplitsParams,
+  V1GetModelPartitionsResponse,
+  RuntimeServiceGetModelPartitionsParams,
   V1GetResourceResponse,
   RuntimeServiceGetResourceParams,
   V1ListResourcesResponse,
@@ -1714,46 +1714,46 @@ export const createRuntimeServiceWatchLogs = <
 };
 
 /**
- * @summary GetModelSplits returns the splits of a model
+ * @summary GetModelPartitions returns the partitions of a model
  */
-export const runtimeServiceGetModelSplits = (
+export const runtimeServiceGetModelPartitions = (
   instanceId: string,
   model: string,
-  params?: RuntimeServiceGetModelSplitsParams,
+  params?: RuntimeServiceGetModelPartitionsParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetModelSplitsResponse>({
-    url: `/v1/instances/${instanceId}/models/${model}/splits`,
+  return httpClient<V1GetModelPartitionsResponse>({
+    url: `/v1/instances/${instanceId}/models/${model}/partitions`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getRuntimeServiceGetModelSplitsQueryKey = (
+export const getRuntimeServiceGetModelPartitionsQueryKey = (
   instanceId: string,
   model: string,
-  params?: RuntimeServiceGetModelSplitsParams,
+  params?: RuntimeServiceGetModelPartitionsParams,
 ) => [
-  `/v1/instances/${instanceId}/models/${model}/splits`,
+  `/v1/instances/${instanceId}/models/${model}/partitions`,
   ...(params ? [params] : []),
 ];
 
-export type RuntimeServiceGetModelSplitsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+export type RuntimeServiceGetModelPartitionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>
 >;
-export type RuntimeServiceGetModelSplitsQueryError = ErrorType<RpcStatus>;
+export type RuntimeServiceGetModelPartitionsQueryError = ErrorType<RpcStatus>;
 
-export const createRuntimeServiceGetModelSplits = <
-  TData = Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+export const createRuntimeServiceGetModelPartitions = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
   TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   model: string,
-  params?: RuntimeServiceGetModelSplitsParams,
+  params?: RuntimeServiceGetModelPartitionsParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+      Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
       TError,
       TData
     >;
@@ -1765,15 +1765,15 @@ export const createRuntimeServiceGetModelSplits = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getRuntimeServiceGetModelSplitsQueryKey(instanceId, model, params);
+    getRuntimeServiceGetModelPartitionsQueryKey(instanceId, model, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>
   > = ({ signal }) =>
-    runtimeServiceGetModelSplits(instanceId, model, params, signal);
+    runtimeServiceGetModelPartitions(instanceId, model, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof runtimeServiceGetModelSplits>>,
+    Awaited<ReturnType<typeof runtimeServiceGetModelPartitions>>,
     TError,
     TData
   >({

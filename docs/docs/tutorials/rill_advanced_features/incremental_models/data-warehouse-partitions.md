@@ -1,7 +1,7 @@
 ---
-title: "Splits with Data Warehouses"
-description:  "Getting Started with Splits"
-sidebar_label: "Data Warehouse: Splits and Incremental Models"
+title: "Partitions with Data Warehouses"
+description:  "Getting Started with Partitions"
+sidebar_label: "Data Warehouse: Partitions and Incremental Models"
 sidebar_position: 12
 ---
 
@@ -16,7 +16,7 @@ import ComingSoon from '@site/src/components/ComingSoon';
 ## Once we have the data ready, we can post this one.
 
 
-Another advanced concept within Rill is using [Incremental Models](https://docs.rilldata.com/build/advancedmodels/incremental). To understand incremental models, we will also need to discuss [splits](https://docs.rilldata.com/build/advancedmodels/splits). 
+Another advanced concept within Rill is using [Incremental Models](https://docs.rilldata.com/build/advancedmodels/incremental). To understand incremental models, we will also need to discuss [partitions](https://docs.rilldata.com/build/advancedmodels/partitions). 
 
 :::tip requirements
 You will need to setup the connection to your data warehouse, depending on the connection please refer to [our documentation](https://docs.rilldata.com/reference/connectors/). 
@@ -26,16 +26,16 @@ Your dataset will require a or equivalent to `updated_on` column to use.
 :::
 
 
-## Understanding Splits in Models
+## Understanding Partitions in Models
 
 Here’s how it works at a high level:
 
-- **Split Definition**: Each row from the result set becomes one "split". The model processes each split separately.
+- **Partition Definition**: Each row from the result set becomes one "partition". The model processes each partition separately.
 - **Execution Strategy**:
-  - **First Split**: Runs without incremental processing.
-  - **Subsequent Splits**: Run incrementally, following the output connector's `incremental_strategy` (either append or merge for SQL connectors).
+  - **First Partition**: Runs without incremental processing.
+  - **Subsequent Partitions**: Run incrementally, following the output connector's `incremental_strategy` (either append or merge for SQL connectors).
 
-### Let's create a basic split model.
+### Let's create a basic partitioned model.
 
 1. Create a YAML file: `SQL-incremental-tutorial.yaml`
 
@@ -50,19 +50,19 @@ sql: >
 
 Note that ` {{if incremental}}` is needed here as we will use this to increment over your data! As stated in the beginning, you will need an `updated_on` column to calculate the increments. 
 
-### Handling errors in splits
-If you see any errors in the UI regarding split, you may need to check the status. You can do this via the CLI running:
+### Handling errors in partitions
+If you see any errors in the UI regarding partitions, you may need to check the status. You can do this via the CLI running:
 ```bash
-rill project splits --<model_name> --local
+rill project partitions --<model_name> --local
 ```
 
 
-### Refreshing Splits 
+### Refreshing Partitions 
 
-Let's say a specific split in your model had some formatting issues. After fixing the data, you would need to find the key for the split and run `rill project splits --<model_name> --local`.  Once found, you can run the following command that will only refresh the specific split, instead of the whole model.
+Let's say a specific partition in your model had some formatting issues. After fixing the data, you would need to find the key for the partition and run `rill project partitions --<model_name> --local`.  Once found, you can run the following command that will only refresh the specific partition, instead of the whole model.
 
 ```bash
-rill project refresh --model <model_name> --split <split_key>
+rill project refresh --model <model_name> --partition <partition_key>
 ```
 
 ## What is Incremental Modeling?

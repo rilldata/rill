@@ -30,13 +30,14 @@
     hasUnsavedChanges,
     autoSave,
     path: filePath,
+    resourceName,
     remoteContent,
     fileName,
   } = fileArtifact);
 
   $: workspace = workspaces.get(filePath);
 
-  $: metricsViewName = getNameFromFile(filePath);
+  $: metricsViewName = $resourceName?.name ?? getNameFromFile(filePath);
 
   $: initLocalUserPreferenceStore(metricsViewName);
 

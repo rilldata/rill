@@ -176,7 +176,6 @@ export function getDefaultMetricsExplorerEntity(
     selectedDimensionName: undefined,
 
     showTimeComparison: false,
-    dimensionSearchText: "",
     temporaryFilterName: null,
     tdd: {
       chartType: TDDChart.DEFAULT,

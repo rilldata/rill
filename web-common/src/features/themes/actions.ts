@@ -1,16 +1,15 @@
 import { generateColorPalette } from "@rilldata/web-common/features/themes/palette-generator";
 import { TailwindColorSpacing } from "./color-config";
-import type { V1Color, V1Theme } from "@rilldata/web-common/runtime-client";
+import type { V1Color, V1ThemeSpec } from "@rilldata/web-common/runtime-client";
 import chroma from "chroma-js";
 
 const ThemeBoundarySelector = ".dashboard-theme-boundary";
 
-export function setTheme(theme: V1Theme) {
-  if (theme.spec?.primaryColor)
-    updateColorVars("primary", theme.spec?.primaryColor);
+export function setTheme(theme: V1ThemeSpec | undefined) {
+  if (!theme) return;
+  if (theme.primaryColor) updateColorVars("primary", theme.primaryColor);
 
-  if (theme.spec?.secondaryColor)
-    updateColorVars("secondary", theme.spec?.secondaryColor);
+  if (theme.secondaryColor) updateColorVars("secondary", theme.secondaryColor);
 }
 
 function updateColorVars(
@@ -30,9 +29,16 @@ function updateColorVars(
   const palette = generateColorPalette(inputColor);
   // Update CSS variables
   palette.forEach((c, i) => {
+    const hsl = c.css("hsl");
+
+    root.style.setProperty(
+      `--hsl-${colorVarKind}-${TailwindColorSpacing[i]}`,
+      hsl.slice(4, -1).split(",").join(" "),
+    );
+
     root.style.setProperty(
       `--color-${colorVarKind}-${TailwindColorSpacing[i]}`,
-      c.css(),
+      hsl,
     );
   });
 }

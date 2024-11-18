@@ -4,6 +4,7 @@ import type { Page } from "@sveltejs/kit";
 export function isOrganizationPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]" ||
+    !!page.route?.id?.startsWith("/[organization]/-/users") ||
     !!page.route?.id?.startsWith("/[organization]/-/settings")
   );
 }

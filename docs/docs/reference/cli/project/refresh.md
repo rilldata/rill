@@ -4,7 +4,7 @@ title: rill project refresh
 ---
 ## rill project refresh
 
-Refresh the project's data sources
+Refresh one or more resources
 
 ```
 rill project refresh [<project-name>] [flags]
@@ -13,9 +13,18 @@ rill project refresh [<project-name>] [flags]
 ### Flags
 
 ```
-      --project string   Project name
-      --path string      Project directory (default ".")
-      --source strings   Refresh specific source(s)
+      --project string       Project name
+      --path string          Project directory (default ".")
+      --local                Target locally running Rill
+      --all                  Refresh all sources and models (default)
+      --full                 Fully reload the targeted models (use with --all or --model)
+      --model strings        Refresh a model
+      --partition strings    Refresh a model partition (must set --model)
+      --errored-partitions   Refresh all model partitions with errors (must set --model)
+      --source strings       Refresh a source
+      --alert strings        Refresh an alert
+      --report strings       Refresh a report
+      --parser               Refresh the parser (forces a pull from Github)
 ```
 
 ### Global flags

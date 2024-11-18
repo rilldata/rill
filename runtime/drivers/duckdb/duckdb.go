@@ -13,7 +13,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
-	duckdbreplicator "github.com/rilldata/duckdb-replicator"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
 	"github.com/rilldata/rill/runtime/drivers/file"
@@ -21,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -270,7 +270,7 @@ type connection struct {
 	instanceID string
 	// do not use directly it can also be nil or closed
 	// use acquireOLAPConn/acquireMetaConn
-	db duckdbreplicator.DB
+	db rduckdb.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -506,34 +506,12 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 		AddSource: true,
 	}))
 	var err error
-	if c.config.ExtTableStorage {
-		var backup *duckdbreplicator.BackupProvider
-		if c.config.BackupBucket != "" {
-			backup, err = duckdbreplicator.NewGCSBackupProvider(ctx, &duckdbreplicator.GCSBackupProviderOptions{
-				UseHostCredentials:         c.config.AllowHostAccess,
-				ApplicationCredentialsJSON: c.config.BackupBucketCredentialsJSON,
-				Bucket:                     c.config.BackupBucket,
-				UniqueIdentifier:           c.instanceID,
-			})
-			if err != nil {
-				return err
-			}
-		}
-		c.db, err = duckdbreplicator.NewDB(ctx, c.instanceID, &duckdbreplicator.DBOptions{
-			Clean:          clean,
-			LocalPath:      c.config.DataDir,
-			BackupProvider: backup,
-			InitQueries:    bootQueries,
-			Logger:         logger,
-		})
-	} else {
-		c.db, err = duckdbreplicator.NewSingleDB(ctx, &duckdbreplicator.SingleDBOptions{
-			DSN:         c.config.DSN,
-			Clean:       clean,
-			InitQueries: bootQueries,
-			Logger:      logger,
-		})
-	}
+	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
+		LocalPath:   c.config.DataDir,
+		Remote:      backup,
+		InitQueries: bootQueries,
+		Logger:      logger,
+	})
 	return err
 }
 
@@ -553,7 +531,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 	}
 
 	// Get new conn
-	rwConn, releaseConn, err := c.acquireConn(ctx, true)
+	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
 		c.metaSem.Release(1)
 		return nil, nil, err
@@ -566,7 +544,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 		return err
 	}
 
-	return rwConn.Connx(), release, nil
+	return conn, release, nil
 }
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
@@ -596,7 +574,7 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	}
 
 	// Get new conn
-	rwConn, releaseConn, err := c.acquireConn(ctx, true)
+	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
 		c.olapSem.Release()
 		if longRunning {
@@ -615,12 +593,12 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 		return err
 	}
 
-	return rwConn.Connx(), release, nil
+	return conn, release, nil
 }
 
 // acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 // acquireConn implements the connection tracking and DB reopening logic described in the struct definition for connection.
-func (c *connection) acquireConn(ctx context.Context, read bool) (duckdbreplicator.Conn, func() error, error) {
+func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
 	c.dbCond.L.Lock()
 	for {
 		if c.dbErr != nil {
@@ -636,14 +614,7 @@ func (c *connection) acquireConn(ctx context.Context, read bool) (duckdbreplicat
 	c.dbConnCount++
 	c.dbCond.L.Unlock()
 
-	var conn duckdbreplicator.Conn
-	var releaseConn func() error
-	var err error
-	if read {
-		conn, releaseConn, err = c.db.AcquireReadConnection(ctx)
-	} else {
-		conn, releaseConn, err = c.db.AcquireWriteConnection(ctx)
-	}
+	conn, releaseConn, err := c.db.AcquireReadConnection(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     V1BillingIssueType,
+    type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
@@ -16,9 +17,8 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
+  export let plan: V1BillingPlan;
   export let showUpgradeDialog: boolean;
-
-  $: plan = subscription?.plan;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: trialIssue = $categorisedIssues.data?.trial;
@@ -43,7 +43,7 @@
     }
   }
 
-  $: title = "Trial plan" + (trialEnded ? " expired" : "");
+  $: title = plan?.displayName + (trialEnded ? " expired" : "");
 
   let open = showUpgradeDialog;
   $: type = (trialEnded ? "trial-expired" : "base") as TeamPlanDialogTypes;
@@ -54,9 +54,7 @@
     <div>
       {trialEndMessage} Ready to get started with Rill?
       <PricingDetails />
-      {#if plan}
-        <PlanQuotas {organization} quotas={plan.quotas} />
-      {/if}
+      <PlanQuotas {organization} />
     </div>
   </div>
   <svelte:fragment slot="contact">

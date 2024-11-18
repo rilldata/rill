@@ -1544,6 +1544,8 @@ theme:
 					Blue:  0.5019608,
 					Alpha: 1,
 				},
+				PrimaryColorRaw:   "red",
+				SecondaryColorRaw: "grey",
 			},
 		},
 		{
@@ -1560,23 +1562,19 @@ theme:
 		{
 			Name:  ResourceName{Kind: ResourceKindExplore, Name: "e2"},
 			Paths: []string{"/explores/e2.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "e2--theme"}},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
 				MetricsView:        "missing",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-				Theme:              "e2--theme",
-			},
-		},
-		{
-			Name:  ResourceName{Kind: ResourceKindTheme, Name: "e2--theme"},
-			Paths: []string{"/explores/e2.yaml"},
-			ThemeSpec: &runtimev1.ThemeSpec{
-				PrimaryColor: &runtimev1.Color{
-					Red:   1,
-					Green: 0,
-					Blue:  0,
-					Alpha: 1,
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
 				},
 			},
 		},
