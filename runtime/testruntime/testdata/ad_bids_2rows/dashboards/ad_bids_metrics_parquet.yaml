@@ -14,4 +14,4 @@ measures:
   - display_name: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: humanize
+    format_preset: ""

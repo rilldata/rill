@@ -1,7 +1,7 @@
-import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
 import type { YAMLMap } from "yaml";
+import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
 export const types: ItemType[] = ["measures", "dimensions"];
 
@@ -74,7 +74,7 @@ export class YAMLMeasure {
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ??
-      (this.format_d3 ? "" : FormatPreset.NONE);
+      (this.format_d3 ? "" : FormatPreset.HUMANIZE);
   }
 }
 

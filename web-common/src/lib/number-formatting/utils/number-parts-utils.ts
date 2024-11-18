@@ -1,7 +1,6 @@
 import type { NumberParts } from "../humanizer-types";
 
 export const numberPartsToString = (parts: NumberParts): string =>
-  (parts.prefix || "") +
   (parts.neg || "") +
   (parts.currencySymbol || "") +
   parts.int +

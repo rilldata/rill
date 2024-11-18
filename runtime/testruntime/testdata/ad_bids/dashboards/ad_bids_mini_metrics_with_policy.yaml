@@ -18,19 +18,15 @@ measures:
   - name: bid's number
     display_name: "Number of bids"
     expression: count(*)
-    format_preset: humanize
   - name: total volume
     display_name: "Total volume"
     expression: sum(volume)
-    format_preset: humanize
   - name: total impressions
     display_name: "Total impressions"
     expression: sum(impressions)
-    format_preset: humanize
   - name: total click"s
     display_name: "Total clicks"
     expression: sum(clicks)
-    format_preset: humanize
 
 security:
   access: true

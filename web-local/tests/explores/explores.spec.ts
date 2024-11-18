@@ -34,19 +34,19 @@ test.describe("explores", () => {
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
-    await page.getByRole("row", { name: "Facebook 19.3k" }).click();
-    await wrapRetryAssertion(() =>
-      assertLeaderboards(page, [
-        {
-          label: "Publisher",
-          values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
-        },
-        {
-          label: "Domain",
-          values: ["facebook.com", "instagram.com"],
-        },
-      ]),
-    );
+    await page.getByRole("row", { name: "Facebook 19.3K" }).click(),
+      await wrapRetryAssertion(() =>
+        assertLeaderboards(page, [
+          {
+            label: "Publisher",
+            values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
+          },
+          {
+            label: "Domain",
+            values: ["facebook.com", "instagram.com"],
+          },
+        ]),
+      );
   });
 
   test("Dashboard runthrough", async ({ page }) => {
@@ -332,7 +332,6 @@ measures:
   - label: Total rows
     expression: count(*)
     name: total_rows
-    format_preset: humanize
     description: Total number of records present
   - label: Avg Bid Price
     expression: avg(bid_price)

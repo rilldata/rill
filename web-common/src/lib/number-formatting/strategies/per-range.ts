@@ -9,16 +9,12 @@ import {
 import { countDigits, countNonZeroDigits } from "../utils/count-digits";
 import {
   formatNumWithOrderOfMag,
-  orderOfMagnitude,
   orderOfMagnitudeEng,
 } from "../utils/format-with-order-of-magnitude";
 import { numberPartsToString } from "../utils/number-parts-utils";
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 
 const formatWithRangeSpec = (x: number, spec: RangeFormatSpec): NumberParts => {
-  if (spec.overrideValue !== undefined) {
-    return spec.overrideValue;
-  }
   const baseMag = spec.baseMagnitude ?? orderOfMagnitudeEng(spec.minMag);
   const padWithInsignificantZeros =
     spec.padWithInsignificantZeros === undefined
@@ -120,13 +116,6 @@ export class PerRangeFormatter implements Formatter {
       // formatted number.
       for (let i = 0; i < rangeSpecs.length; i++) {
         const spec = rangeSpecs[i];
-        if (spec.overrideValue !== undefined) {
-          const OoM = orderOfMagnitude(x);
-          if (OoM >= spec.minMag && OoM < spec.supMag) {
-            numParts = spec.overrideValue;
-            break;
-          }
-        }
         numParts = formatWithRangeSpec(x, spec);
         if (
           numberPartsValidForRangeSpec(numParts, spec) &&
@@ -148,23 +137,17 @@ export class PerRangeFormatter implements Formatter {
     // use defaults
     if (numParts === undefined) {
       const magE = orderOfMagnitudeEng(x);
-      const hasSmallFraction = magE <= -3;
-
-      const maxDigitsLeft = hasSmallFraction ? 1 : 3;
       numParts = formatNumWithOrderOfMag(x, magE, defaultMaxDigitsRight, true);
-      // Note that if this attempt at formatting results in more
-      // digits left of the decimal point than maxDigitsLeft, then we must format this
-      // number according to the next magnitude up. We'll attempt this up to 3 times
-      // to find a suitable formatting, incrementing the magnitude each time.
-      let attempts = 0;
-      while (countDigits(numParts.int) > maxDigitsLeft && attempts < 3) {
+      // Note that if this attempt at formatting results in more than 3
+      // digits left of the decimal point, then we must format this
+      // number according to the next magnitude up.
+      if (countDigits(numParts.int) > 3) {
         numParts = formatNumWithOrderOfMag(
           x,
-          magE + maxDigitsLeft + attempts,
+          magE + 3,
           defaultMaxDigitsRight,
           true,
         );
-        attempts++;
       }
     }
 

@@ -2,25 +2,21 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import { format as d3format } from "d3-format";
 import {
   FormatPreset,
+  formatPresetToNumberKind,
   NumberKind,
-  type FormatterContext,
+  type FormatterFactoryOptions,
 } from "./humanizer-types";
 import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,
 } from "./strategies/intervals";
+import { NonFormatter } from "./strategies/none";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultCurrencyOptions,
   defaultGenericNumOptions,
-  defaultNoFormattingOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
-import {
-  tooltipCurrencyOptions,
-  tooltipNoFormattingOptions,
-  tooltipPercentOptions,
-} from "./strategies/per-range-tooltip-options";
 
 /**
  * This function is intended to provides a compact,
@@ -35,11 +31,25 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
     return JSON.stringify(value);
   }
 
+  const numberKind = formatPresetToNumberKind(preset);
+
+  let options: FormatterFactoryOptions;
+
+  if (preset === FormatPreset.NONE) {
+    options = {
+      numberKind,
+      padWithInsignificantZeros: false,
+    };
+  } else {
+    options = {
+      numberKind,
+    };
+  }
+
   switch (preset) {
     case FormatPreset.NONE:
-      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
-        value,
-      );
+      return new NonFormatter(options).stringFormat(value);
+
     case FormatPreset.CURRENCY_USD:
       return new PerRangeFormatter(
         defaultCurrencyOptions(NumberKind.DOLLAR),
@@ -63,9 +73,9 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
 
     default:
       console.warn(
-        "Unknown format preset, using none formatter. All number kinds should be handled.",
+        "Unknown format preset, using default formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
+      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
         value,
       );
   }
@@ -73,7 +83,6 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
 
 /**
  * Parse the currency symbol from a d3 format string.
- * For d3 the currency symbol is always "$" in the format string
  */
 export function includesCurrencySymbol(formatString: string): boolean {
   return formatString.includes("$");
@@ -97,51 +106,6 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   return value.toString();
 }
 
-function humanizeDataTypeForTooltip(
-  value: number,
-  preset: FormatPreset,
-): string {
-  if (typeof value !== "number") {
-    console.warn(
-      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
-    );
-
-    return JSON.stringify(value);
-  }
-
-  switch (preset) {
-    case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(
-        tooltipCurrencyOptions(NumberKind.DOLLAR),
-      ).stringFormat(value);
-
-    case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(
-        tooltipCurrencyOptions(NumberKind.EURO),
-      ).stringFormat(value);
-
-    case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(tooltipPercentOptions).stringFormat(value);
-
-    case FormatPreset.INTERVAL:
-      return formatMsToDuckDbIntervalString(value);
-
-    case FormatPreset.HUMANIZE:
-    case FormatPreset.NONE:
-      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
-        value,
-      );
-
-    default:
-      console.warn(
-        "Unknown format preset, using none formatter. All number kinds should be handled.",
-      );
-      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
-        value,
-      );
-  }
-}
-
 /**
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
@@ -158,20 +122,12 @@ function humanizeDataTypeForTooltip(
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
-  type: FormatterContext = "table",
+  useUnabridged = false,
+  isBigNumber = false,
 ): (value: number | string | T) => string | T {
-  const useUnabridged = type === "unabridged";
-  const isBigNumber = type === "big-number";
-  const isTooltip = type === "tooltip";
-
-  let humanizer: (value: number, type: FormatPreset) => string;
-  if (useUnabridged) {
-    humanizer = humanizeDataTypeUnabridged;
-  } else if (isTooltip) {
-    humanizer = humanizeDataTypeForTooltip;
-  } else {
-    humanizer = humanizeDataType;
-  }
+  const humanizer = useUnabridged
+    ? humanizeDataTypeUnabridged
+    : humanizeDataType;
 
   // Return and empty string if measureSpec is not provided.
   // This may e.g. be the case during the initial render of a dashboard,
@@ -192,8 +148,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
       return (value: number | string | T) => {
         if (typeof value !== "number") return value;
 
-        // For the Big Number and Tooltips, override the d3formatter
-        if (isBigNumber || isTooltip) {
+        // For the Big Number, override the d3formatter
+        if (isBigNumber) {
           if (hasCurrencySymbol) {
             return humanizer(value, FormatPreset.CURRENCY_USD);
           } else if (hasPercentSymbol) {
@@ -216,12 +172,11 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   let formatPreset =
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
-      : FormatPreset.NONE;
+      : FormatPreset.HUMANIZE;
 
   if (isBigNumber && formatPreset === FormatPreset.NONE) {
     formatPreset = FormatPreset.HUMANIZE;
   }
-
   return (value: number | T) =>
     typeof value === "number" ? humanizer(value, formatPreset) : value;
 }

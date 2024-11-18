@@ -17,16 +17,16 @@ measures:
   - display_name: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: humanize
+    format_preset: ""
   - display_name: "Total volume"
     expression: sum(volume)
     description: ""
-    format_preset: humanize
+    format_preset: ""
   - display_name: "Total impressions"
     expression: sum(impressions)
     description: ""
-    format_preset: humanize
+    format_preset: ""
   - display_name: "Max volume"
     expression: max(volume)
     description: ""
-    format_preset: humanize
+    format_preset: ""

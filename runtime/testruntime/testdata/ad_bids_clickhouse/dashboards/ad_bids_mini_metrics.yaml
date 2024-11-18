@@ -22,4 +22,3 @@ measures:
     expression: sum(impressions)
   - display_name: "Total clicks"
     expression: sum(clicks)
-    format_preset: humanize
