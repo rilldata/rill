@@ -2,14 +2,14 @@
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/canvas-components/render/vega-config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
   import {
+    type EmbedOptions,
     type SignalListeners,
     VegaLite,
     type View,
     type VisualizationSpec,
-    type EmbedOptions,
   } from "svelte-vega";
+  import { get } from "svelte/store";
   import type { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
@@ -34,6 +34,8 @@
     viewVL.tooltip(handler.handleTooltip);
     void viewVL.runAsync();
   }
+
+  $: console.log(height);
 
   $: options = <EmbedOptions>{
     config: getRillTheme(canvasDashboard),

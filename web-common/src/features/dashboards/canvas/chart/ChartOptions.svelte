@@ -1,20 +1,9 @@
 <script lang="ts">
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
   import AddMeasureDimensionButton from "../AddMeasureDimensionButton.svelte";
+  import { chartConfig, updateAxis } from "./configStore";
 
   export let chartType = "bar";
-
-  let selectedXAxis = null;
-  let selectedYAxis = null;
-  function handleAddField(event) {
-    const { detail: fieldName } = event;
-
-    if (!selectedXAxis) {
-      selectedXAxis = fieldName;
-    } else {
-      selectedYAxis = fieldName;
-    }
-  }
 
   const tabs = [
     {
@@ -50,12 +39,30 @@
 {#if currentTabIndex === 0}
   <div class="chart-options">
     <div class="channel-name">X Axis:</div>
-    {selectedXAxis || "Select a field"}
-    <AddMeasureDimensionButton on:addField={handleAddField} />
+    {#if $chartConfig.data?.x?.field}
+      {$chartConfig.data.x.field}
+    {:else}
+      Select a field
+    {/if}
+    <AddMeasureDimensionButton on:addField={(e) => updateAxis("x", e.detail)} />
 
     <div class="channel-name">Y Axis:</div>
-    {selectedYAxis || "Select a field"}
-    <AddMeasureDimensionButton on:addField={handleAddField} />
+    {#if $chartConfig.data?.y?.field}
+      {$chartConfig.data.y.field}
+    {:else}
+      Select a field
+    {/if}
+    <AddMeasureDimensionButton on:addField={(e) => updateAxis("y", e.detail)} />
+
+    <div class="channel-name">Color:</div>
+    {#if $chartConfig.data?.color?.field}
+      {$chartConfig.data.color.field}
+    {:else}
+      Select a field
+    {/if}
+    <AddMeasureDimensionButton
+      on:addField={(e) => updateAxis("color", e.detail)}
+    />
   </div>
 {:else if currentTabIndex === 1}
   <div class="chart-options">
