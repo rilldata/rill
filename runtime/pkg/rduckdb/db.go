@@ -16,13 +16,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel/attribute"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
@@ -210,13 +210,17 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	bgctx, cancel := context.WithCancel(ctx)
 	db := &db{
 		opts:       opts,
 		localPath:  opts.LocalPath,
-		readMu:     &sync.RWMutex{},
+		readMu:     ctxsync.NewRWMutex(),
 		writeSem:   semaphore.NewWeighted(1),
-		writeDirty: true,
+		localDirty: true,
+		ticker:     time.NewTicker(5 * time.Minute),
 		logger:     opts.Logger,
+		ctx:        bgctx,
+		cancel:     cancel,
 	}
 	if opts.Remote != nil {
 		db.remote = opts.Remote
@@ -243,38 +247,60 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 		return nil, err
 	}
-
+	go db.localDBMonitor()
 	return db, nil
 }
 
 type db struct {
 	opts *DBOptions
 
-	localPath  string
-	readHandle *sqlx.DB
-	readMu     *sync.RWMutex
-	writeSem   *semaphore.Weighted
-	writeDirty bool
+	localPath string
+	remote    *blob.Bucket
 
-	remote *blob.Bucket
+	// readHandle serves read queries
+	readHandle *sqlx.DB
+	// readMu controls access to readHandle
+	readMu ctxsync.RWMutex
+	// writeSem ensures only one write operation is allowed at a time
+	writeSem *semaphore.Weighted
+	// localDirty is set to true when a change is committed to the remote but not yet reflected in the local db
+	localDirty bool
+	// ticker to peroiodically check if local db is in sync with remote
+	ticker *time.Ticker
 
 	logger *slog.Logger
+
+	// ctx and cancel to cancel background operations
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 var _ DB = &db{}
 
 func (d *db) Close() error {
-	_ = d.writeSem.Acquire(context.Background(), 1)
+	// close background operations
+	d.cancel()
+	d.ticker.Stop()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_ = d.writeSem.Acquire(ctx, 1)
 	defer d.writeSem.Release(1)
 
-	d.readMu.Lock()
+	err := d.readMu.Lock(ctx)
+	if err != nil {
+		return err
+	}
 	defer d.readMu.Unlock()
 
 	return d.readHandle.Close()
 }
 
 func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() error, error) {
-	d.readMu.RLock()
+	if err := d.readMu.RLock(ctx); err != nil {
+		return nil, nil, err
+	}
 
 	conn, err := d.readHandle.Connx(ctx)
 	if err != nil {
@@ -375,26 +401,27 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return err
 	}
 
-	d.writeDirty = true
+	d.localDirty = true
 	// update remote data and metadata
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
 		return fmt.Errorf("create: replicate failed: %w", err)
 	}
 	d.logger.Debug("remote table updated", slog.String("name", name))
+	// no errors after this point since background goroutine will eventually sync the local db
 
 	// update local metadata
 	err = d.writeTableMeta(name, newMeta)
 	if err != nil {
-		return fmt.Errorf("create: write version file failed: %w", err)
+		d.logger.Debug("create: error in writing table meta", slog.String("name", name), slog.String("error", err.Error()))
+		return nil
 	}
 
-	d.writeDirty = false
 	err = d.reopen(ctx)
 	if err != nil {
-		// TODO :: this means reads will not be in sync with remote till another write happens
-		// Should we mark db as reopen and wait for outstanding queries to become zero and then reopen?
-		return fmt.Errorf("create: db reopen failed: %w", err)
+		d.logger.Debug("create: error in reopening db", slog.String("error", err.Error()))
+		return nil
 	}
+	d.localDirty = false
 	return nil
 }
 
@@ -442,7 +469,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// push to remote
 	_ = release()
-	d.writeDirty = true
+	d.localDirty = true
 	meta := &tableMeta{
 		Name:           name,
 		Version:        newVersion,
@@ -454,19 +481,22 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	if err != nil {
 		return fmt.Errorf("mutate: replicate failed: %w", err)
 	}
+	// no errors after this point since background goroutine will eventually sync the local db
 
 	// update local meta
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
-		return fmt.Errorf("rename: write version file failed: %w", err)
+		d.logger.Debug("mutate: error in writing table meta", slog.String("name", name), slog.String("error", err.Error()))
+		return nil
 	}
-	d.writeDirty = false
 
 	// reopen db handle ignoring old name
 	err = d.reopen(ctx)
 	if err != nil {
-		return fmt.Errorf("rename: unable to reopen: %w", err)
+		d.logger.Debug("mutate: error in reopening db", slog.String("error", err.Error()))
+		return nil
 	}
+	d.localDirty = false
 	return nil
 }
 
@@ -495,26 +525,28 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 
 	// drop the table from remote
-	d.writeDirty = true
+	d.localDirty = true
 	err = d.deleteRemote(ctx, name, "")
 	if err != nil {
 		return fmt.Errorf("drop: unable to drop table %q from remote: %w", name, err)
 	}
+	// no errors after this point since background goroutine will eventually sync the local db
 
 	// mark table as deleted in local
 	meta.Deleted = true
 	err = d.writeTableMeta(name, meta)
 	if err != nil {
-		return fmt.Errorf("drop: write meta failed: %w", err)
+		d.logger.Debug("drop: error in writing table meta", slog.String("name", name), slog.String("error", err.Error()))
+		return nil
 	}
 
 	// reopen db handle
 	err = d.reopen(ctx)
 	if err != nil {
-		return fmt.Errorf("drop: unable to reopen: %w", err)
+		d.logger.Debug("drop: error in reopening db", slog.String("error", err.Error()))
+		return nil
 	}
-
-	d.writeDirty = false
+	d.localDirty = false
 	return nil
 }
 
@@ -556,7 +588,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: rename table failed: %w", err)
 	}
 
-	d.writeDirty = true
+	d.localDirty = true
 	// sync the new table and new version
 	meta := &tableMeta{
 		Name:           newName,
@@ -579,26 +611,58 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to delete old table %q from remote: %w", oldName, err)
 	}
 
+	// no errors after this point since background goroutine will eventually sync the local db
+
 	// update local meta
 	err = d.writeTableMeta(newName, meta)
 	if err != nil {
-		return fmt.Errorf("rename: write version file failed: %w", err)
+		d.logger.Debug("rename: error in writing table meta", slog.String("name", newName), slog.String("error", err.Error()))
+		return nil
 	}
 
 	// mark table as deleted in local
 	oldMeta.Deleted = true
 	err = d.writeTableMeta(oldName, oldMeta)
 	if err != nil {
-		return fmt.Errorf("drop: write meta failed: %w", err)
+		d.logger.Debug("rename: error in writing table meta", slog.String("name", oldName), slog.String("error", err.Error()))
+		return nil
 	}
-	d.writeDirty = false
 
 	// reopen db handle ignoring old name
 	err = d.reopen(ctx)
 	if err != nil {
-		return fmt.Errorf("rename: unable to reopen: %w", err)
+		d.logger.Debug("rename: error in reopening db", slog.String("error", err.Error()))
+		return nil
 	}
+	d.localDirty = false
 	return nil
+}
+
+func (d *db) localDBMonitor() {
+	for {
+		select {
+		case <-d.ctx.Done():
+			return
+		case <-d.ticker.C:
+			err := d.writeSem.Acquire(d.ctx, 1)
+			if err != nil && errors.Is(err, context.Canceled) {
+				d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
+				continue
+			}
+			if !d.localDirty {
+				// all good
+				continue
+			}
+			err = d.pullFromRemote(d.ctx)
+			if err != nil {
+				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
+			}
+			err = d.reopen(d.ctx)
+			if err != nil {
+				d.logger.Error("localDBMonitor: error in reopening db", slog.String("error", err.Error()))
+			}
+		}
+	}
 }
 
 func (d *db) reopen(ctx context.Context) error {
@@ -608,7 +672,10 @@ func (d *db) reopen(ctx context.Context) error {
 	}
 
 	var oldDBHandle *sqlx.DB
-	d.readMu.Lock()
+	err = d.readMu.Lock(ctx)
+	if err != nil {
+		return err
+	}
 	// swap read handle
 	oldDBHandle = d.readHandle
 	d.readHandle = handle

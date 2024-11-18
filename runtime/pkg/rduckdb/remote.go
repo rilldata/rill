@@ -21,7 +21,7 @@ import (
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
 func (d *db) pullFromRemote(ctx context.Context) error {
-	if !d.writeDirty || d.remote == nil {
+	if !d.localDirty || d.remote == nil {
 		// optimisation to skip sync if write was already synced
 		return nil
 	}

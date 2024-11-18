@@ -203,7 +203,7 @@ func TestResetLocal(t *testing.T) {
 	require.NoError(t, db.Close())
 	require.NoError(t, os.RemoveAll(localDir))
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
@@ -223,10 +223,9 @@ func TestResetLocal(t *testing.T) {
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
-	// logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-	// 	Level: slog.LevelDebug,
-	// }))
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
 	remoteDir = t.TempDir()
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
