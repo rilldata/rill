@@ -19,6 +19,7 @@ measures:
     expression: count(*)
   - display_name: "Total volume"
     name: total volume
+    format_preset: humanize
     expression: sum(volume)
   - display_name: "Total impressions"
     name: total impressions
@@ -26,6 +27,7 @@ measures:
   - display_name: "Total clicks"
     name: total click"s
     expression: sum(clicks)
+    format_preset: humanize
 
 security:
   access: true

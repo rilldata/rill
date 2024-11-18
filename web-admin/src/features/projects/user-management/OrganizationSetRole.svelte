@@ -115,14 +115,16 @@
     >
       <span>Viewer</span>
     </DropdownMenu.CheckboxItem>
-    <DropdownMenu.Separator />
-    <DropdownMenu.Item
-      class="font-normal flex items-center"
-      on:click={() => {
-        handleRemove(group.groupName);
-      }}
-    >
-      <span class="ml-6">Remove</span>
-    </DropdownMenu.Item>
+    {#if group.groupName !== "all-users"}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        on:click={() => {
+          handleRemove(group.groupName);
+        }}
+      >
+        <span class="ml-6">Remove</span>
+      </DropdownMenu.Item>
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>

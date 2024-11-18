@@ -30,7 +30,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
 				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 

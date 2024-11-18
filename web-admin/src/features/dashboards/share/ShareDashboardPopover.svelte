@@ -13,11 +13,21 @@
     TabsList,
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   export let createMagicAuthTokens: boolean;
 
   let isOpen = false;
+  let copied = false;
+
+  function onCopy() {
+    navigator.clipboard.writeText(window.location.href).catch(console.error);
+    copied = true;
+
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 </script>
 
 <Popover bind:open={isOpen}>
@@ -42,11 +52,16 @@
           <Button
             type="secondary"
             on:click={() => {
-              copyToClipboard(window.location.href, "Link copied to clipboard");
+              onCopy();
             }}
           >
-            <Link size="16px" className="text-primary-500" />
-            Copy URL
+            {#if copied}
+              <Check size="16px" />
+              Copied URL
+            {:else}
+              <Link size="16px" className="text-primary-500" />
+              Copy URL for this view
+            {/if}
           </Button>
         </div>
       </TabsContent>
