@@ -120,7 +120,6 @@
 
   async function onCopy() {
     const success = await copyToClipboard(url, "URL copied to clipboard");
-    console.log("success", success);
     if (success) {
       copied = true;
 
