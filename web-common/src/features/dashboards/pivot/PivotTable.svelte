@@ -169,7 +169,7 @@
       : 0;
 
   $: rows = $table.getRowModel().rows;
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  $: rowVirtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
     estimateSize: () => ROW_HEIGHT,
@@ -182,10 +182,30 @@
     },
   });
 
-  $: virtualRows = $virtualizer.getVirtualItems();
-  $: totalRowSize = $virtualizer.getTotalSize();
+  $: columns = $table.getAllColumns();
+  $: columnVirtualizer = createVirtualizer<
+    HTMLDivElement,
+    HTMLTableCellElement
+  >({
+    count: columns.length,
+    getScrollElement: () => containerRefElement,
+    estimateSize: () => WIDTHS.INIT_MEASURE_WIDTH,
+    overscan: OVERSCAN,
+    initialOffset: scrollLeft,
+    rangeExtractor: (range) => {
+      const next = new Set([...defaultRangeExtractor(range)]);
 
-  $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
+      return [...next].sort((a, b) => a - b);
+    },
+  });
+
+  $: virtualColumns = $columnVirtualizer.getVirtualItems();
+  $: totalColumnSize = $columnVirtualizer.getTotalSize();
+
+  $: virtualRows = $rowVirtualizer.getVirtualItems();
+  $: totalRowSize = $rowVirtualizer.getTotalSize();
+
+  $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
 
   // In this virtualization model, we create buffer rows before and after our real data
   // This maintains the "correct" scroll position when the user scrolls
@@ -242,8 +262,11 @@
       const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
 
       if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
+        console.log("fetching more data", rowPage);
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
+
+      // TODO: metricsExplorerStore.setPivotColumnPage when implementing column virtualization
     }
   };
 
