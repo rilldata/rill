@@ -134,17 +134,15 @@
   $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
-  function makeHref(uriTemplateOrBoolean: string | null) {
+  function makeHref(uriTemplateOrBoolean: string | boolean | null) {
     if (!uriTemplateOrBoolean) {
       return undefined;
     }
 
     const uri =
-      uriTemplateOrBoolean === "true"
+      uriTemplateOrBoolean === true
         ? label
-        : uriTemplateOrBoolean
-            .replace(/\s/g, "")
-            .replace(`{{${dimensionName}}}`, label);
+        : uriTemplateOrBoolean.replace(/\s/g, "");
 
     const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
 
