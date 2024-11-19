@@ -324,8 +324,8 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 				err = p.Deprovision(ctx, &provisioner.Resource{
 					ID:     pr.ID,
 					Type:   provisioner.ResourceType(pr.Type),
-					Config: pr.Config,
 					State:  pr.State,
+					Config: pr.Config,
 				})
 				if err != nil {
 					s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), zap.Error(err), observability.ZapCtx(ctx))
@@ -524,8 +524,8 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 	r := &provisioner.Resource{
 		ID:     pr.ID,
 		Type:   provisioner.ResourceTypeRuntime,
-		Config: pr.Config, // Empty if inserting
 		State:  pr.State,  // Empty if inserting
+		Config: pr.Config, // Empty if inserting
 	}
 	r, err = p.Provision(ctx, r, &provisioner.ResourceOptions{
 		Args:        args.AsMap(),

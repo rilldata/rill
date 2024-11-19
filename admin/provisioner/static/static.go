@@ -134,8 +134,8 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 	return &provisioner.Resource{
 		ID:     r.ID,
 		Type:   r.Type,
-		Config: cfg.AsMap(),
 		State:  state.AsMap(),
+		Config: cfg.AsMap(),
 	}, nil
 }
 
@@ -212,8 +212,8 @@ func (p *StaticProvisioner) CheckResource(ctx context.Context, r *provisioner.Re
 	return &provisioner.Resource{
 		ID:     r.ID,
 		Type:   r.Type,
-		Config: r.Config,
 		State:  state.AsMap(),
+		Config: r.Config,
 	}, nil
 }
 

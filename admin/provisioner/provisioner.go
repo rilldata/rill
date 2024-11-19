@@ -69,11 +69,11 @@ type Resource struct {
 	ID string
 	// Type describes what type of service the resource is.
 	Type ResourceType
-	// Config contains access details for clients that use the resource.
-	Config map[string]any
 	// State contains state about the provisioned resource for use by the provisioner.
 	// It should not be accessed outside of the provisioner.
 	State map[string]any
+	// Config contains access details for clients that use the resource.
+	Config map[string]any
 }
 
 // ProvisionerSpec is a JSON-serializable specification for a provisioner.

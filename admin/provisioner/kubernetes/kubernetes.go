@@ -279,8 +279,8 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 	return &provisioner.Resource{
 		ID:     r.ID,
 		Type:   r.Type,
-		Config: cfg.AsMap(),
 		State:  state.AsMap(),
+		Config: cfg.AsMap(),
 	}, nil
 }
 
