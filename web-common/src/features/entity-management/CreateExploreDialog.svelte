@@ -45,7 +45,7 @@
 
     <AlertDialog.Description>
       This will determine the measures and dimensions you can explore on this
-      dashboard
+      dashboard.
     </AlertDialog.Description>
 
     <Select
