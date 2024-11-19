@@ -24,13 +24,18 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
+	minTime, err := q.getMinTime(ctx, colName)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := 1; i <= unit; i++ {
 		watermark, _, err = rt.Resolve(rilltime.ResolverContext{
 			Now:        time.Now(),
+			MinTime:    minTime,
 			MaxTime:    watermark,
 			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
-			// MinTime:    watermark, // TODO
 		})
 		if err != nil {
 			return nil, err
@@ -53,13 +58,18 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
+	minTime, err := q.getMinTime(ctx, colName)
+	if err != nil {
+		return nil, err
+	}
+
 	for i := 1; i <= unit; i++ {
 		_, watermark, err = rt.Resolve(rilltime.ResolverContext{
 			Now:        time.Now(),
+			MinTime:    minTime,
 			MaxTime:    watermark,
 			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
-			// MinTime:    watermark, // TODO
 		})
 		if err != nil {
 			return nil, err
@@ -104,6 +114,37 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 		return watermark, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
 	}
 	return watermark, nil
+}
+
+func (q *query) getMinTime(ctx context.Context, colName string) (time.Time, error) {
+	if colName == "" {
+		colName = q.metricsViewSpec.TimeDimension
+	}
+	if colName == "" {
+		// we cannot get min time without a time dimension or a column name specified. return a 0 time
+		return time.Time{}, nil
+	}
+
+	olap, release, err := q.controller.AcquireOLAP(ctx, q.metricsViewSpec.Connector)
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer release()
+
+	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", olap.Dialect().EscapeIdentifier(colName), olap.Dialect().EscapeTable(q.metricsViewSpec.Database, q.metricsViewSpec.DatabaseSchema, q.metricsViewSpec.Table))
+	result, err := olap.Execute(ctx, &drivers.Statement{Query: sql, Priority: q.priority})
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer result.Close()
+
+	var t time.Time
+	for result.Next() {
+		if err := result.Scan(&t); err != nil {
+			return time.Time{}, fmt.Errorf("error scanning min time: %w", err)
+		}
+	}
+	return t, nil
 }
 
 func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.RillTime, int, string, error) {

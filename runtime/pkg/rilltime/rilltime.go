@@ -22,7 +22,7 @@ var (
 		// this needs to be after Now and Latest to match to them
 		{"Grain", `[smhdDWQMY]`},
 		// this has to be at the end
-		{"String", `[a-zA-Z]\w*`},
+		{"TimeZone", `{.+?}`},
 		{"Number", `[-+]?\d+`},
 		// needed for random chars used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
@@ -96,7 +96,7 @@ type GrainModifier struct {
 
 type AtModifiers struct {
 	Offset   *TimeModifier `parser:"@@?"`
-	TimeZone *string       `parser:"('{' @String '}')?"`
+	TimeZone *string       `parser:"@TimeZone?"`
 }
 
 type ResolverContext struct {
@@ -138,7 +138,7 @@ func Parse(from string) (*RillTime, error) {
 		if rt.Modifiers.At != nil {
 			if rt.Modifiers.At.TimeZone != nil {
 				var err error
-				rt.timeZone, err = time.LoadLocation(*rt.Modifiers.At.TimeZone)
+				rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.Modifiers.At.TimeZone, "{}"))
 				if err != nil {
 					return nil, fmt.Errorf("invalid time zone %q: %w", *rt.Modifiers.At.TimeZone, err)
 				}
@@ -229,12 +229,17 @@ func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, e
 		resolverCtx.MaxTime = r.ModifyTime(resolverCtx, resolverCtx.MaxTime, r.Modifiers.At.Offset)
 	}
 
-	start := resolverCtx.MaxTime
+	start := resolverCtx.Now
+	if r.End != nil && r.End.Latest {
+		// if end has latest mentioned then start also should be relative to latest.
+		start = resolverCtx.MaxTime
+	}
+
 	if r.Start != nil {
 		start = r.ModifyTime(resolverCtx, start, r.Start)
 	}
 
-	end := resolverCtx.MaxTime
+	end := resolverCtx.Now
 	if r.End != nil {
 		end = r.ModifyTime(resolverCtx, end, r.End)
 	}
@@ -244,7 +249,7 @@ func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, e
 
 func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *TimeModifier) time.Time {
 	isTruncate := true
-	grain := r.grain
+	truncateGrain := r.grain
 
 	if tm.Now {
 		t = resolverCtx.Now.In(r.timeZone)
@@ -288,12 +293,17 @@ func (r *RillTime) ModifyTime(resolverCtx ResolverContext, t time.Time, tm *Time
 			t = t.AddDate(n, 0, 0)
 		}
 
-		grain = grainMap[g]
+		truncateGrain = grainMap[g]
+		isTruncate = true
+	}
+
+	if tm.Trunc != nil {
+		truncateGrain = grainMap[*tm.Trunc]
 		isTruncate = true
 	}
 
 	if isTruncate {
-		return timeutil.TruncateTime(t, grain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+		return timeutil.TruncateTime(t, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 	}
-	return timeutil.CeilTime(t, grain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+	return timeutil.CeilTime(t, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 }

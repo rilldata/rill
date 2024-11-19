@@ -9,18 +9,32 @@ import (
 
 func Test_Resolve(t *testing.T) {
 	now := parseTestTime(t, "2024-08-09T10:32:36Z")
+	maxTime := parseTestTime(t, "2024-08-06T06:32:36Z")
 	testCases := []struct {
 		timeRange string
 		start     string
 		end       string
 	}{
+		// Earliest = 2023-08-09T10:32:36Z, Latest = 2024-08-06T06:32:36Z, = Now = 2024-08-09T10:32:36Z
 		{`m : |s|`, "2024-08-09T10:32:00Z", "2024-08-09T10:32:36Z"},
 		{`-5m : |m|`, "2024-08-09T10:27:00Z", "2024-08-09T10:32:00Z"},
 		{`-5m, 0m : |m|`, "2024-08-09T10:27:00Z", "2024-08-09T10:32:00Z"},
 		{`h : m`, "2024-08-09T10:00:00Z", "2024-08-09T10:33:00Z"},
 		{`-7d, 0d : |h|`, "2024-08-02T00:00:00Z", "2024-08-09T00:00:00Z"},
+		{`-7d, now/d : |h|`, "2024-08-02T00:00:00Z", "2024-08-09T00:00:00Z"},
 		{`-6d, now : |h|`, "2024-08-03T00:00:00Z", "2024-08-09T10:00:00Z"},
 		{`-6d, now : h`, "2024-08-03T00:00:00Z", "2024-08-09T11:00:00Z"},
+
+		{`-7d, -5d : h`, "2024-08-02T00:00:00Z", "2024-08-04T00:00:00Z"},
+		{`-2d, now/d : h @-5d`, "2024-08-02T00:00:00Z", "2024-08-04T00:00:00Z"},
+
+		{`-7d, now/d : h @ {Asia/Kathmandu}`, "2024-08-01T18:15:00Z", "2024-08-08T18:15:00Z"},
+		{`-7d, now/d : |h| @ {Asia/Kathmandu}`, "2024-08-01T18:15:00Z", "2024-08-08T18:15:00Z"},
+		{`-7d, now/d : |h| @ -5d {Asia/Kathmandu}`, "2024-07-27T18:15:00Z", "2024-08-03T18:15:00Z"},
+
+		{`-7d, latest/d : |h|`, "2024-07-30T00:00:00Z", "2024-08-06T00:00:00Z"},
+		{`-6d, latest : |h|`, "2024-07-31T00:00:00Z", "2024-08-06T06:00:00Z"},
+		{`-6d, latest : h`, "2024-07-31T00:00:00Z", "2024-08-06T07:00:00Z"},
 	}
 
 	for _, tc := range testCases {
@@ -31,7 +45,7 @@ func Test_Resolve(t *testing.T) {
 			start, end, err := rt.Resolve(ResolverContext{
 				Now:        now,
 				MinTime:    now.AddDate(-1, 0, 0),
-				MaxTime:    now,
+				MaxTime:    maxTime,
 				FirstDay:   1,
 				FirstMonth: 1,
 			})

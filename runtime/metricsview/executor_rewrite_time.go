@@ -56,10 +56,15 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
+	minTime, err := e.getMinTime(ctx)
+	if err != nil {
+		return err
+	}
+
 	tr.Start, tr.End, err = rt.Resolve(rilltime.ResolverContext{
 		Now:        time.Now(),
-		MinTime:    t,
-		MaxTime:    time.Time{}, // TODO
+		MinTime:    minTime,
+		MaxTime:    t,
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
@@ -202,5 +207,34 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 	}
 
 	e.watermark = t
+	return t, nil
+}
+
+func (e *Executor) getMinTime(ctx context.Context) (time.Time, error) {
+	if e.metricsView.TimeDimension == "" {
+		// we cannot get min time without a time dimension specified. return a 0 time
+		return time.Time{}, nil
+	}
+
+	dialect := e.olap.Dialect()
+	sql := fmt.Sprintf("SELECT %s FROM %s", fmt.Sprintf("MIN(%s)", dialect.EscapeIdentifier(e.metricsView.TimeDimension)), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer res.Close()
+
+	var t time.Time
+	if res.Next() {
+		if err := res.Scan(&t); err != nil {
+			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
+		}
+	}
+
 	return t, nil
 }
