@@ -35,7 +35,7 @@
     getFiltersForOtherDimensions,
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import { getComparisonRequestMeasures } from "../dashboard-utils";
+  import { getComparisonRequestMeasures, getURIRequestMeasure } from "../dashboard-utils";
   import { getSort } from "./leaderboard-utils";
 
   const slice = 7;
@@ -122,7 +122,8 @@
       ...(comparisonTimeRange
         ? getComparisonRequestMeasures(activeMeasureName)
         : []),
-    );
+    )
+    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
 
   $: sort = getSort(
     sortedAscending,
@@ -246,12 +247,12 @@
 </script>
 
 <div
-  class="flex flex-col"
   aria-label="{dimensionName} leaderboard"
-  role="table"
   bind:this={container}
+  class="flex flex-col"
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
+  role="table"
 >
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
@@ -265,18 +266,18 @@
     </colgroup>
 
     <LeaderboardHeader
-      {hovered}
-      displayName={displayName ?? dimensionName}
       dimensionDescription={description}
       {dimensionName}
+      displayName={displayName ?? dimensionName}
+      {hovered}
       {isBeingCompared}
       {isFetching}
-      {sortType}
-      {isValidPercentOfTotal}
-      {sortedAscending}
       isTimeComparisonActive={!!comparisonTimeRange}
-      {toggleSort}
+      {isValidPercentOfTotal}
       {setPrimaryDimension}
+      {sortType}
+      {sortedAscending}
+      {toggleSort}
     />
 
     <tbody>
@@ -291,7 +292,6 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            {uri}
             {itemData}
             {isValidPercentOfTotal}
             isTimeComparisonActive={!!comparisonTimeRange}
@@ -311,7 +311,6 @@
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
-          {uri}
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}

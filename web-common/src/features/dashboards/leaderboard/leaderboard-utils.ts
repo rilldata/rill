@@ -17,6 +17,8 @@ export type LeaderboardItemData = {
    */
   dimensionValue: string;
 
+  uri: string | null;
+
   /**
    *  main value to be shown in the leaderboard
    */
@@ -59,6 +61,8 @@ export type LeaderboardItemData = {
   selectedIndex: number;
 };
 
+export const URI_DIMENSION_SUFFIX = "__rill_uri";
+
 const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
@@ -81,6 +85,7 @@ export function cleanUpComparisonValue(
 
   return {
     dimensionValue: v[dimensionName],
+    uri: v[dimensionName + URI_DIMENSION_SUFFIX] || null,
     value,
     pctOfTotal: total !== null && value !== null ? value / total : null,
     prevValue: finiteOrNull(v[measureName + ComparisonDeltaPreviousSuffix]),
