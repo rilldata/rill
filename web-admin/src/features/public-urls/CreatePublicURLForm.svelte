@@ -119,14 +119,12 @@
   );
 
   function onCopy() {
-    const success = copyToClipboard(url, "URL copied to clipboard");
-    if (success) {
-      copied = true;
+    copyToClipboard(url, "URL copied to clipboard");
+    copied = true;
 
-      setTimeout(() => {
-        copied = false;
-      }, 2_000);
-    }
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
   }
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);

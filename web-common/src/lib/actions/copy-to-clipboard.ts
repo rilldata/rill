@@ -26,9 +26,7 @@ export function copyToClipboard(value: string, message?: string) {
     eventBus.emit("notification", {
       message: message || `Copied ${value} to clipboard`,
     });
-    return true;
   } else {
     console.warn("Clipboard API not supported.");
-    return false;
   }
 }
