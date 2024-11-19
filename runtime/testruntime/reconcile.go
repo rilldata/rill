@@ -116,9 +116,13 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 		names = append(names, fmt.Sprintf("%s/%s", r.Meta.Name.Kind, r.Meta.Name.Name))
 	}
 
-	require.Equal(t, lenParseErrs, len(parseErrs), "parse errors: %s", strings.Join(parseErrs, "\n"))
-	require.Equal(t, lenReconcileErrs, len(reconcileErrs), "reconcile errors: %s", strings.Join(reconcileErrs, "\n"))
-	if lenResources != -1 {
+	if lenParseErrs >= 0 {
+		require.Equal(t, lenParseErrs, len(parseErrs), "parse errors: %s", strings.Join(parseErrs, "\n"))
+	}
+	if lenReconcileErrs >= 0 {
+		require.Equal(t, lenReconcileErrs, len(reconcileErrs), "reconcile errors: %s", strings.Join(reconcileErrs, "\n"))
+	}
+	if lenResources >= 0 {
 		require.Equal(t, lenResources, len(rs), "resources: %s", strings.Join(names, "\n"))
 	}
 }

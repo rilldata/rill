@@ -15,5 +15,5 @@ export function formatMemorySize(size: number): string {
     if (Degree > size) break;
     size = size / Degree;
   }
-  return `${positive ? "" : "-"}${size.toFixed(2)}${Suffixes[i]}B`;
+  return `${positive ? "" : "-"}${size.toFixed(1)}${Suffixes[i]}B`;
 }

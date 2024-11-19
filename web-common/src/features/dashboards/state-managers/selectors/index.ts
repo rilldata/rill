@@ -12,7 +12,6 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
 import { activeMeasureSelectors } from "./active-measure";
 import { comparisonSelectors } from "./comparisons";
 import { contextColSelectors } from "./context-column";
-import { leaderboardQuerySelectors } from "./dashboard-queries";
 import { formattingSelectors } from "./data-formatting";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
@@ -130,14 +129,6 @@ export const createStateManagerReadables = (
      */
     comparison: createReadablesFromSelectors(
       comparisonSelectors,
-      dashboardDataReadables,
-    ),
-
-    /**
-     * Readables for query construction
-     */
-    dashboardQueries: createReadablesFromSelectors(
-      leaderboardQuerySelectors,
       dashboardDataReadables,
     ),
 

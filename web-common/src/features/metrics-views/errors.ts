@@ -61,7 +61,7 @@ export function runtimeErrorToLine(
     const line = parseInt(message.split("yaml: line ")[1].split(":")[0]);
     return { line: line, message, level: "error" };
   }
-  return { line: -1, message, level: "error" };
+  return { line: 0, message, level: "error" };
 }
 
 // TODO: double check error

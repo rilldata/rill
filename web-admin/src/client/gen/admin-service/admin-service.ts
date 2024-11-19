@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListPublicBillingPlansResponse,
+  V1GetBillingProjectCredentialsResponse,
   RpcStatus,
+  V1GetBillingProjectCredentialsRequest,
+  V1ListPublicBillingPlansResponse,
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
@@ -209,6 +211,74 @@ import { httpClient } from "../../http-client";
 type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+/**
+ * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
+ */
+export const adminServiceGetBillingProjectCredentials = (
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+) => {
+  return httpClient<V1GetBillingProjectCredentialsResponse>({
+    url: `/v1/billing/metrics-project-credentials`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetBillingProjectCredentialsRequest,
+  });
+};
+
+export const getAdminServiceGetBillingProjectCredentialsQueryKey = (
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+) => [
+  `/v1/billing/metrics-project-credentials`,
+  v1GetBillingProjectCredentialsRequest,
+];
+
+export type AdminServiceGetBillingProjectCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+>;
+export type AdminServiceGetBillingProjectCredentialsQueryError = RpcStatus;
+
+export const createAdminServiceGetBillingProjectCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+  TError = RpcStatus,
+>(
+  v1GetBillingProjectCredentialsRequest: V1GetBillingProjectCredentialsRequest,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetBillingProjectCredentialsQueryKey(
+      v1GetBillingProjectCredentialsRequest,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>
+  > = () =>
+    adminServiceGetBillingProjectCredentials(
+      v1GetBillingProjectCredentialsRequest,
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetBillingProjectCredentials>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 /**
  * @summary ListPublicBillingPlans lists all public billing plans

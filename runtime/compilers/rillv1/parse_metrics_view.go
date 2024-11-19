@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,10 +51,11 @@ type MetricsViewYAML struct {
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
-		FormatPreset        string `yaml:"format_preset"`
-		FormatD3            string `yaml:"format_d3"`
-		Ignore              bool   `yaml:"ignore"` // Deprecated
-		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
+		FormatPreset        string         `yaml:"format_preset"`
+		FormatD3            string         `yaml:"format_d3"`
+		FormatD3Locale      map[string]any `yaml:"format_d3_locale"`
+		Ignore              bool           `yaml:"ignore"` // Deprecated
+		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
 	}
 	Security *SecurityPolicyYAML
 
@@ -571,6 +573,18 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
 		}
 
+		var formatD3Locale *structpb.Struct
+		if measure.FormatD3Locale != nil {
+			if measure.FormatD3 == "" {
+				return fmt.Errorf(`"format_d3_locale" can only be set if "format_d3" is set`)
+			}
+
+			formatD3Locale, err = structpb.NewStruct(measure.FormatD3Locale)
+			if err != nil {
+				return fmt.Errorf(`invalid "format_d3_locale": %w`, err)
+			}
+		}
+
 		var perDimensions []*runtimev1.MetricsViewSpec_DimensionSelector
 		for _, per := range measure.Per {
 			typ, ok := names[strings.ToLower(per.Name)]
@@ -680,6 +694,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			ReferencedMeasures:  referencedMeasures,
 			FormatPreset:        measure.FormatPreset,
 			FormatD3:            measure.FormatD3,
+			FormatD3Locale:      formatD3Locale,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}

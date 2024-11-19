@@ -14,6 +14,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -129,7 +130,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				TrialEndDate: sub.TrialEndDate,
 			})
 			if err != nil {
-				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+				s.logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
@@ -163,12 +164,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		}
 	}
 
+	planChange := false
 	if sub == nil {
 		// create new subscription
 		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+		planChange = true
 		s.logger.Named("billing").Info("new subscription created", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 	} else {
 		// schedule plan change
@@ -178,6 +181,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
+			planChange = true
 			s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
 		}
 	}
@@ -185,6 +189,19 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if planChange {
+		// send plan changed email
+		err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
+			ToEmail:  org.BillingEmail,
+			ToName:   org.Name,
+			OrgName:  org.Name,
+			PlanName: plan.DisplayName,
+		})
+		if err != nil {
+			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
+		}
 	}
 
 	return &adminv1.UpdateBillingSubscriptionResponse{
@@ -237,6 +254,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+
 	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
 		ToEmail: org.BillingEmail,
 		ToName:  org.Name,
@@ -244,10 +263,8 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		EndDate: endDate,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		s.logger.Named("billing").Error("failed to send subscription cancelled email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 	}
-
-	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	return &adminv1.CancelBillingSubscriptionResponse{}, nil
 }
@@ -355,6 +372,17 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
+
+	// send subscription renewed email
+	err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
+		ToEmail:  org.BillingEmail,
+		ToName:   org.Name,
+		OrgName:  org.Name,
+		PlanName: sub.Plan.DisplayName,
+	})
+	if err != nil {
+		s.logger.Named("billing").Error("failed to send subscription renewed email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
 		Organization: organizationToDTO(org),
@@ -610,7 +638,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 			TrialEndDate: newEndDate,
 		})
 		if err != nil {
-			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			s.logger.Named("billing").Error("failed to send trial extended email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	}
 
@@ -664,6 +692,65 @@ func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPu
 
 	return &adminv1.ListPublicBillingPlansResponse{
 		Plans: dtos,
+	}, nil
+}
+
+func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.GetBillingProjectCredentialsRequest) (*adminv1.GetBillingProjectCredentialsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Organization))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to get metrics for this org")
+	}
+
+	if s.admin.MetricsProjectID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "metrics project not configured")
+	}
+
+	metricsProj, err := s.admin.DB.FindProject(ctx, s.admin.MetricsProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if metricsProj.ProdDeploymentID == nil {
+		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+	}
+
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *metricsProj.ProdDeploymentID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Generate JWT
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: prodDepl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         runtimeAccessTokenDefaultTTL,
+		InstancePermissions: map[string][]runtimeauth.Permission{
+			prodDepl.RuntimeInstanceID: {
+				runtimeauth.ReadObjects,
+				runtimeauth.ReadMetrics,
+				runtimeauth.ReadAPI,
+			},
+		},
+		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+	}
+
+	s.admin.Used.Deployment(prodDepl.ID)
+
+	return &adminv1.GetBillingProjectCredentialsResponse{
+		RuntimeHost: prodDepl.RuntimeHost,
+		InstanceId:  prodDepl.RuntimeInstanceID,
+		AccessToken: jwt,
+		TtlSeconds:  uint32(runtimeAccessTokenDefaultTTL.Seconds()),
 	}, nil
 }
 

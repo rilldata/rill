@@ -23,7 +23,7 @@
         ? {
             cta: {
               type: "button",
-              text: message.cta.text + "->",
+              text: message.cta.text + " ->",
               onClick() {
                 return billingCTAHandler.handle(message);
               },

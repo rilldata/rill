@@ -96,6 +96,7 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
 		LoginUrl:         s.app.localURL + "/auth",
+		AdminUrl:         s.app.ch.AdminURL(),
 	}), nil
 }
 
@@ -537,6 +538,41 @@ func (s *Server) GetCurrentProject(ctx context.Context, r *connect.Request[local
 	return connect.NewResponse(&localv1.GetCurrentProjectResponse{
 		LocalProjectName: localProjectName,
 		Project:          project,
+	}), nil
+}
+
+func (s *Server) ListOrganizationsAndBillingMetadata(ctx context.Context, r *connect.Request[localv1.ListOrganizationsAndBillingMetadataRequest]) (*connect.Response[localv1.ListOrganizationsAndBillingMetadataResponse], error) {
+	// Get authenticated admin client
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("must authenticate before performing this action")
+	}
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{PageSize: 1000})
+	if err != nil {
+		return nil, err
+	}
+
+	orgsMetadata := make([]*localv1.ListOrganizationsAndBillingMetadataResponse_OrgMetadata, len(resp.Organizations))
+	for i, org := range resp.Organizations {
+		issues, err := c.ListOrganizationBillingIssues(ctx, &adminv1.ListOrganizationBillingIssuesRequest{
+			Organization: org.Name,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		orgsMetadata[i] = &localv1.ListOrganizationsAndBillingMetadataResponse_OrgMetadata{
+			Name:   org.Name,
+			Issues: issues.Issues,
+		}
+	}
+
+	return connect.NewResponse(&localv1.ListOrganizationsAndBillingMetadataResponse{
+		Orgs: orgsMetadata,
 	}), nil
 }
 

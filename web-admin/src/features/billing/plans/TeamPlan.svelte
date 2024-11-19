@@ -2,6 +2,7 @@
   import {
     createAdminServiceCancelBillingSubscription,
     V1BillingIssueType,
+    type V1BillingPlan,
     type V1Subscription,
   } from "@rilldata/web-admin/client";
   import { getErrorForMutation } from "@rilldata/web-admin/client/utils";
@@ -9,7 +10,6 @@
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {
     AlertDialog,
@@ -26,8 +26,7 @@
 
   export let organization: string;
   export let subscription: V1Subscription;
-
-  $: plan = subscription.plan;
+  export let plan: V1BillingPlan;
 
   $: planCanceller = createAdminServiceCancelBillingSubscription();
   async function handleCancelPlan() {
@@ -52,12 +51,16 @@
   ).toLocaleString(DateTime.DATE_MED);
 </script>
 
-<SettingsContainer title="Team plan">
+<SettingsContainer title={plan?.displayName}>
   <div slot="body">
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
-    <PricingDetails />
-    <PlanQuotas {organization} quotas={plan.quotas} />
+    <a
+      href="https://www.rilldata.com/pricing"
+      target="_blank"
+      rel="noreferrer noopener">See pricing details -></a
+    >
+    <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">
     <span>For any questions,</span>

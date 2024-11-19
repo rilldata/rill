@@ -64,9 +64,9 @@ On first project deployment, org will automatically moved to trial plan having 3
 By default, each user across lifetime is restricted to 2 trials. This is **not** checked for superusers and if needed can be increased for any user using `rill sudo quota set --user <email> --trial-orgs <num>`
 
 ### Avoiding trial and restrictive quotas
-Immediately after org creation or at any time in the future, superusers can use `rill sudo org set-internal-plan` to set the org to internal plan which will have unlimited quotas and no trial.
+Immediately after org creation or at any time in the future, superusers can use `rill sudo org set-internal-plan <org-name>` to set the org to internal plan which will have unlimited quotas and no trial.
 
-If creating org through cli you can just use `rill org create <org-name> && rill sudo org set-internal-plan`.
+If creating org through cli you can just use `rill org create <org-name> && rill sudo org set-internal-plan <org-name>`.
 
 ### Continuing with Trial plan and upgrade
 To continue with trial plan, user can upgrade to Teams plan after entering payment details and address in billing portal. In test-mode, use any of the various test cards listed [here](https://docs.stripe.com/testing#cards)
@@ -104,7 +104,7 @@ If needed, billing issues can be deleted using `rill sudo billing delete-issue -
 
 ## Local dev and testing
 `rill devtool start cloud` starts the admin service with Orb and Stripe integration (except for Orb webhooks, see above for manual setup).
-All billing related background jobs like checking for trial end, hibernatino on subscription cancellation, etc. rely on end or grace end times set in respective billing issues.
+All billing related background jobs like checking for trial end, hibernation on subscription cancellation, etc. rely on end or grace end times set in respective billing issues.
 
 These times can be artificially advanced using `rill devtool subscription advance-time` to test out various billing scenarios.
 

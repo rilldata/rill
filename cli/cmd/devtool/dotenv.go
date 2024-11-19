@@ -95,6 +95,7 @@ func DotenvUploadCmd(ch *cmdutil.Helper) *cobra.Command {
 
 var dotenvURLs = map[string]string{
 	"cloud": "gs://rill-devtool/dotenv/cloud-dev.env",
+	"e2e":   "gs://rill-devtool/dotenv/cloud-e2e.env",
 }
 
 func checkDotenv() error {
@@ -106,6 +107,8 @@ func checkDotenv() error {
 }
 
 func downloadDotenv(ctx context.Context, preset string) error {
+	logInfo.Printf("Downloading .env file from %s\n", dotenvURLs[preset])
+
 	err := exec.CommandContext(ctx, "gcloud", "storage", "cp", dotenvURLs[preset], ".env").Run()
 	if err != nil {
 		return fmt.Errorf("error syncing '.env' file from GCS (you must be a Rill team member and have authenticated `gcloud`): %w", err)

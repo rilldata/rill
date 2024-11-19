@@ -30658,6 +30658,235 @@ var _ interface {
 	ErrorName() string
 } = ListPublicBillingPlansResponseValidationError{}
 
+// Validate checks the field values on GetBillingProjectCredentialsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *GetBillingProjectCredentialsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBillingProjectCredentialsRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// GetBillingProjectCredentialsRequestMultiError, or nil if none found.
+func (m *GetBillingProjectCredentialsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBillingProjectCredentialsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := GetBillingProjectCredentialsRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetBillingProjectCredentialsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBillingProjectCredentialsRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// GetBillingProjectCredentialsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetBillingProjectCredentialsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBillingProjectCredentialsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBillingProjectCredentialsRequestMultiError) AllErrors() []error { return m }
+
+// GetBillingProjectCredentialsRequestValidationError is the validation error
+// returned by GetBillingProjectCredentialsRequest.Validate if the designated
+// constraints aren't met.
+type GetBillingProjectCredentialsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBillingProjectCredentialsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBillingProjectCredentialsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBillingProjectCredentialsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBillingProjectCredentialsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBillingProjectCredentialsRequestValidationError) ErrorName() string {
+	return "GetBillingProjectCredentialsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBillingProjectCredentialsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBillingProjectCredentialsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBillingProjectCredentialsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBillingProjectCredentialsRequestValidationError{}
+
+// Validate checks the field values on GetBillingProjectCredentialsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *GetBillingProjectCredentialsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBillingProjectCredentialsResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// GetBillingProjectCredentialsResponseMultiError, or nil if none found.
+func (m *GetBillingProjectCredentialsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBillingProjectCredentialsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RuntimeHost
+
+	// no validation rules for InstanceId
+
+	// no validation rules for AccessToken
+
+	// no validation rules for TtlSeconds
+
+	if len(errors) > 0 {
+		return GetBillingProjectCredentialsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBillingProjectCredentialsResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// GetBillingProjectCredentialsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetBillingProjectCredentialsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBillingProjectCredentialsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBillingProjectCredentialsResponseMultiError) AllErrors() []error { return m }
+
+// GetBillingProjectCredentialsResponseValidationError is the validation error
+// returned by GetBillingProjectCredentialsResponse.Validate if the designated
+// constraints aren't met.
+type GetBillingProjectCredentialsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBillingProjectCredentialsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBillingProjectCredentialsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBillingProjectCredentialsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBillingProjectCredentialsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBillingProjectCredentialsResponseValidationError) ErrorName() string {
+	return "GetBillingProjectCredentialsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBillingProjectCredentialsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBillingProjectCredentialsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBillingProjectCredentialsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBillingProjectCredentialsResponseValidationError{}
+
 // Validate checks the field values on TelemetryRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.

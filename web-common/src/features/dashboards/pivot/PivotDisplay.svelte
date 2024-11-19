@@ -1,12 +1,13 @@
 <script lang="ts">
+  import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { usePivotDataStore } from "./pivot-data-store";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
 
@@ -39,7 +40,9 @@
     >
       <PivotToolbar {isFetching} bind:showPanels />
 
-      {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+      {#if $pivotDataStore?.error?.length}
+        <PivotError errors={$pivotDataStore.error} />
+      {:else if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty {assembled} {isFetching} />
       {:else}
         <PivotTable {pivotDataStore} />

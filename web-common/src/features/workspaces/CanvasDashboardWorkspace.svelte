@@ -7,8 +7,8 @@
   import ComponentsEditorContainer from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditorContainer.svelte";
   import AddComponentMenu from "@rilldata/web-common/features/canvas/AddComponentMenu.svelte";
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
-  import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import ViewSelector from "@rilldata/web-common/features/canvas/ViewSelector.svelte";
+  import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -28,8 +28,8 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
   import {
-    resourceIconMapping,
     resourceColorMapping,
+    resourceIconMapping,
   } from "../entity-management/resource-icon-mapping";
   import PreviewButton from "../explores/PreviewButton.svelte";
 
@@ -102,7 +102,6 @@
       newTitle,
       filePath,
       fileName,
-      fileArtifacts.getNamesForKind(ResourceKind.Canvas),
     );
     if (newRoute) await goto(newRoute);
   }
