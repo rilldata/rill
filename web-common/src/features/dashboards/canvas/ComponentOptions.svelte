@@ -46,7 +46,7 @@
           selected={selectedChartType === chart.id}
           on:click={() => selectChartType(chart)}
         >
-          <svelte:component this={chart.icon} size="18px" />
+          <svelte:component this={chart.icon} size="24px" />
         </Button>
         <TooltipContent slot="tooltip-content">
           {chart.title}
@@ -73,7 +73,7 @@
           type="secondary"
           on:click={() => selectChartType(component)}
         >
-          <svelte:component this={component.icon} size="18px" />
+          <svelte:component this={component.icon} size="24px" />
         </Button>
         <TooltipContent slot="tooltip-content">
           {component.title}
