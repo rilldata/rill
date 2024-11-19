@@ -63,4 +63,4 @@ services:
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
-      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml:ro
+      - ../../../../dev-cloud-state/stripe-config.toml:/etc/stripe-config.toml
