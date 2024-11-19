@@ -16,7 +16,6 @@
   import {
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
-    runtimeServiceListResources,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
