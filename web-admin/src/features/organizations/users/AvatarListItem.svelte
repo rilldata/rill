@@ -10,7 +10,7 @@
   export let pendingAcceptance: boolean = false;
   export let shape: "circle" | "square" = "circle";
   export let count: number = 0;
-  export let isEveryFromText: boolean = false;
+  export let isEveryoneFromText: boolean = false;
 
   function getInitials(name: string) {
     return name.charAt(0).toUpperCase();
@@ -37,7 +37,7 @@
   {/if}
   <div class="flex flex-col text-left">
     <span class="text-sm font-medium text-gray-900">
-      {#if isEveryFromText}
+      {#if isEveryoneFromText}
         {@html `Everyone from <span class="font-bold">${name}</span>`}
       {:else}
         {name}
@@ -51,10 +51,12 @@
         {pendingAcceptance ? "Pending invitation" : email}
       </span>
     {/if}
-    {#if count && count > 0}
-      <span class="text-xs text-gray-500">
-        {count} user{count > 1 ? "s" : ""}
-      </span>
-    {/if}
+    <div class="flex flex-row items-center gap-x-1">
+      {#if count && count > 0}
+        <span class="text-xs text-gray-500">
+          {count} user{count > 1 ? "s" : ""}
+        </span>
+      {/if}
+    </div>
   </div>
 </div>
