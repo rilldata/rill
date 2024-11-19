@@ -83,7 +83,7 @@
   use:builderActions={{ builders }}
   on:click={handleClick}
   style={forcedStyle}
-  data-sveltekit-preload-data={preload}
+  {...href ? { "data-sveltekit-preload-data": preload } : {}}
 >
   {#if loading}
     <svg
