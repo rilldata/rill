@@ -198,7 +198,7 @@
   {/if}
 
   {#if description}
-    <div>{description}</div>
+    <div class="description">{description}</div>
   {/if}
 </div>
 
@@ -266,5 +266,9 @@
 
   .toggle:active {
     @apply bg-primary-100;
+  }
+
+  .description {
+    @apply text-xs text-gray-500;
   }
 </style>

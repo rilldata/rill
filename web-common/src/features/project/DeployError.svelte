@@ -18,10 +18,12 @@
   export let adminUrl: string;
   export let isEmptyOrg: boolean;
   export let onRetry: () => void;
+  export let onBack: () => void;
 
   $: isQuotaError =
     error.type === DeployErrorType.ProjectLimitHit ||
     error.type === DeployErrorType.OrgLimitHit ||
+    error.type === DeployErrorType.TrialEnded ||
     error.type === DeployErrorType.SubscriptionEnded;
 
   $: upgradeHref = buildPlanUpgradeUrl(org, adminUrl, isEmptyOrg, $page.url);
@@ -32,8 +34,8 @@
   <p class="text-base text-gray-500 text-left w-[500px]">
     <PricingDetails extraText={error.message} />
   </p>
-  <Button type="primary" href={upgradeHref} wide on:click>Upgrade</Button>
-  <Button type="secondary" noStroke wide href="/">Back</Button>
+  <Button type="primary" href={upgradeHref} wide>Upgrade</Button>
+  <Button type="secondary" noStroke wide on:click={onBack}>Back</Button>
 {:else}
   <CancelCircleInverse size="7rem" className="text-gray-200" />
   <CTAHeader variant="bold">{error.title}</CTAHeader>
