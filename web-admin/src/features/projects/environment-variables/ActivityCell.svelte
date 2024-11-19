@@ -5,17 +5,22 @@
   export let updatedOn: string;
 
   function formatText() {
-    if (updatedOn) {
-      return `Updated ${timeAgo(new Date(updatedOn))}`;
-    }
-    return `Added ${timeAgo(new Date(createdOn))}`;
+    const updatedDate = new Date(updatedOn);
+
+    // FIXME: `updateProjectVariables` does not update the `updatedOn` timestamp correctly
+    // if (createdDate.getTime() === updatedDate.getTime()) {
+    //   return `Added ${timeAgo(createdDate)}`;
+    // }
+
+    return `Updated ${timeAgo(updatedDate)}`;
   }
-  $: activityText = formatText();
+
+  $: formattedText = formatText();
 </script>
 
 <span
   class="text-xs text-gray-500"
   title={new Date(updatedOn || createdOn).toLocaleString()}
 >
-  {activityText}
+  {formattedText}
 </span>

@@ -217,9 +217,6 @@
   function getKeyFromError(error: { path: string; messages: string[] }) {
     return error.path.split("[")[1].split("]")[0];
   }
-
-  // $: console.log("allErrors: ", $allErrors);
-  $: console.log("errors: ", $errors);
 </script>
 
 <Dialog
