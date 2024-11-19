@@ -210,7 +210,7 @@
 
   async function updateProperties(
     newRecord: Record<string, unknown>,
-    removeProperties?: string[],
+    removeProperties?: Array<string | string[]>,
   ) {
     Object.entries(newRecord).forEach(([property, value]) => {
       if (!value) {
@@ -220,11 +220,13 @@
       }
     });
 
-    parsedDocument.setIn;
-
     if (removeProperties) {
       removeProperties.forEach((prop) => {
-        parsedDocument.delete(prop);
+        if (Array.isArray(prop)) {
+          parsedDocument.deleteIn(prop);
+        } else {
+          parsedDocument.delete(prop);
+        }
       });
     }
 
@@ -340,7 +342,7 @@
       hint="View documentation"
       link="https://docs.rilldata.com/reference/project-files/metrics-view"
       lockable
-      lockTooltip="Unlink metrics view"
+      lockTooltip="Unlock to change metrics view"
       label="Metrics view referenced"
       capitalizeLabel={false}
       bind:value={metricsView}
@@ -432,7 +434,11 @@
       selectedItems={timeRanges}
       onSelectCustomItem={onSelectTimeRangeItem}
       setItems={async (time_ranges) => {
-        await updateProperties({ time_ranges });
+        if (time_ranges.length === 0) {
+          await updateProperties({ time_ranges }, [["defaults", "time_range"]]);
+        } else {
+          await updateProperties({ time_ranges });
+        }
       }}
       let:item
     >
@@ -464,7 +470,7 @@
     <svelte:fragment slot="footer">
       {#if viewingDashboard}
         <footer
-          class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
+          class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
         >
           <p>
             For more options,
@@ -474,8 +480,9 @@
           </p>
 
           <Button
-            forcedStyle="!mt-auto group"
+            class="group"
             type="subtle"
+            gray={viewingDefaults}
             large
             on:click={async () => {
               if (viewingDefaults) {
@@ -486,12 +493,21 @@
             }}
           >
             {#if viewingDefaults}
-              Remove default state
+              <span class="flex gap-x-1">
+                <p class="group-hover:block hidden">Remove</p>
+                <p class="group-hover:hidden">Viewing</p>
+                <p>default state</p>
+              </span>
             {:else}
               Save dashboard state as default
             {/if}
+
             <Tooltip distance={8} location="top">
-              <InfoIcon size="14px" strokeWidth={2} />
+              <InfoIcon
+                size="14px"
+                strokeWidth={2}
+                class={viewingDefaults ? "group-hover:block hidden" : ""}
+              />
               <TooltipContent slot="tooltip-content">
                 {#if viewingDefaults}
                   Remove default settings for time range, comparison modes and

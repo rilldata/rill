@@ -16,6 +16,7 @@
   import {
     createRuntimeServiceCreateDirectory,
     createRuntimeServicePutFile,
+    runtimeServiceListResources,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
@@ -33,7 +34,7 @@
     resourceColorMapping,
     resourceIconMapping,
   } from "./resource-icon-mapping";
-  import { ResourceKind } from "./resource-selectors";
+  import { ResourceKind, useFilteredResources } from "./resource-selectors";
   import CreateExploreDialog from "./CreateExploreDialog.svelte";
 
   let active = false;
@@ -60,6 +61,13 @@
 
   $: isModelingSupportedForDefaultOlapDriver =
     useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+
+  $: metricsViewQuery = useFilteredResources(
+    instanceId,
+    ResourceKind.MetricsView,
+  );
+
+  $: metricsViews = $metricsViewQuery?.data ?? [];
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -198,21 +206,31 @@
       />
       Metrics view
     </DropdownMenu.Item>
-    <DropdownMenu.Separator />
-    <DropdownMenu.Item
-      aria-label="Add Explore Dashboard"
-      class="flex gap-x-2"
-      on:click={() => {
-        showExploreDialog = true;
-      }}
-    >
-      <svelte:component
-        this={resourceIconMapping[ResourceKind.Explore]}
-        color={resourceColorMapping[ResourceKind.Explore]}
-        size="16px"
-      />
-      Explore dashboard
-    </DropdownMenu.Item>
+    {#if metricsViews.length}
+      <DropdownMenu.Separator />
+      <DropdownMenu.Item
+        aria-label="Add Explore Dashboard"
+        class="flex gap-x-2"
+        on:click={async () => {
+          if (metricsViews.length === 1) {
+            const newFilePath = await createResourceFile(
+              ResourceKind.Explore,
+              metricsViews.pop(),
+            );
+            await wrapNavigation(newFilePath);
+          } else {
+            showExploreDialog = true;
+          }
+        }}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Explore]}
+          color={resourceColorMapping[ResourceKind.Explore]}
+          size="16px"
+        />
+        Explore dashboard
+      </DropdownMenu.Item>
+    {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
@@ -295,4 +313,8 @@
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 
-<CreateExploreDialog {wrapNavigation} bind:open={showExploreDialog} />
+<CreateExploreDialog
+  {wrapNavigation}
+  bind:open={showExploreDialog}
+  {metricsViews}
+/>

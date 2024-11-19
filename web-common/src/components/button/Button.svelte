@@ -394,7 +394,7 @@
     @apply bg-white px-0;
   }
 
-  .gray {
-    @apply text-slate-600 border-slate-300;
+  .gray:not(:hover) {
+    @apply text-slate-600 border-slate-300 bg-slate-50;
   }
 </style>

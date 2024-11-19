@@ -1,27 +1,18 @@
 <script lang="ts">
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { ResourceKind } from "./resource-selectors";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { createResourceFile } from "../file-explorer/new-files";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let open = false;
+  export let metricsViews: V1Resource[];
   export let wrapNavigation: (path: string | undefined) => Promise<void>;
 
   let selectedMetricsView: V1Resource | undefined = undefined;
 
-  $: ({ instanceId } = $runtime);
-
-  $: metricsViewQuery = useFilteredResources(
-    instanceId,
-    ResourceKind.MetricsView,
-  );
-
-  $: metricsViews = $metricsViewQuery?.data ?? [];
-
-  $: metricsViewOptions = ($metricsViewQuery?.data ?? []).map((resource) => ({
+  $: metricsViewOptions = metricsViews.map((resource) => ({
     value: resource.meta?.name?.name ?? "",
     label: resource.meta?.name?.name ?? "",
   }));
