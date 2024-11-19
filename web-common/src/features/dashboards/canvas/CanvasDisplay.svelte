@@ -1,24 +1,21 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
   import CanvasComponentSidebar from "@rilldata/web-common/features/dashboards/canvas/CanvasComponentSidebar.svelte";
+  import CanvasEmpty from "@rilldata/web-common/features/dashboards/canvas/CanvasEmpty.svelte";
   import { generateVLBarChartSpec } from "@rilldata/web-common/features/dashboards/canvas/chart/bar/bar";
   import { getChartData } from "@rilldata/web-common/features/dashboards/canvas/chart/chartQuery";
   import { chartConfig } from "@rilldata/web-common/features/dashboards/canvas/chart/configStore";
-  import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import type { View } from "svelte-vega";
 
   const stateManagers = getStateManagers();
 
-  let showPanels = true;
-  let viewVL;
+  let viewVL: View;
 
   $: data = getChartData(stateManagers, $chartConfig);
 </script>
 
 <div class="layout">
-  {#if showPanels}
-    <CanvasComponentSidebar />
-  {/if}
   <div class="flex flex-col size-full overflow-hidden">
     <div class="content" role="presentation">
       {#if $chartConfig.data?.x}
@@ -29,10 +26,15 @@
           spec={generateVLBarChartSpec($chartConfig)}
         />
       {:else}
-        <PivotEmpty assembled isFetching={false} />
+        <div
+          class="size-full border overflow-hidden rounded-[2px] bg-background flex flex-col items-center justify-center"
+        >
+          <CanvasEmpty />
+        </div>
       {/if}
     </div>
   </div>
+  <CanvasComponentSidebar />
 </div>
 
 <style lang="postcss">

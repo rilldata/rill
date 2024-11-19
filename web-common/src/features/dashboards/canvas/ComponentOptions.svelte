@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
   import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
@@ -17,7 +18,7 @@
     { id: "line", title: "Line", icon: LineChart },
   ];
 
-  const genericComponents = [
+  const coreComponents = [
     { id: "kpi", title: "KPI", icon: ArrowUp01 },
     { id: "table", title: "Table", icon: Table },
     { id: "text", title: "Text", icon: Text },
@@ -31,7 +32,11 @@
 </script>
 
 <div class="section">
-  <h3>Charts</h3>
+  <InputLabel
+    label="Charts"
+    id="chart-components"
+    hint="Chose a chart component to add to your canvas"
+  />
   <div class="chart-icons">
     {#each chartTypes as chart}
       <Tooltip distance={8} location="right">
@@ -55,9 +60,13 @@
 </div>
 
 <div class="section">
-  <h3>Other Components</h3>
-  <div class="generic-icons">
-    {#each genericComponents as component}
+  <InputLabel
+    label="Core components"
+    id="core-components"
+    hint="Chose a core component to add to your canvas"
+  />
+  <div class="core-icons">
+    {#each coreComponents as component}
       <Tooltip distance={8} location="right">
         <Button
           square
@@ -76,16 +85,12 @@
 
 <style lang="postcss">
   .section {
-    @apply p-4;
+    @apply flex flex-col gap-y-2 p-4;
     @apply border-b border-slate-200;
   }
 
-  .section h3 {
-    @apply pb-2 font-semibold;
-  }
-
   .chart-icons,
-  .generic-icons {
+  .core-icons {
     @apply flex gap-x-2;
   }
 </style>

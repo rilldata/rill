@@ -7,6 +7,7 @@ export function generateVLBarChartSpec(
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     mark: "bar",
+    width: "container",
     data: { name: "metrics-view" },
     encoding: {
       ...(config.data.x && {

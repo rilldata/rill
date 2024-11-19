@@ -1,6 +1,6 @@
 <script lang="ts">
+  import FieldSelectorDropdown from "@rilldata/web-common/features/dashboards/canvas/FieldSelectorDropdown.svelte";
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
-  import AddMeasureDimensionButton from "../AddMeasureDimensionButton.svelte";
   import { chartConfig, updateAxis } from "./configStore";
 
   export let chartType = "bar";
@@ -38,30 +38,28 @@
 
 {#if currentTabIndex === 0}
   <div class="chart-options">
-    <div class="channel-name">X Axis:</div>
-    {#if $chartConfig.data?.x?.field}
-      {$chartConfig.data.x.field}
-    {:else}
-      Select a field
-    {/if}
-    <AddMeasureDimensionButton on:addField={(e) => updateAxis("x", e.detail)} />
+    <FieldSelectorDropdown
+      label="X axis"
+      id="x-axis"
+      type="dimension"
+      selectedItem={$chartConfig.data?.x?.field}
+      onSelect={(field) => updateAxis("x", field)}
+    />
 
-    <div class="channel-name">Y Axis:</div>
-    {#if $chartConfig.data?.y?.field}
-      {$chartConfig.data.y.field}
-    {:else}
-      Select a field
-    {/if}
-    <AddMeasureDimensionButton on:addField={(e) => updateAxis("y", e.detail)} />
+    <FieldSelectorDropdown
+      label="Y axis"
+      id="y-axis"
+      type="measure"
+      selectedItem={$chartConfig.data?.y?.field}
+      onSelect={(field) => updateAxis("y", field)}
+    />
 
-    <div class="channel-name">Color:</div>
-    {#if $chartConfig.data?.color?.field}
-      {$chartConfig.data.color.field}
-    {:else}
-      Select a field
-    {/if}
-    <AddMeasureDimensionButton
-      on:addField={(e) => updateAxis("color", e.detail)}
+    <FieldSelectorDropdown
+      label="Color"
+      id="color-axis"
+      type="dimension"
+      selectedItem={$chartConfig.data?.color?.field}
+      onSelect={(field) => updateAxis("color", field)}
     />
   </div>
 {:else if currentTabIndex === 1}
@@ -76,7 +74,7 @@
 
 <style lang="postcss">
   .chart-options {
-    @apply px-4 py-2;
+    @apply flex flex-col px-4 py-2 gap-y-4;
   }
   .tabs {
     @apply flex justify-center gap-x-4 h-8;
