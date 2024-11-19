@@ -21,8 +21,6 @@ export function formatUsageVsQuota(
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
-// mapping of externalID (mapped to name in API response) present in plan to internal type.
-// make sure to update admin/billing/orb.go to keep backend consistent
 export function isTrialPlan(plan: V1BillingPlan) {
   return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TRIAL;
 }
