@@ -108,10 +108,10 @@ type DB interface {
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
-	// IncrementStaticRuntimeSlotsUsed increments or decrements the slots registered for a runtime host.
+	// UpsertStaticRuntimeSlotsAssignment tracks the host and slots registered for a provisioner resource.
 	// It is used by the "static" runtime provisioner to track slot usage on each host.
-	IncrementStaticRuntimeSlotsUsed(ctx context.Context, host string, slots int) error
-	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by IncrementStaticRuntimeSlotsUsed.
+	UpsertStaticRuntimeSlotsAssignment(ctx context.Context, id string, host string, slots int) error
+	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by UpsertStaticRuntimeSlotsAssignment.
 	ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*StaticRuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)

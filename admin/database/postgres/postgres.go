@@ -581,8 +581,18 @@ func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID 
 	return res, nil
 }
 
-func (c *connection) IncrementStaticRuntimeSlotsUsed(ctx context.Context, host string, slots int) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_slots (host, slots) VALUES ($1, $2) ON CONFLICT (host) DO UPDATE SET slots = static_runtime_slots.slots + EXCLUDED.slots", host, slots)
+func (c *connection) UpsertStaticRuntimeSlotsAssignment(ctx context.Context, id, host string, slots int) error {
+	// If slots is 0, delete the assignment if it exists (may not exist due to idempotence, so not checking the affected row count).
+	if slots == 0 {
+		_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
+		if err != nil {
+			return parseErr("slots used", err)
+		}
+		return nil
+	}
+
+	// Upsert the assignment.
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_assignments (resource_id, host, slots) VALUES ($1, $2, $3) ON CONFLICT (resource_id) DO UPDATE SET slots = EXCLUDED.slots", id, host, slots)
 	if err != nil {
 		return parseErr("slots used", err)
 	}
@@ -591,7 +601,7 @@ func (c *connection) IncrementStaticRuntimeSlotsUsed(ctx context.Context, host s
 
 func (c *connection) ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*database.StaticRuntimeSlotsUsed, error) {
 	var res []*database.StaticRuntimeSlotsUsed
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT s.host, s.slots FROM static_runtime_slots s")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT host, SUM(slots) as slots FROM static_runtime_assignments GROUP BY host ORDER BY host")
 	if err != nil {
 		return nil, parseErr("slots used", err)
 	}

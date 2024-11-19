@@ -3,6 +3,7 @@ package static
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync/atomic"
@@ -73,12 +74,25 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		return nil, err
 	}
 
+	// Parse state (if it's an update)
+	state, err := newRuntimeState(r.State)
+	if err != nil {
+		return nil, err
+	}
+
+	// Exit early if the resource has already been provisioned.
+	if state.Slots != 0 {
+		if args.Slots == state.Slots {
+			return r, nil
+		}
+		return nil, errors.New("static provisioner cannot update the slots assignment")
+	}
+
 	// Get slots currently used
 	stats, err := p.db.ResolveStaticRuntimeSlotsUsed(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	hostToSlotsUsed := make(map[string]int, len(stats))
 	for _, stat := range stats {
 		hostToSlotsUsed[stat.Host] = stat.Slots
@@ -99,8 +113,8 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 	idx := int((p.nextIdx.Add(1) - 1)) % len(targets)
 	target := targets[idx]
 
-	// Increment slots used
-	err = p.db.IncrementStaticRuntimeSlotsUsed(ctx, target.Host, args.Slots)
+	// Track slots used
+	err = p.db.UpsertStaticRuntimeSlotsAssignment(ctx, r.ID, target.Host, args.Slots)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +127,9 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		MemoryGB:     4 * args.Slots,
 		StorageBytes: int64(args.Slots) * 40 * int64(datasize.GB),
 	}
-	state := &runtimeState{
-		Slots: args.Slots,
+	state = &runtimeState{
+		Slots:   args.Slots,
+		Version: opts.RillVersion,
 	}
 	return &provisioner.Resource{
 		ID:     r.ID,
@@ -130,18 +145,14 @@ func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Reso
 		return fmt.Errorf("unexpected resource type %q", r.Type)
 	}
 
-	// Parse config and state
+	// Parse config
 	cfg, err := provisioner.NewRuntimeConfig(r.Config)
-	if err != nil {
-		return err
-	}
-	state, err := newRuntimeState(r.State)
 	if err != nil {
 		return err
 	}
 
 	// Decrement slots used
-	return p.db.IncrementStaticRuntimeSlotsUsed(ctx, cfg.Host, -state.Slots)
+	return p.db.UpsertStaticRuntimeSlotsAssignment(ctx, r.ID, cfg.Host, 0)
 }
 
 func (p *StaticProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {

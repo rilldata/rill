@@ -43,13 +43,18 @@ INSERT INTO provisioner_resources (
     updated_on
 FROM deployments;
 
-CREATE TABLE static_runtime_slots (
-    host TEXT PRIMARY KEY,
+CREATE TABLE static_runtime_assignments (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    -- This could be a foreign key to provisioner_resources.id, but we don't enforce it to avoid tight coupling with the provisioner's internal data model.
+    resource_id UUID NOT NULL,
+    host TEXT NOT NULL,
     slots INTEGER NOT NULL DEFAULT 0
 );
 
-INSERT INTO static_runtime_slots (host, slots)
-SELECT d.runtime_host, SUM(d.slots) FROM deployments d WHERE d.provisioner = 'static' GROUP BY d.runtime_host;
+CREATE UNIQUE INDEX static_runtime_assignments_resource_id_idx ON static_runtime_assignments (resource_id);
+
+INSERT INTO static_runtime_assignments (resource_id, host, slots)
+SELECT uuid(d.provision_id), d.runtime_host, d.slots FROM deployments d WHERE d.provisioner = 'static';
 
 ALTER TABLE deployments
 DROP COLUMN slots,
