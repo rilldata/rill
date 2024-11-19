@@ -1,9 +1,6 @@
 import { expect } from "@playwright/test";
 import { createExploreFromModel } from "web-local/tests/utils/exploreHelpers";
-import {
-  clickMenuButton,
-  openFileNavEntryContextMenu,
-} from "../utils/commonHelpers";
+import { openFileNavEntryContextMenu } from "../utils/commonHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
 
