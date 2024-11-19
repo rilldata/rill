@@ -87,7 +87,6 @@
   <svelte:fragment slot="body">
     {#if $selectedView === "code"}
       <ExploreEditor
-        forceLocalUpdates
         bind:autoSave={$autoSave}
         {exploreName}
         {fileArtifact}
