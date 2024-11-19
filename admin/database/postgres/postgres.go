@@ -1783,7 +1783,7 @@ func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) 
 // FindBookmarks returns a list of bookmarks for a user per project
 func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and (user_id = $4 or shared = true or "default" = true)`,
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and (user_id = $4 or shared = true or "default" = true)`,
 		projectID, resourceKind, resourceName, userID)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
@@ -1803,7 +1803,7 @@ func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*data
 
 func (c *connection) FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and "default" = true`,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and "default" = true`,
 		projectID, resourceKind, resourceName).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
