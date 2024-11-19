@@ -16,7 +16,6 @@ test.describe("visual explore editing", () => {
       page,
       "/metrics/AdBids_model_metrics.yaml",
     );
-    await clickMenuButton(page, "Generate dashboard");
 
     await page.getByRole("button", { name: "Edit" }).click();
     await page.getByRole("menuitem", { name: "Explore" }).click();
