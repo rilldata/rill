@@ -1,7 +1,5 @@
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
-const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
 /**
  * The Clipboard API is only available in secure contexts.
  * So, a self-hosted Rill Developer instance served over HTTP (not HTTPS) will not have access to the Clipboard API.
