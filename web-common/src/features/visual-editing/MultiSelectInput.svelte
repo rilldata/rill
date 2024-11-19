@@ -1,26 +1,19 @@
 <script lang="ts">
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import {
-    PERIOD_TO_DATE_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PREVIOUS_COMPLETE_DATE_RANGES,
-    DEFAULT_TIME_RANGES,
-  } from "@rilldata/web-common/lib/time/config";
   import SelectionDropdown from "./SelectionDropdown.svelte";
 
-  const ranges = [
-    ...Object.keys(LATEST_WINDOW_TIME_RANGES),
-    ...Object.keys(PERIOD_TO_DATE_RANGES),
-    ...Object.keys(PREVIOUS_COMPLETE_DATE_RANGES),
-  ];
-
-  const defaultSet = new Set(ranges);
-
+  export let defaultItems: string[];
+  export let searchableItems: string[] | undefined = undefined;
   export let selectedItems: Set<string>;
   export let keyNotSet: boolean;
+  export let label: string;
+  export let id: string;
+  export let hint: string;
   export let onSelectCustomItem: (item: string) => void;
-  export let setTimeRanges: (timeRanges: string[]) => void;
+  export let setItems: (timeRanges: string[]) => void;
+
+  const defaultSet = new Set(defaultItems);
 
   let hasDefaultsSelected =
     keyNotSet ||
@@ -37,28 +30,25 @@
 </script>
 
 <div class="flex flex-col gap-y-1">
-  <InputLabel
-    capitalize={false}
-    label="Time ranges"
-    id="visual-explore-range"
-    hint="Time range shortcuts available via the dashboard filter bar"
-  />
+  <InputLabel capitalize={false} {label} {id} {hint} />
   <FieldSwitcher
     fields={["default", "custom"]}
     {selected}
     onClick={(_, field) => {
       if (field === "custom") {
         selected = 1;
-        setTimeRanges(Array.from(selectedProxy));
+        setItems(selectedProxy.size ? Array.from(selectedProxy) : defaultItems);
       } else if (field === "default") {
         selected = 0;
-        setTimeRanges(ranges);
+        setItems(defaultItems);
       }
     }}
   />
 
   {#if selected === 1}
     <SelectionDropdown
+      {searchableItems}
+      {id}
       allItems={defaultSet}
       {selectedItems}
       onSelect={(item) => {
@@ -71,17 +61,14 @@
 
         onSelectCustomItem(item);
       }}
-      setItems={(ranges) => {
-        selectedProxy = new Set(ranges);
-        setTimeRanges(ranges);
+      setItems={(items) => {
+        selectedProxy = new Set(items);
+        setItems(items);
       }}
       let:item
-      type="time ranges"
+      type={label.toLowerCase()}
     >
-      {DEFAULT_TIME_RANGES[item]?.label ?? item}
+      <slot {item} />
     </SelectionDropdown>
   {/if}
 </div>
-
-<style lang="postcss">
-</style>

@@ -39,6 +39,7 @@
   export let noWrap = false;
   export let gray = false;
   export let danger = false;
+  export let preload = true;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -82,6 +83,7 @@
   use:builderActions={{ builders }}
   on:click={handleClick}
   style={forcedStyle}
+  data-sveltekit-preload-data={preload}
 >
   {#if loading}
     <svg

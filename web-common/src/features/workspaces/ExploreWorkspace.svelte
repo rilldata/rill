@@ -15,7 +15,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import ViewSelector from "../canvas/ViewSelector.svelte";
+  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
 
@@ -87,6 +87,7 @@
   <svelte:fragment slot="body">
     {#if $selectedView === "code"}
       <ExploreEditor
+        forceLocalUpdates
         bind:autoSave={$autoSave}
         {exploreName}
         {fileArtifact}

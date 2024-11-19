@@ -49,7 +49,9 @@
             <svelte:fragment slot="name">
               {displayName}
             </svelte:fragment>
-            <svelte:fragment slot="description" />
+            <svelte:fragment slot="description">
+              {dimensionDescription}
+            </svelte:fragment>
           </TooltipTitle>
           <TooltipShortcutContainer>
             <div>

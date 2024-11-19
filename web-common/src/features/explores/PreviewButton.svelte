@@ -34,12 +34,13 @@
 <Tooltip distance={8} location="left">
   <Button
     label="Preview"
-    {loading}
-    compact
-    on:click={viewDashboard}
     type="secondary"
+    preload={false}
+    compact
+    {loading}
     {href}
     {disabled}
+    on:click={viewDashboard}
   >
     <div class="flex gap-x-1 items-center">
       <Play size="14px" />

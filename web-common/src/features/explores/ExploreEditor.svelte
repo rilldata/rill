@@ -14,6 +14,7 @@
   export let allErrors: V1ParseError[];
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
+  export let forceLocalUpdates: boolean;
 
   $: ({ remoteContent } = fileArtifact);
 
@@ -32,6 +33,7 @@
 
 <MetricsEditorContainer error={$remoteContent ? mainError : undefined}>
   <Editor
+    {forceLocalUpdates}
     bind:autoSave
     bind:editor
     onSave={(content) => {

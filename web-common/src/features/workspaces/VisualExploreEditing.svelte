@@ -7,11 +7,8 @@
   } from "../entity-management/resource-selectors";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { YAMLSeq, Scalar, YAMLMap, parseDocument } from "yaml";
-  import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
   import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
-  import TimeZoneInput from "../visual-editing/TimeZoneInput.svelte";
-  import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
   import { useExploreStore } from "../dashboards/stores/dashboard-stores";
@@ -24,6 +21,22 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
+  import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
+  import {
+    PERIOD_TO_DATE_RANGES,
+    LATEST_WINDOW_TIME_RANGES,
+    PREVIOUS_COMPLETE_DATE_RANGES,
+    DEFAULT_TIME_RANGES,
+    DEFAULT_TIMEZONES,
+  } from "@rilldata/web-common/lib/time/config";
+  import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
+  import { replaceState } from "$app/navigation";
+
+  const ranges = [
+    ...Object.keys(LATEST_WINDOW_TIME_RANGES),
+    ...Object.keys(PERIOD_TO_DATE_RANGES),
+    ...Object.keys(PREVIOUS_COMPLETE_DATE_RANGES),
+  ];
 
   const itemTypes = ["measures", "dimensions"] as const;
 
@@ -337,6 +350,10 @@
         value: name,
       }))}
       onChange={async () => {
+        replaceState(window.location.origin + window.location.pathname, {});
+
+        localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
+
         await updateProperties(
           {
             metrics_view: metricsView,
@@ -345,15 +362,6 @@
           },
           ["defaults"],
         );
-
-        // delete all search params from url
-        window.location.href =
-          window.location.origin + window.location.pathname;
-
-        localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
-        await asyncWait(3000);
-
-        if (!metricsViewSpec || !exploreSpec) return;
       }}
     />
 
@@ -393,30 +401,43 @@
       />
     {/each}
 
-    <TimeZoneInput
+    <MultiSelectInput
+      label="Time zones"
+      id="visual-explore-zone"
+      hint="Time zones selectable via the dashboard filter bar"
+      searchableItems={Intl.supportedValuesOf("timeZone")}
+      defaultItems={DEFAULT_TIMEZONES}
       keyNotSet={!rawTimeZones}
       selectedItems={timeZones}
       onSelectCustomItem={async (item) => {
         const deleted = timeZones.delete(item);
-        if (!deleted) {
-          timeZones.add(item);
-        }
+        if (!deleted) timeZones.add(item);
 
         await updateProperties({ time_zones: Array.from(timeZones) });
       }}
-      setTimeZones={async (time_zones) => {
+      setItems={async (time_zones) => {
         await updateProperties({ time_zones });
       }}
-    />
+      let:item
+    >
+      <ZoneDisplay iana={item} />
+    </MultiSelectInput>
 
-    <TimeRangeInput
+    <MultiSelectInput
+      label="Time ranges"
+      id="visual-explore-range"
+      hint="Time range shortcuts available via the dashboard filter bar"
+      defaultItems={ranges}
       keyNotSet={!rawTimeRanges}
       selectedItems={timeRanges}
       onSelectCustomItem={onSelectTimeRangeItem}
-      setTimeRanges={async (time_ranges) => {
+      setItems={async (time_ranges) => {
         await updateProperties({ time_ranges });
       }}
-    />
+      let:item
+    >
+      {DEFAULT_TIME_RANGES[item]?.label ?? item}
+    </MultiSelectInput>
 
     <ThemeInput
       {theme}
@@ -440,50 +461,52 @@
       }}
     />
 
-    <footer
-      slot="footer"
-      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
-    >
-      <p>
-        For more options,
-        <button on:click={switchView} class="text-primary-600 font-medium">
-          edit in YAML
-        </button>
-      </p>
-
+    <svelte:fragment slot="footer">
       {#if viewingDashboard}
-        <Button
-          forcedStyle="!mt-auto group"
-          type="subtle"
-          large
-          on:click={async () => {
-            if (viewingDefaults) {
-              await updateProperties({}, ["defaults"]);
-            } else {
-              await updateProperties({ defaults: newDefaults });
-            }
-          }}
+        <footer
+          class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
         >
-          {#if viewingDefaults}
-            Remove default state
-          {:else}
-            Save dashboard state as default
-          {/if}
-          <Tooltip distance={8} location="top">
-            <InfoIcon size="14px" strokeWidth={2} />
-            <TooltipContent slot="tooltip-content">
-              {#if viewingDefaults}
-                Remove default settings for time range, comparison modes and
-                displayed measures/dimensions
-              {:else}
-                Overwrite default settings for time range, comparison modes and
-                displayed measures/dimensions with the current dashboard view
-              {/if}
-            </TooltipContent>
-          </Tooltip>
-        </Button>
+          <p>
+            For more options,
+            <button on:click={switchView} class="text-primary-600 font-medium">
+              edit in YAML
+            </button>
+          </p>
+
+          <Button
+            forcedStyle="!mt-auto group"
+            type="subtle"
+            large
+            on:click={async () => {
+              if (viewingDefaults) {
+                await updateProperties({}, ["defaults"]);
+              } else {
+                await updateProperties({ defaults: newDefaults });
+              }
+            }}
+          >
+            {#if viewingDefaults}
+              Remove default state
+            {:else}
+              Save dashboard state as default
+            {/if}
+            <Tooltip distance={8} location="top">
+              <InfoIcon size="14px" strokeWidth={2} />
+              <TooltipContent slot="tooltip-content">
+                {#if viewingDefaults}
+                  Remove default settings for time range, comparison modes and
+                  displayed measures/dimensions
+                {:else}
+                  Overwrite default settings for time range, comparison modes
+                  and displayed measures/dimensions with the current dashboard
+                  view
+                {/if}
+              </TooltipContent>
+            </Tooltip>
+          </Button>
+        </footer>
       {/if}
-    </footer>
+    </svelte:fragment>
   </SidebarWrapper>
 </Inspector>
 

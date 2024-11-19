@@ -55,6 +55,7 @@
   export let onEnter: () => void = voidFunction;
   export let onEscape: () => void = voidFunction;
 
+  let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
   let selectElement: HTMLButtonElement | undefined;
@@ -75,6 +76,10 @@
   function onElementBlur(
     e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
   ) {
+    if (hitEnter) {
+      hitEnter = false;
+      return;
+    }
     focus = false;
     onBlur(e);
   }
@@ -85,7 +90,8 @@
     },
   ) {
     if (e.key === "Enter") {
-      e.preventDefault();
+      hitEnter = true;
+      inputElement?.blur();
       onEnter();
     } else if (e.key === "Escape") {
       e.preventDefault();

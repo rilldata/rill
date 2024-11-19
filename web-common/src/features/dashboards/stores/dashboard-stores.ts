@@ -169,6 +169,16 @@ const metricsViewReducers = {
     });
   },
 
+  rename(name: string, newName: string) {
+    update((state) => {
+      if (!state.entities[name]) return state;
+
+      state.entities[newName] = state.entities[name];
+      delete state.entities[name];
+      return state;
+    });
+  },
+
   syncFromUrl(
     name: string,
     urlState: string,

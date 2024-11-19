@@ -292,7 +292,7 @@
     <LeaderboardHeader
       {hovered}
       displayName={displayName ?? dimensionName}
-      dimensionDescription={description}
+      dimensionDescription="nice to meet you"
       {dimensionName}
       {isBeingCompared}
       {isFetching}

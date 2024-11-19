@@ -11,6 +11,7 @@
   export let searchableItems: string[] | undefined = undefined;
   export let excludable: boolean = false;
   export let excludeMode: boolean = false;
+  export let id: string = "";
   export let onSelect: (item: string) => void;
   export let setItems: (items: string[], exclude?: boolean) => void;
 
@@ -39,7 +40,7 @@
     }
   }}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder {id}>
     <button
       use:builder.action
       {...builder}
