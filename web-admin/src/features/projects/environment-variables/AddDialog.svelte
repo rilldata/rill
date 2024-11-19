@@ -41,7 +41,7 @@
 
   $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
-  $: hasNewChanges = $form.newVariables.some(
+  $: hasNewChanges = $form.variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
 
@@ -51,12 +51,12 @@
   const formId = "add-environment-variables-form";
 
   const initialValues = {
-    newVariables: [{ key: "", value: "" }],
+    variables: [{ key: "", value: "" }],
   };
 
   const schema = yup(
     object({
-      newVariables: array(
+      variables: array(
         object({
           key: string()
             .optional()
@@ -81,7 +81,7 @@
         const values = form.data;
 
         // Omit draft variables that do not have a key
-        const filteredVariables = values.newVariables.filter(
+        const filteredVariables = values.variables.filter(
           ({ key }) => key !== "",
         );
 
@@ -145,21 +145,21 @@
   }
 
   function handleAdd() {
-    $form.newVariables = [...$form.newVariables, { key: "", value: "" }];
+    $form.variables = [...$form.variables, { key: "", value: "" }];
   }
 
   function handleKeyChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
-    $form.newVariables[index].key = target.value;
+    $form.variables[index].key = target.value;
   }
 
   function handleValueChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
-    $form.newVariables[index].value = target.value;
+    $form.variables[index].value = target.value;
   }
 
   function handleRemove(index: number) {
-    $form.newVariables = $form.newVariables.filter((_, i) => i !== index);
+    $form.variables = $form.variables.filter((_, i) => i !== index);
     checkForExistingKeys();
   }
 
@@ -172,7 +172,7 @@
   }
 
   function checkForExistingKeys() {
-    const existingKeys = $form.newVariables.map((variable) => variable.key);
+    const existingKeys = $form.variables.map((variable) => variable.key);
     inputErrors = {};
     isKeyAlreadyExists = false;
 
@@ -205,8 +205,8 @@
       const [key, value] = line.split("=");
       if (key && value) {
         if (key.trim() && value.trim()) {
-          $form.newVariables = [
-            ...$form.newVariables,
+          $form.variables = [
+            ...$form.variables,
             { key: key.trim(), value: value.trim() },
           ];
         }
@@ -279,7 +279,7 @@
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
           <div class="flex flex-col gap-y-4 w-full">
-            {#each $form.newVariables as variable, index}
+            {#each $form.variables as variable, index}
               <div
                 class="flex flex-row items-center gap-2"
                 id={`variable-${index}`}
@@ -289,9 +289,9 @@
                   id={`key-${index}`}
                   label=""
                   textClass={inputErrors[index] ||
-                  ($errors.newVariables &&
-                    $errors.newVariables[index] &&
-                    $errors.newVariables[index].key)
+                  ($errors.variables &&
+                    $errors.variables[index] &&
+                    $errors.variables[index].key)
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
@@ -310,7 +310,7 @@
                 <IconButton
                   on:click={() => {
                     // Do not allow to remove the last variable
-                    if (index !== $form.newVariables.length - 1) {
+                    if (index !== $form.variables.length - 1) {
                       handleRemove(index);
                     } else {
                       handleReset();
@@ -331,7 +331,7 @@
               <ul class="flex flex-col gap-y-1">
                 {#each $allErrors as error}
                   <li>
-                    <b>{$form.newVariables[getKeyFromError(error)].key}</b>
+                    <b>{$form.variables[getKeyFromError(error)].key}</b>
                     <span class="text-xs text-red-600 font-normal">
                       {error.messages}
                     </span>
