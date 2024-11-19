@@ -245,7 +245,7 @@
   }
 
   .subtle:disabled {
-    @apply text-slate-400 bg-transparent;
+    @apply text-slate-400 bg-slate-50;
   }
 
   /* LINK STYLES */

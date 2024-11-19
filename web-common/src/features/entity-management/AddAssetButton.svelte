@@ -34,8 +34,10 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
+  import CreateExploreDialog from "./CreateExploreDialog.svelte";
 
   let active = false;
+  let showExploreDialog = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -200,7 +202,9 @@
     <DropdownMenu.Item
       aria-label="Add Explore Dashboard"
       class="flex gap-x-2"
-      on:click={() => handleAddResource(ResourceKind.Explore)}
+      on:click={() => {
+        showExploreDialog = true;
+      }}
     >
       <svelte:component
         this={resourceIconMapping[ResourceKind.Explore]}
@@ -290,3 +294,5 @@
     </DropdownMenu.Sub>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<CreateExploreDialog {wrapNavigation} bind:open={showExploreDialog} />

@@ -214,6 +214,7 @@ export class FileArtifact {
 
       // Optimistically update the remote content
       this.remoteContent.set(blob);
+      this.remoteCallbacks.forEach((cb) => cb(blob));
 
       this.updateLocalContent(null);
     } catch (e) {
