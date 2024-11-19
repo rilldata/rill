@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 
 	// Load Druid database/sql driver
 	_ "github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
@@ -101,7 +102,7 @@ type configProperties struct {
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, data *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("druid driver can't be shared")
 	}

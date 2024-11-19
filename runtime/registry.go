@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gocloud.dev/blob"
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
@@ -125,6 +126,16 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	}
 
 	return nil
+}
+
+// DataBucket returns a prefixed bucket for the given instance.
+// This bucket is used for storing data that is expected to be persisted across resets.
+func (r *Runtime) DataBucket(instanceID string, elem ...string) *blob.Bucket {
+	b := blob.PrefixedBucket(r.dataBucket, instanceID)
+	for _, e := range elem {
+		b = blob.PrefixedBucket(b, e)
+	}
+	return b
 }
 
 // DataDir returns the path to a persistent data directory for the given instance.

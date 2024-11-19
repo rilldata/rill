@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,7 +47,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 				return err
 			}
 		}
-		return t.transferFromExternalDB(ctx, srcCfg, sinkCfg)
+		// return t.transferFromExternalDB(ctx, srcCfg, sinkCfg)
 	}
 
 	// We can't just pass the SQL statement to DuckDB outright.
@@ -114,73 +113,66 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL, nil)
 }
 
-func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
-	rwConn, release, err := t.to.acquireConn(ctx, false)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = release()
-	}()
-	conn := rwConn.Connx()
+// func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
+// 	t.to.db.CreateTableAsSelect(ctx, sinkProps.Table, )
 
-	var localDB, localSchema string
-	err = conn.QueryRowContext(ctx, "SELECT current_database(),current_schema()").Scan(&localDB, &localSchema)
-	if err != nil {
-		return err
-	}
+// 	var localDB, localSchema string
+// 	err = conn.QueryRowContext(ctx, "SELECT current_database(),current_schema()").Scan(&localDB, &localSchema)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// duckdb considers everything before first . as db name
-	// alternative solution can be to query `show databases()` before and after to identify db name
-	dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
-	if dbName == "main" {
-		return fmt.Errorf("`main` is a reserved db name")
-	}
+// 	// duckdb considers everything before first . as db name
+// 	// alternative solution can be to query `show databases()` before and after to identify db name
+// 	dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
+// 	if dbName == "main" {
+// 		return fmt.Errorf("`main` is a reserved db name")
+// 	}
 
-	if _, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))); err != nil {
-		return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
-	}
+// 	if _, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))); err != nil {
+// 		return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
+// 	}
 
-	defer func() {
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(dbName)))
-	}()
+// 	defer func() {
+// 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(dbName)))
+// 	}()
 
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s;", safeName(dbName))); err != nil {
-		return err
-	}
+// 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s;", safeName(dbName))); err != nil {
+// 		return err
+// 	}
 
-	defer func() {
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
-		if err != nil {
-			t.logger.Error("failed to switch back to original database", zap.Error(err))
-		}
-	}()
+// 	defer func() {
+// 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+// 		if err != nil {
+// 			t.logger.Error("failed to switch back to original database", zap.Error(err))
+// 		}
+// 	}()
 
-	userQuery := strings.TrimSpace(srcProps.SQL)
-	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-	safeTempTable := safeName(fmt.Sprintf("%s_tmp_", sinkProps.Table))
-	defer func() {
-		// ensure temporary table is cleaned
-		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTempTable))
-		if err != nil {
-			t.logger.Error("failed to drop temp table", zap.String("table", safeTempTable), zap.Error(err))
-		}
-	}()
+// 	userQuery := strings.TrimSpace(srcProps.SQL)
+// 	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+// 	safeTempTable := safeName(fmt.Sprintf("%s_tmp_", sinkProps.Table))
+// 	defer func() {
+// 		// ensure temporary table is cleaned
+// 		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTempTable))
+// 		if err != nil {
+// 			t.logger.Error("failed to drop temp table", zap.String("table", safeTempTable), zap.Error(err))
+// 		}
+// 	}()
 
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
-	_, err = conn.ExecContext(ctx, query)
-	// first revert to original database
-	if _, switchErr := conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))); switchErr != nil {
-		t.to.fatalInternalError(fmt.Errorf("failed to switch back to original database: %w", err))
-	}
-	// check for the original error
-	if err != nil {
-		return fmt.Errorf("failed to create table: %w", err)
-	}
+// 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
+// 	_, err = conn.ExecContext(ctx, query)
+// 	// first revert to original database
+// 	if _, switchErr := conn.ExecContext(context.Background(), fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))); switchErr != nil {
+// 		t.to.fatalInternalError(fmt.Errorf("failed to switch back to original database: %w", err))
+// 	}
+// 	// check for the original error
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create table: %w", err)
+// 	}
 
-	// create permanent table from temp table using crud API
-	return rwConn.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), nil)
-}
+// 	// create permanent table from temp table using crud API
+// 	return rwConn.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), nil)
+// }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,
 // and if allowHostAccess is false, returns an error if any of the paths resolve to a path outside of the basePath.

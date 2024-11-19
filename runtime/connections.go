@@ -259,9 +259,6 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	case "motherduck":
 		res.setPreset("token", vars["token"], false)
 		res.setPreset("dsn", "", true)
-	case "duckdb":
-		res.setPreset("backup_bucket", r.opts.DuckDBBackupBucket, false)
-		res.setPreset("backup_bucket_credentials_json", r.opts.DuckDBBackupBucketCredentialsJSON, false)
 	case "local_file":
 		// The "local_file" connector needs to know the repo root.
 		// TODO: This is an ugly hack. But how can we get rid of it?

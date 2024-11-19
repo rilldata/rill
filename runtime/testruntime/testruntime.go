@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/fileblob"
 
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
@@ -73,7 +74,9 @@ func New(t TestingT) *runtime.Runtime {
 		require.NoError(t, err)
 	}
 
-	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()), bkt)
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 )
 
 // ErrNotFound indicates the resource wasn't found.
@@ -35,13 +36,13 @@ func Register(name string, driver Driver) {
 // Open opens a new connection.
 // If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
 // If instanceID is not empty, the connection is considered instance-specific and its As...() functions will only be invoked with the same instance ID.
-func Open(driver, instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error) {
+func Open(driver, instanceID string, config map[string]any, client *activity.Client, data *blob.Bucket, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(instanceID, config, client, logger)
+	conn, err := d.Open(instanceID, config, client, data, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ type Driver interface {
 
 	// Open opens a new handle.
 	// If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
-	Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (Handle, error)
+	Open(instanceID string, config map[string]any, client *activity.Client, data *blob.Bucket, logger *zap.Logger) (Handle, error)
 
 	// HasAnonymousSourceAccess returns true if the driver can access the data identified by srcProps without any additional configuration.
 	HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error)

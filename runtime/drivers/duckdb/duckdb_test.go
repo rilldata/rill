@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/memblob"
 )
 
 func TestNoFatalErr(t *testing.T) {
@@ -19,7 +20,7 @@ func TestNoFatalErr(t *testing.T) {
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -81,7 +82,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

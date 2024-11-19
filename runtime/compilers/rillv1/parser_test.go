@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/memblob"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -2037,7 +2038,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")

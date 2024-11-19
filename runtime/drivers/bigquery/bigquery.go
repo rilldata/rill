@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 	"google.golang.org/api/option"
 )
 
@@ -77,7 +78,7 @@ type configProperties struct {
 	TempDir         string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("bigquery driver can't be shared")
 	}

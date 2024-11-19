@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/fileblob"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -528,7 +529,10 @@ func newTestRuntime(t *testing.T) *Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient(), email.New(email.NewNoopSender()))
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+
+	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient(), email.New(email.NewNoopSender()), bkt)
 	t.Cleanup(func() {
 		rt.Close()
 	})

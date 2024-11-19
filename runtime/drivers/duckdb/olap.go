@@ -265,13 +265,13 @@ func (c *connection) execIncrementalInsert(ctx context.Context, name, sql string
 				}
 				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
 			}
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where))
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
 			if err != nil {
 				return err
 			}
 
 			// Insert the new data into the target table
-			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)))
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
 			return err
 		})
 	}

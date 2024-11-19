@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
+	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -130,7 +131,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, data *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
 	}
@@ -144,7 +145,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
 	// See note in connection struct
 	olapSemSize := cfg.PoolSize - 1
@@ -158,6 +158,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
+		data:           blob.PrefixedBucket(data, "duckdb"), // todo : ideally the drivers should get name prefixed buckets
 		metaSem:        semaphore.NewWeighted(1),
 		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
 		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
@@ -182,11 +183,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 		// Check for another process currently accessing the DB
 		if strings.Contains(err.Error(), "Could not set lock on file") {
 			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
-		}
-
-		// Check for using incompatible database files
-		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "Trying to read a database file with version number") {
-			return nil, err
 		}
 
 		c.logger.Debug("Resetting .db file because it was created with an older, incompatible version of Rill")
@@ -278,6 +274,7 @@ type connection struct {
 	config   *config
 	logger   *zap.Logger
 	activity *activity.Client
+	data     *blob.Bucket
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -507,10 +504,13 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 	}))
 	var err error
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
-		LocalPath:   c.config.DataDir,
-		Remote:      backup,
-		InitQueries: bootQueries,
-		Logger:      logger,
+		LocalPath:      c.config.DataDir,
+		Remote:         c.data,
+		ReadSettings:   c.config.ReadSettings,
+		WriteSettings:  c.config.WriteSettings,
+		InitQueries:    bootQueries,
+		Logger:         logger,
+		OtelAttributes: []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
 	return err
 }
