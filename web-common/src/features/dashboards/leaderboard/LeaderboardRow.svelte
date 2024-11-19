@@ -16,7 +16,6 @@
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let uri: string | undefined;
   export let tableWidth: number;
   export let columnWidths: {
     dimension: number;
@@ -72,7 +71,7 @@
 
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
 
-  $: href = makeHref(uri);
+  $: href = makeHref(itemData.uri);
 
   $: percentOfTotal = isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
 
@@ -135,17 +134,15 @@
   $: showZigZag = barLength > tableWidth - gutterWidth;
 
   // uri template or "true" string literal or undefined
-  function makeHref(uriTemplateOrBoolean: string | undefined) {
+  function makeHref(uriTemplateOrBoolean: string | boolean | null) {
     if (!uriTemplateOrBoolean) {
       return undefined;
     }
 
     const uri =
-      uriTemplateOrBoolean === "true"
+      uriTemplateOrBoolean === true
         ? label
-        : uriTemplateOrBoolean
-            .replace(/\s/g, "")
-            .replace(`{{${dimensionName}}}`, label);
+        : uriTemplateOrBoolean.replace(/\s/g, "");
 
     const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
 
