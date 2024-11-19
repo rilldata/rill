@@ -118,8 +118,8 @@
     },
   );
 
-  async function onCopy() {
-    const success = await copyToClipboard(url, "URL copied to clipboard");
+  function onCopy() {
+    const success = copyToClipboard(url, "URL copied to clipboard");
     if (success) {
       copied = true;
 

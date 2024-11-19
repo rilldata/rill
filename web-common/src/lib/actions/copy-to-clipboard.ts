@@ -16,17 +16,13 @@ export function isClipboardApiSupported(): boolean {
   return true;
 }
 
-async function copyToClipboardAPI(value: string) {
-  try {
-    await navigator.clipboard.writeText(value).catch(console.error);
-  } catch (error) {
-    console.error("Failed to copy to clipboard using Clipboard API:", error);
-  }
+function copyToClipboardAPI(value: string) {
+  navigator.clipboard.writeText(value).catch(console.error);
 }
 
-export async function copyToClipboard(value: string, message?: string) {
+export function copyToClipboard(value: string, message?: string) {
   if (isClipboardApiSupported()) {
-    await copyToClipboardAPI(value);
+    copyToClipboardAPI(value);
     eventBus.emit("notification", {
       message: message || `Copied ${value} to clipboard`,
     });
