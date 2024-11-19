@@ -108,10 +108,13 @@ type DB interface {
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
-	// UpsertStaticRuntimeSlotsAssignment tracks the host and slots registered for a provisioner resource.
+	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
 	// It is used by the "static" runtime provisioner to track slot usage on each host.
-	UpsertStaticRuntimeSlotsAssignment(ctx context.Context, id string, host string, slots int) error
-	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by UpsertStaticRuntimeSlotsAssignment.
+	UpsertStaticRuntimeAssignment(ctx context.Context, id string, host string, slots int) error
+	// DeleteStaticRuntimeAssignment removes the host and slots assignment for a provisioner resource.
+	// The implementation should be idempotent.
+	DeleteStaticRuntimeAssignment(ctx context.Context, id string) error
+	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by UpsertStaticRuntimeAssignment.
 	ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*StaticRuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
@@ -1133,7 +1136,7 @@ const (
 	ProvisionerResourceStatusUnspecified ProvisionerResourceStatus = 0
 	ProvisionerResourceStatusPending     ProvisionerResourceStatus = 1
 	ProvisionerResourceStatusOK          ProvisionerResourceStatus = 2
-	ProvisionerResourceStatusError       ProvisionerResourceStatus = 3
+	ProvisionerResourceStatusError       ProvisionerResourceStatus = 4
 )
 
 func (d ProvisionerResourceStatus) String() string {

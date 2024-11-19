@@ -25,6 +25,9 @@ func NewRuntimeArgs(args map[string]any) (*RuntimeArgs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse runtime args: %w", err)
 	}
+	if res.Slots < 1 {
+		return nil, fmt.Errorf("runtime slots must be greater than 0 (received args: %v)", args)
+	}
 	return res, nil
 }
 

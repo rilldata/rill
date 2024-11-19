@@ -263,17 +263,17 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Re
 		return nil, err
 	}
 
+	state := &runtimeState{
+		Slots:   data.Slots,
+		Version: version,
+	}
+
 	cfg := &provisioner.RuntimeConfig{
 		Host:         host,
 		Audience:     host,
 		CPU:          data.CPU,
 		MemoryGB:     data.MemoryGB,
 		StorageBytes: data.StorageBytes,
-	}
-
-	state := &runtimeState{
-		Slots:   data.Slots,
-		Version: version,
 	}
 
 	return &provisioner.Resource{

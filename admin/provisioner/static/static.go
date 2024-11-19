@@ -109,12 +109,12 @@ func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resour
 		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
 	}
 
-	// Select an eligible runtime using an approximate round-robin strategy
+	// Select an eligible runtime using an approximately round-robin strategy
 	idx := int((p.nextIdx.Add(1) - 1)) % len(targets)
 	target := targets[idx]
 
 	// Track slots used
-	err = p.db.UpsertStaticRuntimeSlotsAssignment(ctx, r.ID, target.Host, args.Slots)
+	err = p.db.UpsertStaticRuntimeAssignment(ctx, r.ID, target.Host, args.Slots)
 	if err != nil {
 		return nil, err
 	}
@@ -145,14 +145,8 @@ func (p *StaticProvisioner) Deprovision(ctx context.Context, r *provisioner.Reso
 		return fmt.Errorf("unexpected resource type %q", r.Type)
 	}
 
-	// Parse config
-	cfg, err := provisioner.NewRuntimeConfig(r.Config)
-	if err != nil {
-		return err
-	}
-
-	// Decrement slots used
-	return p.db.UpsertStaticRuntimeSlotsAssignment(ctx, r.ID, cfg.Host, 0)
+	// Remove the assignment
+	return p.db.DeleteStaticRuntimeAssignment(ctx, r.ID)
 }
 
 func (p *StaticProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {

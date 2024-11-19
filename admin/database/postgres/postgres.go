@@ -581,7 +581,7 @@ func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID 
 	return res, nil
 }
 
-func (c *connection) UpsertStaticRuntimeSlotsAssignment(ctx context.Context, id, host string, slots int) error {
+func (c *connection) UpsertStaticRuntimeAssignment(ctx context.Context, id, host string, slots int) error {
 	// If slots is 0, delete the assignment if it exists (may not exist due to idempotence, so not checking the affected row count).
 	if slots == 0 {
 		_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
@@ -594,6 +594,15 @@ func (c *connection) UpsertStaticRuntimeSlotsAssignment(ctx context.Context, id,
 	// Upsert the assignment.
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_assignments (resource_id, host, slots) VALUES ($1, $2, $3) ON CONFLICT (resource_id) DO UPDATE SET slots = EXCLUDED.slots", id, host, slots)
 	if err != nil {
+		return parseErr("slots used", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteStaticRuntimeAssignment(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
+	if err != nil {
+		// Not using checkDeleteRow because this is operation must be idempotent, so the row may not exist.
 		return parseErr("slots used", err)
 	}
 	return nil
@@ -2273,7 +2282,7 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 
 	res := &provisionerResourceDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5 WHERE id = $6 RETURNING *`,
+		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5, updated_on = now() WHERE id = $6 RETURNING *`,
 		opts.Status, opts.StatusMessage, args, state, config, id,
 	).StructScan(res)
 	if err != nil {

@@ -55,7 +55,8 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 		// Mark deployment error
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed provisioning runtime: %v", err))
+		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed to provision runtime: %v", err))
+		s.Logger.Error("create deployment: failed to provision runtime", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		return nil, errors.Join(err, err2)
 	}
 
@@ -69,7 +70,7 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	return depl, nil
 }
 
-// createDeploymentInner idempotently provisions a runtime and initializes an instance on it.
+// createDeploymentInner provisions a runtime and initializes an instance on it.
 // The implementation is idempotent, enabling it to be moved to a retryable background job in the future.
 func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deployment, opts *CreateDeploymentOptions) (*database.Deployment, error) {
 	// Validate the desired runtime version.
@@ -219,11 +220,11 @@ func (s *Service) UpdateDeployment(ctx context.Context, d *database.Deployment, 
 	}
 
 	// Find the runtime provisioned for this deployment
-	pr, err := s.findProvisionedRuntimeResource(ctx, d.ID)
+	pr, ok, err := s.findProvisionedRuntimeResource(ctx, d.ID)
 	if err != nil {
 		return err
 	}
-	if pr == nil {
+	if !ok {
 		return fmt.Errorf("can't update deployment %q because its runtime has not been initialized yet", d.ID)
 	}
 	args, err := provisioner.NewRuntimeArgs(pr.Args)
@@ -493,16 +494,16 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 	}
 
 	// Attempt to find an existing provisioned runtime for the deployment
-	pr, err := s.findProvisionedRuntimeResource(ctx, opts.DeploymentID)
+	pr, ok, err := s.findProvisionedRuntimeResource(ctx, opts.DeploymentID)
 	if err != nil {
 		return nil, err
 	}
-	if pr != nil && pr.Provisioner != opts.Provisioner {
+	if ok && pr.Provisioner != opts.Provisioner {
 		return nil, fmt.Errorf("provisioner: cannot change provisioner from %q to %q for deployment %q", pr.Provisioner, opts.Provisioner, opts.DeploymentID)
 	}
 
 	// If we didn't find an existing DB entry, create one
-	if pr == nil {
+	if !ok {
 		pr, err = s.DB.InsertProvisionerResource(ctx, &database.InsertProvisionerResourceOptions{
 			ID:            uuid.New().String(),
 			DeploymentID:  opts.DeploymentID,
@@ -566,17 +567,17 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 	return pr, nil
 }
 
-func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, error) {
+func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
 	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, deploymentID)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	for _, val := range prs {
 		if provisioner.ResourceType(val.Type) == provisioner.ResourceTypeRuntime {
-			return val, nil
+			return val, true, nil
 		}
 	}
-	return nil, nil
+	return nil, false, nil
 }
 
 func (s *Service) resolveRillVersion() string {
