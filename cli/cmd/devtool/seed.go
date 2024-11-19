@@ -10,12 +10,12 @@ import (
 
 func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "seed {cloud}",
+		Use:   "seed {cloud|e2e}",
 		Short: "Authenticate and deploy a seed project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			preset := args[0]
-			if preset != "cloud" {
+			if preset != "cloud" && preset != "e2e" {
 				return fmt.Errorf("seeding not available for preset %q", preset)
 			}
 

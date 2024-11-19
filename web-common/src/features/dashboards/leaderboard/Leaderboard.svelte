@@ -1,9 +1,7 @@
 <script lang="ts">
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardRow from "./LeaderboardRow.svelte";
-  import LoadingRows from "./LoadingRows.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimensionV2,
     V1Expression,
@@ -17,33 +15,41 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    cleanUpComparisonValue,
-    compareLeaderboardValues,
-    prepareLeaderboardItemData,
-  } from "./leaderboard-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
-  import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-  import { SortType } from "../proto-state/derived-types";
-  import {
-    createAndExpression,
-    createOrExpression,
-    sanitiseExpression,
-  } from "../stores/filter-utils";
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { SortType } from "../proto-state/derived-types";
   import {
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import { getComparisonRequestMeasures } from "../dashboard-utils";
-  import { getSort } from "./leaderboard-utils";
+  import {
+    createAndExpression,
+    createOrExpression,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import {
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    getSort,
+    prepareLeaderboardItemData,
+    type LeaderboardItemData,
+  } from "./leaderboard-utils";
+  import {
+    LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
+    type ColumnWidths,
+  } from "./leaderboard-widths";
+  import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
+  import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
-  const columnWidth = 66;
   const gutterWidth = 24;
   const queryLimit = 8;
 
-  export let parentElement: HTMLElement;
   export let dimension: MetricsViewSpecDimensionV2;
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
@@ -62,6 +68,13 @@
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
+  export let parentElement: HTMLElement;
+  export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
+  export let estimateAndUpdateLeaderboardWidths: (
+    dimensionName: string,
+    aboveTheFold: LeaderboardItemData[],
+    belowTheFold: LeaderboardItemData[],
+  ) => void;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -122,7 +135,8 @@
       ...(comparisonTimeRange
         ? getComparisonRequestMeasures(activeMeasureName)
         : []),
-    );
+    )
+    .concat(uri ? [getURIRequestMeasure(dimensionName)] : []);
 
   $: sort = getSort(
     sortedAscending,
@@ -237,12 +251,25 @@
     ),
   );
 
-  $: firstColumnWidth =
-    !comparisonTimeRange && !isValidPercentOfTotal ? 240 : 164;
-
   $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
 
-  $: tableWidth = columnCount * columnWidth + firstColumnWidth;
+  // Estimate the common column widths for all leaderboards
+  $: if (aboveTheFold.length || belowTheFoldRows.length) {
+    estimateAndUpdateLeaderboardWidths(
+      dimensionName,
+      aboveTheFold,
+      belowTheFoldRows,
+    );
+  }
+
+  $: tableWidth =
+    columnWidths.dimension +
+    columnWidths.value +
+    (comparisonTimeRange
+      ? columnWidths.delta + columnWidths.deltaPercent
+      : isValidPercentOfTotal
+        ? columnWidths.percentOfTotal
+        : 0);
 </script>
 
 <div
@@ -256,11 +283,13 @@
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
-      <col style:width="{firstColumnWidth}px" />
-      <col style:width="{columnWidth}px" />
+      <col style:width="{columnWidths.dimension}px" />
+      <col style:width="{columnWidths.value}px" />
       {#if !!comparisonTimeRange}
-        <col style:width="{columnWidth}px" />
-        <col style:width="{columnWidth}px" />
+        <col style:width="{columnWidths.delta}px" />
+        <col style:width="{columnWidths.deltaPercent}px" />
+      {:else if isValidPercentOfTotal}
+        <col style:width="{columnWidths.percentOfTotal}px" />
       {/if}
     </colgroup>
 
@@ -291,13 +320,11 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {dimensionName}
-            {uri}
             {itemData}
             {isValidPercentOfTotal}
             isTimeComparisonActive={!!comparisonTimeRange}
-            {columnWidth}
+            {columnWidths}
             {gutterWidth}
-            {firstColumnWidth}
             {toggleDimensionValueSelection}
             {formatter}
           />
@@ -311,14 +338,12 @@
           {tableWidth}
           {dimensionName}
           {isBeingCompared}
-          {uri}
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
           isTimeComparisonActive={!!comparisonTimeRange}
-          {columnWidth}
+          {columnWidths}
           {gutterWidth}
-          {firstColumnWidth}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

@@ -4,8 +4,8 @@ import {
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
-  type V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewComparisonMeasureType as ApiSortType,
+  type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
 import { SortType } from "../proto-state/derived-types";
@@ -16,6 +16,8 @@ export type LeaderboardItemData = {
    *The dimension value label to be shown in the leaderboard
    */
   dimensionValue: string;
+
+  uri: string | null;
 
   /**
    *  main value to be shown in the leaderboard
@@ -59,6 +61,8 @@ export type LeaderboardItemData = {
   selectedIndex: number;
 };
 
+export const URI_DIMENSION_SUFFIX = "__rill_uri";
+
 const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
@@ -81,6 +85,7 @@ export function cleanUpComparisonValue(
 
   return {
     dimensionValue: v[dimensionName],
+    uri: v[dimensionName + URI_DIMENSION_SUFFIX] || null,
     value,
     pctOfTotal: total !== null && value !== null ? value / total : null,
     prevValue: finiteOrNull(v[measureName + ComparisonDeltaPreviousSuffix]),
