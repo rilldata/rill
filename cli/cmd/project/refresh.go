@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -41,6 +42,12 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// If only meta flags are set, default to an incremental refresh of all sources and models.
 			var numMetaFlags int
+			cmd.Flags().Visit(func(f *pflag.Flag) {
+				// Count all inherited flags as meta flags.
+				if cmd.InheritedFlags().Lookup(f.Name) != nil {
+					numMetaFlags++
+				}
+			})
 			if cmd.Flags().Changed("project") {
 				numMetaFlags++
 			}
@@ -96,6 +103,11 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 					AllErroredPartitions: erroredPartitions,
 					Partitions:           modelPartitions,
 				})
+			}
+
+			// Return an error for ineffective use of --full
+			if full && !all && len(models) == 0 {
+				return fmt.Errorf("the --full flag can only be used with --all or --model")
 			}
 
 			// Send request
