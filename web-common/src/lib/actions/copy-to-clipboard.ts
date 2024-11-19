@@ -15,26 +15,12 @@ export function isClipboardApiSupported(): boolean {
     return false;
   }
 
-  if (typeof ClipboardItem === "undefined") {
-    console.warn("ClipboardItem is not supported in this environment.");
-    return false;
-  }
-
   return true;
 }
 
 async function copyToClipboardAPI(value: string) {
   try {
-    if (IS_SAFARI) {
-      const text = new ClipboardItem({
-        "text/plain": new Blob([value], { type: "text/plain" }),
-      });
-      console.log("a");
-      await navigator.clipboard.write([text]);
-    } else {
-      console.log("b");
-      await navigator.clipboard.writeText(value);
-    }
+    await navigator.clipboard.writeText(value).catch(console.error);
   } catch (error) {
     console.error("Failed to copy to clipboard using Clipboard API:", error);
   }
@@ -52,27 +38,3 @@ export async function copyToClipboard(value: string, message?: string) {
     return false;
   }
 }
-
-// REVISIT
-// // See: https://wolfgangrittner.dev/how-to-use-clipboard-api-in-safari/
-// // Related: https://developer.apple.com/forums/thread/691873
-
-// // SAFARI ERROR:
-// // Failed to copy to clipboard using Clipboard API:
-// // NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
-// function copyToClipboardSafari(value: string) {
-//   const text = new ClipboardItem({
-//     "text/plain": fetch(value)
-//       .then((response) => response.text())
-//       .then((text) => new Blob([text], { type: "text/plain" })),
-//   });
-//   navigator.clipboard.write([text]);
-// }
-
-// // See: https://wolfgangrittner.dev/how-to-use-clipboard-api-in-firefox/
-// function copyToClipboardFirefox(value: string) {
-//   fetch(value)
-//     .then((response) => response.text())
-//     .then((text) => navigator.clipboard.writeText(text))
-//     .catch(console.error);
-// }
