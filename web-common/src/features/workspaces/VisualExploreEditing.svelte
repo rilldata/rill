@@ -11,7 +11,10 @@
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
-  import { useExploreStore } from "../dashboards/stores/dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useExploreStore,
+  } from "../dashboards/stores/dashboard-stores";
   import {
     TimeRangePreset,
     type DashboardTimeControls,
@@ -222,15 +225,31 @@
 
     if (removeProperties) {
       removeProperties.forEach((prop) => {
-        if (Array.isArray(prop)) {
-          parsedDocument.deleteIn(prop);
-        } else {
-          parsedDocument.delete(prop);
+        try {
+          if (Array.isArray(prop)) {
+            parsedDocument.deleteIn(prop);
+          } else {
+            parsedDocument.delete(prop);
+          }
+        } catch {
+          // ignore
         }
       });
     }
 
+    killState();
+
     await saveContent(parsedDocument.toString());
+
+    if (exploreSpec) {
+      metricsExplorerStore.sync(exploreName, exploreSpec);
+    }
+  }
+
+  function killState() {
+    localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
+
+    replaceState(window.location.origin + window.location.pathname, {});
   }
 
   type Defaults = {
@@ -352,9 +371,7 @@
         value: name,
       }))}
       onChange={async () => {
-        replaceState(window.location.origin + window.location.pathname, {});
-
-        localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
+        killState();
 
         await updateProperties(
           {
@@ -404,28 +421,6 @@
     {/each}
 
     <MultiSelectInput
-      label="Time zones"
-      id="visual-explore-zone"
-      hint="Time zones selectable via the dashboard filter bar"
-      searchableItems={Intl.supportedValuesOf("timeZone")}
-      defaultItems={DEFAULT_TIMEZONES}
-      keyNotSet={!rawTimeZones}
-      selectedItems={timeZones}
-      onSelectCustomItem={async (item) => {
-        const deleted = timeZones.delete(item);
-        if (!deleted) timeZones.add(item);
-
-        await updateProperties({ time_zones: Array.from(timeZones) });
-      }}
-      setItems={async (time_zones) => {
-        await updateProperties({ time_zones });
-      }}
-      let:item
-    >
-      <ZoneDisplay iana={item} />
-    </MultiSelectInput>
-
-    <MultiSelectInput
       label="Time ranges"
       id="visual-explore-range"
       hint="Time range shortcuts available via the dashboard filter bar"
@@ -443,6 +438,32 @@
       let:item
     >
       {DEFAULT_TIME_RANGES[item]?.label ?? item}
+    </MultiSelectInput>
+
+    <MultiSelectInput
+      label="Time zones"
+      id="visual-explore-zone"
+      hint="Time zones selectable via the dashboard filter bar"
+      searchableItems={Intl.supportedValuesOf("timeZone")}
+      defaultItems={DEFAULT_TIMEZONES}
+      keyNotSet={!rawTimeZones}
+      selectedItems={timeZones}
+      noneOption
+      clearKey={async () => {
+        await updateProperties({}, ["time_zones"]);
+      }}
+      onSelectCustomItem={async (item) => {
+        const deleted = timeZones.delete(item);
+        if (!deleted) timeZones.add(item);
+
+        await updateProperties({ time_zones: Array.from(timeZones) });
+      }}
+      setItems={async (time_zones) => {
+        await updateProperties({ time_zones });
+      }}
+      let:item
+    >
+      <ZoneDisplay iana={item} />
     </MultiSelectInput>
 
     <ThemeInput
