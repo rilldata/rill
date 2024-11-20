@@ -35285,6 +35285,8 @@ func (m *BillingPlan) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for PlanType
+
 	// no validation rules for DisplayName
 
 	// no validation rules for Description

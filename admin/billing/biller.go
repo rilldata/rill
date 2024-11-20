@@ -63,9 +63,19 @@ type Biller interface {
 	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
 }
 
+type PlanType int
+
+const (
+	TrailPlanType PlanType = iota
+	TeamPlanType
+	ManagedPlanType
+	EnterprisePlanType
+)
+
 type Plan struct {
 	ID              string // ID of the plan in the external billing system
 	Name            string // Unique name of the plan in Rill, can be empty if biller does not support it
+	PlanType        PlanType
 	DisplayName     string
 	Description     string
 	TrialPeriodDays int

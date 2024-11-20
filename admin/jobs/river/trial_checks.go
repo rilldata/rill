@@ -57,7 +57,7 @@ func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
 			OrgName:      org.Name,
-			UpgradeURL:   w.admin.URLs.UpgradePlan(org.Name),
+			UpgradeURL:   w.admin.URLs.Billing(org.Name, true),
 			TrialEndDate: m.EndDate,
 		})
 		if err != nil {
@@ -163,7 +163,7 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			ToEmail:            org.BillingEmail,
 			ToName:             org.Name,
 			OrgName:            org.Name,
-			UpgradeURL:         w.admin.URLs.UpgradePlan(org.Name),
+			UpgradeURL:         w.admin.URLs.Billing(org.Name, true),
 			GracePeriodEndDate: m.GracePeriodEndDate,
 		})
 		if err != nil {
@@ -289,7 +289,7 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 			ToEmail:    org.BillingEmail,
 			ToName:     org.Name,
 			OrgName:    org.Name,
-			UpgradeURL: w.admin.URLs.UpgradePlan(org.Name),
+			UpgradeURL: w.admin.URLs.Billing(org.Name, true),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)

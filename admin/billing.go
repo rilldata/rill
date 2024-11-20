@@ -168,6 +168,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
 			OrgName:      org.Name,
+			FrontendURL:  s.URLs.Frontend(),
 			TrialEndDate: sub.TrialEndDate,
 		})
 		if err != nil {
