@@ -42,7 +42,7 @@ test.describe("time controls settings from explore preset", () => {
     // Time range has changed
     await expect(page.getByText("Week to Date")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total records 3.4k +156 5%")).toBeVisible();
+    await expect(page.getByText("Total records 3,435 +156 5%")).toBeVisible();
     await expect(page.getByText("Facebook 889 36 4%")).toBeVisible();
 
     // Select a different time range
@@ -54,7 +54,7 @@ test.describe("time controls settings from explore preset", () => {
       page.getByRole("menuitem", { name: "Last 7 Days" }),
     ).not.toBeVisible();
     // Data has changed
-    await expect(page.getByText("Total records 7.9k -15 ~0%")).toBeVisible();
+    await expect(page.getByText("Total records 7,863 -15 ~0%")).toBeVisible();
     await expect(page.getByText("Facebook 2.0k -51 -2%")).toBeVisible();
     await page.getByRole("button", { name: "Edit" }).click();
     await page.getByRole("menuitem", { name: "Explore" }).click();
@@ -72,7 +72,7 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
     await expect(
-      page.getByText("Total records 11.2k -4.3k -28%"),
+      page.getByText("Total records 11,193 -4.3k -28%"),
     ).toBeVisible();
     await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
