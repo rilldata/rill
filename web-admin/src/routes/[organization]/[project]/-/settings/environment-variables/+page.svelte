@@ -11,12 +11,15 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import type { EnvironmentTypes } from "@rilldata/web-admin/features/projects/environment-variables/types";
+  import {
+    EnvironmentType,
+    type EnvironmentTypes,
+  } from "@rilldata/web-admin/features/projects/environment-variables/types";
 
   let open = false;
   let searchText = "";
   let isDropdownOpen = false;
-  let filterByEnvironment: EnvironmentTypes = "";
+  let filterByEnvironment: EnvironmentTypes = EnvironmentType.UNDEFINED;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -38,8 +41,26 @@
   );
 
   $: filteredVariables = searchedVariables.filter((variable) => {
-    if (filterByEnvironment === "") return true;
-    return variable.environment === filterByEnvironment;
+    // Show all variables
+    if (filterByEnvironment === EnvironmentType.UNDEFINED) {
+      return true;
+    }
+    // Includes development
+    if (filterByEnvironment === EnvironmentType.DEVELOPMENT) {
+      return (
+        variable.environment === EnvironmentType.DEVELOPMENT ||
+        variable.environment === EnvironmentType.UNDEFINED
+      );
+    }
+    // Includes production
+    if (filterByEnvironment === EnvironmentType.PRODUCTION) {
+      return (
+        variable.environment === EnvironmentType.PRODUCTION ||
+        variable.environment === EnvironmentType.UNDEFINED
+      );
+    }
+    // No match
+    return false;
   });
 
   function handleFilterByEnvironment(environment: EnvironmentTypes) {
@@ -47,14 +68,14 @@
   }
 
   $: environmentLabel =
-    filterByEnvironment === ""
+    filterByEnvironment === EnvironmentType.UNDEFINED
       ? "All environments"
-      : filterByEnvironment === "prod"
+      : filterByEnvironment === EnvironmentType.PRODUCTION
         ? "Production"
         : "Development";
 
   $: emptyTextWhenNoVariables =
-    filterByEnvironment === ""
+    filterByEnvironment === EnvironmentType.UNDEFINED
       ? "No environment variables"
       : `No environment variables for ${environmentLabel}`;
 </script>
@@ -108,20 +129,23 @@
                 >Filter by environment</DropdownMenu.Label
               >
               <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === ""}
-                on:click={() => handleFilterByEnvironment("")}
+                checked={filterByEnvironment === EnvironmentType.UNDEFINED}
+                on:click={() =>
+                  handleFilterByEnvironment(EnvironmentType.UNDEFINED)}
               >
                 All environments
               </DropdownMenu.CheckboxItem>
               <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === "prod"}
-                on:click={() => handleFilterByEnvironment("prod")}
+                checked={filterByEnvironment === EnvironmentType.PRODUCTION}
+                on:click={() =>
+                  handleFilterByEnvironment(EnvironmentType.PRODUCTION)}
               >
                 Production
               </DropdownMenu.CheckboxItem>
               <DropdownMenu.CheckboxItem
-                checked={filterByEnvironment === "dev"}
-                on:click={() => handleFilterByEnvironment("dev")}
+                checked={filterByEnvironment === EnvironmentType.DEVELOPMENT}
+                on:click={() =>
+                  handleFilterByEnvironment(EnvironmentType.DEVELOPMENT)}
               >
                 Development
               </DropdownMenu.CheckboxItem>
