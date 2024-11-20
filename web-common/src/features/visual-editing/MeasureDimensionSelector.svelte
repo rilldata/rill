@@ -8,7 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import SelectionDropdown from "./SelectionDropdown.svelte";
 
-  const fields = ["all", "subset", "expression"] as const;
+  const fields = ["all", "subset", "expression"];
 
   export let type: "measures" | "dimensions";
   export let mode: "all" | "subset" | "expression" | null;
