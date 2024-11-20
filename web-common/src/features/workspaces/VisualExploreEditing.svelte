@@ -45,8 +45,8 @@
 
   export let fileArtifact: FileArtifact;
   export let exploreName: string;
-  export let exploreResource: V1Explore;
-  export let metricsViewName: string;
+  export let exploreResource: V1Explore | undefined;
+  export let metricsViewName: string | undefined;
   export let viewingDashboard: boolean;
   export let switchView: () => void;
 

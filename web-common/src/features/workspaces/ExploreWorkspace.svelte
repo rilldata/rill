@@ -18,6 +18,9 @@
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
+  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -30,6 +33,7 @@
     fileName,
     getResource,
     getAllErrors,
+    remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
@@ -52,6 +56,13 @@
   $: metricsViewName = data?.meta?.refs?.find(
     (ref) => ref.kind === ResourceKind.MetricsView,
   )?.name;
+
+  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
+    allErrors,
+    $remoteContent ?? "",
+  );
+
+  $: mainError = lineBasedRuntimeErrors?.at(0);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -84,37 +95,41 @@
     </div>
   </WorkspaceHeader>
 
-  <svelte:fragment slot="body">
+  <MetricsEditorContainer
+    slot="body"
+    error={$remoteContent ? mainError : undefined}
+  >
     {#if $selectedView === "code"}
       <ExploreEditor
         bind:autoSave={$autoSave}
         {exploreName}
         {fileArtifact}
-        {allErrors}
+        {lineBasedRuntimeErrors}
       />
     {:else if $selectedView === "viz"}
-      {#key fileArtifact}
-        <div
-          class="size-full border overflow-hidden rounded-[2px] bg-background flex flex-col items-center justify-center"
-        >
+      {#if $remoteContent ? mainError : undefined}
+        <ErrorPage
+          header="Error in dashboard configuration"
+          body={mainError?.message}
+          fatal
+        />
+      {:else}
+        {#key fileArtifact}
           {#if metricsViewName && exploreName}
             <DashboardWithProviders {exploreName} {metricsViewName} />
           {/if}
-        </div>
-      {/key}
+        {/key}
+      {/if}
     {/if}
-  </svelte:fragment>
+  </MetricsEditorContainer>
 
-  <svelte:fragment slot="inspector">
-    {#if exploreResource && metricsViewName}
-      <VisualExploreEditing
-        {exploreResource}
-        {metricsViewName}
-        {exploreName}
-        {fileArtifact}
-        viewingDashboard={$selectedView === "viz"}
-        switchView={() => selectedView.set("code")}
-      />
-    {/if}
-  </svelte:fragment>
+  <VisualExploreEditing
+    slot="inspector"
+    {exploreResource}
+    {metricsViewName}
+    {exploreName}
+    {fileArtifact}
+    viewingDashboard={$selectedView === "viz"}
+    switchView={() => selectedView.set("code")}
+  />
 </WorkspaceContainer>
