@@ -65,7 +65,7 @@ test.describe("explores", () => {
     await createExploreFromModel(page, false);
 
     // Check the total records are 100k
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -171,7 +171,7 @@ test.describe("explores", () => {
     });
 
     // Check number
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // Filter to Facebook via leaderboard
     await page.getByRole("row", { name: "Facebook 19.3k" }).click();
@@ -199,7 +199,7 @@ test.describe("explores", () => {
     await page.getByRole("button", { name: "Clear filters" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // TODO
     //    Change time range to last 6 hours
@@ -409,7 +409,7 @@ dimensions:
     await page.getByText("Clear filters").click();
 
     // run through TDD table view
-    await page.getByText("Total rows 100.0k").click();
+    await page.getByText("Total rows 100k").click();
 
     await expect(
       page.getByText("No comparison dimension selected"),
