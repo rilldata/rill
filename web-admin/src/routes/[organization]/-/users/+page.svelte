@@ -15,6 +15,8 @@
   import { createAdminServiceListOrganizationMemberUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
   import { createAdminServiceListOrganizationInvitesInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-invites";
 
+  const PAGE_SIZE = 12;
+
   let userEmail = "";
   let userRole = "";
   let isSuperUser = false;
@@ -26,8 +28,6 @@
     createAdminServiceListOrganizationMemberUsers(organization);
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
-
-  const PAGE_SIZE = 12;
 
   $: orgMemberUsersInfiniteQuery =
     createAdminServiceListOrganizationMemberUsersInfiniteQuery(organization, {
