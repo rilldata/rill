@@ -127,6 +127,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToEmail:      org.BillingEmail,
 				ToName:       org.Name,
 				OrgName:      org.Name,
+				FrontendURL:  s.admin.URLs.Frontend(),
 				TrialEndDate: sub.TrialEndDate,
 			})
 			if err != nil {
@@ -193,12 +194,26 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	if planChange {
 		// send plan changed email
-		err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
-			ToEmail:  org.BillingEmail,
-			ToName:   org.Name,
-			OrgName:  org.Name,
-			PlanName: plan.DisplayName,
-		})
+
+		if plan.PlanType == billing.TeamPlanType {
+			// special handling for team plan to send custom email
+			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
+				ToEmail:          org.BillingEmail,
+				ToName:           org.Name,
+				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
+				PlanName:         plan.DisplayName,
+				BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+			})
+		} else {
+			err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
+				ToEmail:  org.BillingEmail,
+				ToName:   org.Name,
+				OrgName:  org.Name,
+				PlanName: plan.DisplayName,
+			})
+		}
+
 		if err != nil {
 			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
@@ -226,6 +241,11 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 
 	if org.BillingCustomerID == "" {
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
+	}
+
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
@@ -257,10 +277,12 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		OrgName: org.Name,
-		EndDate: endDate,
+		ToEmail:    org.BillingEmail,
+		ToName:     org.Name,
+		OrgName:    org.Name,
+		PlanName:   sub.Plan.DisplayName,
+		EndDate:    endDate,
+		BillingURL: s.admin.URLs.Billing(org.Name, false),
 	})
 	if err != nil {
 		s.logger.Named("billing").Error("failed to send subscription cancelled email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
@@ -374,12 +396,24 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 
 	// send subscription renewed email
-	err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
-		ToEmail:  org.BillingEmail,
-		ToName:   org.Name,
-		OrgName:  org.Name,
-		PlanName: sub.Plan.DisplayName,
-	})
+	if sub.Plan.PlanType == billing.TeamPlanType {
+		// special handling for team plan to send custom email
+		err = s.admin.Email.SendTeamPlanRenewal(&email.TeamPlan{
+			ToEmail:          org.BillingEmail,
+			ToName:           org.Name,
+			OrgName:          org.Name,
+			FrontendURL:      s.admin.URLs.Frontend(),
+			PlanName:         sub.Plan.DisplayName,
+			BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+		})
+	} else {
+		err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
+			ToEmail:  org.BillingEmail,
+			ToName:   org.Name,
+			OrgName:  org.Name,
+			PlanName: sub.Plan.DisplayName,
+		})
+	}
 	if err != nil {
 		s.logger.Named("billing").Error("failed to send subscription renewed email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 	}
@@ -902,6 +936,7 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 	return &adminv1.BillingPlan{
 		Id:              plan.ID,
 		Name:            plan.Name,
+		PlanType:        planTypeToDTO(plan.PlanType),
 		DisplayName:     plan.DisplayName,
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
@@ -968,6 +1003,21 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeNeverSubscribed, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
+	}
+}
+
+func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
+	switch t {
+	case billing.TrailPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_TRIAL
+	case billing.TeamPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_TEAM
+	case billing.ManagedPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_MANAGED
+	case billing.EnterprisePlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
+	default:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}
 }
 

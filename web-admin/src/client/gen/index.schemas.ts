@@ -1172,6 +1172,11 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
+}
+
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1317,11 +1322,6 @@ export interface V1ConnectProjectToGithubResponse {
   [key: string]: any;
 }
 
-export interface V1Condition {
-  op?: V1Operation;
-  exprs?: V1Expression[];
-}
-
 export interface V1CompletionMessage {
   role?: string;
   data?: string;
@@ -1354,9 +1354,22 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
+export type V1BillingPlanType =
+  (typeof V1BillingPlanType)[keyof typeof V1BillingPlanType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BillingPlanType = {
+  BILLING_PLAN_TYPE_UNSPECIFIED: "BILLING_PLAN_TYPE_UNSPECIFIED",
+  BILLING_PLAN_TYPE_TRIAL: "BILLING_PLAN_TYPE_TRIAL",
+  BILLING_PLAN_TYPE_TEAM: "BILLING_PLAN_TYPE_TEAM",
+  BILLING_PLAN_TYPE_MANAGED: "BILLING_PLAN_TYPE_MANAGED",
+  BILLING_PLAN_TYPE_ENTERPRISE: "BILLING_PLAN_TYPE_ENTERPRISE",
+} as const;
+
 export interface V1BillingPlan {
   id?: string;
   name?: string;
+  planType?: V1BillingPlanType;
   displayName?: string;
   description?: string;
   trialPeriodDays?: number;

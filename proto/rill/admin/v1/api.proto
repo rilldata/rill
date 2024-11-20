@@ -2408,9 +2408,18 @@ message AlertOptions {
   string web_open_state = 12; // Annotation for the base64-encoded UI state to open for the report.
 }
 
+enum BillingPlanType {
+  BILLING_PLAN_TYPE_UNSPECIFIED = 0;
+  BILLING_PLAN_TYPE_TRIAL = 1;
+  BILLING_PLAN_TYPE_TEAM = 2;
+  BILLING_PLAN_TYPE_MANAGED = 3;
+  BILLING_PLAN_TYPE_ENTERPRISE = 4;
+}
+
 message BillingPlan {
   string id = 1;
   string name = 2;
+  BillingPlanType plan_type = 9;
   string display_name = 3;
   string description = 4;
   uint32 trial_period_days = 5;

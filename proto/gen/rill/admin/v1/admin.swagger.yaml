@@ -3810,6 +3810,8 @@ definitions:
         type: string
       name:
         type: string
+      planType:
+        $ref: '#/definitions/v1BillingPlanType'
       displayName:
         type: string
       description:
@@ -3824,6 +3826,15 @@ definitions:
       public:
         type: boolean
         title: TODO expose pricing information
+  v1BillingPlanType:
+    type: string
+    enum:
+      - BILLING_PLAN_TYPE_UNSPECIFIED
+      - BILLING_PLAN_TYPE_TRIAL
+      - BILLING_PLAN_TYPE_TEAM
+      - BILLING_PLAN_TYPE_MANAGED
+      - BILLING_PLAN_TYPE_ENTERPRISE
+    default: BILLING_PLAN_TYPE_UNSPECIFIED
   v1Bookmark:
     type: object
     properties:
