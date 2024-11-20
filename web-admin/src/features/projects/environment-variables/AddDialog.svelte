@@ -202,7 +202,13 @@
     const lines = contents.split("\n");
 
     lines.forEach((line) => {
-      const [key, value] = line.split("=");
+      // Trim the line and check if it starts with '#'
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith("#")) {
+        return; // Skip comment lines
+      }
+
+      const [key, value] = trimmedLine.split("=");
       if (key && value) {
         if (key.trim() && value.trim()) {
           const filteredVariables = $form.variables.filter(

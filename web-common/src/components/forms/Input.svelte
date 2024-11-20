@@ -261,7 +261,7 @@
 
   .error-input-wrapper.input-wrapper {
     @apply border-red-600;
-    @apply ring-1 ring-red-600;
+    @apply ring-1 ring-transparent;
   }
 
   .error {
