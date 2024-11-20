@@ -3,13 +3,13 @@ package metricsview
 import (
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // AST is the abstract syntax tree for a metrics SQL query.
@@ -59,6 +59,7 @@ type SelectNode struct {
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
 	CrossJoin            *SelectNode      // Sub-select to cross join onto FromSelect
+	UnionAllSelects      []*SelectNode    // Selects to union all, if this is set no other select should be set
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -110,6 +111,7 @@ const (
 	JoinTypeFull        JoinType = "FULL OUTER"
 	JoinTypeLeft        JoinType = "LEFT OUTER"
 	JoinTypeRight       JoinType = "RIGHT OUTER"
+	JoinTypeCross       JoinType = "CROSS"
 )
 
 // NewAST builds a new SQL AST based on a metrics query.
@@ -690,24 +692,47 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		return n, nil
 	}
 
-	if spine.TimeRange != nil && a.dialect == drivers.DialectDuckDB {
-		// if spine generates more than 1000 values then ignore
+	if spine.TimeRange != nil {
+		// if spine generates more than 1000 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
 		if bins > 1000 {
 			return nil, errors.New("time spine generates more than 1000 values")
 		}
 
-		from := fmt.Sprintf("range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", spine.TimeRange.Start.Format(time.RFC3339), spine.TimeRange.End.Format(time.RFC3339), spine.TimeRange.Grain)
-		rangeSelect := &SelectNode{
-			Alias: alias,
-			DimFields: []FieldNode{
-				{
-					Name:        spine.TimeRange.Alias,
-					DisplayName: spine.TimeRange.Alias,
-					Expr:        "range",
+		var rangeSelect *SelectNode
+		if a.dialect == drivers.DialectDuckDB {
+			from := fmt.Sprintf("range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", spine.TimeRange.Start.Format(time.RFC3339), spine.TimeRange.End.Format(time.RFC3339), spine.TimeRange.Grain)
+			rangeSelect = &SelectNode{
+				Alias: alias,
+				DimFields: []FieldNode{
+					{
+						Name:        spine.TimeRange.Alias,
+						DisplayName: spine.TimeRange.Alias,
+						Expr:        "range",
+					},
 				},
-			},
-			FromTable: &from,
+				FromTable: &from,
+			}
+		} else if a.dialect == drivers.DialectClickHouse {
+			rangeSelect = &SelectNode{
+				Alias: alias,
+			}
+
+			// ClickHouse does not support range() function, so we need to generate a series of timestamps
+			for t := spine.TimeRange.Start; t.Before(spine.TimeRange.End); t = timeutil.AddTime(t, spine.TimeRange.Grain.ToTimeutil(), 1) {
+				rangeSelect.UnionAllSelects = append(rangeSelect.UnionAllSelects, &SelectNode{
+					Alias: "", // alias is not needed for union all selects
+					DimFields: []FieldNode{
+						{
+							Name:        spine.TimeRange.Alias,
+							DisplayName: spine.TimeRange.Alias,
+							Expr:        fmt.Sprintf("'%s'::DateTime64", t.Format("2006-01-02T15:04:05.000")),
+						},
+					},
+				})
+			}
+		} else {
+			return nil, errors.New("unsupported dialect")
 		}
 		if len(a.dimFields) == 1 {
 			return rangeSelect, nil
@@ -730,7 +755,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			CrossJoin: rangeSelect,
 		}
 
-		a.wrapSelect(crossSelect, a.generateIdentifier())
+		a.wrapSelect(crossSelect, "")
 
 		return crossSelect, nil
 	}
@@ -1026,11 +1051,20 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	}
 
 	if s.CrossJoin != nil {
-		s.DimFields = append(s.DimFields, FieldNode{
-			Name:        s.CrossJoin.DimFields[0].Name,
-			DisplayName: s.CrossJoin.DimFields[0].DisplayName,
-			Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.DimFields[0].Name),
-		})
+		// add the time dimension field to the wrapped select, only single time dim is supported on spine
+		if len(s.CrossJoin.UnionAllSelects) > 0 {
+			s.DimFields = append(s.DimFields, FieldNode{
+				Name:        s.CrossJoin.UnionAllSelects[0].DimFields[0].Name,
+				DisplayName: s.CrossJoin.UnionAllSelects[0].DimFields[0].DisplayName,
+				Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.UnionAllSelects[0].DimFields[0].Name),
+			})
+		} else {
+			s.DimFields = append(s.DimFields, FieldNode{
+				Name:        s.CrossJoin.DimFields[0].Name,
+				DisplayName: s.CrossJoin.DimFields[0].DisplayName,
+				Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.DimFields[0].Name),
+			})
+		}
 	}
 
 	s.MeasureFields = make([]FieldNode, 0, len(cpy.MeasureFields))

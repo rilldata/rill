@@ -90,6 +90,21 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
+	if len(n.UnionAllSelects) > 0 {
+		for i, s := range n.UnionAllSelects {
+			if i > 0 {
+				b.out.WriteString(" UNION ALL ")
+			}
+			b.out.WriteByte('(')
+			err := b.writeSelect(s)
+			if err != nil {
+				return err
+			}
+			b.out.WriteByte(')')
+		}
+		return nil
+	}
+
 	if n.CrossJoin != nil {
 		b.out.WriteString("( ")
 	}
@@ -118,6 +133,11 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
+	if n.FromTable == nil && n.FromSelect == nil {
+		// can happen for union all case
+		return nil
+	}
+
 	b.out.WriteString(" FROM ")
 	if n.FromTable != nil {
 		b.out.WriteString(*n.FromTable)
@@ -129,14 +149,27 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		}
 	} else if n.FromSelect != nil {
 		if !n.FromSelect.IsCTE {
-			b.out.WriteByte('(')
+			if n.FromSelect.CrossJoin == nil {
+				b.out.WriteByte('(')
+			}
 			err := b.writeSelect(n.FromSelect)
 			if err != nil {
 				return err
 			}
-			b.out.WriteString(") ")
+			if n.FromSelect.CrossJoin == nil {
+				b.out.WriteString(") ")
+			}
 		}
-		b.out.WriteString(n.FromSelect.Alias)
+		if n.FromSelect.CrossJoin == nil {
+			b.out.WriteString(n.FromSelect.Alias)
+		}
+
+		/*		if n.CrossJoin != nil {
+				err := b.writeJoin("CROSS", nil, n.CrossJoin)
+				if err != nil {
+					return err
+				}
+			}*/
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
@@ -219,12 +252,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	}
 
 	if n.CrossJoin != nil {
-		b.out.WriteString(" ) CROSS JOIN ( ")
+		b.out.WriteString(" ) cj1 CROSS JOIN ( ")
 		err := b.writeSelect(n.CrossJoin)
 		if err != nil {
 			return err
 		}
-		b.out.WriteString(" )")
+		b.out.WriteString(" ) cj2 ")
 	}
 
 	return nil
@@ -244,6 +277,10 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 		b.out.WriteString(") ")
 	}
 	b.out.WriteString(joinSelect.Alias)
+
+	if joinType == JoinTypeCross {
+		return nil
+	}
 
 	if len(baseSelect.DimFields) == 0 {
 		b.out.WriteString(" ON TRUE")

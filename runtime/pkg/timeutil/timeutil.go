@@ -92,6 +92,33 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 	return start
 }
 
+func AddTime(to time.Time, tg TimeGrain, count int) time.Time {
+	switch tg {
+	case TimeGrainUnspecified:
+		return to
+	case TimeGrainMillisecond:
+		return to.Add(time.Duration(count) * time.Millisecond)
+	case TimeGrainSecond:
+		return to.Add(time.Duration(count) * time.Second)
+	case TimeGrainMinute:
+		return to.Add(time.Duration(count) * time.Minute)
+	case TimeGrainHour:
+		return to.Add(time.Duration(count) * time.Hour)
+	case TimeGrainDay:
+		return to.AddDate(0, 0, count)
+	case TimeGrainWeek:
+		return to.AddDate(0, 0, count*7)
+	case TimeGrainMonth:
+		return to.AddDate(0, count, 0)
+	case TimeGrainQuarter:
+		return to.AddDate(0, count*3, 0)
+	case TimeGrainYear:
+		return to.AddDate(count, 0, 0)
+	}
+
+	return to
+}
+
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
 	switch tg {
 	case TimeGrainUnspecified:
