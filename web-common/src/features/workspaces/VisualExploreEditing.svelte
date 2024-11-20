@@ -186,6 +186,8 @@
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
 
+  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+
   function isString(value: unknown): value is string {
     return typeof value === "string";
   }
@@ -240,10 +242,6 @@
     killState();
 
     await saveContent(parsedDocument.toString());
-
-    if (exploreSpec) {
-      metricsExplorerStore.sync(exploreName, exploreSpec);
-    }
   }
 
   function killState() {
