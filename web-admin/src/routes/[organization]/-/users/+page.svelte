@@ -12,6 +12,7 @@
   import { Plus } from "lucide-svelte";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import { createAdminServiceListOrgUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
 
   let userEmail = "";
   let userRole = "";
@@ -24,6 +25,24 @@
     createAdminServiceListOrganizationMemberUsers(organization);
   $: listOrganizationInvites =
     createAdminServiceListOrganizationInvites(organization);
+
+  const PAGE_SIZE = 12;
+
+  $: orgUsersInfiniteQuery = createAdminServiceListOrgUsersInfiniteQuery(
+    organization,
+    {
+      pageSize: PAGE_SIZE,
+    },
+  );
+
+  $: allRows =
+    $orgUsersInfiniteQuery.data?.pages.flatMap((page) => page.members ?? []) ??
+    [];
+
+  $: console.log(
+    "$listOrganizationMemberUsers.data?.members: ",
+    $listOrganizationMemberUsers.data?.members,
+  );
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
