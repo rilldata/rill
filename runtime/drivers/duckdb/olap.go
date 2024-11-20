@@ -504,14 +504,10 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		if err != nil && !strings.Contains(err.Error(), "database not found") { // ignore database not found errors for idempotency
 			return err
 		}
-		return nil
+		// delete source directory
+		return os.RemoveAll(filepath.Join(c.config.DBStoragePath, name))
 	})
-	if err != nil {
-		return err
-	}
-
-	// delete source directory
-	return os.RemoveAll(filepath.Join(c.config.DBStoragePath, name))
+	return err
 }
 
 // RenameTable implements drivers.OLAPStore.
