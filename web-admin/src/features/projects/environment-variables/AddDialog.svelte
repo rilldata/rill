@@ -283,7 +283,10 @@
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
-          <div class="flex flex-col gap-y-4 w-full">
+          <!-- 64 (gap 16px * 4) + 160 (item height 32 * 5) = 224 -->
+          <div
+            class="flex flex-col gap-y-4 w-full overflow-y-auto max-h-[224px]"
+          >
             {#each $form.variables as variable, index}
               <div
                 class="flex flex-row items-center gap-2"
