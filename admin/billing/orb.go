@@ -426,8 +426,9 @@ func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.H
 
 func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
-		ExternalCustomerID: orb.String(customerID),
-		PlanID:             orb.String(plan.ID),
+		ExternalCustomerID:                    orb.String(customerID),
+		PlanID:                                orb.String(plan.ID),
+		AlignBillingWithSubscriptionStartDate: orb.F(true),
 	})
 	if err != nil {
 		return nil, err
