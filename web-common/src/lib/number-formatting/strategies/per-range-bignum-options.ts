@@ -22,7 +22,7 @@ const bigNumberRangeSpec: RangeFormatSpec[] = [
   {
     minMag: -4,
     supMag: 0,
-    maxDigitsLeft: 1,
+    maxDigitsLeft: 0,
     maxDigitsRight: 4,
     baseMagnitude: 0,
     padWithInsignificantZeros: false,
