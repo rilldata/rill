@@ -32,6 +32,7 @@
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -119,7 +120,7 @@
   );
 
   function onCopy() {
-    copyToClipboard(url, "URL copied to clipboard");
+    copyToClipboard(url, "URL copied to clipboard", false);
     copied = true;
 
     setTimeout(() => {
@@ -268,13 +269,14 @@
   </form>
 {:else}
   <div class="flex flex-col gap-y-4">
-    <h3>
-      {copied
-        ? "Success! URL copied to clipboard."
-        : "Success! A public URL has been created."}
-    </h3>
-    <Button type="secondary" on:click={onCopy}
-      >{copied ? "Copied!" : "Copy URL"}</Button
+    <h3>Success! A public URL has been created.</h3>
+    <Button type="secondary" on:click={onCopy}>
+      {#if copied}
+        <Check size="16px" />
+        Copied URL
+      {:else}
+        Copy Public URL
+      {/if}</Button
     >
   </div>
 {/if}
