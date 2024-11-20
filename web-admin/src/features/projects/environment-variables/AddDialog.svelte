@@ -205,8 +205,13 @@
       const [key, value] = line.split("=");
       if (key && value) {
         if (key.trim() && value.trim()) {
+          const filteredVariables = $form.variables.filter(
+            (variable) =>
+              variable.key.trim() !== "" || variable.value.trim() !== "",
+          );
+
           $form.variables = [
-            ...$form.variables,
+            ...filteredVariables,
             { key: key.trim(), value: value.trim() },
           ];
         }
