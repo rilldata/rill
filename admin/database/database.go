@@ -89,7 +89,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
 	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
@@ -106,7 +106,6 @@ type DB interface {
 	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
-	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
 	// It is used by the "static" runtime provisioner to track slot usage on each host.
@@ -479,8 +478,8 @@ type Deployment struct {
 type InsertDeploymentOptions struct {
 	ProjectID         string
 	Branch            string
-	RuntimeHost       string `validate:"required"`
-	RuntimeInstanceID string `validate:"required"`
+	RuntimeHost       string
+	RuntimeInstanceID string
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
@@ -489,8 +488,8 @@ type InsertDeploymentOptions struct {
 // UpdateDeploymentOptions defines options for updating a Deployment.
 type UpdateDeploymentOptions struct {
 	Branch            string
-	RuntimeHost       string `validate:"required"`
-	RuntimeInstanceID string `validate:"required"`
+	RuntimeHost       string
+	RuntimeInstanceID string
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
@@ -853,9 +852,10 @@ type Invite struct {
 	InvitedBy string `db:"invited_by"`
 }
 
-type DeploymentsCount struct {
-	Deployments int
-	Slots       int
+type ProjectsQuotaUsage struct {
+	Projects    int `db:"projects"`
+	Deployments int `db:"deployments"`
+	Slots       int `db:"slots"`
 }
 
 type OrganizationWhitelistedDomain struct {

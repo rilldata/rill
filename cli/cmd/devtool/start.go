@@ -398,7 +398,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up", "--no-recreate")
+	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -725,7 +725,6 @@ func prepareStripeConfig() error {
 	outputFile := filepath.Join(stateDirCloud, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
-
 	if apiKey == "" {
 		logWarn.Printf("No Stripe API key found in .env, Stripe webhook events will not be processed\n")
 	}

@@ -404,13 +404,19 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return c.projectFromDTO(res)
 }
 
-func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
-	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
+func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
+	res := &database.ProjectsQuotaUsage{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		WITH t1 AS (SELECT * FROM projects WHERE org_id = $1)
+		SELECT
+			(SELECT COUNT(*) FROM t1) AS projects,
+			(SELECT COUNT(*) FROM deployments d WHERE d.project_id IN (SELECT id FROM t1)) AS deployments,
+			(SELECT COALESCE(SUM(prod_slots), 0) FROM t1) AS slots
+	`, orgID).StructScan(res)
 	if err != nil {
-		return 0, parseErr("project count", err)
+		return nil, parseErr("projects quota usage", err)
 	}
-	return count, nil
+	return res, nil
 }
 
 func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*database.ProjectWhitelistedDomainWithJoinedRoleNames, error) {
@@ -569,16 +575,6 @@ func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) e
 		return parseErr("deployment", err)
 	}
 	return nil
-}
-
-func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
-	res := &database.DeploymentsCount{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COUNT(*) as deployments, COALESCE(SUM(slots), 0) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployments count", err)
-	}
-	return res, nil
 }
 
 func (c *connection) UpsertStaticRuntimeAssignment(ctx context.Context, id, host string, slots int) error {

@@ -50,13 +50,14 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 	}
 
 	// Initialize the deployment (by provisioning a runtime and creating an instance on it)
-	depl, err = s.createDeploymentInner(ctx, depl, opts)
+	err = s.createDeploymentInner(ctx, depl, opts)
 	if err != nil {
 		// Mark deployment error
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, fmt.Sprintf("Failed to provision runtime: %v", err))
 		s.Logger.Error("create deployment: failed to provision runtime", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		// TODO: The validate_deployments job will tear it down, but we should consider starting a background job to do so immediately.
 		return nil, errors.Join(err, err2)
 	}
 
@@ -72,13 +73,13 @@ func (s *Service) CreateDeployment(ctx context.Context, opts *CreateDeploymentOp
 
 // createDeploymentInner provisions a runtime and initializes an instance on it.
 // The implementation is idempotent, enabling it to be moved to a retryable background job in the future.
-func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deployment, opts *CreateDeploymentOptions) (*database.Deployment, error) {
+func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deployment, opts *CreateDeploymentOptions) error {
 	// Validate the desired runtime version.
 	// This is usually "latest", which the provisioner internally may resolve to an actual version.
 	runtimeVersion := opts.Version
 	err := validateRuntimeVersion(runtimeVersion)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Provision the runtime
@@ -90,11 +91,11 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		Annotations:  opts.Annotations.ToMap(),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cfg, err := provisioner.NewRuntimeConfig(r.Config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Update the deployment with the runtime details
@@ -108,30 +109,30 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		StatusMessage:     "Creating instance...",
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Connect to the runtime
 	rt, err := s.OpenRuntimeClient(d)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rt.Close()
 
 	// If the instance already exists, we can return now. (This can happen since this operation is idempotent and may be retried.)
 	_, err = rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: instanceID})
 	if err != nil && status.Code(err) != codes.NotFound {
-		return nil, err
+		return err
 	}
 	if err == nil {
 		// Instance already exists. We can return.
-		return d, nil
+		return nil
 	}
 
 	// Create an access token that it can use to authenticate with the admin server.
 	dat, err := s.IssueDeploymentAuthToken(ctx, d.ID, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Prepare connectors
@@ -166,7 +167,7 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 	switch opts.OLAPDriver {
 	case "duckdb", "duckdb-ext-storage":
 		if opts.Slots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
+			return fmt.Errorf("slot count can't be 0 for OLAP driver 'duckdb'")
 		}
 		olapConnector = "duckdb"
 		// Already configured DuckDB above
@@ -195,11 +196,11 @@ func (s *Service) createDeploymentInner(ctx context.Context, d *database.Deploym
 		EmbedCatalog:   false,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Deployment is ready to use
-	return d, nil
+	return nil
 }
 
 type UpdateDeploymentOptions struct {
