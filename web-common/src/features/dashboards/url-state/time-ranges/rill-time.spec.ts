@@ -45,7 +45,11 @@ describe("rill time", () => {
         expect(parser.results).length(1);
 
         const rt = parseRillTime(rillTime);
-        expect(rt.getLabel()).toEqual(label);
+        expect(
+          rt.getLabel({
+            completeness: true,
+          }),
+        ).toEqual(label);
       });
     }
   });

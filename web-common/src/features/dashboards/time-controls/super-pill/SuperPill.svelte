@@ -18,10 +18,10 @@
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
     ALL_TIME_RANGE_ALIAS,
+    bucketTimeRanges,
     CUSTOM_TIME_RANGE_ALIAS,
     type ISODurationString,
     type NamedRange,
-    type RangeBuckets,
   } from "../new-time-controls";
   import * as Elements from "./components";
 
@@ -32,7 +32,6 @@
   const {
     exploreName,
     selectors: {
-      timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
@@ -61,33 +60,9 @@
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
-  $: ({
-    latestWindowTimeRanges,
-    periodToDateRanges,
-    previousCompleteDateRanges,
-    showDefaultItem,
-  } = $timeRangeSelectorState);
+  let showDefaultItem = false; // TODO
 
-  $: ranges = <RangeBuckets>{
-    latest: [
-      ...latestWindowTimeRanges.map((range) => ({
-        range: range.name,
-        label: range.label,
-      })),
-      ...($timeRanges.data?.ranges?.map((r) => ({
-        range: r.rillTime,
-        label: r.rillTime,
-      })) ?? []),
-    ],
-    periodToDate: periodToDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-    previous: previousCompleteDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-  };
+  $: ranges = bucketTimeRanges($timeRanges.data?.ranges ?? []);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -116,7 +91,6 @@
     }
 
     const tr = $timeRanges.data.ranges.find((r) => r.rillTime === name);
-    console.log(name, tr);
     if (!tr) return;
 
     const baseTimeRange: TimeRange = {

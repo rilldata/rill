@@ -42,9 +42,23 @@
 
 {#if ranges.latest.length}
   <DropdownMenu.Separator />
+  <DropdownMenu.Label>COMPLETE</DropdownMenu.Label>
 {/if}
 
 {#each ranges.latest as { range, label } (range)}
+  <DropdownMenu.Item on:click={handleClick} data-range={range}>
+    <span class:font-bold={selected === range}>
+      {label}
+    </span>
+  </DropdownMenu.Item>
+{/each}
+
+{#if ranges.latestIncomplete.length}
+  <DropdownMenu.Separator />
+  <DropdownMenu.Label>INCOMPLETE</DropdownMenu.Label>
+{/if}
+
+{#each ranges.latestIncomplete as { range, label } (range)}
   <DropdownMenu.Item on:click={handleClick} data-range={range}>
     <span class:font-bold={selected === range}>
       {label}

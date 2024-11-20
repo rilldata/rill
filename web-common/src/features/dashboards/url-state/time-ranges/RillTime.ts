@@ -1,22 +1,35 @@
+export enum RillTimeType {
+  Unknown = "Unknown",
+  Latest = "Latest",
+  PreviousPeriod = "Previous period",
+  PeriodToDate = "Period To Date",
+}
+
 export class RillTime {
   public readonly isComplete: boolean;
   public readonly end: RillTimeModifier;
+  public readonly type: RillTimeType;
 
   public constructor(
     public readonly start: RillTimeModifier,
     end: RillTimeModifier,
     public readonly modifier: RillTimeRangeModifier | undefined,
   ) {
+    this.type = start.getType();
+
     this.end = end ?? RillTimeModifier.now();
     this.isComplete =
       this.end.type === RillTimeModifierType.Custom ||
       this.end.truncate !== undefined;
   }
 
-  public getLabel() {
-    const start = capitalizeFirstChar(this.start.getLabel(this.isComplete));
-    const completeSuffix = this.isComplete ? "complete" : "incomplete";
-    return `${start}, ${completeSuffix}`;
+  public getLabel({ completeness }: { completeness: boolean }) {
+    const start = capitalizeFirstChar(this.start.getLabel());
+    const completeSuffix = ", " + (this.isComplete ? "complete" : "incomplete");
+    if (completeness) {
+      return `${start}${completeSuffix}`;
+    }
+    return start;
   }
 }
 
@@ -65,7 +78,7 @@ export class RillTimeModifier {
     return this;
   }
 
-  public getLabel(isComplete: boolean) {
+  public getLabel() {
     const grain = this.grain ?? this.truncate;
     if (!grain) {
       return RillTimeModifierType.Earliest.toString();
@@ -84,8 +97,22 @@ export class RillTimeModifier {
     if (grain.count === -1) {
       return `previous ${unit}`;
     }
-    const completenessOffset = isComplete ? 0 : 1;
-    return `last ${-grain.count + completenessOffset} ${unit}s`;
+    return `last ${-grain.count} ${unit}s`;
+  }
+
+  public getType() {
+    const grain = this.grain ?? this.truncate;
+    if (!grain || grain.count > 0) {
+      return RillTimeType.Unknown;
+    }
+
+    if (grain.count === 0) {
+      return RillTimeType.PeriodToDate;
+    }
+    if (grain.count === -1) {
+      return RillTimeType.PreviousPeriod;
+    }
+    return RillTimeType.Latest;
   }
 }
 
