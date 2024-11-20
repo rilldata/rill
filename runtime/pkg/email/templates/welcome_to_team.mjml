@@ -20,7 +20,6 @@
         <mj-text font-size="20px">
           Welcome to Rill
         </mj-text>
-        <mj-image height="111px" src="https://cdn.rilldata.com/email-transactional/email-transactional-header.png" />
       </mj-column>
     </mj-section>
     <mj-section>

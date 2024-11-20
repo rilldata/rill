@@ -24,7 +24,7 @@
           {{ .PreButton }}
         </mj-text>
 
-        <mj-button padding-top="32px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .ButtonLink }}">
+        <mj-button padding-top="24px" padding-bottom="14px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .ButtonLink }}">
           {{ .ButtonText }}
         </mj-button>
 

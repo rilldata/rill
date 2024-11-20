@@ -482,7 +482,7 @@ If you found that our service did not meet your needs, please reply to this emai
 `, opts.PlanName, opts.ToName, opts.EndDate.Format(dateFormat))),
 		ButtonText: "Billing Settings",
 		ButtonLink: opts.BillingURL,
-		PostButton: template.HTML(fmt.Sprintf("If you found that our service did not meet your needs, please reply to this email and we’ll do our best to address your feedback and concerns.")),
+		PostButton: "If you found that our service did not meet your needs, please reply to this email and we’ll do our best to address your feedback and concerns.",
 	})
 }
 
@@ -505,11 +505,11 @@ If you’d like to reactive your subscription and regain access, you can easily 
 `, opts.OrgName)),
 		ButtonText: "Billing Settings",
 		ButtonLink: opts.BillingURL,
-		PostButton: template.HTML(fmt.Sprintf(`
+		PostButton: `
 We’d also love to hear from you! If you have any feedback about your experience or how we can improve, please share it with us by replying to this email.
 <br /><br />
 Thank you for trying Rill Cloud. We hope to see you again in the future!
-`)),
+`,
 	})
 }
 
@@ -528,10 +528,8 @@ func (c *Client) SendTrialStarted(opts *TrialStarted) error {
 		Subject:     fmt.Sprintf("A 30-day free trial for %s has started", opts.OrgName),
 		FrontendURL: opts.FrontendURL,
 		WelcomeText: template.HTML(fmt.Sprintf(`
-Hi %s,
-<br /><br />
 You now have access to Rill Cloud until %s to explore all features. Let us know if you need any help along the way!
-`, opts.ToName, opts.TrialEndDate.Format(dateFormat))),
+`, opts.TrialEndDate.Format(dateFormat))),
 	})
 }
 
@@ -544,7 +542,7 @@ type TrialEndingSoon struct {
 }
 
 func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
-	diff := opts.TrialEndDate.Sub(time.Now())
+	diff := time.Until(opts.TrialEndDate)
 	days := int(math.Round(diff.Hours() / 24))
 	return c.SendCallToAction(&CallToAction{
 		ToEmail: opts.ToEmail,
@@ -584,7 +582,7 @@ Your Rill Cloud trial has now expired. %s will be hibernated on %s. We hope you�
 `, opts.ToName, opts.OrgName, opts.GracePeriodEndDate.Format(dateFormat))),
 		ButtonText: "Upgrade to Team Plan",
 		ButtonLink: opts.UpgradeURL,
-		PostButton: template.HTML(fmt.Sprintf("If you have any questions, feel free to reply to this email.")),
+		PostButton: "If you have any questions, feel free to reply to this email.",
 	})
 }
 
