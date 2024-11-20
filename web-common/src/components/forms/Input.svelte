@@ -36,6 +36,7 @@
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
+  export let additionalClass = "";
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -90,7 +91,11 @@
   }
 </script>
 
-<div class="component-wrapper" class:w-full={full} style:width>
+<div
+  class="component-wrapper {additionalClass}"
+  class:w-full={full}
+  style:width
+>
   {#if label}
     <InputLabel {label} {optional} {id} {hint}>
       <slot name="mode-switch" slot="mode-switch" />
