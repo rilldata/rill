@@ -389,29 +389,21 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Check projects quota
-	count, err := s.admin.DB.CountProjectsForOrganization(ctx, org.ID)
+	usage, err := s.admin.DB.CountProjectsQuotaUsage(ctx, org.ID)
 	if err != nil {
 		return nil, err
 	}
-	if org.QuotaProjects >= 0 && count >= org.QuotaProjects {
+	if org.QuotaProjects >= 0 && usage.Projects >= org.QuotaProjects {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
 	}
-
-	// Check slots per deployment quota
 	if org.QuotaSlotsPerDeployment >= 0 && int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment", org.QuotaSlotsPerDeployment)
 	}
-
-	// Check per project deployments and slots limit
-	stats, err := s.admin.DB.CountDeploymentsForOrganization(ctx, org.ID)
-	if err != nil {
-		return nil, err
-	}
-	if org.QuotaDeployments >= 0 && stats.Deployments >= org.QuotaDeployments {
-		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
-	}
-	if org.QuotaSlotsTotal >= 0 && stats.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+	if org.QuotaSlotsTotal >= 0 && usage.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
+	}
+	if org.QuotaDeployments >= 0 && usage.Deployments >= org.QuotaDeployments {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
 	}
 
 	// Add prod TTL as 7 days if not a public project else infinite
@@ -1700,7 +1692,6 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 	return &adminv1.Deployment{
 		Id:                d.ID,
 		ProjectId:         d.ProjectID,
-		Slots:             int64(d.Slots),
 		Branch:            d.Branch,
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,

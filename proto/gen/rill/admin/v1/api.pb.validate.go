@@ -33477,8 +33477,6 @@ func (m *Deployment) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Slots
-
 	// no validation rules for Branch
 
 	// no validation rules for RuntimeHost

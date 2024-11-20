@@ -67,7 +67,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			if proj.Project.ProdOlapDsn != "" {
 				fmt.Printf("  OLAP DSN: %s\n", proj.Project.ProdOlapDsn)
 			}
-			fmt.Printf("  Slots: %d\n", depl.Slots)
+			fmt.Printf("  Slots: %d\n", proj.Project.ProdSlots)
 			fmt.Printf("  Branch: %s\n", depl.Branch)
 			if proj.Project.Subpath != "" {
 				fmt.Printf("  Subpath: %s\n", proj.Project.Subpath)

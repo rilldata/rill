@@ -89,7 +89,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
 	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
@@ -103,13 +103,18 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
+	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
-	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
-	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
-	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
-	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
+	// It is used by the "static" runtime provisioner to track slot usage on each host.
+	UpsertStaticRuntimeAssignment(ctx context.Context, id string, host string, slots int) error
+	// DeleteStaticRuntimeAssignment removes the host and slots assignment for a provisioner resource.
+	// The implementation should be idempotent.
+	DeleteStaticRuntimeAssignment(ctx context.Context, id string) error
+	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by UpsertStaticRuntimeAssignment.
+	ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*StaticRuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
@@ -286,6 +291,11 @@ type DB interface {
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
+
+	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
+	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
+	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
+	DeleteProvisionerResource(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -453,10 +463,6 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
-	Provisioner       string           `db:"provisioner"`
-	ProvisionID       string           `db:"provision_id"`
-	RuntimeVersion    string           `db:"runtime_version"`
-	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -471,22 +477,28 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
-	Provisioner       string `validate:"required"`
-	ProvisionID       string
-	RuntimeVersion    string
-	Slots             int
 	Branch            string
-	RuntimeHost       string `validate:"required"`
-	RuntimeInstanceID string `validate:"required"`
+	RuntimeHost       string
+	RuntimeInstanceID string
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
 }
 
-// RuntimeSlotsUsed is the result of a ResolveRuntimeSlotsUsed query.
-type RuntimeSlotsUsed struct {
-	RuntimeHost string `db:"runtime_host"`
-	SlotsUsed   int    `db:"slots_used"`
+// UpdateDeploymentOptions defines options for updating a Deployment.
+type UpdateDeploymentOptions struct {
+	Branch            string
+	RuntimeHost       string
+	RuntimeInstanceID string
+	RuntimeAudience   string
+	Status            DeploymentStatus
+	StatusMessage     string
+}
+
+// StaticRuntimeSlotsUsed is the number of slots currently assigned to a runtime host.
+type StaticRuntimeSlotsUsed struct {
+	Host  string `db:"host"`
+	Slots int    `db:"slots"`
 }
 
 // User is a person registered in Rill.
@@ -840,9 +852,10 @@ type Invite struct {
 	InvitedBy string `db:"invited_by"`
 }
 
-type DeploymentsCount struct {
-	Deployments int
-	Slots       int
+type ProjectsQuotaUsage struct {
+	Projects    int `db:"projects"`
+	Deployments int `db:"deployments"`
+	Slots       int `db:"slots"`
 }
 
 type OrganizationWhitelistedDomain struct {
@@ -1114,4 +1127,66 @@ type UpsertBillingIssueOptions struct {
 	Type      BillingIssueType `validate:"required"`
 	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
+}
+
+// ProvisionerResourceStatus is an enum representing the state of a provisioner resource
+type ProvisionerResourceStatus int
+
+const (
+	ProvisionerResourceStatusUnspecified ProvisionerResourceStatus = 0
+	ProvisionerResourceStatusPending     ProvisionerResourceStatus = 1
+	ProvisionerResourceStatusOK          ProvisionerResourceStatus = 2
+	ProvisionerResourceStatusError       ProvisionerResourceStatus = 4
+)
+
+func (d ProvisionerResourceStatus) String() string {
+	switch d {
+	case ProvisionerResourceStatusPending:
+		return "Pending"
+	case ProvisionerResourceStatusOK:
+		return "OK"
+	case ProvisionerResourceStatusError:
+		return "Error"
+	default:
+		return "Unspecified"
+	}
+}
+
+// ProvisionerResource represents a resource created by a provisioner (see admin/provisioner/README.md for details about provisioners).
+type ProvisionerResource struct {
+	ID            string                    `db:"id"`
+	DeploymentID  string                    `db:"deployment_id"`
+	Type          string                    `db:"type"`
+	Name          string                    `db:"name"`
+	Status        ProvisionerResourceStatus `db:"status"`
+	StatusMessage string                    `db:"status_message"`
+	Provisioner   string                    `db:"provisioner"`
+	Args          map[string]any            `db:"args_json"`
+	State         map[string]any            `db:"state_json"`
+	Config        map[string]any            `db:"config_json"`
+	CreatedOn     time.Time                 `db:"created_on"`
+	UpdatedOn     time.Time                 `db:"updated_on"`
+}
+
+// InsertProvisionerResourceOptions defines options for inserting a new ProvisionerResource.
+type InsertProvisionerResourceOptions struct {
+	ID            string
+	DeploymentID  string
+	Type          string
+	Name          string
+	Status        ProvisionerResourceStatus
+	StatusMessage string
+	Provisioner   string
+	Args          map[string]any
+	State         map[string]any
+	Config        map[string]any
+}
+
+// UpdateProvisionerResourceOptions defines options for updating a ProvisionerResource.
+type UpdateProvisionerResourceOptions struct {
+	Status        ProvisionerResourceStatus
+	StatusMessage string
+	Args          map[string]any
+	State         map[string]any
+	Config        map[string]any
 }
