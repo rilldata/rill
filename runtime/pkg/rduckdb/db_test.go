@@ -57,10 +57,11 @@ func TestDB(t *testing.T) {
 	require.NoError(t, release())
 
 	// Add column
-	db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
+	err = db.MutateTable(ctx, "test2", func(ctx context.Context, conn *sqlx.Conn) error {
 		_, err := conn.ExecContext(ctx, "ALTER TABLE test2 ADD COLUMN city TEXT")
 		return err
 	})
+	require.NoError(t, err)
 
 	// drop table
 	err = db.DropTable(ctx, "test2")
