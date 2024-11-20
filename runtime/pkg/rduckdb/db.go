@@ -216,19 +216,18 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	}
 	bgctx, cancel := context.WithCancel(ctx)
 	db := &db{
-		opts:                opts,
-		localPath:           opts.LocalPath,
-		remote:              opts.Remote,
-		readMu:              ctxsync.NewRWMutex(),
-		writeSem:            semaphore.NewWeighted(1),
-		localDirty:          true,
-		ticker:              time.NewTicker(5 * time.Minute),
-		genCounter:          make(map[int32]int32),
-		tableVersionCounter: make(map[string]map[string]int32),
-		tablVersionForGen:   make(map[int32][]tableVersion),
-		logger:              opts.Logger,
-		ctx:                 bgctx,
-		cancel:              cancel,
+		opts:         opts,
+		localPath:    opts.LocalPath,
+		remote:       opts.Remote,
+		readMu:       ctxsync.NewRWMutex(),
+		writeSem:     semaphore.NewWeighted(1),
+		localDirty:   true,
+		ticker:       time.NewTicker(5 * time.Minute),
+		genCounter:   make(map[int32]int32),
+		schemaForGen: make(map[int32][]*tableMeta),
+		logger:       opts.Logger,
+		ctx:          bgctx,
+		cancel:       cancel,
 	}
 
 	// create local path
@@ -244,8 +243,8 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	}
 
 	// create read handle
-	var tblVersions []tableVersion
-	db.readHandle, tblVersions, err = db.openDBAndAttach(ctx, "", "", true)
+	var schema []*tableMeta
+	db.readHandle, schema, err = db.openDBAndAttach(ctx, "", "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -258,7 +257,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, err
 	}
 	db.latestGen.Store(1)
-	db.tablVersionForGen[1] = tblVersions
+	db.schemaForGen[1] = schema
 	go db.localDBMonitor()
 	return db, nil
 }
@@ -281,15 +280,13 @@ type db struct {
 	ticker *time.Ticker
 	// latestGen is the latest generation of the db. A generation is incremented whenever a write happens.
 	latestGen atomic.Int32
+	// schemaForGen stores tableMeta for all tables active in a generation
+	schemaForGen map[int32][]*tableMeta
 
 	// counterMu protects genCounter and tableVersionCounter
 	counterMu sync.Mutex
 	// genCounter stores how many queries are being served by a particular generation
 	genCounter map[int32]int32
-	// tableVersionCounter stores the number of queries being served by a particular table version
-	tableVersionCounter map[string]map[string]int32
-	// tableVersionForGen stores all table versions for a particular generation
-	tablVersionForGen map[int32][]tableVersion
 
 	logger *slog.Logger
 
@@ -465,7 +462,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil
 	}
 
-	err = d.reopen(ctx)
+	err = d.pushNewGen(ctx)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			d.logger.Error("create: error in reopening db", slog.String("error", err.Error()))
@@ -551,7 +548,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 
 	// reopen db handle ignoring old name
-	err = d.reopen(ctx)
+	err = d.pushNewGen(ctx)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			d.logger.Error("mutate: error in reopening db", slog.String("error", err.Error()))
@@ -603,7 +600,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 
 	// reopen db handle
-	err = d.reopen(ctx)
+	err = d.pushNewGen(ctx)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			d.logger.Error("drop: error in reopening db", slog.String("error", err.Error()))
@@ -693,7 +690,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	}
 
 	// reopen db handle
-	err = d.reopen(ctx)
+	err = d.pushNewGen(ctx)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			d.logger.Error("rename: error in reopening db", slog.String("error", err.Error()))
@@ -723,7 +720,7 @@ func (d *db) localDBMonitor() {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
-			err = d.reopen(d.ctx)
+			err = d.pushNewGen(d.ctx)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in reopening db", slog.String("error", err.Error()))
 			}
@@ -731,7 +728,7 @@ func (d *db) localDBMonitor() {
 	}
 }
 
-func (d *db) reopen(ctx context.Context) error {
+func (d *db) pushNewGen(ctx context.Context) error {
 	conn, err := d.readHandle.Connx(ctx)
 	if err != nil {
 		return err
@@ -756,7 +753,7 @@ func (d *db) reopen(ctx context.Context) error {
 	}
 
 	// update tableVersionForGen
-	d.tablVersionForGen[currentGen] = tblVersions
+	d.schemaForGen[currentGen] = tblVersions
 
 	// update latestGen
 	swapped := d.latestGen.Swap(currentGen)
@@ -779,14 +776,13 @@ func (d *db) reopen(ctx context.Context) error {
 	servedTableVersions := make(map[string][]string)
 
 	// iterate over served gens
-	for g := range d.tablVersionForGen {
+	for g := range d.schemaForGen {
 		if _, ok := gens[g]; !ok {
-			delete(d.tablVersionForGen, g)
 			continue
 		}
-		for _, tv := range d.tablVersionForGen[g] {
-			servedVersions := servedTableVersions[tv.Table]
-			servedTableVersions[tv.Table] = append(servedVersions, tv.Version)
+		for _, tv := range d.schemaForGen[g] {
+			servedVersions := servedTableVersions[tv.Name]
+			servedTableVersions[tv.Name] = append(servedVersions, tv.Version)
 		}
 	}
 
@@ -818,27 +814,25 @@ func (d *db) reopen(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		nothingServed := true
-		for _, version := range versions {
-			table := tableVersion{Table: entry.Name(), Version: version.Name()}
-			if !version.IsDir() {
+		for _, v := range versions {
+			if !v.IsDir() {
 				continue
 			}
-			if ok && slices.Contains(servedVersions, version.Name()) {
-				nothingServed = false
+			version := v.Name()
+			if ok && slices.Contains(servedVersions, version) {
 				continue
 			}
-			_, err := d.readHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(table.Table, table.Version)), nil)
+			_, err := d.readHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(meta.Name, version)), nil)
 			if err != nil {
-				d.logger.Debug("error in detaching table", slog.String("table", table.Table), slog.String("version", table.Version), slog.String("error", err.Error()))
+				d.logger.Debug("error in detaching table", slog.String("table", meta.Name), slog.String("version", version), slog.String("error", err.Error()))
 				continue
 			}
-			err = d.deleteLocalTableFiles(table.Table, table.Version)
+			err = d.deleteLocalTableFiles(meta.Name, version)
 			if err != nil {
-				d.logger.Debug("error in removing table", slog.String("table", table.Table), slog.String("version", table.Version), slog.String("error", err.Error()))
+				d.logger.Debug("error in removing table", slog.String("table", meta.Name), slog.String("version", version), slog.String("error", err.Error()))
 			}
 		}
-		if nothingServed {
+		if len(servedVersions) == 0 {
 			err = d.deleteLocalTableFiles(meta.Name, "")
 			if err != nil {
 				d.logger.Debug("error in removing table", slog.String("table", meta.Name), slog.String("error", err.Error()))
@@ -847,11 +841,12 @@ func (d *db) reopen(ctx context.Context) error {
 	}
 
 	// iterate over gens to delete with no gens being served
-	for g := range d.tablVersionForGen {
+	for g := range d.schemaForGen {
 		if _, ok := gens[g]; ok {
 			// this generation is being served
 			continue
 		}
+		delete(d.schemaForGen, g)
 		_, err := d.readHandle.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(g)), nil)
 		if err != nil {
 			d.logger.Debug("error in dropping schema", slog.Int("gen", int(g)), slog.String("error", err.Error()))
@@ -918,7 +913,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, attachExis
 	}, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (*sqlx.DB, []tableVersion, error) {
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read bool) (*sqlx.DB, []*tableMeta, error) {
 	d.logger.Debug("open db", slog.Bool("read", read), slog.String("uri", uri))
 	// open the db
 	var settings map[string]string
@@ -996,7 +991,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	return db, tblVersions, nil
 }
 
-func (d *db) attachDBs(ctx context.Context, conn *sqlx.Conn, ignoreTable string) ([]tableVersion, error) {
+func (d *db) attachDBs(ctx context.Context, conn *sqlx.Conn, ignoreTable string) ([]*tableMeta, error) {
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return nil, err
@@ -1034,19 +1029,13 @@ func (d *db) attachDBs(ctx context.Context, conn *sqlx.Conn, ignoreTable string)
 		}
 		return strings.Compare(a.CreatedVersion, b.CreatedVersion)
 	})
-
-	res := make([]tableVersion, len(tables))
-	for i, table := range tables {
+	for _, table := range tables {
 		err = d.attachTable(ctx, conn, table)
 		if err != nil {
 			return nil, fmt.Errorf("failed to attach table %q: %w", table.Name, err)
 		}
-		res[i] = tableVersion{
-			Table:   table.Name,
-			Version: table.Version,
-		}
 	}
-	return res, nil
+	return tables, nil
 }
 
 func (d *db) attachTable(ctx context.Context, db *sqlx.Conn, table *tableMeta) error {
@@ -1208,11 +1197,6 @@ func humanReadableSizeToBytes(sizeStr string) (float64, error) {
 	}
 
 	return sizeFloat * multiplier, nil
-}
-
-type tableVersion struct {
-	Table   string
-	Version string
 }
 
 func schemaName(gen int32) string {
