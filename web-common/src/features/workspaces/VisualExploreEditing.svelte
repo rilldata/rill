@@ -108,23 +108,6 @@
       rawDimensions instanceof YAMLMap && rawDimensions.has("exclude"),
   };
 
-  let selectedMeasureField: "all" | "subset" | "expression";
-  let selectedDimensionField: "all" | "subset" | "expression";
-
-  $: selectedMeasureField =
-    rawMeasures === "*"
-      ? "all"
-      : rawMeasures instanceof YAMLSeq || rawMeasures instanceof YAMLMap
-        ? "subset"
-        : "expression";
-
-  $: selectedDimensionField =
-    rawDimensions === "*"
-      ? "all"
-      : rawDimensions instanceof YAMLSeq || rawDimensions instanceof YAMLMap
-        ? "subset"
-        : "expression";
-
   $: subsetMeasures = new Set(
     rawMeasureSequence.items.every((item) => item instanceof Scalar)
       ? rawMeasureSequence.items.map((item) => item.toString())
@@ -138,8 +121,8 @@
   );
 
   $: fields = {
-    measures: selectedMeasureField,
-    dimensions: selectedDimensionField,
+    measures: getMeasureOrDimensionState(rawMeasures),
+    dimensions: getMeasureOrDimensionState(rawDimensions),
   };
 
   $: subsets = {
@@ -206,6 +189,23 @@
 
   function stringGuard(value: unknown | undefined): string {
     return value && typeof value === "string" ? value : "";
+  }
+
+  function getMeasureOrDimensionState(
+    node: unknown,
+  ): "all" | "subset" | "expression" | null {
+    if (node === "*") {
+      return "all";
+    } else if (
+      node instanceof YAMLSeq ||
+      (node instanceof YAMLMap && node.has("exclude"))
+    ) {
+      return "subset";
+    } else if (node instanceof YAMLMap && node.has("expr")) {
+      return "expression";
+    } else {
+      return null;
+    }
   }
 
   async function updateProperties(
