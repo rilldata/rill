@@ -7,6 +7,10 @@
   $: projs = createAdminServiceListProjectsForOrganization(organization);
 </script>
 
+<span class="text-gray-500 text-base font-normal leading-normal">
+  Check out your projects below.
+</span>
+
 {#if $projs.data && $projs.data.projects?.length === 0}
   <p class="text-gray-500 text-xs">This organization has no projects yet.</p>
 {:else if $projs.data && $projs.data.projects?.length > 0}

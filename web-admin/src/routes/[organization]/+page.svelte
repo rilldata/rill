@@ -47,8 +47,8 @@
         {organizationPermissions}
       />
     {:else}
-      <OrganizationHero organization={orgName} {title} />
-      <div class="py-2 px-1.5">
+      <div class="flex flex-col gap-y-4">
+        <OrganizationHero {title} />
         <ProjectCards organization={orgName} />
       </div>
     {/if}
