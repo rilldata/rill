@@ -1,6 +1,7 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
 
   export let value: string;
@@ -30,16 +31,12 @@
     showValue = !showValue;
   }
 
-  function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text).catch(console.error);
-  }
-
   function onCopy() {
     if (isValueHidden) {
       return;
     }
 
-    copyToClipboard(value);
+    copyToClipboard(value, undefined, false);
     copied = true;
 
     setTimeout(() => {
