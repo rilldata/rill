@@ -50,9 +50,10 @@
       },
     );
 
-  $: emailNotifier =
-    $reportQuery.data &&
-    extractNotifier($reportQuery.data.resource.report.spec.notifiers, "email");
+  $: reportSpec = $reportQuery.data?.resource?.report?.spec;
+
+  $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
+  $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
 
   // Actions
   const queryClient = useQueryClient();
@@ -76,7 +77,7 @@
   }
 </script>
 
-{#if $reportQuery.data}
+{#if reportSpec}
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
@@ -84,33 +85,27 @@
         <!-- Author -->
         <ProjectAccessControls {organization} {project}>
           <svelte:fragment slot="manage-project">
-            {#if $reportQuery.data}
-              <ReportOwnerBlock
-                {organization}
-                {project}
-                ownerId={$reportQuery.data.resource.report.spec.annotations[
-                  "admin_owner_user_id"
-                ]}
-              />
-            {/if}
+            <ReportOwnerBlock
+              {organization}
+              {project}
+              ownerId={reportSpec.annotations["admin_owner_user_id"]}
+            />
           </svelte:fragment>
         </ProjectAccessControls>
         <!-- Format -->
         <span>
-          {exportFormatToPrettyString(
-            $reportQuery.data.resource.report.spec.exportFormat,
-          )} •
+          {exportFormatToPrettyString(reportSpec.exportFormat)} •
         </span>
         <!-- Limit -->
         <span>
-          {$reportQuery.data?.resource.report.spec.exportLimit === "0"
+          {reportSpec.exportLimit === "0"
             ? "No row limit"
-            : `${$reportQuery.data?.resource.report.spec.exportLimit} row limit`}
+            : `${reportSpec.exportLimit} row limit`}
         </span>
       </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {$reportQuery.data.resource.report.spec.displayName}
+          {reportSpec.displayName}
         </h1>
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
@@ -160,23 +155,30 @@
         <MetadataValue>
           {formatNextRunOn(
             $reportQuery.data.resource.report.state.nextRunOn,
-            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
+            reportSpec?.refreshSchedule?.timeZone,
           )}
         </MetadataValue>
       </div>
     </div>
+    <!-- Slack recipients -->
+    {#if slackNotifier}
+      <MetadataList
+        data={[...slackNotifier.channels, ...slackNotifier.users]}
+        label="Slack recipients"
+      />
+    {/if}
 
-    <!-- Recipients -->
+    <!-- Email recipients -->
     {#if emailNotifier}
-      <MetadataList data={emailNotifier.recipients} label="Recipients" />
+      <MetadataList data={emailNotifier.recipients} label="Email recipients" />
     {/if}
   </div>
 {/if}
 
-{#if $reportQuery.data}
+{#if reportSpec}
   <CreateScheduledReportDialog
     bind:open={showEditReportDialog}
-    reportSpec={$reportQuery.data.resource.report.spec}
+    {reportSpec}
     exploreName={$dashboardName.data}
   />
 {/if}

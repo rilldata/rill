@@ -211,10 +211,11 @@
     ];
   }
   function onExpandedChange(updater: Updater<ExpandedState>) {
-    // Something is off with tanstack's types
-    //@ts-expect-error-free
-    //eslint-disable-next-line
-    expanded = updater(expanded);
+    if (updater instanceof Function) {
+      expanded = updater(expanded);
+    } else {
+      expanded = updater;
+    }
     metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
@@ -225,6 +226,7 @@
       sorting = updater;
     }
     metricsExplorerStore.setPivotSort($exploreName, sorting);
+    rowScrollOffset = 0;
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {

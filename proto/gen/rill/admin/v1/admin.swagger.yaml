@@ -4000,9 +4000,6 @@ definitions:
         type: string
       projectId:
         type: string
-      slots:
-        type: string
-        format: int64
       branch:
         type: string
       runtimeHost:

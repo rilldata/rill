@@ -552,7 +552,7 @@ export function createPivotDataStore(
                 if (rowMeasureTotalsAxesQuery?.isFetching) {
                   return cellSet({
                     isFetching: true,
-                    data: axesRowTotals,
+                    data: lastPivotData ? lastPivotData : axesRowTotals,
                     columnDef,
                     assembled: false,
                     totalColumns,

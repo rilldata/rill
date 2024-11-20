@@ -75,7 +75,11 @@
             planName: teamPlan.name,
           },
         });
-        showWelcomeToRillDialog.set(true);
+        // if redirect is set then this page won't be active.
+        // so this will lead to pop-in of the modal before navigating away
+        if (!redirect) {
+          showWelcomeToRillDialog.set(true);
+        }
       }
       void invalidateBillingInfo(organization);
     } catch {

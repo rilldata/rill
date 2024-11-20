@@ -12137,11 +12137,6 @@ export class Deployment extends Message<Deployment> {
   projectId = "";
 
   /**
-   * @generated from field: int64 slots = 3;
-   */
-  slots = protoInt64.zero;
-
-  /**
    * @generated from field: string branch = 4;
    */
   branch = "";
@@ -12186,7 +12181,6 @@ export class Deployment extends Message<Deployment> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
