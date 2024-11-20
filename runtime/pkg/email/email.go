@@ -408,12 +408,11 @@ We couldn’t process your payment for %s. You have until %s to update your paym
 }
 
 type InvoicePaymentSuccess struct {
-	ToEmail          string
-	ToName           string
-	OrgName          string
-	BillingStartDate time.Time
-	PaymentDate      time.Time
-	BillingPageURL   string
+	ToEmail        string
+	ToName         string
+	OrgName        string
+	PaymentDate    time.Time
+	BillingPageURL string
 }
 
 // SendInvoicePaymentSuccess Currently Used only when a previously failed invoice payment succeeds
@@ -425,12 +424,12 @@ func (c *Client) SendInvoicePaymentSuccess(opts *InvoicePaymentSuccess) error {
 		Body: template.HTML(fmt.Sprintf(`
 Thank you for your payment!
 <br /><br />
-Your payment for %s has been successfully processed. Your next billing cycle starts on %s. 
+Your payment for %s has been successfully processed. 
 <br /><br />
 If you believe this charge to be in error or have any questions, please email support@rilldata.com.
 <br /><br />
 You can manage your subscription by visiting the <a href=%q>Billing settings</a>
-`, opts.OrgName, opts.BillingStartDate.Format(dateFormat), opts.BillingPageURL)),
+`, opts.OrgName, opts.BillingPageURL)),
 	})
 }
 
@@ -605,11 +604,11 @@ Reactivate your org by upgrading to the Team Plan today!
 `, opts.OrgName)),
 		ButtonText: "Upgrade to Team Plan",
 		ButtonLink: opts.UpgradeURL,
-		PostButton: template.HTML(fmt.Sprintf(`
+		PostButton: `
 We’d also love to hear from you! If you have any feedback about your experience or how we can improve, please share it with us by replying to this email.
 <br /><br />
 Thank you for trying Rill Cloud. We hope to see you again in the future!
-`)),
+`,
 	})
 }
 

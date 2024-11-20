@@ -203,7 +203,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
 				PlanName:         plan.DisplayName,
-				BillingStartDate: sub.CurrentBillingCycleStartDate, // TODO: should this be end date + 1?
+				BillingStartDate: sub.CurrentBillingCycleStartDate.AddDate(0, 0, 1),
 			})
 		} else {
 			err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{

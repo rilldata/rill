@@ -162,12 +162,11 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 
 	// send email
 	err = w.admin.Email.SendInvoicePaymentSuccess(&email.InvoicePaymentSuccess{
-		ToEmail:          org.BillingEmail,
-		ToName:           org.Name,
-		OrgName:          org.Name,
-		BillingStartDate: time.Time{}, // TODO: which will this be?
-		PaymentDate:      time.Now(),
-		BillingPageURL:   w.admin.URLs.Billing(org.Name, false),
+		ToEmail:        org.BillingEmail,
+		ToName:         org.Name,
+		OrgName:        org.Name,
+		PaymentDate:    time.Now(),
+		BillingPageURL: w.admin.URLs.Billing(org.Name, false),
 	})
 	if err != nil {
 		// ignore email sending error
