@@ -12,7 +12,8 @@
   import { Plus } from "lucide-svelte";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/users/AddUsersDialog.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import { createAdminServiceListOrgUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
+  import { createAdminServiceListOrganizationMemberUsersInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-users";
+  import { createAdminServiceListOrganizationInvitesInfiniteQuery } from "@rilldata/web-admin/features/organizations/users/create-infinite-query-org-invites";
 
   let userEmail = "";
   let userRole = "";
@@ -28,21 +29,26 @@
 
   const PAGE_SIZE = 12;
 
-  $: orgUsersInfiniteQuery = createAdminServiceListOrgUsersInfiniteQuery(
-    organization,
-    {
+  $: orgMemberUsersInfiniteQuery =
+    createAdminServiceListOrganizationMemberUsersInfiniteQuery(organization, {
       pageSize: PAGE_SIZE,
-    },
-  );
+    });
+  $: orgInvitesInfiniteQuery =
+    createAdminServiceListOrganizationInvitesInfiniteQuery(organization, {
+      pageSize: PAGE_SIZE,
+    });
 
-  $: allRows =
-    $orgUsersInfiniteQuery.data?.pages.flatMap((page) => page.members ?? []) ??
-    [];
+  $: allOrgMemberUsersRows =
+    $orgMemberUsersInfiniteQuery.data?.pages.flatMap(
+      (page) => page.members ?? [],
+    ) ?? [];
+  $: allOrgInvitesRows =
+    $orgInvitesInfiniteQuery.data?.pages.flatMap(
+      (page) => page.invites ?? [],
+    ) ?? [];
 
-  $: console.log(
-    "$listOrganizationMemberUsers.data?.members: ",
-    $listOrganizationMemberUsers.data?.members,
-  );
+  $: console.log("$allOrgMemberUsersRows: ", allOrgMemberUsersRows);
+  $: console.log("$allOrgInvitesRows: ", allOrgInvitesRows);
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({

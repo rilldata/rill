@@ -1,7 +1,7 @@
 import {
-  adminServiceListOrganizationMemberUsers,
-  getAdminServiceListOrganizationMemberUsersQueryKey,
-  type AdminServiceListOrganizationMemberUsersParams,
+  adminServiceListOrganizationInvites,
+  getAdminServiceListOrganizationInvitesQueryKey,
+  type AdminServiceListOrganizationInvitesParams,
   type RpcStatus,
 } from "@rilldata/web-admin/client";
 import {
@@ -12,15 +12,15 @@ import {
   type QueryKey,
 } from "@tanstack/svelte-query";
 
-export const createAdminServiceListOrganizationMemberUsersInfiniteQuery = <
-  TData = Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+export const createAdminServiceListOrganizationInvitesInfiniteQuery = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
   TError = RpcStatus,
 >(
   organization: string,
-  params?: AdminServiceListOrganizationMemberUsersParams,
+  params?: AdminServiceListOrganizationInvitesParams,
   options?: {
     query?: CreateInfiniteQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+      Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
       TError,
       TData
     >;
@@ -30,19 +30,19 @@ export const createAdminServiceListOrganizationMemberUsersInfiniteQuery = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListOrganizationMemberUsersQueryKey(organization, params);
+    getAdminServiceListOrganizationInvitesQueryKey(organization, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
   > = ({ pageParam, signal }) =>
-    adminServiceListOrganizationMemberUsers(
+    adminServiceListOrganizationInvites(
       organization,
       { ...params, pageToken: pageParam },
       signal,
     );
 
   const query = createInfiniteQuery<
-    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
     TError,
     TData
   >({
