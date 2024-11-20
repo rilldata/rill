@@ -163,7 +163,7 @@ test.describe("explores", () => {
     await page.getByRole("button", { name: "Apply" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 65.1k")).toBeVisible();
+    await expect(page.getByText("Total records 65,091")).toBeVisible();
 
     // Flip back to All Time
     await interactWithTimeRangeMenu(page, async () => {
@@ -184,7 +184,7 @@ test.describe("explores", () => {
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
-    await expect(page.getByText("Total records 80.7k")).toBeVisible();
+    await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
     await page.getByLabel("View filter").getByLabel("Remove").click();
@@ -193,7 +193,7 @@ test.describe("explores", () => {
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 15.1k")).toBeVisible();
+    await expect(page.getByText("Total records 15,119")).toBeVisible();
 
     // Clear all filters button
     await page.getByRole("button", { name: "Clear filters" }).click();
@@ -429,7 +429,7 @@ dimensions:
       .click();
     await page.getByRole("cell", { name: "msn.com", exact: true }).click();
 
-    await expect(page.getByText("Total rows 43.7k")).toBeVisible();
+    await expect(page.getByText("Total rows 43,749")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 

@@ -39,6 +39,7 @@ const bigNumberRangeSpec: RangeFormatSpec[] = [
     minMag: 3,
     supMag: 5,
     maxDigitsRight: 0,
+    useTrailingDot: false,
     baseMagnitude: 0,
     maxDigitsLeft: 5,
     padWithInsignificantZeros: false,
