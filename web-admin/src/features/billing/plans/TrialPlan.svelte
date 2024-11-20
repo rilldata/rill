@@ -58,7 +58,10 @@
         target="_blank"
         rel="noreferrer noopener">See pricing details -></a
       >
-      <PlanQuotas {organization} />
+      {#if plan}
+        <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+        <PlanQuotas {organization} />
+      {/if}
     </div>
   </div>
   <svelte:fragment slot="contact">
