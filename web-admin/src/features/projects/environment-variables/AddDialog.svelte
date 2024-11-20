@@ -323,11 +323,11 @@
                 />
                 <IconButton
                   on:click={() => {
-                    // Do not allow to remove the last variable
-                    if (index !== $form.variables.length - 1) {
-                      handleRemove(index);
-                    } else {
+                    // Reset if there is only one variable
+                    if ($form.variables.length === 1) {
                       handleReset();
+                    } else {
+                      handleRemove(index);
                     }
                   }}
                 >
