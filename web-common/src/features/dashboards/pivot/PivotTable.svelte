@@ -12,7 +12,10 @@
     calculateMeasureWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
-  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import {
+    NUM_COLUMNS_PER_PAGE,
+    NUM_ROWS_PER_PAGE,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -39,6 +42,7 @@
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-config";
   import type { PivotDataRow, PivotDataStore } from "./types";
+  import { slugify } from "@rilldata/web-common/lib/string-utils";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -103,6 +107,7 @@
   $: ({
     expanded,
     sorting,
+    columnPage,
     rowPage,
     rows: rowPills,
     columns: columnPills,
@@ -150,6 +155,7 @@
     headerGroups[headerGroups.length - 2]?.headers?.slice(
       hasDimension ? 1 : 0,
     ) ?? subHeaders;
+  $: console.log("measureGroups: ", measureGroups);
   $: measureGroupsLength = measureGroups.length;
   $: totalMeasureWidth = measures.reduce(
     (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
@@ -182,16 +188,16 @@
     },
   });
 
-  $: columns = $table.getAllColumns();
+  $: visibleColumns = $table.getVisibleLeafColumns();
   $: columnVirtualizer = createVirtualizer<
     HTMLDivElement,
     HTMLTableCellElement
   >({
-    count: columns.length,
+    count: visibleColumns.length,
     getScrollElement: () => containerRefElement,
-    estimateSize: () => WIDTHS.INIT_MEASURE_WIDTH,
+    estimateSize: (index) => visibleColumns[index].getSize(), // Estimate width of each column for accurate scrollbar dragging
+    horizontal: true,
     overscan: OVERSCAN,
-    initialOffset: scrollLeft,
     rangeExtractor: (range) => {
       const next = new Set([...defaultRangeExtractor(range)]);
 
@@ -199,11 +205,21 @@
     },
   });
 
-  $: virtualColumns = $columnVirtualizer.getVirtualItems();
-  $: totalColumnSize = $columnVirtualizer.getTotalSize();
-
   $: virtualRows = $rowVirtualizer.getVirtualItems();
   $: totalRowSize = $rowVirtualizer.getTotalSize();
+
+  $: virtualColumns = $columnVirtualizer.getVirtualItems();
+  // $: totalColumnSize = $columnVirtualizer.getTotalSize();
+
+  let virtualPaddingLeft: number | undefined;
+  let virtualPaddingRight: number | undefined;
+
+  $: if (columnVirtualizer && virtualColumns?.length) {
+    virtualPaddingLeft = virtualColumns[0]?.start ?? 0;
+    virtualPaddingRight =
+      $columnVirtualizer.getTotalSize() -
+      (virtualColumns[virtualColumns.length - 1]?.end ?? 0);
+  }
 
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
 
@@ -259,14 +275,20 @@
       const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
       const canFetchMoreData =
         !$pivotDataStore.isFetching && !reachedEndForRows;
-      const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
-
-      if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
-        console.log("fetching more data", rowPage);
+      const hasMoreRowsDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
+      if (isReachingPageEnd && hasMoreRowsDataThanOnePage && canFetchMoreData) {
+        console.log("fetching more rows [rowPage]: ", rowPage);
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
 
-      // TODO: metricsExplorerStore.setPivotColumnPage when implementing column virtualization
+      const isReachingColumnEnd =
+        scrollLeft + containerRefElement.clientWidth >=
+        containerRefElement.scrollWidth - ROW_THRESHOLD;
+      const hasMoreColumns = visibleColumns.length >= NUM_COLUMNS_PER_PAGE;
+      if (isReachingColumnEnd && hasMoreColumns) {
+        console.log("fetching more columns [columnPage]: ", columnPage);
+        metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
+      }
     }
   };
 
@@ -368,6 +390,10 @@
     );
   }
 </script>
+
+<!-- DEBUGGING -->
+<span>({visibleColumns.length} columns)</span>
+<span>({rows.length} rows)</span>
 
 <div
   class="table-wrapper relative"
@@ -471,6 +497,10 @@
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
       {/each}
+
+      <!-- {#each virtualColumns as column (column.index)}
+        <col style:width="{column.size}px" style:max-width="{column.size}px" />
+      {/each} -->
     </colgroup>
 
     <thead>
@@ -478,8 +508,11 @@
         <tr>
           {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
-
-            <th colSpan={header.colSpan}>
+            <th
+              colSpan={header.colSpan}
+              data-id={slugify(header.id)}
+              data-index={header.index}
+            >
               <button
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
@@ -526,6 +559,7 @@
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
               data-value={cell.getValue()}
+              data-id={slugify(cell.id)}
               class:totals-column={i > 0 && i <= measureCount}
             >
               <div

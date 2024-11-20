@@ -148,20 +148,28 @@ export function getColumnFiltersForPage(
   const filters = colDimensionNames
     .filter((dimension) => {
       if (isTimeDimension(dimension, config.time.timeDimension)) {
-        const dates = slicedAxesData[dimension].map((d) =>
-          new Date(d).getTime(),
-        );
-        const timeStart = new Date(Math.min(...dates)).toISOString();
-        const timeEnd = new Date(Math.max(...dates)).toISOString();
-        const interval = getTimeGrainFromDimension(dimension);
-        timeFilters.push({ timeStart, timeEnd, interval });
-        return false;
+        const dates =
+          slicedAxesData[dimension]?.map((d) => new Date(d).getTime()) || [];
+        if (dates.length > 0) {
+          const timeStart = new Date(Math.min(...dates)).toISOString();
+          const timeEnd = new Date(Math.max(...dates)).toISOString();
+          const interval = getTimeGrainFromDimension(dimension);
+          timeFilters.push({ timeStart, timeEnd, interval });
+        }
+        return false; // Exclude time dimensions from filters
       }
-      return true;
+      return true; // Include non-time dimensions
     })
-    .map((dimension) =>
-      createInExpression(dimension, slicedAxesData[dimension]),
-    );
+    .map((dimension) => {
+      const data = slicedAxesData[dimension];
+      if (data) {
+        return createInExpression(dimension, data);
+      } else {
+        console.warn(`No data found for dimension: ${dimension}`);
+        return null; // Return null for missing data
+      }
+    })
+    .filter((result) => result !== null);
 
   return { filters, timeFilters };
 }
