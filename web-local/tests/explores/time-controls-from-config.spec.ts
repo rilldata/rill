@@ -72,7 +72,7 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
     await expect(
-      page.getByText("Total records 11,193 -4.3k -28%"),
+      page.getByText("Total records 11,193 -4,301 -28%"),
     ).toBeVisible();
     await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
