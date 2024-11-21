@@ -251,17 +251,17 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 		case *runtimev1.SecurityRule_Access:
 			err := p.applySecurityRuleAccess(res, r, rule.Access, templateData)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("security policy: failed to resolve access: %w", err)
 			}
 		case *runtimev1.SecurityRule_FieldAccess:
 			err := p.applySecurityRuleFieldAccess(res, r, rule.FieldAccess, templateData)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("security policy: failed to resolve field access: %w", err)
 			}
 		case *runtimev1.SecurityRule_RowFilter:
 			err := p.applySecurityRuleRowFilter(res, r, rule.RowFilter, templateData)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("security policy: failed to resolve row filter: %w", err)
 			}
 		}
 	}
