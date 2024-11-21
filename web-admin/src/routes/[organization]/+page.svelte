@@ -47,7 +47,7 @@
         {organizationPermissions}
       />
     {:else}
-      <div class="flex flex-col gap-y-4">
+      <div class="flex flex-col gap-y-8">
         <OrganizationHero {title} />
         <ProjectCards organization={orgName} />
       </div>
