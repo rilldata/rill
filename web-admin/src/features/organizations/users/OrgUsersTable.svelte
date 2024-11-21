@@ -31,7 +31,6 @@
         widthPercent: 5,
       },
     },
-
     {
       accessorKey: "roleName",
       header: "Role",
