@@ -7,6 +7,7 @@
     MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import SelectionDropdown from "./SelectionDropdown.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const fields = ["all", "subset", "expression"];
 
@@ -70,6 +71,11 @@
         onExpressionBlur(expression);
       }}
     />
+    <a
+      href="https://docs.rilldata.com/reference/project-files/explore-dashboards"
+    >
+      See docs
+    </a>
   {:else if mode === "subset"}
     <SelectionDropdown
       excludable
