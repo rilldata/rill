@@ -15,7 +15,6 @@
   $: onEnterprisePlan =
     subscription?.plan && isEnterprisePlan(subscription?.plan);
   $: hideBillingSettings = neverSubscribed || !subscription;
-  $: console.log(neverSubscribed, subscription, hideBillingSettings);
 
   $: navItems = [
     { label: "General", route: "" },
