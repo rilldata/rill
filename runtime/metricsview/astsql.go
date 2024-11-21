@@ -266,10 +266,6 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 	}
 	b.out.WriteString(joinSelect.Alias)
 
-	if joinType == JoinTypeCross {
-		return nil
-	}
-
 	if len(baseSelect.DimFields) == 0 {
 		b.out.WriteString(" ON TRUE")
 		return nil
