@@ -403,7 +403,7 @@ func resourceNameFromArgs(parts ...string) (ResourceName, error) {
 }
 
 func EvaluateBoolExpression(expr string) (bool, error) {
-	if expr == "" {
+	if strings.TrimSpace(expr) == "" {
 		return false, fmt.Errorf("cannot evaluate empty expression")
 	}
 	result, err := duckdbsql.EvaluateBool(expr)
