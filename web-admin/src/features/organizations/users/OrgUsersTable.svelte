@@ -175,14 +175,18 @@
       <thead>
         {#each $table.getHeaderGroups() as headerGroup}
           <tr class="h-10">
-            {#each headerGroup.headers as header}
+            {#each headerGroup.headers as header (header.id)}
+              {@const widthPercent = header.column.columnDef.meta?.widthPercent}
+              {@const marginLeft = header.column.columnDef.meta?.marginLeft}
               <th
                 colSpan={header.colSpan}
+                style={`width: ${widthPercent}%;`}
                 class="px-4 py-2 text-left"
                 on:click={header.column.getToggleSortingHandler()}
               >
                 {#if !header.isPlaceholder}
                   <div
+                    style={`margin-left: ${marginLeft};`}
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
                     class="font-semibold text-gray-500 flex flex-row items-center gap-x-1"
