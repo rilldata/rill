@@ -58,8 +58,9 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
-	CrossJoin            *SelectNode      // Sub-select to cross join onto FromSelect
-	UnionAllSelects      []*SelectNode    // Selects to union all, if this is set no other select should be set
+	FromCrossSelect      *SelectNode      // sub-select containing cross join to select from (only one of FromTable, FromSelect, FromCrossSelect can be set)
+	CrossJoinSelects     []*SelectNode    // sub-selects containing cross joins of FromCrossSelect
+	UnionAllSelects      []*SelectNode    // Selects to union all, if this is set all other selects are ignored
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -745,14 +746,20 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			}
 		}
 
-		// there are other dimensions in the query, so cross join the spine time range with the other dimensions
-		crossSelect := &SelectNode{
-			Alias:     alias,
+		rangeSelect.Alias = a.generateIdentifier()
+
+		dimSelect := &SelectNode{
+			Alias:     a.generateIdentifier(),
 			DimFields: newDims,
 			FromTable: a.underlyingTable,
 			Where:     a.underlyingWhere,
 			Group:     true,
-			CrossJoin: rangeSelect,
+		}
+
+		// there are other dimensions in the query, so cross join the spine time range with the other dimensions
+		crossSelect := &SelectNode{
+			Alias:            alias,
+			CrossJoinSelects: []*SelectNode{dimSelect, rangeSelect},
 		}
 
 		a.wrapSelect(crossSelect, "")
@@ -1050,20 +1057,24 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		})
 	}
 
-	if s.CrossJoin != nil {
-		// add the time dimension field to the wrapped select, only single time dim is supported on spine
-		if len(s.CrossJoin.UnionAllSelects) > 0 {
+	for _, cjs := range cpy.CrossJoinSelects {
+		for _, f := range cjs.DimFields {
 			s.DimFields = append(s.DimFields, FieldNode{
-				Name:        s.CrossJoin.UnionAllSelects[0].DimFields[0].Name,
-				DisplayName: s.CrossJoin.UnionAllSelects[0].DimFields[0].DisplayName,
-				Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.UnionAllSelects[0].DimFields[0].Name),
+				Name:        f.Name,
+				DisplayName: f.DisplayName,
+				Expr:        a.sqlForMember(cpy.Alias, f.Name),
 			})
-		} else {
-			s.DimFields = append(s.DimFields, FieldNode{
-				Name:        s.CrossJoin.DimFields[0].Name,
-				DisplayName: s.CrossJoin.DimFields[0].DisplayName,
-				Expr:        a.sqlForMember(cpy.Alias, s.CrossJoin.DimFields[0].Name),
-			})
+		}
+
+		if len(cjs.UnionAllSelects) > 0 {
+			// All dimensions will be same across UNION ALL SELECTS so we can just pick the first one
+			for _, f := range cjs.UnionAllSelects[0].DimFields {
+				s.DimFields = append(s.DimFields, FieldNode{
+					Name:        f.Name,
+					DisplayName: f.DisplayName,
+					Expr:        a.sqlForMember(cpy.Alias, f.Name),
+				})
+			}
 		}
 	}
 
@@ -1077,7 +1088,11 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	}
 
 	s.FromTable = nil
-	s.FromSelect = &cpy
+	if len(cpy.CrossJoinSelects) > 0 {
+		s.FromCrossSelect = &cpy
+	} else {
+		s.FromSelect = &cpy
+	}
 	s.SpineSelect = nil
 	s.LeftJoinSelects = nil
 	s.JoinComparisonSelect = nil
@@ -1093,7 +1108,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
-	s.CrossJoin = nil
+	s.CrossJoinSelects = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.

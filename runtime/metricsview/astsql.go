@@ -105,10 +105,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		return nil
 	}
 
-	if n.CrossJoin != nil {
-		b.out.WriteString("( ")
-	}
-
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -133,8 +129,8 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
-	if n.FromTable == nil && n.FromSelect == nil {
-		// can happen for union all case
+	if n.FromTable == nil && n.FromSelect == nil && n.FromCrossSelect == nil {
+		// will happen for union all select
 		return nil
 	}
 
@@ -149,27 +145,14 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		}
 	} else if n.FromSelect != nil {
 		if !n.FromSelect.IsCTE {
-			if n.FromSelect.CrossJoin == nil {
-				b.out.WriteByte('(')
-			}
+			b.out.WriteByte('(')
 			err := b.writeSelect(n.FromSelect)
 			if err != nil {
 				return err
 			}
-			if n.FromSelect.CrossJoin == nil {
-				b.out.WriteString(") ")
-			}
+			b.out.WriteString(") ")
 		}
-		if n.FromSelect.CrossJoin == nil {
-			b.out.WriteString(n.FromSelect.Alias)
-		}
-
-		/*		if n.CrossJoin != nil {
-				err := b.writeJoin("CROSS", nil, n.CrossJoin)
-				if err != nil {
-					return err
-				}
-			}*/
+		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
@@ -190,6 +173,20 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 				return err
 			}
 		}
+	} else if n.FromCrossSelect != nil {
+		for i, s := range n.FromCrossSelect.CrossJoinSelects {
+			if i > 0 {
+				b.out.WriteString(" CROSS JOIN ")
+			}
+			b.out.WriteByte('(')
+			err := b.writeSelect(s)
+			if err != nil {
+				return err
+			}
+			b.out.WriteString(") ")
+			b.out.WriteString(s.Alias)
+		}
+
 	} else {
 		panic("internal: FromTable and FromSelect are both nil")
 	}
@@ -249,15 +246,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	if n.Offset != nil {
 		b.out.WriteString(" OFFSET ")
 		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
-	}
-
-	if n.CrossJoin != nil {
-		b.out.WriteString(" ) cj1 CROSS JOIN ( ")
-		err := b.writeSelect(n.CrossJoin)
-		if err != nil {
-			return err
-		}
-		b.out.WriteString(" ) cj2 ")
 	}
 
 	return nil
