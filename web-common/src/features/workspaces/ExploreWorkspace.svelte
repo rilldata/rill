@@ -20,6 +20,7 @@
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -48,7 +49,9 @@
   $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
-  $: selectedView = workspace.view;
+  $: selectedViewStore = workspace.view;
+
+  $: selectedView = $selectedViewStore ?? "code";
 
   $: exploreResource = data?.explore;
 
@@ -90,27 +93,33 @@
         reconciling={resourceIsReconciling}
       />
 
-      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedViewStore} />
     </div>
   </WorkspaceHeader>
 
   <MetricsEditorContainer
     slot="body"
-    error={$remoteContent ? mainError : undefined}
+    error={mainError}
+    showError={!!$remoteContent && selectedView === "code"}
   >
-    {#if $selectedView === "code"}
+    {#if selectedView === "code"}
       <ExploreEditor
         bind:autoSave={$autoSave}
         {exploreName}
         {fileArtifact}
         {lineBasedRuntimeErrors}
       />
-    {:else if $selectedView === "viz"}
-      {#key fileArtifact}
-        {#if metricsViewName && exploreName}
-          <DashboardWithProviders {exploreName} {metricsViewName} />
-        {/if}
-      {/key}
+    {:else if selectedView === "viz"}
+      {#if mainError}
+        <ErrorPage
+          body={mainError.message}
+          fatal
+          header="Unable to load dashboard preview"
+          statusCode={404}
+        />
+      {:else if metricsViewName && exploreName}
+        <DashboardWithProviders {exploreName} {metricsViewName} />
+      {/if}
     {/if}
   </MetricsEditorContainer>
 
@@ -120,7 +129,7 @@
     {metricsViewName}
     {exploreName}
     {fileArtifact}
-    viewingDashboard={$selectedView === "viz"}
-    switchView={() => selectedView.set("code")}
+    viewingDashboard={selectedView === "viz"}
+    switchView={() => selectedViewStore.set("code")}
   />
 </WorkspaceContainer>

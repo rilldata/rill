@@ -10,18 +10,18 @@ It will show an error message if passed in.
   import { slide } from "svelte/transition";
 
   export let error: LineStatus | undefined = undefined;
+  export let showError = true;
 </script>
 
-<div class="flex flex-col size-full">
+<div class="flex flex-col size-full gap-y-1">
   <div
     class="size-full border overflow-y-hidden rounded-[2px] bg-background flex flex-col items-center justify-center"
     class:!border-red-500={error}
-    class:border-b-0={error}
   >
     <slot />
   </div>
 
-  {#if error}
+  {#if error && showError}
     <div
       role="status"
       transition:slide={{ duration: LIST_SLIDE_DURATION }}
