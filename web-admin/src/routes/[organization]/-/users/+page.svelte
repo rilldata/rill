@@ -40,7 +40,7 @@
     ) ?? [];
 
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
-    return allOrgInvitesRows.map((invite) => ({
+    return invites.map((invite) => ({
       ...invite,
       userEmail: invite.email,
       roleName: invite.role,
