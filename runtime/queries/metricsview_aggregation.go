@@ -36,7 +36,7 @@ type MetricsViewAggregation struct {
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact,omitempty"`
-	NullFill            bool                                           `json:"null_fill,omitempty"`
+	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
 	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
@@ -311,7 +311,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	}
 
 	// If there is only one time dimension and null fill is enabled, we set the spine to the time range
-	if q.NullFill && len(computedTimeDims) > 0 {
+	if q.FillMissing && len(computedTimeDims) > 0 {
 		if qry.Spine != nil {
 			// should we silently ignore instead of error ?
 			return nil, fmt.Errorf("cannot have both where and time spine")

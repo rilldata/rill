@@ -1320,7 +1320,7 @@ paths:
                 title: Optional
               exact:
                 type: boolean
-              nullFill:
+              fillMissing:
                 type: boolean
       tags:
         - QueryService
@@ -4713,7 +4713,7 @@ definitions:
         title: Optional
       exact:
         type: boolean
-      nullFill:
+      fillMissing:
         type: boolean
   v1MetricsViewAggregationResponse:
     type: object

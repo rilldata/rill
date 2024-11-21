@@ -1026,9 +1026,9 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   exact = false;
 
   /**
-   * @generated from field: bool null_fill = 21;
+   * @generated from field: bool fill_missing = 21;
    */
-  nullFill = false;
+  fillMissing = false;
 
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
@@ -1058,7 +1058,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 17, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 21, name: "null_fill", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "fill_missing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
