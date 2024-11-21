@@ -392,10 +392,16 @@
         excludeMode={excludeMode[type]}
         mode={fields[type]}
         setItems={async (items, exclude) => {
-          if (!exclude) {
-            await updateProperties({ [type]: items });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+
+          if (exclude) {
+            await updateProperties({ [type]: { exclude: items } }, deleteKeys);
           } else {
-            await updateProperties({ [type]: { exclude: items } });
+            await updateProperties({ [type]: items }, deleteKeys);
           }
         }}
         onSelectAll={async () => {
@@ -405,7 +411,12 @@
           await updateProperties({ [type]: { expr: "*" } });
         }}
         onExpressionBlur={async (value) => {
-          await updateProperties({ [type]: { expr: value } });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+          await updateProperties({ [type]: { expr: value } }, deleteKeys);
         }}
         onSelectSubsetItem={async (item) => {
           const deleted = subsets[type].delete(item);
@@ -413,7 +424,16 @@
             subsets[type].add(item);
           }
 
-          await updateProperties({ [type]: Array.from(subsets[type]) });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+
+          await updateProperties(
+            { [type]: Array.from(subsets[type]) },
+            deleteKeys,
+          );
         }}
       />
     {/each}

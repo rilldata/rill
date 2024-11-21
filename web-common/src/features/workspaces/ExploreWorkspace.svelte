@@ -20,7 +20,6 @@
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -107,19 +106,11 @@
         {lineBasedRuntimeErrors}
       />
     {:else if $selectedView === "viz"}
-      {#if $remoteContent ? mainError : undefined}
-        <ErrorPage
-          header="Error in dashboard configuration"
-          body={mainError?.message}
-          fatal
-        />
-      {:else}
-        {#key fileArtifact}
-          {#if metricsViewName && exploreName}
-            <DashboardWithProviders {exploreName} {metricsViewName} />
-          {/if}
-        {/key}
-      {/if}
+      {#key fileArtifact}
+        {#if metricsViewName && exploreName}
+          <DashboardWithProviders {exploreName} {metricsViewName} />
+        {/if}
+      {/key}
     {/if}
   </MetricsEditorContainer>
 
