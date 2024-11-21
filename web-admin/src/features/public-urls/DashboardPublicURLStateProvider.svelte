@@ -12,7 +12,7 @@
 
   $: initLocalUserPreferenceStore(exploreName);
 
-  const dashboardStoreReady = createDashboardStateSync(
+  $: dashboardStoreReady = createDashboardStateSync(
     getStateManagers(),
     readable({
       isFetching: false,
