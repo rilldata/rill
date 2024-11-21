@@ -67,6 +67,10 @@ A project is a single deployed instance from Rill Developer (or what we refer to
 ### Checking deployment status
 After deploying to Rill Cloud, if your projects are not quite ready to view yet, you will be navigating to the status page. Here you will be able to see your component's status and if there are any issues with loading or parsing.
 
+:::tip Refresh all source and models
+You can select the `Refresh all sources and models` in the Status page or run a full project refresh. 
+:::
+
 ![img](/img/manage/project-management/status.png)
 
 ### Managing Project settings

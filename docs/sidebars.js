@@ -100,7 +100,7 @@ const sidebars = {
                   ]
                 },
                 'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
- //               'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
+                'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
 
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 

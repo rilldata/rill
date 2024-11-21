@@ -32,21 +32,15 @@ metrics_view: my_metricsview
 dimensions: '*' #can use regex
 measures: '*' #can use regex
 
-theme: #your default theme
-
 time_ranges: #was available_time_ranges, list the time of available time ranges that can be selected in your dashboard
 time_zones: #was available_time_zones, list the time zones that are selectable in the dashboard
 
 defaults: #define all the defaults within here, was default_* in previous dashboard YAML
     dimensions: 
     measures:
-    time_range:
-    comparison_mode:
-    comparison_dimension:
-
+    ...
 security:
     access: #only dashboard access can be defined here, other security policies must be set on the metrics view
-
 ```
 
 
@@ -60,6 +54,19 @@ For more details about available configurations and properties, check our [Dashb
 Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard/), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
 
 ![preview](/img/build/dashboard/preview-dashboard.png)
+
+
+### Clickable Dimension Links 
+Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view/) can allow for clickable links directly from the dashboard.
+
+```yaml
+dimensions:
+  - label: Company Url
+    column: Company URL
+    uri: true #if already set to the URL, also accepts SQL expressions
+```
+ 
+![url-click](/img/build/dashboard/clickable-dimension.png)
 
 
 ### Multi-editor and external IDE support

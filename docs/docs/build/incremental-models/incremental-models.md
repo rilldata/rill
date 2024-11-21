@@ -74,6 +74,10 @@ sql: |
 
 Once state is defined in an incremental model, its value can be used as a variable in your SQL statement. In the above example, the state returns the most recent `date` value from `TABLE` and adds an additional day. Then, the SQL statement will run based on the WHERE clause.
 
+:::tip 
+You can verify the current value of your state in the left hand panel under Incremental Processing.
+:::
+
 
 In the above example, we are using patitions defined in DuckDB to define a range of days to use in the Snowflake query. The data will be written to a temp-data folder in S3 and written to ClickHouse after. Once completed, the data in temp-data will be cleared.
 

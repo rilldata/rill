@@ -5,7 +5,7 @@ sidebar_label: "Cloud Storage: Incremental Partitioned Models"
 sidebar_position: 12
 ---
 
-Now that we understand what Incremental Models and Partitions are, let's apply to them to our ClickHouse project.
+Now that we understand what [Incremental Models](/build/incremental-models/#what-is-an-incremental-model) and [Partitions]/(build/incremental-models/#what-are-partitions) are, let's apply to them to our ClickHouse project.
 
 Since our ClickHouse data is hosted in GCS, we will be using glob based partitions, instead of the example's sql select statements.
 
