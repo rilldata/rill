@@ -331,21 +331,22 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 		return nil, nil, err
 	}
 
-	// increment all counters
+	// increment gen counter
 	// TODO :: may be use a sempahore here. Atleast the acquire here return early. But the release can stll be blocked.
 	d.counterMu.Lock()
 	// use the schema for the latest generation
 	gen := d.latestGen.Load()
-	_, err = conn.ExecContext(ctx, "USE "+schemaName(gen), nil)
-	if err != nil {
-		_ = conn.Close()
-		d.counterMu.Unlock()
-		d.readMu.RUnlock()
-		return nil, nil, err
-	}
 	// incement generation counter
 	d.genCounter[gen]++
 	d.counterMu.Unlock()
+
+	// switch to the latest generation
+	_, err = conn.ExecContext(ctx, "USE "+schemaName(gen), nil)
+	if err != nil {
+		_ = conn.Close()
+		d.readMu.RUnlock()
+		return nil, nil, err
+	}
 
 	release := func() error {
 		// lock counterMu and decrement all counters
@@ -736,7 +737,7 @@ func (d *db) pushNewGen(ctx context.Context) error {
 	defer conn.Close()
 
 	currentGen := d.latestGen.Load() + 1
-	_, err = conn.ExecContext(ctx, "CREATE SCHEMA "+schemaName(currentGen))
+	_, err = conn.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS "+schemaName(currentGen))
 	if err != nil {
 		return err
 	}
@@ -758,7 +759,7 @@ func (d *db) pushNewGen(ctx context.Context) error {
 	// update latestGen
 	swapped := d.latestGen.Swap(currentGen)
 	if swapped != currentGen-1 {
-		d.logger.Error("reopen: generation mismatch", slog.Int("expected", int(currentGen)), slog.Int("actual", int(swapped)))
+		d.logger.Error("reopen: generation mismatch", slog.Int("expected", int(currentGen-1)), slog.Int("actual", int(swapped)))
 	}
 
 	// do another scan on local data and remove old versions, deleted tables etc
@@ -810,6 +811,13 @@ func (d *db) pushNewGen(ctx context.Context) error {
 
 		// remove unserved versions
 		servedVersions, ok := servedTableVersions[meta.Name]
+		if len(servedVersions) == 0 {
+			err = d.deleteLocalTableFiles(meta.Name, "")
+			if err != nil {
+				d.logger.Debug("error in removing table", slog.String("table", meta.Name), slog.String("error", err.Error()))
+			}
+			continue
+		}
 		versions, err := os.ReadDir(filepath.Join(d.localPath, entry.Name()))
 		if err != nil {
 			return err
@@ -830,12 +838,6 @@ func (d *db) pushNewGen(ctx context.Context) error {
 			err = d.deleteLocalTableFiles(meta.Name, version)
 			if err != nil {
 				d.logger.Debug("error in removing table", slog.String("table", meta.Name), slog.String("version", version), slog.String("error", err.Error()))
-			}
-		}
-		if len(servedVersions) == 0 {
-			err = d.deleteLocalTableFiles(meta.Name, "")
-			if err != nil {
-				d.logger.Debug("error in removing table", slog.String("table", meta.Name), slog.String("error", err.Error()))
 			}
 		}
 	}
