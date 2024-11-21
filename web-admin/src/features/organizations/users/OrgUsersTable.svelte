@@ -154,10 +154,19 @@
       }
     }
   }
+
+  $: dynamicTableMaxHeight = data.length > 12 ? `calc(100dvh - 300px)` : "auto";
+  // 69 * 12 = 828px
+  $: dynamicTableHeight = data.length < 12 ? "828px" : "auto";
 </script>
 
 <!-- FIXME: hoist this to a InfiniteScrollTable component -->
-<div class="list scroll-container" bind:this={virtualListEl}>
+<div
+  class="list scroll-container"
+  bind:this={virtualListEl}
+  style:max-height={dynamicTableMaxHeight}
+  style:height={dynamicTableHeight}
+>
   <div
     class="table-wrapper"
     style="position: relative; height: {$virtualizer.getTotalSize()}px;"
@@ -201,26 +210,37 @@
         {/each}
       </thead>
       <tbody>
-        {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
-          <tr
-            style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
-              idx * virtualRow.size}px);"
-          >
-            {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
-              <td
-                class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
-                data-label={cell.column.columnDef.header}
-              >
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              </td>
-            {/each}
+        {#if $table.getRowModel().rows.length === 0}
+          <tr>
+            <td
+              colspan={columns.length}
+              class="px-4 py-4 text-center text-gray-500"
+            >
+              No users found
+            </td>
           </tr>
-        {/each}
+        {:else}
+          {#each $virtualizer.getVirtualItems() as virtualRow, idx (virtualRow.index)}
+            <tr
+              style="height: {virtualRow.size}px; transform: translateY({virtualRow.start -
+                idx * virtualRow.size}px);"
+            >
+              {#each rows[virtualRow.index]?.getVisibleCells() ?? [] as cell (cell.id)}
+                <td
+                  class={`px-4 py-2 max-w-[200px] truncate ${cell.column.id === "actions" ? "w-1" : ""}`}
+                  data-label={cell.column.columnDef.header}
+                >
+                  <svelte:component
+                    this={flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext(),
+                    )}
+                  />
+                </td>
+              {/each}
+            </tr>
+          {/each}
+        {/if}
       </tbody>
     </table>
   </div>
@@ -267,7 +287,6 @@
     @apply rounded-br-sm;
   }
   .scroll-container {
-    max-height: calc(100dvh - 300px);
     width: 100%;
     overflow-y: auto;
   }
