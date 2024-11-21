@@ -127,6 +127,7 @@
         $sortType,
         activeMeasureName,
         dimensionName,
+        !!comparisonTimeRange,
       ),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilter(filterSet, dimensionThresholdFilters),
