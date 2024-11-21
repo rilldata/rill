@@ -36,6 +36,7 @@ import (
 
 	// Register database and provisioner implementations
 	_ "github.com/rilldata/rill/admin/database/postgres"
+	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
 	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
 	_ "github.com/rilldata/rill/admin/provisioner/static"
 )

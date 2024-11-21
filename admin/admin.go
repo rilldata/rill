@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"cloud.google.com/go/storage"
@@ -131,6 +132,20 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 }
 
 func (s *Service) Close() error {
+	var allErrs error
+	for _, p := range s.ProvisionerSet {
+		err := p.Close()
+		if err != nil {
+			allErrs = errors.Join(allErrs, err)
+		}
+	}
+
 	s.Used.Close()
-	return s.DB.Close()
+
+	err := s.DB.Close()
+	if err != nil {
+		allErrs = errors.Join(allErrs, err)
+	}
+
+	return allErrs
 }
