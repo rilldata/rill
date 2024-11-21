@@ -2,11 +2,11 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import DashboardPublicURLStateProvider from "@rilldata/web-admin/features/public-urls/DashboardPublicURLStateProvider.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -52,7 +52,10 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardStateProvider exploreName={resourceName}>
+      <DashboardPublicURLStateProvider
+        token={data.token}
+        exploreName={resourceName}
+      >
         <DashboardURLStateProvider
           metricsViewName={explore.metricsView.meta.name.name}
         >
@@ -63,7 +66,7 @@
             />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
-      </DashboardStateProvider>
+      </DashboardPublicURLStateProvider>
     </StateManagersProvider>
   {/if}
 {/key}
