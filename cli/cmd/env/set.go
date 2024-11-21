@@ -6,6 +6,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+
+	envValidator "github.com/rilldata/rill/runtime/pkg/env"
 )
 
 // SetCmd is sub command for env. Sets the variable for a project
@@ -22,6 +24,10 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {
+				return err
+			}
+
+			if err := envValidator.ValidateName(key); err != nil {
 				return err
 			}
 
