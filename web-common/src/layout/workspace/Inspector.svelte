@@ -27,8 +27,8 @@
       absolute={false}
       direction="EW"
       side="left"
-      min={fixedWidth ?? 300}
-      max={fixedWidth ?? 500}
+      min={fixedWidth ?? 320}
+      max={fixedWidth ?? 420}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {
         widthStore.set(newWidth);

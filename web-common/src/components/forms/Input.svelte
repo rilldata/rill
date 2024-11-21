@@ -153,6 +153,7 @@
         />
       {:else}
         <input
+          title={value}
           {id}
           {type}
           {placeholder}
@@ -245,11 +246,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center px-2;
+    @apply flex justify-center items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit;
+    @apply h-fit w-fit truncate;
   }
 
   input,
@@ -259,6 +260,7 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+    @apply truncate;
   }
 
   .multiline-input {

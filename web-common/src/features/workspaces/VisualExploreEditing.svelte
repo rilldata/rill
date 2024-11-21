@@ -337,7 +337,7 @@
   }
 </script>
 
-<Inspector filePath={path} resizable={false} fixedWidth={320}>
+<Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
     <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
 
