@@ -7,7 +7,7 @@ import {
 
 const bigNumberRangeSpec: RangeFormatSpec[] = [
   {
-    minMag: -6,
+    minMag: -10,
     supMag: -4,
     maxDigitsRight: 2,
     baseMagnitude: 0,
