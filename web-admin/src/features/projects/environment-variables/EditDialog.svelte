@@ -92,12 +92,12 @@
       if (!form.valid) return;
       const values = form.data;
 
-      const flatVariables = {
+      const flatVariable = {
         [values.key]: values.value,
       };
 
       try {
-        await handleUpdateProjectVariables(flatVariables);
+        await handleUpdateProjectVariables(flatVariable);
         open = false;
       } catch (error) {
         console.error(error);

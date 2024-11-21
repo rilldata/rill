@@ -63,6 +63,10 @@
     return false;
   });
 
+  $: sortedVariables = filteredVariables.sort((a, b) => {
+    return new Date(b.updatedOn).getTime() - new Date(a.updatedOn).getTime();
+  });
+
   function handleFilterByEnvironment(environment: EnvironmentTypes) {
     filterByEnvironment = environment;
   }
@@ -157,7 +161,7 @@
           </Button>
         </div>
         <EnvironmentVariablesTable
-          data={filteredVariables}
+          data={sortedVariables}
           emptyText={emptyTextWhenNoVariables}
           {variableNames}
         />
