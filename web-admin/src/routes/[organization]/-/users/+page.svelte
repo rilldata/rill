@@ -101,6 +101,7 @@
       </div>
       <OrgUsersTable
         data={filteredUsers}
+        query={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
       />
     </div>
