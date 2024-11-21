@@ -123,6 +123,35 @@
             "type": "string",
             "description": "Controls the formatting of this measure using a d3-format string."
           },
+          "format_d3_locale": {
+            "type": "object",
+            "description": "Defines a custom locale for d3-format.",
+            "properties": {
+              "decimal": { "type": "string", "description": "The decimal point (e.g., \".\")." },
+              "thousands": { "type": "string", "description": "The group separator (e.g., \",\")." },
+              "grouping": {
+                "type": "array",
+                "items": { "type": "integer" },
+                "description": "The array of group sizes (e.g., [3]), cycled as needed."
+              },
+              "currency": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "The currency prefix and suffix (e.g., [\"$\", \"\"])."
+              },
+              "numerals": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Optional array of ten strings to replace the numerals 0-9."
+              },
+              "percent": { "type": "string", "description": "Optional symbol to replace the percent suffix." },
+              "minus": { "type": "string", "description": "Optional minus sign (defaults to \"−\")." },
+              "nan": { "type": "string", "description": "Optional value for not-a-number (defaults to \"NaN\")." }
+            },
+            "required": ["decimal", "thousands", "grouping", "currency"]
+          },
           "ignore": {
             "type": "boolean",
             "description": "If true, hides the measure from the dashboard."
