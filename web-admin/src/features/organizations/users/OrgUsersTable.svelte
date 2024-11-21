@@ -1,7 +1,6 @@
 <script lang="ts">
   import { writable } from "svelte/store";
   import type { V1MemberUser, V1UserInvite } from "@rilldata/web-admin/client";
-  // import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import OrgUsersTableUserCompositeCell from "./OrgUsersTableUserCompositeCell.svelte";
   import OrgUsersTableActionsCell from "./OrgUsersTableActionsCell.svelte";
   import OrgUsersTableRoleCell from "./OrgUsersTableRoleCell.svelte";
@@ -26,7 +25,8 @@
   }
 
   export let data: OrgUser[];
-  export let query: InfiniteQueryObserverResult;
+  export let usersQuery: InfiniteQueryObserverResult;
+  export let invitesQuery: InfiniteQueryObserverResult;
   export let currentUserEmail: string;
 
   const ROW_HEIGHT = 69;
@@ -131,8 +131,10 @@
   });
 
   $: {
+    const hasNextPage = usersQuery.hasNextPage || invitesQuery.hasNextPage;
+
     $virtualizer.setOptions({
-      count: query.hasNextPage ? safeData.length + 1 : safeData.length,
+      count: hasNextPage ? safeData.length + 1 : safeData.length,
     });
 
     const [lastItem] = [...$virtualizer.getVirtualItems()].reverse();
@@ -140,15 +142,19 @@
     if (
       lastItem &&
       lastItem.index > safeData.length - 1 &&
-      query.hasNextPage &&
-      !query.isFetchingNextPage
+      hasNextPage &&
+      !usersQuery.isFetchingNextPage &&
+      !invitesQuery.isFetchingNextPage
     ) {
-      query.fetchNextPage();
+      if (usersQuery.hasNextPage) {
+        usersQuery.fetchNextPage();
+      }
+      if (invitesQuery.hasNextPage) {
+        invitesQuery.fetchNextPage();
+      }
     }
   }
 </script>
-
-<!-- <BasicTable {data} {columns} emptyText="No users found" scrollable /> -->
 
 <!-- FIXME: hoist this to a InfiniteScrollTable component -->
 <div class="list scroll-container" bind:this={virtualListEl}>

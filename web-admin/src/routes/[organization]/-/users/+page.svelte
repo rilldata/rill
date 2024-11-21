@@ -1,10 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceListOrganizationMemberUsers,
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizationInvites,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import type { V1UserInvite } from "@rilldata/web-admin/client";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/users/OrgUsersTable.svelte";
@@ -24,10 +20,6 @@
   let searchText = "";
 
   $: organization = $page.params.organization;
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
-  $: listOrganizationInvites =
-    createAdminServiceListOrganizationInvites(organization);
 
   $: orgMemberUsersInfiniteQuery =
     createAdminServiceListOrganizationMemberUsersInfiniteQuery(organization, {
@@ -47,23 +39,20 @@
       (page) => page.invites ?? [],
     ) ?? [];
 
-  $: console.log("$allOrgMemberUsersRows: ", allOrgMemberUsersRows);
-  $: console.log("$allOrgInvitesRows: ", allOrgInvitesRows);
-
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
-    return invites.map((invite) => ({
+    return allOrgInvitesRows.map((invite) => ({
       ...invite,
       userEmail: invite.email,
       roleName: invite.role,
     }));
   }
 
-  $: usersWithPendingInvites = [
-    ...($listOrganizationMemberUsers.data?.members ?? []),
-    ...coerceInvitesToUsers($listOrganizationInvites.data?.invites ?? []),
+  $: combinedRows = [
+    ...allOrgMemberUsersRows,
+    ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  $: filteredUsers = usersWithPendingInvites.filter((user) =>
+  $: filteredUsers = combinedRows.filter((user) =>
     user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
   );
 
@@ -71,16 +60,18 @@
 </script>
 
 <div class="flex flex-col w-full">
-  {#if $listOrganizationMemberUsers.isLoading}
+  {#if $orgMemberUsersInfiniteQuery.isLoading || $orgInvitesInfiniteQuery.isLoading}
     <DelayedSpinner
-      isLoading={$listOrganizationMemberUsers.isLoading}
+      isLoading={$orgMemberUsersInfiniteQuery.isLoading ||
+        $orgInvitesInfiniteQuery.isLoading}
       size="1rem"
     />
-  {:else if $listOrganizationMemberUsers.isError}
+  {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
-      Error loading organization members: {$listOrganizationMemberUsers.error}
+      Error loading organization members: {$orgMemberUsersInfiniteQuery.error ??
+        $orgInvitesInfiniteQuery.error}
     </div>
-  {:else if $listOrganizationMemberUsers.isSuccess}
+  {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
     <div class="flex flex-col gap-4">
       <div class="flex flex-row gap-x-4">
         <Search
@@ -101,7 +92,8 @@
       </div>
       <OrgUsersTable
         data={filteredUsers}
-        query={$orgInvitesInfiniteQuery}
+        usersQuery={$orgMemberUsersInfiniteQuery}
+        invitesQuery={$orgInvitesInfiniteQuery}
         currentUserEmail={$currentUser.data?.user.email}
       />
     </div>
