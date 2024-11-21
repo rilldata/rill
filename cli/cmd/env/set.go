@@ -5,9 +5,8 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	"github.com/spf13/cobra"
-
 	envValidator "github.com/rilldata/rill/runtime/pkg/env"
+	"github.com/spf13/cobra"
 )
 
 // SetCmd is sub command for env. Sets the variable for a project
