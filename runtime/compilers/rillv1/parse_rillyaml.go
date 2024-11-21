@@ -97,6 +97,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	// Look for environment-specific overrides
 	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
+		if v.Kind == yaml.ScalarNode {
+			continue
+		}
 		// Backwards compatibility hack: we renamed "env" to "environment_overrides".
 		// The only environments supported at the rename time were "dev" and "prod".
 		if k == "dev" || k == "prod" {
@@ -145,7 +148,6 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
 		if v.Kind == yaml.ScalarNode {
 			vars[k] = v.Value
-			continue
 		}
 	}
 
