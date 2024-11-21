@@ -267,7 +267,7 @@
     @apply rounded-br-sm;
   }
   .scroll-container {
-    height: 680px;
+    max-height: calc(100dvh - 300px);
     width: 100%;
     overflow-y: auto;
   }
