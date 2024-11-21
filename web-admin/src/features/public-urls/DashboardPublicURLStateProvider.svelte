@@ -17,6 +17,7 @@
     readable({
       isFetching: false,
       data: token.state,
+      error: null,
     }),
   );
 </script>
