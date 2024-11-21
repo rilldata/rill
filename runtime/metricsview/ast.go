@@ -849,6 +849,10 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 		expr = a.sqlForAnyInGroup(expr)
 	}
 
+	if m.TreatNullsAs != "" {
+		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
+	}
+
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
 		Name:        m.Name,
 		DisplayName: m.DisplayName,
@@ -880,6 +884,10 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 		expr := a.sqlForMember(n.FromSelect.Alias, m.Name)
 		if n.Group {
 			expr = a.sqlForAnyInGroup(expr)
+		}
+
+		if m.TreatNullsAs != "" {
+			expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
 		}
 
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
@@ -915,6 +923,10 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		expr = a.sqlForAnyInGroup(expr)
+	}
+
+	if m.TreatNullsAs != "" {
+		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
 	}
 
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
@@ -973,6 +985,10 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		// TODO: Can a node with a comparison ever have Group==true?
 		expr = a.sqlForAnyInGroup(expr)
+	}
+
+	if m.TreatNullsAs != "" {
+		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
 	}
 
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
@@ -1082,7 +1098,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
-			Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			Expr:        a.sqlForMember(cpy.Alias, f.Name), // TODO check treat nulls as here
 		})
 	}
 
@@ -1177,6 +1193,9 @@ func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []a
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNode) (string, error) {
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
+		if m.TreatNullsAs != "" {
+			return a.dialect.Coalesce(m.Expression, m.TreatNullsAs), nil
+		}
 		return m.Expression, nil
 	}
 
@@ -1250,6 +1269,10 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNod
 		b.WriteString(m.Window.FrameExpression)
 	}
 	b.WriteString(")")
+
+	if m.TreatNullsAs != "" {
+		return a.dialect.Coalesce(b.String(), m.TreatNullsAs), nil
+	}
 
 	return b.String(), nil
 }

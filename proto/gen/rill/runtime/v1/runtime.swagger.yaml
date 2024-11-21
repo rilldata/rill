@@ -2999,6 +2999,8 @@ definitions:
         type: string
       validPercentOfTotal:
         type: boolean
+      treatNullsAs:
+        type: string
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureWindow:
     type: object

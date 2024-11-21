@@ -2560,6 +2560,7 @@ export interface MetricsViewSpecMeasureV2 {
   formatPreset?: string;
   formatD3?: string;
   validPercentOfTotal?: boolean;
+  treatNullsAs?: string;
 }
 
 export interface MetricsViewSpecDimensionV2 {
