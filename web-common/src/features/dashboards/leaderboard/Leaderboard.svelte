@@ -130,6 +130,7 @@
     sortType,
     activeMeasureName,
     dimensionName,
+    !!comparisonTimeRange,
   );
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
