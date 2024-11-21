@@ -134,7 +134,12 @@
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-      {#if !allDimensionFilters.length && !allMeasureFilters.length}
+      {#if isFreeFormEdit}
+        <FiltersInput
+          filter={$dashboardStore.whereFilter}
+          onChange={(filters) => setFilters(filters)}
+        />
+      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"
@@ -142,11 +147,6 @@
         >
           No filters selected
         </div>
-      {:else if isFreeFormEdit}
-        <FiltersInput
-          filter={$dashboardStore.whereFilter}
-          onChange={(filters) => setFilters(filters)}
-        />
       {:else}
         {#each allDimensionFilters as { name, label, selectedValues } (name)}
           {@const dimension = dimensions.find(

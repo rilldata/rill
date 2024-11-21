@@ -208,20 +208,20 @@ const metricsViewReducers = {
 
   mergePartialExplorerEntity(
     name: string,
-    partialMetrics: Partial<MetricsExplorerEntity>,
+    partialExploreState: Partial<MetricsExplorerEntity>,
     metricsView: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      for (const key in partialMetrics) {
-        metricsExplorer[key] = partialMetrics[key];
+      for (const key in partialExploreState) {
+        metricsExplorer[key] = partialExploreState[key];
       }
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
-      if (!partialMetrics.showTimeComparison) {
+      if (!partialExploreState.showTimeComparison) {
         metricsExplorer.showTimeComparison = false;
       }
       metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partialMetrics.whereFilter);
+        includeExcludeModeFromFilters(partialExploreState.whereFilter);
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
     });
   },

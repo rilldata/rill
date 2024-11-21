@@ -3,6 +3,7 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
@@ -12,16 +13,19 @@ export const load = async ({ url, parent }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  let partialMetrics: Partial<MetricsExplorerEntity> = {};
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
   if (metricsViewSpec && exploreSpec) {
-    const { entity, errors: errorsFromConvert } = convertURLToMetricsExplore(
+    const {
+      partialExploreState: partialExploreStateFromUrl,
+      errors: errorsFromConvert,
+    } = convertURLToMetricsExplore(
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
       basePreset,
     );
-    partialMetrics = entity;
+    partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
   }
 
@@ -40,17 +44,17 @@ export const load = async ({ url, parent }) => {
       {}, // TODO
     );
     const newUrl = new URL(url);
-    convertMetricsEntityToURLSearchParams(
+    const searchParamsFromTokenState = convertMetricsEntityToURLSearchParams(
       metricsEntity,
-      newUrl.searchParams,
       exploreSpec,
       basePreset,
     );
+    mergeSearchParams(searchParamsFromTokenState, newUrl.searchParams);
     throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
   }
 
   return {
-    partialMetrics,
+    partialExploreState,
     errors,
   };
 };

@@ -22,6 +22,7 @@ import {
   arrayOrderedEquals,
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -29,14 +30,15 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export function convertMetricsEntityToURLSearchParams(
-  metrics: MetricsExplorerEntity,
-  searchParams: URLSearchParams,
+  exploreState: MetricsExplorerEntity,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (!metrics) return;
+  const searchParams = new URLSearchParams();
 
-  const currentView = FromActivePageMap[metrics.activePage];
+  if (!exploreState) return searchParams;
+
+  const currentView = FromActivePageMap[exploreState.activePage];
   if (
     (preset.view !== undefined && preset.view !== currentView) ||
     (preset.view === undefined &&
@@ -45,79 +47,103 @@ export function convertMetricsEntityToURLSearchParams(
     searchParams.set("vw", ToURLParamViewMap[currentView] as string);
   }
 
-  const expr = mergeMeasureFilters(metrics);
+  const expr = mergeMeasureFilters(exploreState);
   if (expr && expr?.cond?.exprs?.length) {
     searchParams.set("f", convertExpressionToFilterParam(expr));
   }
 
-  toTimeRangesUrl(metrics, searchParams, preset);
+  mergeSearchParams(toTimeRangesUrl(exploreState, preset), searchParams);
 
-  toOverviewUrl(metrics, searchParams, explore, preset);
+  mergeSearchParams(toOverviewUrl(exploreState, explore, preset), searchParams);
 
-  toTimeDimensionUrlParams(metrics, searchParams, preset);
+  mergeSearchParams(
+    toTimeDimensionUrlParams(exploreState, preset),
+    searchParams,
+  );
 
-  toPivotUrlParams(metrics, searchParams, preset);
+  mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+
+  return searchParams;
 }
 
 function toTimeRangesUrl(
-  metrics: MetricsExplorerEntity,
-  searchParams: URLSearchParams,
+  exploreState: MetricsExplorerEntity,
   preset: V1ExplorePreset,
 ) {
+  const searchParams = new URLSearchParams();
+
   if (
     (preset.timeRange !== undefined &&
-      metrics.selectedTimeRange !== undefined &&
-      metrics.selectedTimeRange.name !== preset.timeRange) ||
+      exploreState.selectedTimeRange !== undefined &&
+      exploreState.selectedTimeRange.name !== preset.timeRange) ||
     (preset.timeRange === undefined &&
-      metrics.selectedTimeRange?.name !== URLStateDefaultTimeRange)
+      exploreState.selectedTimeRange?.name !== URLStateDefaultTimeRange)
   ) {
-    searchParams.set("tr", metrics.selectedTimeRange?.name ?? "");
+    searchParams.set("tr", exploreState.selectedTimeRange?.name ?? "");
   }
+
   if (
-    // if preset has timezone then only set if selected is not the same
+    // if preset has a time grain, only set if selected is not the same
+    (preset.timeGrain !== undefined &&
+      exploreState.selectedTimeRange?.interval === preset.timeGrain) ||
+    // else if there is no default then set if there was a selected time grain
+    (preset.timeGrain === undefined &&
+      !!exploreState?.selectedTimeRange?.interval)
+  ) {
+    searchParams.set("tg", exploreState.selectedTimeRange?.interval ?? "");
+  }
+
+  if (
+    // if preset has timezone, only set if selected is not the same
     (preset.timezone !== undefined &&
-      metrics.selectedTimezone !== preset.timezone) ||
+      exploreState.selectedTimezone !== preset.timezone) ||
     // else if the timezone is not the default then set the param
     (preset.timezone === undefined &&
-      metrics.selectedTimezone !== URLStateDefaultTimezone)
+      exploreState.selectedTimezone !== URLStateDefaultTimezone)
   ) {
-    searchParams.set("tz", metrics.selectedTimezone);
+    searchParams.set("tz", exploreState.selectedTimezone);
   }
 
   if (
     (preset.compareTimeRange !== undefined &&
-      metrics.selectedComparisonTimeRange !== undefined &&
-      metrics.selectedComparisonTimeRange.name !== preset.compareTimeRange) ||
+      exploreState.selectedComparisonTimeRange !== undefined &&
+      exploreState.selectedComparisonTimeRange.name !==
+        preset.compareTimeRange) ||
     (preset.compareTimeRange === undefined &&
-      !!metrics.selectedComparisonTimeRange?.name)
+      !!exploreState.selectedComparisonTimeRange?.name)
   ) {
-    searchParams.set("ctr", metrics.selectedComparisonTimeRange?.name ?? "");
+    searchParams.set(
+      "ctr",
+      exploreState.selectedComparisonTimeRange?.name ?? "",
+    );
   }
   if (
-    // if preset has a compare dimension then only set if selected is not the same
+    // if preset has a compare dimension, only set if selected is not the same
     (preset.comparisonDimension !== undefined &&
-      metrics.selectedComparisonDimension !== preset.comparisonDimension) ||
+      exploreState.selectedComparisonDimension !==
+        preset.comparisonDimension) ||
     // else if there is no default then set if there was a selected compare dimension
     (preset.comparisonDimension === undefined &&
-      !!metrics.selectedComparisonDimension)
+      !!exploreState.selectedComparisonDimension)
   ) {
-    searchParams.set("cd", metrics.selectedComparisonDimension ?? "");
+    searchParams.set("cd", exploreState.selectedComparisonDimension ?? "");
   }
 
-  // TODO: grain
+  return searchParams;
 }
 
 function toOverviewUrl(
-  metrics: MetricsExplorerEntity,
-  searchParams: URLSearchParams,
+  exploreState: MetricsExplorerEntity,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  if (metrics.visibleMeasureKeys) {
-    const measures = [...metrics.visibleMeasureKeys];
+  const searchParams = new URLSearchParams();
+
+  if (exploreState.visibleMeasureKeys) {
+    const measures = [...exploreState.visibleMeasureKeys];
     const presetMeasures = preset.measures ?? explore.measures ?? [];
     if (!arrayUnorderedEquals(measures, presetMeasures)) {
-      if (metrics.allMeasuresVisible) {
+      if (exploreState.allMeasuresVisible) {
         searchParams.set("o.m", "*");
       } else {
         searchParams.set("o.m", measures.join(","));
@@ -125,11 +151,11 @@ function toOverviewUrl(
     }
   }
 
-  if (metrics.visibleDimensionKeys) {
-    const dimensions = [...metrics.visibleDimensionKeys];
+  if (exploreState.visibleDimensionKeys) {
+    const dimensions = [...exploreState.visibleDimensionKeys];
     const presetDimensions = preset.dimensions ?? explore.dimensions ?? [];
     if (!arrayUnorderedEquals(dimensions, presetDimensions)) {
-      if (metrics.allDimensionsVisible) {
+      if (exploreState.allDimensionsVisible) {
         searchParams.set("o.d", "*");
       } else {
         searchParams.set("o.d", dimensions.join(","));
@@ -142,90 +168,97 @@ function toOverviewUrl(
   if (
     // if sort by is defined in preset then only set param if selected is not the same.
     (preset.overviewSortBy &&
-      metrics.leaderboardMeasureName !== preset.overviewSortBy) ||
+      exploreState.leaderboardMeasureName !== preset.overviewSortBy) ||
     // else the default is the 1st measure in preset or explore, so check that next
     (!preset.overviewSortBy &&
-      metrics.leaderboardMeasureName !== defaultLeaderboardMeasure)
+      exploreState.leaderboardMeasureName !== defaultLeaderboardMeasure)
   ) {
-    searchParams.set("o.sb", metrics.leaderboardMeasureName);
+    searchParams.set("o.sb", exploreState.leaderboardMeasureName);
   }
 
-  const sortAsc = metrics.sortDirection === SortDirection.ASCENDING;
+  const sortAsc = exploreState.sortDirection === SortDirection.ASCENDING;
   if (
     // if preset has a sort direction then only set if not the same
     (preset.overviewSortAsc !== undefined &&
       preset.overviewSortAsc !== sortAsc) ||
     // else if the direction is not the default then set the param
     (preset.overviewSortAsc === undefined &&
-      metrics.sortDirection !== URLStateDefaultSortDirection)
+      exploreState.sortDirection !== URLStateDefaultSortDirection)
   ) {
     searchParams.set("o.sd", sortAsc ? "ASC" : "DESC");
   }
 
   if (
     (preset.overviewExpandedDimension !== undefined &&
-      metrics.selectedDimensionName !== preset.overviewExpandedDimension) ||
+      exploreState.selectedDimensionName !==
+        preset.overviewExpandedDimension) ||
     (preset.overviewExpandedDimension === undefined &&
-      metrics.selectedDimensionName)
+      exploreState.selectedDimensionName)
   ) {
-    searchParams.set("o.ed", metrics.selectedDimensionName ?? "");
+    searchParams.set("o.ed", exploreState.selectedDimensionName ?? "");
   }
+
+  return searchParams;
 }
 
 function toTimeDimensionUrlParams(
-  metrics: MetricsExplorerEntity,
-  searchParams: URLSearchParams,
+  exploreState: MetricsExplorerEntity,
   preset: V1ExplorePreset,
 ) {
+  const searchParams = new URLSearchParams();
+
   if (
     (preset.timeDimensionMeasure !== undefined &&
-      metrics.tdd.expandedMeasureName !== preset.timeDimensionMeasure) ||
+      exploreState.tdd.expandedMeasureName !== preset.timeDimensionMeasure) ||
     (preset.timeDimensionMeasure === undefined &&
-      metrics.tdd.expandedMeasureName)
+      exploreState.tdd.expandedMeasureName)
   ) {
-    searchParams.set("tdd.m", metrics.tdd.expandedMeasureName ?? "");
+    searchParams.set("tdd.m", exploreState.tdd.expandedMeasureName ?? "");
   }
 
   if (
     (preset.timeDimensionChartType !== undefined &&
-      ToURLParamTDDChartMap[metrics.tdd.chartType] !==
+      ToURLParamTDDChartMap[exploreState.tdd.chartType] !==
         preset.timeDimensionChartType) ||
     (preset.timeDimensionChartType === undefined &&
-      metrics.tdd.chartType !== URLStateDefaultTDDChartType)
+      exploreState.tdd.chartType !== URLStateDefaultTDDChartType)
   ) {
     searchParams.set(
       "tdd.ct",
-      ToURLParamTDDChartMap[metrics.tdd.chartType] ?? "",
+      ToURLParamTDDChartMap[exploreState.tdd.chartType] ?? "",
     );
   }
 
   // TODO: pin
   // TODO: what should be done when chartType is set but expandedMeasureName is not
+  return searchParams;
 }
 
 function toPivotUrlParams(
-  metrics: MetricsExplorerEntity,
-  searchParams: URLSearchParams,
+  exploreState: MetricsExplorerEntity,
   preset: V1ExplorePreset,
 ) {
+  const searchParams = new URLSearchParams();
+
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)
       return ToURLParamTimeDimensionMap[data.id] as string;
     return data.id;
   };
 
-  const rows = metrics.pivot.rows.dimension.map(mapPivotEntry);
+  const rows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
   if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
     searchParams.set("p.r", rows.join(","));
   }
 
   const cols = [
-    ...metrics.pivot.columns.dimension.map(mapPivotEntry),
-    ...metrics.pivot.columns.measure.map(mapPivotEntry),
+    ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
+    ...exploreState.pivot.columns.measure.map(mapPivotEntry),
   ];
   if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
     searchParams.set("p.c", cols.join(","));
   }
 
   // TODO: other fields
+  return searchParams;
 }

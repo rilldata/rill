@@ -18,63 +18,66 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export function convertMetricsExploreToPreset(
-  metrics: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
   explore: V1ExploreSpec,
 ) {
   const preset: V1ExplorePreset = {};
 
-  if (metrics.activePage) {
-    preset.view = FromActivePageMap[metrics.activePage];
+  if (exploreState.activePage) {
+    preset.view = FromActivePageMap[exploreState.activePage];
   }
 
-  if (metrics.whereFilter || metrics.dimensionThresholdFilters) {
+  if (exploreState.whereFilter || exploreState.dimensionThresholdFilters) {
     preset.where = mergeDimensionAndMeasureFilter(
-      metrics.whereFilter ?? createAndExpression([]),
-      metrics.dimensionThresholdFilters ?? [],
+      exploreState.whereFilter ?? createAndExpression([]),
+      exploreState.dimensionThresholdFilters ?? [],
     );
   }
 
-  Object.assign(preset, fromMetricsExploreTimeRangeFields(metrics));
+  Object.assign(preset, fromMetricsExploreTimeRangeFields(exploreState));
 
-  Object.assign(preset, fromMetricsExploreOverviewFields(metrics, explore));
+  Object.assign(
+    preset,
+    fromMetricsExploreOverviewFields(exploreState, explore),
+  );
 
-  Object.assign(preset, fromMetricsExploreTimeDimensionFields(metrics));
+  Object.assign(preset, fromMetricsExploreTimeDimensionFields(exploreState));
 
-  Object.assign(preset, fromMetricsExplorePivotFields(metrics));
+  Object.assign(preset, fromMetricsExplorePivotFields(exploreState));
 
   return preset;
 }
 
 function fromMetricsExploreTimeRangeFields(
-  metrics: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
 ) {
   const preset: V1ExplorePreset = {};
 
-  if (metrics.selectedTimeRange?.name) {
-    preset.timeRange = metrics.selectedTimeRange?.name;
+  if (exploreState.selectedTimeRange?.name) {
+    preset.timeRange = exploreState.selectedTimeRange?.name;
     // TODO: custom time range
   }
   // TODO: grain
 
-  if (metrics.selectedComparisonTimeRange?.name) {
-    preset.compareTimeRange = metrics.selectedComparisonTimeRange.name;
+  if (exploreState.selectedComparisonTimeRange?.name) {
+    preset.compareTimeRange = exploreState.selectedComparisonTimeRange.name;
     // TODO: custom time range
   }
-  if (metrics.showTimeComparison) {
+  if (exploreState.showTimeComparison) {
     preset.comparisonMode =
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
   }
 
-  if (metrics.selectedComparisonDimension !== undefined) {
-    preset.comparisonDimension = metrics.selectedComparisonDimension;
-    if (metrics.selectedComparisonDimension) {
+  if (exploreState.selectedComparisonDimension !== undefined) {
+    preset.comparisonDimension = exploreState.selectedComparisonDimension;
+    if (exploreState.selectedComparisonDimension) {
       preset.comparisonMode =
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION;
     }
   }
 
-  if (metrics.selectedTimezone) {
-    preset.timezone = metrics.selectedTimezone;
+  if (exploreState.selectedTimezone) {
+    preset.timezone = exploreState.selectedTimezone;
   }
 
   // TODO: scrubRange
@@ -83,70 +86,71 @@ function fromMetricsExploreTimeRangeFields(
 }
 
 function fromMetricsExploreOverviewFields(
-  metrics: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
   explore: V1ExploreSpec,
 ) {
   const preset: V1ExplorePreset = {};
 
-  if (metrics.allMeasuresVisible) {
+  if (exploreState.allMeasuresVisible) {
     preset.measures = explore.measures ?? [];
-  } else if (metrics.visibleMeasureKeys) {
-    preset.measures = [...metrics.visibleMeasureKeys];
+  } else if (exploreState.visibleMeasureKeys) {
+    preset.measures = [...exploreState.visibleMeasureKeys];
   }
 
-  if (metrics.allDimensionsVisible) {
+  if (exploreState.allDimensionsVisible) {
     preset.dimensions = explore.dimensions ?? [];
-  } else if (metrics.visibleDimensionKeys) {
-    preset.dimensions = [...metrics.visibleDimensionKeys];
+  } else if (exploreState.visibleDimensionKeys) {
+    preset.dimensions = [...exploreState.visibleDimensionKeys];
   }
 
-  if (metrics.leaderboardMeasureName !== undefined) {
-    preset.overviewSortBy = metrics.leaderboardMeasureName;
+  if (exploreState.leaderboardMeasureName !== undefined) {
+    preset.overviewSortBy = exploreState.leaderboardMeasureName;
   }
 
-  if (metrics.sortDirection) {
+  if (exploreState.sortDirection) {
     preset.overviewSortAsc =
-      metrics.sortDirection ===
+      exploreState.sortDirection ===
       DashboardState_LeaderboardSortDirection.ASCENDING;
   }
 
-  if (metrics.leaderboardContextColumn !== undefined) {
+  if (exploreState.leaderboardContextColumn !== undefined) {
     // TODO
   }
 
-  if (metrics.dashboardSortType) {
+  if (exploreState.dashboardSortType) {
     // TODO
   }
 
-  if (metrics.selectedDimensionName !== undefined) {
-    preset.overviewExpandedDimension = metrics.selectedDimensionName;
+  if (exploreState.selectedDimensionName !== undefined) {
+    preset.overviewExpandedDimension = exploreState.selectedDimensionName;
   }
 
   return preset;
 }
 
 function fromMetricsExploreTimeDimensionFields(
-  metrics: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
 ) {
   const preset: V1ExplorePreset = {};
 
-  if (!metrics.tdd) {
+  if (!exploreState.tdd) {
     return preset;
   }
 
-  preset.timeDimensionMeasure = metrics.tdd.expandedMeasureName;
+  preset.timeDimensionMeasure = exploreState.tdd.expandedMeasureName;
   preset.timeDimensionPin = false; // TODO
-  preset.timeDimensionChartType = ToURLParamTDDChartMap[metrics.tdd.chartType];
+  preset.timeDimensionChartType =
+    ToURLParamTDDChartMap[exploreState.tdd.chartType];
 
   return preset;
 }
 
 function fromMetricsExplorePivotFields(
-  metrics: Partial<MetricsExplorerEntity>,
+  exploreState: Partial<MetricsExplorerEntity>,
 ) {
   const preset: V1ExplorePreset = {};
 
-  if (!metrics.pivot) {
+  if (!exploreState.pivot) {
     return preset;
   }
 
@@ -156,10 +160,10 @@ function fromMetricsExplorePivotFields(
     return data.id;
   };
 
-  preset.pivotRows = metrics.pivot.rows.dimension.map(mapPivotEntry);
+  preset.pivotRows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
   preset.pivotCols = [
-    ...metrics.pivot.columns.dimension.map(mapPivotEntry),
-    ...metrics.pivot.columns.measure.map(mapPivotEntry),
+    ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
+    ...exploreState.pivot.columns.measure.map(mapPivotEntry),
   ];
 
   // TODO: other fields

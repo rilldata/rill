@@ -20,6 +20,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1ExplorePreset,
   V1ExploreSpec,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
@@ -229,6 +230,15 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
     ...AD_BIDS_INIT_DIMENSIONS.map((d) => d.name!),
     AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
   ],
+};
+
+export const AD_BIDS_PRESET: V1ExplorePreset = {
+  timeRange: "P7D",
+  timezone: "Asia/Kathmandu",
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
+  overviewSortAsc: true,
 };
 
 export const AD_BIDS_BASE_PRESET = getBasePreset(AD_BIDS_EXPLORE_INIT, {

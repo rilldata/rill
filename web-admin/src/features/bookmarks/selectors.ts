@@ -18,6 +18,7 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   createQueryServiceMetricsViewSchema,
   type V1ExplorePreset,
@@ -289,12 +290,12 @@ function getFilledInBookmark(
   basePreset: V1ExplorePreset,
 ) {
   const url = new URL(baseUrl);
-  convertMetricsEntityToURLSearchParams(
+  const searchParamsFromBookmark = convertMetricsEntityToURLSearchParams(
     { ...dashboard, ...bookmark.metricsEntity },
-    url.searchParams,
     exploreSpec,
     basePreset,
   );
+  mergeSearchParams(url.searchParams, searchParamsFromBookmark);
   return {
     ...bookmark,
     url: `${url.pathname}${url.search}`,

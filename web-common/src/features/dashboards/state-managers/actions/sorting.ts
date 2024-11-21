@@ -37,6 +37,14 @@ export const toggleSortByActiveContextColumn = (args: DashboardMutables) => {
   toggleSort(args, contextColumnSortType);
 };
 
+export const setSortDescending = ({
+  dashboard,
+  persistentDashboardStore,
+}: DashboardMutables) => {
+  dashboard.sortDirection = SortDirection.DESCENDING;
+  persistentDashboardStore.updateSortDirection(dashboard.sortDirection);
+};
+
 export const sortActions = {
   /**
    * Sets the sort type for the dashboard (value, percent, delta, etc.)
@@ -58,11 +66,5 @@ export const sortActions = {
   /**
    * Sets the sort direction to descending.
    */
-  setSortDescending: ({
-    dashboard,
-    persistentDashboardStore,
-  }: DashboardMutables) => {
-    dashboard.sortDirection = SortDirection.DESCENDING;
-    persistentDashboardStore.updateSortDirection(dashboard.sortDirection);
-  },
+  setSortDescending,
 };

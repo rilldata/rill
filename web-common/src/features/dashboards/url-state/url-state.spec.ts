@@ -29,6 +29,7 @@ import {
   type DashboardTimeControls,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
+import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExplorePreset,
@@ -389,25 +390,28 @@ describe("Human readable URL state", () => {
         cleanMetricsExplore(initEntity);
 
         // load url params with update metrics state
-        convertMetricsEntityToURLSearchParams(
-          {
-            ...initEntity,
-            ...entity,
-          },
+        mergeSearchParams(
+          convertMetricsEntityToURLSearchParams(
+            {
+              ...initEntity,
+              ...entity,
+            },
+            explore,
+            basePreset,
+          ),
           url.searchParams,
-          explore,
-          basePreset,
         );
 
         expect(url.toString()).to.eq(expectedUrl);
 
         // get back the entity from url params
-        const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          url.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          basePreset,
-        );
+        const { partialExploreState: entityFromUrl } =
+          convertURLToMetricsExplore(
+            url.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            basePreset,
+          );
 
         // assert that the entity we got back matches the expected entity
         expect(entityFromUrl).toEqual({
@@ -417,12 +421,13 @@ describe("Human readable URL state", () => {
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
-        const { entity: entityFromDefaultUrl } = convertURLToMetricsExplore(
-          defaultUrl.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          basePreset,
-        );
+        const { partialExploreState: entityFromDefaultUrl } =
+          convertURLToMetricsExplore(
+            defaultUrl.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            basePreset,
+          );
 
         // assert that the entity we got back matches the original
         expect(entityFromDefaultUrl).toEqual(initEntity);
@@ -458,12 +463,13 @@ describe("Human readable URL state", () => {
         );
 
         // get back the entity from url params
-        const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          url.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          basePreset,
-        );
+        const { partialExploreState: entityFromUrl } =
+          convertURLToMetricsExplore(
+            url.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            basePreset,
+          );
         // assert that the entity we got back matches the expected entity
         expect(entityFromUrl).toEqual({
           ...initEntity,
@@ -472,12 +478,13 @@ describe("Human readable URL state", () => {
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
-        const { entity: entityFromDefaultUrl } = convertURLToMetricsExplore(
-          defaultUrl.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          basePreset,
-        );
+        const { partialExploreState: entityFromDefaultUrl } =
+          convertURLToMetricsExplore(
+            defaultUrl.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            basePreset,
+          );
 
         // assert that the entity we got back matches the original
         expect(entityFromDefaultUrl).toEqual(initEntity);
@@ -495,7 +502,6 @@ export function cleanMetricsExplore(
   delete metricsExplorerEntity.havingFilter;
   delete metricsExplorerEntity.temporaryFilterName;
   delete metricsExplorerEntity.contextColumnWidths;
-  delete metricsExplorerEntity.dimensionSearchText;
   if (metricsExplorerEntity.selectedTimeRange) {
     metricsExplorerEntity.selectedTimeRange = {
       name: metricsExplorerEntity.selectedTimeRange?.name ?? "inf",

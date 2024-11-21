@@ -47,13 +47,10 @@ export function convertURLToMetricsExplore(
     basePreset,
   );
   errors.push(...errorsFromPreset);
-  const { entity, errors: errorsFromEntity } = convertPresetToMetricsExplore(
-    metricsView,
-    explore,
-    preset,
-  );
+  const { partialExploreState, errors: errorsFromEntity } =
+    convertPresetToMetricsExplore(metricsView, explore, preset);
   errors.push(...errorsFromEntity);
-  return { entity, errors };
+  return { partialExploreState, errors };
 }
 
 /**
@@ -65,7 +62,7 @@ export function convertPresetToMetricsExplore(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const entity: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
 
   const measures = getMapFromArray(
@@ -81,83 +78,75 @@ export function convertPresetToMetricsExplore(
   );
 
   if (preset.view) {
-    entity.activePage = Number(ToActivePageViewMap[preset.view] ?? "0");
+    partialExploreState.activePage = Number(
+      ToActivePageViewMap[preset.view] ?? "0",
+    );
   }
 
   if (preset.where) {
     const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
       preset.where,
     );
-    entity.whereFilter = dimensionFilters;
-    entity.dimensionThresholdFilters = dimensionThresholdFilters;
+    partialExploreState.whereFilter = dimensionFilters;
+    partialExploreState.dimensionThresholdFilters = dimensionThresholdFilters;
   }
 
-  const { entity: trEntity, errors: trErrors } = fromTimeRangesParams(
-    preset,
-    dimensions,
-  );
-  Object.assign(entity, trEntity);
+  const { partialExploreState: trPartialState, errors: trErrors } =
+    fromTimeRangesParams(preset, dimensions);
+  Object.assign(partialExploreState, trPartialState);
   errors.push(...trErrors);
 
-  const { entity: ovEntity, errors: ovErrors } = fromOverviewUrlParams(
-    measures,
-    dimensions,
-    explore,
-    preset,
-  );
-  Object.assign(entity, ovEntity);
+  const { partialExploreState: ovPartialState, errors: ovErrors } =
+    fromOverviewUrlParams(measures, dimensions, explore, preset);
+  Object.assign(partialExploreState, ovPartialState);
   errors.push(...ovErrors);
 
-  const { entity: tddEntity, errors: tddErrors } = fromTimeDimensionUrlParams(
-    measures,
-    preset,
-  );
-  Object.assign(entity, tddEntity);
+  const { partialExploreState: tddPartialState, errors: tddErrors } =
+    fromTimeDimensionUrlParams(measures, preset);
+  Object.assign(partialExploreState, tddPartialState);
   errors.push(...tddErrors);
 
-  const { entity: pivotEntity, errors: pivotErrors } = fromPivotUrlParams(
-    measures,
-    dimensions,
-    preset,
-  );
-  Object.assign(entity, pivotEntity);
+  const { partialExploreState: pivotPartialState, errors: pivotErrors } =
+    fromPivotUrlParams(measures, dimensions, preset);
+  Object.assign(partialExploreState, pivotPartialState);
   errors.push(...pivotErrors);
 
-  return { entity, errors };
+  return { partialExploreState, errors };
 }
 
 function fromTimeRangesParams(
   preset: V1ExplorePreset,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
 ) {
-  const entity: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
 
   if (preset.timeRange) {
     const { timeRange, error } = fromTimeRangeUrlParam(preset.timeRange);
     if (error) errors.push(error);
-    entity.selectedTimeRange = timeRange;
+    partialExploreState.selectedTimeRange = timeRange;
   }
 
   if (preset.timezone) {
-    entity.selectedTimezone = preset.timezone;
+    partialExploreState.selectedTimezone = preset.timezone;
   }
 
   if (preset.compareTimeRange) {
     const { timeRange, error } = fromTimeRangeUrlParam(preset.compareTimeRange);
     if (error) errors.push(error);
-    entity.selectedComparisonTimeRange = timeRange;
-    entity.showTimeComparison = true;
+    partialExploreState.selectedComparisonTimeRange = timeRange;
+    partialExploreState.showTimeComparison = true;
     // unset compare dimension
-    entity.selectedComparisonDimension = "";
+    partialExploreState.selectedComparisonDimension = "";
   }
 
   if (preset.comparisonDimension) {
     if (dimensions.has(preset.comparisonDimension)) {
-      entity.selectedComparisonDimension = preset.comparisonDimension;
+      partialExploreState.selectedComparisonDimension =
+        preset.comparisonDimension;
       // unset compare time ranges
-      entity.selectedComparisonTimeRange = undefined;
-      entity.showTimeComparison = false;
+      partialExploreState.selectedComparisonTimeRange = undefined;
+      partialExploreState.showTimeComparison = false;
     } else {
       errors.push(
         getSingleFieldError("compare dimension", preset.comparisonDimension),
@@ -170,14 +159,14 @@ function fromTimeRangesParams(
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
   ) {
     // unset all comparison setting if mode is none
-    entity.selectedComparisonTimeRange = undefined;
-    entity.selectedComparisonDimension = "";
-    entity.showTimeComparison = false;
+    partialExploreState.selectedComparisonTimeRange = undefined;
+    partialExploreState.selectedComparisonDimension = "";
+    partialExploreState.showTimeComparison = false;
   }
 
   // TODO: grain
 
-  return { entity, errors };
+  return { partialExploreState, errors };
 }
 
 function fromTimeRangeUrlParam(tr: string): {
@@ -202,7 +191,7 @@ function fromOverviewUrlParams(
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
-  const entity: Partial<MetricsExplorerEntity> = {};
+  const partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
@@ -212,9 +201,9 @@ function fromOverviewUrlParams(
       errors.push(getMultiFieldError("measure", missingMeasures));
     }
 
-    entity.allMeasuresVisible =
+    partialExploreState.allMeasuresVisible =
       selectedMeasures.length === explore.measures?.length;
-    entity.visibleMeasureKeys = new Set(selectedMeasures);
+    partialExploreState.visibleMeasureKeys = new Set(selectedMeasures);
   }
 
   if (preset.dimensions?.length) {
@@ -229,14 +218,14 @@ function fromOverviewUrlParams(
       errors.push(getMultiFieldError("dimension", missingDimensions));
     }
 
-    entity.allDimensionsVisible =
+    partialExploreState.allDimensionsVisible =
       selectedDimensions.length === explore.dimensions?.length;
-    entity.visibleDimensionKeys = new Set(selectedDimensions);
+    partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
   }
 
   if (preset.overviewSortBy) {
     if (measures.has(preset.overviewSortBy)) {
-      entity.leaderboardMeasureName = preset.overviewSortBy;
+      partialExploreState.leaderboardMeasureName = preset.overviewSortBy;
     } else {
       errors.push(
         getSingleFieldError("sort by measure", preset.overviewSortBy),
@@ -245,29 +234,31 @@ function fromOverviewUrlParams(
   }
 
   if (preset.overviewSortAsc !== undefined) {
-    entity.sortDirection = preset.overviewSortAsc
+    partialExploreState.sortDirection = preset.overviewSortAsc
       ? SortDirection.ASCENDING
       : SortDirection.DESCENDING;
   }
 
   if (preset.overviewExpandedDimension !== undefined) {
     if (preset.overviewExpandedDimension === "") {
-      entity.selectedDimensionName = "";
+      partialExploreState.selectedDimensionName = "";
       // if preset didnt have a view then this is a dimension table unset.
       if (
         preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||
         preset.view === undefined
       ) {
-        entity.activePage = DashboardState_ActivePage.DEFAULT;
+        partialExploreState.activePage = DashboardState_ActivePage.DEFAULT;
       }
     } else if (dimensions.has(preset.overviewExpandedDimension)) {
-      entity.selectedDimensionName = preset.overviewExpandedDimension;
+      partialExploreState.selectedDimensionName =
+        preset.overviewExpandedDimension;
       if (
         preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW ||
         preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||
         preset.view === undefined
       ) {
-        entity.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+        partialExploreState.activePage =
+          DashboardState_ActivePage.DIMENSION_TABLE;
       }
     } else {
       errors.push(
@@ -279,19 +270,19 @@ function fromOverviewUrlParams(
     }
   }
 
-  return { entity, errors };
+  return { partialExploreState, errors };
 }
 
 function fromTimeDimensionUrlParams(
   measures: Map<string, MetricsViewSpecMeasureV2>,
   preset: V1ExplorePreset,
 ): {
-  entity: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<MetricsExplorerEntity>;
   errors: Error[];
 } {
   if (preset.timeDimensionMeasure === undefined) {
     return {
-      entity: {},
+      partialExploreState: {},
       errors: [],
     };
   }
@@ -307,7 +298,7 @@ function fromTimeDimensionUrlParams(
   // unset
   if (expandedMeasureName === "") {
     return {
-      entity: {
+      partialExploreState: {
         tdd: {
           expandedMeasureName: "",
           chartType: TDDChart.DEFAULT,
@@ -318,7 +309,7 @@ function fromTimeDimensionUrlParams(
     };
   }
 
-  const entity: Partial<MetricsExplorerEntity> = {
+  const partialExploreState: Partial<MetricsExplorerEntity> = {
     tdd: {
       expandedMeasureName,
       chartType: preset.timeDimensionChartType
@@ -329,7 +320,7 @@ function fromTimeDimensionUrlParams(
   };
 
   return {
-    entity,
+    partialExploreState,
     errors,
   };
 }
@@ -339,7 +330,7 @@ function fromPivotUrlParams(
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
   preset: V1ExplorePreset,
 ): {
-  entity: Partial<MetricsExplorerEntity>;
+  partialExploreState: Partial<MetricsExplorerEntity>;
   errors: Error[];
 } {
   const errors: Error[] = [];
@@ -406,13 +397,13 @@ function fromPivotUrlParams(
 
   if (!hasSomePivotFields) {
     return {
-      entity: {},
+      partialExploreState: {},
       errors,
     };
   }
 
   return {
-    entity: {
+    partialExploreState: {
       pivot: {
         active: preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
         rows: {

@@ -6,6 +6,7 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
+  import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -14,7 +15,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let basePreset: V1ExplorePreset;
-  export let partialMetrics: Partial<MetricsExplorerEntity>;
+  export let partialExploreState: Partial<MetricsExplorerEntity>;
 
   const {
     metricsViewName,
@@ -42,12 +43,13 @@
     const u = new URL(
       `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`,
     );
-    convertMetricsEntityToURLSearchParams(
-      $dashboardStore,
-      u.searchParams,
-      exploreSpec,
-      basePreset,
-    );
+    const searchParamsFromDashboardState =
+      convertMetricsEntityToURLSearchParams(
+        $dashboardStore,
+        exploreSpec,
+        basePreset,
+      );
+    mergeSearchParams(searchParamsFromDashboardState, u.searchParams);
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {
       void goto(newUrl);
@@ -68,7 +70,7 @@
 
     metricsExplorerStore.mergePartialExplorerEntity(
       $exploreName,
-      partialMetrics,
+      partialExploreState,
       metricsSpec,
     );
     prevUrl = window.location.href;
@@ -80,10 +82,10 @@
     gotoNewState();
   }
 
-  // reactive to only partialMetrics, metricsSpec & exploreSpec
+  // reactive to only partialExploreState, metricsSpec & exploreSpec
   // but mergePartialExplorerEntity checks other fields
   $: if (
-    partialMetrics &&
+    partialExploreState &&
     metricsSpec &&
     exploreSpec &&
     prevUrl !== window.location.href

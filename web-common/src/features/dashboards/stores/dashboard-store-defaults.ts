@@ -145,7 +145,7 @@ export function getDefaultMetricsExplorerEntity(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
   basePreset = getBasePreset(explore, getLocalUserPreferencesState(name)),
 ): MetricsExplorerEntity {
-  const { entity: baseEntity } = convertPresetToMetricsExplore(
+  const { partialExploreState } = convertPresetToMetricsExplore(
     metricsView,
     explore,
     basePreset,
@@ -162,7 +162,7 @@ export function getDefaultMetricsExplorerEntity(
     temporaryFilterName: null,
     contextColumnWidths: { ...contextColWidthDefaults },
 
-    ...baseEntity,
+    ...partialExploreState,
   } as MetricsExplorerEntity;
   // set time range related stuff
   setDefaultTimeRange(explore?.defaultPreset, metricsExplorer, fullTimeRange);

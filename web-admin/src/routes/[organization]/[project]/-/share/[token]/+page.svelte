@@ -15,7 +15,7 @@
 
   $: ({
     basePreset,
-    partialMetrics,
+    partialExploreState,
     token: { resourceName },
   } = data);
   $: ({ organization, project } = $page.params);
@@ -55,7 +55,7 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardURLStateSync {basePreset} {partialMetrics}>
+      <DashboardURLStateSync {basePreset} {partialExploreState}>
         <DashboardThemeProvider>
           <Dashboard
             exploreName={resourceName}

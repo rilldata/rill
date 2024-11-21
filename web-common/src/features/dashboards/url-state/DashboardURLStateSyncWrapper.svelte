@@ -22,21 +22,22 @@
     getLocalUserPreferencesState($exploreName),
   );
 
-  let partialMetrics: Partial<MetricsExplorerEntity> = {};
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
   function parseUrl(url: URL) {
-    const { entity } = convertURLToMetricsExplore(
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      basePreset,
-    );
-    partialMetrics = entity;
+    const { partialExploreState: partialExploreStateFromUrl } =
+      convertURLToMetricsExplore(
+        url.searchParams,
+        metricsViewSpec,
+        exploreSpec,
+        basePreset,
+      );
+    partialExploreState = partialExploreStateFromUrl;
   }
 
   // only reactive to url
   $: parseUrl($page.url);
 </script>
 
-<DashboardURLStateSync {basePreset} {partialMetrics}>
+<DashboardURLStateSync {basePreset} {partialExploreState}>
   <slot />
 </DashboardURLStateSync>

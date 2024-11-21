@@ -118,14 +118,15 @@ describe("sparse preset", () => {
 
         const url = new URL("http://localhost");
         // get the entity from no param url
-        const { entity: entityFromUrl } = convertURLToMetricsExplore(
-          url.searchParams,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_BASE_PRESET,
-        );
+        const { partialExploreState: partialExploreStateFromUrl } =
+          convertURLToMetricsExplore(
+            url.searchParams,
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            AD_BIDS_EXPLORE_INIT,
+            AD_BIDS_BASE_PRESET,
+          );
 
-        expect(entityFromUrl).toEqual(initEntity);
+        expect(partialExploreStateFromUrl).toEqual(initEntity);
       });
     }
   });
@@ -143,7 +144,7 @@ describe("sparse preset", () => {
           AD_BIDS_EXPLORE_INIT,
         );
         // convert to partial preset and back to entity
-        const { entity: partialEntityFromPreset } =
+        const { partialExploreState: partialExploreStateFromPreset } =
           convertPresetToMetricsExplore(
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             AD_BIDS_EXPLORE_INIT,
@@ -152,7 +153,7 @@ describe("sparse preset", () => {
         // remove parts not in the state
         cleanMetricsExplore(partialEntity);
         // assert that the partial from entity match the one from state
-        expect(partialEntityFromPreset).toEqual(partialEntity);
+        expect(partialExploreStateFromPreset).toEqual(partialEntity);
 
         // apply mutations to reverse the previous mutations
         applyMutationsToDashboard(
@@ -163,7 +164,7 @@ describe("sparse preset", () => {
         // merge partial entity from preset to current state
         metricsExplorerStore.mergePartialExplorerEntity(
           AD_BIDS_EXPLORE_NAME,
-          partialEntityFromPreset,
+          partialExploreStateFromPreset,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
         );
 

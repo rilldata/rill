@@ -15,7 +15,7 @@
   const queryClient = useQueryClient();
 
   export let data: PageData;
-  $: ({ metricsView, explore, basePreset, partialMetrics } = data);
+  $: ({ metricsView, explore, basePreset, partialExploreState } = data);
 
   resetSelectedMockUserAfterNavigate(queryClient);
 
@@ -67,7 +67,7 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardURLStateSync {basePreset} {partialMetrics}>
+      <DashboardURLStateSync {basePreset} {partialExploreState}>
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>

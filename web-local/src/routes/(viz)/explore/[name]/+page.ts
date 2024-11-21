@@ -6,21 +6,24 @@ export const load = async ({ url, parent }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  let partialMetrics: Partial<MetricsExplorerEntity> = {};
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
   if (metricsViewSpec && exploreSpec && url) {
-    const { entity, errors: errorsFromConvert } = convertURLToMetricsExplore(
+    const {
+      partialExploreState: partialExploreStateFromUrl,
+      errors: errorsFromConvert,
+    } = convertURLToMetricsExplore(
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
       basePreset,
     );
-    partialMetrics = entity;
+    partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
   }
 
   return {
-    partialMetrics,
+    partialExploreState,
     errors,
   };
 };

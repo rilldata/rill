@@ -111,7 +111,6 @@
         ),
         undefined,
       );
-  $: console.log(isComplexFilter, where);
 
   $: measures = getIndependentMeasures(
     metricsView,
