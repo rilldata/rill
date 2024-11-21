@@ -67,7 +67,7 @@ test.describe("Metrics editor", () => {
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.
-    await expect(page.getByText("Total Records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total Records 100k")).toBeVisible();
 
     // double-check that leaderboards make sense.
     await expect(

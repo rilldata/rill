@@ -3,13 +3,20 @@ import { format as d3format } from "d3-format";
 import {
   FormatPreset,
   NumberKind,
+  type ContextOptions,
   type FormatterContext,
+  type FormatterContextSurface,
 } from "./humanizer-types";
 import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,
 } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
+import {
+  bigNumCurrencyOptions,
+  bigNumDefaultFormattingOptions,
+  bigNumPercentOptions,
+} from "./strategies/per-range-bignum-options";
 import {
   defaultCurrencyOptions,
   defaultGenericNumOptions,
@@ -23,41 +30,73 @@ import {
 } from "./strategies/per-range-tooltip-options";
 
 /**
- * This function is intended to provides a compact,
- * potentially lossy, humanized string representation of a number.
+ * This function provides a compact, potentially lossy, humanized string representation of a number.
+ * @param value The number to format
+ * @param preset The format preset to use
+ * @param type The format context type (e.g., tooltip, big-number)
  */
-function humanizeDataType(value: number, preset: FormatPreset): string {
+function humanizeDataType(
+  value: number,
+  preset: FormatPreset,
+  type: FormatterContextSurface,
+): string {
   if (typeof value !== "number") {
     console.warn(
       `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
     );
-
     return JSON.stringify(value);
   }
 
+  const optionsMap: Record<FormatterContextSurface, ContextOptions> = {
+    tooltip: {
+      none: tooltipNoFormattingOptions,
+      currencyUsd: tooltipCurrencyOptions(NumberKind.DOLLAR),
+      currencyEur: tooltipCurrencyOptions(NumberKind.EURO),
+      percent: tooltipPercentOptions,
+      humanize: tooltipNoFormattingOptions,
+    },
+    "big-number": {
+      none: bigNumDefaultFormattingOptions,
+      currencyUsd: bigNumCurrencyOptions(NumberKind.DOLLAR),
+      currencyEur: bigNumCurrencyOptions(NumberKind.EURO),
+      percent: bigNumPercentOptions,
+      humanize: bigNumDefaultFormattingOptions,
+    },
+    table: {
+      none: defaultNoFormattingOptions,
+      currencyUsd: defaultCurrencyOptions(NumberKind.DOLLAR),
+      currencyEur: defaultCurrencyOptions(NumberKind.EURO),
+      percent: defaultPercentOptions,
+      humanize: defaultGenericNumOptions,
+    },
+  };
+
+  const selectedOptions = optionsMap[type] || optionsMap.table;
+
   switch (preset) {
     case FormatPreset.NONE:
-      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
+      return new PerRangeFormatter(selectedOptions.none).stringFormat(value);
+
+    case FormatPreset.CURRENCY_USD:
+      return new PerRangeFormatter(selectedOptions.currencyUsd).stringFormat(
         value,
       );
-    case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(
-        defaultCurrencyOptions(NumberKind.DOLLAR),
-      ).stringFormat(value);
 
     case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(
-        defaultCurrencyOptions(NumberKind.EURO),
-      ).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.currencyEur).stringFormat(
+        value,
+      );
 
     case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(defaultPercentOptions).stringFormat(value);
+      return new PerRangeFormatter(selectedOptions.percent).stringFormat(value);
 
     case FormatPreset.INTERVAL:
-      return formatMsInterval(value);
+      return type === "tooltip"
+        ? formatMsToDuckDbIntervalString(value)
+        : formatMsInterval(value);
 
     case FormatPreset.HUMANIZE:
-      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
+      return new PerRangeFormatter(selectedOptions.humanize).stringFormat(
         value,
       );
 
@@ -65,9 +104,7 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
       console.warn(
         "Unknown format preset, using none formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(defaultNoFormattingOptions).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(selectedOptions.none).stringFormat(value);
   }
 }
 
@@ -97,51 +134,6 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   return value.toString();
 }
 
-function humanizeDataTypeForTooltip(
-  value: number,
-  preset: FormatPreset,
-): string {
-  if (typeof value !== "number") {
-    console.warn(
-      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${preset}"`,
-    );
-
-    return JSON.stringify(value);
-  }
-
-  switch (preset) {
-    case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(
-        tooltipCurrencyOptions(NumberKind.DOLLAR),
-      ).stringFormat(value);
-
-    case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(
-        tooltipCurrencyOptions(NumberKind.EURO),
-      ).stringFormat(value);
-
-    case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(tooltipPercentOptions).stringFormat(value);
-
-    case FormatPreset.INTERVAL:
-      return formatMsToDuckDbIntervalString(value);
-
-    case FormatPreset.HUMANIZE:
-    case FormatPreset.NONE:
-      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
-        value,
-      );
-
-    default:
-      console.warn(
-        "Unknown format preset, using none formatter. All number kinds should be handled.",
-      );
-      return new PerRangeFormatter(tooltipNoFormattingOptions).stringFormat(
-        value,
-      );
-  }
-}
-
 /**
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
@@ -167,10 +159,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   let humanizer: (value: number, type: FormatPreset) => string;
   if (useUnabridged) {
     humanizer = humanizeDataTypeUnabridged;
-  } else if (isTooltip) {
-    humanizer = humanizeDataTypeForTooltip;
   } else {
-    humanizer = humanizeDataType;
+    humanizer = (value, preset) => humanizeDataType(value, preset, type);
   }
 
   // Return and empty string if measureSpec is not provided.
