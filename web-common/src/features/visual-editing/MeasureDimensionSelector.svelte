@@ -7,7 +7,6 @@
     MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import SelectionDropdown from "./SelectionDropdown.svelte";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const fields = ["all", "subset", "expression"];
 
