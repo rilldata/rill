@@ -155,17 +155,18 @@
     }
   }
 
-  $: dynamicTableMaxHeight = data.length > 12 ? `calc(100dvh - 300px)` : "auto";
+  $: dynamicTableMaxHeight =
+    data && data.length > 12 ? `calc(100dvh - 300px)` : "auto";
   // 69 * 12 = 828px
-  $: dynamicTableHeight = data.length < 12 ? "828px" : "auto";
+  $: dynamicTableMinHeight = "828px";
 </script>
 
 <!-- FIXME: hoist this to a InfiniteScrollTable component -->
 <div
-  class="list scroll-container"
+  class={`list scroll-container ${dynamicTableMaxHeight}`}
   bind:this={virtualListEl}
   style:max-height={dynamicTableMaxHeight}
-  style:height={dynamicTableHeight}
+  style:min-height={dynamicTableMinHeight}
 >
   <div
     class="table-wrapper"
