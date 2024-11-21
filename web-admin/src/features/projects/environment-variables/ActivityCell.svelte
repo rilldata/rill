@@ -1,7 +1,8 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { timeAgo } from "../../dashboards/listing/utils";
 
-  export let createdOn: string;
   export let updatedOn: string;
 
   function formatText() {
@@ -18,9 +19,13 @@
   $: formattedText = formatText();
 </script>
 
-<span
-  class="text-xs text-gray-500"
-  title={new Date(updatedOn || createdOn).toLocaleString()}
->
-  {formattedText}
-</span>
+<Tooltip distance={8} location="top" alignment="start">
+  <div class="text-xs text-gray-500 cursor-pointer">
+    {formattedText}
+  </div>
+  <TooltipContent slot="tooltip-content">
+    <span class="text-xs text-gray-50 font-medium"
+      >{new Date(updatedOn).toLocaleString()}</span
+    >
+  </TooltipContent>
+</Tooltip>

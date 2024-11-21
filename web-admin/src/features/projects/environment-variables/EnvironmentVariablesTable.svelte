@@ -44,7 +44,6 @@
       enableSorting: false,
       cell: ({ row }) => {
         return flexRender(ActivityCell, {
-          createdOn: row.original.createdOn,
           updatedOn: row.original.updatedOn,
         });
       },
