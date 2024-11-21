@@ -10,6 +10,10 @@
 
   const navItems = [
     {
+      label: "Environment Variables",
+      route: "/environment-variables",
+    },
+    {
       label: "Public URLs",
       route: "/public-urls",
     },
@@ -24,6 +28,7 @@
       {basePage}
       baseRoute="/[organization]/[project]/-/settings"
       {navItems}
+      minWidth="180px"
     />
     <slot />
   </div>

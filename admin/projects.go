@@ -69,16 +69,16 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
-	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:      proj.ID,
-		Provisioner:    proj.Provisioner,
-		Annotations:    s.NewDeploymentAnnotations(org, proj),
-		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  nil,
-		ProdOLAPDriver: proj.ProdOLAPDriver,
-		ProdOLAPDSN:    proj.ProdOLAPDSN,
-		ProdSlots:      proj.ProdSlots,
-		ProdVersion:    proj.ProdVersion,
+	depl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
+		ProjectID:   proj.ID,
+		Annotations: s.NewDeploymentAnnotations(org, proj),
+		Branch:      proj.ProdBranch,
+		Provisioner: proj.Provisioner,
+		Slots:       proj.ProdSlots,
+		Version:     proj.ProdVersion,
+		Variables:   nil,
+		OLAPDriver:  proj.ProdOLAPDriver,
+		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -190,10 +190,10 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Version:         d.RuntimeVersion,
-			Branch:          opts.ProdBranch,
-			Variables:       nil,
 			Annotations:     annotations,
+			Branch:          opts.ProdBranch,
+			Version:         opts.ProdVersion,
+			Variables:       nil,
 			EvictCachedRepo: true,
 		})
 		if err != nil {
@@ -264,10 +264,10 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Version:         d.RuntimeVersion,
-			Branch:          project.ProdBranch,
-			Variables:       vars,
 			Annotations:     annotations,
+			Branch:          project.ProdBranch,
+			Version:         project.ProdVersion,
+			Variables:       vars,
 			EvictCachedRepo: true,
 		})
 		if err != nil {
@@ -299,10 +299,10 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-					Version:         d.RuntimeVersion,
-					Branch:          proj.ProdBranch,
-					Variables:       nil,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
+					Branch:          proj.ProdBranch,
+					Version:         proj.ProdVersion,
+					Variables:       nil,
 					EvictCachedRepo: false,
 				})
 				if err != nil {
@@ -334,16 +334,16 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 	}
 
 	// Provision new deployment
-	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:      proj.ID,
-		Provisioner:    proj.Provisioner,
-		Annotations:    s.NewDeploymentAnnotations(org, proj),
-		ProdVersion:    proj.ProdVersion,
-		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  vars,
-		ProdOLAPDriver: proj.ProdOLAPDriver,
-		ProdOLAPDSN:    proj.ProdOLAPDSN,
-		ProdSlots:      proj.ProdSlots,
+	newDepl, err := s.CreateDeployment(ctx, &CreateDeploymentOptions{
+		ProjectID:   proj.ID,
+		Annotations: s.NewDeploymentAnnotations(org, proj),
+		Branch:      proj.ProdBranch,
+		Provisioner: proj.Provisioner,
+		Slots:       proj.ProdSlots,
+		Version:     proj.ProdVersion,
+		Variables:   vars,
+		OLAPDriver:  proj.ProdOLAPDriver,
+		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
 		return nil, err

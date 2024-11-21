@@ -13,6 +13,8 @@
   export let border = true;
   export let background = true;
   export let large = false;
+  export let disabled = false;
+
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
 
@@ -32,7 +34,11 @@
   });
 </script>
 
-<form class="relative w-full">
+<form
+  class="relative w-full {disabled
+    ? 'pointer-events-none opacity-50 cursor-not-allowed'
+    : ''}"
+>
   <button
     type="button"
     class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon"
@@ -53,6 +59,7 @@
     class="outline-none rounded-sm block w-full pl-8 p-1 {large
       ? 'h-full'
       : ''}"
+    {disabled}
     {placeholder}
     bind:value
     on:input

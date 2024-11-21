@@ -276,6 +276,11 @@
     @apply ring-2 ring-primary-100;
   }
 
+  .error-input-wrapper.input-wrapper {
+    @apply border-red-600;
+    @apply ring-1 ring-transparent;
+  }
+
   .error {
     @apply text-red-500 text-xs;
   }

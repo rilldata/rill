@@ -1,13 +1,9 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { createAdminServiceGetBillingSubscription } from "@rilldata/web-admin/client";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import type { PageData } from "./$types";
 
-  $: organization = $page.params.organization;
-
-  $: billingSub = createAdminServiceGetBillingSubscription(organization);
-  $: billingUrl = $billingSub.data?.billingPortalUrl;
+  export let data: PageData;
 
   let iframeLoading = true;
 
@@ -17,15 +13,13 @@
   };
 </script>
 
-{#if $billingSub.isLoading || iframeLoading}
+{#if iframeLoading}
   <Spinner status={EntityStatus.Running} size="16px" />
 {/if}
-{#if billingUrl}
-  <iframe
-    {...iframeProps}
-    src={billingUrl}
-    title="Orb Billing Portal"
-    class="w-full h-[1000px]"
-    on:load={() => (iframeLoading = false)}
-  />
-{/if}
+<iframe
+  {...iframeProps}
+  src={data.billingPortalUrl}
+  title="Orb Billing Portal"
+  class="w-full h-[1000px]"
+  on:load={() => (iframeLoading = false)}
+/>

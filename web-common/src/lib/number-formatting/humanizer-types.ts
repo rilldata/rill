@@ -308,3 +308,13 @@ export type FormatterContext =
   | "unabridged"
   | "big-number"
   | "tooltip";
+
+export type FormatterContextSurface = Exclude<FormatterContext, "unabridged">;
+
+export type ContextOptions = {
+  none: FormatterRangeSpecsStrategy;
+  currencyUsd: FormatterRangeSpecsStrategy;
+  currencyEur: FormatterRangeSpecsStrategy;
+  percent: FormatterRangeSpecsStrategy;
+  humanize: FormatterRangeSpecsStrategy;
+};
