@@ -150,7 +150,7 @@
               "minus": { "type": "string", "description": "Optional minus sign (defaults to \"−\")." },
               "nan": { "type": "string", "description": "Optional value for not-a-number (defaults to \"NaN\")." }
             },
-            "required": ["decimal", "thousands", "grouping", "currency"]
+            "required": ["currency"]
           },
           "ignore": {
             "type": "boolean",

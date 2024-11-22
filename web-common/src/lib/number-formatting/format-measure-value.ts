@@ -1,12 +1,13 @@
 import {
   currencyHumanizer,
+  getLocaleFromConfig,
   includesCurrencySymbol,
   isValidD3Locale,
 } from "@rilldata/web-common/lib/number-formatting/utils/d3-format-utils";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 import {
   format as d3format,
-  formatLocale,
+  formatLocale as d3FormatLocale,
   type FormatLocaleDefinition,
 } from "d3-format";
 import {
@@ -179,9 +180,12 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
     try {
       let d3formatter: (n: number | { valueOf(): number }) => string;
 
-      if (isValidD3Locale(measureSpec.formatD3Locale)) {
-        const locale = measureSpec.formatD3Locale as FormatLocaleDefinition;
-        d3formatter = formatLocale(locale).format(measureSpec.formatD3);
+      const isValidLocale = isValidD3Locale(measureSpec.formatD3Locale);
+      if (isValidLocale) {
+        const locale = getLocaleFromConfig(
+          measureSpec.formatD3Locale as FormatLocaleDefinition,
+        );
+        d3formatter = d3FormatLocale(locale).format(measureSpec.formatD3);
       } else {
         d3formatter = d3format(measureSpec.formatD3);
       }
@@ -194,7 +198,7 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         // For the Big Number and Tooltips, override the d3formatter
         if (isBigNumber || isTooltip) {
           if (hasCurrencySymbol) {
-            if (measureSpec?.formatD3Locale?.currency) {
+            if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
               const currency = measureSpec.formatD3Locale.currency as [
                 string,
                 string,
