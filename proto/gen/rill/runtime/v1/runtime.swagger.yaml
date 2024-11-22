@@ -3953,6 +3953,10 @@ definitions:
         type: array
         items:
           type: string
+      provision:
+        type: boolean
+      provisionArgs:
+        type: object
       propertiesFromVariables:
         type: object
         additionalProperties:

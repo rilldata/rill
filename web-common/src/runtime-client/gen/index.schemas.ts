@@ -1353,10 +1353,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
-}
-
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
@@ -1976,12 +1972,16 @@ NOTE : properties_from_variables and properties both should be used to get all p
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
+export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
+
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
   templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
   /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
@@ -2622,6 +2622,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

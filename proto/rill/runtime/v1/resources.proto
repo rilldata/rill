@@ -726,10 +726,17 @@ message CharLocation {
   uint32 line = 1;
 }
 
+message ConnectorV2 {
+  ConnectorSpec spec = 1;
+  ConnectorState state = 2;
+}
+
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
   repeated string templated_properties = 4;
+  bool provision = 5;
+  google.protobuf.Struct provision_args = 6;
   // DEPRECATED: properties_from_variables stores properties whose value is a variable.
   // NOTE : properties_from_variables and properties both should be used to get all properties.
   map<string, string> properties_from_variables = 3;
@@ -737,9 +744,4 @@ message ConnectorSpec {
 
 message ConnectorState {
   string spec_hash = 1;
-}
-
-message ConnectorV2 {
-  ConnectorSpec spec = 1;
-  ConnectorState state = 2;
 }
