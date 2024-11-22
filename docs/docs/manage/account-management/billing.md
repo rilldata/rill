@@ -22,7 +22,7 @@ Get started with Rill Cloud with our 30 day free trial! Upon deployment of your 
 ![deploy](/img/manage/billing/deploy-project.png)
 
 ### Upgrading to Team Plan
-Once you are ready to upgrade to a Team Plan, you can do so via the organization billing page, or select `Upgrade` in the top banner.
+Once you are ready to upgrade to a Team Plan, you can do so via the organization billing page, or select `Upgrade` in the top banner. Only organization administrators can upgrade the plan.
 
 ![img](/img/manage/billing/team-plan.png)
 
