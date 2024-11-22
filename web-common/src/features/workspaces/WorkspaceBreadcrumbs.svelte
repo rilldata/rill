@@ -24,6 +24,8 @@
   $: resourcesQuery = createRuntimeServiceListResources(instanceId);
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
+  $: console.log({ allResources });
+
   $: upstreamKind = resourceKind && upstreamMapping.get(resourceKind);
 
   $: downstreamResources = upstreamKind
@@ -36,10 +38,33 @@
         );
       })
     : [];
+
+  $: console.log({ resourceKind, resource });
+
+  $: lateralResources = allResources.filter((r) => {
+    if (
+      r.meta?.name?.name === resourceName &&
+      r.meta?.name?.kind === resourceKind
+    )
+      return true;
+    if (!r.meta?.refs?.length) return false;
+    return r.meta?.refs?.every((reference) =>
+      resource?.meta?.refs?.find(
+        (ref) => ref?.name === reference.name && ref?.kind === reference.kind,
+      ),
+    );
+  });
 </script>
 
-<nav class="flex gap-x-1.5 items-center h-7 mt-2 flex-none w-full pr-3">
-  <WorkspaceCrumb selected resources={[resource]} {allResources} {filePath} />
+<nav
+  class="flex gap-x-1.5 items-center h-7 flex-none w-full pr-3 truncate line-clamp-1"
+>
+  <WorkspaceCrumb
+    selected
+    resources={lateralResources}
+    {allResources}
+    {filePath}
+  />
 
   {#if downstreamResources.length}
     <WorkspaceCrumb

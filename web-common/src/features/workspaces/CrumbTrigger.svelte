@@ -14,13 +14,15 @@
     : filePath === "/.env" || filePath === "/rill.yaml"
       ? Settings
       : File;
+
+  $: console.log({ kind });
 </script>
 
 <span class="gap-x-1.5 items-center font-medium flex" title={label}>
   <span class="flex-none">
     <svelte:component this={icon} size="{size}px" />
   </span>
-  <p class="truncate">
+  <span class="truncate">
     {label ?? "Loading..."}
-  </p>
+  </span>
 </span>

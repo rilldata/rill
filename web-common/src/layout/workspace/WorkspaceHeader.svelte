@@ -29,6 +29,7 @@
   export let onTitleChange: (title: string) => void = () => {};
 
   let width: number;
+  let editing: boolean;
 
   $: value = titleInput;
   $: workspaceLayout = workspaces.get(filePath);
@@ -37,23 +38,29 @@
 </script>
 
 <header bind:clientWidth={width}>
-  <div class="slide pl-[14px]" class:!pl-10={!$navigationOpen}>
+  <div
+    class="slide pl-3.5 h-7 flex items-center"
+    class:!pl-10={!$navigationOpen}
+  >
     <WorkspaceBreadcrumbs {resource} {filePath} />
   </div>
 
   <div class="second-level-wrapper">
-    <div class="flex gap-x-0 items-center w-full">
-      <svelte:component
-        this={resourceKind
-          ? resourceIconMapping[resourceKind]
-          : filePath === "/.env" || filePath === "/rill.yaml"
-            ? Settings
-            : File}
-        size="19px"
-        color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
-      />
+    <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
+      <span class="flex-none">
+        <svelte:component
+          this={resourceKind
+            ? resourceIconMapping[resourceKind]
+            : filePath === "/.env" || filePath === "/rill.yaml"
+              ? Settings
+              : File}
+          size="19px"
+          color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
+        />
+      </span>
 
       <InputWithConfirm
+        bind:editing
         size="md"
         {editable}
         id="model-title-input"
@@ -64,7 +71,7 @@
       />
     </div>
 
-    <div class="flex items-center gap-x-2 w-fit">
+    <div class="flex items-center gap-x-2 w-fit flex-none">
       <slot name="workspace-controls" {width} />
 
       <div class="flex-none">
@@ -117,12 +124,12 @@
 
 <style lang="postcss">
   .second-level-wrapper {
-    @apply px-4 w-full;
-    @apply justify-between;
-    @apply flex flex-none py-2;
+    @apply px-4 py-2 w-full h-7;
+    @apply flex justify-between gap-x-2;
+    @apply items-center;
   }
 
   header {
-    @apply flex flex-col;
+    @apply flex flex-col py-2 gap-y-2;
   }
 </style>

@@ -19,7 +19,6 @@
 
   let open = false;
 
-  $: dropdown = resources.length > 1;
   $: firstResource = resources?.[0];
 
   $: resourceKind = firstResource?.meta?.name?.kind as ResourceKind | undefined;
@@ -35,6 +34,8 @@
             ref?.name === meta?.name?.name && ref?.kind === meta?.name?.kind,
         ),
       );
+
+  $: dropdown = resources.length > 1;
 </script>
 
 {#if referencedResources.length}
@@ -61,7 +62,7 @@
       <CrumbTrigger
         {filePath}
         kind={resourceKind}
-        label={dropdown
+        label={!selected && dropdown
           ? `${resources?.length} ${ResourceKindMap[resourceKind ?? ResourceKind.Component].folderName}`
           : name}
       />
