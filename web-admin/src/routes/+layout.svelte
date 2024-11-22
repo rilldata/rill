@@ -13,14 +13,15 @@
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
-  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;
@@ -39,12 +40,14 @@
   featureFlags.set(true, "adminServer", "readOnly");
 
   let removeJavascriptListeners: () => void;
+
   initCloudMetrics()
     .then(() => {
       removeJavascriptListeners =
         errorEventHandler.addJavascriptErrorListeners();
     })
     .catch(console.error);
+  initPosthog();
   initPylonWidget();
 
   onMount(() => {
