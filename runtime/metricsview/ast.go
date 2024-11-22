@@ -71,6 +71,7 @@ type FieldNode struct {
 	DisplayName string
 	Expr        string
 	AutoUnnest  bool
+	TreatNullAs string // only used for measures
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -804,11 +805,14 @@ func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 
 	switch m.Type {
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
-		return a.addSimpleMeasure(n, m)
+		_, err = a.addSimpleMeasure(n, m)
+		return err
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED:
-		return a.addDerivedMeasure(n, m)
+		_, err = a.addDerivedMeasure(n, m)
+		return err
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON:
-		return a.addTimeComparisonMeasure(n, m)
+		_, err = a.addTimeComparisonMeasure(n, m)
+		return err
 	default:
 		panic("unhandled measure type")
 	}
@@ -816,32 +820,34 @@ func (a *AST) addMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 
 // addSimpleMeasure adds a measure of type simple to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) (*FieldNode, error) {
 	// Base case: it targets the underlying table.
 	// Add the measure directly to the SELECT list.
 	if n.FromTable != nil {
 		expr, err := a.sqlForMeasure(m, n)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
 			Name:        m.Name,
 			DisplayName: m.DisplayName,
 			Expr:        expr,
+			TreatNullAs: m.TreatNullsAs,
 		})
 
-		return nil
+		return &n.MeasureFields[len(n.MeasureFields)-1], nil
 	}
 
 	// Recursive case: it targets another SelectNode.
 	// We recurse on the sub-select and add a pass-through field to the current node.
 
 	if !hasMeasure(n.FromSelect, m.Name) { // Don't recurse if already in scope in sub-query
-		err := a.addSimpleMeasure(n.FromSelect, m)
+		f, err := a.addSimpleMeasure(n.FromSelect, m)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		f.TreatNullAs = "" // only have to set this at the top level
 	}
 
 	expr := a.sqlForMember(n.FromSelect.Alias, m.Name)
@@ -849,22 +855,19 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 		expr = a.sqlForAnyInGroup(expr)
 	}
 
-	if m.TreatNullsAs != "" {
-		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
-	}
-
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
 		Name:        m.Name,
 		DisplayName: m.DisplayName,
 		Expr:        expr,
+		TreatNullAs: m.TreatNullsAs,
 	})
 
-	return nil
+	return &n.MeasureFields[len(n.MeasureFields)-1], nil
 }
 
 // addDerivedMeasure adds a measure of type derived to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) (*FieldNode, error) {
 	// Handle derived measures with "per" dimensions separately.
 	if len(m.PerDimensions) > 0 {
 		return a.addDerivedMeasureWithPer(n, m)
@@ -875,10 +878,11 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 	// so we need to ensure the referenced names exist only in ONE sub-query.
 	if n.JoinComparisonSelect != nil {
 		if !hasMeasure(n.FromSelect, m.Name) {
-			err := a.addDerivedMeasure(n.FromSelect, m)
+			f, err := a.addDerivedMeasure(n.FromSelect, m)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			f.TreatNullAs = "" // only have to set this at the top level
 		}
 
 		expr := a.sqlForMember(n.FromSelect.Alias, m.Name)
@@ -886,17 +890,14 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 			expr = a.sqlForAnyInGroup(expr)
 		}
 
-		if m.TreatNullsAs != "" {
-			expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
-		}
-
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
 			Name:        m.Name,
 			DisplayName: m.DisplayName,
 			Expr:        expr,
+			TreatNullAs: m.TreatNullsAs,
 		})
 
-		return nil
+		return &n.MeasureFields[len(n.MeasureFields)-1], nil
 	}
 	// Now we know it's NOT a node with a comparison join.
 
@@ -912,53 +913,50 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 	// Since the node doesn't have a comparison join, addReferencedMeasuresToScope guarantees the referenced measures are ONLY in scope in ONE sub-query, which prevents ambiguous references in the measure expression.
 	err := a.addReferencedMeasuresToScope(n, m.ReferencedMeasures)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add the derived measure expression to the current node.
 	expr, err := a.sqlForMeasure(m, n)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		expr = a.sqlForAnyInGroup(expr)
 	}
 
-	if m.TreatNullsAs != "" {
-		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
-	}
-
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
 		Name:        m.Name,
 		DisplayName: m.DisplayName,
 		Expr:        expr,
+		TreatNullAs: m.TreatNullsAs,
 	})
 
-	return nil
+	return &n.MeasureFields[len(n.MeasureFields)-1], nil
 }
 
 // addDerivedMeasureWithPer adds a measure of type derived with "per" dimensions to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addDerivedMeasureWithPer(_ *SelectNode, _ *runtimev1.MetricsViewSpec_MeasureV2) error {
-	return errors.New(`support for "per" not implemented`)
+func (a *AST) addDerivedMeasureWithPer(_ *SelectNode, _ *runtimev1.MetricsViewSpec_MeasureV2) (*FieldNode, error) {
+	return nil, errors.New(`support for "per" not implemented`)
 }
 
 // addTimeComparisonMeasure adds a measure of type time comparison to the given SelectNode.
 // When called, we know the measure is not present in the SelectNode, but it might be present in a sub-select.
-func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_MeasureV2) (*FieldNode, error) {
 	// If the node doesn't have a comparison join, we wrap it in a new SELECT that we add the comparison join to.
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
 		if a.query.ComparisonTimeRange == nil {
-			return errors.New("comparison time range not provided")
+			return nil, errors.New("comparison time range not provided")
 		}
 
 		a.wrapSelect(n, "base")
 
 		csn, err := a.buildBaseSelect("comparison", true)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		n.JoinComparisonSelect = csn
 
@@ -973,13 +971,13 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	// Add the referenced measures to the base and comparison SELECTs.
 	err := a.addReferencedMeasuresToScope(n, m.ReferencedMeasures)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Add the comparison measure expression to the current node.
 	expr, err := a.sqlForMeasure(m, n)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
@@ -987,17 +985,14 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 		expr = a.sqlForAnyInGroup(expr)
 	}
 
-	if m.TreatNullsAs != "" {
-		expr = a.dialect.Coalesce(expr, m.TreatNullsAs)
-	}
-
 	n.MeasureFields = append(n.MeasureFields, FieldNode{
 		Name:        m.Name,
 		DisplayName: m.DisplayName,
 		Expr:        expr,
+		TreatNullAs: m.TreatNullsAs,
 	})
 
-	return nil
+	return &n.MeasureFields[len(n.MeasureFields)-1], nil
 }
 
 // addOrderField adds a sort field to the given SelectNode.
@@ -1098,7 +1093,8 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 		s.MeasureFields = append(s.MeasureFields, FieldNode{
 			Name:        f.Name,
 			DisplayName: f.DisplayName,
-			Expr:        a.sqlForMember(cpy.Alias, f.Name), // TODO check treat nulls as here
+			Expr:        a.sqlForMember(cpy.Alias, f.Name),
+			TreatNullAs: "",
 		})
 	}
 
@@ -1193,9 +1189,6 @@ func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []a
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNode) (string, error) {
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		if m.TreatNullsAs != "" {
-			return a.dialect.Coalesce(m.Expression, m.TreatNullsAs), nil
-		}
 		return m.Expression, nil
 	}
 
@@ -1269,10 +1262,6 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNod
 		b.WriteString(m.Window.FrameExpression)
 	}
 	b.WriteString(")")
-
-	if m.TreatNullsAs != "" {
-		return a.dialect.Coalesce(b.String(), m.TreatNullsAs), nil
-	}
 
 	return b.String(), nil
 }

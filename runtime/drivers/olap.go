@@ -313,10 +313,6 @@ func (d Dialect) AutoUnnest(expr string) string {
 	return expr
 }
 
-func (d Dialect) Coalesce(expr string, fallback string) string {
-	return fmt.Sprintf("COALESCE(%s, %s)", expr, fallback)
-}
-
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if dimension.Expression != "" {
 		return dimension.Expression

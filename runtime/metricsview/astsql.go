@@ -123,8 +123,16 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
+		if f.TreatNullAs != "" {
+			b.out.WriteString("COALESCE(")
+		}
+
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
+		if f.TreatNullAs != "" {
+			b.out.WriteString("), ")
+			b.out.WriteString(f.TreatNullAs)
+		}
 		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
