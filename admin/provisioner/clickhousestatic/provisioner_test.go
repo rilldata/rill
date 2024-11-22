@@ -53,7 +53,9 @@ func Test(t *testing.T) {
 
 	// Provision two resources
 	r1, db1 := provisionClickHouse(t, p)
+	defer db1.Close()
 	r2, db2 := provisionClickHouse(t, p)
+	defer db2.Close()
 
 	// Check the resources are different
 	require.NotEqual(t, r1.ID, r2.ID)

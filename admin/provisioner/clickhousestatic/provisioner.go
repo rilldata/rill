@@ -49,11 +49,6 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 	}
 	ch := clickhouse.OpenDB(opts)
 
-	_, err = ch.ExecContext(context.Background(), "SELECT 1")
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping: %w", err)
-	}
-
 	return &Provisioner{
 		spec:   spec,
 		logger: logger,
@@ -116,7 +111,6 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 	// Grant privileges on the database to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT
-			SHOW DICTIONARIES,
 			SELECT,
 			INSERT,
 			ALTER,
@@ -128,6 +122,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 			DROP VIEW,
 			TRUNCATE,
 			OPTIMIZE,
+			SHOW DICTIONARIES,
 			dictGet
 		ON %s.* TO %s
 	`, dbName, user))
@@ -151,18 +146,6 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant global privileges to clickhouse user: %w", err)
 	}
 
-	// Grant access to all table engines
-	// _, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT TABLE ENGINE ON * TO %s", user))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to grant table engine access to clickhouse user: %w", err)
-	// }
-
-	// Grant select on system
-	// _, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT SELECT ON system.* TO %s", user))
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to grant select on system to clickhouse user: %w", err)
-	// }
-
 	// Build DSN for the resource and return it
 	dsn, err := url.Parse(p.spec.DSN)
 	if err != nil {
@@ -182,7 +165,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 }
 
 func (p *Provisioner) Deprovision(ctx context.Context, r *provisioner.Resource) error {
-	// Check it's spec clickhouse resource
+	// Check it's a clickhouse resource
 	if r.Type != provisioner.ResourceTypeClickHouse {
 		return fmt.Errorf("unexpected resource type %q", r.Type)
 	}
