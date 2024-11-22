@@ -482,7 +482,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.Organization,
+		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
