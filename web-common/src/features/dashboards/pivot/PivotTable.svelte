@@ -22,6 +22,7 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { dev } from "$app/environment";
   import {
     type Cell,
     type ExpandedState,
@@ -164,6 +165,7 @@
   $: totalLength = measureGroupsLength * totalMeasureWidth;
 
   $: headerGroups = $table.getHeaderGroups();
+  // $: console.log("headerGroups: ", headerGroups);
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
   $: headers = headerGroups[0].headers;
   $: firstColumnName = hasDimension
@@ -183,24 +185,22 @@
     initialOffset: rowScrollOffset,
     rangeExtractor: (range) => {
       const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
-
       return [...next].sort((a, b) => a - b);
     },
   });
 
-  $: visibleColumns = $table.getVisibleLeafColumns();
+  $: columns = $table.getVisibleLeafColumns();
   $: columnVirtualizer = createVirtualizer<
     HTMLDivElement,
     HTMLTableCellElement
   >({
-    count: visibleColumns.length,
-    getScrollElement: () => containerRefElement,
-    estimateSize: (index) => visibleColumns[index].getSize(), // Estimate width of each column for accurate scrollbar dragging
     horizontal: true,
+    count: columns.length,
+    getScrollElement: () => containerRefElement,
+    estimateSize: (index) => columns[index].getSize(),
     overscan: OVERSCAN,
     rangeExtractor: (range) => {
       const next = new Set([...defaultRangeExtractor(range)]);
-
       return [...next].sort((a, b) => a - b);
     },
   });
@@ -209,7 +209,6 @@
   $: totalRowSize = $rowVirtualizer.getTotalSize();
 
   $: virtualColumns = $columnVirtualizer.getVirtualItems();
-  // $: totalColumnSize = $columnVirtualizer.getTotalSize();
 
   let virtualPaddingLeft: number | undefined;
   let virtualPaddingRight: number | undefined;
@@ -223,6 +222,7 @@
 
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
 
+  // See: https://github.com/TanStack/virtual/issues/585#issuecomment-1716247313
   // In this virtualization model, we create buffer rows before and after our real data
   // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
@@ -265,7 +265,7 @@
     rowScrollOffset = 0;
   }
 
-  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+  function handleScroll(containerRefElement?: HTMLDivElement | null) {
     if (containerRefElement) {
       if (hovering) hovering = null;
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
@@ -281,23 +281,17 @@
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
 
-      const isReachingColumnEnd =
-        scrollLeft + containerRefElement.clientWidth >=
-        containerRefElement.scrollWidth - ROW_THRESHOLD;
-      const hasMoreColumns = visibleColumns.length >= NUM_COLUMNS_PER_PAGE;
-      if (isReachingColumnEnd && hasMoreColumns) {
-        console.log("fetching more columns [columnPage]: ", columnPage);
-        metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
-      }
+      // FIXME: when uncommented, the row page will increase as we scroll right
+      // const isReachingColumnEnd =
+      //   scrollLeft + containerRefElement.clientWidth >=
+      //   containerRefElement.scrollWidth - ROW_THRESHOLD;
+      // const hasMoreColumns = columns.length >= NUM_COLUMNS_PER_PAGE;
+      // if (isReachingColumnEnd && hasMoreColumns) {
+      //   console.log("fetching more columns [columnPage]: ", columnPage);
+      //   metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
+      // }
     }
-  };
-
-  onMount(() => {
-    // wait for layout to be calculated
-    requestAnimationFrame(() => {
-      handleScroll(containerRefElement);
-    });
-  });
+  }
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
@@ -389,11 +383,20 @@
       cell.column.id === activeCell?.columnId
     );
   }
+
+  onMount(() => {
+    // wait for layout to be calculated
+    requestAnimationFrame(() => {
+      handleScroll(containerRefElement);
+    });
+  });
 </script>
 
-<!-- DEBUGGING -->
-<span>({visibleColumns.length} columns)</span>
-<span>({rows.length} rows)</span>
+<!-- DEBUG ONLY -->
+{#if dev}
+  <span>({columns.length} columns)</span>
+  <span>({rows.length} rows)</span>
+{/if}
 
 <div
   class="table-wrapper relative"
@@ -497,10 +500,6 @@
           <col style:width="{length}px" style:max-width="{length}px" />
         {/each}
       {/each}
-
-      <!-- {#each virtualColumns as column (column.index)}
-        <col style:width="{column.size}px" style:max-width="{column.size}px" />
-      {/each} -->
     </colgroup>
 
     <thead>
