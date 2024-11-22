@@ -3,8 +3,11 @@ import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-stat
 import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
+  queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
+  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 
@@ -36,9 +39,28 @@ export async function fetchExploreSpec(
     throw error(404, "Metrics view not found");
   }
 
+  let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined = undefined;
+  const metricsViewName = exploreResource.explore.state?.validSpec?.metricsView;
+  if (
+    metricsViewResource.metricsView.state?.validSpec?.timeDimension &&
+    metricsViewName
+  ) {
+    fullTimeRange = await queryClient.fetchQuery({
+      queryFn: () =>
+        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
+      queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
+        instanceId,
+        metricsViewName,
+        {},
+      ),
+      staleTime: Infinity,
+    });
+  }
+
   const basePreset = getBasePreset(
     exploreResource.explore.state?.validSpec ?? {},
     getLocalUserPreferencesState(exploreName),
+    fullTimeRange,
   );
 
   return {

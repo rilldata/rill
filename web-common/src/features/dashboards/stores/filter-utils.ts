@@ -324,7 +324,11 @@ export function isExpressionUnsupported(expression: V1Expression) {
   }
 
   for (const expr of expression.cond.exprs) {
-    if (expr.cond?.op !== V1Operation.OPERATION_IN) return true;
+    if (
+      expr.cond?.op !== V1Operation.OPERATION_IN &&
+      expr.cond?.op !== V1Operation.OPERATION_NIN
+    )
+      return true;
 
     const subqueryExpr = expr.cond?.exprs?.[1];
     if (

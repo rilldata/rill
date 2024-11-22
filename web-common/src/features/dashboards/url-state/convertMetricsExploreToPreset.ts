@@ -9,6 +9,7 @@ import {
   FromActivePageMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
+  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -57,7 +58,10 @@ function fromMetricsExploreTimeRangeFields(
     preset.timeRange = exploreState.selectedTimeRange?.name;
     // TODO: custom time range
   }
-  // TODO: grain
+  if (exploreState.selectedTimeRange?.interval) {
+    preset.timeGrain =
+      ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange.interval];
+  }
 
   if (exploreState.selectedComparisonTimeRange?.name) {
     preset.compareTimeRange = exploreState.selectedComparisonTimeRange.name;

@@ -385,6 +385,7 @@ const metricsViewReducers = {
 
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         active: true,

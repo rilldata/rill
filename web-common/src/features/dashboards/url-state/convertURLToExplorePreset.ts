@@ -163,6 +163,9 @@ function fromTimeRangesParams(
     preset.timeRange = searchParams.get("tr") as string;
     // TODO: parse and return errors
   }
+  if (searchParams.has("tg")) {
+    preset.timeGrain = searchParams.get("tg") as string;
+  }
   if (searchParams.has("tz")) {
     preset.timezone = searchParams.get("tz") as string;
   }

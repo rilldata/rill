@@ -22,6 +22,7 @@ import {
   FromActivePageMap,
   FromURLParamTimeDimensionMap,
   ToURLParamTimeDimensionMap,
+  ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   getMapFromArray,
@@ -134,8 +135,8 @@ function fromLegacyTimeRangeFields(
     // TODO: custom time range
   }
   if (legacyState.timeGrain) {
-    // TODO
-    // preset.timeGrain = legacyState.timeGrain;
+    preset.timeGrain =
+      ToURLParamTimeGrainMapMap[FromProtoTimeGrainMap[legacyState.timeGrain]];
   }
 
   if (legacyState.compareTimeRange?.name) {

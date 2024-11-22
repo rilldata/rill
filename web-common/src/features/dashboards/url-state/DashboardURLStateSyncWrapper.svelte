@@ -1,11 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   /**
    * Temporary wrapper component that mimics the parsing and loading of url into metrics.
@@ -13,13 +15,18 @@
    * TODO: Fix embed to update the URL and get rid of this.
    */
 
-  const { exploreName, validSpecStore } = getStateManagers();
+  const { exploreName, metricsViewName, validSpecStore } = getStateManagers();
 
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: metricsViewTimeRange = useMetricsViewTimeRange(
+    $runtime.instanceId,
+    $metricsViewName,
+  );
   $: basePreset = getBasePreset(
     exploreSpec,
     getLocalUserPreferencesState($exploreName),
+    $metricsViewTimeRange.data,
   );
 
   let partialExploreState: Partial<MetricsExplorerEntity> = {};

@@ -14,6 +14,7 @@ import {
 import {
   FromURLParamTDDChartMap,
   FromURLParamTimeDimensionMap,
+  FromURLParamTimeGrainMap,
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
@@ -127,6 +128,11 @@ function fromTimeRangesParams(
     partialExploreState.selectedTimeRange = timeRange;
   }
 
+  if (preset.timeGrain && partialExploreState.selectedTimeRange) {
+    partialExploreState.selectedTimeRange.interval =
+      FromURLParamTimeGrainMap[preset.timeGrain];
+  }
+
   if (preset.timezone) {
     partialExploreState.selectedTimezone = preset.timezone;
   }
@@ -163,8 +169,6 @@ function fromTimeRangesParams(
     partialExploreState.selectedComparisonDimension = "";
     partialExploreState.showTimeComparison = false;
   }
-
-  // TODO: grain
 
   return { partialExploreState, errors };
 }

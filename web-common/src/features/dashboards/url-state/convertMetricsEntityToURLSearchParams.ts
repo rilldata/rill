@@ -16,6 +16,7 @@ import {
   FromActivePageMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
+  ToURLParamTimeGrainMapMap,
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
@@ -31,7 +32,7 @@ import {
 
 export function convertMetricsEntityToURLSearchParams(
   exploreState: MetricsExplorerEntity,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
@@ -54,7 +55,10 @@ export function convertMetricsEntityToURLSearchParams(
 
   mergeSearchParams(toTimeRangesUrl(exploreState, preset), searchParams);
 
-  mergeSearchParams(toOverviewUrl(exploreState, explore, preset), searchParams);
+  mergeSearchParams(
+    toOverviewUrl(exploreState, exploreSpec, preset),
+    searchParams,
+  );
 
   mergeSearchParams(
     toTimeDimensionUrlParams(exploreState, preset),
@@ -82,15 +86,16 @@ function toTimeRangesUrl(
     searchParams.set("tr", exploreState.selectedTimeRange?.name ?? "");
   }
 
+  const mappedTimeGrain =
+    ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
+    "";
   if (
     // if preset has a time grain, only set if selected is not the same
-    (preset.timeGrain !== undefined &&
-      exploreState.selectedTimeRange?.interval === preset.timeGrain) ||
+    (preset.timeGrain !== undefined && mappedTimeGrain !== preset.timeGrain) ||
     // else if there is no default then set if there was a selected time grain
-    (preset.timeGrain === undefined &&
-      !!exploreState?.selectedTimeRange?.interval)
+    (preset.timeGrain === undefined && !!mappedTimeGrain)
   ) {
-    searchParams.set("tg", exploreState.selectedTimeRange?.interval ?? "");
+    searchParams.set("tg", mappedTimeGrain);
   }
 
   if (
@@ -134,42 +139,46 @@ function toTimeRangesUrl(
 
 function toOverviewUrl(
   exploreState: MetricsExplorerEntity,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
 
-  if (exploreState.visibleMeasureKeys) {
-    const measures = [...exploreState.visibleMeasureKeys];
-    const presetMeasures = preset.measures ?? explore.measures ?? [];
-    if (!arrayUnorderedEquals(measures, presetMeasures)) {
-      if (exploreState.allMeasuresVisible) {
-        searchParams.set("o.m", "*");
-      } else {
-        searchParams.set("o.m", measures.join(","));
-      }
-    }
+  const visibleMeasuresParam = toVisibleMeasuresUrlParam(
+    exploreState,
+    exploreSpec,
+    preset,
+  );
+  if (visibleMeasuresParam) {
+    searchParams.set("o.m", visibleMeasuresParam);
   }
 
-  if (exploreState.visibleDimensionKeys) {
-    const dimensions = [...exploreState.visibleDimensionKeys];
-    const presetDimensions = preset.dimensions ?? explore.dimensions ?? [];
-    if (!arrayUnorderedEquals(dimensions, presetDimensions)) {
-      if (exploreState.allDimensionsVisible) {
-        searchParams.set("o.d", "*");
-      } else {
-        searchParams.set("o.d", dimensions.join(","));
-      }
-    }
+  const visibleDimensionsParam = toVisibleDimensionsUrlParam(
+    exploreState,
+    exploreSpec,
+    preset,
+  );
+  if (visibleDimensionsParam) {
+    searchParams.set("o.d", visibleDimensionsParam);
+  }
+
+  if (
+    (preset.overviewExpandedDimension !== undefined &&
+      exploreState.selectedDimensionName !==
+        preset.overviewExpandedDimension) ||
+    (preset.overviewExpandedDimension === undefined &&
+      exploreState.selectedDimensionName)
+  ) {
+    searchParams.set("o.ed", exploreState.selectedDimensionName ?? "");
   }
 
   const defaultLeaderboardMeasure =
-    preset.measures?.[0] ?? explore.measures?.[0];
+    preset.measures?.[0] ?? exploreSpec.measures?.[0];
   if (
     // if sort by is defined in preset then only set param if selected is not the same.
     (preset.overviewSortBy &&
       exploreState.leaderboardMeasureName !== preset.overviewSortBy) ||
-    // else the default is the 1st measure in preset or explore, so check that next
+    // else the default is the 1st measure in preset or exploreSpec, so check that next
     (!preset.overviewSortBy &&
       exploreState.leaderboardMeasureName !== defaultLeaderboardMeasure)
   ) {
@@ -188,17 +197,43 @@ function toOverviewUrl(
     searchParams.set("o.sd", sortAsc ? "ASC" : "DESC");
   }
 
-  if (
-    (preset.overviewExpandedDimension !== undefined &&
-      exploreState.selectedDimensionName !==
-        preset.overviewExpandedDimension) ||
-    (preset.overviewExpandedDimension === undefined &&
-      exploreState.selectedDimensionName)
-  ) {
-    searchParams.set("o.ed", exploreState.selectedDimensionName ?? "");
-  }
-
   return searchParams;
+}
+
+function toVisibleMeasuresUrlParam(
+  exploreState: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  preset: V1ExplorePreset,
+) {
+  if (!exploreState.visibleMeasureKeys) return undefined;
+
+  const measures = [...exploreState.visibleMeasureKeys];
+  const presetMeasures = preset.measures ?? exploreSpec.measures ?? [];
+  if (arrayUnorderedEquals(measures, presetMeasures)) {
+    return undefined;
+  }
+  if (exploreState.allMeasuresVisible) {
+    return "*";
+  }
+  return measures.join(",");
+}
+
+function toVisibleDimensionsUrlParam(
+  exploreState: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  preset: V1ExplorePreset,
+) {
+  if (!exploreState.visibleDimensionKeys) return undefined;
+
+  const dimensions = [...exploreState.visibleDimensionKeys];
+  const presetDimensions = preset.dimensions ?? exploreSpec.dimensions ?? [];
+  if (arrayUnorderedEquals(dimensions, presetDimensions)) {
+    return undefined;
+  }
+  if (exploreState.allDimensionsVisible) {
+    return "*";
+  }
+  return dimensions.join(",");
 }
 
 function toTimeDimensionUrlParams(

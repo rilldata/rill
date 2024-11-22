@@ -15,6 +15,7 @@
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { Search } from "@rilldata/web-common/components/search";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -36,9 +37,14 @@
   $: dashboard = useExploreStore(exploreName);
   $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewTimeRange = useMetricsViewTimeRange(
+    $runtime.instanceId,
+    metricsViewName,
+  );
   $: basePreset = getBasePreset(
     exploreSpec,
     getLocalUserPreferencesState(exploreName),
+    $metricsViewTimeRange.data,
   );
 
   let searchText: string;

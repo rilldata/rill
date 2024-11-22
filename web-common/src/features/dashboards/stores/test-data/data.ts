@@ -17,14 +17,15 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
-  V1ExplorePreset,
-  V1ExploreSpec,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1StructType,
+import {
+  type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
+  type V1ExplorePreset,
+  type V1ExploreSpec,
+  V1ExploreWebView,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
+  type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import { TypeCode, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
@@ -240,10 +241,27 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
   overviewSortAsc: true,
 };
+export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
+  overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+};
+export const AD_BIDS_TIME_DIMENSION_DETAILS_PRESET: V1ExplorePreset = {
+  view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
+  timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
+  timeDimensionChartType: "stacked_bar",
+};
+export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
+  view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+  pivotRows: ["publisher", "time.hour"],
+  pivotCols: ["domain", "time.day", "impressions"],
+};
 
-export const AD_BIDS_BASE_PRESET = getBasePreset(AD_BIDS_EXPLORE_INIT, {
-  timeZone: "UTC",
-});
+export const AD_BIDS_BASE_PRESET = getBasePreset(
+  AD_BIDS_EXPLORE_INIT,
+  {
+    timeZone: "UTC",
+  },
+  undefined,
+);
 
 export const AD_BIDS_SCHEMA: V1StructType = {
   fields: [

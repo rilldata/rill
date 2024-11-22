@@ -10,17 +10,17 @@ import { reverseMap } from "@rilldata/web-common/features/dashboards/url-state/m
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 const BinaryOperationMap: Record<string, V1Operation> = {
-  "=": V1Operation.OPERATION_EQ,
-  "!=": V1Operation.OPERATION_NEQ,
-  ">": V1Operation.OPERATION_GT,
-  ">=": V1Operation.OPERATION_GTE,
-  "<": V1Operation.OPERATION_LT,
-  "<=": V1Operation.OPERATION_LTE,
+  eq: V1Operation.OPERATION_EQ,
+  neq: V1Operation.OPERATION_NEQ,
+  gt: V1Operation.OPERATION_GT,
+  gte: V1Operation.OPERATION_GTE,
+  lt: V1Operation.OPERATION_LT,
+  lte: V1Operation.OPERATION_LTE,
 };
 export const BinaryOperationReverseMap = reverseMap(BinaryOperationMap);
 
 export const binaryPostprocessor = ([left, _1, op, _2, right]) =>
-  createBinaryExpression(left, BinaryOperationMap[op], right);
+  createBinaryExpression(left, BinaryOperationMap[op.toLowerCase()], right);
 
 export const inPostprocessor = ([column, _1, op, _2, _3, values]) =>
   createInExpression(column, values, op === "NIN");

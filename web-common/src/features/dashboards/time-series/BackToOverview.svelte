@@ -8,7 +8,7 @@
   export let isFetching = false;
 
   function goBackToOverview() {
-    metricsExplorerStore.setExpandedMeasureName(exploreName, undefined);
+    metricsExplorerStore.setExpandedMeasureName(exploreName, "");
   }
 </script>
 

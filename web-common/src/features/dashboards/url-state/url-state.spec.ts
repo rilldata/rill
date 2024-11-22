@@ -499,7 +499,6 @@ export function cleanMetricsExplore(
 ) {
   delete metricsExplorerEntity.name;
   delete metricsExplorerEntity.dimensionFilterExcludeMode;
-  delete metricsExplorerEntity.havingFilter;
   delete metricsExplorerEntity.temporaryFilterName;
   delete metricsExplorerEntity.contextColumnWidths;
   if (metricsExplorerEntity.selectedTimeRange) {

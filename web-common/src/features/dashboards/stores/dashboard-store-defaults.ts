@@ -3,7 +3,6 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
@@ -138,22 +137,26 @@ function setDefaultComparisonTimeRange(
     LeaderboardContextColumn.DELTA_PERCENT;
 }
 
+// TODO: Remove this in favour of just `getBasePreset`
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  basePreset = getBasePreset(explore, getLocalUserPreferencesState(name)),
+  basePreset = getBasePreset(
+    explore,
+    getLocalUserPreferencesState(name),
+    fullTimeRange,
+  ),
 ): MetricsExplorerEntity {
   const { partialExploreState } = convertPresetToMetricsExplore(
     metricsView,
     explore,
     basePreset,
   );
-  const metricsExplorer = {
+  return {
     // fields filled here are the ones that are not stored and loaded to/from URL
     name,
-    havingFilter: createAndExpression([]),
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
@@ -164,10 +167,6 @@ export function getDefaultMetricsExplorerEntity(
 
     ...partialExploreState,
   } as MetricsExplorerEntity;
-  // set time range related stuff
-  setDefaultTimeRange(explore?.defaultPreset, metricsExplorer, fullTimeRange);
-  setDefaultComparison(metricsView, explore, metricsExplorer, fullTimeRange);
-  return metricsExplorer;
 }
 
 export function restorePersistedDashboardState(

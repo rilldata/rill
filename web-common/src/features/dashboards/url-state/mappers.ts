@@ -1,4 +1,5 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreWebView,
@@ -30,11 +31,16 @@ export const ToActivePageViewMap = reverseMap(FromActivePageMap);
 ToActivePageViewMap[V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW] =
   DashboardState_ActivePage.DEFAULT;
 
-export const FromURLParamTimeDimensionMap: Record<string, V1TimeGrain> = {
-  "time.hour": V1TimeGrain.TIME_GRAIN_HOUR,
-  "time.day": V1TimeGrain.TIME_GRAIN_DAY,
-  "time.month": V1TimeGrain.TIME_GRAIN_MONTH,
-};
+export const FromURLParamTimeGrainMap: Record<string, V1TimeGrain> = {};
+Object.values(TIME_GRAIN).forEach((tg) => {
+  FromURLParamTimeGrainMap[tg.label] = tg.grain;
+});
+export const ToURLParamTimeGrainMapMap = reverseMap(FromURLParamTimeGrainMap);
+
+export const FromURLParamTimeDimensionMap: Record<string, V1TimeGrain> = {};
+Object.values(TIME_GRAIN).forEach((tg) => {
+  FromURLParamTimeDimensionMap["time." + tg.label] = tg.grain;
+});
 export const ToURLParamTimeDimensionMap = reverseMap(
   FromURLParamTimeDimensionMap,
 );

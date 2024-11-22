@@ -39,12 +39,12 @@ simple_expr => column {% id %}
 in_operator      => "IN"i     {% id %}
                   | "NIN"i    {% id %}
                   | "NOT IN"i {% () => "NIN" %}
-compare_operator => "="       {% id %}
-                  | "!="      {% id %}
-                  | ">"       {% id %}
-                  | ">="      {% id %}
-                  | "<"       {% id %}
-                  | "<="      {% id %}
+compare_operator => "eq"i     {% id %}
+                  | "neq"i    {% id %}
+                  | "gt"i     {% id %}
+                  | "gte"i    {% id %}
+                  | "lt"i     {% id %}
+                  | "lte"i    {% id %}
 
 column     => sqstring                 {% id %}
             | [a-zA-Z] [a-zA-Z0-9_]:*  {% ([fst, rest]) => [fst, ...rest].join("") %}
