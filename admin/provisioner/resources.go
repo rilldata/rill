@@ -10,7 +10,8 @@ import (
 type ResourceType string
 
 const (
-	ResourceTypeRuntime ResourceType = "runtime"
+	ResourceTypeRuntime    ResourceType = "runtime"
+	ResourceTypeClickHouse ResourceType = "clickhouse"
 )
 
 // RuntimeArgs describe the expected arguments for provisioning a runtime resource.
@@ -59,6 +60,29 @@ func NewRuntimeConfig(cfg map[string]any) (*RuntimeConfig, error) {
 }
 
 func (r *RuntimeConfig) AsMap() map[string]any {
+	res := make(map[string]any)
+	err := mapstructure.Decode(r, &res)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// ClickhouseConfig describes the expected config for a provisioned Clickhouse resource.
+type ClickhouseConfig struct {
+	DSN string `mapstructure:"dsn"`
+}
+
+func NewClickhouseConfig(cfg map[string]any) (*ClickhouseConfig, error) {
+	res := &ClickhouseConfig{}
+	err := mapstructure.Decode(cfg, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse clickhouse config: %w", err)
+	}
+	return res, nil
+}
+
+func (r *ClickhouseConfig) AsMap() map[string]any {
 	res := make(map[string]any)
 	err := mapstructure.Decode(r, &res)
 	if err != nil {

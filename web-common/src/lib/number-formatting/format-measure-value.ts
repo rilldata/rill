@@ -1,5 +1,15 @@
+import {
+  currencyHumanizer,
+  getLocaleFromConfig,
+  includesCurrencySymbol,
+  isValidD3Locale,
+} from "@rilldata/web-common/lib/number-formatting/utils/d3-format-utils";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-import { format as d3format } from "d3-format";
+import {
+  format as d3format,
+  formatLocale as d3FormatLocale,
+  type FormatLocaleDefinition,
+} from "d3-format";
 import {
   FormatPreset,
   NumberKind,
@@ -109,14 +119,6 @@ function humanizeDataType(
 }
 
 /**
- * Parse the currency symbol from a d3 format string.
- * For d3 the currency symbol is always "$" in the format string
- */
-export function includesCurrencySymbol(formatString: string): boolean {
-  return formatString.includes("$");
-}
-
-/**
  * This function is intended to provide a lossless
  * humanized string representation of a number in cases
  * where a raw number will be meaningless to the user.
@@ -176,7 +178,18 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
   // otherwise, use the humanize formatter.
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
-      const d3formatter = d3format(measureSpec.formatD3);
+      let d3formatter: (n: number | { valueOf(): number }) => string;
+
+      const isValidLocale = isValidD3Locale(measureSpec.formatD3Locale);
+      if (isValidLocale) {
+        const locale = getLocaleFromConfig(
+          measureSpec.formatD3Locale as FormatLocaleDefinition,
+        );
+        d3formatter = d3FormatLocale(locale).format(measureSpec.formatD3);
+      } else {
+        d3formatter = d3format(measureSpec.formatD3);
+      }
+
       const hasCurrencySymbol = includesCurrencySymbol(measureSpec.formatD3);
       const hasPercentSymbol = measureSpec.formatD3.includes("%");
       return (value: number | string | T) => {
@@ -185,6 +198,16 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         // For the Big Number and Tooltips, override the d3formatter
         if (isBigNumber || isTooltip) {
           if (hasCurrencySymbol) {
+            if (isValidLocale && measureSpec?.formatD3Locale?.currency) {
+              const currency = measureSpec.formatD3Locale.currency as [
+                string,
+                string,
+              ];
+              return currencyHumanizer(
+                currency,
+                humanizer(value, FormatPreset.HUMANIZE),
+              );
+            }
             return humanizer(value, FormatPreset.CURRENCY_USD);
           } else if (hasPercentSymbol) {
             return humanizer(value, FormatPreset.PERCENTAGE);
@@ -194,7 +217,8 @@ export function createMeasureValueFormatter<T extends null | undefined = never>(
         }
         return d3formatter(value);
       };
-    } catch {
+    } catch (error) {
+      console.warn("Invalid d3 format:", error);
       return (value: number | string | T) =>
         typeof value === "number"
           ? humanizer(value, FormatPreset.HUMANIZE)

@@ -1,11 +1,12 @@
 <script context="module" lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
+  import { createEventDispatcher } from "svelte";
+  import { writable } from "svelte/store";
   import AddField from "./AddField.svelte";
   import PivotDragItem from "./PivotDragItem.svelte";
   import PivotPortalItem from "./PivotPortalItem.svelte";
-  import { createEventDispatcher } from "svelte";
-  import { type PivotChipData, PivotChipType } from "./types";
-  import { writable } from "svelte/store";
   import { swapListener } from "./swapListener";
+  import { type PivotChipData, PivotChipType } from "./types";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -198,6 +199,16 @@
 
   {#if zone === "columns" || zone === "rows"}
     <AddField {zone} />
+    {#if items.length}
+      <Button
+        type="text"
+        on:click={() => {
+          dispatch("update", []);
+        }}
+      >
+        Clear
+      </Button>
+    {/if}
   {/if}
 </div>
 
