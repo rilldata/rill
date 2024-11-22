@@ -5,10 +5,7 @@
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import {
-    ResourceKind,
-    useResource,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import CanvasDashboardWorkspace from "@rilldata/web-common/features/workspaces/CanvasDashboardWorkspace.svelte";
   import ComponentWorkspace from "@rilldata/web-common/features/workspaces/ComponentWorkspace.svelte";

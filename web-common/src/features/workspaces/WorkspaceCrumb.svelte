@@ -55,7 +55,9 @@
       class:selected
       href={dropdown
         ? undefined
-        : `/files${firstResource?.meta?.filePaths?.[0] ?? "/"}`}
+        : firstResource
+          ? `/files${firstResource?.meta?.filePaths?.[0]}`
+          : "#"}
       {...dropdown ? builder : {}}
       use:builderActions={{ builders: dropdown ? [builder] : [] }}
     >

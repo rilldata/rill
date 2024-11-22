@@ -14,8 +14,6 @@
     : filePath === "/.env" || filePath === "/rill.yaml"
       ? Settings
       : File;
-
-  $: console.log({ kind });
 </script>
 
 <span class="gap-x-1.5 items-center font-medium flex" title={label}>

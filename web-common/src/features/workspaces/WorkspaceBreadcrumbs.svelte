@@ -24,8 +24,6 @@
   $: resourcesQuery = createRuntimeServiceListResources(instanceId);
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
-  $: console.log({ allResources });
-
   $: upstreamKind = resourceKind && upstreamMapping.get(resourceKind);
 
   $: downstreamResources = upstreamKind
@@ -38,8 +36,6 @@
         );
       })
     : [];
-
-  $: console.log({ resourceKind, resource });
 
   $: lateralResources = allResources.filter((r) => {
     if (
