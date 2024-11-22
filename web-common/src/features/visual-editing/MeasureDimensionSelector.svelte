@@ -71,6 +71,7 @@
       }}
     />
     <a
+      target="_blank"
       href="https://docs.rilldata.com/reference/project-files/explore-dashboards"
     >
       See docs
