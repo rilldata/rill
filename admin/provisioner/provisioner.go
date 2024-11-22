@@ -33,6 +33,8 @@ func Register(typ string, fn ProvisionerInitializer) {
 type Provisioner interface {
 	// Type returns the type of the provisioner.
 	Type() string
+	// Close is called when the provisioner is no longer needed.
+	Close() error
 	// Provision provisions a new resource.
 	// It may be called multiple times for the same ID if:
 	//  - the initial provision is interrupted, or

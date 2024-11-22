@@ -62,6 +62,10 @@ func (p *StaticProvisioner) Type() string {
 	return "static"
 }
 
+func (p *StaticProvisioner) Close() error {
+	return nil
+}
+
 func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
 	// Can only provision runtime resources
 	if r.Type != provisioner.ResourceTypeRuntime {
