@@ -41,6 +41,7 @@ const (
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_Provision_FullMethodName                             = "/rill.admin.v1.AdminService/Provision"
 	AdminService_ListOrganizationMemberUsers_FullMethodName           = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName               = "/rill.admin.v1.AdminService/ListOrganizationInvites"
 	AdminService_AddOrganizationMemberUser_FullMethodName             = "/rill.admin.v1.AdminService/AddOrganizationMemberUser"
@@ -202,6 +203,9 @@ type AdminServiceClient interface {
 	// TriggerRedeploy is similar to RedeployProject.
 	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
+	// Provision provisions a new resource for a deployment.
+	// If an existing resource matches the request, it will be returned without provisioning a new resource.
+	Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(ctx context.Context, in *ListOrganizationMemberUsersRequest, opts ...grpc.CallOption) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
@@ -635,6 +639,16 @@ func (c *adminServiceClient) TriggerRedeploy(ctx context.Context, in *TriggerRed
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TriggerRedeployResponse)
 	err := c.cc.Invoke(ctx, AdminService_TriggerRedeploy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) Provision(ctx context.Context, in *ProvisionRequest, opts ...grpc.CallOption) (*ProvisionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProvisionResponse)
+	err := c.cc.Invoke(ctx, AdminService_Provision_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1736,6 +1750,9 @@ type AdminServiceServer interface {
 	// TriggerRedeploy is similar to RedeployProject.
 	// DEPRECATED: Use RedeployProject instead.
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
+	// Provision provisions a new resource for a deployment.
+	// If an existing resource matches the request, it will be returned without provisioning a new resource.
+	Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
 	ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error)
 	// ListOrganizationInvites lists all the org invites
@@ -2020,6 +2037,9 @@ func (UnimplementedAdminServiceServer) TriggerRefreshSources(context.Context, *T
 }
 func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRedeploy not implemented")
+}
+func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequest) (*ProvisionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Provision not implemented")
 }
 func (UnimplementedAdminServiceServer) ListOrganizationMemberUsers(context.Context, *ListOrganizationMemberUsersRequest) (*ListOrganizationMemberUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMemberUsers not implemented")
@@ -2746,6 +2766,24 @@ func _AdminService_TriggerRedeploy_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).TriggerRedeploy(ctx, req.(*TriggerRedeployRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_Provision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProvisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).Provision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_Provision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).Provision(ctx, req.(*ProvisionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4716,6 +4754,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerRedeploy",
 			Handler:    _AdminService_TriggerRedeploy_Handler,
+		},
+		{
+			MethodName: "Provision",
+			Handler:    _AdminService_Provision_Handler,
 		},
 		{
 			MethodName: "ListOrganizationMemberUsers",

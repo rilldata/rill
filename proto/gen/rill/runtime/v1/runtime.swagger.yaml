@@ -3339,6 +3339,12 @@ definitions:
         additionalProperties:
           type: string
         title: Config properties set as dynamic variables
+      provision:
+        type: boolean
+        title: Provision indicates if its a managed connector
+      provisionArgs:
+        type: object
+        title: Provision args for the provisioner if provision is true
       hasAnonymousAccess:
         type: boolean
         title: True if the connector can be accessed without credentials
@@ -3887,6 +3893,11 @@ definitions:
         items:
           type: string
         title: Properties in config that use templating
+      provision:
+        type: boolean
+        title: Provision settings if its a managed connector
+      provisionArgs:
+        type: object
       configFromVariables:
         type: object
         additionalProperties:
