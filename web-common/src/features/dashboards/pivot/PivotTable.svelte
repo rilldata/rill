@@ -156,13 +156,14 @@
     headerGroups[headerGroups.length - 2]?.headers?.slice(
       hasDimension ? 1 : 0,
     ) ?? subHeaders;
-  $: console.log("measureGroups: ", measureGroups);
+  // $: console.log("measureGroups: ", measureGroups);
   $: measureGroupsLength = measureGroups.length;
   $: totalMeasureWidth = measures.reduce(
     (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
     0,
   );
   $: totalLength = measureGroupsLength * totalMeasureWidth;
+  // $: console.log("totalLength: ", totalLength);
 
   $: headerGroups = $table.getHeaderGroups();
   // $: console.log("headerGroups: ", headerGroups);
@@ -175,6 +176,7 @@
     hasDimension && firstColumnName
       ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
+  // $: console.log("firstColumnWidth: ", firstColumnWidth);
 
   $: rows = $table.getRowModel().rows;
   $: rowVirtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
@@ -209,6 +211,7 @@
   $: totalRowSize = $rowVirtualizer.getTotalSize();
 
   $: virtualColumns = $columnVirtualizer.getVirtualItems();
+  // $: totalColumnSize = $columnVirtualizer.getTotalSize();
 
   let virtualPaddingLeft: number | undefined;
   let virtualPaddingRight: number | undefined;
@@ -277,19 +280,21 @@
         !$pivotDataStore.isFetching && !reachedEndForRows;
       const hasMoreRowsDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
       if (isReachingPageEnd && hasMoreRowsDataThanOnePage && canFetchMoreData) {
-        console.log("fetching more rows [rowPage]: ", rowPage);
+        console.log("fetching more rowPage: ", rowPage);
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
 
       // FIXME: when uncommented, the row page will increase as we scroll right
-      // const isReachingColumnEnd =
-      //   scrollLeft + containerRefElement.clientWidth >=
-      //   containerRefElement.scrollWidth - ROW_THRESHOLD;
-      // const hasMoreColumns = columns.length >= NUM_COLUMNS_PER_PAGE;
-      // if (isReachingColumnEnd && hasMoreColumns) {
-      //   console.log("fetching more columns [columnPage]: ", columnPage);
-      //   metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
-      // }
+      const rightEndDistance =
+        containerRefElement.scrollWidth -
+        scrollLeft -
+        containerRefElement.clientWidth;
+      const isReachingColumnEnd = rightEndDistance < ROW_THRESHOLD;
+      const hasMoreColumnsThanOnePage = columns.length >= NUM_COLUMNS_PER_PAGE;
+      if (isReachingColumnEnd && hasMoreColumnsThanOnePage) {
+        console.log("fetching more columns [columnPage]: ", columnPage);
+        // metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
+      }
     }
   }
 
@@ -390,12 +395,21 @@
       handleScroll(containerRefElement);
     });
   });
+
+  $: tableWidth = totalLength + firstColumnWidth;
+  $: tableHeight = totalRowSize + totalHeaderHeight + headerGroups.length;
 </script>
 
+<!-- FIXME: columns and columnPage should be increasing as we scroll right -->
 <!-- DEBUG ONLY -->
 {#if dev}
-  <span>({columns.length} columns)</span>
-  <span>({rows.length} rows)</span>
+  <span
+    >({columns.length} columns) ({columnPage} Column Page) ({tableWidth}px Table
+    Width)</span
+  >
+  <span
+    >({rows.length} rows) ({rowPage} Row Page) ({tableHeight}px Table Height)</span
+  >
 {/if}
 
 <div
@@ -411,8 +425,8 @@
 >
   <div
     class="w-full absolute top-0 z-50 flex pointer-events-none"
-    style:width="{totalLength + firstColumnWidth}px"
-    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
+    style:width="{tableWidth}px"
+    style:height="{tableHeight}px"
   >
     <div
       style:width="{firstColumnWidth}px"
@@ -482,7 +496,8 @@
 
   <table
     role="presentation"
-    style:width="{totalLength + firstColumnWidth}px"
+    style:width="{tableWidth}px"
+    style:height="{tableHeight}px"
     on:click={modified({ shift: handleClick })}
   >
     <colgroup>
