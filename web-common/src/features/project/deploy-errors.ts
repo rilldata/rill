@@ -41,7 +41,10 @@ export type DeployError = {
   message: string;
 };
 
-export function extractDeployError(error: ConnectError): DeployError {
+export function extractDeployError(
+  error: ConnectError,
+  orgOnTrial: boolean,
+): DeployError {
   if (!error) {
     return {
       type: DeployErrorType.Unknown,
@@ -81,10 +84,12 @@ export function extractDeployError(error: ConnectError): DeployError {
   const projectQuotaMatch = ProjectQuotaErrorMatcher.exec(desc);
   if (projectQuotaMatch?.length) {
     const projectQuota = Number(projectQuotaMatch[1]);
+    const planLabel = orgOnTrial ? "current plan" : "trial plan";
+
     return {
       type: DeployErrorType.ProjectLimitHit,
       title: "To deploy this project, start a Team plan",
-      message: `Your trial plan is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. To have unlimited projects, upgrade to a Team plan.`,
+      message: `Your ${planLabel} is limited to ${projectQuota} project${projectQuota > 1 ? "s" : ""}. To have unlimited projects, upgrade to a Team plan.`,
     };
   }
 
