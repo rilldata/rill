@@ -119,6 +119,7 @@
   $: hasDimension = rowPills.dimension.length > 0;
   $: hasColumnDimension = columnPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
+  $: reachedEndForColumns = !!$pivotDataStore?.reachedEndForColumnData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
@@ -156,17 +157,14 @@
     headerGroups[headerGroups.length - 2]?.headers?.slice(
       hasDimension ? 1 : 0,
     ) ?? subHeaders;
-  // $: console.log("measureGroups: ", measureGroups);
   $: measureGroupsLength = measureGroups.length;
   $: totalMeasureWidth = measures.reduce(
     (acc, { name }) => acc + ($measureLengths.get(name) ?? 0),
     0,
   );
   $: totalLength = measureGroupsLength * totalMeasureWidth;
-  // $: console.log("totalLength: ", totalLength);
 
   $: headerGroups = $table.getHeaderGroups();
-  // $: console.log("headerGroups: ", headerGroups);
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
   $: headers = headerGroups[0].headers;
   $: firstColumnName = hasDimension
@@ -176,7 +174,6 @@
     hasDimension && firstColumnName
       ? calculateFirstColumnWidth(firstColumnName, timeDimension, dataRows)
       : 0;
-  // $: console.log("firstColumnWidth: ", firstColumnWidth);
 
   $: rows = $table.getRowModel().rows;
   $: rowVirtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
@@ -211,7 +208,6 @@
   $: totalRowSize = $rowVirtualizer.getTotalSize();
 
   $: virtualColumns = $columnVirtualizer.getVirtualItems();
-  // $: totalColumnSize = $columnVirtualizer.getTotalSize();
 
   let virtualPaddingLeft: number | undefined;
   let virtualPaddingRight: number | undefined;
@@ -271,29 +267,36 @@
   function handleScroll(containerRefElement?: HTMLDivElement | null) {
     if (containerRefElement) {
       if (hovering) hovering = null;
-      const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      const {
+        scrollHeight,
+        scrollTop,
+        clientHeight,
+        scrollWidth,
+        clientWidth,
+      } = containerRefElement;
       scrollLeft = containerRefElement.scrollLeft;
+      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
 
       const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
       const canFetchMoreData =
         !$pivotDataStore.isFetching && !reachedEndForRows;
       const hasMoreRowsDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
       if (isReachingPageEnd && hasMoreRowsDataThanOnePage && canFetchMoreData) {
-        console.log("fetching more rowPage: ", rowPage);
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
 
-      // FIXME: when uncommented, the row page will increase as we scroll right
-      const rightEndDistance =
-        containerRefElement.scrollWidth -
-        scrollLeft -
-        containerRefElement.clientWidth;
       const isReachingColumnEnd = rightEndDistance < ROW_THRESHOLD;
-      const hasMoreColumnsThanOnePage = columns.length >= NUM_COLUMNS_PER_PAGE;
-      if (isReachingColumnEnd && hasMoreColumnsThanOnePage) {
-        console.log("fetching more columns [columnPage]: ", columnPage);
-        // metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
+      const canFetchMoreColumns =
+        !$pivotDataStore.isFetching && !reachedEndForColumns;
+      const hasMoreColumnsDataThanOnePage =
+        columns.length >= NUM_COLUMNS_PER_PAGE;
+      if (
+        isReachingColumnEnd &&
+        hasMoreColumnsDataThanOnePage &&
+        canFetchMoreColumns
+      ) {
+        metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
       }
     }
   }
@@ -453,6 +456,7 @@
       </Resizer>
     </div>
 
+    <!-- Resizer for the measure columns -->
     {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
         {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
@@ -500,6 +504,7 @@
     style:height="{tableHeight}px"
     on:click={modified({ shift: handleClick })}
   >
+    <!-- Resizer for the first column -->
     <colgroup>
       {#if firstColumnName && firstColumnWidth}
         <col

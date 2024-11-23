@@ -3,7 +3,10 @@
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
-  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import {
+    NUM_COLUMNS_PER_PAGE,
+    NUM_ROWS_PER_PAGE,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import type {
     PivotDataStore,
@@ -83,11 +86,18 @@
   let percentOfChangeDuringResize = 0;
   let resizingMeasure = false;
 
-  $: ({ expanded, sorting, rowPage, rows: rowPills } = $pivotDashboardStore);
+  $: ({
+    expanded,
+    sorting,
+    rowPage,
+    columnPage,
+    rows: rowPills,
+  } = $pivotDashboardStore);
 
   $: timeDimension = config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
+  $: reachedEndForColumns = !!$pivotDataStore?.reachedEndForColumnData;
   $: assembled = $pivotDataStore.assembled;
 
   $: measures = getMeasureColumnProps(config);
@@ -115,6 +125,7 @@
       : 0;
 
   $: rows = $table.getRowModel().rows;
+  $: columns = $table.getHeaderGroups()[0].headers;
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
@@ -170,11 +181,18 @@
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
       if (hovering) hovering = null;
-      const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
+      const {
+        scrollHeight,
+        scrollTop,
+        clientHeight,
+        scrollWidth,
+        clientWidth,
+      } = containerRefElement;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
 
-      // Fetch more data when scrolling near the bottom end
+      // Fetch more rows when scrolling near the bottom end
       if (
         bottomEndDistance < ROW_THRESHOLD &&
         rows.length >= NUM_ROWS_PER_PAGE &&
@@ -184,6 +202,19 @@
         pivotDashboardStore.update((state) => ({
           ...state,
           rowPage: rowPage + 1,
+        }));
+      }
+
+      // Fetch more columns when scrolling near the right end
+      if (
+        rightEndDistance < ROW_THRESHOLD &&
+        columns.length >= NUM_COLUMNS_PER_PAGE &&
+        !$pivotDataStore.isFetching &&
+        !reachedEndForColumns
+      ) {
+        pivotDashboardStore.update((state) => ({
+          ...state,
+          columnPage: columnPage + 1,
         }));
       }
     }
