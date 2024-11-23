@@ -403,7 +403,6 @@
   $: tableHeight = totalRowSize + totalHeaderHeight + headerGroups.length;
 </script>
 
-<!-- FIXME: columns and columnPage should be increasing as we scroll right -->
 <!-- DEBUG ONLY -->
 {#if dev}
   <span
