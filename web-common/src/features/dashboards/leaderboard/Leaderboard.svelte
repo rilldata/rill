@@ -1,9 +1,7 @@
 <script lang="ts">
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardRow from "./LeaderboardRow.svelte";
-  import LoadingRows from "./LoadingRows.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
     MetricsViewSpecDimensionV2,
     V1Expression,
@@ -17,26 +15,31 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    cleanUpComparisonValue,
-    compareLeaderboardValues,
-    prepareLeaderboardItemData,
-  } from "./leaderboard-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
-  import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-  import { SortType } from "../proto-state/derived-types";
-  import {
-    createAndExpression,
-    createOrExpression,
-    sanitiseExpression,
-  } from "../stores/filter-utils";
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
+  import { SortType } from "../proto-state/derived-types";
   import {
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import { getComparisonRequestMeasures, getURIRequestMeasure } from "../dashboard-utils";
-  import { getSort } from "./leaderboard-utils";
+  import {
+    createAndExpression,
+    createOrExpression,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import {
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    getSort,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
+  import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
+  import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
   const columnWidth = 66;
