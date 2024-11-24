@@ -63,6 +63,7 @@
 
   // Check if the mock user (if selected) has access to the explore
   $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
+
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
 

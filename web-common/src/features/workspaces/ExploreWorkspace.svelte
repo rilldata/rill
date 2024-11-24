@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -9,15 +10,17 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
+  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import PreviewButton from "../explores/PreviewButton.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import ViewSelector from "../canvas/ViewSelector.svelte";
-  import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
+  import PreviewButton from "../explores/PreviewButton.svelte";
+  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import VisualExploreEditing from "./VisualExploreEditing.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -30,6 +33,7 @@
     fileName,
     getResource,
     getAllErrors,
+    remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
@@ -45,13 +49,22 @@
   $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
-  $: selectedView = workspace.view;
+  $: selectedViewStore = workspace.view;
+
+  $: selectedView = $selectedViewStore ?? "code";
 
   $: exploreResource = data?.explore;
 
   $: metricsViewName = data?.meta?.refs?.find(
     (ref) => ref.kind === ResourceKind.MetricsView,
   )?.name;
+
+  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
+    allErrors,
+    $remoteContent ?? "",
+  );
+
+  $: mainError = lineBasedRuntimeErrors?.at(0);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -80,41 +93,43 @@
         reconciling={resourceIsReconciling}
       />
 
-      <ViewSelector allowSplit={false} bind:selectedView={$selectedView} />
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedViewStore} />
     </div>
   </WorkspaceHeader>
 
-  <svelte:fragment slot="body">
-    {#if $selectedView === "code"}
+  <MetricsEditorContainer
+    slot="body"
+    error={mainError}
+    showError={!!$remoteContent && selectedView === "code"}
+  >
+    {#if selectedView === "code"}
       <ExploreEditor
         bind:autoSave={$autoSave}
         {exploreName}
         {fileArtifact}
-        {allErrors}
+        {lineBasedRuntimeErrors}
       />
-    {:else if $selectedView === "viz"}
-      {#key fileArtifact}
-        <div
-          class="size-full border overflow-hidden rounded-[2px] bg-background flex flex-col items-center justify-center"
-        >
-          {#if metricsViewName && exploreName}
-            <DashboardWithProviders {exploreName} {metricsViewName} />
-          {/if}
-        </div>
-      {/key}
+    {:else if selectedView === "viz"}
+      {#if mainError}
+        <ErrorPage
+          body={mainError.message}
+          fatal
+          header="Unable to load dashboard preview"
+          statusCode={404}
+        />
+      {:else if metricsViewName && exploreName}
+        <DashboardWithProviders {exploreName} {metricsViewName} />
+      {/if}
     {/if}
-  </svelte:fragment>
+  </MetricsEditorContainer>
 
-  <svelte:fragment slot="inspector">
-    {#if exploreResource && metricsViewName}
-      <VisualExploreEditing
-        {exploreResource}
-        {metricsViewName}
-        {exploreName}
-        {fileArtifact}
-        viewingDashboard={$selectedView === "viz"}
-        switchView={() => selectedView.set("code")}
-      />
-    {/if}
-  </svelte:fragment>
+  <VisualExploreEditing
+    slot="inspector"
+    {exploreResource}
+    {metricsViewName}
+    {exploreName}
+    {fileArtifact}
+    viewingDashboard={selectedView === "viz"}
+    switchView={() => selectedViewStore.set("code")}
+  />
 </WorkspaceContainer>

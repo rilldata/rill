@@ -138,12 +138,12 @@
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.start,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
       timeGrainToDuration(interval),
     );
     scrubEnd = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.end,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
       timeGrainToDuration(interval),
     );
 
@@ -424,7 +424,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -437,7 +437,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -467,7 +467,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
-              zone={$exploreStore.selectedTimezone}
+              zone={$exploreStore?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
               timeGrain={interval}

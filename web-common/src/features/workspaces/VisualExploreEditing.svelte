@@ -1,36 +1,52 @@
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
+  import {
+    DEFAULT_TIME_RANGES,
+    DEFAULT_TIMEZONES,
+    LATEST_WINDOW_TIME_RANGES,
+    PERIOD_TO_DATE_RANGES,
+    PREVIOUS_COMPLETE_DATE_RANGES,
+  } from "@rilldata/web-common/lib/time/config";
+  import {
+    TimeRangePreset,
+    type DashboardTimeControls,
+  } from "@rilldata/web-common/lib/time/types";
+  import type { V1Explore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { InfoIcon } from "lucide-svelte";
+  import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
+  import {
+    metricsExplorerStore,
+    useExploreStore,
+  } from "../dashboards/stores/dashboard-stores";
+  import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
     useFilteredResources,
   } from "../entity-management/resource-selectors";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { YAMLSeq, Scalar, YAMLMap, parseDocument } from "yaml";
-  import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
-  import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
-  import TimeZoneInput from "../visual-editing/TimeZoneInput.svelte";
-  import TimeRangeInput from "../visual-editing/TimeRangeInput.svelte";
+  import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
+  import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import type { V1Explore } from "@rilldata/web-common/runtime-client";
-  import { useExploreStore } from "../dashboards/stores/dashboard-stores";
-  import {
-    TimeRangePreset,
-    type DashboardTimeControls,
-  } from "@rilldata/web-common/lib/time/types";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { InfoIcon } from "lucide-svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
+
+  const ranges = [
+    ...Object.keys(LATEST_WINDOW_TIME_RANGES),
+    ...Object.keys(PERIOD_TO_DATE_RANGES),
+    ...Object.keys(PREVIOUS_COMPLETE_DATE_RANGES),
+  ];
 
   const itemTypes = ["measures", "dimensions"] as const;
 
   export let fileArtifact: FileArtifact;
   export let exploreName: string;
-  export let exploreResource: V1Explore;
-  export let metricsViewName: string;
+  export let exploreResource: V1Explore | undefined;
+  export let metricsViewName: string | undefined;
   export let viewingDashboard: boolean;
   export let switchView: () => void;
 
@@ -95,23 +111,6 @@
       rawDimensions instanceof YAMLMap && rawDimensions.has("exclude"),
   };
 
-  let selectedMeasureField: "all" | "subset" | "expression";
-  let selectedDimensionField: "all" | "subset" | "expression";
-
-  $: selectedMeasureField =
-    rawMeasures === "*"
-      ? "all"
-      : rawMeasures instanceof YAMLSeq || rawMeasures instanceof YAMLMap
-        ? "subset"
-        : "expression";
-
-  $: selectedDimensionField =
-    rawDimensions === "*"
-      ? "all"
-      : rawDimensions instanceof YAMLSeq || rawDimensions instanceof YAMLMap
-        ? "subset"
-        : "expression";
-
   $: subsetMeasures = new Set(
     rawMeasureSequence.items.every((item) => item instanceof Scalar)
       ? rawMeasureSequence.items.map((item) => item.toString())
@@ -125,8 +124,8 @@
   );
 
   $: fields = {
-    measures: selectedMeasureField,
-    dimensions: selectedDimensionField,
+    measures: getMeasureOrDimensionState(rawMeasures),
+    dimensions: getMeasureOrDimensionState(rawDimensions),
   };
 
   $: subsets = {
@@ -187,6 +186,8 @@
       return JSON.stringify(value) === JSON.stringify(defaults[key]);
     });
 
+  $: if (exploreSpec) metricsExplorerStore.sync(exploreName, exploreSpec);
+
   function isString(value: unknown): value is string {
     return typeof value === "string";
   }
@@ -195,9 +196,26 @@
     return value && typeof value === "string" ? value : "";
   }
 
+  function getMeasureOrDimensionState(
+    node: unknown,
+  ): "all" | "subset" | "expression" | null {
+    if (node === "*") {
+      return "all";
+    } else if (
+      node instanceof YAMLSeq ||
+      (node instanceof YAMLMap && node.has("exclude"))
+    ) {
+      return "subset";
+    } else if (node instanceof YAMLMap && node.has("expr")) {
+      return "expression";
+    } else {
+      return null;
+    }
+  }
+
   async function updateProperties(
     newRecord: Record<string, unknown>,
-    removeProperties?: string[],
+    removeProperties?: Array<string | string[]>,
   ) {
     Object.entries(newRecord).forEach(([property, value]) => {
       if (!value) {
@@ -207,15 +225,29 @@
       }
     });
 
-    parsedDocument.setIn;
-
     if (removeProperties) {
       removeProperties.forEach((prop) => {
-        parsedDocument.delete(prop);
+        try {
+          if (Array.isArray(prop)) {
+            parsedDocument.deleteIn(prop);
+          } else {
+            parsedDocument.delete(prop);
+          }
+        } catch {
+          // ignore
+        }
       });
     }
 
+    killState();
+
     await saveContent(parsedDocument.toString());
+  }
+
+  function killState() {
+    localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
+
+    replaceState(window.location.origin + window.location.pathname, {});
   }
 
   type Defaults = {
@@ -305,7 +337,7 @@
   }
 </script>
 
-<Inspector filePath={path} resizable={false} fixedWidth={320}>
+<Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
     <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
 
@@ -327,7 +359,7 @@
       hint="View documentation"
       link="https://docs.rilldata.com/reference/project-files/metrics-view"
       lockable
-      lockTooltip="Unlink metrics view"
+      lockTooltip="Unlock to change metrics view"
       label="Metrics view referenced"
       capitalizeLabel={false}
       bind:value={metricsView}
@@ -337,6 +369,8 @@
         value: name,
       }))}
       onChange={async () => {
+        killState();
+
         await updateProperties(
           {
             metrics_view: metricsView,
@@ -345,15 +379,6 @@
           },
           ["defaults"],
         );
-
-        // delete all search params from url
-        window.location.href =
-          window.location.origin + window.location.pathname;
-
-        localStorage.removeItem(`${exploreName}-persistentDashboardStore`);
-        await asyncWait(3000);
-
-        if (!metricsViewSpec || !exploreSpec) return;
       }}
     />
 
@@ -367,10 +392,16 @@
         excludeMode={excludeMode[type]}
         mode={fields[type]}
         setItems={async (items, exclude) => {
-          if (!exclude) {
-            await updateProperties({ [type]: items });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+
+          if (exclude) {
+            await updateProperties({ [type]: { exclude: items } }, deleteKeys);
           } else {
-            await updateProperties({ [type]: { exclude: items } });
+            await updateProperties({ [type]: items }, deleteKeys);
           }
         }}
         onSelectAll={async () => {
@@ -380,7 +411,12 @@
           await updateProperties({ [type]: { expr: "*" } });
         }}
         onExpressionBlur={async (value) => {
-          await updateProperties({ [type]: { expr: value } });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+          await updateProperties({ [type]: { expr: value } }, deleteKeys);
         }}
         onSelectSubsetItem={async (item) => {
           const deleted = subsets[type].delete(item);
@@ -388,35 +424,65 @@
             subsets[type].add(item);
           }
 
-          await updateProperties({ [type]: Array.from(subsets[type]) });
+          const deleteKeys = [["defaults", type]];
+          if (type === "dimensions") {
+            deleteKeys.push(["defaults", "comparison_dimension"]);
+            deleteKeys.push(["defaults", "comparison_mode"]);
+          }
+
+          await updateProperties(
+            { [type]: Array.from(subsets[type]) },
+            deleteKeys,
+          );
         }}
       />
     {/each}
 
-    <TimeZoneInput
-      keyNotSet={!rawTimeZones}
-      selectedItems={timeZones}
-      onSelectCustomItem={async (item) => {
-        const deleted = timeZones.delete(item);
-        if (!deleted) {
-          timeZones.add(item);
-        }
-
-        await updateProperties({ time_zones: Array.from(timeZones) });
-      }}
-      setTimeZones={async (time_zones) => {
-        await updateProperties({ time_zones });
-      }}
-    />
-
-    <TimeRangeInput
+    <MultiSelectInput
+      label="Time ranges"
+      id="visual-explore-range"
+      hint="Time range shortcuts available via the dashboard filter bar"
+      defaultItems={ranges}
       keyNotSet={!rawTimeRanges}
       selectedItems={timeRanges}
       onSelectCustomItem={onSelectTimeRangeItem}
-      setTimeRanges={async (time_ranges) => {
-        await updateProperties({ time_ranges });
+      setItems={async (time_ranges) => {
+        if (time_ranges.length === 0) {
+          await updateProperties({ time_ranges }, [["defaults", "time_range"]]);
+        } else {
+          await updateProperties({ time_ranges });
+        }
       }}
-    />
+      let:item
+    >
+      {DEFAULT_TIME_RANGES[item]?.label ?? item}
+    </MultiSelectInput>
+
+    <MultiSelectInput
+      label="Time zones"
+      id="visual-explore-zone"
+      hint="Time zones selectable via the dashboard filter bar"
+      searchableItems={Intl.supportedValuesOf("timeZone")}
+      defaultItems={DEFAULT_TIMEZONES}
+      keyNotSet={!rawTimeZones}
+      selectedItems={timeZones}
+      noneOption
+      clearKey={async () => {
+        await updateProperties({}, ["time_zones"]);
+      }}
+      onSelectCustomItem={async (item) => {
+        const deleted = timeZones.delete(item);
+        if (!deleted) timeZones.add(item);
+
+        await updateProperties({ time_zones: Array.from(timeZones) });
+      }}
+      setItems={async (time_zones) => {
+        await updateProperties({ time_zones });
+      }}
+      let:item
+    >
+      <ZoneDisplay iana={item} />
+    </MultiSelectInput>
 
     <ThemeInput
       {theme}
@@ -440,50 +506,62 @@
       }}
     />
 
-    <footer
-      slot="footer"
-      class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
-    >
-      <p>
-        For more options,
-        <button on:click={switchView} class="text-primary-600 font-medium">
-          edit in YAML
-        </button>
-      </p>
-
+    <svelte:fragment slot="footer">
       {#if viewingDashboard}
-        <Button
-          forcedStyle="!mt-auto group"
-          type="subtle"
-          large
-          on:click={async () => {
-            if (viewingDefaults) {
-              await updateProperties({}, ["defaults"]);
-            } else {
-              await updateProperties({ defaults: newDefaults });
-            }
-          }}
+        <footer
+          class="flex flex-col gap-y-4 mt-auto border-t px-5 py-5 pb-6 w-full text-sm text-gray-500"
         >
-          {#if viewingDefaults}
-            Remove default state
-          {:else}
-            Save dashboard state as default
-          {/if}
-          <Tooltip distance={8} location="top">
-            <InfoIcon size="14px" strokeWidth={2} />
-            <TooltipContent slot="tooltip-content">
-              {#if viewingDefaults}
-                Remove default settings for time range, comparison modes and
-                displayed measures/dimensions
-              {:else}
-                Overwrite default settings for time range, comparison modes and
-                displayed measures/dimensions with the current dashboard view
-              {/if}
-            </TooltipContent>
-          </Tooltip>
-        </Button>
+          <p>
+            For more options,
+            <button on:click={switchView} class="text-primary-600 font-medium">
+              edit in YAML
+            </button>
+          </p>
+
+          <Button
+            class="group"
+            type="subtle"
+            gray={viewingDefaults}
+            large
+            on:click={async () => {
+              if (viewingDefaults) {
+                await updateProperties({}, ["defaults"]);
+              } else {
+                await updateProperties({ defaults: newDefaults });
+              }
+            }}
+          >
+            {#if viewingDefaults}
+              <span class="flex gap-x-1">
+                <p class="group-hover:block hidden">Remove</p>
+                <p class="group-hover:hidden">Viewing</p>
+                <p>default state</p>
+              </span>
+            {:else}
+              Save dashboard state as default
+            {/if}
+
+            <Tooltip distance={8} location="top">
+              <InfoIcon
+                size="14px"
+                strokeWidth={2}
+                class={viewingDefaults ? "group-hover:block hidden" : ""}
+              />
+              <TooltipContent slot="tooltip-content">
+                {#if viewingDefaults}
+                  Remove default settings for time range, comparison modes and
+                  displayed measures/dimensions
+                {:else}
+                  Overwrite default settings for time range, comparison modes
+                  and displayed measures/dimensions with the current dashboard
+                  view
+                {/if}
+              </TooltipContent>
+            </Tooltip>
+          </Button>
+        </footer>
       {/if}
-    </footer>
+    </svelte:fragment>
   </SidebarWrapper>
 </Inspector>
 

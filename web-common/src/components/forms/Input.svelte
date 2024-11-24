@@ -40,6 +40,7 @@
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
+  export let additionalClass = "";
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -55,6 +56,7 @@
   export let onEnter: () => void = voidFunction;
   export let onEscape: () => void = voidFunction;
 
+  let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
   let selectElement: HTMLButtonElement | undefined;
@@ -75,6 +77,10 @@
   function onElementBlur(
     e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
   ) {
+    if (hitEnter) {
+      hitEnter = false;
+      return;
+    }
     focus = false;
     onBlur(e);
   }
@@ -85,7 +91,8 @@
     },
   ) {
     if (e.key === "Enter") {
-      e.preventDefault();
+      hitEnter = true;
+      inputElement?.blur();
       onEnter();
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -94,7 +101,11 @@
   }
 </script>
 
-<div class="component-wrapper" class:w-full={full} style:width>
+<div
+  class="component-wrapper {additionalClass}"
+  class:w-full={full}
+  style:width
+>
   {#if label}
     <InputLabel
       {label}
@@ -142,6 +153,7 @@
         />
       {:else}
         <input
+          title={value}
           {id}
           {type}
           {placeholder}
@@ -211,7 +223,7 @@
   {/if}
 
   {#if description}
-    <div>{description}</div>
+    <div class="description">{description}</div>
   {/if}
 </div>
 
@@ -234,11 +246,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center px-2;
+    @apply flex justify-center items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit;
+    @apply h-fit w-fit truncate;
   }
 
   input,
@@ -248,6 +260,7 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+    @apply truncate;
   }
 
   .multiline-input {
@@ -265,6 +278,11 @@
     @apply ring-2 ring-primary-100;
   }
 
+  .error-input-wrapper.input-wrapper {
+    @apply border-red-600;
+    @apply ring-1 ring-transparent;
+  }
+
   .error {
     @apply text-red-500 text-xs;
   }
@@ -279,5 +297,9 @@
 
   .toggle:active {
     @apply bg-primary-100;
+  }
+
+  .description {
+    @apply text-xs text-gray-500;
   }
 </style>

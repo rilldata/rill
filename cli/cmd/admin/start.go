@@ -34,8 +34,11 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/option"
 
-	// Load database drivers for admin
+	// Register database and provisioner implementations
 	_ "github.com/rilldata/rill/admin/database/postgres"
+	_ "github.com/rilldata/rill/admin/provisioner/clickhousestatic"
+	_ "github.com/rilldata/rill/admin/provisioner/kubernetes"
+	_ "github.com/rilldata/rill/admin/provisioner/static"
 )
 
 // Config describes admin server config derived from environment variables.

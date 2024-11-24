@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { Select as SelectPrimitive } from "bits-ui";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import { cn } from "@rilldata/web-common/lib/shadcn";
+  import { Select as SelectPrimitive } from "bits-ui";
   import { Lock, UnlockIcon } from "lucide-svelte";
-
+  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  // import Link2 from "svelte-radix/Link1.svelte";
 
   type $$Props = SelectPrimitive.TriggerProps & {
     lockable?: boolean;

@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
-  import { slide } from "svelte/transition";
 
   export let filePath: string;
   export let resizable = true;
@@ -27,8 +27,8 @@
       absolute={false}
       direction="EW"
       side="left"
-      min={fixedWidth ?? 300}
-      max={fixedWidth ?? 500}
+      min={fixedWidth ?? 320}
+      max={fixedWidth ?? 420}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {
         widthStore.set(newWidth);

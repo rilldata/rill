@@ -187,7 +187,7 @@ function getSmallestUnit(duration: Duration) {
 }
 
 function getLargestUnit(duration: Duration, units: DurationUnit[]) {
-  for (let i = PeriodAndUnits.length - 1; i > 0; i--) {
+  for (let i = PeriodAndUnits.length - 1; i >= 0; i--) {
     const { unit } = PeriodAndUnits[i];
     if (units.includes(unit) && duration[unit]) {
       return unit;

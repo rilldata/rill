@@ -35,7 +35,7 @@
     });
     eventBus.emit("notification", {
       type: "success",
-      message: "Your Team plan was canceled",
+      message: "Your Team plan was cancelled",
     });
     void invalidateBillingInfo(organization, [
       V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,

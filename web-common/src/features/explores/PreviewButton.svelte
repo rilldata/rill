@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import { navigating } from "$app/stores";
+  import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -34,12 +34,13 @@
 <Tooltip distance={8} location="left">
   <Button
     label="Preview"
-    {loading}
-    compact
-    on:click={viewDashboard}
     type="secondary"
+    preload={false}
+    compact
+    {loading}
     {href}
     {disabled}
+    on:click={viewDashboard}
   >
     <div class="flex gap-x-1 items-center">
       <Play size="14px" />

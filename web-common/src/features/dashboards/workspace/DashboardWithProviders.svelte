@@ -11,8 +11,8 @@
 </script>
 
 {#if metricsViewName}
-  {#key metricsViewName + exploreName}
-    <StateManagersProvider {metricsViewName} {exploreName}>
+  {#key exploreName}
+    <StateManagersProvider {metricsViewName} {exploreName} visualEditing>
       <DashboardStateProvider {exploreName}>
         <DashboardUrlStateProvider {metricsViewName}>
           <DashboardThemeProvider>

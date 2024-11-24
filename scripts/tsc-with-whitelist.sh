@@ -20,6 +20,7 @@ web-admin/src/routes/[organization]/-/settings/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/payment/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/upgrade/+page.ts: error TS2307
+web-admin/src/routes/[organization]/-/settings/usage/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/upgrade-callback/+page.ts: error TS2307
 web-common/src/components/data-graphic/actions/mouse-position-to-domain-action-factory.ts: error TS2322
 web-common/src/components/data-graphic/actions/outline.ts: error TS18047

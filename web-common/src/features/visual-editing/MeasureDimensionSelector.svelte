@@ -8,8 +8,10 @@
   } from "@rilldata/web-common/runtime-client";
   import SelectionDropdown from "./SelectionDropdown.svelte";
 
+  const fields = ["all", "subset", "expression"];
+
   export let type: "measures" | "dimensions";
-  export let mode: "all" | "subset" | "expression";
+  export let mode: "all" | "subset" | "expression" | null;
   export let expression: string = "";
   export let items: (MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2)[];
   export let selectedItems: Set<string> | undefined;
@@ -23,7 +25,7 @@
   let selectedProxy = new Set(selectedItems);
   let excludeProxy = excludeMode;
 
-  $: selected = mode === "all" ? 0 : mode === "subset" ? 1 : 2;
+  $: selected = fields.findIndex((field) => field === mode);
 
   function isString(value: unknown): value is string {
     return typeof value === "string";
@@ -37,7 +39,7 @@
     hint="Selection of {type} from the underlying metrics view for inclusion on the dashboard"
   />
   <FieldSwitcher
-    fields={["all", "subset", "expression"]}
+    {fields}
     {selected}
     onClick={(_, field) => {
       if (field === "all") {
@@ -68,6 +70,12 @@
         onExpressionBlur(expression);
       }}
     />
+    <a
+      target="_blank"
+      href="https://docs.rilldata.com/reference/project-files/explore-dashboards"
+    >
+      See docs
+    </a>
   {:else if mode === "subset"}
     <SelectionDropdown
       excludable

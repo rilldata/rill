@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
   import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -57,6 +58,18 @@
     return deployer.deploy(selectedOrg);
   }
 
+  function onBack() {
+    if (orgMetadata.orgs.length) {
+      promptOrgSelection.set(true);
+    } else {
+      void goto("/");
+    }
+  }
+
+  function onRetry() {
+    return deployer.deploy($org);
+  }
+
   onMount(() => {
     void deployer.loginOrDeploy();
   });
@@ -89,7 +102,8 @@
         org={$org}
         adminUrl={$metadata.data?.adminUrl ?? ""}
         {isEmptyOrg}
-        onRetry={() => {}}
+        {onRetry}
+        {onBack}
       />
     {/if}
   </CTAContentContainer>

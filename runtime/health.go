@@ -124,7 +124,6 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		olap, release, err := r.OLAP(ctx, instanceID, mv.GetMetricsView().State.ValidSpec.Connector)
 		if err != nil {
 			res.MetricsViews[mv.Meta.Name.Name] = InstanceHealthMetricsViewError{Err: err.Error()}
-			release()
 			continue
 		}
 		mayBeScaledToZero := olap.MayBeScaledToZero(ctx)
