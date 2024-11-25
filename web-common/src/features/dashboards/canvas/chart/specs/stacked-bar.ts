@@ -1,7 +1,7 @@
 import type { ChartTypeConfig } from "@rilldata/web-common/features/dashboards/canvas/types";
 import type { VisualizationSpec } from "svelte-vega";
 
-export function generateVLBarChartSpec(
+export function generateVLStackedBarChartSpec(
   config: ChartTypeConfig,
 ): VisualizationSpec {
   return {
@@ -9,6 +9,7 @@ export function generateVLBarChartSpec(
     mark: "bar",
     width: "container",
     data: { name: "metrics-view" },
+    autosize: { type: "fit" },
     encoding: {
       ...(config.data.x && {
         x: {

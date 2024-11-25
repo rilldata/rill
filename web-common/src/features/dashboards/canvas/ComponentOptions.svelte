@@ -7,10 +7,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ArrowUp01, List, Table, Text } from "lucide-svelte";
+  import { createEventDispatcher } from "svelte";
   import ChartOptions from "./chart/ChartOptions.svelte";
 
-  export let selectedComponent;
-  let selectedChartType;
+  const dispatch = createEventDispatcher();
 
   const chartTypes = [
     { id: "bar", title: "Bar", icon: BarChart },
@@ -24,10 +24,11 @@
     { id: "text", title: "Text", icon: Text },
     { id: "leaderboard", title: "Leaderboard", icon: List },
   ];
+  let selectedChartType;
 
   function selectChartType(chartType) {
     selectedChartType = chartType.id;
-    selectedComponent = chartType;
+    dispatch("select", chartType);
   }
 </script>
 
@@ -55,7 +56,7 @@
     {/each}
   </div>
   {#if selectedChartType}
-    <ChartOptions />
+    <ChartOptions chartType={selectedChartType} />
   {/if}
 </div>
 

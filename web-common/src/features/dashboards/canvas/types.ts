@@ -1,3 +1,4 @@
+export type ChartType = "bar" | "stacked-bar" | "line";
 export interface CanvasDashState {
   active: boolean;
 }
@@ -15,5 +16,6 @@ export interface EncodingConfig {
 }
 
 export interface ChartTypeConfig {
+  chartType: ChartType | null;
   data: EncodingConfig;
 }

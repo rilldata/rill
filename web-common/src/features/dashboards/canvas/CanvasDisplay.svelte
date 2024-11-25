@@ -2,11 +2,11 @@
   import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
   import CanvasComponentSidebar from "@rilldata/web-common/features/dashboards/canvas/CanvasComponentSidebar.svelte";
   import CanvasEmpty from "@rilldata/web-common/features/dashboards/canvas/CanvasEmpty.svelte";
-  import { generateVLBarChartSpec } from "@rilldata/web-common/features/dashboards/canvas/chart/bar/bar";
-  import { getChartData } from "@rilldata/web-common/features/dashboards/canvas/chart/chartQuery";
-  import { chartConfig } from "@rilldata/web-common/features/dashboards/canvas/chart/configStore";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type { View } from "svelte-vega";
+  import { getChartData } from "./chart/chartQuery";
+  import { chartConfig } from "./chart/configStore";
+  import { generateSpec } from "./chart/generateSpec";
 
   const stateManagers = getStateManagers();
 
@@ -23,7 +23,7 @@
           bind:viewVL
           canvasDashboard={true}
           data={{ "metrics-view": $data }}
-          spec={generateVLBarChartSpec($chartConfig)}
+          spec={generateSpec($chartConfig)}
         />
       {:else}
         <div

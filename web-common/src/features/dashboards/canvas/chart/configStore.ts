@@ -1,7 +1,8 @@
 import { writable } from "svelte/store";
-import type { ChartTypeConfig } from "../types";
+import type { ChartType, ChartTypeConfig } from "../types";
 
 export const chartConfig = writable<ChartTypeConfig>({
+  chartType: null,
   data: {},
 });
 
@@ -16,4 +17,11 @@ export function updateAxis(axis: "x" | "y" | "color", fieldName: string) {
       },
     };
   });
+}
+
+export function updateChartType(chartType: ChartType | null) {
+  chartConfig.update((config) => ({
+    ...config,
+    chartType,
+  }));
 }

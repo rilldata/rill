@@ -1,15 +1,15 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import ChartOptions from "@rilldata/web-common/features/dashboards/canvas/chart/ChartOptions.svelte";
-  import ComponentOptions from "@rilldata/web-common/features/dashboards/canvas/ComponentOptions.svelte";
+  import {
+    chartConfig,
+    updateChartType,
+  } from "@rilldata/web-common/features/dashboards/canvas/chart/configStore";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
   import { ArrowLeft } from "lucide-svelte";
+  import ComponentOptions from "./ComponentOptions.svelte";
 
-  let selectedComponent;
-
-  $: heading = selectedComponent?.id
-    ? selectedComponent?.title
-    : "Add component";
+  $: heading = "Add component";
+  $: selectedComponent = $chartConfig.chartType;
 </script>
 
 <Inspector filePath="canvas_path" resizable={false} fixedWidth={320}>
@@ -19,7 +19,10 @@
         <Button
           type="subtle"
           class="inline-block"
-          on:click={() => (selectedComponent = null)}
+          on:click={() => {
+            updateChartType(null);
+            heading = "Add component";
+          }}
         >
           <ArrowLeft size="16px" />
         </Button>
@@ -27,11 +30,12 @@
       <h1>{heading}</h1>
     </div>
     <div class="sidebar-body">
-      {#if selectedComponent}
-        <ChartOptions chartType={selectedComponent?.id} />
-      {:else}
-        <ComponentOptions bind:selectedComponent />
-      {/if}
+      <ComponentOptions
+        on:select={(e) => {
+          heading = e.detail?.title;
+          updateChartType(e.detail?.id);
+        }}
+      />
     </div>
     <footer
       class="flex flex-col gap-y-2 mt-auto border-t px-5 py-3 w-full text-sm text-gray-500"
