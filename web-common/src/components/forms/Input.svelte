@@ -32,6 +32,10 @@
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
   export let disabled = false;
+  export let link: string = "";
+  export let lockable = false;
+  export let capitalizeLabel = true;
+  export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
@@ -52,6 +56,7 @@
   export let onEnter: () => void = voidFunction;
   export let onEscape: () => void = voidFunction;
 
+  let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
   let selectElement: HTMLButtonElement | undefined;
@@ -72,6 +77,10 @@
   function onElementBlur(
     e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
   ) {
+    if (hitEnter) {
+      hitEnter = false;
+      return;
+    }
     focus = false;
     onBlur(e);
   }
@@ -82,7 +91,8 @@
     },
   ) {
     if (e.key === "Enter") {
-      e.preventDefault();
+      hitEnter = true;
+      inputElement?.blur();
       onEnter();
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -97,7 +107,14 @@
   style:width
 >
   {#if label}
-    <InputLabel {label} {optional} {id} {hint}>
+    <InputLabel
+      {label}
+      {optional}
+      {id}
+      {hint}
+      {link}
+      capitalize={capitalizeLabel}
+    >
       <slot name="mode-switch" slot="mode-switch" />
     </InputLabel>
   {/if}
@@ -136,6 +153,7 @@
         />
       {:else}
         <input
+          title={value}
           {id}
           {type}
           {placeholder}
@@ -178,6 +196,8 @@
       ringFocus
       {sameWidth}
       {id}
+      {lockable}
+      {lockTooltip}
       bind:selectElement
       bind:value
       {options}
@@ -226,11 +246,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center px-2;
+    @apply flex justify-center items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit;
+    @apply h-fit w-fit truncate;
   }
 
   input,
@@ -240,6 +260,7 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+    @apply truncate;
   }
 
   .multiline-input {

@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
@@ -18,10 +19,9 @@
     createLocalServiceGetMetadata,
     createLocalServiceListOrganizationsAndBillingMetadataRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import Rocket from "svelte-radix/Rocket.svelte";
   import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
-  import Rocket from "svelte-radix/Rocket.svelte";
-  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
 
   export let hasValidDashboard: boolean;
 
@@ -40,11 +40,6 @@
   $: isFirstTimeDeploy =
     !isDeployed &&
     $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues));
-  $: console.log(
-    isDeployed,
-    $orgsMetadata.data?.orgs,
-    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues)),
-  );
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
