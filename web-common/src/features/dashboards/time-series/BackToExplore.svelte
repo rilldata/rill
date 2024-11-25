@@ -7,14 +7,14 @@
   export let exploreName: string;
   export let isFetching = false;
 
-  function goBackToOverview() {
+  function goBackToExplore() {
     metricsExplorerStore.setExpandedMeasureName(exploreName, undefined);
   }
 </script>
 
 <button
   class="flex flex-row items-center gap-x-1"
-  on:click={() => goBackToOverview()}
+  on:click={() => goBackToExplore()}
 >
   {#if isFetching}
     <Spinner size="16px" status={EntityStatus.Running} />
@@ -22,6 +22,6 @@
     <span class="ui-copy-icon">
       <Back color="var(--color-primary-600)" size="16px" />
     </span>
-    <span class="text-primary-600 font-medium">Overview</span>
+    <span class="text-primary-600 font-medium">All measures</span>
   {/if}
 </button>
