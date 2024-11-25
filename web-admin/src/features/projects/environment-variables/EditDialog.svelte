@@ -69,12 +69,8 @@
   const schema = yup(
     object({
       environment: string().optional(),
-      key: string()
-        .optional()
-        .matches(
-          /^[a-zA-Z0-9_]+$/,
-          "Key must only contain letters, numbers, and underscores",
-        ),
+      // FIXME: after https://github.com/rilldata/rill/pull/6121
+      key: string().optional(),
       value: string().optional(),
     }),
   );
