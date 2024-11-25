@@ -245,7 +245,7 @@ func (c *catalog) releaseVersion(ctx context.Context, t *table, version string) 
 	}
 
 	delete(t.versionReferenceCounts, version)
-	if t.deleted {
+	if t.deleted && len(t.versionReferenceCounts) == 0 {
 		delete(c.tables, t.name)
 	}
 

@@ -225,6 +225,49 @@ func TestResetLocal(t *testing.T) {
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
 }
 
+func TestConcurrentReads(t *testing.T) {
+	testDB, _, _ := prepareDB(t)
+	ctx := context.Background()
+
+	// create table
+	err := testDB.CreateTableAsSelect(ctx, "pest", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// create test table
+	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// acquire connection
+	conn1, release1, err1 := testDB.AcquireReadConnection(ctx)
+	require.NoError(t, err1)
+
+	// replace with a view
+	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT * FROM pest", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// acquire connection
+	conn2, release2, err2 := testDB.AcquireReadConnection(ctx)
+	require.NoError(t, err2)
+
+	// drop table
+	err = testDB.DropTable(ctx, "test")
+
+	// verify both tables are still accessible
+	verifyTableForConn(t, conn1, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, release1())
+	verifyTableForConn(t, conn2, "SELECT id, country FROM test", []testData{{ID: 2, Country: "USA"}})
+	require.NoError(t, release2())
+
+	// acquire connection to see that table is now dropped
+	conn3, release3, err3 := testDB.AcquireReadConnection(ctx)
+	require.NoError(t, err3)
+	var id int
+	var country string
+	err = conn3.QueryRowContext(ctx, "SELECT id, country FROM test").Scan(&id, &country)
+	require.Error(t, err)
+	require.NoError(t, release3())
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
@@ -254,6 +297,14 @@ func verifyTable(t *testing.T, db DB, query string, data []testData) {
 
 	var scannedData []testData
 	err = conn.SelectContext(ctx, &scannedData, query)
+	require.NoError(t, err)
+	require.Equal(t, data, scannedData)
+}
+
+func verifyTableForConn(t *testing.T, conn *sqlx.Conn, query string, data []testData) {
+	ctx := context.Background()
+	var scannedData []testData
+	err := conn.SelectContext(ctx, &scannedData, query)
 	require.NoError(t, err)
 	require.Equal(t, data, scannedData)
 }
