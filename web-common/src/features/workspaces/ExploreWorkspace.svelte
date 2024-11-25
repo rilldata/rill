@@ -17,10 +17,12 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
-  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import DashboardPage from "/Users/burg/OKAY/rill/web-local/src/routes/(viz)/explore/[name]/+page.svelte";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import Spinner from "../entity-management/Spinner.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -37,6 +39,10 @@
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
+
+  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+
+  $: ({ data } = $query);
 
   $: initLocalUserPreferenceStore(exploreName);
 
@@ -118,8 +124,10 @@
           header="Unable to load dashboard preview"
           statusCode={404}
         />
-      {:else if metricsViewName && exploreName}
-        <DashboardWithProviders {exploreName} {metricsViewName} />
+      {:else if data?.explore && data.metricsView}
+        <DashboardPage {data} />
+      {:else}
+        <Spinner status={1} size="48px" />
       {/if}
     {/if}
   </MetricsEditorContainer>
