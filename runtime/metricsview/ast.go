@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -32,6 +33,7 @@ type AST struct {
 	security    *runtime.ResolvedSecurity
 	query       *Query
 	dialect     drivers.Dialect
+	olapContext map[string]any
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -653,6 +655,9 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		if err != nil {
 			return nil, err
 		}
+		if sn == nil {
+			return n, nil
+		}
 
 		a.wrapSelect(n, a.generateIdentifier())
 		n.SpineSelect = sn
@@ -694,6 +699,14 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
+		if a.dialect == drivers.DialectDruid {
+			if a.olapContext == nil {
+				a.olapContext = make(map[string]any)
+			}
+			a.olapContext[druidsqldriver.SkipEmptyBucketsContextKey] = false
+			return nil, nil
+		}
+
 		// if spine generates more than 1000 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
 		if bins > 1000 {
@@ -755,6 +768,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			Where:     a.underlyingWhere,
 			Group:     true,
 		}
+
+		a.addTimeRange(dimSelect, tr)
 
 		// there are other dimensions in the query, so cross join the spine time range with the other dimensions
 		crossSelect := &SelectNode{
