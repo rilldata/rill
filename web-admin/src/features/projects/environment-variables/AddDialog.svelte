@@ -22,7 +22,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
-  import { EnvironmentType, type VariableNames } from "./types";
+  import { type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
