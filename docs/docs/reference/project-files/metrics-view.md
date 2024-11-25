@@ -68,11 +68,6 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
  
 ```yaml
 measures:
-  - display_name: sum of measure per foo required bar
-    expression: sum(measure)
-    per: [foo]
-    requires: [bar]
-
  - name: bids_1day_rolling_avg
     expression: AVG(measure)
     requires: [measure]
@@ -80,6 +75,7 @@ measures:
       order: timestamp
       frame: RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW
 ```
+
 **`smallest_time_grain`** — Refers to the smallest time granularity the user is allowed to view. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year` _(optional)_.
 
 **`first_day_of_week`** — Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=`1` and Sunday=`7` _(optional)_.
