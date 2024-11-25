@@ -51,5 +51,8 @@ column     => sqstring                 {% id %}
 value      => sqstring                 {% id %}
             | int                      {% id %}
             | decimal                  {% id %}
+            | "true"i                  {% () => true %}
+            | "false"i                 {% () => false %}
+            | "null"i                  {% () => null %}
 value_list => value_list _ "," _ value {% ([list, _1, _2, _3, value]) => [...list, value] %}
             | value                    {% ([v]) => [v] %}

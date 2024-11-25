@@ -5,6 +5,7 @@ import {
   getComparionRangeForScrub,
   getComparisonRange,
   getTimeComparisonParametersForComponent,
+  inferCompareTimeRange,
 } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import {
@@ -363,14 +364,12 @@ function getComparisonTimeRange(
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
   if (!comparisonTimeRange?.name) {
-    const comparisonOption = DEFAULT_TIME_RANGES[
-      timeRange.name as TimeComparisonOption
-    ]?.defaultComparison as TimeComparisonOption;
+    const comparisonOption = inferCompareTimeRange(
+      explore.timeRanges,
+      timeRange.name,
+    );
     const range = getTimeComparisonParametersForComponent(
-      comparisonOption ??
-        explore.timeRanges?.find((tr) => tr.range === timeRange.name)
-          ?.comparisonTimeRanges?.[0]?.offset ??
-        TimeComparisonOption.CONTIGUOUS,
+      comparisonOption,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,

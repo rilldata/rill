@@ -10,6 +10,7 @@ const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string) {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(filter);
+  console.log(parser.results[0]);
   return parser.results[0] as V1Expression;
 }
 
@@ -19,7 +20,7 @@ export function convertExpressionToFilterParam(
 ): string {
   if (!expr) return "";
 
-  if (expr.val) {
+  if ("val" in expr) {
     if (typeof expr.val === "string") {
       return `'${expr.val}'`;
     }
@@ -86,8 +87,7 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
   if (expr.cond.exprs.length > 1) {
     const vals = expr.cond.exprs
       .slice(1)
-      .map((e) => convertExpressionToFilterParam(e, depth + 1))
-      .filter(Boolean);
+      .map((e) => convertExpressionToFilterParam(e, depth + 1));
     return `${column} ${joiner} (${vals.join(",")})`;
   }
 

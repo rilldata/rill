@@ -191,6 +191,12 @@ let ParserRules = [
     {"name": "value", "symbols": ["sqstring"], "postprocess": id},
     {"name": "value", "symbols": ["int"], "postprocess": id},
     {"name": "value", "symbols": ["decimal"], "postprocess": id},
+    {"name": "value$subexpression$1", "symbols": [/[tT]/, /[rR]/, /[uU]/, /[eE]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "value", "symbols": ["value$subexpression$1"], "postprocess": () => true},
+    {"name": "value$subexpression$2", "symbols": [/[fF]/, /[aA]/, /[lL]/, /[sS]/, /[eE]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "value", "symbols": ["value$subexpression$2"], "postprocess": () => false},
+    {"name": "value$subexpression$3", "symbols": [/[nN]/, /[uU]/, /[lL]/, /[lL]/], "postprocess": function(d) {return d.join(""); }},
+    {"name": "value", "symbols": ["value$subexpression$3"], "postprocess": () => null},
     {"name": "value_list", "symbols": ["value_list", "_", {"literal":","}, "_", "value"], "postprocess": ([list, _1, _2, _3, value]) => [...list, value]},
     {"name": "value_list", "symbols": ["value"], "postprocess": ([v]) => [v]}
 ];

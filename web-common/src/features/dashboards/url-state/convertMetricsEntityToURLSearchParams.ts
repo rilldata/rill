@@ -23,6 +23,8 @@ import {
   arrayOrderedEquals,
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
@@ -53,7 +55,10 @@ export function convertMetricsEntityToURLSearchParams(
     searchParams.set("f", convertExpressionToFilterParam(expr));
   }
 
-  mergeSearchParams(toTimeRangesUrl(exploreState, preset), searchParams);
+  mergeSearchParams(
+    toTimeRangesUrl(exploreState, exploreSpec, preset),
+    searchParams,
+  );
 
   mergeSearchParams(
     toOverviewUrl(exploreState, exploreSpec, preset),
@@ -72,6 +77,7 @@ export function convertMetricsEntityToURLSearchParams(
 
 function toTimeRangesUrl(
   exploreState: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
@@ -109,19 +115,29 @@ function toTimeRangesUrl(
     searchParams.set("tz", exploreState.selectedTimezone);
   }
 
-  if (
-    (preset.compareTimeRange !== undefined &&
-      exploreState.selectedComparisonTimeRange !== undefined &&
-      exploreState.selectedComparisonTimeRange.name !==
-        preset.compareTimeRange) ||
-    (preset.compareTimeRange === undefined &&
-      !!exploreState.selectedComparisonTimeRange?.name)
-  ) {
-    searchParams.set(
-      "ctr",
-      exploreState.selectedComparisonTimeRange?.name ?? "",
-    );
+  if (exploreState.showTimeComparison) {
+    if (
+      (preset.compareTimeRange !== undefined &&
+        exploreState.selectedComparisonTimeRange !== undefined &&
+        exploreState.selectedComparisonTimeRange.name !==
+          preset.compareTimeRange) ||
+      preset.compareTimeRange === undefined
+    ) {
+      searchParams.set(
+        "ctr",
+        exploreState.selectedComparisonTimeRange?.name ?? "",
+      );
+    } else if (exploreState.selectedTimeRange?.name) {
+      // we infer compare time range if the user has not explicitly selected one but has enabled comparison
+      const inferredCompareTimeRange = inferCompareTimeRange(
+        exploreSpec.timeRanges,
+        exploreState.selectedTimeRange.name,
+      );
+      if (inferredCompareTimeRange)
+        searchParams.set("ctr", inferredCompareTimeRange);
+    }
   }
+
   if (
     // if preset has a compare dimension, only set if selected is not the same
     (preset.comparisonDimension !== undefined &&

@@ -194,7 +194,7 @@ function fromTimeRangesParams(
     }
   }
 
-  // TODO: grain from time range ?
+  // TODO: scrub range
 
   return { preset, errors };
 }
