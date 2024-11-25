@@ -9,22 +9,18 @@ model: ad_bids
 timeseries: timestamp
 
 dimensions:
-  - 
-    display_name: Publisher
+  - display_name: Publisher
     column: publisher
-  - 
-    display_name: Domain
+  - display_name: Domain
     column: domain
 
 measures:
   - name: total_records
-    
     display_name: Total records
     expression: COUNT(*)
     description: ""
     format_preset: humanize
   - name: bid_price_sum
-    
     display_name: Sum of Bid Price
     expression: SUM(bid_price)
     description: ""
