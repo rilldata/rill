@@ -51,6 +51,10 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
     - **Example**: to show a measure using fixed point formatting with 2 digits after the decimal point, your measure specification would include: `format_d3: ".2f"`.
     - **Example**: to show a measure using grouped thousands with two significant digits, your measure specification would include: `format_d3: ",.2r"`.
   - **`format_d3_locale`** — locale configuration passed through to D3, enabling changing the currency symbol among other things. For details, see the docs for D3's [`formatLocale`](https://d3js.org/d3-format#formatLocale). _(optional)_
+
+```yaml
+
+```
   - **`format_preset`** — controls the formatting of this measure according to option specified below. Measures <u>cannot</u> have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - `humanize` — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc.
     - `none` — raw output
