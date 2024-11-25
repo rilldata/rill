@@ -236,6 +236,7 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
 export const AD_BIDS_PRESET: V1ExplorePreset = {
   timeRange: "P7D",
   timezone: "Asia/Kathmandu",
+  compareTimeRange: "rill-PP",
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
   overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,

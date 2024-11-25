@@ -2,6 +2,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FiltersInput from "@rilldata/web-common/features/dashboards/filters/FiltersInput.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
@@ -92,10 +93,6 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
-  let isFreeFormEdit = false;
-  $: if (isComplexFilter) {
-    isFreeFormEdit = true;
-  }
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -134,11 +131,8 @@
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-      {#if isFreeFormEdit}
-        <FiltersInput
-          filter={$dashboardStore.whereFilter}
-          onChange={(filters) => setFilters(filters)}
-        />
+      {#if isComplexFilter}
+        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
       {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
@@ -190,14 +184,6 @@
       that enables clearing all filters -->
         {#if hasFilters}
           <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
-        {/if}
-        {#if !isComplexFilter}
-          <Button
-            type="text"
-            on:click={() => (isFreeFormEdit = !isFreeFormEdit)}
-          >
-            {#if isFreeFormEdit}Back{:else}Edit{/if}
-          </Button>
         {/if}
       {/if}
     </div>

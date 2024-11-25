@@ -94,6 +94,26 @@ export const AD_BIDS_SET_KATHMANDU_TIMEZONE: TestDashboardMutation = () =>
   metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "Asia/Kathmandu");
 export const AD_BIDS_SET_LA_TIMEZONE: TestDashboardMutation = () =>
   metricsExplorerStore.setTimeZone(AD_BIDS_EXPLORE_NAME, "America/Los_Angeles");
+export const AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => {
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_EXPLORE_NAME,
+      { name: "rill-PP" } as any,
+      AD_BIDS_METRICS_INIT,
+    );
+  };
+export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => {
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_EXPLORE_NAME,
+      { name: "rill-PWC" } as any,
+      AD_BIDS_METRICS_INIT,
+    );
+  };
+export const AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER: TestDashboardMutation =
+  () => metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, false);
 
 export const AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY: TestDashboardMutation =
   (mut) => {

@@ -1,25 +1,19 @@
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DIMENSION_TABLE_PRESET,
-  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
-  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
-  AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { getPivotedPartialDashboard } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
-  AD_BIDS_OPEN_BP_TDD,
+  AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
   AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
   AD_BIDS_OPEN_IMP_TDD,
@@ -29,6 +23,8 @@ import {
   AD_BIDS_SET_LA_TIMEZONE,
   AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+  AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
@@ -38,7 +34,6 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
 import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
@@ -48,12 +43,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
-  V1ExploreWebView,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
@@ -96,6 +88,47 @@ const OverviewTestCases: {
     keys: AllTimeRangeKeys,
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?tr=P4W&tg=week&tz=America%2FLos_Angeles",
+  },
+
+  {
+    title: "Time range comparison without preset",
+    mutations: [
+      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+    ],
+    keys: AllTimeRangeKeys,
+    expectedUrl: "http://localhost/?tr=P4W&tg=week&ctr=rill-PWC",
+  },
+  {
+    title: "Time range comparison with preset and state matching preset",
+    mutations: [
+      AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+    ],
+    keys: AllTimeRangeKeys,
+    preset: AD_BIDS_PRESET,
+    expectedUrl: "http://localhost/",
+  },
+  {
+    title: "Time range comparison with preset and state not matching preset",
+    mutations: [
+      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+    ],
+    keys: AllTimeRangeKeys,
+    preset: AD_BIDS_PRESET,
+    expectedUrl: "http://localhost/?tr=P4W&tg=week&ctr=rill-PWC",
+  },
+  {
+    title: "Time range comparison enable and disable",
+    mutations: [
+      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+      AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
+      AD_BIDS_DISABLE_COMPARE_TIME_RANGE_FILTER,
+    ],
+    keys: AllTimeRangeKeys,
+    preset: AD_BIDS_PRESET,
+    expectedUrl: "http://localhost/?tr=P4W&tg=week",
   },
 
   {

@@ -127,7 +127,10 @@ function toTimeRangesUrl(
         "ctr",
         exploreState.selectedComparisonTimeRange?.name ?? "",
       );
-    } else if (exploreState.selectedTimeRange?.name) {
+    } else if (
+      !exploreState.selectedComparisonTimeRange?.name &&
+      exploreState.selectedTimeRange?.name
+    ) {
       // we infer compare time range if the user has not explicitly selected one but has enabled comparison
       const inferredCompareTimeRange = inferCompareTimeRange(
         exploreSpec.timeRanges,
