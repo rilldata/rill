@@ -44,7 +44,8 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
 **`measures`** — Used to define the numeric [aggregates](/build/metrics-view/metrics-view.md#measures) of columns from your data model  _(required)_.
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 
   - **`name`** — a stable identifier for the measure _(required)_
-  - **`label`** — a label for your measure _(optional)_ 
+  - **`display_name`** - the display name of your measure._(required)_
+  - **`label`** — a label for your measure, deprecated use `display_name` _(optional)_ 
   - **`description`** — a freeform text description of the dimension  _(optional)_ 
   - **`valid_percent_of_total`** — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
   - **`format_d3`** — controls the formatting of this measure  using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize` (described below). Measures <u>cannot</u> have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
@@ -58,8 +59,28 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
     - `currency_eur` —  output rounded to 2 decimal points prepended with a euro symbol: `€`
     - `percentage` — output transformed from a rate to a percentage appended with a percentage sign
     - `interval_ms` — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc.
+  - **`window`** — can be used for [advanced window expressions](/build/metrics-view/expressions), cannot be used with simple measures _(optional)_ 
+    - **`partition`** — boolean _(optional)_ 
+    - **`order`** — using a value available in your metrics view to order the window _(optional)_ 
+    - **`ordertime`** — boolean, sets the order only by the time dimensions _(optional)_ 
+    - **`frame`** — sets the frame of your window. _(optional)_ 
+  - **`per`** - calculates the expression based on the parameter defined, cannot be used with simple measures  _(optional)_
+  - **`requires`** — using a value available in your metrics view to set a required parameter, cannot be used with simple measures  _(optional)_
+ 
+```yaml
+measures:
+  - display_name: sum of measure per foo required bar
+    expression: sum(measure)
+    per: [foo]
+    requires: [bar]
 
-
+ - name: bids_1day_rolling_avg
+    expression: AVG(measure)
+    requires: [measure]
+    window:
+      order: timestamp
+      frame: RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW
+```
 **`smallest_time_grain`** — Refers to the smallest time granularity the user is allowed to view. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year` _(optional)_.
 
 **`first_day_of_week`** — Refers to the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=`1` and Sunday=`7` _(optional)_.
