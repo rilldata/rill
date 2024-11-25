@@ -1655,6 +1655,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   formatD3 = "";
 
   /**
+   * @generated from field: google.protobuf.Struct format_d3_locale = 13;
+   */
+  formatD3Locale?: Struct;
+
+  /**
    * @generated from field: bool valid_percent_of_total = 6;
    */
   validPercentOfTotal = false;
@@ -1678,6 +1683,7 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 12, name: "referenced_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

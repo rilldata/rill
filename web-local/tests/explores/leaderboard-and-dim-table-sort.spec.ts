@@ -14,10 +14,10 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  useDashboardFlowTestSetup();
+  useDashboardFlowTestSetup(false);
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.waitForTimeout(1000);
 
     /**
      * LEADERBOARD

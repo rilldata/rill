@@ -3,6 +3,7 @@ package rillv1
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -98,7 +99,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		n++
 
 		renderer = "vega_lite"
-		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
+		rendererProps = must(structpb.NewStruct(map[string]any{"spec": strings.TrimSpace(*tmp.VegaLite)}))
 	}
 	if len(tmp.Other) == 1 {
 		n++
@@ -130,7 +131,10 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 
 	// Parse input variables
-	input := make([]*runtimev1.ComponentVariable, len(tmp.Input))
+	var input []*runtimev1.ComponentVariable
+	if len(tmp.Input) > 0 {
+		input = make([]*runtimev1.ComponentVariable, len(tmp.Input))
+	}
 	for i, v := range tmp.Input {
 		var err error
 		input[i], err = v.Proto()

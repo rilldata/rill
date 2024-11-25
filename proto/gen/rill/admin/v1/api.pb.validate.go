@@ -33477,8 +33477,6 @@ func (m *Deployment) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for Slots
-
 	// no validation rules for Branch
 
 	// no validation rules for RuntimeHost
@@ -35284,6 +35282,8 @@ func (m *BillingPlan) validate(all bool) error {
 	// no validation rules for Id
 
 	// no validation rules for Name
+
+	// no validation rules for PlanType
 
 	// no validation rules for DisplayName
 

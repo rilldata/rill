@@ -28,7 +28,7 @@
   let open = showUpgradeDialog;
 </script>
 
-<SettingsContainer title={plan?.displayName}>
+<SettingsContainer title={plan?.displayName ?? "Team plan"}>
   <div slot="body">
     <div>
       <div class="flex flex-row items-center gap-x-1 text-sm">
@@ -40,7 +40,10 @@
           and your subscription has ended.
         {/if}
       </div>
-      <PlanQuotas {organization} />
+      {#if plan}
+        <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+        <PlanQuotas {organization} />
+      {/if}
     </div>
   </div>
   <svelte:fragment slot="contact">

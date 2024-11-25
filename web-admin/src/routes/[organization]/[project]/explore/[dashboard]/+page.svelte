@@ -97,7 +97,7 @@
   {:else if isDashboardErrored}
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricsViewName}
-    {#key metricsViewName}
+    {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
         <DashboardURLStateSync {basePreset} {partialExploreState}>
           <DashboardThemeProvider>

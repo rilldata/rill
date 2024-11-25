@@ -79,7 +79,7 @@
       Export as XLSX
     </DropdownMenu.Item>
 
-    {#if includeScheduledReport}
+    {#if includeScheduledReport && queryArgs}
       <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
         Create scheduled report...
       </DropdownMenu.Item>

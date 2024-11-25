@@ -132,7 +132,7 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 	}
 
 	failedInvoices := be.Metadata.(*database.BillingIssueMetadataPaymentFailed).Invoices
-	failedInvoice, ok := failedInvoices[job.Args.InvoiceID]
+	_, ok := failedInvoices[job.Args.InvoiceID]
 	if !ok {
 		// invoice not found in the failed invoices, do nothing
 		return nil
@@ -162,11 +162,11 @@ func (w *PaymentSuccessWorker) Work(ctx context.Context, job *river.Job[PaymentS
 
 	// send email
 	err = w.admin.Email.SendInvoicePaymentSuccess(&email.InvoicePaymentSuccess{
-		ToEmail:  org.BillingEmail,
-		ToName:   org.Name,
-		OrgName:  org.Name,
-		Currency: failedInvoice.Currency,
-		Amount:   failedInvoice.Amount,
+		ToEmail:        org.BillingEmail,
+		ToName:         org.Name,
+		OrgName:        org.Name,
+		PaymentDate:    time.Now(),
+		BillingPageURL: w.admin.URLs.Billing(org.Name, false),
 	})
 	if err != nil {
 		// ignore email sending error

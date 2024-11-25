@@ -34,7 +34,7 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 				var err error
 				project, err = ch.InferProjectName(ctx, ch.Org, path)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 

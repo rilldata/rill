@@ -13,6 +13,7 @@
     useExploreStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import * as Elements from "../super-pill/components";
+  import { SortType } from "../../proto-state/derived-types";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -24,6 +25,10 @@
     exploreName,
     selectors: {
       timeRangeSelectors: { timeComparisonOptionsState },
+      sorting: { sortType },
+    },
+    actions: {
+      sorting: { toggleSort },
     },
     validSpecStore,
   } = ctx;
@@ -74,6 +79,15 @@
         $exploreName,
         !showTimeComparison,
       );
+
+      if (
+        (showTimeComparison &&
+          ($sortType === SortType.DELTA_PERCENT ||
+            $sortType === SortType.DELTA_ABSOLUTE)) ||
+        (!showTimeComparison && $sortType === SortType.PERCENT)
+      ) {
+        toggleSort(SortType.VALUE);
+      }
     }}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">

@@ -1353,10 +1353,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
-}
-
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
@@ -2461,14 +2457,6 @@ export interface V1API {
   state?: V1APIState;
 }
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -2529,6 +2517,14 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2561,6 +2557,8 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
+export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: any };
+
 export type MetricsViewSpecMeasureType =
   (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
 
@@ -2571,21 +2569,6 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
-
-export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  formatPreset?: string;
-  formatD3?: string;
-  validPercentOfTotal?: boolean;
-}
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
@@ -2608,6 +2591,22 @@ export interface MetricsViewSpecMeasureWindow {
   /** Dimensions to order the window by. Must be present in required_dimensions. */
   orderBy?: MetricsViewSpecDimensionSelector[];
   frameExpression?: string;
+}
+
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  formatPreset?: string;
+  formatD3?: string;
+  formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
+  validPercentOfTotal?: boolean;
 }
 
 /**
@@ -2646,6 +2645,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {
