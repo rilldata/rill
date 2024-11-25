@@ -18,11 +18,10 @@
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
     ALL_TIME_RANGE_ALIAS,
+    bucketTimeRanges,
     CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
     type ISODurationString,
     type NamedRange,
-    type RangeBuckets,
   } from "../new-time-controls";
   import * as Elements from "./components";
 
@@ -33,10 +32,10 @@
   const {
     exploreName,
     selectors: {
-      timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
+    timeRanges,
   } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
@@ -61,27 +60,9 @@
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
-  $: ({
-    latestWindowTimeRanges,
-    periodToDateRanges,
-    previousCompleteDateRanges,
-    showDefaultItem,
-  } = $timeRangeSelectorState);
+  let showDefaultItem = false; // TODO
 
-  $: ranges = <RangeBuckets>{
-    latest: latestWindowTimeRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-    periodToDate: periodToDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-    previous: previousCompleteDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-  };
+  $: ranges = bucketTimeRanges($timeRanges.data?.ranges ?? []);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -105,29 +86,17 @@
   }
 
   function onSelectRange(name: NamedRange | ISODurationString) {
-    if (!allTimeRange?.end) {
+    if (!allTimeRange?.end || !$timeRanges.data?.ranges) {
       return;
     }
 
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate(allTimeRange.end),
-    );
-    if (!interval?.isValid) return;
+    const tr = $timeRanges.data.ranges.find((r) => r.rillTime === name);
+    if (!tr) return;
 
     const baseTimeRange: TimeRange = {
       name: name as TimeRangePreset,
-      start: interval.start.toJSDate(),
-      end: interval.end.toJSDate(),
+      start: new Date(tr.start),
+      end: new Date(tr.end),
     };
 
     selectRange(baseTimeRange);

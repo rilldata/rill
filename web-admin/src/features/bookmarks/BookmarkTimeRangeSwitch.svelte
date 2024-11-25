@@ -1,7 +1,6 @@
 <script lang="ts">
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { useQueryClient } from "@rilldata/svelte-query";
   import { getPrettySelectedTimeRange } from "@rilldata/web-admin/features/bookmarks/selectors.js";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store.js";
 
@@ -9,9 +8,7 @@
   export let exploreName: string;
   export let checked: boolean;
 
-  const queryClient = useQueryClient();
   $: selectedTimeRange = getPrettySelectedTimeRange(
-    queryClient,
     $runtime?.instanceId,
     metricsViewName,
     exploreName,
