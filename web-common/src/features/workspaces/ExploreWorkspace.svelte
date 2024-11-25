@@ -42,20 +42,20 @@
 
   $: resourceQuery = getResource(queryClient, instanceId);
 
-  $: ({ data } = $resourceQuery);
+  $: ({ data: resource } = $resourceQuery);
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading(data);
+  $: resourceIsReconciling = resourceIsLoading(resource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: exploreResource = data?.explore;
+  $: exploreResource = resource?.explore;
 
-  $: metricsViewName = data?.meta?.refs?.find(
+  $: metricsViewName = resource?.meta?.refs?.find(
     (ref) => ref.kind === ResourceKind.MetricsView,
   )?.name;
 
@@ -79,6 +79,7 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    {resource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"

@@ -129,6 +129,7 @@
 <WorkspaceContainer>
   <WorkspaceHeader
     {filePath}
+    {resource}
     resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}
