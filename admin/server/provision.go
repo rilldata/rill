@@ -92,11 +92,17 @@ func provisionerResourceToPB(i *database.ProvisionerResource) *adminv1.Provision
 		panic(err)
 	}
 
+	configPB, err := structpb.NewStruct(i.Config)
+	if err != nil {
+		panic(err)
+	}
+
 	return &adminv1.ProvisionerResource{
 		Id:           i.ID,
 		DeploymentId: i.DeploymentID,
-		Type:         string(i.Type),
+		Type:         i.Type,
 		Name:         i.Name,
 		Args:         argsPB,
+		Config:       configPB,
 	}
 }
