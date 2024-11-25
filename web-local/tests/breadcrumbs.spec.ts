@@ -29,7 +29,7 @@ test.describe("Breadcrumbs", () => {
       await expect(link).toBeVisible();
       await expect(link).toHaveClass(/selected/g);
 
-      await page.getByText("Generate metrics view with AI").click();
+      await page.getByText("Generate metrics view").click();
       await page.getByText("Start simple").click();
 
       link = page.getByRole("link", {

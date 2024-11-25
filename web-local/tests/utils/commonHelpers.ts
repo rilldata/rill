@@ -111,7 +111,7 @@ export async function renameFileUsingTitle(
 ) {
   await page.getByRole("heading", { name: originalName, exact: true }).hover();
   await page.getByRole("button", { name: "File title actions" }).click();
-  await page.getByRole("menuitem", { name: "Rename" }).click();
+
   await page.locator("#model-title-input").fill(toName);
   await page.keyboard.press("Enter");
 }
