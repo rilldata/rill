@@ -20,7 +20,7 @@
 </script>
 
 <Tooltip distance={8} location="top" alignment="start">
-  <div class="text-xs text-gray-500 cursor-pointer">
+  <div class="text-xs text-gray-500 cursor-pointer w-fit">
     {formattedText}
   </div>
   <TooltipContent slot="tooltip-content">
