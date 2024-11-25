@@ -7,9 +7,9 @@
     V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import Button from "web-common/src/components/button/Button.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import Button from "web-common/src/components/button/Button.svelte";
+  import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -49,7 +49,7 @@
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
-        allSourcesModelsFull: true,
+        allSourcesModels: true,
       },
     });
 
