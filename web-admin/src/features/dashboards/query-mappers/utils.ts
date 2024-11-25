@@ -71,7 +71,7 @@ export function fillTimeRange(
       // temporary fix to not lead to an uncaught error.
       // TODO: we should a single custom label when we move to rill-time syntax
       if (
-        dashboard.selectedComparisonTimeRange.name === TimeRangePreset.CUSTOM
+        dashboard.selectedComparisonTimeRange?.name === TimeRangePreset.CUSTOM
       ) {
         dashboard.selectedComparisonTimeRange.name =
           TimeComparisonOption.CUSTOM;
