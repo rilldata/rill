@@ -121,9 +121,11 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.ProvisionArgs), hash)
-	if err != nil {
-		return "", err
+	if spec.ProvisionArgs != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.ProvisionArgs), hash)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// write properties to hash
