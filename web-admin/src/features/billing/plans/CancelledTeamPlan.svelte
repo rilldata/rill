@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { V1BillingPlan } from "@rilldata/web-admin/client";
   import ContactUs from "@rilldata/web-admin/features/billing/ContactUs.svelte";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import StartTeamPlanDialog from "@rilldata/web-admin/features/billing/plans/StartTeamPlanDialog.svelte";
@@ -9,6 +10,7 @@
   import { DateTime } from "luxon";
 
   export let organization: string;
+  export let plan: V1BillingPlan;
   export let showUpgradeDialog: boolean;
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
@@ -26,7 +28,7 @@
   let open = showUpgradeDialog;
 </script>
 
-<SettingsContainer title="Team Plan">
+<SettingsContainer title={plan?.displayName ?? "Team plan"}>
   <div slot="body">
     <div>
       <div class="flex flex-row items-center gap-x-1 text-sm">
@@ -38,7 +40,10 @@
           and your subscription has ended.
         {/if}
       </div>
-      <PlanQuotas {organization} />
+      {#if plan}
+        <!-- if there is no plan then quotas will be set to 0. It doesnt make sense to show this then -->
+        <PlanQuotas {organization} />
+      {/if}
     </div>
   </div>
   <svelte:fragment slot="contact">

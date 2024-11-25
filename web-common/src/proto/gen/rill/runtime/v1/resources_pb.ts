@@ -1617,12 +1617,19 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   formatD3 = "";
 
   /**
+   * @generated from field: google.protobuf.Struct format_d3_locale = 13;
+   */
+  formatD3Locale?: Struct;
+
+  /**
    * @generated from field: bool valid_percent_of_total = 6;
    */
   validPercentOfTotal = false;
 
   /**
-   * @generated from field: string treat_nulls_as = 13;
+   * TODO what should the type, using string values will not work when coalescing numeric cols
+   *
+   * @generated from field: string treat_nulls_as = 14;
    */
   treatNullsAs = "";
 
@@ -1645,8 +1652,9 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 12, name: "referenced_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "format_d3_locale", kind: "message", T: Struct },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 13, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureV2 {

@@ -12559,6 +12559,35 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for FormatD3
 
+	if all {
+		switch v := interface{}(m.GetFormatD3Locale()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					field:  "FormatD3Locale",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					field:  "FormatD3Locale",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFormatD3Locale()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_MeasureV2ValidationError{
+				field:  "FormatD3Locale",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for ValidPercentOfTotal
 
 	// no validation rules for TreatNullsAs

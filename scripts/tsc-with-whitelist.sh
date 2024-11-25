@@ -16,9 +16,11 @@ web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/billing/issues/getMessageForTrialPlan.ts: error TS18048
 web-admin/src/features/billing/plans/selectors.ts: error TS18048
 web-admin/src/routes/[organization]/-/settings/+layout.ts: error TS2307
+web-admin/src/routes/[organization]/-/settings/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/payment/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/settings/billing/upgrade/+page.ts: error TS2307
+web-admin/src/routes/[organization]/-/settings/usage/+page.ts: error TS2307
 web-admin/src/routes/[organization]/-/upgrade-callback/+page.ts: error TS2307
 web-common/src/components/data-graphic/actions/mouse-position-to-domain-action-factory.ts: error TS2322
 web-common/src/components/data-graphic/actions/outline.ts: error TS18047

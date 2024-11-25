@@ -30,8 +30,9 @@ var (
 )
 
 const (
-	SkipEmptyBucketsContextKey = "skipEmptyBuckets"
-	sqlQueryIDContextKey       = "sqlQueryId"
+	SkipEmptyBucketsContextKey           = "skipEmptyBuckets"
+	sqlQueryIDContextKey                 = "sqlQueryId"
+	enableTimeBoundaryPlanningContextKey = "enableTimeBoundaryPlanning"
 )
 
 type druidSQLDriver struct{}
@@ -422,10 +423,6 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	}
 }
 
-type DruidQueryContext struct {
-	SQLQueryID string `json:"sqlQueryId"`
-}
-
 type DruidParameter struct {
 	Type  string `json:"type"`
 	Value any    `json:"value"`
@@ -443,6 +440,7 @@ type DruidRequest struct {
 func newDruidRequest(query string, args []driver.NamedValue) *DruidRequest {
 	queryCtx := make(map[string]any)
 	queryCtx[sqlQueryIDContextKey] = uuid.New().String()
+	queryCtx[enableTimeBoundaryPlanningContextKey] = true
 
 	var parameters []DruidParameter
 	for _, arg := range args {

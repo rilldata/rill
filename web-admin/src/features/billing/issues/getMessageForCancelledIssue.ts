@@ -34,7 +34,7 @@ export function getMessageForCancelledIssue(cancelledSubIssue: V1BillingIssue) {
 
   return <BillingIssueMessage>{
     type: ended ? "error" : "warning",
-    title: `Your plan is canceled ${accessTimeout}.`,
+    title: `Your plan is cancelled ${accessTimeout}.`,
     description: "To maintain access, renew your plan.",
     iconType: "alert",
     cta: {

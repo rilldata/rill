@@ -2997,10 +2997,13 @@ definitions:
         type: string
       formatD3:
         type: string
+      formatD3Locale:
+        type: object
       validPercentOfTotal:
         type: boolean
       treatNullsAs:
         type: string
+        title: TODO what should the type, using string values will not work when coalescing numeric cols
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureWindow:
     type: object

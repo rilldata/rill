@@ -11,6 +11,7 @@
   export let value: string = "";
   export let id: string;
   export let label: string = "";
+  export let lockTooltip: string = "";
   export let options: { value: string; label: string; type?: string }[];
   export let placeholder: string = "";
   export let optional: boolean = false;
@@ -24,6 +25,7 @@
   export let ringFocus = true;
   export let truncate = false;
   export let enableSearch = false;
+  export let lockable = false;
   export let onChange: (value: string) => void = () => {};
 
   let searchText = "";
@@ -76,6 +78,8 @@
   >
     <Select.Trigger
       {id}
+      {lockable}
+      {lockTooltip}
       bind:el={selectElement}
       class="flex px-3 gap-x-2 max-w-full {width &&
         `w-[${width}px]`} {ringFocus &&

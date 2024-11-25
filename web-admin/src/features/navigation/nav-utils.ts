@@ -21,6 +21,8 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/status" ||
     page.route.id === "/[organization]/[project]/-/settings" ||
     page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
+    page.route.id ===
+      "/[organization]/[project]/-/settings/environment-variables" ||
     !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
 }

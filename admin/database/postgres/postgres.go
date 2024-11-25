@@ -404,13 +404,19 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return c.projectFromDTO(res)
 }
 
-func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
-	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
+func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
+	res := &database.ProjectsQuotaUsage{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		WITH t1 AS (SELECT * FROM projects WHERE org_id = $1)
+		SELECT
+			(SELECT COUNT(*) FROM t1) AS projects,
+			(SELECT COUNT(*) FROM deployments d WHERE d.project_id IN (SELECT id FROM t1)) AS deployments,
+			(SELECT COALESCE(SUM(prod_slots), 0) FROM t1) AS slots
+	`, orgID).StructScan(res)
 	if err != nil {
-		return 0, parseErr("project count", err)
+		return nil, parseErr("projects quota usage", err)
 	}
-	return count, nil
+	return res, nil
 }
 
 func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*database.ProjectWhitelistedDomainWithJoinedRoleNames, error) {
@@ -525,9 +531,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, provisioner, provision_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, runtime_version, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-		opts.ProjectID, opts.Provisioner, opts.ProvisionID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.RuntimeVersion, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ProjectID, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -540,18 +546,23 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
-func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
+func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET branch=$1, runtime_host=$2, runtime_instance_id=$3, runtime_audience=$4, status=$5, status_message=$6, updated_on=now()
+		WHERE id=$7 RETURNING *`,
+		opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
+	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET runtime_version=$1, updated_on=now() WHERE id=$2 RETURNING *", version, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -566,28 +577,36 @@ func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) e
 	return nil
 }
 
-func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET branch=$1, updated_on=now() WHERE id=$2 RETURNING *", branch, id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
+func (c *connection) UpsertStaticRuntimeAssignment(ctx context.Context, id, host string, slots int) error {
+	// If slots is 0, delete the assignment if it exists (may not exist due to idempotence, so not checking the affected row count).
+	if slots == 0 {
+		_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
+		if err != nil {
+			return parseErr("slots used", err)
+		}
+		return nil
 	}
-	return res, nil
+
+	// Upsert the assignment.
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_assignments (resource_id, host, slots) VALUES ($1, $2, $3) ON CONFLICT (resource_id) DO UPDATE SET slots = EXCLUDED.slots", id, host, slots)
+	if err != nil {
+		return parseErr("slots used", err)
+	}
+	return nil
 }
 
-func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
-	res := &database.DeploymentsCount{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COUNT(*) as deployments, COALESCE(SUM(slots), 0) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
+func (c *connection) DeleteStaticRuntimeAssignment(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
 	if err != nil {
-		return nil, parseErr("deployments count", err)
+		// Not using checkDeleteRow because this is operation must be idempotent, so the row may not exist.
+		return parseErr("slots used", err)
 	}
-	return res, nil
+	return nil
 }
 
-func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.RuntimeSlotsUsed, error) {
-	var res []*database.RuntimeSlotsUsed
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
+func (c *connection) ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*database.StaticRuntimeSlotsUsed, error) {
+	var res []*database.StaticRuntimeSlotsUsed
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT host, SUM(slots) as slots FROM static_runtime_assignments GROUP BY host ORDER BY host")
 	if err != nil {
 		return nil, parseErr("slots used", err)
 	}
@@ -1783,7 +1802,7 @@ func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) 
 // FindBookmarks returns a list of bookmarks for a user per project
 func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and (user_id = $4 or shared = true or "default" = true)`,
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and (user_id = $4 or shared = true or "default" = true)`,
 		projectID, resourceKind, resourceName, userID)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
@@ -1803,7 +1822,7 @@ func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*data
 
 func (c *connection) FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and "default" = true`,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and "default" = true`,
 		projectID, resourceKind, resourceName).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
@@ -2204,6 +2223,75 @@ func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, envi
 	return err
 }
 
+func (c *connection) FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*database.ProvisionerResource, error) {
+	var res []*provisionerResourceDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM provisioner_resources WHERE deployment_id = $1`, deploymentID)
+	if err != nil {
+		return nil, parseErr("provisioner resources", err)
+	}
+	return c.provisionerResourcesFromDTOs(res)
+}
+
+func (c *connection) InsertProvisionerResource(ctx context.Context, opts *database.InsertProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &provisionerResourceDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO provisioner_resources (id, deployment_id, "type", name, status, status_message, provisioner, args_json, state_json, config_json)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.ID, opts.DeploymentID, opts.Type, opts.Name, opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, opts *database.UpdateProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &provisionerResourceDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5, updated_on = now() WHERE id = $6 RETURNING *`,
+		opts.Status, opts.StatusMessage, args, state, config, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM provisioner_resources WHERE id = $1", id)
+	return checkDeleteRow("provisioner resource", res, err)
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -2232,55 +2320,40 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
-// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
-func (c *connection) encrypt(text []byte) ([]byte, string, error) {
-	if len(c.encKeyring) == 0 {
-		return text, "", nil
-	}
-	// use the first key in the keyring for encryption
-	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+// provisionerResourceDTO wraps database.ProvisionerResource, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type provisionerResourceDTO struct {
+	*database.ProvisionerResource
+	Args   pgtype.JSON `db:"args_json"`
+	State  pgtype.JSON `db:"state_json"`
+	Config pgtype.JSON `db:"config_json"`
+}
+
+func (c *connection) provisionerResourceFromDTO(dto *provisionerResourceDTO) (*database.ProvisionerResource, error) {
+	err := dto.Args.AssignTo(&dto.ProvisionerResource.Args)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return encrypted, c.encKeyring[0].ID, nil
+	err = dto.State.AssignTo(&dto.ProvisionerResource.State)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.Config.AssignTo(&dto.ProvisionerResource.Config)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ProvisionerResource, nil
 }
 
-// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
-func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
-	if encKeyID == "" {
-		return text, nil
-	}
-	var encKey *database.EncryptionKey
-	for _, key := range c.encKeyring {
-		if key.ID == encKeyID {
-			encKey = key
-			break
-		}
-	}
-	if encKey == nil {
-		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-	}
-	return decrypt(text, encKey.Secret)
-}
-
-func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
-	for _, v := range res {
-		if v.ValueEncryptionKeyID == "" {
-			continue
-		}
-		dec, err := base64.StdEncoding.DecodeString(v.Value)
+func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO) ([]*database.ProvisionerResource, error) {
+	res := make([]*database.ProvisionerResource, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = c.provisionerResourceFromDTO(dto)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
-		if err != nil {
-			return err
-		}
-
-		v.Value = string(decryptedValue)
 	}
-	return nil
+	return res, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2421,6 +2494,57 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError
+}
+
+func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
+	for _, v := range res {
+		if v.ValueEncryptionKeyID == "" {
+			continue
+		}
+		dec, err := base64.StdEncoding.DecodeString(v.Value)
+		if err != nil {
+			return err
+		}
+
+		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
+		if err != nil {
+			return err
+		}
+
+		v.Value = string(decryptedValue)
+	}
+	return nil
+}
+
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encrypt(text []byte) ([]byte, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return nil, "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {
