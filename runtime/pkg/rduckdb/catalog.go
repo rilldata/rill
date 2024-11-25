@@ -68,18 +68,22 @@ func newCatalog(removeVersionFunc func(context.Context, string, string) error, r
 	}
 }
 
-func (c *catalog) hasTableVersion(ctx context.Context, name, version string) (bool, error) {
+func (c *catalog) tableMeta(ctx context.Context, name string) (*tableMeta, error) {
 	err := c.sem.Acquire(ctx, 1)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer c.sem.Release(1)
 
 	t, ok := c.tables[name]
-	if ok && !t.deleted && t.currentVersion == version {
-		return true, nil
+	if !ok || t.deleted {
+		return nil, errNotFound
 	}
-	return false, nil
+	meta, ok := t.versionMeta[t.currentVersion]
+	if !ok {
+		return nil, fmt.Errorf("internal error: meta for version %q not found", t.currentVersion)
+	}
+	return meta, nil
 }
 
 // addTableVersion registers a new version of a table.
@@ -135,6 +139,7 @@ func (c *catalog) removeTable(ctx context.Context, name string) error {
 	return c.releaseVersion(ctx, t, oldVersion)
 }
 
+// listTables returns tableMeta for all active tables present in the catalog.
 func (c *catalog) listTables(ctx context.Context) ([]*tableMeta, error) {
 	err := c.sem.Acquire(ctx, 1)
 	if err != nil {

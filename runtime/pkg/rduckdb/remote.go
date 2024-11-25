@@ -87,18 +87,16 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			continue
 		}
 
-		inSync, err := d.catalog.hasTableVersion(gctx, table, backedUpMeta.Version)
-		if err != nil {
-			return err
-		}
-		if inSync {
+		// check if table in catalog is already upto date
+		meta, _ := d.catalog.tableMeta(gctx, table)
+		if meta != nil && meta.Version == backedUpMeta.Version {
 			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
 			continue
 		}
 		tblMetas[table] = backedUpMeta
 
-		// check with local meta
-		meta, _ := d.tableMeta(table)
+		// check if table is locally present but not added to catalog yet
+		meta, _ = d.tableMeta(table)
 		if meta != nil && meta.Version == backedUpMeta.Version {
 			d.logger.Debug("SyncWithObjectStorage: local table is not present in catalog", slog.String("table", table))
 			tblMetas[table] = backedUpMeta

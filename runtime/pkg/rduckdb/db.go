@@ -362,7 +362,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// We can also use catalog to get the latest version
 	// but we are not using it here since pullFromRemote should have already updated the catalog
 	// and we need meta.json contents
-	oldMeta, _ := d.tableMeta(name)
+	oldMeta, _ := d.catalog.tableMeta(ctx, name)
 	if oldMeta != nil {
 		d.logger.Debug("old version", slog.String("version", oldMeta.Version))
 	}
@@ -469,7 +469,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return err
 	}
 
-	oldMeta, err := d.tableMeta(name)
+	oldMeta, err := d.catalog.tableMeta(ctx, name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("mutate: Table %q not found", name)
@@ -554,7 +554,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 
 	// check if table exists
-	_, err = d.tableMeta(name)
+	_, err = d.catalog.tableMeta(ctx, name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("drop: Table %q not found", name)
@@ -596,7 +596,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to pull from remote: %w", err)
 	}
 
-	oldMeta, err := d.tableMeta(oldName)
+	oldMeta, err := d.catalog.tableMeta(ctx, oldName)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("rename: Table %q not found", oldName)
@@ -703,7 +703,7 @@ func (d *db) Size() int64 {
 		if strings.HasPrefix(entry.Name(), "__rill_tmp_") {
 			continue
 		}
-		meta, _ := d.tableMeta(entry.Name())
+		meta, _ := d.catalog.tableMeta(context.Background(), entry.Name())
 		if meta != nil {
 			paths = append(paths, filepath.Join(d.localPath, entry.Name(), meta.Version, "data.db"))
 		}
