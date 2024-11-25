@@ -8,33 +8,43 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { ResourceKindMap } from "../file-explorer/new-files";
   import CrumbTrigger from "./CrumbTrigger.svelte";
-  import { ResourceKind } from "../entity-management/resource-selectors";
+  import {
+    ResourceKind,
+    type UserFacingResourceKinds,
+  } from "../entity-management/resource-selectors";
   import { builderActions } from "bits-ui";
 
   const downstreamMapping = new Map([
-    [ResourceKind.MetricsView, ResourceKind.Explore],
-    [ResourceKind.Source, ResourceKind.Model],
-    [ResourceKind.Model, ResourceKind.MetricsView],
+    [ResourceKind.MetricsView, new Set([ResourceKind.Explore])],
+    [ResourceKind.Source, new Set([ResourceKind.Model])],
+    [
+      ResourceKind.Model,
+      new Set([ResourceKind.MetricsView, ResourceKind.Model]),
+    ],
   ]);
 
   export let resources: (V1Resource | undefined)[];
   export let allResources: V1Resource[];
-  export let selected = false;
+  export let selectedResource: V1Resource | undefined;
+  export let current = false;
   export let downstream = false;
   export let upstream = false;
   export let filePath: string = "";
 
   let open = false;
 
-  $: firstResource = resources?.[0];
+  $: dropdown = resources.length > 1;
 
-  $: resourceKind = firstResource?.meta?.name?.kind as ResourceKind | undefined;
-  $: resourceName =
-    firstResource?.meta?.name?.name ?? filePath?.split("/").pop();
+  $: exampleResource = selectedResource ?? resources?.[0];
+
+  $: meta = exampleResource?.meta;
+
+  $: resourceKind = meta?.name?.kind as ResourceKind | undefined;
+  $: resourceName = meta?.name?.name ?? filePath?.split("/").pop();
 
   $: allRefs = resources?.map((r) => r?.meta?.refs).flat();
 
-  $: referencedResources = downstream
+  $: upstreamResources = downstream
     ? []
     : allResources.filter(({ meta }) =>
         allRefs?.find(
@@ -43,16 +53,17 @@
         ),
       );
 
-  $: dropdown = resources.length > 1;
+  $: downstreamKinds =
+    !upstream && resourceKind && downstreamMapping.get(resourceKind);
 
-  $: downstreamKind = resourceKind && downstreamMapping.get(resourceKind);
-
-  $: downstreamResources = downstreamKind
+  $: downstreamResources = downstreamKinds
     ? allResources.filter(({ meta }) => {
+        const kind = meta?.name?.kind as UserFacingResourceKinds | undefined;
+        if (!kind) return false;
         return (
-          meta?.name?.kind === downstreamKind &&
+          downstreamKinds.has(kind) &&
           meta?.refs?.find(({ kind, name }) => {
-            return selected
+            return selectedResource
               ? kind === resourceKind && name === resourceName
               : resources.find(
                   (r) =>
@@ -63,13 +74,28 @@
         );
       })
     : [];
+
+  function generateLabel(resources: (V1Resource | undefined)[]) {
+    const counts: Map<UserFacingResourceKinds, number> = new Map();
+
+    for (const r of resources) {
+      const kind = r?.meta?.name?.kind as UserFacingResourceKinds | undefined;
+      if (!kind) continue;
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    }
+
+    return Array.from(counts)
+      .map(
+        ([kind, count]) =>
+          `${count} ${ResourceKindMap[kind].folderName.slice(0, -1) + (count > 1 ? "s" : "")}`,
+      )
+      .join(", ");
+  }
 </script>
 
-{#if !downstream && referencedResources.length}
-  <svelte:self resources={referencedResources} {allResources} upstream />
-{/if}
+{#if upstreamResources.length}
+  <svelte:self resources={upstreamResources} {allResources} upstream />
 
-{#if !downstream && referencedResources.length}
   <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
 {/if}
 
@@ -78,12 +104,12 @@
     <svelte:element
       this={dropdown ? "button" : "a"}
       class:open
-      class="text-gray-500 px-1.5 py-1 w-full max-w-fit line-clamp-1"
-      class:selected
+      class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
+      class:selected={current}
       href={dropdown
         ? undefined
-        : firstResource
-          ? `/files${firstResource?.meta?.filePaths?.[0]}`
+        : exampleResource
+          ? `/files${exampleResource?.meta?.filePaths?.[0]}`
           : "#"}
       {...dropdown ? builder : {}}
       use:builderActions={{ builders: dropdown ? [builder] : [] }}
@@ -91,8 +117,8 @@
       <CrumbTrigger
         {filePath}
         kind={resourceKind}
-        label={!selected && dropdown
-          ? `${resources?.length} ${ResourceKindMap[resourceKind ?? ResourceKind.Component].folderName}`
+        label={!selectedResource && dropdown
+          ? generateLabel(resources)
           : resourceName}
       />
     </svelte:element>
@@ -117,11 +143,9 @@
   {/if}
 </DropdownMenu.Root>
 
-{#if !upstream && downstreamResources.length}
+{#if downstreamResources.length}
   <CaretDownIcon size="12px" className="text-gray-500 -rotate-90 flex-none" />
-{/if}
 
-{#if !upstream && downstreamResources.length}
   <svelte:self resources={downstreamResources} {allResources} downstream />
 {/if}
 

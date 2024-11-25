@@ -18,16 +18,14 @@
   $: resourcesQuery = createRuntimeServiceListResources(instanceId);
   $: allResources = $resourcesQuery.data?.resources ?? [];
 
-  $: lateralResources = allResources.filter((r) => {
-    if (
-      r.meta?.name?.name === resourceName &&
-      r.meta?.name?.kind === resourceKind
-    )
+  $: lateralResources = allResources.filter(({ meta }) => {
+    if (meta?.name?.name === resourceName && meta?.name?.kind === resourceKind)
       return true;
-    if (!r.meta?.refs?.length) return false;
-    return r.meta?.refs?.every((reference) =>
+    if (!meta?.refs?.length) return false;
+
+    return meta?.refs?.every(({ name, kind }) =>
       resource?.meta?.refs?.find(
-        (ref) => ref?.name === reference.name && ref?.kind === reference.kind,
+        (ref) => ref?.name === name && ref?.kind === kind,
       ),
     );
   });
@@ -37,9 +35,10 @@
   class="flex gap-x-1.5 items-center h-7 flex-none w-full pr-3 truncate line-clamp-1"
 >
   <WorkspaceCrumb
-    selected
+    selectedResource={resource}
     resources={lateralResources}
     {allResources}
     {filePath}
+    current
   />
 </nav>
