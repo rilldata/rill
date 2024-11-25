@@ -106,22 +106,6 @@
     },
   });
 
-  // function getCurrentEnvironment() {
-  //   if (isDevelopment && isProduction) {
-  //     return EnvironmentType.UNDEFINED;
-  //   }
-
-  //   if (isDevelopment) {
-  //     return EnvironmentType.DEVELOPMENT;
-  //   }
-
-  //   if (isProduction) {
-  //     return EnvironmentType.PRODUCTION;
-  //   }
-
-  //   return EnvironmentType.UNDEFINED;
-  // }
-
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
