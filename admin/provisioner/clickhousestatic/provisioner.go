@@ -223,7 +223,7 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 
 	_, err = db.ExecContext(ctx, "SELECT 1")
 	if err != nil {
-		return fmt.Errorf("failed to execute query on tenant: %w", err)
+		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil
