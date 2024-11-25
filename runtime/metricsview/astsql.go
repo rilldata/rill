@@ -194,7 +194,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(") ")
 			b.out.WriteString(s.Alias)
 		}
-
 	} else {
 		panic("internal: FromTable and FromSelect are both nil")
 	}
