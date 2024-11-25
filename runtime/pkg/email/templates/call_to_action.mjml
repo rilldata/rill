@@ -5,33 +5,44 @@
       <meta name="supported-color-schemes" content="light" />
     </mj-raw>
     <mj-attributes>
-      <mj-all font-family="Helvetica" font-size="16px" />
-      <mj-text color="#000" font-size="16px" line-height="1.25" />
+      <mj-all font-family="Helvetica" font-size="14px" />
+      <mj-all align="left" />
+      <mj-text color="#4b5563" font-size="14px" line-height="1.25" />
+      <mj-section padding="0 0 32px 0" />
+      <mj-column padding-bottom="0px" />
     </mj-attributes>
   </mj-head>
   <mj-body>
+    <mj-section padding-top="24px">
+      <mj-column>
+        <mj-image container-background-color="#FFF" width="48px" src="https://cdn.rilldata.com/email-transactional/rill-logo.png" />
+      </mj-column>
+    </mj-section>
     <mj-section>
       <mj-column>
-        <mj-image container-background-color="#FFF" width="100px" src="https://cdn.rilldata.com/email-transactional/rill-logo-purple.png" />
-
-        <mj-spacer height="35px" />
-        
-        <mj-text align="center" font-size="20px" font-weight="bold">
-          {{ .Title }}
+        <mj-text>
+          {{ .PreButton }}
         </mj-text>
 
-        <mj-text align="center" padding-bottom="0px">
-          {{ .Body }}
-        </mj-text>
-
-        <mj-spacer height="20px" />
-
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .ButtonLink }}">
+        <mj-button padding-top="24px" padding-bottom="14px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .ButtonLink }}">
           {{ .ButtonText }}
         </mj-button>
 
-        <mj-spacer height="20px" />
+        <mj-text>
+          {{ .PostButton }}
+        </mj-text>
 
+      </mj-column>
+    </mj-section>
+
+    <mj-section>
+      <mj-column>
+        <mj-text>- The Rill Team</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section>
+      <mj-column>
         <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
 
         <mj-spacer height="20px" />
@@ -45,5 +56,6 @@
         </mj-text>
       </mj-column>
     </mj-section>
+
   </mj-body>
 </mjml>

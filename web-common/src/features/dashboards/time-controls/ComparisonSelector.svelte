@@ -86,7 +86,7 @@
         showBorderOnFocus={false}
       />
     </div>
-    <DropdownMenu.Item on:select={disableAllComparisons}>
+    <DropdownMenu.Item on:click={disableAllComparisons}>
       <span
         class:font-bold={!selectedComparisonDimension && !showTimeComparison}
       >

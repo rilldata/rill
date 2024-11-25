@@ -34,19 +34,19 @@ test.describe("explores", () => {
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
-    await page.getByRole("row", { name: "Facebook 19.3K" }).click(),
-      await wrapRetryAssertion(() =>
-        assertLeaderboards(page, [
-          {
-            label: "Publisher",
-            values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
-          },
-          {
-            label: "Domain",
-            values: ["facebook.com", "instagram.com"],
-          },
-        ]),
-      );
+    await page.getByRole("row", { name: "Facebook 19.3k" }).click();
+    await wrapRetryAssertion(() =>
+      assertLeaderboards(page, [
+        {
+          label: "Publisher",
+          values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
+        },
+        {
+          label: "Domain",
+          values: ["facebook.com", "instagram.com"],
+        },
+      ]),
+    );
   });
 
   test("Dashboard runthrough", async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe("explores", () => {
     await createExploreFromModel(page, false);
 
     // Check the total records are 100k
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // Check the row viewer accordion is visible
     await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
@@ -163,7 +163,7 @@ test.describe("explores", () => {
     await page.getByRole("button", { name: "Apply" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 65.1k")).toBeVisible();
+    await expect(page.getByText("Total records 65,091")).toBeVisible();
 
     // Flip back to All Time
     await interactWithTimeRangeMenu(page, async () => {
@@ -171,7 +171,7 @@ test.describe("explores", () => {
     });
 
     // Check number
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // Filter to Facebook via leaderboard
     await page.getByRole("row", { name: "Facebook 19.3k" }).click();
@@ -184,7 +184,7 @@ test.describe("explores", () => {
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
-    await expect(page.getByText("Total records 80.7k")).toBeVisible();
+    await expect(page.getByText("Total records 80,659")).toBeVisible();
 
     // Clear the filter from filter bar
     await page.getByLabel("View filter").getByLabel("Remove").click();
@@ -193,13 +193,13 @@ test.describe("explores", () => {
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 15.1k")).toBeVisible();
+    await expect(page.getByText("Total records 15,119")).toBeVisible();
 
     // Clear all filters button
     await page.getByRole("button", { name: "Clear filters" }).click();
 
     // Check number
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     // TODO
     //    Change time range to last 6 hours
@@ -332,6 +332,7 @@ measures:
   - label: Total rows
     expression: count(*)
     name: total_rows
+    format_preset: humanize
     description: Total number of records present
   - label: Avg Bid Price
     expression: avg(bid_price)
@@ -408,7 +409,7 @@ dimensions:
     await page.getByText("Clear filters").click();
 
     // run through TDD table view
-    await page.getByText("Total rows 100.0k").click();
+    await page.getByText("Total rows 100k").click();
 
     await expect(
       page.getByText("No comparison dimension selected"),
@@ -428,7 +429,7 @@ dimensions:
       .click();
     await page.getByRole("cell", { name: "msn.com", exact: true }).click();
 
-    await expect(page.getByText("Total rows 43.7k")).toBeVisible();
+    await expect(page.getByText("Total rows 43,749")).toBeVisible();
 
     await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
 

@@ -11,7 +11,7 @@
 </script>
 
 <div class="flex items-center gap-x-1 text-xs cursor-pointer overflow-hidden">
-  <b class="min-w-9 max-w-9">
+  <b class="min-w-12 max-w-12">
     {getAbbreviationForIANA(watermark, iana)}
   </b>
 

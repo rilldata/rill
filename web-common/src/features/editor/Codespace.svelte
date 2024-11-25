@@ -60,8 +60,9 @@
     });
 
     const unsubscribeRemoteContent = onRemoteContentChange(
-      (newRemoteContent) => {
-        if (editor && !editor.hasFocus && newRemoteContent !== null) {
+      (newRemoteContent, force) => {
+        if (editor && newRemoteContent !== null) {
+          if (editor.hasFocus && !force) return;
           const local = get(localContent);
           if (editor.state.doc.toString() === newRemoteContent) return;
 

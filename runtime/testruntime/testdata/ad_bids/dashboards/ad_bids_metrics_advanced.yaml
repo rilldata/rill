@@ -35,19 +35,19 @@ measures:
     display_name: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - display_name: "Average bid price"
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: m1 
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: bid_price 
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: bids_1day_rolling_avg
     expression: AVG(bids)
     requires: [bids]

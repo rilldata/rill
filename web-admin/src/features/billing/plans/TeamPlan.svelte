@@ -10,7 +10,6 @@
   import { invalidateBillingInfo } from "@rilldata/web-admin/features/billing/invalidations";
   import PlanQuotas from "@rilldata/web-admin/features/billing/plans/PlanQuotas.svelte";
   import { getNextBillingCycleDate } from "@rilldata/web-admin/features/billing/plans/selectors";
-  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import {
     AlertDialog,
@@ -36,7 +35,7 @@
     });
     eventBus.emit("notification", {
       type: "success",
-      message: "Your Team plan was canceled",
+      message: "Your Team plan was cancelled",
     });
     void invalidateBillingInfo(organization, [
       V1BillingIssueType.BILLING_ISSUE_TYPE_SUBSCRIPTION_CANCELLED,
@@ -56,7 +55,11 @@
   <div slot="body">
     Next billing cycle will start on
     <b>{getNextBillingCycleDate(subscription.currentBillingCycleEndDate)}</b>.
-    <PricingDetails />
+    <a
+      href="https://www.rilldata.com/pricing"
+      target="_blank"
+      rel="noreferrer noopener">See pricing details -></a
+    >
     <PlanQuotas {organization} />
   </div>
   <svelte:fragment slot="contact">

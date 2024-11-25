@@ -54,13 +54,15 @@
           <MetricsViewIcon
             color={resourceColorMapping[ResourceKind.MetricsView]}
             size="16px"
-          />Metrics View
+          />
+          Metrics View
         </DropdownMenu.Item>
         <DropdownMenu.Item href={`/files${exploreFilePath}`}>
           <ExploreIcon
             color={resourceColorMapping[ResourceKind.Explore]}
             size="16px"
-          />Explore
+          />
+          Explore dashboard
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

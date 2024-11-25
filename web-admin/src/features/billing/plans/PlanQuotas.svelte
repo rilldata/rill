@@ -17,7 +17,7 @@
   });
 
   $: projectQuota =
-    $organizationQuotas.data?.projects &&
+    $organizationQuotas.data?.projects !== undefined &&
     $organizationQuotas.data?.projects !== -1
       ? $organizationQuotas.data?.projects
       : "Unlimited";

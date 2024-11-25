@@ -67,6 +67,44 @@ proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
 ]);
 
 /**
+ * @generated from enum rill.admin.v1.BillingPlanType
+ */
+export enum BillingPlanType {
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_TRIAL = 1;
+   */
+  TRIAL = 1,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_TEAM = 2;
+   */
+  TEAM = 2,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_MANAGED = 3;
+   */
+  MANAGED = 3,
+
+  /**
+   * @generated from enum value: BILLING_PLAN_TYPE_ENTERPRISE = 4;
+   */
+  ENTERPRISE = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(BillingPlanType)
+proto3.util.setEnumType(BillingPlanType, "rill.admin.v1.BillingPlanType", [
+  { no: 0, name: "BILLING_PLAN_TYPE_UNSPECIFIED" },
+  { no: 1, name: "BILLING_PLAN_TYPE_TRIAL" },
+  { no: 2, name: "BILLING_PLAN_TYPE_TEAM" },
+  { no: 3, name: "BILLING_PLAN_TYPE_MANAGED" },
+  { no: 4, name: "BILLING_PLAN_TYPE_ENTERPRISE" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.BillingIssueType
  */
 export enum BillingIssueType {
@@ -12099,11 +12137,6 @@ export class Deployment extends Message<Deployment> {
   projectId = "";
 
   /**
-   * @generated from field: int64 slots = 3;
-   */
-  slots = protoInt64.zero;
-
-  /**
    * @generated from field: string branch = 4;
    */
   branch = "";
@@ -12148,7 +12181,6 @@ export class Deployment extends Message<Deployment> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -13149,6 +13181,11 @@ export class BillingPlan extends Message<BillingPlan> {
   name = "";
 
   /**
+   * @generated from field: rill.admin.v1.BillingPlanType plan_type = 9;
+   */
+  planType = BillingPlanType.UNSPECIFIED;
+
+  /**
    * @generated from field: string display_name = 3;
    */
   displayName = "";
@@ -13190,6 +13227,7 @@ export class BillingPlan extends Message<BillingPlan> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "plan_type", kind: "enum", T: proto3.getEnumType(BillingPlanType) },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
