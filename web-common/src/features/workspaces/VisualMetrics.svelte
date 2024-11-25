@@ -632,7 +632,7 @@
         value={smallestTimeGrain}
         options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
           value: label,
-          label,
+          label: label.charAt(0).toUpperCase() + label.slice(1),
         }))}
         placeholder="Select time grain"
         label="Smallest time grain"
