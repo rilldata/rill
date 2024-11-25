@@ -68,6 +68,14 @@ export function fillTimeRange(
         reqComparisonTimeRange.isoOffset,
         executionTime,
       );
+      // temporary fix to not lead to an uncaught error.
+      // TODO: we should a single custom label when we move to rill-time syntax
+      if (
+        dashboard.selectedComparisonTimeRange.name === TimeRangePreset.CUSTOM
+      ) {
+        dashboard.selectedComparisonTimeRange.name =
+          TimeComparisonOption.CUSTOM;
+      }
     }
 
     if (dashboard.selectedComparisonTimeRange) {
