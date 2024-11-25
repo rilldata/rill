@@ -6,7 +6,7 @@
 
   // NOTE: if environment is empty, the variable is shared for all environments
   function getEnvironmentLabel(environment: string) {
-    if (environment === "") {
+    if (environment === EnvironmentType.UNDEFINED) {
       return "Development, Production";
     }
     if (environment === EnvironmentType.DEVELOPMENT) {

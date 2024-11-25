@@ -7,7 +7,7 @@ export enum EnvironmentType {
 
 export type EnvironmentTypes = "dev" | "prod" | "";
 
-export type EnvironmentVariable = {
-  key: string;
-  value: string;
-};
+export type VariableNames = {
+  environment: string;
+  name: string;
+}[];

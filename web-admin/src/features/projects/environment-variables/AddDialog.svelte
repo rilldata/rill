@@ -22,13 +22,18 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
+  import {
+    getCurrentEnvironment,
+    getEnvironmentLabel,
+    isDuplicateKey,
+  } from "./utils";
 
   export let open = false;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let inputErrors: { [key: number]: boolean } = {};
   let isKeyAlreadyExists = false;
@@ -99,31 +104,17 @@
       },
     });
 
-  function getCurrentEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
-
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
-
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
-
-    return undefined;
-  }
-
   async function handleUpdateProjectVariables(
     flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
+    checkForExistingKeys();
+
     try {
       await $updateProjectVariables.mutateAsync({
         organization,
         project,
         data: {
-          environment: getCurrentEnvironment(),
+          environment: getCurrentEnvironment(isDevelopment, isProduction),
           variables: flatVariables,
         },
       });
@@ -172,14 +163,24 @@
   }
 
   function checkForExistingKeys() {
-    const existingKeys = $form.variables.map((variable) => variable.key);
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
+    const existingKeys = $form.variables.map((variable) => {
+      return {
+        environment: getEnvironmentLabel(
+          getCurrentEnvironment(isDevelopment, isProduction),
+        ),
+        name: variable.key,
+      };
+    });
+
+    existingKeys.forEach((key, idx) => {
+      const variableEnvironment = key.environment;
+      const variableKey = key.name;
+
+      if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+        inputErrors[idx] = true;
         isKeyAlreadyExists = true;
       }
     });

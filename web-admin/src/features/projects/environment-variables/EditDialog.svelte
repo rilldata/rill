@@ -21,16 +21,21 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { onMount } from "svelte";
+  import {
+    getCurrentEnvironment,
+    getEnvironmentLabel,
+    isDuplicateKey,
+  } from "./utils";
 
   export let open = false;
   export let id: string;
   export let environment: string;
   export let name: string;
   export let value: string;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let initialEnvironment: {
     isDevelopment: boolean;
@@ -45,7 +50,7 @@
   $: project = $page.params.project;
 
   $: isEnvironmentSelected = isDevelopment || isProduction;
-  $: hasChanges =
+  $: hasNewChanges =
     $form.key !== initialValues.key ||
     $form.value !== initialValues.value ||
     initialEnvironment?.isDevelopment !== isDevelopment ||
@@ -105,21 +110,21 @@
     },
   });
 
-  function processEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
+  // function getCurrentEnvironment() {
+  //   if (isDevelopment && isProduction) {
+  //     return EnvironmentType.UNDEFINED;
+  //   }
 
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
+  //   if (isDevelopment) {
+  //     return EnvironmentType.DEVELOPMENT;
+  //   }
 
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
+  //   if (isProduction) {
+  //     return EnvironmentType.PRODUCTION;
+  //   }
 
-    return undefined;
-  }
+  //   return EnvironmentType.UNDEFINED;
+  // }
 
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -146,7 +151,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -155,7 +160,10 @@
       // If the key remains the same, update the environment or value
       if (initialValues.key === $form.key) {
         // If environment has changed, remove the old key and add the new key
-        if (initialValues.environment !== processEnvironment()) {
+        if (
+          initialValues.environment !==
+          getCurrentEnvironment(isDevelopment, isProduction)
+        ) {
           await $updateProjectVariables.mutateAsync({
             organization,
             project,
@@ -170,7 +178,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -208,17 +216,23 @@
   }
 
   function checkForExistingKeys() {
-    const existingKeys = [$form.key];
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
-        isKeyAlreadyExists = true;
-      }
-    });
+    const existingKey = {
+      environment: getEnvironmentLabel(
+        getCurrentEnvironment(isDevelopment, isProduction),
+      ),
+      name: $form.key,
+    };
+
+    const variableEnvironment = existingKey.environment;
+    const variableKey = existingKey.name;
+
+    if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+      inputErrors[0] = true;
+      isKeyAlreadyExists = true;
+    }
   }
 
   function setInitialCheckboxState() {
@@ -343,7 +357,7 @@
         type="primary"
         form={$formId}
         disabled={$submitting ||
-          !hasChanges ||
+          !hasNewChanges ||
           !isEnvironmentSelected ||
           hasExistingKeys ||
           $allErrors.length > 0}
