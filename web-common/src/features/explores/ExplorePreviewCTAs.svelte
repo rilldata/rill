@@ -50,19 +50,19 @@
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="end">
-        <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
-          <MetricsViewIcon
-            color={resourceColorMapping[ResourceKind.MetricsView]}
-            size="16px"
-          />
-          Metrics View
-        </DropdownMenu.Item>
         <DropdownMenu.Item href={`/files${exploreFilePath}`}>
           <ExploreIcon
             color={resourceColorMapping[ResourceKind.Explore]}
             size="16px"
           />
           Explore dashboard
+        </DropdownMenu.Item>
+        <DropdownMenu.Item href={`/files${metricsViewFilePath}`}>
+          <MetricsViewIcon
+            color={resourceColorMapping[ResourceKind.MetricsView]}
+            size="16px"
+          />
+          Metrics View
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

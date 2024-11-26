@@ -53,7 +53,7 @@ export function getPathForNewResourceFile(
   return `${folderName}/${newName}${extension}`;
 }
 
-const ResourceKindMap: Record<
+export const ResourceKindMap: Record<
   UserFacingResourceKinds,
   {
     folderName: string;

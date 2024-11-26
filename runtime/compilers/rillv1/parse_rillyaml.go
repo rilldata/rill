@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
 
@@ -142,11 +143,17 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
 	vars := make(map[string]string)
 	for k, v := range tmp.Vars { // Backwards compatibility
+		if err := env.ValidateName(k); err != nil {
+			return err
+		}
 		vars[k] = v
 	}
 
 	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
 		if v.Kind == yaml.ScalarNode {
+			if err := env.ValidateName(k); err != nil {
+				return err
+			}
 			vars[k] = v.Value
 		}
 	}

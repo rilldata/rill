@@ -84,13 +84,13 @@
       },
       {
         optional: true,
-        label: "Label",
+        label: "Display name",
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -171,14 +171,14 @@
         selected: 0,
       },
       {
-        label: "Label",
+        label: "Display name",
         optional: true,
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -268,6 +268,7 @@
   >
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
+
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
@@ -295,6 +296,7 @@
         <Input
           id="vme-{label}"
           textClass="text-sm"
+          capitalizeLabel={false}
           {label}
           {hint}
           {options}

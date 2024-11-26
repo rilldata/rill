@@ -1,9 +1,10 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
+import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import {
   DeployErrorType,
-  extractDeployError,
+  getPrettyDeployError,
 } from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -19,6 +20,7 @@ import {
   createLocalServiceGetCurrentProject,
   createLocalServiceGetCurrentUser,
   createLocalServiceGetMetadata,
+  createLocalServiceListOrganizationsAndBillingMetadataRequest,
   createLocalServiceRedeploy,
   getLocalServiceGetCurrentUserQueryKey,
   localServiceGetCurrentUser,
@@ -27,6 +29,8 @@ import { derived, get, writable } from "svelte/store";
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
+  public readonly orgsMetadata =
+    createLocalServiceListOrganizationsAndBillingMetadataRequest();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
   public readonly promptOrgSelection = writable(false);
@@ -53,27 +57,43 @@ export class ProjectDeployer {
     return derived(
       [
         this.metadata,
+        this.orgsMetadata,
         this.user,
         this.project,
+        this.org,
         this.deployMutation,
         this.redeployMutation,
       ],
-      ([metadata, user, project, deployMutation, redeployMutation]) => {
+      ([
+        metadata,
+        orgsMetadata,
+        user,
+        project,
+        org,
+        deployMutation,
+        redeployMutation,
+      ]) => {
         if (
           metadata.error ||
+          orgsMetadata.error ||
           user.error ||
           project.error ||
           deployMutation.error ||
           redeployMutation.error
         ) {
+          const orgMetadata = orgsMetadata?.data?.orgs.find(
+            (om) => om.name === org,
+          );
+          const onTrial = !!getTrialIssue(orgMetadata?.issues ?? []);
           return {
             isLoading: false,
-            error: extractDeployError(
+            error: getPrettyDeployError(
               (metadata.error as ConnectError) ??
                 (user.error as ConnectError) ??
                 (project.error as ConnectError) ??
                 (deployMutation.error as ConnectError) ??
                 (redeployMutation.error as ConnectError),
+              onTrial,
             ),
           };
         }
@@ -189,7 +209,7 @@ export class ProjectDeployer {
         );
         return resp.frontendUrl;
       } catch (e) {
-        const err = extractDeployError(e);
+        const err = getPrettyDeployError(e, false);
         if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
           i++;
         } else {
