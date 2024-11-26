@@ -15,7 +15,7 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
-  export let refreshSource: (
+  export let refreshSources: (
     resourceKind: string,
     resourceName: string,
   ) => void;
@@ -82,7 +82,7 @@
           resourceKind: row.original.meta.name.kind,
           resourceName: row.original.meta.name.name,
           isSource: isSource(row.original),
-          refreshSource,
+          refreshSources,
         }),
       enableSorting: false,
       meta: {

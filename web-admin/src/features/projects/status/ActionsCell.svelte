@@ -7,7 +7,7 @@
   export let resourceKind: string;
   export let resourceName: string;
   export let isSource: boolean;
-  export let refreshSource: (
+  export let refreshSources: (
     resourceKind: string,
     resourceName: string,
   ) => void;
@@ -25,7 +25,7 @@
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => refreshSource(resourceKind, resourceName)}
+        on:click={() => refreshSources(resourceKind, resourceName)}
       >
         <RefreshCcwIcon size="12px" />
         <span class="ml-2">Refresh</span>
