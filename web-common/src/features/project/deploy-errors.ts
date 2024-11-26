@@ -41,7 +41,7 @@ export type DeployError = {
   message: string;
 };
 
-export function extractDeployError(
+export function getPrettyDeployError(
   error: ConnectError,
   orgOnTrial: boolean,
 ): DeployError {

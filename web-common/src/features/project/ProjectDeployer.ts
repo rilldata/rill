@@ -4,7 +4,7 @@ import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import {
   DeployErrorType,
-  extractDeployError,
+  getPrettyDeployError,
 } from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -87,7 +87,7 @@ export class ProjectDeployer {
           const onTrial = !!getTrialIssue(orgMetadata?.issues ?? []);
           return {
             isLoading: false,
-            error: extractDeployError(
+            error: getPrettyDeployError(
               (metadata.error as ConnectError) ??
                 (user.error as ConnectError) ??
                 (project.error as ConnectError) ??
@@ -209,7 +209,7 @@ export class ProjectDeployer {
         );
         return resp.frontendUrl;
       } catch (e) {
-        const err = extractDeployError(e, false);
+        const err = getPrettyDeployError(e, false);
         if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
           i++;
         } else {
