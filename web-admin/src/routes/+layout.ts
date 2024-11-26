@@ -5,6 +5,7 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
+import { dev } from "$app/environment";
 import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
@@ -41,14 +42,17 @@ export const load = async ({ params, url, route }) => {
   const token = searchParamToken ?? routeToken;
 
   // Initialize analytics
-  const posthogSessionId = url.searchParams.get("ph_session_id") as
-    | string
-    | null;
-  initPosthog(posthogSessionId);
-  if (posthogSessionId) {
-    // Remove the PostHog sessionID from the url
-    url.searchParams.delete("ph_session_id");
-    throw redirect(307, url.toString());
+  const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
+  if (shouldSendAnalytics) {
+    const posthogSessionId = url.searchParams.get("ph_session_id") as
+      | string
+      | null;
+    initPosthog(posthogSessionId);
+    if (posthogSessionId) {
+      // Remove the PostHog sessionID from the url
+      url.searchParams.delete("ph_session_id");
+      throw redirect(307, url.toString());
+    }
   }
 
   // If no organization or project, return empty permissions
