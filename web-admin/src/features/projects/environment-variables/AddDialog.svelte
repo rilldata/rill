@@ -99,6 +99,7 @@
         try {
           await handleUpdateProjectVariables(flatVariables);
           open = false;
+          handleReset();
         } catch (error) {
           console.error(error);
         }

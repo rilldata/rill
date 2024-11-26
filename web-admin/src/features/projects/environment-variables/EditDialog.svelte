@@ -105,6 +105,7 @@
       try {
         await handleUpdateProjectVariables(flatVariable);
         open = false;
+        handleReset();
       } catch (error) {
         console.error(error);
       }
@@ -198,6 +199,9 @@
 
   function handleReset() {
     reset();
+    isDevelopment = true;
+    isProduction = true;
+    inputErrors = {};
     isKeyAlreadyExists = false;
   }
 
