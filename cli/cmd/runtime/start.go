@@ -23,6 +23,9 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gocloud.dev/blob/gcsblob"
+	"gocloud.dev/gcp"
+	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
@@ -85,6 +88,9 @@ type Config struct {
 	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
 	// The data for each instance is stored in a child directory named instance_id
 	DataDir string `split_words:"true"`
+	// DataBucket is the name of the GCS bucket where DuckDB backups are stored
+	DataBucket                string `split_words:"true"`
+	DataBucketCredentialsJSON string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Kafka brokers of an activity client's sink
@@ -198,6 +204,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 
+			// Init dataBucket
+			client, err := newClient(ctx, conf.DataBucketCredentialsJSON)
+			if err != nil {
+				logger.Fatal("error: could not create GCP client", zap.Error(err))
+			}
+
+			bucket, err := gcsblob.OpenBucket(ctx, client, conf.DataBucket, nil)
+			if err != nil {
+				logger.Fatal("failed to open bucket %q, %w", zap.String("bucket", conf.DataBucket), zap.Error(err))
+			}
+
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
@@ -216,7 +233,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient)
+			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient, bucket)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
@@ -266,4 +283,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	return startCmd
+}
+
+func newClient(ctx context.Context, jsonData string) (*gcp.HTTPClient, error) {
+	creds, err := google.CredentialsFromJSON(ctx, []byte(jsonData), "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create credentials: %w", err)
+	}
+	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
+	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
 }

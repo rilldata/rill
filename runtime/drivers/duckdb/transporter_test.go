@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/memblob"
 )
 
 type mockObjectStore struct {
@@ -592,7 +593,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write"}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write"}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 	olap, canServe := conn.AsOLAP("")
 	require.True(t, canServe)

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
@@ -41,9 +42,10 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
+	dataBucket     *blob.Bucket
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client, dataBucket *blob.Bucket) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -55,6 +57,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		dataBucket:     dataBucket,
 	}
 
 	rt.connCache = rt.newConnectionCache()

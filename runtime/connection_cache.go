@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 	"golang.org/x/exp/maps"
 )
 
@@ -93,6 +94,7 @@ func (r *Runtime) evictInstanceConnections(instanceID string) {
 func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, error) {
 	logger := r.Logger
 	activityClient := r.activity
+	var dataBucket *blob.Bucket
 	if cfg.instanceID != "" { // Not shared across multiple instances
 		inst, err := r.Instance(ctx, cfg.instanceID)
 		if err != nil {
@@ -108,9 +110,13 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		if activityClient != nil {
 			activityClient = activityClient.With(activityDims...)
 		}
+
+		dataBucket = r.DataBucket(cfg.instanceID)
+	} else {
+		dataBucket = r.DataBucket("__global__")
 	}
 
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, activityClient, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, activityClient, dataBucket, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}

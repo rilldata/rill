@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/memblob"
 )
 
 func TestClickhouseCrudOps(t *testing.T) {
@@ -24,7 +25,7 @@ func TestClickhouseCrudOps(t *testing.T) {
 }
 
 func testClickhouseSingleHost(t *testing.T, dsn string) {
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	prepareConn(t, conn)
@@ -41,7 +42,7 @@ func testClickhouseSingleHost(t *testing.T, dsn string) {
 }
 
 func testClickhouseCluster(t *testing.T, dsn, cluster string) {
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 

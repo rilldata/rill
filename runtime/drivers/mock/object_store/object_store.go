@@ -38,7 +38,7 @@ func (driver) Spec() drivers.Spec {
 }
 
 // Open implements drivers.Driver.
-func (driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
 	cfg := &configProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
