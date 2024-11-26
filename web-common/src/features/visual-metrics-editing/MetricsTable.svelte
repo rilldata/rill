@@ -112,7 +112,7 @@
   function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
     return (
       item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.display_name?.toLowerCase().includes(searchValue.toLowerCase()) ||
       item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
       (item instanceof YAMLDimension &&
         item?.column?.toLowerCase().includes(searchValue.toLowerCase()))
