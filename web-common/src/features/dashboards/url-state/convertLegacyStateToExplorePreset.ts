@@ -49,10 +49,10 @@ export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   const preset: V1ExplorePreset = {
-    ...basePreset,
+    ...defaultExplorePreset,
   };
   const errors: Error[] = [];
 

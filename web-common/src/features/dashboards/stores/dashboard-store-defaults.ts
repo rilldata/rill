@@ -143,7 +143,7 @@ export function getDefaultMetricsExplorerEntity(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  basePreset = getBasePreset(
+  defaultExplorePreset = getBasePreset(
     explore,
     getLocalUserPreferencesState(name),
     fullTimeRange,
@@ -152,7 +152,7 @@ export function getDefaultMetricsExplorerEntity(
   const { partialExploreState } = convertPresetToMetricsExplore(
     metricsView,
     explore,
-    basePreset,
+    defaultExplorePreset,
   );
   return {
     // fields filled here are the ones that are not stored and loaded to/from URL

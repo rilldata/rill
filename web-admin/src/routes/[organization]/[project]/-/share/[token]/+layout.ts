@@ -8,15 +8,16 @@ export const load = async ({ params: { token }, parent }) => {
   try {
     const tokenData = await fetchMagicAuthToken(token);
 
-    const { explore, metricsView, basePreset } = await fetchExploreSpec(
-      runtime?.instanceId,
-      tokenData.token?.resourceName,
-    );
+    const { explore, metricsView, defaultExplorePreset } =
+      await fetchExploreSpec(
+        runtime?.instanceId,
+        tokenData.token?.resourceName,
+      );
 
     return {
       explore,
       metricsView,
-      basePreset,
+      defaultExplorePreset,
       token: tokenData?.token,
     };
   } catch (e) {

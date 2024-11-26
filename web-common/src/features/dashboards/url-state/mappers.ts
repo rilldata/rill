@@ -8,9 +8,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const FromURLParamViewMap: Record<string, V1ExploreWebView> = {
-  overview: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+  explore: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
   pivot: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-  time_dimension: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+  ttd: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
 };
 export const ToURLParamViewMap = reverseMap(FromURLParamViewMap);
 

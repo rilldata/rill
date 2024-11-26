@@ -23,7 +23,7 @@
     $runtime.instanceId,
     $metricsViewName,
   );
-  $: basePreset = getBasePreset(
+  $: defaultExplorePreset = getBasePreset(
     exploreSpec,
     getLocalUserPreferencesState($exploreName),
     $metricsViewTimeRange.data,
@@ -36,7 +36,7 @@
         url.searchParams,
         metricsViewSpec,
         exploreSpec,
-        basePreset,
+        defaultExplorePreset,
       );
     partialExploreState = partialExploreStateFromUrl;
   }
@@ -45,6 +45,6 @@
   $: parseUrl($page.url);
 </script>
 
-<DashboardURLStateSync {basePreset} {partialExploreState}>
+<DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
   <slot />
 </DashboardURLStateSync>

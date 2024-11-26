@@ -19,15 +19,14 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ basePreset, partialExploreState, errors } = data);
+  $: ({ defaultExplorePreset, partialExploreState, errors } = data);
   $: if (errors?.length) {
-    console.log(errors);
     setTimeout(() => {
       eventBus.emit("notification", {
         type: "error",
         message: errors[0].message,
         options: {
-          persisted: false,
+          persisted: true,
         },
       });
     }, 100);
@@ -99,7 +98,7 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync {basePreset} {partialExploreState}>
+        <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>

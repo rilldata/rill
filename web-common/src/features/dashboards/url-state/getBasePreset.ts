@@ -24,7 +24,7 @@ export function getBasePreset(
   preferences: LocalUserPreferences,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
-  const basePreset: V1ExplorePreset = {
+  const defaultExplorePreset: V1ExplorePreset = {
     view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
     where: createAndExpression([]),
 
@@ -54,23 +54,29 @@ export function getBasePreset(
     ...(explore.defaultPreset ?? {}),
   };
 
-  if (!basePreset.timeGrain) {
-    basePreset.timeGrain = getDefaultPresetTimeGrain(basePreset, fullTimeRange);
+  if (!defaultExplorePreset.timeGrain) {
+    defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
+      defaultExplorePreset,
+      fullTimeRange,
+    );
   }
 
-  if (basePreset.comparisonMode) {
-    Object.assign(basePreset, getDefaultComparisonFields(basePreset, explore));
+  if (defaultExplorePreset.comparisonMode) {
+    Object.assign(
+      defaultExplorePreset,
+      getDefaultComparisonFields(defaultExplorePreset, explore),
+    );
   }
 
-  return basePreset;
+  return defaultExplorePreset;
 }
 
 function getDefaultPresetTimeGrain(
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   if (
-    !basePreset.timeRange ||
+    !defaultExplorePreset.timeRange ||
     !fullTimeRange?.timeRangeSummary?.min ||
     !fullTimeRange?.timeRangeSummary?.max
   )
@@ -79,10 +85,10 @@ function getDefaultPresetTimeGrain(
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
   const timeRange = isoDurationToFullTimeRange(
-    basePreset.timeRange,
+    defaultExplorePreset.timeRange,
     fullTimeStart,
     fullTimeEnd,
-    basePreset.timezone,
+    defaultExplorePreset.timezone,
   );
 
   return (
@@ -93,23 +99,23 @@ function getDefaultPresetTimeGrain(
 }
 
 function getDefaultComparisonFields(
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
   explore: V1ExploreSpec,
 ): V1ExplorePreset {
   if (
-    basePreset.comparisonMode ===
+    defaultExplorePreset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED
   ) {
     return {};
   }
 
   if (
-    basePreset.comparisonMode ===
+    defaultExplorePreset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
   ) {
     return {
       comparisonDimension:
-        basePreset.comparisonDimension || explore.dimensions?.[0],
+        defaultExplorePreset.comparisonDimension || explore.dimensions?.[0],
     };
   }
 

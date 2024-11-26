@@ -41,7 +41,7 @@
     $runtime.instanceId,
     metricsViewName,
   );
-  $: basePreset = getBasePreset(
+  $: defaultExplorePreset = getBasePreset(
     exploreSpec,
     getLocalUserPreferencesState(exploreName),
     $metricsViewTimeRange.data,
@@ -62,7 +62,7 @@
     `/${organization}/${project}/explore/${exploreName}`,
     $dashboard,
     exploreSpec,
-    basePreset,
+    defaultExplorePreset,
   );
   $: filteredBookmarks = searchBookmarks(filledInBookmarks, searchText);
 

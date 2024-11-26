@@ -5,7 +5,10 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
-import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import {
+  convertFilterParamToExpression,
+  stripParserError,
+} from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import {
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
@@ -37,10 +40,10 @@ export function convertURLToExplorePreset(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   const preset: V1ExplorePreset = {
-    ...basePreset,
+    ...defaultExplorePreset,
   };
   const errors: Error[] = [];
 
@@ -61,13 +64,18 @@ export function convertURLToExplorePreset(
   if (searchParams.has("state")) {
     const legacyState = searchParams.get("state") as string;
     const { preset: presetFromLegacyState, errors: errorsFromLegacyState } =
-      fromLegacyStateUrlParam(legacyState, metricsView, explore, basePreset);
+      fromLegacyStateUrlParam(
+        legacyState,
+        metricsView,
+        explore,
+        defaultExplorePreset,
+      );
     Object.assign(preset, presetFromLegacyState);
     errors.push(...errorsFromLegacyState);
   }
 
-  if (searchParams.has("vw")) {
-    const view = searchParams.get("vw") as string;
+  if (searchParams.has("view")) {
+    const view = searchParams.get("view") as string;
     if (view in FromURLParamViewMap) {
       preset.view = FromURLParamViewMap[view];
     } else {
@@ -121,7 +129,7 @@ function fromLegacyStateUrlParam(
   legacyState: string,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   try {
     legacyState = legacyState.includes("%")
@@ -135,7 +143,7 @@ function fromLegacyStateUrlParam(
       legacyDashboardState,
       metricsView,
       explore,
-      basePreset,
+      defaultExplorePreset,
     );
   } catch (e) {
     return {
@@ -160,7 +168,9 @@ function fromFilterUrlParam(filter: string): {
     }
     return { expr };
   } catch (e) {
-    return { errors: [e] };
+    return {
+      errors: [new Error("Selected filter is invalid: " + stripParserError(e))],
+    };
   }
 }
 
@@ -179,8 +189,13 @@ function fromTimeRangesParams(
       errors.push(getSingleFieldError("time range", tr));
     }
   }
-  if (searchParams.has("ctr")) {
-    const ctr = searchParams.get("ctr") as string;
+
+  if (searchParams.has("tz")) {
+    preset.timezone = searchParams.get("tz") as string;
+  }
+
+  if (searchParams.has("compare_tr")) {
+    const ctr = searchParams.get("compare_tr") as string;
     if (ctr in TIME_COMPARISON) {
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
@@ -190,20 +205,17 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("tg")) {
-    const tg = searchParams.get("tg") as string;
+  if (searchParams.has("grain")) {
+    const tg = searchParams.get("grain") as string;
     if (tg in FromURLParamTimeGrainMap) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));
     }
   }
-  if (searchParams.has("tz")) {
-    preset.timezone = searchParams.get("tz") as string;
-  }
 
-  if (searchParams.has("cd")) {
-    const comparisonDimension = searchParams.get("cd") as string;
+  if (searchParams.has("compare_dim")) {
+    const comparisonDimension = searchParams.get("compare_dim") as string;
     // unsetting a default from url
     if (comparisonDimension === "") {
       preset.comparisonDimension = "";
@@ -234,8 +246,8 @@ function fromOverviewUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("o.m")) {
-    const mes = searchParams.get("o.m") as string;
+  if (searchParams.has("measures")) {
+    const mes = searchParams.get("measures") as string;
     if (mes === "*") {
       preset.measures = explore.measures ?? [];
     } else {
@@ -251,8 +263,8 @@ function fromOverviewUrlParams(
     }
   }
 
-  if (searchParams.has("o.d")) {
-    const dims = searchParams.get("o.d") as string;
+  if (searchParams.has("dims")) {
+    const dims = searchParams.get("dims") as string;
     if (dims === "*") {
       preset.dimensions = explore.dimensions ?? [];
     } else {
@@ -270,8 +282,8 @@ function fromOverviewUrlParams(
     }
   }
 
-  if (searchParams.has("o.sb")) {
-    const sortBy = searchParams.get("o.sb") as string;
+  if (searchParams.has("sort_by")) {
+    const sortBy = searchParams.get("sort_by") as string;
     if (measures.has(sortBy)) {
       preset.overviewSortBy = sortBy;
     } else {
@@ -279,12 +291,12 @@ function fromOverviewUrlParams(
     }
   }
 
-  if (searchParams.has("o.sd")) {
-    preset.overviewSortAsc = (searchParams.get("o.sd") as string) === "ASC";
+  if (searchParams.has("sort_dir")) {
+    preset.overviewSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
   }
 
-  if (searchParams.has("o.ed")) {
-    const dim = searchParams.get("o.ed") as string;
+  if (searchParams.has("expanded_dim")) {
+    const dim = searchParams.get("expanded_dim") as string;
     if (
       dimensions.has(dim) ||
       // we are unsetting from a default preset
@@ -306,8 +318,8 @@ function fromTimeDimensionUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("tdd.m")) {
-    const mes = searchParams.get("tdd.m") as string;
+  if (searchParams.has("measure")) {
+    const mes = searchParams.get("measure") as string;
     if (
       measures.has(mes) ||
       // we are unsetting from a default preset
@@ -318,10 +330,10 @@ function fromTimeDimensionUrlParams(
       errors.push(getSingleFieldError("expanded measure", mes));
     }
   }
-  if (searchParams.has("tdd.ct")) {
-    preset.timeDimensionChartType = searchParams.get("tdd.ct") as string;
+  if (searchParams.has("chart_type")) {
+    preset.timeDimensionChartType = searchParams.get("chart_type") as string;
   }
-  if (searchParams.has("tdd.p")) {
+  if (searchParams.has("pin")) {
     preset.timeDimensionPin = true;
   }
 
@@ -339,8 +351,8 @@ function fromPivotUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("p.r")) {
-    const rows = (searchParams.get("p.r") as string).split(",");
+  if (searchParams.has("rows")) {
+    const rows = (searchParams.get("rows") as string).split(",");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -351,8 +363,8 @@ function fromPivotUrlParams(
     }
   }
 
-  if (searchParams.has("p.c")) {
-    const cols = (searchParams.get("p.c") as string).split(",");
+  if (searchParams.has("cols")) {
+    const cols = (searchParams.get("cols") as string).split(",");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||

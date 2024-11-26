@@ -38,14 +38,14 @@ export function convertURLToMetricsExplore(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
     explore,
-    basePreset,
+    defaultExplorePreset,
   );
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =

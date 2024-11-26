@@ -57,7 +57,7 @@ export async function fetchExploreSpec(
     });
   }
 
-  const basePreset = getBasePreset(
+  const defaultExplorePreset = getBasePreset(
     exploreResource.explore.state?.validSpec ?? {},
     getLocalUserPreferencesState(exploreName),
     fullTimeRange,
@@ -66,6 +66,6 @@ export async function fetchExploreSpec(
   return {
     explore: exploreResource,
     metricsView: metricsViewResource,
-    basePreset,
+    defaultExplorePreset,
   };
 }

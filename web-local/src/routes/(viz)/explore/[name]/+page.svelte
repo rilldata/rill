@@ -8,6 +8,7 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
@@ -15,7 +16,24 @@
   const queryClient = useQueryClient();
 
   export let data: PageData;
-  $: ({ metricsView, explore, basePreset, partialExploreState } = data);
+  $: ({
+    metricsView,
+    explore,
+    defaultExplorePreset,
+    partialExploreState,
+    errors,
+  } = data);
+  $: if (errors?.length) {
+    setTimeout(() => {
+      eventBus.emit("notification", {
+        type: "error",
+        message: errors[0].message,
+        options: {
+          persisted: true,
+        },
+      });
+    }, 100);
+  }
 
   resetSelectedMockUserAfterNavigate(queryClient);
 
@@ -67,7 +85,7 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardURLStateSync {basePreset} {partialExploreState}>
+      <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>

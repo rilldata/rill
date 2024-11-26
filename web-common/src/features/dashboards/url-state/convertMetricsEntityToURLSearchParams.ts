@@ -46,7 +46,7 @@ export function convertMetricsEntityToURLSearchParams(
     (preset.view === undefined &&
       currentView !== V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW)
   ) {
-    searchParams.set("vw", ToURLParamViewMap[currentView] as string);
+    searchParams.set("view", ToURLParamViewMap[currentView] as string);
   }
 
   mergeSearchParams(
@@ -91,6 +91,17 @@ function toTimeRangesUrl(
     searchParams.set("tr", exploreState.selectedTimeRange?.name ?? "");
   }
 
+  if (
+    // if preset has timezone, only set if selected is not the same
+    (preset.timezone !== undefined &&
+      exploreState.selectedTimezone !== preset.timezone) ||
+    // else if the timezone is not the default then set the param
+    (preset.timezone === undefined &&
+      exploreState.selectedTimezone !== URLStateDefaultTimezone)
+  ) {
+    searchParams.set("tz", exploreState.selectedTimezone);
+  }
+
   if (exploreState.showTimeComparison) {
     if (
       (preset.compareTimeRange !== undefined &&
@@ -100,7 +111,7 @@ function toTimeRangesUrl(
       preset.compareTimeRange === undefined
     ) {
       searchParams.set(
-        "ctr",
+        "compare_tr",
         exploreState.selectedComparisonTimeRange?.name ?? "",
       );
     } else if (
@@ -113,7 +124,7 @@ function toTimeRangesUrl(
         exploreState.selectedTimeRange.name,
       );
       if (inferredCompareTimeRange)
-        searchParams.set("ctr", inferredCompareTimeRange);
+        searchParams.set("compare_tr", inferredCompareTimeRange);
     }
   }
 
@@ -126,18 +137,7 @@ function toTimeRangesUrl(
     // else if there is no default then set if there was a selected time grain
     (preset.timeGrain === undefined && !!mappedTimeGrain)
   ) {
-    searchParams.set("tg", mappedTimeGrain);
-  }
-
-  if (
-    // if preset has timezone, only set if selected is not the same
-    (preset.timezone !== undefined &&
-      exploreState.selectedTimezone !== preset.timezone) ||
-    // else if the timezone is not the default then set the param
-    (preset.timezone === undefined &&
-      exploreState.selectedTimezone !== URLStateDefaultTimezone)
-  ) {
-    searchParams.set("tz", exploreState.selectedTimezone);
+    searchParams.set("grain", mappedTimeGrain);
   }
 
   if (
@@ -149,7 +149,11 @@ function toTimeRangesUrl(
     (preset.comparisonDimension === undefined &&
       !!exploreState.selectedComparisonDimension)
   ) {
-    searchParams.set("cd", exploreState.selectedComparisonDimension ?? "");
+    // TODO: move this based on sequence
+    searchParams.set(
+      "compare_dim",
+      exploreState.selectedComparisonDimension ?? "",
+    );
   }
 
   return searchParams;
@@ -168,7 +172,7 @@ function toOverviewUrl(
     preset,
   );
   if (visibleMeasuresParam) {
-    searchParams.set("o.m", visibleMeasuresParam);
+    searchParams.set("measures", visibleMeasuresParam);
   }
 
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
@@ -177,7 +181,7 @@ function toOverviewUrl(
     preset,
   );
   if (visibleDimensionsParam) {
-    searchParams.set("o.d", visibleDimensionsParam);
+    searchParams.set("dims", visibleDimensionsParam);
   }
 
   if (
@@ -187,7 +191,7 @@ function toOverviewUrl(
     (preset.overviewExpandedDimension === undefined &&
       exploreState.selectedDimensionName)
   ) {
-    searchParams.set("o.ed", exploreState.selectedDimensionName ?? "");
+    searchParams.set("expand_dim", exploreState.selectedDimensionName ?? "");
   }
 
   const defaultLeaderboardMeasure =
@@ -200,7 +204,7 @@ function toOverviewUrl(
     (!preset.overviewSortBy &&
       exploreState.leaderboardMeasureName !== defaultLeaderboardMeasure)
   ) {
-    searchParams.set("o.sb", exploreState.leaderboardMeasureName);
+    searchParams.set("sort_by", exploreState.leaderboardMeasureName);
   }
 
   const sortAsc = exploreState.sortDirection === SortDirection.ASCENDING;
@@ -212,7 +216,7 @@ function toOverviewUrl(
     (preset.overviewSortAsc === undefined &&
       exploreState.sortDirection !== URLStateDefaultSortDirection)
   ) {
-    searchParams.set("o.sd", sortAsc ? "ASC" : "DESC");
+    searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");
   }
 
   return searchParams;
@@ -266,7 +270,7 @@ function toTimeDimensionUrlParams(
     (preset.timeDimensionMeasure === undefined &&
       exploreState.tdd.expandedMeasureName)
   ) {
-    searchParams.set("tdd.m", exploreState.tdd.expandedMeasureName ?? "");
+    searchParams.set("measure", exploreState.tdd.expandedMeasureName ?? "");
   }
 
   if (
@@ -277,7 +281,7 @@ function toTimeDimensionUrlParams(
       exploreState.tdd.chartType !== URLStateDefaultTDDChartType)
   ) {
     searchParams.set(
-      "tdd.ct",
+      "chart_type",
       ToURLParamTDDChartMap[exploreState.tdd.chartType] ?? "",
     );
   }
@@ -301,7 +305,7 @@ function toPivotUrlParams(
 
   const rows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
   if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
-    searchParams.set("p.r", rows.join(","));
+    searchParams.set("rows", rows.join(","));
   }
 
   const cols = [
@@ -309,7 +313,7 @@ function toPivotUrlParams(
     ...exploreState.pivot.columns.measure.map(mapPivotEntry),
   ];
   if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
-    searchParams.set("p.c", cols.join(","));
+    searchParams.set("cols", cols.join(","));
   }
 
   // TODO: other fields

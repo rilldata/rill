@@ -14,7 +14,7 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let basePreset: V1ExplorePreset;
+  export let defaultExplorePreset: V1ExplorePreset;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
 
   const {
@@ -47,7 +47,7 @@
       convertMetricsEntityToURLSearchParams(
         $dashboardStore,
         exploreSpec,
-        basePreset,
+        defaultExplorePreset,
       );
     mergeSearchParams(searchParamsFromDashboardState, u.searchParams);
     const newUrl = u.toString();

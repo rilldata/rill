@@ -127,7 +127,7 @@ export class ExploreWebViewStore {
     exploreState: MetricsExplorerEntity,
     metricsSpec: V1MetricsViewSpec,
     exploreSpec: V1ExploreSpec,
-    basePreset: V1ExplorePreset,
+    defaultExplorePreset: V1ExplorePreset,
     additionaPreset: V1ExplorePreset = {},
   ) {
     const currentPreset = convertMetricsExploreToPreset(
@@ -141,7 +141,7 @@ export class ExploreWebViewStore {
     };
 
     for (const key of ExploreViewOtherKeys[view]) {
-      preset[key] = basePreset[key] as any;
+      preset[key] = defaultExplorePreset[key] as any;
     }
     if (view === ExploreWebViewNonPivot) {
       preset.view = undefined;
@@ -157,7 +157,7 @@ export class ExploreWebViewStore {
     const searchParams = convertMetricsEntityToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
-      basePreset,
+      defaultExplorePreset,
     );
     const u = new URL(get(page).url);
     // clear any existing search params.

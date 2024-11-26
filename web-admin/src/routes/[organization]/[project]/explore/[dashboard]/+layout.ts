@@ -16,10 +16,8 @@ export const load = async ({ params, depends, parent }) => {
   depends(exploreName, "explore");
 
   try {
-    const { explore, metricsView, basePreset } = await fetchExploreSpec(
-      runtime?.instanceId,
-      exploreName,
-    );
+    const { explore, metricsView, defaultExplorePreset } =
+      await fetchExploreSpec(runtime?.instanceId, exploreName);
 
     // used to merge home bookmark to url state
     const bookmarks = await fetchBookmarks(
@@ -32,7 +30,7 @@ export const load = async ({ params, depends, parent }) => {
     return {
       explore,
       metricsView,
-      basePreset,
+      defaultExplorePreset,
       bookmarks,
     };
   } catch {
@@ -41,7 +39,7 @@ export const load = async ({ params, depends, parent }) => {
     return {
       explore: <V1Resource>{},
       metricsView: <V1Resource>{},
-      basePreset: <V1ExplorePreset>{},
+      defaultExplorePreset: <V1ExplorePreset>{},
       bookmarks: <Bookmarks>{},
     };
   }

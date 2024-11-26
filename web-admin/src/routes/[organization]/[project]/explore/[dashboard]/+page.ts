@@ -7,7 +7,8 @@ import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 export const load = async ({ url, parent, params }) => {
-  const { explore, metricsView, basePreset, bookmarks } = await parent();
+  const { explore, metricsView, defaultExplorePreset, bookmarks } =
+    await parent();
   const { dashboard: exploreName } = params;
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
@@ -22,7 +23,7 @@ export const load = async ({ url, parent, params }) => {
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
-      basePreset,
+      defaultExplorePreset,
     );
     partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
@@ -40,7 +41,7 @@ export const load = async ({ url, parent, params }) => {
     const searchParamsFromHomeBookmark = convertMetricsEntityToURLSearchParams(
       bookmarks.home.metricsEntity,
       exploreSpec,
-      basePreset,
+      defaultExplorePreset,
     );
     mergeSearchParams(searchParamsFromHomeBookmark, newUrl.searchParams);
     throw redirect(307, `${newUrl.pathname}${newUrl.search}`);

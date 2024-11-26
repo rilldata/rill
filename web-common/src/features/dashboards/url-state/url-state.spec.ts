@@ -378,7 +378,7 @@ describe("Human readable URL state", () => {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
         };
-        const basePreset = getBasePreset(explore, {
+        const defaultExplorePreset = getBasePreset(explore, {
           timeZone: "UTC",
         });
         const initEntity = getDefaultMetricsExplorerEntity(
@@ -397,7 +397,7 @@ describe("Human readable URL state", () => {
               ...entity,
             },
             explore,
-            basePreset,
+            defaultExplorePreset,
           ),
           url.searchParams,
         );
@@ -410,7 +410,7 @@ describe("Human readable URL state", () => {
             url.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
-            basePreset,
+            defaultExplorePreset,
           );
 
         // assert that the entity we got back matches the expected entity
@@ -426,7 +426,7 @@ describe("Human readable URL state", () => {
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
-            basePreset,
+            defaultExplorePreset,
           );
 
         // assert that the entity we got back matches the original
@@ -443,7 +443,7 @@ describe("Human readable URL state", () => {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
         };
-        const basePreset = getBasePreset(explore, {
+        const defaultExplorePreset = getBasePreset(explore, {
           timeZone: "UTC",
         });
         const initEntity = getDefaultMetricsExplorerEntity(
@@ -468,7 +468,7 @@ describe("Human readable URL state", () => {
             url.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
-            basePreset,
+            defaultExplorePreset,
           );
         // assert that the entity we got back matches the expected entity
         expect(entityFromUrl).toEqual({
@@ -483,7 +483,7 @@ describe("Human readable URL state", () => {
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
-            basePreset,
+            defaultExplorePreset,
           );
 
         // assert that the entity we got back matches the original

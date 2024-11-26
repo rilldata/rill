@@ -232,7 +232,7 @@ export function getFilledInBookmarks(
   baseUrl: string,
   dashboard: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ): Bookmarks | undefined {
   if (!bookmarks) return undefined;
 
@@ -248,14 +248,26 @@ export function getFilledInBookmarks(
           baseUrl,
           dashboard,
           exploreSpec,
-          basePreset,
+          defaultExplorePreset,
         )
       : undefined,
     personal: bookmarks.personal.map((b) =>
-      getFilledInBookmark(b, baseUrl, dashboard, exploreSpec, basePreset),
+      getFilledInBookmark(
+        b,
+        baseUrl,
+        dashboard,
+        exploreSpec,
+        defaultExplorePreset,
+      ),
     ),
     shared: bookmarks.shared.map((b) =>
-      getFilledInBookmark(b, baseUrl, dashboard, exploreSpec, basePreset),
+      getFilledInBookmark(
+        b,
+        baseUrl,
+        dashboard,
+        exploreSpec,
+        defaultExplorePreset,
+      ),
     ),
   };
 }
@@ -287,13 +299,13 @@ function getFilledInBookmark(
   baseUrl: string,
   dashboard: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
-  basePreset: V1ExplorePreset,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   const url = new URL(baseUrl);
   const searchParamsFromBookmark = convertMetricsEntityToURLSearchParams(
     { ...dashboard, ...bookmark.metricsEntity },
     exploreSpec,
-    basePreset,
+    defaultExplorePreset,
   );
   mergeSearchParams(url.searchParams, searchParamsFromBookmark);
   return {
