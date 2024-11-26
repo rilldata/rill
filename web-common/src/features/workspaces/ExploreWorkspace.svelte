@@ -20,9 +20,9 @@
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import DashboardPage from "/Users/burg/OKAY/rill/web-local/src/routes/(viz)/explore/[name]/+page.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import Spinner from "../entity-management/Spinner.svelte";
+  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -33,7 +33,6 @@
     path: filePath,
     resourceName,
     fileName,
-    getResource,
     getAllErrors,
     remoteContent,
   } = fileArtifact);
@@ -42,28 +41,23 @@
 
   $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
 
-  $: ({ data } = $query);
+  $: ({ data: resources } = $query);
 
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
-
-  $: ({ data: resource } = $resourceQuery);
+  $: exploreResource = resources?.explore;
+  $: metricsViewResource = resources?.metricsView;
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading(resource);
+  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: exploreResource = resource?.explore;
-
-  $: metricsViewName = resource?.meta?.refs?.find(
-    (ref) => ref.kind === ResourceKind.MetricsView,
-  )?.name;
+  $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
@@ -85,7 +79,7 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
-    {resource}
+    resource={exploreResource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"
@@ -124,8 +118,8 @@
           header="Unable to load dashboard preview"
           statusCode={404}
         />
-      {:else if data?.explore && data.metricsView}
-        <DashboardPage {data} />
+      {:else if exploreName && metricsViewName}
+        <DashboardWithProviders {exploreName} {metricsViewName} />
       {:else}
         <Spinner status={1} size="48px" />
       {/if}
@@ -134,7 +128,7 @@
 
   <VisualExploreEditing
     slot="inspector"
-    {exploreResource}
+    exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}
