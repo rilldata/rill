@@ -1,6 +1,9 @@
 <script lang="ts">
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    prettyResourceKind,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import { getResourceKindTagColor } from "./display-utils";
@@ -9,8 +12,13 @@
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import RefreshCell from "./RefreshCell.svelte";
   import NameCell from "./NameCell.svelte";
+  import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
+
+  function isSource(resource: V1Resource) {
+    return resource.meta.name.kind === ResourceKind.Source;
+  }
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {
@@ -61,6 +69,20 @@
         flexRender(RefreshCell, {
           date: info.getValue() as string,
         }),
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      cell: ({ row }) =>
+        flexRender(ActionsCell, {
+          resourceKind: row.original.meta.name.kind,
+          resourceName: row.original.meta.name.name,
+          isSource: isSource(row.original),
+        }),
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
+      },
     },
   ];
 </script>
