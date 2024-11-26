@@ -15,7 +15,7 @@ export function formatUsageVsQuota(
   const formattedUsage = formatMemorySize(usageInBytes);
   const formattedQuota = formatMemorySize(quota);
   const percent =
-    formattedUsage > formattedQuota
+    usageInBytes > quota
       ? "100+"
       : Math.round((usageInBytes * 100) / quota) + "";
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
