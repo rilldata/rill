@@ -1,6 +1,7 @@
 import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { DashboardDataSources } from "./types";
 import { PivotChipType } from "../../pivot/types";
+import { allDimensions } from "./dimensions";
 
 export const pivotSelectors = {
   showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
@@ -19,9 +20,13 @@ export const pivotSelectors = {
         description: measure.description,
       }));
   },
-  dimensions: ({ validMetricsView, dashboard }: DashboardDataSources) => {
+  dimensions: ({
+    validMetricsView,
+    dashboard,
+    validExplore,
+  }: DashboardDataSources) => {
     {
-      const dimensions = validMetricsView?.dimensions ?? [];
+      const dimensions = allDimensions({ validMetricsView, validExplore });
 
       const columns = dashboard.pivot.columns;
       const rows = dashboard.pivot.rows;

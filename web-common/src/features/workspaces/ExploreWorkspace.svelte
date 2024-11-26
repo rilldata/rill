@@ -17,10 +17,12 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
-  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import Spinner from "../entity-management/Spinner.svelte";
+  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -31,33 +33,31 @@
     path: filePath,
     resourceName,
     fileName,
-    getResource,
     getAllErrors,
     remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
+  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+
+  $: ({ data: resources } = $query);
+
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
-
-  $: ({ data: resource } = $resourceQuery);
+  $: exploreResource = resources?.explore;
+  $: metricsViewResource = resources?.metricsView;
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading(resource);
+  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: exploreResource = resource?.explore;
-
-  $: metricsViewName = resource?.meta?.refs?.find(
-    (ref) => ref.kind === ResourceKind.MetricsView,
-  )?.name;
+  $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
@@ -79,7 +79,7 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
-    {resource}
+    resource={exploreResource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"
@@ -118,15 +118,17 @@
           header="Unable to load dashboard preview"
           statusCode={404}
         />
-      {:else if metricsViewName && exploreName}
+      {:else if exploreName && metricsViewName}
         <DashboardWithProviders {exploreName} {metricsViewName} />
+      {:else}
+        <Spinner status={1} size="48px" />
       {/if}
     {/if}
   </MetricsEditorContainer>
 
   <VisualExploreEditing
     slot="inspector"
-    {exploreResource}
+    exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}
