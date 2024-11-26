@@ -109,6 +109,7 @@
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
+    // Check if the key has changed, if so, check for existing keys
     if ($form.key !== initialValues.key) {
       checkForExistingKeys();
     }
