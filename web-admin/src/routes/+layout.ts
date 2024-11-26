@@ -44,10 +44,11 @@ export const load = async ({ params, url, route }) => {
   // Initialize analytics
   const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
   if (shouldSendAnalytics) {
+    const rillVersion = import.meta.env.RILL_UI_VERSION;
     const posthogSessionId = url.searchParams.get("ph_session_id") as
       | string
       | null;
-    initPosthog(posthogSessionId);
+    initPosthog(rillVersion, posthogSessionId);
     if (posthogSessionId) {
       // Remove the PostHog sessionID from the url
       url.searchParams.delete("ph_session_id");

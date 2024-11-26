@@ -2,7 +2,7 @@ import posthog, { type Properties } from "posthog-js";
 
 const POSTHOG_API_KEY = import.meta.env.RILL_UI_PUBLIC_POSTHOG_API_KEY;
 
-export function initPosthog(sessionId?: string | null) {
+export function initPosthog(rillVersion: string, sessionId?: string | null) {
   // No need to proceed if PostHog is already initialized
   if (posthog.__loaded) return;
 
@@ -24,6 +24,11 @@ export function initPosthog(sessionId?: string | null) {
     enable_heatmaps: true,
     bootstrap: {
       sessionID: sessionId ?? undefined,
+    },
+    loaded: (posthog) => {
+      posthog.register_for_session({
+        "Rill version": rillVersion,
+      });
     },
   });
 }

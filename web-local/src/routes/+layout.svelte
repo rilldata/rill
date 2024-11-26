@@ -55,10 +55,9 @@
 
     if (shouldSendAnalytics) {
       await initMetrics(config); // Proxies events through the Rill "intake" service
-      initPosthog();
+      initPosthog(config.version);
       posthogIdentify(config.userId, {
         installId: config.installId,
-        release: config.version,
       });
     }
 
