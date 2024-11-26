@@ -1,27 +1,25 @@
 <script lang="ts">
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
 
-  export let exploreName: string;
-  export let isFetching = false;
+  const { dashboardStore, validSpecStore, webViewStore, basePresetStore } =
+    getStateManagers();
+  $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
+  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  function goBackToOverview() {
-    metricsExplorerStore.setExpandedMeasureName(exploreName, "");
-  }
+  $: href = webViewStore.getUrlForView(
+    V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    $dashboardStore,
+    metricsSpec,
+    exploreSpec,
+    $basePresetStore,
+  );
 </script>
 
-<button
-  class="flex flex-row items-center gap-x-1"
-  on:click={() => goBackToOverview()}
->
-  {#if isFetching}
-    <Spinner size="16px" status={EntityStatus.Running} />
-  {:else}
-    <span class="ui-copy-icon">
-      <Back color="var(--color-primary-600)" size="16px" />
-    </span>
-    <span class="text-primary-600 font-medium">Overview</span>
-  {/if}
-</button>
+<a class="flex flex-row items-center gap-x-1" {href}>
+  <span class="ui-copy-icon">
+    <Back color="var(--color-primary-600)" size="16px" />
+  </span>
+  <span class="text-primary-600 font-medium">Overview</span>
+</a>

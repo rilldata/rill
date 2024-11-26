@@ -292,7 +292,7 @@
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
-      <BackToOverview {exploreName} />
+      <BackToOverview />
       <ChartTypeSelector
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
@@ -379,12 +379,6 @@
               : $timeSeriesDataStore?.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
-            on:expand-measure={() => {
-              metricsExplorerStore.setExpandedMeasureName(
-                exploreName,
-                measure.name,
-              );
-            }}
           />
 
           {#if hasTimeseriesError}

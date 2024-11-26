@@ -276,7 +276,7 @@ const TestCases: {
       },
     },
     preset: {
-      view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
       timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
       timeDimensionChartType: "stacked_bar",
     },
@@ -294,7 +294,7 @@ const TestCases: {
       },
     },
     preset: {
-      view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_TIME_DIMENSION,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
       timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
       timeDimensionChartType: "stacked_bar",
     },
@@ -323,7 +323,7 @@ const TestCases: {
       [V1TimeGrain.TIME_GRAIN_DAY],
     ),
     preset: {
-      view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       pivotRows: ["publisher", "time.hour"],
       pivotCols: ["domain", "time.day", "impressions"],
     },
@@ -339,7 +339,7 @@ const TestCases: {
       [],
     ),
     preset: {
-      view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       pivotRows: ["publisher", "time.hour"],
       pivotCols: ["domain", "time.day", "impressions"],
     },
@@ -349,7 +349,7 @@ const TestCases: {
     title: "Pivot with preset and no pivot in state different as preset",
     entity: getPivotedPartialDashboard([], [], [], [], []),
     preset: {
-      view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       pivotRows: ["publisher", "time.hour"],
       pivotCols: ["domain", "time.day", "impressions"],
     },

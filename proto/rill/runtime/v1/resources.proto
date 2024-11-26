@@ -386,35 +386,36 @@ message ExplorePreset {
   // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
   FieldSelector measures_selector = 10;
 
-  optional Expression where = 25;
+  optional Expression where = 11;
 
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
   // If not found in `time_ranges`, it should be added to the list.
   optional string time_range = 6;
-  optional string timezone = 11;
-  optional string time_grain = 12;
+  optional string timezone = 12;
+  optional string time_grain = 13;
 
   // Comparison mode.
   ExploreComparisonMode comparison_mode = 7;
-  optional string compare_time_range = 13;
+  optional string compare_time_range = 14;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
 
-  optional ExploreWebView view = 14;
+  optional ExploreWebView view = 15;
 
-  optional string overview_sort_by = 15;
-  optional bool overview_sort_asc = 16;
-  optional string overview_expanded_dimension = 17;
+  optional string overview_sort_by = 16;
+  optional bool overview_sort_asc = 17;
+  optional ExploreOverviewSortType overview_sort_type = 18;
+  optional string overview_expanded_dimension = 19;
 
-  optional string time_dimension_measure = 18;
-  optional string time_dimension_chart_type = 19;
-  optional bool time_dimension_pin = 20;
+  optional string time_dimension_measure = 20;
+  optional string time_dimension_chart_type = 21;
+  optional bool time_dimension_pin = 22;
 
-  repeated string pivot_rows = 21;
-  repeated string pivot_cols = 22;
-  optional string pivot_sort_by = 23;
-  optional bool pivot_sort_asc = 24;
+  repeated string pivot_rows = 23;
+  repeated string pivot_cols = 24;
+  optional string pivot_sort_by = 25;
+  optional bool pivot_sort_asc = 26;
 }
 
 enum ExploreComparisonMode {
@@ -425,11 +426,20 @@ enum ExploreComparisonMode {
 }
 
 enum ExploreWebView {
-  EXPLORE_ACTIVE_PAGE_UNSPECIFIED = 0;
-  EXPLORE_ACTIVE_PAGE_OVERVIEW = 1;
-  EXPLORE_ACTIVE_PAGE_TIME_DIMENSION = 2;
-  EXPLORE_ACTIVE_PAGE_PIVOT = 3;
-  EXPLORE_ACTIVE_PAGE_CANVAS = 4;
+  EXPLORE_WEB_VIEW_UNSPECIFIED = 0;
+  EXPLORE_WEB_VIEW_OVERVIEW = 1;
+  EXPLORE_WEB_VIEW_TIME_DIMENSION = 2;
+  EXPLORE_WEB_VIEW_PIVOT = 3;
+  EXPLORE_WEB_VIEW_CANVAS = 4;
+}
+
+enum ExploreOverviewSortType {
+  EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED = 0;
+  EXPLORE_OVERVIEW_SORT_TYPE_PERCENT = 1;
+  EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT = 2;
+  EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE = 3;
+  EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION = 4;
+  EXPLORE_OVERVIEW_SORT_TYPE_HIDDEN = 5;
 }
 
 // FieldSelector describes logic for selecting a list of fields.

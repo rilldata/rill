@@ -25,7 +25,7 @@ export function getBasePreset(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const basePreset: V1ExplorePreset = {
-    view: V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW,
+    view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
     where: createAndExpression([]),
 
     measures: explore.measures,

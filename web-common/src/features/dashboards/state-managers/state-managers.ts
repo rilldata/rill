@@ -7,7 +7,12 @@ import {
   getPersistentDashboardStore,
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
+import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import {
+  getLocalUserPreferencesState,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -16,6 +21,7 @@ import {
   type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
+  type V1ExplorePreset,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -70,6 +76,8 @@ export type StateManagers = {
    * it's a one-off solution that introduces another new pattern.
    */
   contextColumnWidths: Writable<ContextColWidths>;
+  webViewStore: ExploreWebViewStore;
+  basePresetStore: Readable<V1ExplorePreset>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -138,6 +146,21 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
+  const webViewStore = new ExploreWebViewStore(exploreName);
+  const basePresetStore = derived(
+    [validSpecStore, timeRangeSummaryStore],
+    ([validSpec, timeRangeSummary]) => {
+      if (!validSpec.data?.explore) {
+        return {};
+      }
+      return getBasePreset(
+        validSpec.data?.explore ?? {},
+        getLocalUserPreferencesState(exploreName),
+        timeRangeSummary.data,
+      );
+    },
+  );
+
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
   initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
   initLocalUserPreferenceStore(exploreName);
@@ -171,5 +194,7 @@ export function createStateManagers({
       persistentDashboardStore,
     }),
     contextColumnWidths,
+    webViewStore,
+    basePresetStore,
   };
 }

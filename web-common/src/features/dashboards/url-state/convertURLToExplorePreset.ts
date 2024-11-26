@@ -8,12 +8,19 @@ import {
 import { convertFilterParamToExpression } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import {
   FromURLParamTimeDimensionMap,
+  FromURLParamTimeGrainMap,
+  FromURLParamTimeRangePresetMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
+import {
+  TIME_COMPARISON,
+  TIME_GRAIN,
+} from "@rilldata/web-common/lib/time/config";
+import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimensionV2,
@@ -60,7 +67,12 @@ export function convertURLToExplorePreset(
   }
 
   if (searchParams.has("vw")) {
-    preset.view = FromURLParamViewMap[searchParams.get("vw") as string];
+    const view = searchParams.get("vw") as string;
+    if (view in FromURLParamViewMap) {
+      preset.view = FromURLParamViewMap[view];
+    } else {
+      errors.push(getSingleFieldError("view", view));
+    }
   }
 
   if (searchParams.has("f")) {
@@ -160,22 +172,36 @@ function fromTimeRangesParams(
   const errors: Error[] = [];
 
   if (searchParams.has("tr")) {
-    preset.timeRange = searchParams.get("tr") as string;
-    // TODO: parse and return errors
+    const tr = searchParams.get("tr") as string;
+    if (tr in FromURLParamTimeRangePresetMap || validateISODuration(tr)) {
+      preset.timeRange = tr;
+    } else {
+      errors.push(getSingleFieldError("time range", tr));
+    }
   }
+  if (searchParams.has("ctr")) {
+    const ctr = searchParams.get("ctr") as string;
+    if (ctr in TIME_COMPARISON) {
+      preset.compareTimeRange = ctr;
+      preset.comparisonMode ??=
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
+    } else {
+      errors.push(getSingleFieldError("compare time range", ctr));
+    }
+  }
+
   if (searchParams.has("tg")) {
-    preset.timeGrain = searchParams.get("tg") as string;
+    const tg = searchParams.get("tg") as string;
+    if (tg in FromURLParamTimeGrainMap) {
+      preset.timeGrain = tg;
+    } else {
+      errors.push(getSingleFieldError("time grain", tg));
+    }
   }
   if (searchParams.has("tz")) {
     preset.timezone = searchParams.get("tz") as string;
   }
 
-  if (searchParams.has("ctr")) {
-    preset.compareTimeRange = searchParams.get("ctr") as string;
-    preset.comparisonMode ??=
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
-    // TODO: parse and return errors
-  }
   if (searchParams.has("cd")) {
     const comparisonDimension = searchParams.get("cd") as string;
     // unsetting a default from url

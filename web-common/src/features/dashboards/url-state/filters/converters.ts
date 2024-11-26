@@ -10,7 +10,6 @@ const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
 export function convertFilterParamToExpression(filter: string) {
   const parser = new nearley.Parser(compiledGrammar);
   parser.feed(filter);
-  console.log(parser.results[0]);
   return parser.results[0] as V1Expression;
 }
 

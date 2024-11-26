@@ -4955,6 +4955,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for OverviewSortAsc
 	}
 
+	if m.OverviewSortType != nil {
+		// no validation rules for OverviewSortType
+	}
+
 	if m.OverviewExpandedDimension != nil {
 		// no validation rules for OverviewExpandedDimension
 	}

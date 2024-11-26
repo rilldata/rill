@@ -248,7 +248,7 @@ function fromOverviewUrlParams(
       partialExploreState.selectedDimensionName = "";
       // if preset didnt have a view then this is a dimension table unset.
       if (
-        preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||
+        preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED ||
         preset.view === undefined
       ) {
         partialExploreState.activePage = DashboardState_ActivePage.DEFAULT;
@@ -257,8 +257,8 @@ function fromOverviewUrlParams(
       partialExploreState.selectedDimensionName =
         preset.overviewExpandedDimension;
       if (
-        preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW ||
-        preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_UNSPECIFIED ||
+        preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW ||
+        preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED ||
         preset.view === undefined
       ) {
         partialExploreState.activePage =
@@ -409,7 +409,7 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: preset.view === V1ExploreWebView.EXPLORE_ACTIVE_PAGE_PIVOT,
+        active: preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
         rows: {
           dimension: rowDimensions,
         },

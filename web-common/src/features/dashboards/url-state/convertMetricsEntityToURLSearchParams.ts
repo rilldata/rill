@@ -24,7 +24,6 @@ import {
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
-import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
@@ -45,20 +44,20 @@ export function convertMetricsEntityToURLSearchParams(
   if (
     (preset.view !== undefined && preset.view !== currentView) ||
     (preset.view === undefined &&
-      currentView !== V1ExploreWebView.EXPLORE_ACTIVE_PAGE_OVERVIEW)
+      currentView !== V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW)
   ) {
     searchParams.set("vw", ToURLParamViewMap[currentView] as string);
-  }
-
-  const expr = mergeMeasureFilters(exploreState);
-  if (expr && expr?.cond?.exprs?.length) {
-    searchParams.set("f", convertExpressionToFilterParam(expr));
   }
 
   mergeSearchParams(
     toTimeRangesUrl(exploreState, exploreSpec, preset),
     searchParams,
   );
+
+  const expr = mergeMeasureFilters(exploreState);
+  if (expr && expr?.cond?.exprs?.length) {
+    searchParams.set("f", convertExpressionToFilterParam(expr));
+  }
 
   mergeSearchParams(
     toOverviewUrl(exploreState, exploreSpec, preset),
@@ -92,29 +91,6 @@ function toTimeRangesUrl(
     searchParams.set("tr", exploreState.selectedTimeRange?.name ?? "");
   }
 
-  const mappedTimeGrain =
-    ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
-    "";
-  if (
-    // if preset has a time grain, only set if selected is not the same
-    (preset.timeGrain !== undefined && mappedTimeGrain !== preset.timeGrain) ||
-    // else if there is no default then set if there was a selected time grain
-    (preset.timeGrain === undefined && !!mappedTimeGrain)
-  ) {
-    searchParams.set("tg", mappedTimeGrain);
-  }
-
-  if (
-    // if preset has timezone, only set if selected is not the same
-    (preset.timezone !== undefined &&
-      exploreState.selectedTimezone !== preset.timezone) ||
-    // else if the timezone is not the default then set the param
-    (preset.timezone === undefined &&
-      exploreState.selectedTimezone !== URLStateDefaultTimezone)
-  ) {
-    searchParams.set("tz", exploreState.selectedTimezone);
-  }
-
   if (exploreState.showTimeComparison) {
     if (
       (preset.compareTimeRange !== undefined &&
@@ -139,6 +115,29 @@ function toTimeRangesUrl(
       if (inferredCompareTimeRange)
         searchParams.set("ctr", inferredCompareTimeRange);
     }
+  }
+
+  const mappedTimeGrain =
+    ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
+    "";
+  if (
+    // if preset has a time grain, only set if selected is not the same
+    (preset.timeGrain !== undefined && mappedTimeGrain !== preset.timeGrain) ||
+    // else if there is no default then set if there was a selected time grain
+    (preset.timeGrain === undefined && !!mappedTimeGrain)
+  ) {
+    searchParams.set("tg", mappedTimeGrain);
+  }
+
+  if (
+    // if preset has timezone, only set if selected is not the same
+    (preset.timezone !== undefined &&
+      exploreState.selectedTimezone !== preset.timezone) ||
+    // else if the timezone is not the default then set the param
+    (preset.timezone === undefined &&
+      exploreState.selectedTimezone !== URLStateDefaultTimezone)
+  ) {
+    searchParams.set("tz", exploreState.selectedTimezone);
   }
 
   if (

@@ -4073,6 +4073,16 @@ definitions:
         description: |-
           ISO 8601 duration string for the duration of the comparison time range.
           If not specified, it should fallback to the range of the base time range.
+  v1ExploreOverviewSortType:
+    type: string
+    enum:
+      - EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
+      - EXPLORE_OVERVIEW_SORT_TYPE_PERCENT
+      - EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT
+      - EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE
+      - EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION
+      - EXPLORE_OVERVIEW_SORT_TYPE_HIDDEN
+    default: EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
   v1ExplorePreset:
     type: object
     properties:
@@ -4118,6 +4128,8 @@ definitions:
         type: string
       overviewSortAsc:
         type: boolean
+      overviewSortType:
+        $ref: '#/definitions/v1ExploreOverviewSortType'
       overviewExpandedDimension:
         type: string
       timeDimensionMeasure:
@@ -4221,12 +4233,12 @@ definitions:
   v1ExploreWebView:
     type: string
     enum:
-      - EXPLORE_ACTIVE_PAGE_UNSPECIFIED
-      - EXPLORE_ACTIVE_PAGE_OVERVIEW
-      - EXPLORE_ACTIVE_PAGE_TIME_DIMENSION
-      - EXPLORE_ACTIVE_PAGE_PIVOT
-      - EXPLORE_ACTIVE_PAGE_CANVAS
-    default: EXPLORE_ACTIVE_PAGE_UNSPECIFIED
+      - EXPLORE_WEB_VIEW_UNSPECIFIED
+      - EXPLORE_WEB_VIEW_OVERVIEW
+      - EXPLORE_WEB_VIEW_TIME_DIMENSION
+      - EXPLORE_WEB_VIEW_PIVOT
+      - EXPLORE_WEB_VIEW_CANVAS
+    default: EXPLORE_WEB_VIEW_UNSPECIFIED
   v1ExportFormat:
     type: string
     enum:
