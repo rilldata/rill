@@ -1,10 +1,11 @@
-import { getPivotConfig } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-config";
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1Expression,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
@@ -13,6 +14,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
+import { getPivotConfig } from "./pivot-data-config";
 import {
   addExpandedDataToPivot,
   getExpandedQueryErrors,
@@ -240,13 +242,23 @@ export function createPivotDataStore(
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
+        let whereFilter: V1Expression = config.whereFilter;
+        if (config.searchText) {
+          whereFilter =
+            getDimensionFilterWithSearch(
+              whereFilter,
+              config.searchText,
+              anchorDimension,
+            ) || config.whereFilter;
+        }
+
         // Get sort order for the anchor dimension
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
           sortFilteredMeasureBody,
-          config.whereFilter,
+          whereFilter,
           sortPivotBy,
           timeRange,
           NUM_ROWS_PER_PAGE.toString(),

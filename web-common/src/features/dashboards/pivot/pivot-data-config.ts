@@ -2,7 +2,10 @@ import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/fi
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import {
+  dimensionSearchText,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import { type Readable, derived } from "svelte/store";
@@ -24,8 +27,13 @@ export function getPivotConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([validSpec, timeRangeSummary, dashboardStore]) => {
+    [
+      ctx.validSpecStore,
+      ctx.timeRangeSummaryStore,
+      ctx.dashboardStore,
+      dimensionSearchText,
+    ],
+    ([validSpec, timeRangeSummary, dashboardStore, searchText]) => {
       if (
         !validSpec?.data?.metricsView ||
         !validSpec?.data?.explore ||
@@ -42,6 +50,7 @@ export function getPivotConfig(
           time: {} as PivotTimeConfig,
           comparisonTime: undefined,
           enableComparison: false,
+          searchText,
         };
       }
 
@@ -123,6 +132,7 @@ export function getPivotConfig(
         enableComparison,
         comparisonTime,
         time,
+        searchText,
       };
 
       const currentKey = getPivotConfigKey(config);
