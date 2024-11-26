@@ -251,6 +251,3 @@ a {
   @apply pl-8;
 }
 
-svg {
-  pointer-events: none;
-}
