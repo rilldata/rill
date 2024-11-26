@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
@@ -30,6 +29,8 @@ type Options struct {
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
 	DataDir                      string
+	DataBucket                   string
+	DataBucketCredentialsJSON    string
 }
 
 type Runtime struct {
@@ -42,10 +43,9 @@ type Runtime struct {
 	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
-	dataBucket     *blob.Bucket
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client, dataBucket *blob.Bucket) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -57,7 +57,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
-		dataBucket:     dataBucket,
 	}
 
 	rt.connCache = rt.newConnectionCache()
@@ -91,8 +90,7 @@ func (r *Runtime) Close() error {
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
-	err3 := r.dataBucket.Close()
-	return errors.Join(err1, err2, err3)
+	return errors.Join(err1, err2)
 }
 
 func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {

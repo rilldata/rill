@@ -11,7 +11,6 @@ import (
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 )
 
 func TestConfig(t *testing.T) {
@@ -94,7 +93,7 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "1", "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "1", "external_table_storage": false}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 	config := conn.(*connection).config
 	require.Equal(t, filepath.Join(path, "st@g3's.db?custom_user_agent=rill&max_memory=4GB&threads=1"), config.DSN)
@@ -111,7 +110,7 @@ func Test_specialCharInPath(t *testing.T) {
 
 func TestOverrides(t *testing.T) {
 	cfgMap := map[string]any{"path": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10", "external_table_storage": false}
-	handle, err := Driver{}.Open("default", cfgMap, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	handle, err := Driver{}.Open("default", cfgMap, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

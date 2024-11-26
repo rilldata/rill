@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -136,7 +135,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
 	}

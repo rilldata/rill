@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 )
 
 func init() {
@@ -58,7 +57,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("mysql driver can't be shared")
 	}

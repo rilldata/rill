@@ -31,7 +31,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
-	"gocloud.dev/blob/fileblob"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -157,10 +156,6 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
 	// }
-	bkt, err := fileblob.OpenBucket(filepath.Join(dbDirPath, "remote"), &fileblob.Options{CreateDir: true})
-	if err != nil {
-		return nil, err
-	}
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
@@ -172,7 +167,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender), bkt)
+	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender))
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -122,7 +121,7 @@ type configProperties struct {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}

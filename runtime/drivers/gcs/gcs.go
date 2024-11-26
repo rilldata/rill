@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 )
@@ -76,7 +75,7 @@ type configProperties struct {
 	TempDir         string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")
 	}

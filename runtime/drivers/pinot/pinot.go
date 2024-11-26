@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 )
 
 func init() {
@@ -95,7 +94,7 @@ type configProperties struct {
 }
 
 // Open a connection to Apache Pinot using HTTP API.
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}

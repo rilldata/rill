@@ -22,6 +22,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gocloud.dev/blob"
+	"gocloud.dev/blob/gcsblob"
+	"gocloud.dev/gcp"
+	"golang.org/x/oauth2/google"
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
@@ -130,13 +133,26 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 
 // DataBucket returns a prefixed bucket for the given instance.
 // This bucket is used for storing data that is expected to be persisted across resets.
-func (r *Runtime) DataBucket(instanceID string, elem ...string) *blob.Bucket {
-	b := blob.PrefixedBucket(r.dataBucket, instanceID)
-	for _, e := range elem {
-		b = blob.PrefixedBucket(b, e)
+func (r *Runtime) DataBucket(ctx context.Context, instanceID string, elem ...string) (*blob.Bucket, error) {
+	if r.opts.DataBucket == "" {
+		return nil, nil
 	}
-	b = blob.PrefixedBucket(b, "/")
-	return b
+	// Init dataBucket
+	client, err := newClient(ctx, r.opts.DataBucketCredentialsJSON)
+	if err != nil {
+		return nil, fmt.Errorf("could not create GCP client: %w", err)
+	}
+
+	bucket, err := gcsblob.OpenBucket(ctx, client, r.opts.DataBucket, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open bucket %q: %w", r.opts.DataBucket, err)
+	}
+	prefix := instanceID + "/"
+	for _, e := range elem {
+		prefix = prefix + e + "/"
+	}
+	b := blob.PrefixedBucket(bucket, prefix)
+	return b, nil
 }
 
 // DataDir returns the path to a persistent data directory for the given instance.
@@ -606,6 +622,15 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 
 	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p, false)
+}
+
+func newClient(ctx context.Context, jsonData string) (*gcp.HTTPClient, error) {
+	creds, err := google.CredentialsFromJSON(ctx, []byte(jsonData), "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create credentials: %w", err)
+	}
+	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
+	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
 }
 
 func sizeOfDir(path string) int64 {

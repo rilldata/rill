@@ -15,7 +15,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 )
 
 const testTable = "test_data"
@@ -109,7 +108,7 @@ func TestDruid(t *testing.T) {
 	require.NoError(t, err)
 
 	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

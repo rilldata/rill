@@ -23,7 +23,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
 )
@@ -64,7 +63,7 @@ type configProperties struct {
 	TempDir     string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, _ *blob.Bucket, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("admin driver can't be shared")
 	}

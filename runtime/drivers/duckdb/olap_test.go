@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -213,7 +212,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -249,11 +248,11 @@ func Test_safeSQLString(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

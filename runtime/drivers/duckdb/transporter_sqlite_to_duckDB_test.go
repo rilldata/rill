@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 	_ "modernc.org/sqlite"
 )
 
@@ -30,7 +29,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	db.Close()
 
-	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 

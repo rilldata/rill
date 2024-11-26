@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -32,7 +31,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver, instanceID string, cfg map[string]any) {
 			// Open
-			conn, err := drivers.Open(driver, instanceID, cfg, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+			conn, err := drivers.Open(driver, instanceID, cfg, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 
