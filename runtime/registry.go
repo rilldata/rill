@@ -135,6 +135,7 @@ func (r *Runtime) DataBucket(instanceID string, elem ...string) *blob.Bucket {
 	for _, e := range elem {
 		b = blob.PrefixedBucket(b, e)
 	}
+	b = blob.PrefixedBucket(b, "/")
 	return b
 }
 

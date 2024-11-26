@@ -91,7 +91,8 @@ func (r *Runtime) Close() error {
 	r.registryCache.close(ctx)
 	err1 := r.queryCache.close()
 	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
-	return errors.Join(err1, err2)
+	err3 := r.dataBucket.Close()
+	return errors.Join(err1, err2, err3)
 }
 
 func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
