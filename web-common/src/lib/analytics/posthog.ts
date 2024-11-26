@@ -3,6 +3,9 @@ import posthog, { type Properties } from "posthog-js";
 const POSTHOG_API_KEY = import.meta.env.RILL_UI_PUBLIC_POSTHOG_API_KEY;
 
 export function initPosthog(sessionId?: string) {
+  // No need to proceed if PostHog is already initialized
+  if (posthog.__loaded) return;
+
   if (!POSTHOG_API_KEY) {
     console.warn("PostHog API Key not found");
     return;
@@ -28,4 +31,8 @@ export function initPosthog(sessionId?: string) {
 export function posthogIdentify(userID: string, userProperties?: Properties) {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   posthog.identify(userID, userProperties);
+}
+
+export function addPosthogSessionIdToUrl(url: string) {
+  return url + "?ph_session_id=" + posthog.get_session_id();
 }

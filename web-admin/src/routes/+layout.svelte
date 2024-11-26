@@ -15,7 +15,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
-  import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -47,7 +46,6 @@
         errorEventHandler.addJavascriptErrorListeners();
     })
     .catch(console.error);
-  initPosthog();
   initPylonWidget();
 
   onMount(() => {
