@@ -1,14 +1,11 @@
-import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
-import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
-import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1Expression,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
@@ -17,6 +14,7 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { type Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
+import { getPivotConfig } from "./pivot-data-config";
 import {
   addExpandedDataToPivot,
   getExpandedQueryErrors,
@@ -40,7 +38,6 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
-  canEnablePivotComparison,
   getErrorFromResponses,
   getErrorState,
   getFilterForPivotTable,
@@ -54,141 +51,11 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
-  COMPARISON_DELTA,
-  COMPARISON_PERCENT,
-  PivotChipType,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
   type PivotFilter,
-  type PivotTimeConfig,
 } from "./types";
-
-let lastKey: string | undefined = undefined;
-
-/**
- * Extract out config relevant to pivot from dashboard and meta store
- */
-export function getPivotConfig(
-  ctx: StateManagers,
-): Readable<PivotDataStoreConfig> {
-  return derived(
-    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([validSpec, timeRangeSummary, dashboardStore]) => {
-      if (
-        !validSpec?.data?.metricsView ||
-        !validSpec?.data?.explore ||
-        timeRangeSummary.isFetching
-      ) {
-        return {
-          measureNames: [],
-          rowDimensionNames: [],
-          colDimensionNames: [],
-          allMeasures: [],
-          allDimensions: [],
-          whereFilter: dashboardStore.whereFilter,
-          pivot: dashboardStore.pivot,
-          time: {} as PivotTimeConfig,
-          comparisonTime: undefined,
-          enableComparison: false,
-        };
-      }
-
-      const { metricsView, explore } = validSpec.data;
-
-      // This indirection makes sure only one update of dashboard store triggers this
-      const timeControl = timeControlStateSelector([
-        metricsView,
-        explore,
-        timeRangeSummary,
-        dashboardStore,
-      ]);
-
-      const time: PivotTimeConfig = {
-        timeStart: timeControl.timeStart,
-        timeEnd: timeControl.timeEnd,
-        timeZone: dashboardStore?.selectedTimezone || "UTC",
-        timeDimension: metricsView.timeDimension || "",
-      };
-
-      const enableComparison =
-        canEnablePivotComparison(
-          dashboardStore.pivot,
-          timeControl.comparisonTimeStart,
-        ) && !!timeControl.showTimeComparison;
-
-      let comparisonTime: TimeRangeString | undefined = undefined;
-      if (enableComparison) {
-        comparisonTime = {
-          start: timeControl.comparisonTimeStart,
-          end: timeControl.comparisonTimeEnd,
-        };
-      }
-
-      const measureNames = dashboardStore.pivot.columns.measure.flatMap((m) => {
-        const measureName = m.id;
-        const group = [measureName];
-
-        if (enableComparison) {
-          group.push(
-            `${measureName}${COMPARISON_DELTA}`,
-            `${measureName}${COMPARISON_PERCENT}`,
-          );
-        }
-        return group;
-      });
-
-      // This is temporary until we have a better way to handle time grains
-      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
-        if (d.type === PivotChipType.Time) {
-          return `${time.timeDimension}_rill_${d.id}`;
-        }
-        return d.id;
-      });
-
-      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
-        (d) => {
-          if (d.type === PivotChipType.Time) {
-            return `${time.timeDimension}_rill_${d.id}`;
-          }
-          return d.id;
-        },
-      );
-
-      const config: PivotDataStoreConfig = {
-        measureNames,
-        rowDimensionNames,
-        colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
-        allDimensions: allDimensions({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
-        whereFilter: mergeMeasureFilters(dashboardStore),
-        pivot: dashboardStore.pivot,
-        enableComparison,
-        comparisonTime,
-        time,
-      };
-
-      const currentKey = getPivotConfigKey(config);
-
-      if (lastKey !== currentKey) {
-        // Reset rowPage when pivot config changes
-        lastKey = currentKey;
-        if (config.pivot.rowPage !== 1) {
-          metricsExplorerStore.setPivotRowPage(dashboardStore.name, 1);
-          config.pivot.rowPage = 1;
-        }
-      }
-
-      return config;
-    },
-  );
-}
 
 /**
  * Returns a query for cell data for the initial table.
@@ -375,13 +242,23 @@ export function createPivotDataStore(
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
+        let whereFilter: V1Expression = config.whereFilter;
+        if (config.searchText) {
+          whereFilter =
+            getDimensionFilterWithSearch(
+              whereFilter,
+              config.searchText,
+              anchorDimension,
+            ) || config.whereFilter;
+        }
+
         // Get sort order for the anchor dimension
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
           sortFilteredMeasureBody,
-          config.whereFilter,
+          whereFilter,
           sortPivotBy,
           timeRange,
           NUM_ROWS_PER_PAGE.toString(),
