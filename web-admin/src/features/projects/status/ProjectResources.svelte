@@ -10,6 +10,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -26,7 +27,7 @@
           // Filter out the "ProjectParser" resource
           return data.resources.filter(
             (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
+              resource.meta.name.kind !== ResourceKind.ProjectParser,
           );
         },
         refetchOnMount: true,
