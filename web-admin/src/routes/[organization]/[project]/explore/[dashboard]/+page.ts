@@ -27,7 +27,6 @@ export const load = async ({ url, parent, params }) => {
     );
     partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
-    console.log(partialExploreState.whereFilter);
   }
 
   if (

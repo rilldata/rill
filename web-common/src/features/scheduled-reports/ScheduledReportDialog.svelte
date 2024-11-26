@@ -142,6 +142,7 @@
         return handleSubmit(values);
       },
       validationMethod: "oninput",
+      invalidateAll: false,
     },
   );
 </script>

@@ -263,6 +263,7 @@ function toTimeDimensionUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
+  if (!exploreState.tdd) return searchParams;
 
   if (
     (preset.timeDimensionMeasure !== undefined &&
@@ -296,6 +297,7 @@ function toPivotUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
+  if (!exploreState.pivot) return searchParams;
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)
