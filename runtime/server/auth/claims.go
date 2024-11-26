@@ -67,6 +67,9 @@ func (c *jwtClaims) SecurityClaims() *runtime.SecurityClaims {
 		attrs = make(map[string]any)
 	}
 	attrs["id"] = c.Subject()
+	if cid, ok := c.Attrs["creator_id"]; ok {
+		attrs["creator_id"] = cid
+	}
 
 	var rules []*runtimev1.SecurityRule
 	if len(c.Security) > 0 {

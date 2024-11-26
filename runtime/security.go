@@ -46,7 +46,10 @@ func (c *SecurityClaims) UserID() string {
 	if c.UserAttributes == nil {
 		return ""
 	}
-	id, _ := c.UserAttributes["id"].(string)
+	id, _ := c.UserAttributes["creator_id"].(string)
+	if id == "" {
+		id, _ = c.UserAttributes["id"].(string)
+	}
 	return id
 }
 
@@ -367,7 +370,7 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, cla
 	// Extract attributes
 	var email, userID string
 	if len(claims.UserAttributes) != 0 {
-		userID, _ = claims.UserAttributes["id"].(string)
+		userID = claims.UserID()
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 
@@ -421,7 +424,7 @@ func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, c
 	// Extract attributes
 	var email, userID string
 	if len(claims.UserAttributes) != 0 {
-		userID, _ = claims.UserAttributes["id"].(string)
+		userID = claims.UserID()
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 

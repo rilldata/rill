@@ -165,7 +165,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		// All themes
 		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
 		// The magic token's resource
-		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
+		condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
 		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
 		if mdl.ResourceType == runtime.ResourceKindExplore {
 			client, err := s.admin.OpenRuntimeClient(depl)
@@ -190,11 +190,15 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 			spec := resp.Resource.GetExplore().State.ValidSpec
 			if spec != nil {
-				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+				condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
 		}
 
 		attr = mdl.Attributes
+		// add the magic token's creator id to the attributes useful for checks in security rules
+		if mdl.CreatedByUserID != nil && *mdl.CreatedByUserID != "" {
+			attr["creator_id"] = *mdl.CreatedByUserID
+		}
 
 		// Add a rule that denies access to anything that doesn't match the condition.
 		rules = append(rules, &runtimev1.SecurityRule{
