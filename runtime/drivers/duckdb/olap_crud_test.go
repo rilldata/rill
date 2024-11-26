@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob/fileblob"
 	"gocloud.dev/blob/memblob"
 )
 
@@ -21,14 +22,18 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
 	require.NoError(t, normalConn.Migrate(context.Background()))
 
 	dbPath = filepath.Join(temp, "default", "view.db")
-	handle, err = Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err = fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err = Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	viewConnection := handle.(*connection)
 	require.NoError(t, viewConnection.Migrate(context.Background()))
@@ -101,7 +106,9 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	temp := t.TempDir()
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -146,7 +153,9 @@ func Test_connection_DropTable(t *testing.T) {
 	temp := t.TempDir()
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -175,7 +184,9 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -204,7 +215,9 @@ func Test_connection_RenameTable(t *testing.T) {
 	os.Mkdir(temp, fs.ModePerm)
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -230,7 +243,9 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	os.Mkdir(temp, fs.ModePerm)
 
 	dbPath := filepath.Join(temp, "default", "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -259,7 +274,9 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	os.Mkdir(temp, fs.ModePerm)
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -288,7 +305,9 @@ func Test_connection_AddTableColumn(t *testing.T) {
 }
 
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
-	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -317,7 +336,9 @@ func Test_connection_CastEnum(t *testing.T) {
 	os.Mkdir(temp, fs.ModePerm)
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -362,7 +383,9 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
@@ -399,7 +422,9 @@ func Test_connection_ChangingOrder(t *testing.T) {
 
 	// on cloud
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true, "allow_host_access": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
+	require.NoError(t, err)
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true, "allow_host_access": false}, activity.NewNoopClient(), bkt, zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))

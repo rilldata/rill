@@ -88,7 +88,7 @@ type Config struct {
 	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
 	// The data for each instance is stored in a child directory named instance_id
 	DataDir string `split_words:"true"`
-	// DataBucket is the name of the GCS bucket where DuckDB backups are stored
+	// DataBucket is a common GCS bucket to store data for all instances. The data is expected to be persisted across resets.
 	DataBucket                string `split_words:"true"`
 	DataBucketCredentialsJSON string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
@@ -207,12 +207,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init dataBucket
 			client, err := newClient(ctx, conf.DataBucketCredentialsJSON)
 			if err != nil {
-				logger.Fatal("error: could not create GCP client", zap.Error(err))
+				logger.Fatal("could not create GCP client", zap.Error(err))
 			}
 
 			bucket, err := gcsblob.OpenBucket(ctx, client, conf.DataBucket, nil)
 			if err != nil {
-				logger.Fatal("failed to open bucket %q, %w", zap.String("bucket", conf.DataBucket), zap.Error(err))
+				logger.Fatal("failed to open bucket %q: %w", zap.String("bucket", conf.DataBucket), zap.Error(err))
 			}
 
 			// Init runtime

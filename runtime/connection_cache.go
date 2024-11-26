@@ -111,9 +111,9 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 			activityClient = activityClient.With(activityDims...)
 		}
 
-		dataBucket = r.DataBucket(cfg.instanceID)
+		dataBucket = r.DataBucket(cfg.instanceID, cfg.driver)
 	} else {
-		dataBucket = r.DataBucket("__global__")
+		dataBucket = r.DataBucket("__shared__", cfg.driver)
 	}
 
 	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, activityClient, dataBucket, logger)
