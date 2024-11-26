@@ -68,6 +68,22 @@
     );
   }
 
+  function refreshSource(resourceKind: string, resourceName: string) {
+    isReconciling = true;
+
+    void $createTrigger.mutateAsync({
+      instanceId: $runtime.instanceId,
+      data: {
+        resources: [
+          {
+            kind: resourceKind,
+            name: resourceName,
+          },
+        ],
+      },
+    });
+  }
+
   $: if (!isAnySourceOrModelReconciling) {
     isReconciling = false;
   }
@@ -98,7 +114,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} />
+    <ProjectResourcesTable data={$resources.data} {refreshSource} />
   {/if}
 </section>
 
