@@ -4,7 +4,13 @@
   import { ROW_HEIGHT } from "./lib";
   import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
 
-  const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
+  const headers = [
+    "Name",
+    "Display name",
+    "SQL expression",
+    "Format",
+    "Description",
+  ];
   const gutterWidth = 56;
 
   export let type: "measures" | "dimensions";
