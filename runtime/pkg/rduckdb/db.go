@@ -359,9 +359,6 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	}
 
 	// check if some older version exists
-	// We can also use catalog to get the latest version
-	// but we are not using it here since pullFromRemote should have already updated the catalog
-	// and we need meta.json contents
 	oldMeta, _ := d.catalog.tableMeta(ctx, name)
 	if oldMeta != nil {
 		d.logger.Debug("old version", slog.String("version", oldMeta.Version))
@@ -891,7 +888,7 @@ func (d *db) tableMeta(name string) (*tableMeta, error) {
 	if m.Type == "VIEW" {
 		return m, nil
 	}
-	// this is required because release version does not table table directory as of now
+	// this is required because release version does not delete table directory as of now
 	_, err = os.Stat(filepath.Join(d.localPath, name, m.Version))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -930,7 +927,7 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 	if err != nil {
 		return err
 	}
-	d.metaSem.Release(1)
+	defer d.metaSem.Release(1)
 
 	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+dbName(name, version))
 	if err != nil {
