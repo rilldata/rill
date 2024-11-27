@@ -1,19 +1,18 @@
 <script lang="ts">
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import {
-    SortDirection,
-    SortType,
-  } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+
+  import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import TddPivotTable from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDPivotTable.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
   import { onDestroy } from "svelte";
+  import { getTDDConfig } from "./tdd-table-config";
   import TDDHeader from "./TDDHeader.svelte";
-  import TDDTable from "./TDDTable.svelte";
   import {
     chartInteractionColumn,
     tableInteractionStore,
@@ -65,6 +64,11 @@
   } else if (comparing === "none") {
     dimensionLabel = "No Comparison";
   }
+
+  $: tddConfig = getTDDConfig(stateManagers);
+  $: tddDataStore = createPivotDataStore(stateManagers, tddConfig);
+
+  $: console.log($tddDataStore);
 
   // Create a copy of the data to avoid flashing of table in transient states
   let timeDimensionDataCopy: TableData;
@@ -221,7 +225,8 @@
       </div>
     </div>
   {:else if formattedData && comparisonCopy && measure}
-    <TDDTable
+    <TddPivotTable {tddDataStore} />
+    <!-- <TDDTable
       {measure}
       {excludeMode}
       {dimensionLabel}
@@ -246,7 +251,7 @@
         );
       }}
       on:highlight={debounceHighlightCell}
-    />
+    /> -->
   {/if}
 
   {#if comparing === "none"}

@@ -1,3 +1,5 @@
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
+
 export enum TDDChart {
   DEFAULT = "default",
   STACKED_BAR = "stacked_bar",
@@ -21,6 +23,10 @@ export interface TDDState {
    */
   pinIndex: number;
   chartType: TDDChart;
+  expanded: ExpandedState;
+  sorting: SortingState;
+  columnPage: number;
+  rowPage: number;
 }
 
 export interface HeaderData<T> {

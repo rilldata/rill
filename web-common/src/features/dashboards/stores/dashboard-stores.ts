@@ -427,6 +427,36 @@ const metricsViewReducers = {
     });
   },
 
+  setTddSort(name: string, sorting: SortingState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd = {
+        ...metricsExplorer.tdd,
+        sorting,
+        rowPage: 1,
+        columnPage: 1,
+        expanded: {},
+      };
+    });
+  },
+
+  setTddColumnPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd = {
+        ...metricsExplorer.tdd,
+        columnPage: pageNumber,
+      };
+    });
+  },
+
+  setTddRowPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd = {
+        ...metricsExplorer.tdd,
+        rowPage: pageNumber,
+      };
+    });
+  },
+
   setTDDChartType(name: string, type: TDDChart) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.tdd.chartType = type;

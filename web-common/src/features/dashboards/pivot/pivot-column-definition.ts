@@ -143,7 +143,7 @@ function createColumnDefinitionForDimensions(
  * Get formatted value for row dimension values. Format
  * time dimension values if present.
  */
-function formatRowDimensionValue(
+export function formatRowDimensionValue(
   value: string,
   depth: number,
   timeConfig: PivotTimeConfig,
@@ -201,7 +201,7 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
   });
 }
 
-function getDimensionColumnProps(
+export function getDimensionColumnProps(
   dimensionNames: string[],
   config: PivotDataStoreConfig,
 ) {
