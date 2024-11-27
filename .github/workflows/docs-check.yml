@@ -41,7 +41,7 @@ jobs:
         uses: nwtgck/actions-netlify@v3.0
         if: github.event_name == 'pull_request'
         with:
-          publish-dir: ./docs/build
+          publish-dir: ./docs/dist
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Docs ${{ github.ref_name }} deployed to docs.rilldata.com"
           production-deploy: true
