@@ -11,6 +11,7 @@ import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/fi
 import { getPivotConfigKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { dimensionSearchText } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 
@@ -20,8 +21,13 @@ export function getTDDConfig(
   ctx: StateManagers,
 ): Readable<PivotDataStoreConfig> {
   return derived(
-    [ctx.validSpecStore, ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([validSpec, timeRangeSummary, dashboardStore]) => {
+    [
+      ctx.validSpecStore,
+      ctx.timeRangeSummaryStore,
+      ctx.dashboardStore,
+      dimensionSearchText,
+    ],
+    ([validSpec, timeRangeSummary, dashboardStore, searchText]) => {
       if (
         !validSpec?.data?.metricsView ||
         !validSpec?.data?.explore ||
@@ -38,6 +44,7 @@ export function getTDDConfig(
           time: {} as PivotTimeConfig,
           comparisonTime: undefined,
           enableComparison: false,
+          searchText,
         };
       }
       const { metricsView, explore } = validSpec.data;
@@ -110,6 +117,7 @@ export function getTDDConfig(
         enableComparison,
         comparisonTime,
         time,
+        searchText,
       };
 
       const currentKey = getPivotConfigKey(config);
