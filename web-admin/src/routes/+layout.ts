@@ -11,10 +11,7 @@ import {
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
-import {
-  redirectToLoginIfNotLoggedIn,
-  redirectToLoginOrRequestAccess,
-} from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error, type Page } from "@sveltejs/kit";
