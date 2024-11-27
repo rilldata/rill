@@ -80,6 +80,7 @@
 <WorkspaceContainer inspector={isModelingSupported && $selectedView === "code"}>
   <WorkspaceHeader
     {filePath}
+    {resource}
     resourceKind={ResourceKind.MetricsView}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}

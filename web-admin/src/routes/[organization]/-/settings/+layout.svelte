@@ -14,7 +14,7 @@
   $: basePage = `/${organization}/-/settings`;
   $: onEnterprisePlan =
     subscription?.plan && isEnterprisePlan(subscription?.plan);
-  $: hideBillingSettings = neverSubscribed || !subscription;
+  $: hideBillingSettings = neverSubscribed;
 
   $: navItems = [
     { label: "General", route: "" },

@@ -223,18 +223,18 @@
   };
 
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label, resourceName }) => {
+    (acc, { name, display_name, resourceName }) => {
       acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
-      acc.label = Math.max(acc.label, label.length);
+      acc.label = Math.max(acc.label, display_name.length);
       return acc;
     },
     { name: 0, label: 0 },
   );
 
   $: measureNamesAndLabels = itemGroups.measures.reduce(
-    (acc, { name, label }) => {
+    (acc, { name, display_name }) => {
       acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
+      acc.label = Math.max(acc.label, display_name.length);
       return acc;
     },
     { name: 0, label: 0 },
@@ -632,7 +632,7 @@
         value={smallestTimeGrain}
         options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
           value: label,
-          label,
+          label: label.charAt(0).toUpperCase() + label.slice(1),
         }))}
         placeholder="Select time grain"
         label="Smallest time grain"

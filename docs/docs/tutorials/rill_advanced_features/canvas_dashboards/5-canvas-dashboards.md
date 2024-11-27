@@ -24,7 +24,7 @@ You will notice three options in the UI for creating dashboards.
 
 ![project-view](/img/tutorials/301/custom-dashboard.png)
 
-In both the split and viz mode, we can drag and drop chart components into the Canvas dashboard.
+In both the partition and viz mode, we can drag and drop chart components into the Canvas dashboard.
 You'll notice that in the YAML for the dashboard, you can adjust the `columns`, which will adjust the number of squares on the screen. Let's go ahead and drag our two custom components that we built!
 
 <img src = '/img/tutorials/301/custom-chart.gif' class='rounded-gif' />
