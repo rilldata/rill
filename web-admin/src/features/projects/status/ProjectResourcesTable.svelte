@@ -15,10 +15,6 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
-  export let refreshSources: (
-    resourceKind: string,
-    resourceName: string,
-  ) => void;
 
   function isSource(resource: V1Resource) {
     return resource.meta.name.kind === ResourceKind.Source;
@@ -82,7 +78,6 @@
           resourceKind: row.original.meta.name.kind,
           resourceName: row.original.meta.name.name,
           isSource: isSource(row.original),
-          refreshSources,
         }),
       enableSorting: false,
       meta: {

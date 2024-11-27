@@ -28,7 +28,7 @@
     {
       query: {
         select: (data) => {
-          // Filter out the "ProjectParser" resource
+          // Exclude the "ProjectParser" resource
           return data.resources.filter(
             (resource) =>
               resource.meta.name.kind !== ResourceKind.ProjectParser,
@@ -68,26 +68,6 @@
     );
   }
 
-  function refreshSources(resourceKind: string, resourceName: string) {
-    void $createTrigger.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        resources: [
-          {
-            kind: resourceKind,
-            name: resourceName,
-          },
-        ],
-      },
-    });
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, {
-        kind: ResourceKind.Source,
-      }),
-    );
-  }
-
   $: if (!isAnySourceOrModelReconciling) {
     isReconciling = false;
   }
@@ -118,7 +98,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} {refreshSources} />
+    <ProjectResourcesTable data={$resources?.data} />
   {/if}
 </section>
 

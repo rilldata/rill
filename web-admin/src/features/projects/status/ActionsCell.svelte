@@ -2,17 +2,47 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import {
+    createRuntimeServiceCreateTrigger,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon } from "lucide-svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let resourceKind: string;
   export let resourceName: string;
   export let isSource: boolean;
-  export let refreshSources: (
-    resourceKind: string,
-    resourceName: string,
-  ) => void;
 
   let isDropdownOpen = false;
+
+  const queryClient = useQueryClient();
+  const createTrigger = createRuntimeServiceCreateTrigger();
+
+  // TODO: start refetching interval for sources
+  function refreshSources(resourceKind: string, resourceName: string) {
+    void $createTrigger.mutateAsync({
+      instanceId: $runtime.instanceId,
+      data: {
+        resources: [
+          {
+            kind: resourceKind,
+            name: resourceName,
+          },
+        ],
+      },
+    });
+
+    // FIXME: Specify invalidating the resource kind
+    // TODO: only accept name and path in the query params, so we can't really invalidate a single resource
+    void queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey(
+        $runtime.instanceId,
+        // All resource "kinds"
+        undefined,
+      ),
+    );
+  }
 </script>
 
 {#if isSource}
