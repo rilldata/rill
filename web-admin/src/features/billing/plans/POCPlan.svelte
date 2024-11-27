@@ -22,11 +22,13 @@
     <span>To make changes to your contract,</span>
     <ContactUs variant="enterprise" />
   </svelte:fragment>
-  {#if hasPayment}
-    <Button type="primary" slot="action" on:click={() => (open = true)}>
-      Start Team plan
-    </Button>
-  {/if}
+  <svelte:fragment slot="action">
+    {#if hasPayment}
+      <Button type="primary" on:click={() => (open = true)}>
+        Start Team plan
+      </Button>
+    {/if}
+  </svelte:fragment>
 </SettingsContainer>
 
 <StartTeamPlanDialog bind:open {organization} type="base" />
