@@ -449,6 +449,14 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
 			return &localFileToSelfExecutor{c, f}, true
 		}
+		if _, ok := opts.InputHandle.AsSQLStore(); ok {
+			switch opts.InputHandle.Driver() {
+			case "mysql":
+				return &sqlStoreToSelfExecutor{c: c, driver: "mysql"}, true
+			case "postgres":
+				return &sqlStoreToSelfExecutor{c: c, driver: "postgres"}, true
+			}
+		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {

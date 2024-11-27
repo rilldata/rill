@@ -95,6 +95,10 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	defer db.Close()
 
 	t.Run("AllDataTypes", func(t *testing.T) { allMySQLDataTypesTest(t, db, dsn) })
+
+	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
+		mysqlToDuckDB(t, fmt.Sprintf("host=%s port=%v database=mydb user=myuser password=mypassword", host, port.Int()))
+	})
 }
 
 func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
@@ -124,4 +128,43 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	}
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
+}
+
+func mysqlToDuckDB(t *testing.T, dbURL string) {
+	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	me := &sqlStoreToSelfExecutor{
+		c:      duckDB.(*connection),
+		driver: "mysql",
+	}
+	opts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: &drivers.ModelExecutorOptions{
+			Env: &drivers.ModelEnv{
+				AllowHostAccess: false,
+				StageChanges:    true,
+			},
+		},
+		InputProperties: map[string]any{
+			"sql":          "SELECT * FROM all_data_types_table;",
+			"database_url": dbURL,
+		},
+		OutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+
+	_, err = me.Execute(context.Background(), opts)
+	require.NoError(t, err)
+
+	res, err := me.c.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
+	require.NoError(t, res.Close())
+	require.NoError(t, duckDB.Close())
 }
