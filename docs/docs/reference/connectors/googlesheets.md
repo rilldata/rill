@@ -23,3 +23,6 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 :::
 
 ![Connecting to Google Sheets](/img/reference/connectors/googlesheets/googlesheets.png)
+
+<img src = '/img/reference/connectors/bigquery/bigquery.png' class='rounded-png' />
+<br />

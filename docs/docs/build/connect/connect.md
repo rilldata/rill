@@ -78,6 +78,18 @@ To add a remote source using the UI, click "+" by Sources in the left hand navig
 
 After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
 
+:::note Have a firewall setup?
+You need to whitelist the following IP addresses to connect to/from Rill Cloud and your service behind the firewall.
+```
+35.196.245.100
+34.74.117.37
+35.196.153.31
+34.75.22.143
+34.148.167.51
+35.237.60.193
+```
+:::
+
 ### Using code
 When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory.
 
