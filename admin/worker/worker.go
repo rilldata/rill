@@ -51,7 +51,7 @@ func (w *Worker) Run(ctx context.Context) error {
 
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
+		return w.schedule(ctx, "check_provisioners", w.checkProvisioners, 15*time.Minute)
 	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
@@ -93,8 +93,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) RunJob(ctx context.Context, name string) error {
 	switch name {
-	case "check_provisioner_capacity":
-		return w.runJob(ctx, name, w.checkProvisionerCapacity)
+	case "check_provisioners":
+		return w.runJob(ctx, name, w.checkProvisioners)
 	case "reset_all_deployments":
 		_, err := w.jobs.ResetAllDeployments(ctx)
 		return err

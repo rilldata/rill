@@ -337,9 +337,13 @@ func (u *URLs) AlertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert)
 }
 
-// UpgradePlan returns the landing page URL to either upgrade to plan or redirect to payment portal if there are any issues.
-func (u *URLs) UpgradePlan(org string) string {
-	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing"), map[string]string{"upgrade": "true"})
+// Billing returns the landing page url that optionally shows the upgrade modal.
+func (u *URLs) Billing(org string, upgrade bool) string {
+	bu := urlutil.MustJoinURL(u.Frontend(), org, "-", "settings", "billing")
+	if upgrade {
+		return urlutil.MustWithQuery(bu, map[string]string{"upgrade": "true"})
+	}
+	return bu
 }
 
 // PaymentPortal returns the landing page url that redirects user to payment portal

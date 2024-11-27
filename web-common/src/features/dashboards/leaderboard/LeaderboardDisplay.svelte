@@ -1,14 +1,20 @@
 <script lang="ts">
+  import type { LeaderboardItemData } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import Leaderboard from "./Leaderboard.svelte";
-  import LeaderboardControls from "./LeaderboardControls.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type {
     V1Expression,
     V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import Leaderboard from "./Leaderboard.svelte";
+  import LeaderboardControls from "./LeaderboardControls.svelte";
+  import {
+    calculateAndUpdateAllLeaderboardWidths,
+    columnWidths,
+    resetColumnWidths,
+  } from "./leaderboard-widths";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -43,6 +49,30 @@
 
   let parentElement: HTMLDivElement;
 
+  function estimateAndUpdateLeaderboardWidths(
+    dimensionName: string,
+    aboveTheFold: LeaderboardItemData[],
+    selectedBelowTheFold: LeaderboardItemData[],
+  ) {
+    const firstColumnWidth =
+      !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+    calculateAndUpdateAllLeaderboardWidths(
+      dimensionName,
+      firstColumnWidth,
+      aboveTheFold,
+      selectedBelowTheFold,
+      $activeMeasureFormatter,
+    );
+  }
+
+  // Reset column widths when relevant data changes
+  $: {
+    activeMeasureName;
+    !!comparisonTimeRange;
+    !!timeRange;
+    $isValidPercentOfTotal;
+    resetColumnWidths();
+  }
   $: ({ instanceId } = $runtime);
 </script>
 
@@ -75,6 +105,8 @@
               {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
+              columnWidths={$columnWidths}
+              {estimateAndUpdateLeaderboardWidths}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}

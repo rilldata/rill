@@ -3,31 +3,27 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ neverSubscribed } = data);
+
+  $: ({ subscription, neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
+  $: onEnterprisePlan =
+    subscription?.plan && isEnterprisePlan(subscription?.plan);
+  $: hideBillingSettings = neverSubscribed;
 
   $: navItems = [
-    {
-      label: "General",
-      route: "",
-    },
-    ...(!neverSubscribed
-      ? [
-          {
-            label: "Billing",
-            route: "/billing",
-          },
-          {
-            label: "Usage",
-            route: "/usage",
-          },
-        ]
-      : []),
+    { label: "General", route: "" },
+    ...(hideBillingSettings
+      ? []
+      : [
+          { label: "Billing", route: "/billing" },
+          ...(onEnterprisePlan ? [] : [{ label: "Usage", route: "/usage" }]),
+        ]),
   ];
 </script>
 

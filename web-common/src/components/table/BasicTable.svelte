@@ -16,6 +16,7 @@
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
+  export let emptyIcon: any | null = null;
   export let emptyText = "No data available";
   export let scrollable = false;
 
@@ -107,11 +108,15 @@
     <tbody>
       {#if $table.getRowModel().rows.length === 0}
         <tr>
-          <td
-            colspan={columns.length}
-            class="px-4 py-4 text-center text-gray-500"
-          >
-            {emptyText}
+          <td colspan={columns.length} class="px-4 py-10 text-center">
+            <div class="flex flex-col items-center gap-y-1">
+              {#if emptyIcon}
+                <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
+              {/if}
+              <span class="text-gray-600 font-semibold text-sm"
+                >{emptyText}</span
+              >
+            </div>
           </td>
         </tr>
       {:else}

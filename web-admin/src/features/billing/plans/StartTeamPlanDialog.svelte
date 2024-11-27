@@ -12,6 +12,7 @@
     getSubscriptionResumedText,
     showWelcomeToRillDialog,
   } from "@rilldata/web-admin/features/billing/plans/utils";
+  import PricingDetails from "@rilldata/web-common/features/billing/PricingDetails.svelte";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
   import {
     AlertDialog,
@@ -23,7 +24,6 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
-  import PricingDetails from "@rilldata/web-admin/features/billing/PricingDetails.svelte";
   import {
     createAdminServiceRenewBillingSubscription,
     createAdminServiceUpdateBillingSubscription,
@@ -38,8 +38,7 @@
 
   let title: string;
   let description =
-    "Starting a Team plan will end your trial and start your billing cycle today. " +
-    "Pricing is based on amount of data ingested (and compressed) into Rill.";
+    "Starting a Team plan will end your trial and start your billing cycle today.";
   let buttonText = "Start Team plan";
   function setCopyBasedOnType(t: TeamPlanDialogTypes) {
     switch (t) {
@@ -54,8 +53,7 @@
 
       case "org":
         title = "To create another organization, start a Team plan";
-        description =
-          "Pricing is based on amount of data ingested (and compressed) into Rill.";
+        description = "";
         break;
 
       case "proj":
@@ -64,17 +62,14 @@
 
       case "renew":
         title = "Renew Team plan";
-        description =
-          `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}. ` +
-          "Pricing is based on amount of data ingested (and compressed) into Rill";
+        description = `Your billing cycle will resume ${getSubscriptionResumedText(endDate)}.`;
         buttonText = "Continue";
         break;
 
       case "trial-expired":
         title = "Start Team plan";
         description =
-          "Starting Team plan will wake your projects and start your billing cycle today. " +
-          "Pricing is based on amount of data ingested (and compressed) into Rill";
+          "Starting Team plan will wake your projects and start your billing cycle today.";
         buttonText = "Continue";
         break;
     }
@@ -83,6 +78,7 @@
 
   $: categorisedIssues = useCategorisedOrganizationBillingIssues(organization);
   $: paymentIssues = $categorisedIssues.data?.payment;
+  $: redirect = $page.url.searchParams.get("redirect");
 
   let loading = false;
 
@@ -131,6 +127,11 @@
     }
     void invalidateBillingInfo(organization);
     open = false;
+    if (redirect) {
+      // redirect param could be on a different domain like the rill developer instance
+      // so using goto won't work
+      window.open(redirect, "_self");
+    }
   }
 </script>
 
@@ -143,12 +144,7 @@
       <AlertDialogTitle>{title}</AlertDialogTitle>
 
       <AlertDialogDescription>
-        {description}
-        <PricingDetails />
-        <ul class="mt-5 ml-5 list-disc">
-          <li>Starts at $250/month with 10 GB included, $25/GB thereafter</li>
-          <li>Unlimited projects, limited to 50 GB each</li>
-        </ul>
+        <PricingDetails extraText={description} />
       </AlertDialogDescription>
 
       {#if $allStatus.isError}

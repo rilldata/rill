@@ -100,6 +100,7 @@ export interface PivotDataStoreConfig {
   time: PivotTimeConfig;
   enableComparison: boolean;
   comparisonTime: TimeRangeString | undefined;
+  searchText: string | undefined;
 }
 
 export interface PivotAxesData {

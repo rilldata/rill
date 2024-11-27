@@ -50,7 +50,9 @@ export async function fetchPaymentsPortalURL(
 }
 
 export function getBillingUpgradeUrl(page: Page, organization: string) {
-  return `${page.url.protocol}//${page.url.host}/${organization}/-/upgrade-callback`;
+  const url = new URL(page.url);
+  url.pathname = `/${organization}/-/upgrade-callback`;
+  return url.toString();
 }
 
 export function getNextBillingCycleDate(curEndDateRaw: string): string {

@@ -17,5 +17,5 @@
   shape="square"
   name={usergroup}
   count={userGroupMembersCount}
-  isEveryFromText
+  isEveryoneFromText
 />

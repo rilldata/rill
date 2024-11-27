@@ -120,6 +120,7 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 		ToEmail:      org.BillingEmail,
 		ToName:       org.Name,
 		OrgName:      org.Name,
+		FrontendURL:  w.admin.URLs.Frontend(),
 		TrialEndDate: sub.TrialEndDate,
 	})
 	if err != nil {

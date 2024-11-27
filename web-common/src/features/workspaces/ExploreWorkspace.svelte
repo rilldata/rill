@@ -14,6 +14,15 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
+  import VisualExploreEditing from "./VisualExploreEditing.svelte";
+  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
+  import Spinner from "../entity-management/Spinner.svelte";
+  import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -24,19 +33,38 @@
     path: filePath,
     resourceName,
     fileName,
-    getResource,
     getAllErrors,
+    remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
+  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+
+  $: ({ data: resources } = $query);
+
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
+  $: exploreResource = resources?.explore;
+  $: metricsViewResource = resources?.metricsView;
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
+  $: resourceIsReconciling = resourceIsLoading(exploreResource);
+
+  $: workspace = workspaces.get(filePath);
+  $: selectedViewStore = workspace.view;
+
+  $: selectedView = $selectedViewStore ?? "code";
+
+  $: metricsViewName = metricsViewResource?.meta?.name?.name;
+
+  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
+    allErrors,
+    $remoteContent ?? "",
+  );
+
+  $: mainError = lineBasedRuntimeErrors?.at(0);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
@@ -49,29 +77,62 @@
   }
 </script>
 
-<WorkspaceContainer inspector={false}>
+<WorkspaceContainer>
   <WorkspaceHeader
+    resource={exploreResource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
-    showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
     {filePath}
     resourceKind={ResourceKind.Explore}
   >
-    <PreviewButton
-      slot="cta"
-      href="/explore/{exploreName}"
-      disabled={allErrors.length > 0 || resourceIsReconciling}
-      reconciling={resourceIsReconciling}
-    />
+    <div class="flex gap-x-2" slot="cta">
+      <PreviewButton
+        href="/explore/{exploreName}"
+        disabled={allErrors.length > 0 || resourceIsReconciling}
+        reconciling={resourceIsReconciling}
+      />
+
+      <ViewSelector allowSplit={false} bind:selectedView={$selectedViewStore} />
+    </div>
   </WorkspaceHeader>
 
-  <ExploreEditor
+  <MetricsEditorContainer
     slot="body"
-    bind:autoSave={$autoSave}
+    error={mainError}
+    showError={!!$remoteContent && selectedView === "code"}
+  >
+    {#if selectedView === "code"}
+      <ExploreEditor
+        bind:autoSave={$autoSave}
+        {exploreName}
+        {fileArtifact}
+        {lineBasedRuntimeErrors}
+      />
+    {:else if selectedView === "viz"}
+      {#if mainError}
+        <ErrorPage
+          body={mainError.message}
+          fatal
+          header="Unable to load dashboard preview"
+          statusCode={404}
+        />
+      {:else if exploreName && metricsViewName}
+        <DashboardWithProviders {exploreName} {metricsViewName} />
+      {:else}
+        <Spinner status={1} size="48px" />
+      {/if}
+    {/if}
+  </MetricsEditorContainer>
+
+  <VisualExploreEditing
+    slot="inspector"
+    exploreResource={exploreResource?.explore}
+    {metricsViewName}
     {exploreName}
     {fileArtifact}
-    {allErrors}
+    viewingDashboard={selectedView === "viz"}
+    switchView={() => selectedViewStore.set("code")}
   />
 </WorkspaceContainer>

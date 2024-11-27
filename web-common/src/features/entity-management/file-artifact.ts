@@ -75,7 +75,7 @@ export class FileArtifact {
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
 
-  private remoteCallbacks = new Set<(content: string) => void>();
+  private remoteCallbacks = new Set<(content: string, force?: true) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
 
   // Last time the state of the resource `kind/name` was updated.
@@ -175,7 +175,9 @@ export class FileArtifact {
     }
   };
 
-  onRemoteContentChange = (callback: (content: string) => void) => {
+  onRemoteContentChange = (
+    callback: (content: string, force?: true) => void,
+  ) => {
     this.remoteCallbacks.add(callback);
     return () => this.remoteCallbacks.delete(callback);
   };
@@ -214,6 +216,7 @@ export class FileArtifact {
 
       // Optimistically update the remote content
       this.remoteContent.set(blob);
+      this.remoteCallbacks.forEach((cb) => cb(blob, true));
 
       this.updateLocalContent(null);
     } catch (e) {

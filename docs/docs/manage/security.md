@@ -57,6 +57,8 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 ## Testing your policies
 
+### In Rill Developer
+
 In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute, and can optionally have `name` and `admin` attributes. For example:
@@ -73,6 +75,12 @@ mock_users:
 ```
 
 On the dashboard page (provided you've added a policy) you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
+
+### In Rill Cloud (Admin only)
+
+In case you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file. 
+
+![rc_view_as](/img/manage/access-policies/rill-cloud-view-as.png)
 
 ## Examples
 

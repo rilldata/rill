@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
-  import { FileArtifact } from "../entity-management/file-artifact";
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
-  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
-  import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { NUMERICS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { V1ProfileColumn } from "@rilldata/web-common/runtime-client";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import { FileArtifact } from "../entity-management/file-artifact";
+  import { YAMLDimension, YAMLMeasure, type MenuOption } from "./lib";
+  import SimpleSqlExpression from "./SimpleSQLExpression.svelte";
 
   export let item: YAMLMeasure | YAMLDimension;
   export let fileArtifact: FileArtifact;
@@ -84,13 +84,13 @@
       },
       {
         optional: true,
-        label: "Label",
+        label: "Display name",
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -171,14 +171,14 @@
         selected: 0,
       },
       {
-        label: "Label",
+        label: "Display name",
         optional: true,
         fields: [
           {
-            key: "label",
+            key: "display_name",
             hint: "Used on dashboards and charts. Inferred from name when not provided",
 
-            label: "Label",
+            label: "Display name",
           },
         ],
         selected: 0,
@@ -268,6 +268,7 @@
   >
     {#each properties[type] as { fields, selected, label, optional, fontFamily } (label)}
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
+
       {#if boolean}
         <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
@@ -295,6 +296,7 @@
         <Input
           id="vme-{label}"
           textClass="text-sm"
+          capitalizeLabel={false}
           {label}
           {hint}
           {options}

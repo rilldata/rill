@@ -37,7 +37,7 @@
   import { onMount } from "svelte";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
-  import { getPivotConfig } from "./pivot-data-store";
+  import { getPivotConfig } from "./pivot-data-config";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   // Distance threshold (in pixels) for triggering data fetch
@@ -211,10 +211,11 @@
     ];
   }
   function onExpandedChange(updater: Updater<ExpandedState>) {
-    // Something is off with tanstack's types
-    //@ts-expect-error-free
-    //eslint-disable-next-line
-    expanded = updater(expanded);
+    if (updater instanceof Function) {
+      expanded = updater(expanded);
+    } else {
+      expanded = updater;
+    }
     metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
@@ -225,6 +226,7 @@
       sorting = updater;
     }
     metricsExplorerStore.setPivotSort($exploreName, sorting);
+    rowScrollOffset = 0;
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -550,7 +552,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal select-none;
+    @apply font-normal;
     @apply bg-white table-fixed;
   }
 

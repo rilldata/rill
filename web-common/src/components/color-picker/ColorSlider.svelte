@@ -23,6 +23,7 @@
 <script lang="ts">
   export let value: number;
   export let hue = 0;
+  export let color: string;
   export let mode: "hue" | "saturation" | "lightness";
   export let onChange: () => void;
 </script>
@@ -30,6 +31,7 @@
 <div class="size-full flex flex-none gap-x-2 items-center">
   <input
     style:--hue={hue}
+    style:--color={color}
     style:background-image={gradients[mode]}
     type="range"
     min="0"
@@ -49,6 +51,12 @@
 </div>
 
 <style lang="postcss">
+  * {
+    --focus: rgba(255, 255, 255, 1) 0 0 0 2.5px, var(--color) 0 0 0 4.5px;
+    --hover: rgba(255, 255, 255, 1) 0 0 0 2.5px,
+      rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
+  }
+
   input:focus {
     @apply outline-none;
   }
@@ -56,10 +64,8 @@
   input[type="range"] {
     @apply rounded-full w-full;
     -webkit-appearance: none;
-    box-shadow:
-      rgba(255, 255, 255, 0.25) 0 1px 1px inset,
-      rgba(0, 0, 0, 0.6) 0 0 0 1px;
-    height: 18px;
+
+    height: 13px;
     margin: 0;
   }
 
@@ -67,12 +73,11 @@
     @apply rounded-full;
     -webkit-appearance: none;
     box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgb(235, 235, 235) 0 0 0 2.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 3.5px;
-    height: 16px;
-    width: 16px;
-    background: transparent;
+      rgba(255, 255, 255, 1) 0 0 0 2.5px,
+      rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
+    height: 14px;
+    width: 14px;
+    background: var(--color);
     cursor: pointer;
     margin-top: -0px;
   }
@@ -81,9 +86,8 @@
     @apply rounded-full;
     -webkit-appearance: none;
     box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgb(235, 235, 235) 0 0 0 2.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 3.5px;
+      rgba(255, 255, 255, 1) 0 0 0 2.5px,
+      rgba(0, 0, 0, 0.2) 0 0 3px 3.5px;
     height: 16px;
     width: 16px;
     background: transparent;
@@ -92,32 +96,18 @@
   }
 
   input[type="range"]:hover::-webkit-slider-thumb {
-    box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 3.5px;
+    box-shadow: var(--hover);
   }
 
   input[type="range"]:focus::-webkit-slider-thumb {
-    box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      hsl(var(--hue), 100%, 50%) 0 0 0 4.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 5.5px;
+    box-shadow: var(--focus);
   }
 
   input[type="range"]:hover::-moz-range-thumb {
-    box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 3.5px;
+    box-shadow: var(--hover);
   }
 
   input[type="range"]:focus::-moz-range-thumb {
-    box-shadow:
-      rgba(0, 0, 0, 0.6) 0 0 0 1px inset,
-      rgba(255, 255, 255, 1) 0 0 0 2.5px,
-      hsl(var(--hue), 100%, 50%) 0 0 0 4.5px,
-      rgba(0, 0, 0, 0.6) 0 0 0 5.5px;
+    box-shadow: var(--focus);
   }
 </style>

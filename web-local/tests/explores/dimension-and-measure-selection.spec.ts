@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { useDashboardFlowTestSetup } from "web-local/tests/explores/dashboard-flow-test-setup";
-import { test } from "../utils/test";
 import { clickMenuButton } from "../utils/commonHelpers";
+import { test } from "../utils/test";
 
 test.describe("dimension and measure selectors", () => {
   // dashboard test setup
@@ -31,8 +31,8 @@ test.describe("dimension and measure selectors", () => {
     await escape();
     await expect(measuresButton).toHaveText("1 of 2 Measures");
 
-    await expect(page.getByText("Sum of Bid Price 300.6k")).toBeVisible();
-    await expect(page.getByText("Total records 100.0k")).not.toBeVisible();
+    await expect(page.getByText("Sum of Bid Price 301k")).toBeVisible();
+    await expect(page.getByText("Total records 100k")).not.toBeVisible();
 
     await measuresButton.click();
     await clickMenuItem("Total records");
@@ -40,8 +40,8 @@ test.describe("dimension and measure selectors", () => {
     await expect(measuresButton).toHaveText("1 of 2 Measures");
     await escape();
 
-    await expect(page.getByText("Sum of Bid Price 300.6k")).not.toBeVisible();
-    await expect(page.getByText("Total records 100.0k")).toBeVisible();
+    await expect(page.getByText("Sum of Bid Price 301k")).not.toBeVisible();
+    await expect(page.getByText("Total records 100k")).toBeVisible();
 
     await dimensionsButton.click();
     await clickMenuItem("Publisher");
