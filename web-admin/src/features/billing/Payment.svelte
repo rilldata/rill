@@ -9,7 +9,7 @@
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import { isEnterprisePlan } from "./plans/utils";
+  import { isEnterprisePlan, isManagedPlan } from "./plans/utils";
 
   export let organization: string;
   export let subscription: V1Subscription;
@@ -21,6 +21,9 @@
   $: onTrial = !!$categorisedIssues.data?.trial;
   $: onEnterprisePlan =
     subscription?.plan && isEnterprisePlan(subscription.plan);
+  $: onManagedPlan = subscription?.plan && isManagedPlan(subscription.plan);
+  $: hidePaymentModule =
+    neverSubscribed || onTrial || onEnterprisePlan || onManagedPlan;
 
   async function handleManagePayment() {
     window.open(
@@ -31,7 +34,7 @@
 </script>
 
 <!-- Presence of paymentCustomerId signifies that the org's payment is managed through stripe -->
-{#if !$categorisedIssues.isLoading && !neverSubscribed && $org.data?.organization?.paymentCustomerId && !onTrial && !onEnterprisePlan}
+{#if !$categorisedIssues.isLoading && $org.data?.organization?.paymentCustomerId && !hidePaymentModule}
   <SettingsContainer title="Payment Method">
     <div slot="body" class="flex flex-row items-center gap-x-1">
       {#if paymentIssues?.length}
