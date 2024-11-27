@@ -39,7 +39,7 @@ jobs:
 
       - name: Deploy Docs to Netlify docs.rilldata.com
         uses: nwtgck/actions-netlify@v3.0
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'pull_request'
         with:
           publish-dir: ./docs/dist
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -53,8 +53,7 @@ jobs:
       - name: Algolia crawler creation and crawl
         uses: algolia/algoliasearch-crawler-github-actions@v1.1.10
         id: algolia_crawler
-        if: false
-        #if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         with:
           crawler-name: rilldata
           crawler-user-id: ${{ secrets.CRAWLER_USER_ID }}
@@ -62,16 +61,3 @@ jobs:
           algolia-app-id: ${{ secrets.ALGOLIA_APP_ID }}
           algolia-api-key: ${{ secrets.ALGOLIA_API_KEY }}
           site-url: 'https://docs.rilldata.com'
-
-      - name: Notify Slack
-        uses: ravsamhq/notify-slack-action@v2
-        if: false
-        #if: github.event_name != 'pull_request'
-        with:
-          status: ${{ job.status }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
-          footer: "Linked Repo <{repo_url}|{repo}>"
-          notify_when: "failure"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ANNOUNCE_DD }}
