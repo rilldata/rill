@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - "*"
-    branches:
-      - "main"
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
