@@ -19,14 +19,14 @@
   let isReconciling = false;
   let isRefreshConfirmDialogOpen = false;
 
-  $: resources = createRuntimeServiceListResources(
+  $: allResources = createRuntimeServiceListResources(
     $runtime.instanceId,
     // All resource "kinds"
     undefined,
     {
       query: {
         select: (data) => {
-          // Filter out the "ProjectParser" resource
+          // Exclude the "ProjectParser" resource
           return data.resources.filter(
             (resource) =>
               resource.meta.name.kind !== ResourceKind.ProjectParser,
@@ -38,7 +38,7 @@
     },
   );
 
-  $: isAnySourceOrModelReconciling = $resources?.data?.some(
+  $: isAnySourceOrModelReconciling = $allResources?.data?.some(
     (resource) =>
       resource.meta.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
@@ -65,26 +65,6 @@
     );
   }
 
-  function refreshSources(resourceKind: string, resourceName: string) {
-    void $createTrigger.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        resources: [
-          {
-            kind: resourceKind,
-            name: resourceName,
-          },
-        ],
-      },
-    });
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, {
-        kind: ResourceKind.Source,
-      }),
-    );
-  }
-
   $: if (!isAnySourceOrModelReconciling) {
     isReconciling = false;
   }
@@ -107,14 +87,14 @@
       {/if}
     </Button>
   </div>
-  {#if $resources.isLoading}
-    <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
-  {:else if $resources.isError}
+  {#if $allResources.isLoading}
+    <DelayedSpinner isLoading={$allResources.isLoading} size="16px" />
+  {:else if $allResources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      Error loading resources: {$allResources.error?.message}
     </div>
-  {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} {refreshSources} />
+  {:else if $allResources.isSuccess}
+    <ProjectResourcesTable data={$allResources?.data} />
   {/if}
 </section>
 
