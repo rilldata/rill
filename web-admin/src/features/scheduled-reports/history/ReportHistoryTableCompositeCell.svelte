@@ -15,7 +15,7 @@
     {formatRunDate(reportTime, timeZone)}
   </div>
   {#if errorMessage === ""}
-    <Tag color="blue">Email sent</Tag>
+    <Tag color="blue">Report sent</Tag>
   {:else}
     <Tooltip distance={8}>
       <Tag color="red">Failed</Tag>

@@ -1,4 +1,20 @@
 <script lang="ts">
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import Close from "@rilldata/web-common/components/icons/Close.svelte";
+  import Search from "@rilldata/web-common/components/icons/Search.svelte";
+  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     createConnectorServiceOLAPListTables,
     createQueryServiceTableColumns,
@@ -8,48 +24,32 @@
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { FileArtifact } from "../entity-management/file-artifact";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { PlusIcon } from "lucide-svelte";
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
-  import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
-  import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { tick } from "svelte";
+  import { slide } from "svelte/transition";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
+  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
+  import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { featureFlags } from "../feature-flags";
   import { useModels } from "../models/selectors";
   import { useSources } from "../sources/selectors";
-  import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { slide } from "svelte/transition";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
-  import { tick } from "svelte";
-  import type { ItemType, Confirmation } from "../visual-metrics-editing/lib";
+  import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
+  import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
+  import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
+  import type { Confirmation, ItemType } from "../visual-metrics-editing/lib";
   import {
-    YAMLMeasure,
-    YAMLDimension,
     editingIndex,
     editingItem,
     types,
+    YAMLDimension,
+    YAMLMeasure,
   } from "../visual-metrics-editing/lib";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { TIMESTAMPS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
-  import { connectorExplorerStore } from "../connectors/connector-explorer-store";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
-  import { featureFlags } from "../feature-flags";
-  import AlertConfirmation from "../visual-metrics-editing/AlertConfirmation.svelte";
 
   const { clickhouseModeling } = featureFlags;
   const store = connectorExplorerStore.duplicateStore(
@@ -223,18 +223,18 @@
   };
 
   $: dimensionNamesAndLabels = itemGroups.dimensions.reduce(
-    (acc, { name, label, resourceName }) => {
+    (acc, { name, display_name, resourceName }) => {
       acc.name = Math.max(acc.name, name.length || resourceName?.length || 0);
-      acc.label = Math.max(acc.label, label.length);
+      acc.label = Math.max(acc.label, display_name.length);
       return acc;
     },
     { name: 0, label: 0 },
   );
 
   $: measureNamesAndLabels = itemGroups.measures.reduce(
-    (acc, { name, label }) => {
+    (acc, { name, display_name }) => {
       acc.name = Math.max(acc.name, name.length);
-      acc.label = Math.max(acc.label, label.length);
+      acc.label = Math.max(acc.label, display_name.length);
       return acc;
     },
     { name: 0, label: 0 },
@@ -632,7 +632,7 @@
         value={smallestTimeGrain}
         options={Object.entries(TIME_GRAIN).map(([_, { label }]) => ({
           value: label,
-          label,
+          label: label.charAt(0).toUpperCase() + label.slice(1),
         }))}
         placeholder="Select time grain"
         label="Smallest time grain"

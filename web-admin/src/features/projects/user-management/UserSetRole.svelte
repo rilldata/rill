@@ -29,6 +29,7 @@
   export let project: string;
   export let user: User;
   export let isCurrentUser = false;
+  export let pendingAcceptance: boolean = false;
 
   let isOpen = false;
 
@@ -97,7 +98,7 @@
   }
 </script>
 
-{#if !isCurrentUser}
+{#if !isCurrentUser && !pendingAcceptance}
   <DropdownMenu.Root bind:open={isOpen}>
     <DropdownMenu.Trigger
       class="w-18 flex flex-row gap-1 items-center rounded-sm mr-[10px] {isOpen

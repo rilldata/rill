@@ -84,11 +84,22 @@ function syncMeasures(
   // sync measures with selected leaderboard measure.
   if (
     explore.measures?.length &&
-    (!metricsExplorer.leaderboardMeasureName ||
-      !measuresSet.has(metricsExplorer.leaderboardMeasureName))
+    !measuresSet.has(metricsExplorer.leaderboardMeasureName)
   ) {
     metricsExplorer.leaderboardMeasureName = explore.measures[0];
   }
+
+  if (
+    metricsExplorer.tdd.expandedMeasureName &&
+    !measuresSet.has(metricsExplorer.tdd.expandedMeasureName)
+  ) {
+    metricsExplorer.tdd.expandedMeasureName = undefined;
+  }
+
+  metricsExplorer.pivot.columns.measure =
+    metricsExplorer.pivot.columns.measure.filter((measure) =>
+      measuresSet.has(measure.id),
+    );
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
@@ -130,6 +141,20 @@ function syncDimensions(
     metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
+  metricsExplorer.pivot.rows.dimension =
+    metricsExplorer.pivot.rows.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
+    );
+
+  metricsExplorer.pivot.columns.dimension =
+    metricsExplorer.pivot.columns.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
+    );
+
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
     metricsExplorer.visibleDimensionKeys = dimensionsSet;
@@ -159,6 +184,7 @@ const metricsViewReducers = {
         explore,
         fullTimeRange,
       );
+
       state.entities[name] = restorePersistedDashboardState(
         state.entities[name],
       );

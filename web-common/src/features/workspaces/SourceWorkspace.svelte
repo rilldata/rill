@@ -3,7 +3,6 @@
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -79,10 +78,6 @@
       newTitle,
       filePath,
       fileName,
-      [
-        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -134,6 +129,7 @@
 <WorkspaceContainer>
   <WorkspaceHeader
     {filePath}
+    {resource}
     resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}

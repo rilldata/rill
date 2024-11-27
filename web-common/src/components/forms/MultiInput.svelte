@@ -121,7 +121,9 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-white rounded-sm border border-gray-300 px-1 py-[3px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-white rounded-sm px-1 py-[3px] w-full {contentClassName}"
+      class:border={!hasSomeErrors}
+      class:border-gray-300={!hasSomeErrors}
       class:outline={focused || hasSomeErrors}
       class:outline-red-500={hasSomeErrors}
       class:outline-primary-500={focused && !hasSomeErrors}
@@ -130,7 +132,8 @@
         {#each values.slice(0, lastIdx) as _, i}
           {@const hasError = errors?.[i]?.length}
           <div
-            class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
+            class="flex items-center text-gray-600 text-sm rounded-2xl border bg-gray-100 pl-2 pr-1 max-w-full"
+            class:border-gray-300={!hasError}
             class:border-red-300={hasError}
             class:bg-red-50={hasError}
           >

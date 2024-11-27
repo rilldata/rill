@@ -27,7 +27,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 	}
 	d.logger.Debug("syncing from remote")
 	// Create an errgroup for background downloads with limited concurrency.
-	g, ctx := errgroup.WithContext(ctx)
+	g, gctx := errgroup.WithContext(ctx)
 	g.SetLimit(8)
 
 	objects := d.remote.List(&blob.ListOptions{
@@ -39,7 +39,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		// Stop the loop if the ctx was cancelled
 		var stop bool
 		select {
-		case <-ctx.Done():
+		case <-gctx.Done():
 			stop = true
 		default:
 			// don't break
@@ -48,7 +48,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			break // can't use break inside the select
 		}
 
-		obj, err := objects.Next(ctx)
+		obj, err := objects.Next(gctx)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -64,8 +64,8 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 
 		// get version of the table
 		var b []byte
-		err = retry(ctx, func() error {
-			res, err := d.remote.ReadAll(ctx, path.Join(table, "meta.json"))
+		err = retry(gctx, func() error {
+			res, err := d.remote.ReadAll(gctx, path.Join(table, "meta.json"))
 			if err != nil {
 				return err
 			}
@@ -87,13 +87,21 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			continue
 		}
 
-		// check with current version
-		meta, _ := d.tableMeta(table)
+		// check if table in catalog is already upto date
+		meta, _ := d.catalog.tableMeta(gctx, table)
 		if meta != nil && meta.Version == backedUpMeta.Version {
 			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
 			continue
 		}
 		tblMetas[table] = backedUpMeta
+
+		// check if table is locally present but not added to catalog yet
+		meta, _ = d.tableMeta(table)
+		if meta != nil && meta.Version == backedUpMeta.Version {
+			d.logger.Debug("SyncWithObjectStorage: local table is not present in catalog", slog.String("table", table))
+			tblMetas[table] = backedUpMeta
+			continue
+		}
 		if err := os.MkdirAll(filepath.Join(d.localPath, table, backedUpMeta.Version), os.ModePerm); err != nil {
 			return err
 		}
@@ -101,7 +109,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		tblIter := d.remote.List(&blob.ListOptions{Prefix: path.Join(table, backedUpMeta.Version)})
 		// download all objects in the table and current version
 		for {
-			obj, err := tblIter.Next(ctx)
+			obj, err := tblIter.Next(gctx)
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					break
@@ -109,14 +117,14 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 				return err
 			}
 			g.Go(func() error {
-				return retry(ctx, func() error {
+				return retry(gctx, func() error {
 					file, err := os.Create(filepath.Join(d.localPath, obj.Key))
 					if err != nil {
 						return err
 					}
 					defer file.Close()
 
-					rdr, err := d.remote.NewReader(ctx, obj.Key, nil)
+					rdr, err := d.remote.NewReader(gctx, obj.Key, nil)
 					if err != nil {
 						return err
 					}
@@ -141,6 +149,10 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		err = d.catalog.addTableVersion(ctx, table, meta)
+		if err != nil {
+			return err
+		}
 	}
 
 	// mark tables that are not in remote for delete later
@@ -155,14 +167,10 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		if _, ok := tblMetas[entry.Name()]; ok {
 			continue
 		}
-		// get current meta
-		meta, _ := d.tableMeta(entry.Name())
-		if meta == nil {
-			// cleanup ??
-			continue
+		err = d.catalog.removeTable(ctx, entry.Name())
+		if err != nil {
+			return err
 		}
-		meta.Deleted = true
-		_ = d.writeTableMeta(entry.Name(), meta)
 	}
 	return nil
 }

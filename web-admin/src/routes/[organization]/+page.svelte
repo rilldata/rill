@@ -33,7 +33,7 @@
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
   >
     {#if $projs.data.projects?.length === 0}
-      <OrganizationHero organization={orgName} {title} />
+      <OrganizationHero {title} />
       <span>
         This organization has no projects yet. <a
           href="https://docs.rilldata.com/home/get-started"
@@ -47,8 +47,8 @@
         {organizationPermissions}
       />
     {:else}
-      <OrganizationHero organization={orgName} {title} />
-      <div class="py-2 px-1.5">
+      <div class="flex flex-col gap-y-8">
+        <OrganizationHero {title} />
         <ProjectCards organization={orgName} />
       </div>
     {/if}

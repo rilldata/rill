@@ -14,8 +14,7 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// DataDir is the path to directory where duckdb file named `main.db` will be created. In case of external table storage all the files will also be present in DataDir's subdirectories.
-	// If path is set then DataDir is ignored.
+	// DataDir is the path to directory where duckdb files will be created.
 	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
@@ -35,9 +34,6 @@ type config struct {
 	InitSQL string `mapstructure:"init_sql"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
 	LogQueries bool `mapstructure:"log_queries"`
-
-	ReadSettings  map[string]string `mapstructure:"-"`
-	WriteSettings map[string]string `mapstructure:"-"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -47,27 +43,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("could not decode config: %w", err)
 	}
 
-	// Set memory limit
-	cfg.ReadSettings = make(map[string]string)
-	cfg.WriteSettings = make(map[string]string)
-	if cfg.MemoryLimitGB > 0 {
-		cfg.ReadSettings["max_memory"] = fmt.Sprintf("%dGB", cfg.MemoryLimitGB)
-	}
-	if cfg.MemoryLimitGBWrite > 0 {
-		cfg.WriteSettings["max_memory"] = fmt.Sprintf("%dGB", cfg.MemoryLimitGB)
-	}
-
-	// Set threads limit
-	var threads int
-	if cfg.CPU > 0 {
-		cfg.ReadSettings["threads"] = strconv.Itoa(cfg.CPU)
-	}
-	if cfg.CPUWrite > 0 {
-		cfg.WriteSettings["threads"] = strconv.Itoa(cfg.CPUWrite)
-	}
-
 	// Set pool size
 	poolSize := cfg.PoolSize
+	threads := cfg.CPU
 	if poolSize == 0 && threads != 0 {
 		poolSize = threads
 		if cfg.CPU != 0 && cfg.CPU < poolSize {
@@ -77,15 +55,29 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
-
-	// useful for motherduck but safe to pass at initial connect
-	cfg.WriteSettings["custom_user_agent"] = "rill"
 	return cfg, nil
 }
 
-func generateDSN(path, encodedQuery string) string {
-	if encodedQuery == "" {
-		return path
+func (c *config) readSettings() map[string]string {
+	readSettings := make(map[string]string)
+	if c.MemoryLimitGB > 0 {
+		readSettings["max_memory"] = fmt.Sprintf("%dGB", c.MemoryLimitGB)
 	}
-	return path + "?" + encodedQuery
+	if c.CPU > 0 {
+		readSettings["threads"] = strconv.Itoa(c.CPU)
+	}
+	return readSettings
+}
+
+func (c *config) writeSettings() map[string]string {
+	writeSettings := make(map[string]string)
+	if c.MemoryLimitGBWrite > 0 {
+		writeSettings["max_memory"] = fmt.Sprintf("%dGB", c.MemoryLimitGBWrite)
+	}
+	if c.CPUWrite > 0 {
+		writeSettings["threads"] = strconv.Itoa(c.CPUWrite)
+	}
+	// useful for motherduck but safe to pass at initial connect
+	writeSettings["custom_user_agent"] = "rill"
+	return writeSettings
 }

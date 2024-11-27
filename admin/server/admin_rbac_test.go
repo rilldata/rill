@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/rilldata/rill/admin/jobs"
 	"net"
 	"strconv"
 	"testing"
+
+	"github.com/rilldata/rill/admin/jobs"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	_ "github.com/rilldata/rill/admin/database/postgres"
+	_ "github.com/rilldata/rill/admin/provisioner/static"
 )
 
 func TestAdmin_RBAC(t *testing.T) {

@@ -60,7 +60,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "instance not found")
+			return nil, status.Error(codes.NotFound, "instance not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -506,8 +506,8 @@ func (c *connection) reopenDB(ctx context.Context, clean bool) error {
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:      c.config.DataDir,
 		Remote:         c.data,
-		ReadSettings:   c.config.ReadSettings,
-		WriteSettings:  c.config.WriteSettings,
+		ReadSettings:   c.config.readSettings(),
+		WriteSettings:  c.config.writeSettings(),
 		InitQueries:    bootQueries,
 		Logger:         logger,
 		OtelAttributes: []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},

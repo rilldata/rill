@@ -1,4 +1,7 @@
-import type { V1BillingPlan } from "@rilldata/web-admin/client";
+import {
+  type V1BillingPlan,
+  V1BillingPlanType,
+} from "@rilldata/web-admin/client";
 import { formatMemorySize } from "@rilldata/web-common/lib/number-formatting/memory-size";
 import { DateTime } from "luxon";
 import { writable } from "svelte/store";
@@ -12,22 +15,22 @@ export function formatUsageVsQuota(
   const formattedUsage = formatMemorySize(usageInBytes);
   const formattedQuota = formatMemorySize(quota);
   const percent =
-    formattedUsage > formattedQuota
+    usageInBytes > quota
       ? "100+"
       : Math.round((usageInBytes * 100) / quota) + "";
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
 }
 
 export function isTrialPlan(plan: V1BillingPlan) {
-  return plan.name === "free_trial";
+  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TRIAL;
 }
 
 export function isTeamPlan(plan: V1BillingPlan) {
-  return plan.name === "team";
+  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM;
 }
 
 export function isPOCPlan(plan: V1BillingPlan) {
-  return plan.name === "poc";
+  return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED;
 }
 
 export function isEnterprisePlan(plan: V1BillingPlan) {
