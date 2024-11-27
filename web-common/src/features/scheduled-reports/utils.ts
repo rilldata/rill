@@ -91,7 +91,7 @@ export function extractNotificationV2(
   }
 
   return {
-    enableSlackNotification: isEdit ? !!slackNotifier : true,
+    enableSlackNotification: isEdit ? !!slackNotifier : false,
     slackChannels,
     slackUsers,
 
