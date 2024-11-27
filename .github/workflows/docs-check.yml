@@ -29,18 +29,17 @@ jobs:
         with:
           node-version: 20
 
-      - name: NPM Install ${{ matrix.name }}
-        run: npm install -w ${{ matrix.name }}
+      - name: Build docs
+        run: |-
+          npm install -w docs
+          npm run build -w docs
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0
 
-      - name: Build ${{ matrix.name }}
-        run: npm run build -w ${{ matrix.name }}
-
       - name: Deploy Docs to Netlify docs.rilldata.com
         uses: nwtgck/actions-netlify@v3.0
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'pull_request'
         with:
           publish-dir: ./docs/build
           github-token: ${{ secrets.GITHUB_TOKEN }}
