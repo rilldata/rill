@@ -124,7 +124,7 @@
           if (selectedItems.size === allItems.size) {
             setItems([]);
           } else {
-            setItems(Array.from(allItems));
+            setItems(Array.from(allItems), excludeMode);
           }
         }}
         type="plain"
