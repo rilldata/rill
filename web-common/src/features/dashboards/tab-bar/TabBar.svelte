@@ -25,7 +25,7 @@
     dashboardStore,
     validSpecStore,
     webViewStore,
-    basePresetStore,
+    defaultExploreState,
   } = StateManagers;
   $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
@@ -40,7 +40,7 @@
         $dashboardStore,
         metricsSpec,
         exploreSpec,
-        $basePresetStore,
+        $defaultExploreState,
       ),
     },
     ...(hidePivot
@@ -55,7 +55,7 @@
               $dashboardStore,
               metricsSpec,
               exploreSpec,
-              $basePresetStore,
+              $defaultExploreState,
             ),
           },
         ]),

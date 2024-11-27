@@ -77,7 +77,7 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   webViewStore: ExploreWebViewStore;
-  basePresetStore: Readable<V1ExplorePreset>;
+  defaultExploreState: Readable<V1ExplorePreset>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -147,7 +147,7 @@ export function createStateManagers({
   );
 
   const webViewStore = new ExploreWebViewStore(exploreName);
-  const basePresetStore = derived(
+  const defaultExploreState = derived(
     [validSpecStore, timeRangeSummaryStore],
     ([validSpec, timeRangeSummary]) => {
       if (!validSpec.data?.explore) {
@@ -160,6 +160,11 @@ export function createStateManagers({
       );
     },
   );
+  dashboardStore.subscribe((dashState) => {
+    const exploreState = get(validSpecStore).data?.explore;
+    if (!dashState || !exploreState) return;
+    webViewStore.updateStores(dashState, exploreState);
+  });
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
   initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
@@ -195,6 +200,6 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     webViewStore,
-    basePresetStore,
+    defaultExploreState,
   };
 }

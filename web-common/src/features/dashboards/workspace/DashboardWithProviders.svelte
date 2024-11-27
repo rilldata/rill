@@ -1,9 +1,8 @@
 <script lang="ts">
+  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import DashboardThemeProvider from "../DashboardThemeProvider.svelte";
-  import DashboardUrlStateProvider from "../proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "../state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "../stores/DashboardStateProvider.svelte";
   import Dashboard from "./Dashboard.svelte";
 
   export let metricsViewName: string;
@@ -13,13 +12,11 @@
 {#if metricsViewName}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName} visualEditing>
-      <DashboardStateProvider {exploreName}>
-        <DashboardUrlStateProvider {metricsViewName}>
-          <DashboardThemeProvider>
-            <Dashboard {metricsViewName} {exploreName} />
-          </DashboardThemeProvider>
-        </DashboardUrlStateProvider>
-      </DashboardStateProvider>
+      <DashboardURLStateSyncWrapper>
+        <DashboardThemeProvider>
+          <Dashboard {metricsViewName} {exploreName} />
+        </DashboardThemeProvider>
+      </DashboardURLStateSyncWrapper>
     </StateManagersProvider>
   {/key}
 {:else}

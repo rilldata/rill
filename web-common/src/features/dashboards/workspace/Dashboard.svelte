@@ -32,12 +32,7 @@
     },
     dashboardStore,
     validSpecStore,
-    webViewStore,
   } = StateManagers;
-  $: webViewStore.updateStores(
-    $dashboardStore,
-    $validSpecStore.data?.explore ?? {},
-  );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 

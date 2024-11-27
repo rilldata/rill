@@ -295,8 +295,8 @@ function fromOverviewUrlParams(
     preset.overviewSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
   }
 
-  if (searchParams.has("expanded_dim")) {
-    const dim = searchParams.get("expanded_dim") as string;
+  if (searchParams.has("expand_dim")) {
+    const dim = searchParams.get("expand_dim") as string;
     if (
       dimensions.has(dim) ||
       // we are unsetting from a default preset

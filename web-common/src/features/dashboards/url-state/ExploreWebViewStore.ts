@@ -19,6 +19,8 @@ type ExploreWebView = V1ExploreWebView | typeof ExploreWebViewNonPivot;
 const ExploreViewKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> = {
   [V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]: [],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW]: [
+    "measures",
+    "dimensions",
     "overviewExpandedDimension",
     "overviewSortBy",
     "overviewSortAsc",
@@ -127,9 +129,14 @@ export class ExploreWebViewStore {
     exploreState: MetricsExplorerEntity,
     metricsSpec: V1MetricsViewSpec,
     exploreSpec: V1ExploreSpec,
+    // default set of fields used to determine which params will not be set in url
     defaultExplorePreset: V1ExplorePreset,
-    additionaPreset: V1ExplorePreset = {},
+    // additional fields to be applied on top of fields in session store. this is used to parameterise opening of page.
+    // currently it is used to set the active measure for TTD
+    additionalPresetForView: V1ExplorePreset = {},
   ) {
+    // convert the MetricsExplorerEntity to V1ExplorePreset
+    // TODO: we should eventually only use V1ExplorePreset across the app
     const currentPreset = convertMetricsExploreToPreset(
       exploreState,
       exploreSpec,
@@ -137,7 +144,7 @@ export class ExploreWebViewStore {
     const preset = {
       ...currentPreset,
       ...get(this.stores[view]),
-      ...additionaPreset,
+      ...additionalPresetForView,
     };
 
     for (const key of ExploreViewOtherKeys[view]) {

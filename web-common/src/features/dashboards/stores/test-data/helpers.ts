@@ -1,5 +1,4 @@
 import { QueryClient } from "@rilldata/svelte-query";
-import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -17,14 +16,11 @@ import {
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewSpec,
-  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
@@ -114,20 +110,6 @@ export function assertMetricsViewRaw(
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
 }
 
-export function assertVisiblePartsOfMetricsView(
-  name: string,
-  measures: Array<string> | undefined,
-  dimensions: Array<string> | undefined,
-) {
-  const metricsView = get(metricsExplorerStore).entities[name];
-  if (measures)
-    expect([...metricsView.visibleMeasureKeys].sort()).toEqual(measures.sort());
-  if (dimensions)
-    expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
-      dimensions.sort(),
-    );
-}
-
 export function initStateManagers(metricsViewName?: string) {
   metricsViewName ??= AD_BIDS_NAME;
   const exploreName = metricsViewName + "_explore";
@@ -164,67 +146,4 @@ export function getPartialDashboard(
     (key) => ((partialDashboard as any)[key] = deepClone(dashboard[key])),
   );
   return partialDashboard;
-}
-
-export function getPivotedPartialDashboard(
-  pivotRowDimensions: string[],
-  pivotRowTimeDimensions: V1TimeGrain[],
-  pivotColumnMeasures: string[],
-  pivotColumnDimensions: string[],
-  pivotColumnTimeDimensions: V1TimeGrain[],
-): Partial<MetricsExplorerEntity> {
-  const hasPivot =
-    !!pivotRowDimensions.length ||
-    !!pivotRowTimeDimensions.length ||
-    !!pivotColumnMeasures.length ||
-    !!pivotColumnDimensions.length ||
-    !!pivotColumnTimeDimensions.length;
-  return {
-    activePage: hasPivot
-      ? DashboardState_ActivePage.PIVOT
-      : DashboardState_ActivePage.DEFAULT,
-    pivot: {
-      active: hasPivot,
-      rows: {
-        dimension: [
-          ...pivotRowDimensions.map((r) => ({
-            id: r,
-            type: PivotChipType.Dimension,
-            title: r,
-          })),
-          ...pivotRowTimeDimensions.map((g) => ({
-            id: g,
-            type: PivotChipType.Time,
-            title: TIME_GRAIN[g]?.label.toString(),
-          })),
-        ],
-      },
-      columns: {
-        measure: pivotColumnMeasures.map((m) => ({
-          id: m,
-          type: PivotChipType.Measure,
-          title: m,
-        })),
-        dimension: [
-          ...pivotColumnDimensions.map((r) => ({
-            id: r,
-            type: PivotChipType.Dimension,
-            title: r,
-          })),
-          ...pivotColumnTimeDimensions.map((g) => ({
-            id: g,
-            type: PivotChipType.Time,
-            title: TIME_GRAIN[g]?.label.toString(),
-          })),
-        ],
-      },
-      expanded: {},
-      sorting: [],
-      columnPage: 1,
-      rowPage: 1,
-      enableComparison: true,
-      activeCell: null,
-      rowJoinType: "nest",
-    },
-  };
 }

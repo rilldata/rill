@@ -44,7 +44,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const { dashboardStore, validSpecStore, webViewStore, basePresetStore } =
+  const { dashboardStore, validSpecStore, webViewStore, defaultExploreState } =
     getStateManagers();
   $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
@@ -99,7 +99,7 @@
     $dashboardStore,
     metricsSpec,
     exploreSpec,
-    $basePresetStore,
+    $defaultExploreState,
     {
       timeDimensionMeasure: measure.name,
     },

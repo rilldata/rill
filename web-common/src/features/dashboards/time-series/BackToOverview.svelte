@@ -3,7 +3,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
 
-  const { dashboardStore, validSpecStore, webViewStore, basePresetStore } =
+  const { dashboardStore, validSpecStore, webViewStore, defaultExploreState } =
     getStateManagers();
   $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
@@ -13,7 +13,7 @@
     $dashboardStore,
     metricsSpec,
     exploreSpec,
-    $basePresetStore,
+    $defaultExploreState,
   );
 </script>
 
