@@ -69,8 +69,6 @@
   }
 
   function refreshSources(resourceKind: string, resourceName: string) {
-    isReconciling = true;
-
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
