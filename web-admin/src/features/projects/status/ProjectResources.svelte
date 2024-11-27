@@ -11,11 +11,13 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isReconciling = false;
+  let isRefreshConfirmDialogOpen = false;
 
   $: resources = createRuntimeServiceListResources(
     $runtime.instanceId,
@@ -64,8 +66,6 @@
   }
 
   function refreshSources(resourceKind: string, resourceName: string) {
-    isReconciling = true;
-
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
@@ -95,7 +95,9 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={refreshAllSourcesAndModels}
+      on:click={() => {
+        isRefreshConfirmDialogOpen = true;
+      }}
       disabled={isReconciling}
     >
       {#if isReconciling}
@@ -115,3 +117,8 @@
     <ProjectResourcesTable data={$resources.data} {refreshSources} />
   {/if}
 </section>
+
+<RefreshConfirmDialog
+  bind:open={isRefreshConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>
