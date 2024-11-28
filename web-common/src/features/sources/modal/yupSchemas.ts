@@ -166,8 +166,7 @@ export const getYupSchema = {
       ),
     port: yup
       .string() // Purposefully using a string input, not a numeric input
-      .matches(/^\d+$/, "Port must be a number")
-      .required("Port is required"),
+      .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
@@ -189,8 +188,7 @@ export const getYupSchema = {
       ),
     port: yup
       .string() // Purposefully using a string input, not a numeric input
-      .matches(/^\d+$/, "Port must be a number")
-      .required("Port is required"),
+      .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
@@ -212,8 +210,7 @@ export const getYupSchema = {
       ),
     port: yup
       .string() // Purposefully using a string input, not a numeric input
-      .matches(/^\d+$/, "Port must be a number")
-      .required("Port is required"),
+      .matches(/^\d+$/, "Port must be a number"),
     username: yup.string(),
     password: yup.string(),
     ssl: yup.boolean(),
