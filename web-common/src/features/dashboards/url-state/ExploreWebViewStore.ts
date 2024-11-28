@@ -19,6 +19,7 @@ type ExploreWebView = V1ExploreWebView | typeof ExploreWebViewNonPivot;
 const ExploreViewKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> = {
   [V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]: [],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW]: [
+    "view",
     "measures",
     "dimensions",
     "overviewExpandedDimension",
@@ -27,11 +28,13 @@ const ExploreViewKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> = {
     "overviewSortType",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [
+    "view",
     "timeDimensionMeasure",
     "timeDimensionChartType",
     "timeDimensionPin",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [
+    "view",
     "pivotCols",
     "pivotRows",
     "pivotSortAsc",
@@ -57,14 +60,14 @@ const ExploreViewOtherKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> =
   };
 for (const webView in ExploreViewOtherKeys) {
   const keys = new Set(ExploreViewKeys[webView]);
-  const otherKeys: (keyof V1ExplorePreset)[] = [];
+  const otherKeys = new Set<keyof V1ExplorePreset>();
   for (const otherWebView in ExploreViewKeys) {
     for (const key of ExploreViewKeys[otherWebView]) {
       if (keys.has(key)) continue;
-      otherKeys.push(key);
+      otherKeys.add(key);
     }
   }
-  ExploreViewOtherKeys[webView] = otherKeys;
+  ExploreViewOtherKeys[webView] = [...otherKeys];
 }
 
 function getStoreForExploreWebView(exploreName: string, view: ExploreWebView) {
@@ -119,6 +122,7 @@ export class ExploreWebViewStore {
         ExploreWebViewNonPivot,
         exploreState,
         exploreSpec,
+        view,
       );
     }
     this.updateStoreForView(view, exploreState, exploreSpec);
@@ -150,9 +154,7 @@ export class ExploreWebViewStore {
     for (const key of ExploreViewOtherKeys[view]) {
       preset[key] = defaultExplorePreset[key] as any;
     }
-    if (view === ExploreWebViewNonPivot) {
-      preset.view = undefined;
-    } else {
+    if (view !== ExploreWebViewNonPivot) {
       preset.view = view;
     }
 
@@ -174,15 +176,16 @@ export class ExploreWebViewStore {
   }
 
   private updateStoreForView(
-    view: ExploreWebView,
+    storeView: ExploreWebView,
     exploreState: MetricsExplorerEntity,
     exploreSpec: V1ExploreSpec,
+    forView = storeView,
   ) {
-    const store = this.stores[view];
+    const store = this.stores[storeView];
     const preset = convertMetricsExploreToPreset(exploreState, exploreSpec);
     const storedPreset: V1ExplorePreset = {};
 
-    for (const key of ExploreViewKeys[view]) {
+    for (const key of ExploreViewKeys[forView]) {
       storedPreset[key] = preset[key] as any;
     }
 
