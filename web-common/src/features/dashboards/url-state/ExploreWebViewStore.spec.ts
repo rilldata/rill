@@ -12,7 +12,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
-  AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,

@@ -1,5 +1,9 @@
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  filterExpressions,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import {
   getMultiFieldError,
@@ -10,6 +14,7 @@ import {
   stripParserError,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import {
+  FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
   FromURLParamTimeGrainMap,
   FromURLParamTimeRangePresetMap,
@@ -29,6 +34,7 @@ import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   V1ExploreComparisonMode,
+  V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1Expression,
@@ -86,6 +92,8 @@ export function convertURLToExplorePreset(
   if (searchParams.has("f")) {
     const { expr, errors: filterErrors } = fromFilterUrlParam(
       searchParams.get("f") as string,
+      measures,
+      dimensions,
     );
     if (filterErrors) errors.push(...filterErrors);
     if (expr) preset.where = expr;
@@ -153,12 +161,23 @@ function fromLegacyStateUrlParam(
   }
 }
 
-function fromFilterUrlParam(filter: string): {
+function fromFilterUrlParam(
+  filter: string,
+  measures: Map<string, MetricsViewSpecMeasureV2>,
+  dimensions: Map<string, MetricsViewSpecDimensionV2>,
+): {
   expr?: V1Expression;
   errors?: Error[];
 } {
   try {
     let expr = convertFilterParamToExpression(filter);
+    if (!expr) {
+      return {
+        expr: createAndExpression([]),
+        errors: [new Error("Failed to parse filter: " + filter)],
+      };
+    }
+
     // if root is not AND/OR then add AND
     if (
       expr?.cond?.op !== V1Operation.OPERATION_AND &&
@@ -166,7 +185,36 @@ function fromFilterUrlParam(filter: string): {
     ) {
       expr = createAndExpression([expr]);
     }
-    return { expr };
+    const errors: Error[] = [];
+    const missingDims: string[] = [];
+    const missingFields: string[] = [];
+    expr =
+      filterIdentifiers(expr, (e, ident) => {
+        if (
+          e.cond?.op === V1Operation.OPERATION_IN ||
+          e.cond?.op === V1Operation.OPERATION_NIN
+        ) {
+          if (dimensions.has(ident)) {
+            return true;
+          }
+          missingDims.push(ident);
+          return false;
+        }
+
+        if (measures.has(ident) || dimensions.has(ident)) {
+          return true;
+        }
+        missingFields.push(ident);
+
+        return false;
+      }) ?? createAndExpression([]);
+    if (missingDims.length) {
+      errors.push(getMultiFieldError("filter dimension", missingDims));
+    }
+    if (missingFields.length) {
+      errors.push(getMultiFieldError("filter field", missingFields));
+    }
+    return { expr, errors };
   } catch (e) {
     return {
       errors: [new Error("Selected filter is invalid: " + stripParserError(e))],
@@ -282,6 +330,19 @@ function fromOverviewUrlParams(
     }
   }
 
+  if (searchParams.has("expand_dim")) {
+    const dim = searchParams.get("expand_dim") as string;
+    if (
+      dimensions.has(dim) ||
+      // we are unsetting from a default preset
+      dim === ""
+    ) {
+      preset.overviewExpandedDimension = dim;
+    } else {
+      errors.push(getSingleFieldError("expanded dimension", dim));
+    }
+  }
+
   if (searchParams.has("sort_by")) {
     const sortBy = searchParams.get("sort_by") as string;
     if (measures.has(sortBy)) {
@@ -295,16 +356,12 @@ function fromOverviewUrlParams(
     preset.overviewSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
   }
 
-  if (searchParams.has("expand_dim")) {
-    const dim = searchParams.get("expand_dim") as string;
-    if (
-      dimensions.has(dim) ||
-      // we are unsetting from a default preset
-      dim === ""
-    ) {
-      preset.overviewExpandedDimension = dim;
+  if (searchParams.has("sort_type")) {
+    const sortType = searchParams.get("sort_type") as string;
+    if (sortType in FromURLParamsSortTypeMap) {
+      preset.overviewSortType = FromURLParamsSortTypeMap[sortType];
     } else {
-      errors.push(getSingleFieldError("expanded dimension", dim));
+      errors.push(getSingleFieldError("sort type", sortType));
     }
   }
 

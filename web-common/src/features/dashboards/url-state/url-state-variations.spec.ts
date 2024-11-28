@@ -20,6 +20,7 @@ import {
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+  AD_BIDS_SET_ALL_TIME_RANGE_FILTER,
   AD_BIDS_SET_KATHMANDU_TIMEZONE,
   AD_BIDS_SET_LA_TIMEZONE,
   AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
@@ -27,6 +28,9 @@ import {
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
+  AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
+  AD_BIDS_SORT_BY_PERCENT_VALUE,
+  AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
@@ -83,6 +87,12 @@ const TestCases: {
     mutations: [AD_BIDS_SET_P4W_TIME_RANGE_FILTER, AD_BIDS_SET_LA_TIMEZONE],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/?tr=P4W&tz=America%2FLos_Angeles&grain=week",
+  },
+  {
+    title: "Time range with preset and ALL_TIME selected",
+    mutations: [AD_BIDS_SET_ALL_TIME_RANGE_FILTER],
+    preset: AD_BIDS_PRESET,
+    expectedUrl: "http://localhost/?tr=all",
   },
 
   {
@@ -173,28 +183,33 @@ const TestCases: {
   {
     title:
       "Leaderboard configs with no preset and leaderboard sort measure in state different than default",
-    mutations: [AD_BIDS_SORT_ASC_BY_BID_PRICE],
-    expectedUrl: "http://localhost/?sort_by=bid_price&sort_dir=ASC",
+    mutations: [AD_BIDS_SORT_BY_DELTA_ABS_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
+    expectedUrl:
+      "http://localhost/?sort_by=bid_price&sort_dir=ASC&sort_type=delta_abs",
   },
   {
     title:
       "Leaderboard configs with no preset and leaderboard sort measure in state same as default",
-    mutations: [AD_BIDS_SORT_DESC_BY_IMPRESSIONS],
+    mutations: [AD_BIDS_SORT_BY_VALUE, AD_BIDS_SORT_DESC_BY_IMPRESSIONS],
     expectedUrl: "http://localhost/",
   },
   {
     title:
       "Leaderboard configs with preset and leaderboard sort measure in state same as preset",
-    mutations: [AD_BIDS_SORT_ASC_BY_BID_PRICE],
+    mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/",
   },
   {
     title:
       "Leaderboard configs with preset and leaderboard sort measure in state different than preset",
-    mutations: [AD_BIDS_SORT_DESC_BY_IMPRESSIONS],
+    mutations: [
+      AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
+      AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+    ],
     preset: AD_BIDS_PRESET,
-    expectedUrl: "http://localhost/?sort_by=impressions&sort_dir=DESC",
+    expectedUrl:
+      "http://localhost/?sort_by=impressions&sort_dir=DESC&sort_type=delta_abs",
   },
 
   {
@@ -459,7 +474,6 @@ export function getCleanMetricsExploreForAssertion() {
   // TODO
   delete cleanedState.selectedScrubRange;
   delete cleanedState.leaderboardContextColumn;
-  delete cleanedState.dashboardSortType;
 
   return cleanedState;
 }

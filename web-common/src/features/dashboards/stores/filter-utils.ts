@@ -2,6 +2,7 @@ import {
   type V1Condition,
   V1Operation,
   type V1Expression,
+  type V1Subquery,
 } from "@rilldata/web-common/runtime-client";
 
 export function createLikeExpression(
@@ -183,6 +184,12 @@ export function filterExpressions(
   expr: V1Expression,
   checker: (e: V1Expression) => boolean,
 ): V1Expression | undefined {
+  if (expr.subquery) {
+    return {
+      subquery: filterSubQuery(expr.subquery, checker),
+    };
+  }
+
   if (!expr.cond?.exprs) {
     return {
       ...expr,
@@ -213,6 +220,40 @@ export function filterExpressions(
   }
 
   return newExpr;
+}
+function filterSubQuery(
+  subQuery: V1Subquery,
+  checker: (e: V1Expression) => boolean,
+) {
+  if (subQuery.having?.cond?.exprs?.length) {
+    if (checker(subQuery.having)) {
+      subQuery.having = filterExpressions(subQuery.having, checker);
+    } else {
+      subQuery.having = undefined;
+    }
+  } else if (subQuery.having) {
+    subQuery.having = {
+      ...subQuery.having,
+    };
+  }
+  if (subQuery.where?.cond?.exprs?.length) {
+    if (checker(subQuery.where)) {
+      subQuery.where = filterExpressions(subQuery.where, checker);
+    } else {
+      subQuery.where = undefined;
+    }
+  } else if (subQuery.where) {
+    subQuery.where = {
+      ...subQuery.where,
+    };
+  }
+
+  return <V1Subquery>{
+    dimension: subQuery.dimension,
+    measures: [...(subQuery.measures ?? [])],
+    where: subQuery.where,
+    having: subQuery.having,
+  };
 }
 
 export function copyFilterExpression(expr: V1Expression) {

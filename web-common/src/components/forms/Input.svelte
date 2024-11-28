@@ -53,7 +53,11 @@
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
-  export let onEnter: () => void = voidFunction;
+  export let onEnter: (
+    e: FocusEvent & {
+      currentTarget: EventTarget & HTMLDivElement;
+    },
+  ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
 
   let hitEnter = false;

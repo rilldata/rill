@@ -123,38 +123,38 @@ export enum ExploreOverviewSortType {
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_PERCENT = 1;
+   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_VALUE = 1;
    */
-  PERCENT = 1,
+  VALUE = 1,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT = 2;
+   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_PERCENT = 2;
    */
-  DELTA_PERCENT = 2,
+  PERCENT = 2,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE = 3;
+   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT = 3;
    */
-  DELTA_ABSOLUTE = 3,
+  DELTA_PERCENT = 3,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION = 4;
+   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE = 4;
    */
-  DIMENSION = 4,
+  DELTA_ABSOLUTE = 4,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_HIDDEN = 5;
+   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION = 5;
    */
-  HIDDEN = 5,
+  DIMENSION = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ExploreOverviewSortType)
 proto3.util.setEnumType(ExploreOverviewSortType, "rill.runtime.v1.ExploreOverviewSortType", [
   { no: 0, name: "EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED" },
-  { no: 1, name: "EXPLORE_OVERVIEW_SORT_TYPE_PERCENT" },
-  { no: 2, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT" },
-  { no: 3, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE" },
-  { no: 4, name: "EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION" },
-  { no: 5, name: "EXPLORE_OVERVIEW_SORT_TYPE_HIDDEN" },
+  { no: 1, name: "EXPLORE_OVERVIEW_SORT_TYPE_VALUE" },
+  { no: 2, name: "EXPLORE_OVERVIEW_SORT_TYPE_PERCENT" },
+  { no: 3, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT" },
+  { no: 4, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE" },
+  { no: 5, name: "EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION" },
 ]);
 
 /**

@@ -54,6 +54,7 @@ export async function fetchExploreSpec(
         {},
       ),
       staleTime: Infinity,
+      cacheTime: Infinity,
     });
   }
 

@@ -38,6 +38,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export type TestDashboardMutation = (mut: DashboardMutables) => void;
@@ -87,6 +88,14 @@ export const AD_BIDS_SET_P4W_TIME_RANGE_FILTER: TestDashboardMutation = () =>
     AD_BIDS_EXPLORE_NAME,
     { name: TimeRangePreset.LAST_4_WEEKS } as any,
     V1TimeGrain.TIME_GRAIN_WEEK,
+    undefined,
+    AD_BIDS_METRICS_INIT,
+  );
+export const AD_BIDS_SET_ALL_TIME_RANGE_FILTER: TestDashboardMutation = () =>
+  metricsExplorerStore.selectTimeRange(
+    AD_BIDS_EXPLORE_NAME,
+    { name: TimeRangePreset.ALL_TIME } as any,
+    V1TimeGrain.TIME_GRAIN_DAY,
     undefined,
     AD_BIDS_METRICS_INIT,
   );
@@ -142,6 +151,15 @@ export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
+};
+export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
+  toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
+};
+export const AD_BIDS_SORT_BY_PERCENT_VALUE: TestDashboardMutation = (mut) => {
+  toggleSort(mut, DashboardState_LeaderboardSortType.PERCENT);
+};
+export const AD_BIDS_SORT_BY_DELTA_ABS_VALUE: TestDashboardMutation = (mut) => {
+  toggleSort(mut, DashboardState_LeaderboardSortType.DELTA_ABSOLUTE);
 };
 
 export const AD_BIDS_OPEN_PUB_DIMENSION_TABLE: TestDashboardMutation = (mut) =>

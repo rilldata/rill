@@ -11,6 +11,7 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
+import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromURLParamTDDChartMap,
   FromURLParamTimeDimensionMap,
@@ -22,12 +23,19 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
+import {
+  DashboardState_ActivePage,
+  DashboardState_LeaderboardSortType,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   V1ExploreComparisonMode,
+  V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
   V1ExploreWebView,
@@ -177,6 +185,10 @@ function fromTimeRangeUrlParam(tr: string): {
   timeRange?: DashboardTimeControls;
   error?: Error;
 } {
+  if (tr === "all") {
+    // temporary to replace `inf` to `all`
+    tr = TimeRangePreset.ALL_TIME;
+  }
   // TODO: validation
   return {
     timeRange: {
@@ -241,6 +253,16 @@ function fromOverviewUrlParams(
     partialExploreState.sortDirection = preset.overviewSortAsc
       ? SortDirection.ASCENDING
       : SortDirection.DESCENDING;
+  }
+
+  if (
+    preset.overviewSortType !== undefined &&
+    preset.overviewSortType !==
+      V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
+  ) {
+    partialExploreState.dashboardSortType =
+      Number(ToLegacySortTypeMap[preset.overviewSortType]) ??
+      DashboardState_LeaderboardSortType.UNSPECIFIED;
   }
 
   if (preset.overviewExpandedDimension !== undefined) {

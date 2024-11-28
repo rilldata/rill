@@ -1,8 +1,10 @@
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1ExploreOverviewSortType,
   V1ExploreWebView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -31,6 +33,20 @@ export const FromActivePageMap: Record<
 export const ToActivePageViewMap = reverseMap(FromActivePageMap);
 ToActivePageViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW] =
   DashboardState_ActivePage.DEFAULT;
+
+export const FromURLParamsSortTypeMap: Record<
+  string,
+  V1ExploreOverviewSortType
+> = {
+  value: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_VALUE,
+  percent: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_PERCENT,
+  delta_abs:
+    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE,
+  delta_percent:
+    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT,
+  dim: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION,
+};
+export const ToURLParamSortTypeMap = reverseMap(FromURLParamsSortTypeMap);
 
 export const FromURLParamTimeGrainMap: Record<string, V1TimeGrain> = {};
 Object.values(TIME_GRAIN).forEach((tg) => {
@@ -61,6 +77,7 @@ Object.keys(TimeRangePreset).forEach(
     (FromURLParamTimeRangePresetMap[TimeRangePreset[tr]] =
       tr as TimeRangePreset),
 );
+FromURLParamTimeRangePresetMap["all"] = TimeRangePreset.ALL_TIME;
 
 export function reverseMap<
   K extends string | number,

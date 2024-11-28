@@ -20,6 +20,7 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
+  V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
   V1ExploreWebView,
@@ -241,6 +242,8 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
   overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
   overviewSortAsc: true,
+  overviewSortType:
+    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_PERCENT,
 };
 export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
   overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,

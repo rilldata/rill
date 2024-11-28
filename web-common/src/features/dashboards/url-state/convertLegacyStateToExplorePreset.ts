@@ -17,7 +17,10 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
-import { mapLegacyChartType } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
+import {
+  FromLegacySortTypeMap,
+  mapLegacyChartType,
+} from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
   FromURLParamTimeDimensionMap,
@@ -241,7 +244,8 @@ function fromLegacyOverviewFields(
   }
 
   if (legacyState.leaderboardSortType) {
-    // TODO
+    preset.overviewSortType =
+      FromLegacySortTypeMap[legacyState.leaderboardSortType];
   }
 
   if (legacyState.selectedDimension) {

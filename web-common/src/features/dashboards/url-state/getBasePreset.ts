@@ -13,6 +13,7 @@ import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboa
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   V1ExploreComparisonMode,
+  V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
   V1ExploreWebView,
@@ -40,6 +41,8 @@ export function getBasePreset(
 
     overviewSortBy: explore.measures?.[0],
     overviewSortAsc: false,
+    overviewSortType:
+      V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_VALUE,
     overviewExpandedDimension: "",
 
     timeDimensionMeasure: "",

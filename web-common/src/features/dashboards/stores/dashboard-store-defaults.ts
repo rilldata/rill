@@ -159,8 +159,6 @@ export function getDefaultMetricsExplorerEntity(
     name,
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-    dashboardSortType: SortType.VALUE,
-    sortDirection: SortDirection.DESCENDING,
 
     temporaryFilterName: null,
     contextColumnWidths: { ...contextColWidthDefaults },

@@ -12,8 +12,10 @@ import {
   URLStateDefaultTimezone,
 } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
+  ToURLParamSortTypeMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
   ToURLParamTimeGrainMapMap,
@@ -24,6 +26,7 @@ import {
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
@@ -88,7 +91,12 @@ function toTimeRangesUrl(
     (preset.timeRange === undefined &&
       exploreState.selectedTimeRange?.name !== URLStateDefaultTimeRange)
   ) {
-    searchParams.set("tr", exploreState.selectedTimeRange?.name ?? "");
+    let tr = exploreState.selectedTimeRange?.name ?? "";
+    if (tr === TimeRangePreset.ALL_TIME) {
+      // temporary to replace `inf` to `all`
+      tr = "all";
+    }
+    searchParams.set("tr", tr);
   }
 
   if (
@@ -149,7 +157,7 @@ function toTimeRangesUrl(
     (preset.comparisonDimension === undefined &&
       !!exploreState.selectedComparisonDimension)
   ) {
-    // TODO: move this based on sequence
+    // TODO: move this based on expected param sequence
     searchParams.set(
       "compare_dim",
       exploreState.selectedComparisonDimension ?? "",
@@ -217,6 +225,15 @@ function toOverviewUrl(
       exploreState.sortDirection !== URLStateDefaultSortDirection)
   ) {
     searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");
+  }
+
+  const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
+  if (
+    (preset.overviewSortType !== undefined &&
+      preset.overviewSortType !== sortType) ||
+    (preset.overviewSortType === undefined && sortType)
+  ) {
+    searchParams.set("sort_type", ToURLParamSortTypeMap[sortType] ?? "");
   }
 
   return searchParams;
