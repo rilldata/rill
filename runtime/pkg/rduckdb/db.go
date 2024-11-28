@@ -28,7 +28,7 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var errNotFound = errors.New("not found")
+var errNotFound = errors.New("rduckdb: not found")
 
 type DB interface {
 	// Close closes the database.
