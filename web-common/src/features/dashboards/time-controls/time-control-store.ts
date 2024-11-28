@@ -363,14 +363,14 @@ function getComparisonTimeRange(
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
   if (!comparisonTimeRange?.name) {
-    const comparisonOption = DEFAULT_TIME_RANGES[
-      timeRange.name as TimeComparisonOption
-    ]?.defaultComparison as TimeComparisonOption;
+    const comparisonOption =
+      (DEFAULT_TIME_RANGES[timeRange.name as TimeComparisonOption]
+        ?.defaultComparison as TimeComparisonOption) ??
+      explore.timeRanges?.find((tr) => tr.range === timeRange.name)
+        ?.comparisonTimeRanges?.[0]?.offset ??
+      TimeComparisonOption.CONTIGUOUS;
     const range = getTimeComparisonParametersForComponent(
-      comparisonOption ??
-        explore.timeRanges?.find((tr) => tr.range === timeRange.name)
-          ?.comparisonTimeRanges?.[0]?.offset ??
-        TimeComparisonOption.CONTIGUOUS,
+      comparisonOption,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,
