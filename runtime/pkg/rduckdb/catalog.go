@@ -28,7 +28,7 @@ type snapshot struct {
 // Represents a catalog of available table versions.
 // It is thread-safe and supports acquiring a snapshot of table versions which will not be mutated or removed for as long as the snapshot is held.
 type catalog struct {
-	lock              sync.Mutex
+	mu                sync.Mutex
 	tables            map[string]*table
 	snapshots         map[int]*snapshot
 	currentSnapshotID int
@@ -53,8 +53,8 @@ func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(
 }
 
 func (c *catalog) tableMeta(name string) (*tableMeta, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	t, ok := c.tables[name]
 	if !ok || t.deleted {
@@ -70,8 +70,8 @@ func (c *catalog) tableMeta(name string) (*tableMeta, error) {
 // addTableVersion registers a new version of a table.
 // If the table name has not been seen before, it is added to the catalog.
 func (c *catalog) addTableVersion(name string, meta *tableMeta) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	t, ok := c.tables[name]
 	if !ok {
@@ -98,8 +98,8 @@ func (c *catalog) addTableVersion(name string, meta *tableMeta) {
 // If the table is currently used by a snapshot, it will stay in the catalog but marked with deleted=true.
 // When the last snapshot referencing the table is released, the table will be removed completely.
 func (c *catalog) removeTable(name string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	t, ok := c.tables[name]
 	if !ok {
@@ -115,8 +115,8 @@ func (c *catalog) removeTable(name string) {
 
 // listTables returns tableMeta for all active tables present in the catalog.
 func (c *catalog) listTables() []*tableMeta {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	tables := make([]*tableMeta, 0)
 	for _, t := range c.tables {
@@ -134,8 +134,8 @@ func (c *catalog) listTables() []*tableMeta {
 
 // acquireSnapshot acquires a snapshot of the current table versions.
 func (c *catalog) acquireSnapshot() *snapshot {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	s, ok := c.snapshots[c.currentSnapshotID]
 	if ok {
@@ -166,8 +166,8 @@ func (c *catalog) acquireSnapshot() *snapshot {
 
 // releaseSnapshot releases a snapshot of table versions.
 func (c *catalog) releaseSnapshot(s *snapshot) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	s.referenceCount--
 	if s.referenceCount > 0 {

@@ -323,7 +323,7 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 }
 
 func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) error {
-	d.logger.Debug("create table", slog.String("name", name), slog.Bool("view", opts.View))
+	d.logger.Debug("create: create table", slog.String("name", name), slog.Bool("view", opts.View))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
 		return err
@@ -339,7 +339,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// check if some older version exists
 	oldMeta, _ := d.catalog.tableMeta(name)
 	if oldMeta != nil {
-		d.logger.Debug("old version", slog.String("table", name), slog.String("version", oldMeta.Version))
+		d.logger.Debug("create: old version", slog.String("table", name), slog.String("version", oldMeta.Version))
 	}
 
 	// create new version directory
@@ -394,7 +394,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
 		return fmt.Errorf("create: replicate failed: %w", err)
 	}
-	d.logger.Debug("remote table updated", slog.String("name", name))
+	d.logger.Debug("create: remote table updated", slog.String("name", name))
 	// no errors after this point since background goroutine will eventually sync the local db
 
 	// update local metadata
