@@ -88,7 +88,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		}
 
 		// check if table in catalog is already upto date
-		meta, _ := d.catalog.tableMeta(gctx, table)
+		meta, _ := d.catalog.tableMeta(table)
 		if meta != nil && meta.Version == backedUpMeta.Version {
 			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
 			continue
@@ -149,10 +149,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		err = d.catalog.addTableVersion(ctx, table, meta)
-		if err != nil {
-			return err
-		}
+		d.catalog.addTableVersion(table, meta)
 	}
 
 	// mark tables that are not in remote for delete later
@@ -167,10 +164,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		if _, ok := tblMetas[entry.Name()]; ok {
 			continue
 		}
-		err = d.catalog.removeTable(ctx, entry.Name())
-		if err != nil {
-			return err
-		}
+		d.catalog.removeTable(entry.Name())
 	}
 	return nil
 }
@@ -178,42 +172,41 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 // pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	if meta.Type == "TABLE" {
-		// for views no db files exists, the SQL is stored in meta.json
-		localPath := filepath.Join(d.localPath, table, meta.Version)
-		entries, err := os.ReadDir(localPath)
+	// for views no db files exists, the SQL is stored in meta.json
+	localPath := filepath.Join(d.localPath, table, meta.Version)
+	entries, err := os.ReadDir(localPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
+		// no directory should exist as of now
+		if entry.IsDir() {
+			d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
+			continue
+		}
+
+		wr, err := os.Open(filepath.Join(localPath, entry.Name()))
 		if err != nil {
 			return err
 		}
 
-		for _, entry := range entries {
-			d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
-			// no directory should exist as of now
-			if entry.IsDir() {
-				d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
-				continue
-			}
-
-			wr, err := os.Open(filepath.Join(localPath, entry.Name()))
-			if err != nil {
-				return err
-			}
-
-			// upload to cloud storage
-			err = retry(ctx, func() error {
-				return d.remote.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
-					ContentType: "application/octet-stream",
-				})
+		// upload to cloud storage
+		err = retry(ctx, func() error {
+			return d.remote.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
+				ContentType: "application/octet-stream",
 			})
-			_ = wr.Close()
-			if err != nil {
-				return err
-			}
+		})
+		_ = wr.Close()
+		if err != nil {
+			return err
 		}
 	}
 
 	// update table meta
 	// todo :: also use etag to avoid concurrent writer conflicts
+	d.localDirty = true
 	m, err := json.Marshal(meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal table metadata: %w", err)
@@ -222,7 +215,7 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 		return d.remote.WriteAll(ctx, path.Join(table, "meta.json"), m, nil)
 	})
 	if err != nil {
-		d.logger.Error("failed to update meta.json in remote", slog.Any("error", err))
+		d.logger.Error("failed to update meta.json in remote", slog.String("table", table), slog.Any("error", err))
 	}
 
 	// success -- remove old version
@@ -244,12 +237,11 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 		if version != "" {
 			prefix = path.Join(table, version) + "/"
 		} else {
-			// deleting the entire table
 			prefix = table + "/"
 			// delete meta.json first
 			err := retry(ctx, func() error { return d.remote.Delete(ctx, "meta.json") })
 			if err != nil && gcerrors.Code(err) != gcerrors.NotFound {
-				d.logger.Error("failed to delete meta.json in remote", slog.Any("error", err))
+				d.logger.Error("failed to delete meta.json in remote", slog.String("table", table), slog.Any("error", err))
 				return err
 			}
 		}
@@ -263,11 +255,11 @@ func (d *db) deleteRemote(ctx context.Context, table, version string) error {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			d.logger.Debug("failed to list object", slog.Any("error", err))
+			d.logger.Debug("failed to list object", slog.String("table", table), slog.Any("error", err))
 		}
 		err = retry(ctx, func() error { return d.remote.Delete(ctx, obj.Key) })
 		if err != nil {
-			d.logger.Debug("failed to delete object", slog.String("object", obj.Key), slog.Any("error", err))
+			d.logger.Debug("failed to delete object", slog.String("table", table), slog.String("object", obj.Key), slog.Any("error", err))
 		}
 	}
 	return nil

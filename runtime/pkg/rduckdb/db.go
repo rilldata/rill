@@ -22,7 +22,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel/attribute"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
@@ -76,7 +75,6 @@ type DBOptions struct {
 	OtelAttributes []attribute.KeyValue
 }
 
-// TODO :: revisit this logic
 func (d *DBOptions) ValidateSettings() error {
 	read := &settings{}
 	err := mapstructure.Decode(d.ReadSettings, read)
@@ -218,25 +216,38 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts:       opts,
 		localPath:  opts.LocalPath,
 		remote:     opts.Remote,
-		readMu:     ctxsync.NewRWMutex(),
 		writeSem:   semaphore.NewWeighted(1),
 		metaSem:    semaphore.NewWeighted(1),
 		localDirty: true,
-		ticker:     time.NewTicker(5 * time.Minute),
 		logger:     opts.Logger,
 		ctx:        bgctx,
 		cancel:     cancel,
 	}
 	// catalog
 	db.catalog = newCatalog(
-		db.removeTableVersion,
-		db.removeSnapshot,
+		func(name, version string) {
+			go func() {
+				err = db.removeTableVersion(bgctx, name, version)
+				if err != nil && !errors.Is(err, context.Canceled) {
+					db.logger.Error("error in removing table version", slog.String("name", name), slog.String("version", version), slog.String("error", err.Error()))
+				}
+			}()
+		},
+		func(i int) {
+			go func() {
+				err = db.removeSnapshot(bgctx, i)
+				if err != nil && !errors.Is(err, context.Canceled) {
+					db.logger.Error("error in removing snapshot", slog.Int("id", i), slog.String("error", err.Error()))
+				}
+			}()
+		},
+		opts.Logger,
 	)
 
 	// create local path
 	err = os.MkdirAll(db.localPath, fs.ModePerm)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create read path: %w", err)
+		return nil, fmt.Errorf("unable to create local path: %w", err)
 	}
 
 	// sync local data
@@ -245,7 +256,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, err
 	}
 
-	// create read handle
+	// create db handle
 	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
@@ -266,8 +277,6 @@ type db struct {
 
 	// dbHandle serves executes meta queries and serves read queries
 	dbHandle *sqlx.DB
-	// readMu controls access to readHandle
-	readMu ctxsync.RWMutex
 	// writeSem ensures only one write operation is allowed at a time
 	writeSem *semaphore.Weighted
 	// metaSem enures only one meta operation can run on a duckb handle.
@@ -275,9 +284,7 @@ type db struct {
 	metaSem *semaphore.Weighted
 	// localDirty is set to true when a change is committed to the remote but not yet reflected in the local db
 	localDirty bool
-	// ticker to peroiodically check if local db is in sync with remote
-	ticker  *time.Ticker
-	catalog *catalog
+	catalog    *catalog
 
 	logger *slog.Logger
 
@@ -291,7 +298,6 @@ var _ DB = &db{}
 func (d *db) Close() error {
 	// close background operations
 	d.cancel()
-	d.ticker.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -299,47 +305,26 @@ func (d *db) Close() error {
 	_ = d.writeSem.Acquire(ctx, 1)
 	defer d.writeSem.Release(1)
 
-	err := d.readMu.Lock(ctx)
-	if err != nil {
-		return err
-	}
-	defer d.readMu.Unlock()
-
-	err = d.dbHandle.Close()
-	d.dbHandle = nil
-	return err
+	return d.dbHandle.Close()
 }
 
 func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() error, error) {
-	if err := d.readMu.RLock(ctx); err != nil {
-		return nil, nil, err
-	}
-
-	// acquire a connection
-	snapshot, err := d.catalog.acquireSnapshot(ctx)
-	if err != nil {
-		d.readMu.RUnlock()
-		return nil, nil, err
-	}
+	snapshot := d.catalog.acquireSnapshot()
 
 	conn, err := d.dbHandle.Connx(ctx)
 	if err != nil {
-		d.readMu.RUnlock()
 		return nil, nil, err
 	}
 
 	err = d.prepareSnapshot(ctx, conn, snapshot)
 	if err != nil {
 		_ = conn.Close()
-		d.readMu.RUnlock()
 		return nil, nil, err
 	}
 
 	release := func() error {
-		err = d.catalog.releaseSnapshot(ctx, snapshot)
-		err = errors.Join(err, conn.Close())
-		d.readMu.RUnlock()
-		return err
+		d.catalog.releaseSnapshot(snapshot)
+		return conn.Close()
 	}
 	return conn, release, nil
 }
@@ -359,38 +344,23 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	}
 
 	// check if some older version exists
-	oldMeta, _ := d.catalog.tableMeta(ctx, name)
+	oldMeta, _ := d.catalog.tableMeta(name)
 	if oldMeta != nil {
-		d.logger.Debug("old version", slog.String("version", oldMeta.Version))
+		d.logger.Debug("old version", slog.String("table", name), slog.String("version", oldMeta.Version))
 	}
 
 	// create new version directory
 	newVersion := newVersion()
 	newMeta := &tableMeta{
-		Name:           name,
-		Version:        newVersion,
-		CreatedVersion: newVersion,
+		Name:    name,
+		Version: newVersion,
 	}
-	var dsn string
-	if opts.View {
-		dsn = ""
-		newMeta.SQL = query
-		// special handling to ensure that if a view is recreated with the same name and schema then any views on top of this view still works
-		if oldMeta != nil && oldMeta.Type == "VIEW" {
-			newMeta.CreatedVersion = oldMeta.CreatedVersion
-		}
-		err = os.MkdirAll(filepath.Join(d.localPath, name), fs.ModePerm)
-		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
-	} else {
-		newVersionDir := filepath.Join(d.localPath, name, newVersion)
-		err = os.MkdirAll(newVersionDir, fs.ModePerm)
-		if err != nil {
-			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
-		}
-		dsn = filepath.Join(newVersionDir, "data.db")
+
+	err = d.initLocalTable(name, newVersion)
+	if err != nil {
+		return fmt.Errorf("create: unable to create dir %q: %w", name, err)
 	}
+	dsn := d.localDBPath(name, newVersion)
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dsn, name, true)
@@ -405,11 +375,10 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	var typ string
 	if opts.View {
 		typ = "VIEW"
-		newMeta.Type = "VIEW"
 	} else {
 		typ = "TABLE"
-		newMeta.Type = "TABLE"
 	}
+	newMeta.Type = typ
 	if opts.InitSQL != "" {
 		_, err = conn.ExecContext(ctx, opts.InitSQL, nil)
 		if err != nil {
@@ -422,13 +391,12 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return fmt.Errorf("create: create %s %q failed: %w", typ, name, err)
 	}
 
-	// close write handle before syncing read so that temp files or wal files are removed
+	// close write handle before syncing local so that temp files or wal files are removed
 	err = release()
 	if err != nil {
 		return err
 	}
 
-	d.localDirty = true
 	// update remote data and metadata
 	if err := d.pushToRemote(ctx, name, oldMeta, newMeta); err != nil {
 		return fmt.Errorf("create: replicate failed: %w", err)
@@ -443,11 +411,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil
 	}
 
-	err = d.catalog.addTableVersion(ctx, name, newMeta)
-	if err != nil {
-		d.logger.Debug("create: error in adding version", slog.String("table", name), slog.String("version", newMeta.Version), slog.String("error", err.Error()))
-		return nil
-	}
+	d.catalog.addTableVersion(name, newMeta)
 	d.localDirty = false
 	return nil
 }
@@ -466,7 +430,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return err
 	}
 
-	oldMeta, err := d.catalog.tableMeta(ctx, name)
+	oldMeta, err := d.catalog.tableMeta(name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("mutate: Table %q not found", name)
@@ -476,20 +440,14 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// create new version directory
 	newVersion := newVersion()
-	newVersionDir := filepath.Join(d.localPath, name, newVersion)
-	err = os.MkdirAll(newVersionDir, fs.ModePerm)
-	if err != nil {
-		return fmt.Errorf("mutate: unable to create dir %q: %w", name, err)
-	}
-
-	err = copyDir(newVersionDir, filepath.Join(d.localPath, name, oldMeta.Version))
+	err = copyDir(d.localTableDir(name, newVersion), d.localTableDir(name, oldMeta.Version))
 	if err != nil {
 		return fmt.Errorf("mutate: copy table failed: %w", err)
 	}
 
 	// acquire write connection
 	// need to ignore attaching table since it is already present in the db file
-	conn, release, err := d.acquireWriteConn(ctx, filepath.Join(newVersionDir, "data.db"), name, false)
+	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
 		return err
 	}
@@ -505,13 +463,10 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	if err != nil {
 		return fmt.Errorf("mutate: failed to close connection: %w", err)
 	}
-	d.localDirty = true
 	meta := &tableMeta{
-		Name:           name,
-		Version:        newVersion,
-		CreatedVersion: oldMeta.CreatedVersion,
-		Type:           oldMeta.Type,
-		SQL:            oldMeta.SQL,
+		Name:    name,
+		Version: newVersion,
+		Type:    oldMeta.Type,
 	}
 	err = d.pushToRemote(ctx, name, oldMeta, meta)
 	if err != nil {
@@ -526,11 +481,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return nil
 	}
 
-	err = d.catalog.addTableVersion(ctx, name, meta)
-	if err != nil {
-		d.logger.Debug("mutate: error in adding version", slog.String("table", name), slog.String("version", meta.Version), slog.String("error", err.Error()))
-		return nil
-	}
+	d.catalog.addTableVersion(name, meta)
 	d.localDirty = false
 	return nil
 }
@@ -551,7 +502,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 
 	// check if table exists
-	_, err = d.catalog.tableMeta(ctx, name)
+	_, err = d.catalog.tableMeta(name)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("drop: Table %q not found", name)
@@ -567,11 +518,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 	// no errors after this point since background goroutine will eventually sync the local db
 
-	err = d.catalog.removeTable(ctx, name)
-	if err != nil {
-		d.logger.Debug("drop: error in removing table", slog.String("name", name), slog.String("error", err.Error()))
-		return nil
-	}
+	d.catalog.removeTable(name)
 	d.localDirty = false
 	return nil
 }
@@ -593,7 +540,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to pull from remote: %w", err)
 	}
 
-	oldMeta, err := d.catalog.tableMeta(ctx, oldName)
+	oldMeta, err := d.catalog.tableMeta(oldName)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			return fmt.Errorf("rename: Table %q not found", oldName)
@@ -603,25 +550,22 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 
 	// copy the old table to new table
 	newVersion := newVersion()
-	err = copyDir(filepath.Join(d.localPath, newName, newVersion), filepath.Join(d.localPath, oldName, oldMeta.Version))
+	err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
 	if err != nil {
 		return fmt.Errorf("rename: copy table failed: %w", err)
 	}
 
 	// rename the underlying table
-	err = renameTable(ctx, filepath.Join(d.localPath, newName, newVersion, "data.db"), oldName, newName)
+	err = renameTable(ctx, d.localDBPath(newName, newVersion), oldName, newName)
 	if err != nil {
 		return fmt.Errorf("rename: rename table failed: %w", err)
 	}
 
-	d.localDirty = true
 	// sync the new table and new version
 	meta := &tableMeta{
-		Name:           newName,
-		Version:        newVersion,
-		CreatedVersion: newVersion,
-		Type:           oldMeta.Type,
-		SQL:            oldMeta.SQL,
+		Name:    newName,
+		Version: newVersion,
+		Type:    oldMeta.Type,
 	}
 	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
@@ -647,32 +591,27 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	}
 
 	// remove old table from local db
-	err = d.catalog.removeTable(ctx, oldName)
-	if err != nil {
-		d.logger.Debug("rename: error in removing table", slog.String("name", oldName), slog.String("error", err.Error()))
-		return nil
-	}
-	err = d.catalog.addTableVersion(ctx, newName, meta)
-	if err != nil {
-		d.logger.Debug("rename: error in adding version", slog.String("table", newName), slog.String("version", newVersion), slog.String("error", err.Error()))
-		return nil
-	}
+	d.catalog.removeTable(oldName)
+	d.catalog.addTableVersion(newName, meta)
 	d.localDirty = false
 	return nil
 }
 
 func (d *db) localDBMonitor() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-d.ctx.Done():
 			return
-		case <-d.ticker.C:
+		case <-ticker.C:
 			err := d.writeSem.Acquire(d.ctx, 1)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
 				continue
 			}
 			if !d.localDirty {
+				d.writeSem.Release(1)
 				// all good
 				continue
 			}
@@ -680,6 +619,7 @@ func (d *db) localDBMonitor() {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
+			d.writeSem.Release(1)
 		}
 	}
 }
@@ -700,9 +640,9 @@ func (d *db) Size() int64 {
 		if strings.HasPrefix(entry.Name(), "__rill_tmp_") {
 			continue
 		}
-		meta, _ := d.catalog.tableMeta(context.Background(), entry.Name())
+		meta, _ := d.catalog.tableMeta(entry.Name())
 		if meta != nil {
-			paths = append(paths, filepath.Join(d.localPath, entry.Name(), meta.Version, "data.db"))
+			paths = append(paths, d.localDBPath(meta.Name, meta.Version))
 		}
 	}
 	return fileSize(paths)
@@ -746,7 +686,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	d.logger.Debug("open db", slog.Bool("read", read), slog.String("uri", uri))
 	// open the db
 	var settings map[string]string
-	dsn, err := url.Parse(uri) // in-memory
+	dsn, err := url.Parse(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -789,11 +729,7 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 		return nil, err
 	}
 
-	tables, err := d.catalog.listTables(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+	tables := d.catalog.listTables()
 	err = d.attachTables(ctx, conn, tables, ignoreTable)
 	if err != nil {
 		db.Close()
@@ -839,7 +775,8 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 		if b.Type == "TABLE" {
 			return 1
 		}
-		return strings.Compare(a.CreatedVersion, b.CreatedVersion)
+		// any order for views
+		return 0
 	})
 	for _, table := range tables {
 		if table.Name == ignoreTable {
@@ -855,24 +792,25 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 
 func (d *db) attachTable(ctx context.Context, conn *sqlx.Conn, table *tableMeta) error {
 	safeTable := safeSQLName(table.Name)
-	if table.Type == "VIEW" {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
-		return err
-	}
-
 	safeDBName := safeSQLName(dbName(table.Name, table.Version))
-	_, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(filepath.Join(d.localPath, table.Name, table.Version, "data.db")), safeDBName))
+	_, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(d.localDBPath(table.Name, table.Version)), safeDBName))
 	if err != nil {
-		d.logger.Warn("error in attaching db", slog.String("table", table.Name), slog.Any("error", err))
+		d.logger.Warn("error in attaching db", slog.String("table", table.Name), slog.String("version", table.Version), slog.Any("error", err))
 		return err
 	}
 
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.%s", safeTable, safeDBName, safeTable))
-	return err
+	if err != nil && !errors.Is(err, context.Canceled) && table.Type == "VIEW" {
+		// create a view that returns an error on querying
+		// may be the view is incompatible with the underlying data due to schema changes
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT error('View %s is incompatible with the underlying data: %s')", safeTable, safeTable, strings.ReplaceAll(err.Error(), "'", "''")))
+		return err
+	}
+	return nil
 }
 
 func (d *db) tableMeta(name string) (*tableMeta, error) {
-	contents, err := os.ReadFile(filepath.Join(d.localPath, name, "meta.json"))
+	contents, err := os.ReadFile(d.localMetaPath(name))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, errNotFound
@@ -885,11 +823,8 @@ func (d *db) tableMeta(name string) (*tableMeta, error) {
 		return nil, err
 	}
 
-	if m.Type == "VIEW" {
-		return m, nil
-	}
 	// this is required because release version does not delete table directory as of now
-	_, err = os.Stat(filepath.Join(d.localPath, name, m.Version))
+	_, err = os.Stat(d.localTableDir(name, m.Version))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, errNotFound
@@ -904,24 +839,42 @@ func (d *db) writeTableMeta(name string, meta *tableMeta) error {
 	if err != nil {
 		return fmt.Errorf("create: marshal meta failed: %w", err)
 	}
-	err = os.WriteFile(filepath.Join(d.localPath, name, "meta.json"), metaBytes, fs.ModePerm)
+	err = os.WriteFile(d.localMetaPath(name), metaBytes, fs.ModePerm)
 	if err != nil {
 		return fmt.Errorf("create: write meta failed: %w", err)
 	}
 	return nil
 }
 
-// deleteLocalTableFiles delete table files for the given table name. If version is provided, only that version is deleted.
-func (d *db) deleteLocalTableFiles(name, version string) error {
+func (d *db) localTableDir(name, version string) string {
 	var path string
 	if version == "" {
 		path = filepath.Join(d.localPath, name)
 	} else {
 		path = filepath.Join(d.localPath, name, version)
 	}
-	return os.RemoveAll(path)
+	return path
 }
 
+func (d *db) localMetaPath(table string) string {
+	return filepath.Join(d.localPath, table, "meta.json")
+}
+
+func (d *db) localDBPath(table, version string) string {
+	return filepath.Join(d.localPath, table, version, "data.db")
+}
+
+// initLocalTable creates a directory for the table in the local path.
+// If version is provided, a version directory is also created.
+func (d *db) initLocalTable(name, version string) error {
+	err := os.MkdirAll(d.localTableDir(name, version), fs.ModePerm)
+	if err != nil {
+		return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+	}
+	return nil
+}
+
+// removeTableVersion removes the table version from the catalog and deletes the local table files.
 func (d *db) removeTableVersion(ctx context.Context, name, version string) error {
 	err := d.metaSem.Acquire(ctx, 1)
 	if err != nil {
@@ -934,6 +887,11 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 		return err
 	}
 	return d.deleteLocalTableFiles(name, version)
+}
+
+// deleteLocalTableFiles delete table files for the given table name. If version is provided, only that version is deleted.
+func (d *db) deleteLocalTableFiles(name, version string) error {
+	return os.RemoveAll(d.localTableDir(name, version))
 }
 
 func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) error {
@@ -957,7 +915,12 @@ func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) 
 		return err
 	}
 
-	return d.attachTables(ctx, conn, s.tables, "")
+	err = d.attachTables(ctx, conn, s.tables, "")
+	if err != nil {
+		return err
+	}
+	s.ready = true
+	return nil
 }
 
 func (d *db) removeSnapshot(ctx context.Context, id int) error {
@@ -972,11 +935,9 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 }
 
 type tableMeta struct {
-	Name           string `json:"name"`
-	Version        string `json:"version"`
-	CreatedVersion string `json:"created_version"`
-	Type           string `json:"type"` // either TABLE or VIEW
-	SQL            string `json:"sql"`  // populated for views
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Type    string `json:"type"` // either TABLE or VIEW
 }
 
 func renameTable(ctx context.Context, dbFile, old, newName string) error {
