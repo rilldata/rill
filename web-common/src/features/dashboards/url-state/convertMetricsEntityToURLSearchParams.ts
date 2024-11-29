@@ -26,7 +26,11 @@ import {
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  TimeComparisonOption,
+  type TimeRange,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
@@ -91,12 +95,7 @@ function toTimeRangesUrl(
     (preset.timeRange === undefined &&
       exploreState.selectedTimeRange?.name !== URLStateDefaultTimeRange)
   ) {
-    let tr = exploreState.selectedTimeRange?.name ?? "";
-    if (tr === TimeRangePreset.ALL_TIME) {
-      // temporary to replace `inf` to `all`
-      tr = "all";
-    }
-    searchParams.set("tr", tr);
+    searchParams.set("tr", toTimeRangeParam(exploreState.selectedTimeRange));
   }
 
   if (
@@ -120,7 +119,7 @@ function toTimeRangesUrl(
     ) {
       searchParams.set(
         "compare_tr",
-        exploreState.selectedComparisonTimeRange?.name ?? "",
+        toTimeRangeParam(exploreState.selectedComparisonTimeRange),
       );
     } else if (
       !exploreState.selectedComparisonTimeRange?.name &&
@@ -164,7 +163,35 @@ function toTimeRangesUrl(
     );
   }
 
+  if (
+    exploreState.selectedScrubRange &&
+    !exploreState.selectedScrubRange.isScrubbing
+  ) {
+    searchParams.set(
+      "select_tr",
+      toTimeRangeParam(exploreState.selectedScrubRange),
+    );
+  }
+
   return searchParams;
+}
+
+function toTimeRangeParam(timeRange: TimeRange | undefined) {
+  if (!timeRange) return "";
+  if (timeRange.name === TimeRangePreset.ALL_TIME) {
+    return "all";
+  }
+  if (
+    timeRange.name &&
+    timeRange.name !== TimeRangePreset.CUSTOM &&
+    timeRange.name !== TimeComparisonOption.CUSTOM
+  ) {
+    return timeRange.name;
+  }
+
+  if (!timeRange.start || !timeRange.end) return "";
+
+  return `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
 }
 
 function toOverviewUrl(

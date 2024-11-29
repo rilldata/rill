@@ -394,28 +394,29 @@ message ExplorePreset {
   optional string time_range = 6;
   optional string timezone = 12;
   optional string time_grain = 13;
+  optional string select_time_range = 14;
 
   // Comparison mode.
   ExploreComparisonMode comparison_mode = 7;
-  optional string compare_time_range = 14;
+  optional string compare_time_range = 15;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   optional string comparison_dimension = 8;
 
-  optional ExploreWebView view = 15;
+  optional ExploreWebView view = 16;
 
-  optional string overview_sort_by = 16;
-  optional bool overview_sort_asc = 17;
-  optional ExploreOverviewSortType overview_sort_type = 18;
-  optional string overview_expanded_dimension = 19;
+  optional string overview_sort_by = 17;
+  optional bool overview_sort_asc = 18;
+  optional ExploreOverviewSortType overview_sort_type = 19;
+  optional string overview_expanded_dimension = 20;
 
-  optional string time_dimension_measure = 20;
-  optional string time_dimension_chart_type = 21;
-  optional bool time_dimension_pin = 22;
+  optional string time_dimension_measure = 21;
+  optional string time_dimension_chart_type = 22;
+  optional bool time_dimension_pin = 23;
 
-  repeated string pivot_rows = 23;
-  repeated string pivot_cols = 24;
-  optional string pivot_sort_by = 25;
-  optional bool pivot_sort_asc = 26;
+  repeated string pivot_rows = 24;
+  repeated string pivot_cols = 25;
+  optional string pivot_sort_by = 26;
+  optional bool pivot_sort_asc = 27;
 }
 
 enum ExploreComparisonMode {

@@ -131,9 +131,9 @@ function fromTimeRangesParams(
   const errors: Error[] = [];
 
   if (preset.timeRange) {
-    const { timeRange, error } = fromTimeRangeUrlParam(preset.timeRange);
-    if (error) errors.push(error);
-    partialExploreState.selectedTimeRange = timeRange;
+    partialExploreState.selectedTimeRange = fromTimeRangeUrlParam(
+      preset.timeRange,
+    );
   }
 
   if (preset.timeGrain && partialExploreState.selectedTimeRange) {
@@ -146,9 +146,9 @@ function fromTimeRangesParams(
   }
 
   if (preset.compareTimeRange) {
-    const { timeRange, error } = fromTimeRangeUrlParam(preset.compareTimeRange);
-    if (error) errors.push(error);
-    partialExploreState.selectedComparisonTimeRange = timeRange;
+    partialExploreState.selectedComparisonTimeRange = fromTimeRangeUrlParam(
+      preset.compareTimeRange,
+    );
     partialExploreState.showTimeComparison = true;
     // unset compare dimension
     partialExploreState.selectedComparisonDimension = "";
@@ -168,6 +168,13 @@ function fromTimeRangesParams(
     }
   }
 
+  if (preset.selectTimeRange) {
+    partialExploreState.selectedScrubRange = {
+      ...fromTimeRangeUrlParam(preset.selectTimeRange),
+      isScrubbing: true,
+    };
+  }
+
   if (
     preset.comparisonMode ===
     V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
@@ -181,24 +188,26 @@ function fromTimeRangesParams(
   return { partialExploreState, errors };
 }
 
-function fromTimeRangeUrlParam(tr: string): {
-  timeRange?: DashboardTimeControls;
-  error?: Error;
-} {
+export const CustomTimeRangeRegex =
+  /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z),(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z)/;
+function fromTimeRangeUrlParam(tr: string) {
+  const customTimeRangeMatch = CustomTimeRangeRegex.exec(tr);
+  if (customTimeRangeMatch?.length) {
+    const [, start, end] = customTimeRangeMatch;
+    return {
+      name: TimeRangePreset.CUSTOM,
+      start: new Date(start),
+      end: new Date(end),
+    } as DashboardTimeControls;
+  }
+
   if (tr === "all") {
     // temporary to replace `inf` to `all`
     tr = TimeRangePreset.ALL_TIME;
   }
-  // TODO: validation
   return {
-    timeRange: {
-      name: tr,
-    } as DashboardTimeControls,
-  };
-
-  // return {
-  //   error: new Error(`unknown time range: ${tr}`),
-  // };
+    name: tr,
+  } as DashboardTimeControls;
 }
 
 function fromOverviewUrlParams(

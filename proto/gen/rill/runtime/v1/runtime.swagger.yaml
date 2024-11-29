@@ -4114,6 +4114,8 @@ definitions:
         type: string
       timeGrain:
         type: string
+      selectTimeRange:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.

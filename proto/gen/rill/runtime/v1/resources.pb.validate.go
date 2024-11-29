@@ -4935,6 +4935,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for TimeGrain
 	}
 
+	if m.SelectTimeRange != nil {
+		// no validation rules for SelectTimeRange
+	}
+
 	if m.CompareTimeRange != nil {
 		// no validation rules for CompareTimeRange
 	}

@@ -5,6 +5,7 @@ import {
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
+import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -231,7 +232,11 @@ function fromTimeRangesParams(
 
   if (searchParams.has("tr")) {
     const tr = searchParams.get("tr") as string;
-    if (tr in FromURLParamTimeRangePresetMap || validateISODuration(tr)) {
+    if (
+      tr in FromURLParamTimeRangePresetMap ||
+      validateISODuration(tr) ||
+      CustomTimeRangeRegex.test(tr)
+    ) {
       preset.timeRange = tr;
     } else {
       errors.push(getSingleFieldError("time range", tr));
@@ -244,7 +249,7 @@ function fromTimeRangesParams(
 
   if (searchParams.has("compare_tr")) {
     const ctr = searchParams.get("compare_tr") as string;
-    if (ctr in TIME_COMPARISON) {
+    if (ctr in TIME_COMPARISON || CustomTimeRangeRegex.test(ctr)) {
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
@@ -280,8 +285,14 @@ function fromTimeRangesParams(
     }
   }
 
-  // TODO: scrub range
-
+  if (searchParams.has("select_tr")) {
+    const selectTr = searchParams.get("select_tr") as string;
+    if (CustomTimeRangeRegex.test(selectTr)) {
+      preset.selectTimeRange = selectTr;
+    } else {
+      errors.push(getSingleFieldError("select_tr", selectTr));
+    }
+  }
   return { preset, errors };
 }
 

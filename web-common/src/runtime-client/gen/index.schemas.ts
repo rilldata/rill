@@ -1922,6 +1922,7 @@ If not found in `time_ranges`, it should be added to the list. */
   timeRange?: string;
   timezone?: string;
   timeGrain?: string;
+  selectTimeRange?: string;
   comparisonMode?: V1ExploreComparisonMode;
   compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
