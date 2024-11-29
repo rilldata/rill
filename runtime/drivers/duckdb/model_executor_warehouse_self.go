@@ -132,16 +132,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			var key []string
-			switch outputProps.IncrementalStrategy {
-			case drivers.IncrementalStrategyMerge:
-				key = outputProps.UniqueKey
-			case drivers.IncrementalStrategyReplace:
-				key = outputProps.ReplaceKey
-			default:
-				return fmt.Errorf("unsupported incremental strategy: %s", outputProps.IncrementalStrategy)
-			}
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, drivers.IncrementalStrategyMerge, key)
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, drivers.IncrementalStrategyMerge, outputProps.UniqueKey)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}

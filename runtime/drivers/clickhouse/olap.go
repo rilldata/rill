@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -239,7 +240,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, key []string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	if !inPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
@@ -250,18 +251,47 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			LongRunning: true,
 		})
 	}
-	if strategy == drivers.IncrementalStrategyReplace {
+
+	if strategy == drivers.IncrementalStrategyMerge {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// Get the engine info of the given table
+		var engine, engineFull string
+		res, err := c.Execute(ctx, &drivers.Statement{
+			Query:    "SELECT engine, engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
+			Args:     []any{name},
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+		if res.Next() {
+			if err := res.Scan(&engine, &engineFull); err != nil {
+				return err
+			}
+		}
+		// Distributed table cannot be altered directly, so we need to alter the underlying table
+		if engine == "Distributed" {
+			// Parse the engine_full string to extract underlying table name
+			// Example engine_full: Distributed('cluster', 'db', 'underlying_table', sharding_key)
+			re := regexp.MustCompile(`Distributed\('[^,]+',\s*'[^']+',\s*'([^']+)'`)
+			matches := re.FindStringSubmatch(engineFull)
+			if len(matches) < 1 {
+				return fmt.Errorf("unable to parse underlying table info from engine expression: %q", engineFull)
+			}
+			name = matches[1]
+		}
 		// create temp table with the same schema
 		tempName := tempName(name)
-		// drop the temp table
-		defer func() {
-			err := c.DropTable(ctx, tempName, false)
-			if err != nil {
-				c.logger.Error("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
-			}
-		}()
-		err := c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE TABLE %s AS %s", safeSQLName(tempName), name),
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
 			Priority: 1,
 		})
 		if err != nil {
@@ -275,16 +305,16 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return err
 		}
-		// list partitions from the temp table
-		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SELECT DISTINCT %s FROM %s", strings.Join(key, ", "), safeSQLName(tempName)),
+		// list partitions from the temp table using system.parts
+		res, err = c.Execute(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = '%s'", tempName),
 			Priority: 1,
 		})
 		if err != nil {
 			return err
 		}
 		defer res.Close()
-		// iterate the partitions of the temp table
+		// iterate over partitions and replace them in the main table
 		for res.Next() {
 			var part string
 			if err := res.Scan(&part); err != nil {
@@ -292,7 +322,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 			// alter the main table to replace partitions with the temp table
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s REPLACE PARTITION %s FROM %s", safeSQLName(name), part, safeSQLName(tempName)),
+				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION %s FROM %s", safeSQLName(name), onClusterClause, part, safeSQLName(tempName)),
 				Priority: 1,
 			})
 			if err != nil {
@@ -301,7 +331,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		return nil
 	}
-	// merge strategy is also not supported for clickhouse
+
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 

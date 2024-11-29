@@ -625,7 +625,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false
 }
 
-func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, key []string) error {
+func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	var byNameClause string
 	if byName {
 		byNameClause = "BY NAME"
@@ -639,7 +639,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		})
 	}
 
-	if strategy == drivers.IncrementalStrategyMerge || strategy == drivers.IncrementalStrategyReplace {
+	if strategy == drivers.IncrementalStrategyMerge {
 		// Create a temporary table with the new data
 		tmp := uuid.New().String()
 		err := c.Exec(ctx, &drivers.Statement{
@@ -675,7 +675,7 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 
 		// Drop the rows from the target table where the unique key is present in the temporary table
 		where := ""
-		for i, key := range key {
+		for i, key := range uniqueKey {
 			key = safeSQLName(key)
 			if i != 0 {
 				where += " AND "

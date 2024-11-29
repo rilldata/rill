@@ -25,7 +25,6 @@ type ModelOutputProperties struct {
 	Table               string                      `mapstructure:"table"`
 	Materialize         *bool                       `mapstructure:"materialize"`
 	UniqueKey           []string                    `mapstructure:"unique_key"`
-	ReplaceKey          []string                    `mapstructure:"replace_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 }
 
@@ -45,31 +44,21 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	}
 
 	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyMerge, drivers.IncrementalStrategyReplace:
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyMerge:
 	default:
 		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
-	}
-
-	if len(p.UniqueKey) > 0 && len(p.ReplaceKey) > 0 {
-		return fmt.Errorf(`cannot specify both "unique_key" and "replace_key"`)
 	}
 
 	if p.IncrementalStrategy == drivers.IncrementalStrategyMerge && len(p.UniqueKey) == 0 {
 		return fmt.Errorf(`must specify a "unique_key" when "incremental_strategy" is %q`, p.IncrementalStrategy)
 	}
 
-	if p.IncrementalStrategy == drivers.IncrementalStrategyReplace && len(p.ReplaceKey) == 0 {
-		return fmt.Errorf(`cannot specify a "partition_key" when "incremental_strategy" is %q`, p.IncrementalStrategy)
-	}
-
-	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified:
-		if len(p.UniqueKey) == 0 && len(p.ReplaceKey) == 0 {
+	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
+		if len(p.UniqueKey) == 0 {
 			p.IncrementalStrategy = drivers.IncrementalStrategyAppend
+		} else {
+			p.IncrementalStrategy = drivers.IncrementalStrategyMerge
 		}
-	case drivers.IncrementalStrategyAppend:
-		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
-	case drivers.IncrementalStrategyReplace:
 	}
 
 	return nil

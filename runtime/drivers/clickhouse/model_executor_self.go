@@ -83,18 +83,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 				return nil, fmt.Errorf("failed to rename staged model: %w", err)
 			}
 		}
-	}
-
-	if opts.IncrementalRun {
-		var key []string
-		switch outputProps.IncrementalStrategy {
-		case drivers.IncrementalStrategyAppend:
-			key = outputProps.UniqueKey
-		case drivers.IncrementalStrategyReplace:
-			key = outputProps.ReplaceKey
-		}
+	} else {
 		// Insert into the table
-		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, key)
+		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}

@@ -163,7 +163,6 @@ const (
 	IncrementalStrategyUnspecified IncrementalStrategy = ""
 	IncrementalStrategyAppend      IncrementalStrategy = "append"
 	IncrementalStrategyMerge       IncrementalStrategy = "merge"
-	IncrementalStrategyReplace     IncrementalStrategy = "replace"
 )
 
 // Dialect enumerates OLAP query languages.
