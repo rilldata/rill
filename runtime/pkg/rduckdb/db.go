@@ -345,15 +345,25 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	// create new version directory
 	newVersion := newVersion()
 	newMeta := &tableMeta{
-		Name:    name,
-		Version: newVersion,
+		Name:           name,
+		Version:        newVersion,
+		CreatedVersion: newVersion,
 	}
-
-	err = d.initLocalTable(name, newVersion)
-	if err != nil {
-		return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+	var dsn string
+	if opts.View {
+		dsn = ""
+		newMeta.SQL = query
+		err = d.initLocalTable(name, "")
+		if err != nil {
+			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+		}
+	} else {
+		err = d.initLocalTable(name, newVersion)
+		if err != nil {
+			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
+		}
+		dsn = d.localDBPath(name, newVersion)
 	}
-	dsn := d.localDBPath(name, newVersion)
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
 	conn, release, err := d.acquireWriteConn(ctx, dsn, name, true)
@@ -457,9 +467,11 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return fmt.Errorf("mutate: failed to close connection: %w", err)
 	}
 	meta := &tableMeta{
-		Name:    name,
-		Version: newVersion,
-		Type:    oldMeta.Type,
+		Name:           name,
+		Version:        newVersion,
+		CreatedVersion: oldMeta.CreatedVersion,
+		Type:           oldMeta.Type,
+		SQL:            oldMeta.SQL,
 	}
 	err = d.pushToRemote(ctx, name, oldMeta, meta)
 	if err != nil {
@@ -543,22 +555,31 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 
 	// copy the old table to new table
 	newVersion := newVersion()
-	err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
-	if err != nil {
-		return fmt.Errorf("rename: copy table failed: %w", err)
-	}
+	if oldMeta.Type == "TABLE" {
+		err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
+		if err != nil {
+			return fmt.Errorf("rename: copy table failed: %w", err)
+		}
 
-	// rename the underlying table
-	err = renameTable(ctx, d.localDBPath(newName, newVersion), oldName, newName)
-	if err != nil {
-		return fmt.Errorf("rename: rename table failed: %w", err)
+		// rename the underlying table
+		err = renameTable(ctx, d.localDBPath(newName, newVersion), oldName, newName)
+		if err != nil {
+			return fmt.Errorf("rename: rename table failed: %w", err)
+		}
+	} else {
+		err = copyDir(d.localTableDir(newName, ""), d.localTableDir(oldName, ""))
+		if err != nil {
+			return fmt.Errorf("rename: copy view failed: %w", err)
+		}
 	}
 
 	// sync the new table and new version
 	meta := &tableMeta{
-		Name:    newName,
-		Version: newVersion,
-		Type:    oldMeta.Type,
+		Name:           newName,
+		Version:        newVersion,
+		CreatedVersion: newVersion,
+		Type:           oldMeta.Type,
+		SQL:            oldMeta.SQL,
 	}
 	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
@@ -769,35 +790,72 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 			return 1
 		}
 		// any order for views
-		return 0
+		return strings.Compare(a.CreatedVersion, b.CreatedVersion)
 	})
+
+	var failedViews []*tableMeta
+	// attach database files
 	for _, table := range tables {
 		if table.Name == ignoreTable {
 			continue
 		}
-		err := d.attachTable(ctx, conn, table)
+		safeTable := safeSQLName(table.Name)
+		if table.Type == "VIEW" {
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return err
+				}
+				failedViews = append(failedViews, table)
+			}
+			continue
+		}
+		safeDBName := safeSQLName(dbName(table.Name, table.Version))
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(d.localDBPath(table.Name, table.Version)), safeDBName))
 		if err != nil {
 			return fmt.Errorf("failed to attach table %q: %w", table.Name, err)
 		}
-	}
-	return nil
-}
-
-func (d *db) attachTable(ctx context.Context, conn *sqlx.Conn, table *tableMeta) error {
-	safeTable := safeSQLName(table.Name)
-	safeDBName := safeSQLName(dbName(table.Name, table.Version))
-	_, err := conn.ExecContext(ctx, fmt.Sprintf("ATTACH IF NOT EXISTS %s AS %s (READ_ONLY)", safeSQLString(d.localDBPath(table.Name, table.Version)), safeDBName))
-	if err != nil {
-		d.logger.Warn("error in attaching db", slog.String("table", table.Name), slog.String("version", table.Version), slog.Any("error", err))
-		return err
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.%s", safeTable, safeDBName, safeTable))
+		if err != nil {
+			return err
+		}
 	}
 
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.%s", safeTable, safeDBName, safeTable))
-	if err != nil && !errors.Is(err, context.Canceled) && table.Type == "VIEW" {
-		// create a view that returns an error on querying
+	// retry creating views
+	for len(failedViews) > 0 {
+		allViewsFailed := true
+		size := len(failedViews)
+		for i := 0; i < size; i++ {
+			table := failedViews[0]
+			failedViews = failedViews[1:]
+			safeTable := safeSQLName(table.Name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
+			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					return err
+				}
+				failedViews = append(failedViews, table)
+				continue
+			}
+			// successfully created view
+			allViewsFailed = false
+		}
+		if !allViewsFailed {
+			// at least one view should always be created unless there is a circular dependency which is not allowed
+			continue
+		}
+
+		// create views that return error on querying
 		// may be the view is incompatible with the underlying data due to schema changes
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT error('View %s is incompatible with the underlying data: %s')", safeTable, safeTable, strings.ReplaceAll(err.Error(), "'", "''")))
-		return err
+		for i := 0; i < len(failedViews); i++ {
+			table := failedViews[i]
+			safeTable := safeSQLName(table.Name)
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT error('View %s is incompatible with the underlying data')", safeTable, safeTable))
+			if err != nil {
+				return err
+			}
+		}
+		break
 	}
 	return nil
 }
@@ -928,9 +986,11 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 }
 
 type tableMeta struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	Type    string `json:"type"` // either TABLE or VIEW
+	Name           string `json:"name"`
+	Version        string `json:"version"`
+	CreatedVersion string `json:"created_version"`
+	Type           string `json:"type"` // either TABLE or VIEW
+	SQL            string `json:"sql"`  // populated for views
 }
 
 func renameTable(ctx context.Context, dbFile, old, newName string) error {

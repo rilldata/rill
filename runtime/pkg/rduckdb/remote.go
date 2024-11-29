@@ -102,7 +102,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			tblMetas[table] = backedUpMeta
 			continue
 		}
-		if err := os.MkdirAll(filepath.Join(d.localPath, table, backedUpMeta.Version), os.ModePerm); err != nil {
+		if err := d.initLocalTable(table, backedUpMeta.Version); err != nil {
 			return err
 		}
 
@@ -172,34 +172,36 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 // pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	localPath := filepath.Join(d.localPath, table, meta.Version)
-	entries, err := os.ReadDir(localPath)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
-		// no directory should exist as of now
-		if entry.IsDir() {
-			d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
-			continue
-		}
-
-		wr, err := os.Open(filepath.Join(localPath, entry.Name()))
+	if meta.Type == "TABLE" {
+		localPath := d.localTableDir(table, meta.Version)
+		entries, err := os.ReadDir(localPath)
 		if err != nil {
 			return err
 		}
 
-		// upload to cloud storage
-		err = retry(ctx, func() error {
-			return d.remote.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
-				ContentType: "application/octet-stream",
+		for _, entry := range entries {
+			d.logger.Debug("replicating file", slog.String("file", entry.Name()), slog.String("path", localPath))
+			// no directory should exist as of now
+			if entry.IsDir() {
+				d.logger.Debug("found directory in path which should not exist", slog.String("file", entry.Name()), slog.String("path", localPath))
+				continue
+			}
+
+			wr, err := os.Open(filepath.Join(localPath, entry.Name()))
+			if err != nil {
+				return err
+			}
+
+			// upload to cloud storage
+			err = retry(ctx, func() error {
+				return d.remote.Upload(ctx, path.Join(table, meta.Version, entry.Name()), wr, &blob.WriterOptions{
+					ContentType: "application/octet-stream",
+				})
 			})
-		})
-		_ = wr.Close()
-		if err != nil {
-			return err
+			_ = wr.Close()
+			if err != nil {
+				return err
+			}
 		}
 	}
 

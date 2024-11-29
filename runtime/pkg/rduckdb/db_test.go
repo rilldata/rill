@@ -2,6 +2,7 @@ package rduckdb
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -322,13 +323,22 @@ func TestViews(t *testing.T) {
 	verifyTable(t, testDB, "SELECT id, country FROM child_view", []testData{{ID: 2, Country: "USA"}})
 
 	// rename child view
-	err = testDB.RenameTable(ctx, "child_view", "child_view2")
+	err = testDB.RenameTable(ctx, "child_view", "view0")
 	require.NoError(t, err)
-	verifyTable(t, testDB, "SELECT id, country FROM child_view2", []testData{{ID: 2, Country: "USA"}})
+	verifyTable(t, testDB, "SELECT id, country FROM view0", []testData{{ID: 2, Country: "USA"}})
 
 	// old child view does not exist
 	err = testDB.DropTable(ctx, "child_view")
 	require.Error(t, err)
+
+	// create a chain of views
+	for i := 1; i <= 10; i++ {
+		err = testDB.CreateTableAsSelect(ctx, fmt.Sprintf("view%d", i), fmt.Sprintf("SELECT * FROM view%d", i-1), &CreateTableOptions{View: true})
+		require.NoError(t, err)
+	}
+	verifyTable(t, testDB, "SELECT id, country FROM view10", []testData{{ID: 2, Country: "USA"}})
+
+	require.NoError(t, testDB.Close())
 }
 
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
