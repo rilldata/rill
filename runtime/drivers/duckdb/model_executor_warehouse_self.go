@@ -132,7 +132,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, drivers.IncrementalStrategyMerge, outputProps.UniqueKey)
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}

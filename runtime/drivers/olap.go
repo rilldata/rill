@@ -35,7 +35,7 @@ type OLAPStore interface {
 	InformationSchema() InformationSchema
 
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
-	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, key []string) error
+	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
 	DropTable(ctx context.Context, name string, view bool) error
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
