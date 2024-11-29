@@ -125,7 +125,7 @@ func (c *catalog) listTables() []*tableMeta {
 		}
 		meta, ok := t.versionMeta[t.currentVersion]
 		if !ok {
-			c.logger.Error("internal error: meta for table not found in rduckdb catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			c.logger.Error("internal error: meta for table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
 		}
 		tables = append(tables, meta)
 	}
@@ -155,7 +155,7 @@ func (c *catalog) acquireSnapshot() *snapshot {
 
 		meta, ok := t.versionMeta[t.currentVersion]
 		if !ok {
-			c.logger.Error("internal error: meta for table not found in rduckdb catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			c.logger.Error("internal error: meta for table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
 		}
 		s.tables = append(s.tables, meta)
 		c.acquireVersion(t, t.currentVersion)
@@ -177,7 +177,7 @@ func (c *catalog) releaseSnapshot(s *snapshot) {
 	for _, meta := range s.tables {
 		t, ok := c.tables[meta.Name]
 		if !ok {
-			c.logger.Error("internal error: table not found in rduckdb catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			c.logger.Error("internal error: table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
 		}
 		c.releaseVersion(t, meta.Version)
 	}
@@ -198,7 +198,7 @@ func (c *catalog) acquireVersion(t *table, version string) {
 func (c *catalog) releaseVersion(t *table, version string) {
 	referenceCount, ok := t.versionReferenceCounts[version]
 	if !ok {
-		c.logger.Error("internal error: version of table not found in rduckdb catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+		c.logger.Error("internal error: version of table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
 	}
 	referenceCount--
 	if referenceCount > 0 {

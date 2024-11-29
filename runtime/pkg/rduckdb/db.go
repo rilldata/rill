@@ -298,13 +298,6 @@ var _ DB = &db{}
 func (d *db) Close() error {
 	// close background operations
 	d.cancel()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_ = d.writeSem.Acquire(ctx, 1)
-	defer d.writeSem.Release(1)
-
 	return d.dbHandle.Close()
 }
 

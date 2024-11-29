@@ -172,7 +172,6 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 // pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	// for views no db files exists, the SQL is stored in meta.json
 	localPath := filepath.Join(d.localPath, table, meta.Version)
 	entries, err := os.ReadDir(localPath)
 	if err != nil {
