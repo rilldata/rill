@@ -1,228 +1,48 @@
-package druid
+package druid_test
 
 import (
 	"context"
-	"fmt"
-	"net/url"
-	"strings"
 	"testing"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 )
 
-const testTable = "test_data"
+func TestScan(t *testing.T) {
+	_, olap := acquireTestDruid(t)
 
-var testCSV = strings.TrimSpace(`
-id,timestamp,publisher,domain,bid_price
-5000,2022-03-18T12:25:58.074Z,Facebook,facebook.com,4.19
-9000,2022-03-15T11:17:23.530Z,Microsoft,msn.com,3.48
-10000,2022-03-02T04:00:56.643Z,Microsoft,msn.com,3.57
-11000,2022-01-16T00:26:44.770Z,,instagram.com,5.38
-12000,2022-01-17T08:55:09.270Z,,msn.com,1.34
-13000,2022-03-20T03:16:57.618Z,Yahoo,news.yahoo.com,1.05
-14000,2022-01-29T19:05:33.545Z,Google,news.google.com,4.54
-15000,2022-03-22T00:56:22.035Z,Yahoo,news.yahoo.com,1.13
-16000,2022-01-24T13:41:43.527Z,,instagram.com,1.78
-`)
-
-var testIngestSpec = fmt.Sprintf(`{
-	"type": "index_parallel",
-	"spec": {
-		"ioConfig": {
-			"type": "index_parallel",
-			"inputSource": {
-				"type": "inline",
-				"data": "%s"
-			},
-			"inputFormat": {
-				"type": "csv",
-				"findColumnsFromHeader": true
-			}
-		},
-		"tuningConfig": {
-			"type": "index_parallel",
-			"partitionsSpec": {
-				"type": "dynamic"
-			}
-		},
-		"dataSchema": {
-			"dataSource": "%s",
-			"timestampSpec": {
-				"column": "timestamp",
-				"format": "iso"
-			},
-			"transformSpec": {},
-			"dimensionsSpec": {
-				"dimensions": [
-					{"type": "long", "name": "id"},
-					"publisher",
-					"domain",
-					{"type": "double", "name": "bid_price"}
-				]
-			},
-			"granularitySpec": {
-				"queryGranularity": "none",
-				"rollup": false,
-				"segmentGranularity": "day"
-			}
-		}
-	}
-}`, strings.ReplaceAll(testCSV, "\n", "\\n"), testTable)
-
-// TestDruid starts a Druid cluster using testcontainers, ingests data into it, then runs all other tests
-// in this file as sub-tests (to prevent spawning many clusters).
-func TestDruid(t *testing.T) {
-	if testing.Short() {
-		t.Skip("druid: skipping test in short mode")
-	}
-
-	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		Started: true,
-		ContainerRequest: testcontainers.ContainerRequest{
-			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081").WithStartupTimeout(time.Minute * 2),
-			Image:        "gcr.io/rilldata/druid-micro:25.0.0",
-			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
-			Cmd:          []string{"./bin/start-micro-quickstart"},
-		},
-	})
-	require.NoError(t, err)
-	defer container.Terminate(ctx)
-
-	coordinatorURL, err := container.PortEndpoint(ctx, "8081/tcp", "http")
+	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1, 'hello world', true, null, CAST('2024-01-01T00:00:00Z' AS TIMESTAMP)"})
 	require.NoError(t, err)
 
-	t.Run("ingest", func(t *testing.T) { testIngest(t, coordinatorURL) })
+	var i int
+	var s string
+	var b bool
+	var n any
+	var t1 time.Time
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&i, &s, &b, &n, &t1))
 
-	brokerURL, err := container.PortEndpoint(ctx, "8082/tcp", "http")
+	require.Equal(t, 1, i)
+	require.Equal(t, "hello world", s)
+	require.Equal(t, true, b)
+	require.Nil(t, n)
+	require.Equal(t, time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC), t1)
+
+	require.NoError(t, rows.Close())
+}
+
+func acquireTestDruid(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
+	cfg := testruntime.AcquireConnector(t, "druid")
+	conn, err := drivers.Open("druid", "default", cfg, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
 
-	druidAPIURL, err := url.JoinPath(brokerURL, "/druid/v2/sql")
-	require.NoError(t, err)
-
-	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	olap, ok := conn.AsOLAP("")
+	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
-	t.Run("count", func(t *testing.T) { testCount(t, olap) })
-	t.Run("max", func(t *testing.T) { testMax(t, olap) })
-	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, olap) })
-	t.Run("schema all like", func(t *testing.T) { testSchemaAllLike(t, olap) })
-	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, olap) })
-	// Add new tests here
-	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
-
-	require.NoError(t, conn.Close())
-}
-
-func testIngest(t *testing.T, coordinatorURL string) {
-	timeout := 5 * time.Minute
-	err := Ingest(coordinatorURL, testIngestSpec, testTable, timeout)
-	require.NoError(t, err)
-}
-
-func testCount(t *testing.T, olap drivers.OLAPStore) {
-	qry := fmt.Sprintf("SELECT count(*) FROM %s", testTable)
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
-	require.NoError(t, err)
-
-	var count int
-	rows.Next()
-
-	require.NoError(t, rows.Scan(&count))
-	require.Equal(t, 9, count)
-	require.NoError(t, rows.Close())
-}
-
-func testMax(t *testing.T, olap drivers.OLAPStore) {
-	qry := fmt.Sprintf("SELECT max(id) FROM %s", testTable)
-	expectedValue := 16000
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: qry})
-	require.NoError(t, err)
-
-	var count int
-	rows.Next()
-	require.NoError(t, rows.Scan(&count))
-	require.Equal(t, expectedValue, count)
-	require.NoError(t, rows.Close())
-}
-
-func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
-	qry := fmt.Sprintf("SELECT time_floor(__time, 'P1D', null, CAST(? AS VARCHAR)) FROM %s", testTable)
-	rows, err := olap.Execute(context.Background(), &drivers.Statement{
-		Query: qry,
-		Args:  []any{"Asia/Kathmandu"},
-	})
-	require.NoError(t, err)
-	defer rows.Close()
-
-	var tmString string
-	count := 0
-	for rows.Next() {
-		require.NoError(t, rows.Scan(&tmString))
-		tm, err := time.Parse(time.RFC3339, tmString)
-		require.NoError(t, err)
-		require.Equal(t, 15, tm.Minute())
-		count += 1
-	}
-	require.Equal(t, 9, count)
-}
-
-func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
-	tables, err := olap.InformationSchema().All(context.Background(), "")
-	require.NoError(t, err)
-
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, testTable, tables[0].Name)
-
-	require.Equal(t, 5, len(tables[0].Schema.Fields))
-
-	mp := make(map[string]*runtimev1.StructType_Field)
-	for _, f := range tables[0].Schema.Fields {
-		mp[f.Name] = f
-	}
-
-	f := mp["__time"]
-	require.Equal(t, "__time", f.Name)
-	require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["bid_price"]
-	require.Equal(t, runtimev1.Type_CODE_FLOAT64, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["domain"]
-	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
-	require.Equal(t, true, f.Type.Nullable)
-	f = mp["id"]
-	require.Equal(t, runtimev1.Type_CODE_INT64, f.Type.Code)
-	require.Equal(t, false, f.Type.Nullable)
-	f = mp["publisher"]
-	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
-	require.Equal(t, true, f.Type.Nullable)
-}
-
-func testSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
-	tables, err := olap.InformationSchema().All(context.Background(), "%test%")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(tables))
-	require.Equal(t, testTable, tables[0].Name)
-}
-
-func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
-	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", testTable)
-	require.NoError(t, err)
-	require.Equal(t, testTable, table.Name)
-
-	_, err = olap.InformationSchema().Lookup(ctx, "", "", "foo")
-	require.Equal(t, drivers.ErrNotFound, err)
+	return conn, olap
 }

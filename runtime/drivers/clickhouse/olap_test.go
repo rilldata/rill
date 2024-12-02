@@ -5,42 +5,39 @@ import (
 	"fmt"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
-func TestClickhouseCrudOps(t *testing.T) {
-	// t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-	if testing.Short() {
-		t.Skip("clickhouse: skipping test in short mode")
-	}
+func TestClickhouseSingle(t *testing.T) {
+	cfg := testruntime.AcquireConnector(t, "clickhouse")
 
-	dsn, cluster := testruntime.ClickhouseCluster(t)
-	t.Run("SingleHost", func(t *testing.T) { testClickhouseSingleHost(t, dsn) })
-	t.Run("Cluster", func(t *testing.T) { testClickhouseCluster(t, dsn, cluster) })
-}
-
-func testClickhouseSingleHost(t *testing.T, dsn string) {
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", cfg, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	prepareConn(t, conn)
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
-	t.Run("RenameView", func(t *testing.T) {
-		testRenameView(t, olap)
-	})
+	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
-
+	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 }
 
-func testClickhouseCluster(t *testing.T, dsn, cluster string) {
+func TestClickhouseCluster(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	dsn, cluster := testruntime.ClickhouseCluster(t)
+
 	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": dsn, "cluster": cluster}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
@@ -50,9 +47,7 @@ func testClickhouseCluster(t *testing.T, dsn, cluster string) {
 
 	prepareClusterConn(t, olap, cluster)
 
-	t.Run("RenameView", func(t *testing.T) {
-		testRenameView(t, olap)
-	})
+	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
@@ -136,6 +131,33 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, "Earth", planet)
 
 	require.NoError(t, olap.DropTable(context.Background(), "dict1", false))
+}
+
+func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
+	cases := []struct {
+		query string
+		ms    int
+	}{
+		{query: "SELECT INTERVAL '1' SECOND", ms: 1000},
+		{query: "SELECT INTERVAL '2' MINUTE", ms: 2 * 60 * 1000},
+		{query: "SELECT INTERVAL '3' HOUR", ms: 3 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '4' DAY", ms: 4 * 24 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '5' MONTH", ms: 5 * 30 * 24 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '6' YEAR", ms: 6 * 365 * 24 * 60 * 60 * 1000},
+	}
+	for _, c := range cases {
+		rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: c.query})
+		require.NoError(t, err)
+		require.Equal(t, runtimev1.Type_CODE_INTERVAL, rows.Schema.Fields[0].Type.Code)
+
+		require.True(t, rows.Next())
+		var s string
+		require.NoError(t, rows.Scan(&s))
+		ms, ok := clickhouse.ParseIntervalToMillis(s)
+		require.True(t, ok)
+		require.Equal(t, c.ms, ms)
+		require.NoError(t, rows.Close())
+	}
 }
 
 func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {
