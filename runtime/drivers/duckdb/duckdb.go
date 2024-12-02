@@ -245,28 +245,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	return c, nil
 }
 
-func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
-	cfg, err := newConfig(cfgMap, "")
-	if err != nil {
-		return err
-	}
-	if cfg.DBStoragePath != "" {
-		return os.RemoveAll(cfg.DBStoragePath)
-	}
-	if cfg.DBFilePath != "" {
-		err = os.Remove(cfg.DBFilePath)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		// Hacky approach to remove the wal file
-		_ = os.Remove(cfg.DBFilePath + ".wal")
-		// also temove the temp dir
-		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
-	}
-
-	return nil
-}
-
 func (d Driver) Spec() drivers.Spec {
 	if d.name == "motherduck" {
 		return motherduckSpec

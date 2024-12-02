@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -108,7 +109,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
-	if err := r.storage.RemoveInstance(instanceID); err != nil {
+	if err := storage.RemoveInstance(r.storage, inst.ID); err != nil {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
@@ -325,7 +326,7 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
-	err := r.rt.storage.AddInstance(inst.ID)
+	err := storage.AddInstance(r.rt.storage, inst.ID)
 	if err != nil {
 		return err
 	}

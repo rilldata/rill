@@ -18,13 +18,7 @@ import (
 type Client struct {
 	dataDirPath  string
 	bucketConfig *gcsBucketConfig
-	instanceID   string
-}
-
-type gcsBucketConfig struct {
-	Bucket          string `mapstructure:"bucket"`
-	SecretJSON      string `mapstructure:"google_application_credentials"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	prefixes     []string
 }
 
 func New(dataDir string, bucketCfg map[string]any) (*Client, error) {
@@ -44,55 +38,27 @@ func New(dataDir string, bucketCfg map[string]any) (*Client, error) {
 }
 
 func MustNew(dataDir string, bucketCfg map[string]any) *Client {
-	c := &Client{
-		dataDirPath: dataDir,
-	}
-
-	if len(bucketCfg) != 0 {
-		gcsBucketConfig := &gcsBucketConfig{}
-		if err := mapstructure.WeakDecode(bucketCfg, gcsBucketConfig); err != nil {
-			panic(err)
-		}
-		c.bucketConfig = gcsBucketConfig
+	c, err := New(dataDir, bucketCfg)
+	if err != nil {
+		panic(err)
 	}
 	return c
-}
-
-func (c *Client) AddInstance(instanceID string) error {
-	err := os.Mkdir(filepath.Join(c.dataDirPath, instanceID), os.ModePerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("could not create instance directory: %w", err)
-	}
-
-	// recreate instance's tmp directory
-	tmpDir := filepath.Join(c.dataDirPath, instanceID, "tmp")
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return fmt.Errorf("could not remove instance tmp directory: %w", err)
-	}
-	if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Client) RemoveInstance(instanceID string) error {
-	err := os.RemoveAll(filepath.Join(c.dataDirPath, instanceID))
-	if err != nil {
-		return fmt.Errorf("could not remove instance directory: %w", err)
-	}
-	return nil
 }
 
 func (c *Client) WithPrefix(prefix string) *Client {
-	c.instanceID = prefix
-	return c
+	newClient := &Client{
+		dataDirPath:  c.dataDirPath,
+		bucketConfig: c.bucketConfig,
+	}
+	newClient.prefixes = append(newClient.prefixes, c.prefixes...)
+	newClient.prefixes = append(newClient.prefixes, prefix)
+	return newClient
 }
 
 func (c *Client) DataDir(elem ...string) string {
 	paths := []string{c.dataDirPath}
-	if c.instanceID != "" {
-		paths = append(paths, c.instanceID)
+	if c.prefixes != nil {
+		paths = append(paths, c.prefixes...)
 	}
 	paths = append(paths, elem...)
 	return filepath.Join(paths...)
@@ -100,8 +66,8 @@ func (c *Client) DataDir(elem ...string) string {
 
 func (c *Client) TempDir(elem ...string) string {
 	paths := []string{c.dataDirPath}
-	if c.instanceID != "" {
-		paths = append(paths, c.instanceID)
+	if c.prefixes != nil {
+		paths = append(paths, c.prefixes...)
 	}
 	paths = append(paths, "tmp")
 	paths = append(paths, elem...)
@@ -123,8 +89,8 @@ func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, 
 		return nil, false, fmt.Errorf("failed to open bucket %q: %w", c.bucketConfig.Bucket, err)
 	}
 	var prefix string
-	if c.instanceID != "" {
-		prefix = c.instanceID + "/"
+	for _, p := range c.prefixes {
+		prefix = prefix + p + "/"
 	}
 	for _, e := range elem {
 		prefix = prefix + e + "/"
@@ -135,16 +101,51 @@ func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, 
 	return blob.PrefixedBucket(bucket, prefix), true, nil
 }
 
-func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
-	creds, err := gcputil.Credentials(ctx, c.bucketConfig.SecretJSON, c.bucketConfig.AllowHostAccess)
-	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
+func AddInstance(c *Client, instanceID string) error {
+	if c.prefixes != nil {
+		return fmt.Errorf("storage: should not call AddInstance with prefixed client")
+	}
 
-		// no credentials set, we try with a anonymous client in case user is trying to access public buckets
-		return gcp.NewAnonymousHTTPClient(gcp.DefaultTransport()), nil
+	c = c.WithPrefix(instanceID)
+	err := os.Mkdir(c.DataDir(), os.ModePerm)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
+		return fmt.Errorf("could not create instance directory: %w", err)
+	}
+
+	// recreate instance's tmp directory
+	tmpDir := c.TempDir()
+	if err := os.RemoveAll(tmpDir); err != nil {
+		return fmt.Errorf("could not remove instance tmp directory: %w", err)
+	}
+	if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+		return err
+	}
+
+	return nil
+}
+
+func RemoveInstance(c *Client, instanceID string) error {
+	if c.prefixes != nil {
+		return fmt.Errorf("storage: should not call RemoveInstance with prefixed client")
+	}
+
+	err := os.RemoveAll(c.DataDir())
+	if err != nil {
+		return fmt.Errorf("could not remove instance directory: %w", err)
+	}
+	return nil
+}
+
+func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
+	creds, err := gcputil.Credentials(ctx, c.bucketConfig.SecretJSON, false)
+	if err != nil {
+		return nil, err
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
+type gcsBucketConfig struct {
+	Bucket     string `mapstructure:"bucket"`
+	SecretJSON string `mapstructure:"google_application_credentials"`
 }
