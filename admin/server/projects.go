@@ -192,6 +192,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			if spec != nil {
 				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
+		} else if mdl.ResourceType == runtime.ResourceKindReport {
+			// adding this rule to allow report resource accessible by non admin users
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))),
+						Allow:     true,
+					},
+				},
+			})
 		}
 
 		attr = mdl.Attributes
