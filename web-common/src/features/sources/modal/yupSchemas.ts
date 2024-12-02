@@ -156,6 +156,15 @@ export const getYupSchema = {
       .required("Source name is required"),
   }),
 
+  trino: yup.object().shape({
+      sql: yup.string().required("sql is required"),
+      dsn: yup.string(),
+      name: yup
+        .string()
+        .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        .required("Source name is required"),
+    }),
+
   clickhouse: yup.object().shape({
     host: yup
       .string()

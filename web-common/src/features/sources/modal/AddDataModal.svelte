@@ -2,6 +2,7 @@
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import AmazonRedshift from "@rilldata/web-common/components/icons/connectors/AmazonRedshift.svelte";
   import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
+  import Trino from "@rilldata/web-common/components/icons/connectors/Trino.svelte";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import {
     createRuntimeServiceListConnectorDrivers,
@@ -51,6 +52,7 @@
     "motherduck",
     "postgres",
     "mysql",
+    "trino",
     "sqlite",
     "snowflake",
     "salesforce",
@@ -73,6 +75,7 @@
     motherduck: MotherDuck,
     postgres: Postgres,
     mysql: MySQL,
+    trino: Trino,
     sqlite: SQLite,
     snowflake: Snowflake,
     salesforce: Salesforce,
