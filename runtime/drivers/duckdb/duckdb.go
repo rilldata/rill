@@ -178,28 +178,17 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 	}, connectionsInUse))
 
 	// Open the DB
-	err = c.reopenDB(ctx, false)
+	err = c.reopenDB(ctx)
 	if err != nil {
 		// Check for another process currently accessing the DB
 		if strings.Contains(err.Error(), "Could not set lock on file") {
 			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
 		}
-
-		c.logger.Debug("Resetting .db file because it was created with an older, incompatible version of Rill")
-		// reopen connection again
-		if err := c.reopenDB(ctx, true); err != nil {
-			return nil, err
+		// Return nice error for old macOS versions
+		if strings.Contains(err.Error(), "Symbol not found") {
+			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
+			os.Exit(1)
 		}
-	}
-
-	// Return nice error for old macOS versions
-	_, release, err := c.db.AcquireReadConnection(context.Background())
-	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
-		fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
-		os.Exit(1)
-	} else if err == nil {
-		_ = release()
-	} else {
 		return nil, err
 	}
 
@@ -373,12 +362,6 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Connection.
-// Use OLAPStore instead.
-func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
@@ -416,13 +399,15 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
-			return newDuckDBToDuckDB(c, c.logger), true
+			return newDuckDBToDuckDB(c, "duckdb", c.logger), true
 		}
-		if from.Driver() == "motherduck" {
+		switch from.Driver() {
+		case "motherduck":
 			return newMotherduckToDuckDB(from, olap, c.logger), true
-		}
-		if store, ok := from.AsSQLStore(); ok {
-			return newSQLStoreToDuckDB(store, olap, c.logger), true
+		case "postgres":
+			return newDuckDBToDuckDB(c, "postgres", c.logger), true
+		case "mysql":
+			return newDuckDBToDuckDB(c, "mysql", c.logger), true
 		}
 		if store, ok := from.AsWarehouse(); ok {
 			return NewWarehouseToDuckDB(store, olap, c.logger), true
@@ -452,7 +437,7 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.
-func (c *connection) reopenDB(ctx context.Context, clean bool) error {
+func (c *connection) reopenDB(ctx context.Context) error {
 	// If c.db is already open, close it first
 	if c.db != nil {
 		err := c.db.Close()
@@ -634,7 +619,7 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
 			c.dbReopen = false
-			err = c.reopenDB(ctx, false)
+			err = c.reopenDB(ctx)
 			if err == nil {
 				c.logger.Debug("reopened DuckDB successfully")
 			} else {
@@ -710,11 +695,4 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Unlock()
 		}
 	}
-}
-
-// fatalInternalError logs a critical internal error and exits the process.
-// This is used for errors that are completely unrecoverable.
-// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
-func (c *connection) fatalInternalError(err error) {
-	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
 }

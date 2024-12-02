@@ -87,7 +87,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 				require.NoError(t, res.Scan(&count))
 				require.Equal(t, 1, count)
 				require.NoError(t, res.Close())
-				contents, err := os.ReadFile(filepath.Join(temp, "default", "read", tt.name, "version.txt"))
+				contents, err := os.ReadFile(filepath.Join(temp, "default", tt.name, "version.txt"))
 				require.NoError(t, err)
 				version, err := strconv.ParseInt(string(contents), 10, 64)
 				require.NoError(t, err)
@@ -112,7 +112,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 'hello'", nil)
 	require.NoError(t, err)
 
-	dirs, err := os.ReadDir(filepath.Join(temp, "read", "test-select-multiple"))
+	dirs, err := os.ReadDir(filepath.Join(temp, "test-select-multiple"))
 	require.NoError(t, err)
 	names := make([]string, 0)
 	for _, dir := range dirs {
@@ -122,7 +122,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select fail query", nil)
 	require.Error(t, err)
 
-	dirs, err = os.ReadDir(filepath.Join(temp, "read", "test-select-multiple"))
+	dirs, err = os.ReadDir(filepath.Join(temp, "test-select-multiple"))
 	require.NoError(t, err)
 	newNames := make([]string, 0)
 	for _, dir := range dirs {
@@ -157,7 +157,7 @@ func Test_connection_DropTable(t *testing.T) {
 	err = c.DropTable(context.Background(), "test-drop", true)
 	require.NoError(t, err)
 
-	_, err = os.ReadDir(filepath.Join(temp, "read", "test-drop"))
+	_, err = os.ReadDir(filepath.Join(temp, "test-drop"))
 	require.True(t, os.IsNotExist(err))
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name='test-drop' AND table_type='VIEW'"})

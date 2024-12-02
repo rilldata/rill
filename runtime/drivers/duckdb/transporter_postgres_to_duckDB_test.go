@@ -68,17 +68,12 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	_, err := db.ExecContext(ctx, sqlStmt)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("postgres", "default", map[string]any{"database_url": dbURL}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, handle)
-
-	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := newSQLStoreToDuckDB(sqlStore, to.(*connection), zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
+	tr := newDuckDBToDuckDB(to.(*connection), "postgres", zap.NewNop())
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;", "db": dbURL}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)

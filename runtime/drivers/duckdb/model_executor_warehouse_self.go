@@ -114,7 +114,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		files, err := iter.Next()
 		if err != nil {
 			// TODO: Why is this not just one error?
-			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) || errors.Is(err, drivers.ErrIteratorDone) {
+			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) {
 				break
 			}
 			return err

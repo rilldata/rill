@@ -17,8 +17,8 @@ func TestConfig(t *testing.T) {
 
 	cfg, err = newConfig(map[string]any{"dsn": "", "memory_limit_gb": "1", "cpu": 2})
 	require.NoError(t, err)
-	require.Equal(t, "1", cfg.readSettings()["threads"])
-	require.Equal(t, "1", cfg.readSettings()["threads"])
+	require.Equal(t, "2", cfg.readSettings()["threads"])
+	require.Equal(t, "", cfg.writeSettings()["threads"])
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
@@ -41,9 +41,9 @@ func TestConfig(t *testing.T) {
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"})
 	require.NoError(t, err)
-	require.Equal(t, "1", cfg.readSettings()["threads"])
-	require.Equal(t, "1", cfg.writeSettings()["threads"])
-	require.Equal(t, "4", cfg.readSettings()["max_memory"])
-	require.Equal(t, "4", cfg.writeSettings()["max_memory"])
+	require.Equal(t, "2", cfg.readSettings()["threads"])
+	require.Equal(t, "", cfg.writeSettings()["threads"])
+	require.Equal(t, "8GB", cfg.readSettings()["max_memory"])
+	require.Equal(t, "", cfg.writeSettings()["max_memory"])
 	require.Equal(t, 2, cfg.PoolSize)
 }

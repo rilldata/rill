@@ -201,8 +201,10 @@ func (d *DBOptions) ValidateSettings() error {
 type CreateTableOptions struct {
 	// View specifies whether the created table is a view.
 	View bool
-	// InitSQL is the SQL to run before creating the table.
-	InitSQL string
+	// If BeforeCreateFn is set, it will be executed before the create query is executed.
+	BeforeCreateFn func(ctx context.Context, conn *sqlx.Conn) error
+	// If AfterCreateFn is set, it will be executed after the create query is executed.
+	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 }
 
 // NewDB creates a new DB instance.
@@ -236,7 +238,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	// create local path
 	err = os.MkdirAll(db.localPath, fs.ModePerm)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create read path: %w", err)
+		return nil, fmt.Errorf("unable to create local path: %w", err)
 	}
 
 	// sync local data
@@ -306,7 +308,6 @@ func (d *db) Close() error {
 	defer d.readMu.Unlock()
 
 	err = d.dbHandle.Close()
-	d.dbHandle = nil
 	return err
 }
 
@@ -410,16 +411,22 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		typ = "TABLE"
 		newMeta.Type = "TABLE"
 	}
-	if opts.InitSQL != "" {
-		_, err = conn.ExecContext(ctx, opts.InitSQL, nil)
+	if opts.BeforeCreateFn != nil {
+		err = opts.BeforeCreateFn(ctx, conn)
 		if err != nil {
-			return fmt.Errorf("create: init sql failed: %w", err)
+			return fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
 		}
 	}
 	// ingest data
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
 	if err != nil {
 		return fmt.Errorf("create: create %s %q failed: %w", typ, name, err)
+	}
+	if opts.AfterCreateFn != nil {
+		err = opts.AfterCreateFn(ctx, conn)
+		if err != nil {
+			return fmt.Errorf("create: AfterCreateFn returned error: %w", err)
+		}
 	}
 
 	// close write handle before syncing read so that temp files or wal files are removed

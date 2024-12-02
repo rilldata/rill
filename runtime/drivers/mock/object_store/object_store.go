@@ -160,11 +160,6 @@ func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Connection.
-func (h *handle) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsWarehouse implements drivers.Handle.
 func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
