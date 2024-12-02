@@ -209,16 +209,6 @@
 
   $: virtualColumns = $columnVirtualizer.getVirtualItems();
 
-  let virtualPaddingLeft: number | undefined;
-  let virtualPaddingRight: number | undefined;
-
-  $: if (columnVirtualizer && virtualColumns?.length) {
-    virtualPaddingLeft = virtualColumns[0]?.start ?? 0;
-    virtualPaddingRight =
-      $columnVirtualizer.getTotalSize() -
-      (virtualColumns[virtualColumns.length - 1]?.end ?? 0);
-  }
-
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
 
   // See: https://github.com/TanStack/virtual/issues/585#issuecomment-1716247313
