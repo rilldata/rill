@@ -75,7 +75,7 @@ func (c *Client) TempDir(elem ...string) string {
 }
 
 func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, bool, error) {
-	if c.bucketConfig == nil {
+	if len(c.bucketConfig) == 0 {
 		return nil, false, nil
 	}
 	// Init dataBucket
@@ -147,5 +147,5 @@ func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
 
 type gcsBucketConfig struct {
 	Bucket     string `mapstructure:"bucket"`
-	SecretJSON string `mapstructure:"google_application_credentials"`
+	GoogleApplicationCredentialsJSON string `mapstructure:"google_application_credentials_json"`
 }
