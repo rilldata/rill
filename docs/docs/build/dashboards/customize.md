@@ -122,8 +122,8 @@ title: Title of your explore dashboard
 description: a description
 metrics_view: <your-metric-view-file-name>
 
-dimensions: '*' #can use regex
-measures: '*' #can use regex
+dimensions: '*' #can use expressions
+measures: '*' #can use expressions
 
 theme: #your default theme
 
@@ -132,10 +132,7 @@ time_zones: #was available_time_zones
 
 defaults: #define all the defaults within here
     dimensions:
-    measures:
-    time_range:
-    comparison_mode:
-    comparison_dimension:
+  ...
 
 security:
     access: #only access can be set on dashboard level, see metric view for detailed access policies
