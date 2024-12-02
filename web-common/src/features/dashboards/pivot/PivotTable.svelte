@@ -395,12 +395,15 @@
 
 <!-- DEBUG ONLY -->
 {#if dev}
+  <span>({headerGroups.length} Header Groups)</span>
+  <span>({measureGroups.length} Measure Groups)</span>
   <span
-    >({columns.length} columns) ({columnPage} Column Page) ({tableWidth}px Table
-    Width)</span
+    >({columns.length} columns) ({virtualColumns.length} Virtual Columns) ({columnPage}
+    Column Page) ({tableWidth}px Table Width)</span
   >
   <span
-    >({rows.length} rows) ({rowPage} Row Page) ({tableHeight}px Table Height)</span
+    >({rows.length} rows) ({virtualRows.length} Virtual Rows) ({rowPage} Row Page)
+    ({tableHeight}px Table Height)</span
   >
 {/if}
 
@@ -445,7 +448,6 @@
       </Resizer>
     </div>
 
-    <!-- Resizer for the measure columns -->
     {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
         {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
@@ -493,7 +495,7 @@
     style:height="{tableHeight}px"
     on:click={modified({ shift: handleClick })}
   >
-    <!-- Resizer for the first column -->
+    <!-- ORIGINAL COLGROUP -->
     <colgroup>
       {#if firstColumnName && firstColumnWidth}
         <col
@@ -511,16 +513,30 @@
       {/each}
     </colgroup>
 
+    <!-- FIXME: measure groups vs virtual columns -->
+    <!-- <colgroup>
+      {#if firstColumnName && firstColumnWidth}
+        <col
+          style:width="{firstColumnWidth}px"
+          style:max-width="{firstColumnWidth}px"
+        />
+      {/if}
+      {#each virtualColumns as virtualColumn (virtualColumn.index)}
+        {@const length =
+          $measureLengths.get(columns[virtualColumn.index].id) ??
+          WIDTHS.INIT_MEASURE_WIDTH}
+        <col style:width="{length}px" style:max-width="{length}px" />
+      {/each}
+    </colgroup> -->
+
+    <!-- ORIGINAL THEAD -->
     <thead>
       {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
           {#each headerGroup.headers as header, i (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
-            <th
-              colSpan={header.colSpan}
-              data-id={slugify(header.id)}
-              data-index={header.index}
-            >
+
+            <th colSpan={header.colSpan}>
               <button
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}
@@ -547,6 +563,52 @@
         </tr>
       {/each}
     </thead>
+
+    <!-- <thead>
+      {#each headerGroups as headerGroup (headerGroup.id)}
+        <tr>
+          {#each headerGroup.headers as header, idx (header.id)}
+            {#if virtualColumns.some((vc) => vc.index === header.index)}
+              {@const sortDirection = header.column.getIsSorted()}
+              <th
+                colSpan={header.colSpan}
+                aria-sort={sortDirection
+                  ? sortDirection === "asc"
+                    ? "ascending"
+                    : "descending"
+                  : "none"}
+                data-id={slugify(header.id)}
+                data-index={header.index}
+              >
+                <button
+                  class="header-cell"
+                  class:cursor-pointer={header.column.getCanSort()}
+                  class:select-none={header.column.getCanSort()}
+                  class:flex-row-reverse={isMeasureColumn(header, idx)}
+                  on:click={header.column.getToggleSortingHandler()}
+                >
+                  {#if !header.isPlaceholder}
+                    <p class="truncate">
+                      {header.column.columnDef.header}
+                    </p>
+                    {#if sortDirection}
+                      <span
+                        class="transition-transform -mr-1"
+                        class:-rotate-180={sortDirection === "asc"}
+                      >
+                        <ArrowDown />
+                      </span>
+                    {/if}
+                  {/if}
+                </button>
+              </th>
+            {/if}
+          {/each}
+        </tr>
+      {/each}
+    </thead> -->
+
+    <!-- ORIGINAL TBODY -->
     <tbody>
       <tr style:height="{before}px" />
       {#each virtualRows as row (row.index)}
