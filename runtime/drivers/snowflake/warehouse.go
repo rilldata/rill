@@ -86,7 +86,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		return nil, drivers.ErrNoRows
 	}
 
-	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
+	tempDir, err := os.MkdirTemp(c.storage.TempDir(), "snowflake")
 	if err != nil {
 		return nil, err
 	}

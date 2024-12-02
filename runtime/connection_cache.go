@@ -28,6 +28,7 @@ var (
 
 type cachedConnectionConfig struct {
 	instanceID string // Empty if connection is shared
+	name       string
 	driver     string
 	config     map[string]any
 }
@@ -67,13 +68,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 
 // getConnection returns a cached connection for the given driver configuration.
 // If instanceID is empty, the connection is considered shared (see drivers.Open for details).
-func (r *Runtime) getConnection(ctx context.Context, instanceID, driver string, config map[string]any) (drivers.Handle, func(), error) {
-	cfg := cachedConnectionConfig{
-		instanceID: instanceID,
-		driver:     driver,
-		config:     config,
-	}
-
+func (r *Runtime) getConnection(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, func(), error) {
 	handle, release, err := r.connCache.Acquire(ctx, cfg)
 	if err != nil {
 		return nil, nil, err
@@ -94,7 +89,6 @@ func (r *Runtime) evictInstanceConnections(instanceID string) {
 func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, error) {
 	logger := r.Logger
 	activityClient := r.activity
-	var dataBucket *blob.Bucket
 	if cfg.instanceID != "" { // Not shared across multiple instances
 		inst, err := r.Instance(ctx, cfg.instanceID)
 		if err != nil {
@@ -110,13 +104,9 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		if activityClient != nil {
 			activityClient = activityClient.With(activityDims...)
 		}
-
-		dataBucket = r.DataBucket(cfg.instanceID)
-	} else {
-		dataBucket = r.DataBucket("__global__")
 	}
 
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, activityClient, dataBucket, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
@@ -138,7 +128,11 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 func generateKey(cfg cachedConnectionConfig) string {
 	sb := strings.Builder{}
 	sb.WriteString(cfg.instanceID) // Empty if cfg.shared
+	sb.WriteString(":")
+	sb.WriteString(cfg.name)
+	sb.WriteString(":")
 	sb.WriteString(cfg.driver)
+	sb.WriteString(":")
 	keys := maps.Keys(cfg.config)
 	slices.Sort(keys)
 	for _, key := range keys {

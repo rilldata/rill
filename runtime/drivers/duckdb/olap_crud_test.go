@@ -12,23 +12,23 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 )
 
 func Test_connection_CreateTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
 	require.NoError(t, normalConn.Migrate(context.Background()))
 
-	dbPath = filepath.Join(temp, "default")
-	handle, err = Driver{}.Open("default", map[string]any{"data_dir": dbPath, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath = filepath.Join(temp, "default", "view.db")
+	handle, err = Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	viewConnection := handle.(*connection)
 	require.NoError(t, viewConnection.Migrate(context.Background()))
@@ -100,7 +100,8 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -144,7 +145,8 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 func Test_connection_DropTable(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -172,7 +174,8 @@ func Test_connection_DropTable(t *testing.T) {
 func Test_connection_InsertTableAsSelect(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -199,7 +202,8 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 func Test_connection_RenameTable(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -223,7 +227,8 @@ func Test_connection_RenameTable(t *testing.T) {
 func Test_connection_RenameToExistingTable(t *testing.T) {
 	temp := t.TempDir()
 
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	dbPath := filepath.Join(temp, "default", "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -249,7 +254,10 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 
 func Test_connection_AddTableColumn(t *testing.T) {
 	temp := t.TempDir()
-	handle, err := Driver{}.Open("default", map[string]any{"data_dir": temp, "external_table_storage": true}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	os.Mkdir(temp, fs.ModePerm)
+
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -278,7 +286,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 }
 
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
-	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -302,11 +310,57 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.NoError(t, res.Close())
 }
 
+func Test_connection_CastEnum(t *testing.T) {
+	temp := t.TempDir()
+	os.Mkdir(temp, fs.ModePerm)
+
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country", nil)
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 2, 'mUm', 'IND'", false, true, drivers.IncrementalStrategyAppend, nil)
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'Perth', 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, null, 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'bglr', null", false, true, drivers.IncrementalStrategyAppend, nil)
+	require.NoError(t, err)
+
+	err = c.convertToEnum(context.Background(), "test", []string{"city", "country"})
+	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='city' AND table_name='test' AND table_catalog = 'view'"})
+	require.NoError(t, err)
+
+	var typ string
+	require.True(t, res.Next())
+	require.NoError(t, res.Scan(&typ))
+	require.Equal(t, "ENUM('bglr', 'Perth', 'mUm')", typ)
+	require.NoError(t, res.Close())
+
+	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='country' AND table_name='test' AND table_catalog = 'view'"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	require.NoError(t, res.Scan(&typ))
+	require.Equal(t, "ENUM('Aus', 'IND')", typ)
+	require.NoError(t, res.Close())
+}
+
 func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, activity.NewNoopClient(), memblob.OpenBucket(nil), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
@@ -335,6 +389,60 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 
 	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql, nil)
 	require.NoError(t, err)
+}
+
+func Test_connection_ChangingOrder(t *testing.T) {
+	temp := t.TempDir()
+	os.Mkdir(temp, fs.ModePerm)
+
+	// on cloud
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true, "allow_host_access": false}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// create table
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'", nil)
+	require.NoError(t, err)
+
+	// create view
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test", nil)
+	require.NoError(t, err)
+	verifyCount(t, c, "test_view", 1)
+
+	// change sequence
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id", nil)
+	require.NoError(t, err)
+	// view should still work
+	verifyCount(t, c, "test_view", 1)
+
+	// on local
+	dbPath = filepath.Join(temp, "local.db")
+	handle, err = Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true, "allow_host_access": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c = handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// create table
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'", nil)
+	require.NoError(t, err)
+
+	// create view
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test", nil)
+	require.NoError(t, err)
+	verifyCount(t, c, "test_view", 1)
+
+	// change sequence
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id", nil)
+	require.NoError(t, err)
+
+	// view no longer works
+	_, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from test_view"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Binder Error: Contents of view were altered: types don't match!")
 }
 
 func verifyCount(t *testing.T, c *connection, table string, expected int) {

@@ -6,16 +6,17 @@ package duckdb
 // 	"path/filepath"
 // 	"testing"
 
-// 	"github.com/rilldata/rill/runtime/drivers"
-// 	activity "github.com/rilldata/rill/runtime/pkg/activity"
-// 	"github.com/stretchr/testify/require"
-// 	"go.uber.org/zap"
-// )
+	"github.com/rilldata/rill/runtime/drivers"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
 
-// func TestDuckDBToDuckDBTransfer(t *testing.T) {
-// 	tempDir := t.TempDir()
-// 	conn, err := Driver{}.Open("default", map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser")), "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
-// 	require.NoError(t, err)
+func TestDuckDBToDuckDBTransfer(t *testing.T) {
+	tempDir := t.TempDir()
+	conn, err := Driver{}.Open("default", map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser")), "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
 
 // 	olap, ok := conn.AsOLAP("")
 // 	require.True(t, ok)
@@ -31,8 +32,8 @@ package duckdb
 // 	require.NoError(t, err)
 // 	require.NoError(t, conn.Close())
 
-// 	to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db"), "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
-// 	require.NoError(t, err)
+	to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db"), "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
 
 // 	tr := newDuckDBToDuckDB(to.(*connection), zap.NewNop())
 

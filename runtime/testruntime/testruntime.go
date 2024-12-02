@@ -17,9 +17,9 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/fileblob"
 
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
@@ -64,7 +64,6 @@ func New(t TestingT) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              true,
-		DataDir:                      t.TempDir(),
 	}
 
 	logger := zap.NewNop()
@@ -74,9 +73,7 @@ func New(t TestingT) *runtime.Runtime {
 		require.NoError(t, err)
 	}
 
-	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
-	require.NoError(t, err)
-	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()), bkt)
+	rt, err := runtime.New(context.Background(), opts, logger, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 

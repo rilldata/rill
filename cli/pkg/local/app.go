@@ -27,11 +27,11 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
-	"gocloud.dev/blob/fileblob"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -157,22 +157,21 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
 	// }
-	bkt, err := fileblob.OpenBucket(filepath.Join(dbDirPath, "remote"), &fileblob.Options{CreateDir: true})
-	if err != nil {
-		return nil, err
-	}
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
-		DataDir:                      dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender), bkt)
+	st, err := storage.New(dbDirPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	rt, err := runtime.New(ctx, rtOpts, logger, st, opts.Ch.Telemetry(ctx), email.New(sender))
 	if err != nil {
 		return nil, err
 	}

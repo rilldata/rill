@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -110,7 +110,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
-	if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
+	if err := storage.RemoveInstance(r.storage, inst.ID); err != nil {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
@@ -141,8 +141,7 @@ func (r *Runtime) DataBucket(instanceID string, elem ...string) *blob.Bucket {
 // DataDir returns the path to a persistent data directory for the given instance.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
 func (r *Runtime) DataDir(instanceID string, elem ...string) string {
-	elem = append([]string{r.opts.DataDir, instanceID}, elem...)
-	return filepath.Join(elem...)
+	return r.storage.WithPrefix(instanceID).DataDir(elem...)
 }
 
 // TempDir returns the path to a temporary directory for the given instance.
@@ -150,8 +149,7 @@ func (r *Runtime) DataDir(instanceID string, elem ...string) string {
 // The TempDir may be cleared after restarts.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
 func (r *Runtime) TempDir(instanceID string, elem ...string) string {
-	elem = append([]string{r.opts.DataDir, instanceID, "tmp"}, elem...)
-	return filepath.Join(elem...)
+	return r.storage.WithPrefix(instanceID).TempDir(elem...)
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
@@ -339,19 +337,9 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
-	if r.rt.opts.DataDir != "" {
-		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
-
-		// also recreate instance's tmp directory
-		tmpDir := filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp")
-		if err := os.RemoveAll(tmpDir); err != nil {
-			r.logger.Warn("failed to remove tmp directory", zap.String("instance_id", inst.ID), zap.Error(err))
-		}
-		if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
+	err := storage.AddInstance(r.rt.storage, inst.ID)
+	if err != nil {
+		return err
 	}
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
@@ -572,7 +560,7 @@ func (r *registryCache) emitHeartbeats() {
 }
 
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
-	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
+	dataDir := r.rt.storage.WithPrefix(inst.ID).DataDir()
 
 	// Add instance annotations as attributes to pass organization id, project id, etc.
 	attrs := instanceAnnotationsToAttribs(inst)

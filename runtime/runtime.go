@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -29,13 +30,13 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	DataDir                      string
 }
 
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
 	Logger         *zap.Logger
+	storage        *storage.Client
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
@@ -45,7 +46,7 @@ type Runtime struct {
 	dataBucket     *blob.Bucket
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client, dataBucket *blob.Bucket) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -54,10 +55,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		Email:          emailClient,
 		opts:           opts,
 		Logger:         logger,
+		storage:        st,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
-		dataBucket:     dataBucket,
 	}
 
 	rt.connCache = rt.newConnectionCache()

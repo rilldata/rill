@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/fileblob"
@@ -381,7 +382,6 @@ func TestRuntime_EditInstance(t *testing.T) {
 func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := newTestRuntime(t)
-	rt.opts.DataDir = t.TempDir()
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -406,7 +406,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"data_dir": rt.opts.DataDir},
+						Config: map[string]string{},
 					},
 				},
 			}
@@ -457,7 +457,6 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	// Prepare
 	ctx := context.Background()
 	rt := newTestRuntime(t)
-	rt.opts.DataDir = t.TempDir()
 	// Create instance
 	inst := &drivers.Instance{
 		Environment:   "test",
@@ -473,14 +472,14 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"data_dir": rt.opts.DataDir},
+				Config: map[string]string{},
 			},
 		},
 	}
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 
-	dbpath := filepath.Join(rt.opts.DataDir, inst.ID, "duckdb", "write", "main.db")
+	dbpath := filepath.Join(rt.storage.DataDir(), inst.ID, "duckdb", "main.db")
 
 	// Put some data into it to create a .db file on disk
 	olap, release, err := rt.OLAP(ctx, inst.ID, "")
@@ -529,10 +528,8 @@ func newTestRuntime(t *testing.T) *Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	bkt, err := fileblob.OpenBucket(t.TempDir(), nil)
-	require.NoError(t, err)
 
-	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient(), email.New(email.NewNoopSender()), bkt)
+	rt, err := New(context.Background(), opts, zap.NewNop(), storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewNoopSender()))
 	t.Cleanup(func() {
 		rt.Close()
 	})
