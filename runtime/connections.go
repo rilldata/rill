@@ -24,7 +24,12 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 				cfg[strings.ToLower(k)] = v
 			}
 			cfg["allow_host_access"] = r.opts.AllowHostAccess
-			return r.getConnection(ctx, "", c.Type, cfg)
+			return r.getConnection(ctx, cachedConnectionConfig{
+				instanceID: "",
+				name:       connector,
+				driver:     c.Type,
+				config:     cfg,
+			})
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
@@ -41,7 +46,12 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
 		return nil, nil, ctx.Err()
 	}
-	return r.getConnection(ctx, instanceID, cfg.Driver, cfg.Resolve())
+	return r.getConnection(ctx, cachedConnectionConfig{
+		instanceID: instanceID,
+		name:       connector,
+		driver:     cfg.Driver,
+		config:     cfg.Resolve(),
+	})
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {

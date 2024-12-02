@@ -27,6 +27,7 @@ var (
 
 type cachedConnectionConfig struct {
 	instanceID string // Empty if connection is shared
+	name       string
 	driver     string
 	config     map[string]any
 }
@@ -66,13 +67,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 
 // getConnection returns a cached connection for the given driver configuration.
 // If instanceID is empty, the connection is considered shared (see drivers.Open for details).
-func (r *Runtime) getConnection(ctx context.Context, instanceID, driver string, config map[string]any) (drivers.Handle, func(), error) {
-	cfg := cachedConnectionConfig{
-		instanceID: instanceID,
-		driver:     driver,
-		config:     config,
-	}
-
+func (r *Runtime) getConnection(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, func(), error) {
 	handle, release, err := r.connCache.Acquire(ctx, cfg)
 	if err != nil {
 		return nil, nil, err
@@ -110,7 +105,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID), activityClient, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
@@ -132,7 +127,11 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 func generateKey(cfg cachedConnectionConfig) string {
 	sb := strings.Builder{}
 	sb.WriteString(cfg.instanceID) // Empty if cfg.shared
+	sb.WriteString(":")
+	sb.WriteString(cfg.name)
+	sb.WriteString(":")
 	sb.WriteString(cfg.driver)
+	sb.WriteString(":")
 	keys := maps.Keys(cfg.config)
 	slices.Sort(keys)
 	for _, key := range keys {

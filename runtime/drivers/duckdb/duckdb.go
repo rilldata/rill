@@ -146,7 +146,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		logger.Warn("failed to install embedded DuckDB extensions, let DuckDB download them", zap.Error(err))
 	}
 
-	cfg, err := newConfig(cfgMap, st.DataDir("duckdb"))
+	cfg, err := newConfig(cfgMap, st.DataDir())
 	if err != nil {
 		return nil, err
 	}

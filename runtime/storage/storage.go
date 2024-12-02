@@ -45,13 +45,13 @@ func MustNew(dataDir string, bucketCfg map[string]any) *Client {
 	return c
 }
 
-func (c *Client) WithPrefix(prefix string) *Client {
+func (c *Client) WithPrefix(prefix ...string) *Client {
 	newClient := &Client{
 		dataDirPath:  c.dataDirPath,
 		bucketConfig: c.bucketConfig,
 	}
 	newClient.prefixes = append(newClient.prefixes, c.prefixes...)
-	newClient.prefixes = append(newClient.prefixes, prefix)
+	newClient.prefixes = append(newClient.prefixes, prefix...)
 	return newClient
 }
 
