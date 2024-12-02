@@ -97,7 +97,7 @@ type ConfigProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}

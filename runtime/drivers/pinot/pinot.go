@@ -95,7 +95,7 @@ type configProperties struct {
 }
 
 // Open a connection to Apache Pinot using HTTP API.
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}

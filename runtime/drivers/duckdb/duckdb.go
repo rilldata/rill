@@ -136,7 +136,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(instanceID string, cfgMap map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
 	}
@@ -146,7 +146,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, storage *storage.
 		logger.Warn("failed to install embedded DuckDB extensions, let DuckDB download them", zap.Error(err))
 	}
 
-	cfg, err := newConfig(cfgMap, storage.DataDir())
+	cfg, err := newConfig(cfgMap, st.DataDir("duckdb"))
 	if err != nil {
 		return nil, err
 	}

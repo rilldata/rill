@@ -119,7 +119,7 @@ type configProperties struct {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -173,7 +173,7 @@ func (d driver) Open(instanceID string, config map[string]any, storage *storage.
 		}
 	} else {
 		// run clickhouse locally
-		embed = newEmbedClickHouse(conf.EmbedPort, storage.DataDir(), storage.TempDir(), logger)
+		embed = newEmbedClickHouse(conf.EmbedPort, st.DataDir(), st.TempDir(), logger)
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err

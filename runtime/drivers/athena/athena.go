@@ -86,7 +86,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("athena driver can't be shared")
 	}

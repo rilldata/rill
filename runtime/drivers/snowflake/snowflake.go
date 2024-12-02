@@ -66,7 +66,7 @@ type configProperties struct {
 	ParallelFetchLimit int    `mapstructure:"parallel_fetch_limit"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}
@@ -80,7 +80,7 @@ func (d driver) Open(instanceID string, config map[string]any, storage *storage.
 	// actual db connection is opened during query
 	return &connection{
 		configProperties: conf,
-		storage:          storage,
+		storage:          st,
 		logger:           logger,
 	}, nil
 }

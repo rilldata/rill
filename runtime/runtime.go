@@ -44,7 +44,7 @@ type Runtime struct {
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, storage *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -53,7 +53,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, storage *storag
 		Email:          emailClient,
 		opts:           opts,
 		Logger:         logger,
-		storage:        storage,
+		storage:        st,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),

@@ -75,7 +75,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")
 	}
@@ -88,7 +88,7 @@ func (d driver) Open(instanceID string, config map[string]any, storage *storage.
 
 	conn := &Connection{
 		config:  conf,
-		storage: storage,
+		storage: st,
 		logger:  logger,
 	}
 	return conn, nil

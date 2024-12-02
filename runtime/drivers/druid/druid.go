@@ -102,7 +102,7 @@ type configProperties struct {
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
-func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("druid driver can't be shared")
 	}
