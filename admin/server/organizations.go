@@ -45,7 +45,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 	pbs := make([]*adminv1.Organization, len(orgs))
 	for i, org := range orgs {
-		pbs[i] = organizationToDTO(org)
+		pbs[i] = organizationToDTO(org, false)
 	}
 
 	return &adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}, nil
@@ -60,13 +60,23 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
+	perms := claims.OrganizationPermissions(ctx, org.ID)
+	if !perms.ReadOrg && !claims.Superuser(ctx) {
+		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
+		}
+
+		perms.ReadOrg = true
+		perms.ReadProjects = true
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: organizationToDTO(org),
-		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
+		Organization: organizationToDTO(org, perms.ManageOrg),
+		Permissions:  perms,
 	}, nil
 }
 
@@ -119,7 +129,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	}
 
 	return &adminv1.CreateOrganizationResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 	}, nil
 }
 
@@ -211,7 +221,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	return &adminv1.UpdateOrganizationResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 	}, nil
 }
 
@@ -873,7 +883,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	}
 
 	return &adminv1.SudoUpdateOrganizationQuotasResponse{
-		Organization: organizationToDTO(updatedOrg),
+		Organization: organizationToDTO(updatedOrg, true),
 	}, nil
 }
 
@@ -914,12 +924,12 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	}
 
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 	}, nil
 }
 
-func organizationToDTO(o *database.Organization) *adminv1.Organization {
-	return &adminv1.Organization{
+func organizationToDTO(o *database.Organization, privileged bool) *adminv1.Organization {
+	res := &adminv1.Organization{
 		Id:           o.ID,
 		Name:         o.Name,
 		DisplayName:  o.DisplayName,
@@ -933,12 +943,17 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
 			StorageLimitBytesPerDeployment: o.QuotaStorageLimitBytesPerDeployment,
 		},
-		BillingCustomerId: o.BillingCustomerID,
-		PaymentCustomerId: o.PaymentCustomerID,
-		BillingEmail:      o.BillingEmail,
-		CreatedOn:         timestamppb.New(o.CreatedOn),
-		UpdatedOn:         timestamppb.New(o.UpdatedOn),
+		CreatedOn: timestamppb.New(o.CreatedOn),
+		UpdatedOn: timestamppb.New(o.UpdatedOn),
 	}
+
+	if privileged {
+		res.BillingCustomerId = o.BillingCustomerID
+		res.PaymentCustomerId = o.PaymentCustomerID
+		res.BillingEmail = o.BillingEmail
+	}
+
+	return res
 }
 
 func valOrEmptyString(v *int) string {
