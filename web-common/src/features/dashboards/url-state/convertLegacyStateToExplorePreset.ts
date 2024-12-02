@@ -384,7 +384,15 @@ function fromLegacyPivotFields(
     preset.pivotCols = [];
   }
 
-  // TODO: other fields
+  const sortBy = legacyState.pivotSort?.[0];
+  if (sortBy) {
+    preset.pivotSortBy =
+      sortBy.id in ToURLParamTimeDimensionMap
+        ? ToURLParamTimeDimensionMap[sortBy.id]
+        : sortBy.id;
+    preset.pivotSortAsc = !sortBy.desc;
+  }
 
+  // TODO: other fields like expanded state and pin are not supported right now
   return { preset, errors };
 }

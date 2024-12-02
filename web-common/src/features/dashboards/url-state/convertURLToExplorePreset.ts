@@ -1,7 +1,6 @@
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
-  filterExpressions,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
@@ -25,19 +24,16 @@ import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
-import {
-  TIME_COMPARISON,
-  TIME_GRAIN,
-} from "@rilldata/web-common/lib/time/config";
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { validateISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   V1ExploreComparisonMode,
-  V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  V1ExploreWebView,
   type V1Expression,
   type V1MetricsViewSpec,
   V1Operation,
@@ -107,29 +103,40 @@ export function convertURLToExplorePreset(
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
-  const { preset: ovPreset, errors: ovErrors } = fromOverviewUrlParams(
-    searchParams,
-    measures,
-    dimensions,
-    explore,
-  );
-  Object.assign(preset, ovPreset);
-  errors.push(...ovErrors);
+  // only extract params if the view is explicitly set to the relevant one
+  switch (preset.view) {
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW:
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
+      // eslint-disable-next-line no-case-declarations
+      const { preset: ovPreset, errors: ovErrors } = fromOverviewUrlParams(
+        searchParams,
+        measures,
+        dimensions,
+        explore,
+      );
+      Object.assign(preset, ovPreset);
+      errors.push(...ovErrors);
+      break;
 
-  const { preset: tddPreset, errors: tddErrors } = fromTimeDimensionUrlParams(
-    searchParams,
-    measures,
-  );
-  Object.assign(preset, tddPreset);
-  errors.push(...tddErrors);
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION:
+      // eslint-disable-next-line no-case-declarations
+      const { preset: tddPreset, errors: tddErrors } =
+        fromTimeDimensionUrlParams(searchParams, measures);
+      Object.assign(preset, tddPreset);
+      errors.push(...tddErrors);
+      break;
 
-  const { preset: pivotPreset, errors: pivotErrors } = fromPivotUrlParams(
-    searchParams,
-    measures,
-    dimensions,
-  );
-  Object.assign(preset, pivotPreset);
-  errors.push(...pivotErrors);
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT:
+      // eslint-disable-next-line no-case-declarations
+      const { preset: pivotPreset, errors: pivotErrors } = fromPivotUrlParams(
+        searchParams,
+        measures,
+        dimensions,
+      );
+      Object.assign(preset, pivotPreset);
+      errors.push(...pivotErrors);
+      break;
+  }
 
   return { preset, errors };
 }
@@ -192,8 +199,10 @@ function fromFilterUrlParam(
     expr =
       filterIdentifiers(expr, (e, ident) => {
         if (
+          // these we are sure are dimensions so add errors as "missing dimension"
           e.cond?.op === V1Operation.OPERATION_IN ||
-          e.cond?.op === V1Operation.OPERATION_NIN
+          e.cond?.op === V1Operation.OPERATION_NIN ||
+          !!e.subquery
         ) {
           if (dimensions.has(ident)) {
             return true;
@@ -285,12 +294,12 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("select_tr")) {
-    const selectTr = searchParams.get("select_tr") as string;
+  if (searchParams.has("highlighted_tr")) {
+    const selectTr = searchParams.get("highlighted_tr") as string;
     if (CustomTimeRangeRegex.test(selectTr)) {
       preset.selectTimeRange = selectTr;
     } else {
-      errors.push(getSingleFieldError("select_tr", selectTr));
+      errors.push(getSingleFieldError("highlighted time range", selectTr));
     }
   }
   return { preset, errors };
@@ -313,8 +322,8 @@ function fromOverviewUrlParams(
       const selectedMeasures = mes.split(",").filter((m) => measures.has(m));
       preset.measures = selectedMeasures;
       const missingMeasures = getMissingValues(
-        mes.split(","),
         selectedMeasures,
+        mes.split(","),
       );
       if (missingMeasures.length) {
         errors.push(getMultiFieldError("measure", missingMeasures));
@@ -332,8 +341,8 @@ function fromOverviewUrlParams(
         .filter((d) => dimensions.has(d));
       preset.dimensions = selectedDimensions;
       const missingDimensions = getMissingValues(
-        dims.split(","),
         selectedDimensions,
+        dims.split(","),
       );
       if (missingDimensions.length) {
         errors.push(getMultiFieldError("dimension", missingDimensions));
@@ -446,7 +455,15 @@ function fromPivotUrlParams(
     }
   }
 
-  // TODO: other fields
+  if (searchParams.has("sort_by")) {
+    const sortBy = searchParams.get("sort_by") as string;
+    preset.pivotSortBy = sortBy;
+  }
 
+  if (searchParams.has("sort_dir")) {
+    preset.pivotSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
+  }
+
+  // TODO: other fields like expanded state and pin are not supported right now
   return { preset, errors };
 }

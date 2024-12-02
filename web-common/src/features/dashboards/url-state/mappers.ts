@@ -77,7 +77,6 @@ Object.keys(TimeRangePreset).forEach(
     (FromURLParamTimeRangePresetMap[TimeRangePreset[tr]] =
       tr as TimeRangePreset),
 );
-FromURLParamTimeRangePresetMap["all"] = TimeRangePreset.ALL_TIME;
 
 export function reverseMap<
   K extends string | number,

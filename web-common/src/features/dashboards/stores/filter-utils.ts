@@ -212,9 +212,9 @@ export function filterExpressions(
       if (newExpr.cond?.exprs?.length === 0) return undefined;
       break;
 
-    // other types will have identifier as 1st expression
     default:
-      if (!newExpr.cond?.exprs?.length || !("ident" in newExpr.cond.exprs[0]))
+      // other types should have at least 2 expressions
+      if (newExpr.cond?.exprs?.length && newExpr.cond.exprs.length <= 1)
         return undefined;
       break;
   }
@@ -265,6 +265,9 @@ export function filterIdentifiers(
   cb: (e: V1Expression, ident: string) => boolean,
 ) {
   return filterExpressions(expr, (e) => {
+    if (e.subquery?.dimension) {
+      return cb(e, e.subquery.dimension);
+    }
     const ident = e.cond?.exprs?.[0].ident;
     if (ident === undefined) {
       return true;

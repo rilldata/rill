@@ -32,6 +32,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -49,9 +50,11 @@ export function convertMetricsEntityToURLSearchParams(
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (
-    (preset.view !== undefined && preset.view !== currentView) ||
-    (preset.view === undefined &&
-      currentView !== V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW)
+    shouldSetParamWithDefault(
+      preset.view,
+      currentView,
+      V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    )
   ) {
     searchParams.set("view", ToURLParamViewMap[currentView] as string);
   }
@@ -66,17 +69,27 @@ export function convertMetricsEntityToURLSearchParams(
     searchParams.set("f", convertExpressionToFilterParam(expr));
   }
 
-  mergeSearchParams(
-    toOverviewUrl(exploreState, exploreSpec, preset),
-    searchParams,
-  );
+  switch (exploreState.activePage) {
+    case DashboardState_ActivePage.UNSPECIFIED:
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      mergeSearchParams(
+        toOverviewUrl(exploreState, exploreSpec, preset),
+        searchParams,
+      );
+      break;
 
-  mergeSearchParams(
-    toTimeDimensionUrlParams(exploreState, preset),
-    searchParams,
-  );
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      mergeSearchParams(
+        toTimeDimensionUrlParams(exploreState, preset),
+        searchParams,
+      );
+      break;
 
-  mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+    case DashboardState_ActivePage.PIVOT:
+      mergeSearchParams(toPivotUrlParams(exploreState, preset), searchParams);
+      break;
+  }
 
   return searchParams;
 }
@@ -99,12 +112,11 @@ function toTimeRangesUrl(
   }
 
   if (
-    // if preset has timezone, only set if selected is not the same
-    (preset.timezone !== undefined &&
-      exploreState.selectedTimezone !== preset.timezone) ||
-    // else if the timezone is not the default then set the param
-    (preset.timezone === undefined &&
-      exploreState.selectedTimezone !== URLStateDefaultTimezone)
+    shouldSetParamWithDefault(
+      preset.timezone,
+      exploreState.selectedTimezone,
+      URLStateDefaultTimezone,
+    )
   ) {
     searchParams.set("tz", exploreState.selectedTimezone);
   }
@@ -138,23 +150,15 @@ function toTimeRangesUrl(
   const mappedTimeGrain =
     ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
     "";
-  if (
-    // if preset has a time grain, only set if selected is not the same
-    (preset.timeGrain !== undefined && mappedTimeGrain !== preset.timeGrain) ||
-    // else if there is no default then set if there was a selected time grain
-    (preset.timeGrain === undefined && !!mappedTimeGrain)
-  ) {
+  if (shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set("grain", mappedTimeGrain);
   }
 
   if (
-    // if preset has a compare dimension, only set if selected is not the same
-    (preset.comparisonDimension !== undefined &&
-      exploreState.selectedComparisonDimension !==
-        preset.comparisonDimension) ||
-    // else if there is no default then set if there was a selected compare dimension
-    (preset.comparisonDimension === undefined &&
-      !!exploreState.selectedComparisonDimension)
+    shouldSetParam(
+      preset.comparisonDimension,
+      exploreState.selectedComparisonDimension,
+    )
   ) {
     // TODO: move this based on expected param sequence
     searchParams.set(
@@ -168,7 +172,7 @@ function toTimeRangesUrl(
     !exploreState.selectedScrubRange.isScrubbing
   ) {
     searchParams.set(
-      "select_tr",
+      "highlighted_tr",
       toTimeRangeParam(exploreState.selectedScrubRange),
     );
   }
@@ -178,9 +182,6 @@ function toTimeRangesUrl(
 
 function toTimeRangeParam(timeRange: TimeRange | undefined) {
   if (!timeRange) return "";
-  if (timeRange.name === TimeRangePreset.ALL_TIME) {
-    return "all";
-  }
   if (
     timeRange.name &&
     timeRange.name !== TimeRangePreset.CUSTOM &&
@@ -220,11 +221,10 @@ function toOverviewUrl(
   }
 
   if (
-    (preset.overviewExpandedDimension !== undefined &&
-      exploreState.selectedDimensionName !==
-        preset.overviewExpandedDimension) ||
-    (preset.overviewExpandedDimension === undefined &&
-      exploreState.selectedDimensionName)
+    shouldSetParam(
+      preset.overviewExpandedDimension,
+      exploreState.selectedDimensionName,
+    )
   ) {
     searchParams.set("expand_dim", exploreState.selectedDimensionName ?? "");
   }
@@ -232,14 +232,18 @@ function toOverviewUrl(
   const defaultLeaderboardMeasure =
     preset.measures?.[0] ?? exploreSpec.measures?.[0];
   if (
-    // if sort by is defined in preset then only set param if selected is not the same.
-    (preset.overviewSortBy &&
-      exploreState.leaderboardMeasureName !== preset.overviewSortBy) ||
-    // else the default is the 1st measure in preset or exploreSpec, so check that next
-    (!preset.overviewSortBy &&
-      exploreState.leaderboardMeasureName !== defaultLeaderboardMeasure)
+    shouldSetParamWithDefault(
+      preset.overviewSortBy,
+      exploreState.leaderboardMeasureName,
+      defaultLeaderboardMeasure,
+    )
   ) {
     searchParams.set("sort_by", exploreState.leaderboardMeasureName);
+  }
+
+  const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
+  if (shouldSetParam(preset.overviewSortType, sortType)) {
+    searchParams.set("sort_type", ToURLParamSortTypeMap[sortType] ?? "");
   }
 
   const sortAsc = exploreState.sortDirection === SortDirection.ASCENDING;
@@ -252,15 +256,6 @@ function toOverviewUrl(
       exploreState.sortDirection !== URLStateDefaultSortDirection)
   ) {
     searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");
-  }
-
-  const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
-  if (
-    (preset.overviewSortType !== undefined &&
-      preset.overviewSortType !== sortType) ||
-    (preset.overviewSortType === undefined && sortType)
-  ) {
-    searchParams.set("sort_type", ToURLParamSortTypeMap[sortType] ?? "");
   }
 
   return searchParams;
@@ -310,25 +305,23 @@ function toTimeDimensionUrlParams(
   if (!exploreState.tdd) return searchParams;
 
   if (
-    (preset.timeDimensionMeasure !== undefined &&
-      exploreState.tdd.expandedMeasureName !== preset.timeDimensionMeasure) ||
-    (preset.timeDimensionMeasure === undefined &&
-      exploreState.tdd.expandedMeasureName)
+    shouldSetParam(
+      preset.timeDimensionMeasure,
+      exploreState.tdd.expandedMeasureName,
+    )
   ) {
     searchParams.set("measure", exploreState.tdd.expandedMeasureName ?? "");
   }
 
+  const chartType = ToURLParamTDDChartMap[exploreState.tdd.chartType];
   if (
-    (preset.timeDimensionChartType !== undefined &&
-      ToURLParamTDDChartMap[exploreState.tdd.chartType] !==
-        preset.timeDimensionChartType) ||
-    (preset.timeDimensionChartType === undefined &&
-      exploreState.tdd.chartType !== URLStateDefaultTDDChartType)
+    shouldSetParamWithDefault(
+      preset.timeDimensionChartType,
+      chartType,
+      URLStateDefaultTDDChartType,
+    )
   ) {
-    searchParams.set(
-      "chart_type",
-      ToURLParamTDDChartMap[exploreState.tdd.chartType] ?? "",
-    );
+    searchParams.set("chart_type", chartType ?? "");
   }
 
   // TODO: pin
@@ -341,7 +334,7 @@ function toPivotUrlParams(
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
-  if (!exploreState.pivot) return searchParams;
+  if (!exploreState.pivot?.active) return searchParams;
 
   const mapPivotEntry = (data: PivotChipData) => {
     if (data.type === PivotChipType.Time)
@@ -362,6 +355,55 @@ function toPivotUrlParams(
     searchParams.set("cols", cols.join(","));
   }
 
-  // TODO: other fields
+  const sort = exploreState.pivot.sorting?.[0];
+  const sortId =
+    sort?.id in ToURLParamTimeDimensionMap
+      ? ToURLParamTimeDimensionMap[sort?.id]
+      : sort?.id;
+  if (shouldSetParam(preset.pivotSortBy, sortId)) {
+    searchParams.set("sort_by", sortId ?? "");
+  }
+  if (sort && !!preset.pivotSortAsc !== !sort?.desc) {
+    searchParams.set("sort_dir", sort?.desc ? "DESC" : "ASC");
+  }
+
+  // TODO: other fields like expanded state and pin are not supported right now
   return searchParams;
+}
+
+function shouldSetParam<T>(
+  presetValue: T | undefined,
+  exploreStateValue: T | undefined,
+) {
+  // there is no value in preset, set param only if state has a value
+  if (presetValue === undefined) {
+    return !!exploreStateValue;
+  }
+
+  // both preset and state value is non-truthy.
+  // EG: one is "" and another is undefined then we should not set param as empty string
+  if (!presetValue && !exploreStateValue) {
+    return false;
+  }
+
+  return presetValue !== exploreStateValue;
+}
+
+function shouldSetParamWithDefault<T>(
+  presetValue: T | undefined,
+  exploreStateValue: T | undefined,
+  defaultValue: T,
+) {
+  // there is no value in preset, set param only if state has a value
+  if (presetValue === undefined) {
+    return exploreStateValue != defaultValue;
+  }
+
+  // both preset and state value is non-truthy.
+  // EG: one is "" and another is undefined then we should not set param as empty string
+  if (!presetValue && !exploreStateValue) {
+    return false;
+  }
+
+  return presetValue !== exploreStateValue;
 }

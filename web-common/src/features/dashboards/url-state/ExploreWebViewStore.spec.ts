@@ -17,7 +17,9 @@ import {
   AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
+  AD_BIDS_SORT_BY_PERCENT_VALUE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+  AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
@@ -81,7 +83,7 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
       mutations: [],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_dir=ASC",
+        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
@@ -99,7 +101,7 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_dir=ASC",
+        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
@@ -118,14 +120,17 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
       mutations: [],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_dir=ASC",
+        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       previousView: ExploreWebViewNonPivot,
-      mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions",
+        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
@@ -134,14 +139,17 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_dir=ASC",
+        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       previousView: ExploreWebViewNonPivot,
-      mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions",
+        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
@@ -158,9 +166,12 @@ const TestCases: {
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
       previousView: ExploreWebViewNonPivot,
-      mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+      mutations: [
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+        AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions",
+        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
 ];
@@ -223,6 +234,46 @@ describe("ExploreWebViewStore", () => {
     );
   });
 
+  it("Empty states should only have view as a param", () => {
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    );
+    const stateManagers = createStateManagers({
+      queryClient,
+      metricsViewName: AD_BIDS_NAME,
+      exploreName: AD_BIDS_EXPLORE_NAME,
+    });
+    const defaultExplorePreset = getBasePreset(
+      AD_BIDS_EXPLORE_INIT,
+      {
+        timeZone: "UTC",
+      },
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    );
+
+    const emptyPivotUrl = stateManagers.webViewStore.getUrlForView(
+      V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+      {},
+    );
+    expect(emptyPivotUrl).toEqual("/explore/AdBids_explore?view=pivot");
+    const emptyNonPivotUrl = stateManagers.webViewStore.getUrlForView(
+      ExploreWebViewNonPivot,
+      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+      {},
+    );
+    expect(emptyNonPivotUrl).toEqual("/explore/AdBids_explore");
+  });
+
   for (const { title, initView, view } of TestCases) {
     it(title, () => {
       metricsExplorerStore.init(
@@ -252,6 +303,7 @@ describe("ExploreWebViewStore", () => {
         AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
         AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
         AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+        AD_BIDS_SORT_BY_PERCENT_VALUE,
         AD_BIDS_SORT_ASC_BY_BID_PRICE,
       ]);
 

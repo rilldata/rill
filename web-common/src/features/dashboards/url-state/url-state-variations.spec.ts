@@ -32,6 +32,9 @@ import {
   AD_BIDS_SORT_BY_PERCENT_VALUE,
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+  AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC,
+  AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
+  AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
   AD_BIDS_TOGGLE_BID_DOMAIN_DIMENSION_VISIBILITY,
   AD_BIDS_TOGGLE_BID_PRICE_MEASURE_VISIBILITY,
@@ -92,7 +95,7 @@ const TestCases: {
     title: "Time range with preset and ALL_TIME selected",
     mutations: [AD_BIDS_SET_ALL_TIME_RANGE_FILTER],
     preset: AD_BIDS_PRESET,
-    expectedUrl: "http://localhost/?tr=all",
+    expectedUrl: "http://localhost/?tr=inf",
   },
 
   {
@@ -185,7 +188,7 @@ const TestCases: {
       "Leaderboard configs with no preset and leaderboard sort measure in state different than default",
     mutations: [AD_BIDS_SORT_BY_DELTA_ABS_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
     expectedUrl:
-      "http://localhost/?sort_by=bid_price&sort_dir=ASC&sort_type=delta_abs",
+      "http://localhost/?sort_by=bid_price&sort_type=delta_abs&sort_dir=ASC",
   },
   {
     title:
@@ -209,7 +212,7 @@ const TestCases: {
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl:
-      "http://localhost/?sort_by=impressions&sort_dir=DESC&sort_type=delta_abs",
+      "http://localhost/?sort_by=impressions&sort_type=delta_abs&sort_dir=DESC",
   },
 
   {
@@ -272,34 +275,47 @@ const TestCases: {
       "Time dimensional details with preset and has time dimensional details in state different than presets",
     mutations: [AD_BIDS_CLOSE_TDD],
     preset: AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
-    expectedUrl: "http://localhost/?view=explore&measure=",
+    expectedUrl: "http://localhost/?view=explore",
     legacyNotSupported: true,
   },
 
   {
     title: "Pivot with no preset and has pivot in state",
-    mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+    mutations: [
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+    ],
     expectedUrl:
-      "http://localhost/?view=pivot&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions",
+      "http://localhost/?view=pivot&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
   },
   {
     title: "Pivot with no preset, open and close pivot",
-    mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS, AD_BIDS_TOGGLE_PIVOT],
-    expectedUrl:
-      "http://localhost/?rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions",
+    mutations: [
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+      AD_BIDS_TOGGLE_PIVOT,
+    ],
+    expectedUrl: "http://localhost/",
     legacyNotSupported: true,
   },
   {
     title: "Pivot with preset and has pivot in state same as preset",
-    mutations: [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+    mutations: [
+      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
+    ],
     preset: AD_BIDS_PIVOT_PRESET,
     expectedUrl: "http://localhost/",
   },
   {
     title: "Pivot with preset and pivot in state different as preset",
-    mutations: [AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT],
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
+    ],
     preset: AD_BIDS_PIVOT_PRESET,
-    expectedUrl: "http://localhost/?rows=domain%2Ctime.day&cols=impressions",
+    expectedUrl:
+      "http://localhost/?rows=domain%2Ctime.day&cols=impressions&sort_by=impressions&sort_dir=DESC",
   },
   {
     title: "Pivot with preset and no pivot in state different as preset",
@@ -362,7 +378,12 @@ describe("Human readable URL state variations", () => {
 
         // load empty url into metrics
         const defaultUrl = new URL("http://localhost");
-        applyURLToExploreState(defaultUrl, explore, defaultExplorePreset);
+        const errors = applyURLToExploreState(
+          defaultUrl,
+          explore,
+          defaultExplorePreset,
+        );
+        expect(errors.length).toEqual(0);
         const currentState = getCleanMetricsExploreForAssertion();
         // current state should match the initial state
         expect(currentState).toEqual(initState);
@@ -432,7 +453,7 @@ export function applyURLToExploreState(
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
-  const { partialExploreState: partialExploreStateDefaultUrl } =
+  const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLToMetricsExplore(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
@@ -444,6 +465,7 @@ export function applyURLToExploreState(
     partialExploreStateDefaultUrl,
     AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   );
+  return errors;
 }
 
 // cleans the metrics explore of any state that is not stored or restored from url state

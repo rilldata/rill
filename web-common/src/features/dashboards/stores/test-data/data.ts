@@ -257,6 +257,8 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
   pivotRows: ["publisher", "time.hour"],
   pivotCols: ["domain", "time.day", "impressions"],
+  pivotSortBy: "time.day",
+  pivotSortAsc: true,
 };
 
 export const AD_BIDS_BASE_PRESET = getBasePreset(

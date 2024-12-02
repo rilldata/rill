@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
   ToURLParamTDDChartMap,
@@ -118,11 +119,12 @@ function fromMetricsExploreOverviewFields(
   }
 
   if (exploreState.leaderboardContextColumn !== undefined) {
-    // TODO
+    // TODO: is this still used?
   }
 
   if (exploreState.dashboardSortType) {
-    // TODO
+    preset.overviewSortType =
+      FromLegacySortTypeMap[exploreState.dashboardSortType];
   }
 
   if (exploreState.selectedDimensionName !== undefined) {
@@ -169,8 +171,12 @@ function fromMetricsExplorePivotFields(
     ...exploreState.pivot.columns.dimension.map(mapPivotEntry),
     ...exploreState.pivot.columns.measure.map(mapPivotEntry),
   ];
+  const sort = exploreState.pivot.sorting?.[0];
+  if (sort) {
+    preset.pivotSortBy = sort.id;
+    preset.pivotSortAsc = !sort.desc;
+  }
 
-  // TODO: other fields
-
+  // TODO: other fields like expanded state and pin are not supported right now
   return preset;
 }

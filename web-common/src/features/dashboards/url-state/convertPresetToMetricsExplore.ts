@@ -41,6 +41,7 @@ import {
   V1ExploreWebView,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { SortingState } from "@tanstack/svelte-table";
 
 export function convertURLToMetricsExplore(
   searchParams: URLSearchParams,
@@ -199,11 +200,6 @@ function fromTimeRangeUrlParam(tr: string) {
       start: new Date(start),
       end: new Date(end),
     } as DashboardTimeControls;
-  }
-
-  if (tr === "all") {
-    // temporary to replace `inf` to `all`
-    tr = TimeRangePreset.ALL_TIME;
   }
   return {
     name: tr,
@@ -437,6 +433,18 @@ function fromPivotUrlParams(
     };
   }
 
+  const sorting: SortingState = [];
+  if (preset.pivotSortBy) {
+    const sortById =
+      preset.pivotSortBy in FromURLParamTimeDimensionMap
+        ? FromURLParamTimeDimensionMap[preset.pivotSortBy]
+        : preset.pivotSortBy;
+    sorting.push({
+      id: sortById,
+      desc: !preset.pivotSortAsc,
+    });
+  }
+
   return {
     partialExploreState: {
       pivot: {
@@ -448,9 +456,9 @@ function fromPivotUrlParams(
           measure: colMeasures,
           dimension: colDimensions,
         },
-        // TODO: other fields
+        sorting,
+        // TODO: other fields are not supported right now
         expanded: {},
-        sorting: [],
         columnPage: 1,
         rowPage: 1,
         enableComparison: true,

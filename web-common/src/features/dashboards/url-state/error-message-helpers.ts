@@ -1,5 +1,5 @@
 export function getSingleFieldError(fieldLabel: string, field: string) {
-  return new Error(`Select ${fieldLabel}: "${field}" is not valid.`);
+  return new Error(`Selected ${fieldLabel}: "${field}" is not valid.`);
 }
 
 export function getMultiFieldError(fieldLabel: string, fields: string[]) {

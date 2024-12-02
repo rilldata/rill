@@ -257,6 +257,19 @@ export const AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT: TestDashboardMutation = () =>
   );
 export const AD_BIDS_TOGGLE_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotMode(AD_BIDS_EXPLORE_NAME, false);
+export const AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    { id: AD_BIDS_DOMAIN_DIMENSION, desc: true },
+  ]);
+export const AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+    { id: V1TimeGrain.TIME_GRAIN_DAY, desc: false },
+  ]);
+export const AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC: TestDashboardMutation =
+  () =>
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+    ]);
 
 export const AD_BIDS_OPEN_PUB_IMP_PIVOT: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
