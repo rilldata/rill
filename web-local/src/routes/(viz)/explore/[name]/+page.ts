@@ -1,5 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 
 export const load = async ({ url, parent }) => {
   const { explore, metricsView, defaultExplorePreset } = await parent();
@@ -12,7 +12,7 @@ export const load = async ({ url, parent }) => {
     const {
       partialExploreState: partialExploreStateFromUrl,
       errors: errorsFromConvert,
-    } = convertURLToMetricsExplore(
+    } = convertURLToExploreState(
       url.searchParams,
       metricsViewSpec,
       exploreSpec,

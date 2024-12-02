@@ -42,9 +42,9 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
-import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -354,7 +354,7 @@ describe("Human readable URL state variations", () => {
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
         const initState = getCleanMetricsExploreForAssertion();
-        const defaultExplorePreset = getBasePreset(
+        const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           {
             timeZone: "UTC",
@@ -367,7 +367,7 @@ describe("Human readable URL state variations", () => {
         // load url params with updated metrics state
         const url = new URL("http://localhost");
         mergeSearchParams(
-          convertMetricsEntityToURLSearchParams(
+          convertExploreStateToURLSearchParams(
             get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
             explore,
             defaultExplorePreset,
@@ -405,7 +405,7 @@ describe("Human readable URL state variations", () => {
           explore,
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
-        const defaultExplorePreset = getBasePreset(
+        const defaultExplorePreset = getDefaultExplorePreset(
           explore,
           {
             timeZone: "UTC",
@@ -422,19 +422,18 @@ describe("Human readable URL state variations", () => {
         // load url with legacy protobuf state
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
-        const { partialExploreState: entityFromUrl } =
-          convertURLToMetricsExplore(
-            url.searchParams,
-            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-            explore,
-            defaultExplorePreset,
-          );
+        const { partialExploreState: entityFromUrl } = convertURLToExploreState(
+          url.searchParams,
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+          explore,
+          defaultExplorePreset,
+        );
         expect(entityFromUrl).toEqual(curState);
 
         // go back to default url
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
-          convertURLToMetricsExplore(
+          convertURLToExploreState(
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -454,7 +453,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLToMetricsExplore(
+    convertURLToExploreState(
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

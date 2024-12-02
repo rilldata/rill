@@ -19,7 +19,7 @@ import {
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
-export function convertMetricsExploreToPreset(
+export function convertExploreStateToPreset(
   exploreState: Partial<MetricsExplorerEntity>,
   explore: V1ExploreSpec,
 ) {

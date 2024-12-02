@@ -4,7 +4,7 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -261,7 +261,7 @@ export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
   pivotSortAsc: true,
 };
 
-export const AD_BIDS_BASE_PRESET = getBasePreset(
+export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
   AD_BIDS_EXPLORE_INIT,
   {
     timeZone: "UTC",

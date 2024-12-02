@@ -43,7 +43,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { SortingState } from "@tanstack/svelte-table";
 
-export function convertURLToMetricsExplore(
+export function convertURLToExploreState(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
@@ -58,7 +58,7 @@ export function convertURLToMetricsExplore(
   );
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToMetricsExplore(metricsView, explore, preset);
+    convertPresetToExploreState(metricsView, explore, preset);
   errors.push(...errorsFromEntity);
   return { partialExploreState, errors };
 }
@@ -67,7 +67,7 @@ export function convertURLToMetricsExplore(
  * Converts a V1ExplorePreset to our internal metrics explore state.
  * V1ExplorePreset could come from url state, bookmark, alert or report.
  */
-export function convertPresetToMetricsExplore(
+export function convertPresetToExploreState(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   preset: V1ExplorePreset,

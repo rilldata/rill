@@ -1,7 +1,7 @@
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
-import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
@@ -19,7 +19,7 @@ export const load = async ({ url, parent, params }) => {
     const {
       partialExploreState: partialExploreStateFromUrl,
       errors: errorsFromConvert,
-    } = convertURLToMetricsExplore(
+    } = convertURLToExploreState(
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
@@ -37,7 +37,7 @@ export const load = async ({ url, parent, params }) => {
     // Initial load of the dashboard.
     // Merge home bookmark to url if present and there are no params in the url
     const newUrl = new URL(url);
-    const searchParamsFromHomeBookmark = convertMetricsEntityToURLSearchParams(
+    const searchParamsFromHomeBookmark = convertExploreStateToURLSearchParams(
       bookmarks.home.metricsEntity,
       exploreSpec,
       defaultExplorePreset,

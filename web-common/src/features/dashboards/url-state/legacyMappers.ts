@@ -1,20 +1,20 @@
-import { ExplorePresetDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
+import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { reverseMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1ExploreOverviewSortType } from "@rilldata/web-common/runtime-client";
 
 const LegacyCharTypeToPresetChartType: Record<string, string> = {
-  default: ExplorePresetDefaultChartType,
+  default: ExploreStateDefaultChartType,
   grouped_bar: "bar",
   stacked_bar: "stacked_bar",
   stacked_area: "stacked_area",
 };
 export function mapLegacyChartType(chartType: string | undefined) {
   if (!chartType) {
-    return ExplorePresetDefaultChartType;
+    return ExploreStateDefaultChartType;
   }
   return (
-    LegacyCharTypeToPresetChartType[chartType] ?? ExplorePresetDefaultChartType
+    LegacyCharTypeToPresetChartType[chartType] ?? ExploreStateDefaultChartType
   );
 }
 

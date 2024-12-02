@@ -5,7 +5,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
+  import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
   import {
     createQueryServiceMetricsViewSchema,
@@ -43,12 +43,11 @@
     const u = new URL(
       `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`,
     );
-    const searchParamsFromDashboardState =
-      convertMetricsEntityToURLSearchParams(
-        $dashboardStore,
-        exploreSpec,
-        defaultExplorePreset,
-      );
+    const searchParamsFromDashboardState = convertExploreStateToURLSearchParams(
+      $dashboardStore,
+      exploreSpec,
+      defaultExplorePreset,
+    );
     mergeSearchParams(searchParamsFromDashboardState, u.searchParams);
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {

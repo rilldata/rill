@@ -5,15 +5,16 @@ import {
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
-export const URLStateDefaultView = V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW;
+export const ExploreStateDefaultView =
+  V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW;
 
-export const URLStateDefaultTimeRange = "inf";
-export const URLStateDefaultTimezone = "UTC";
+export const ExploreStateDefaultTimeRange = "inf";
+export const ExploreStateDefaultTimezone = "UTC";
 
-export const URLStateDefaultCompareMode =
+export const ExploreStateDefaultCompareMode =
   V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
 
-export const URLStateDefaultSortDirection = SortDirection.DESCENDING;
+export const ExploreStateDefaultSortDirection = SortDirection.DESCENDING;
 
-export const URLStateDefaultTDDChartType = TDDChart.DEFAULT;
-export const ExplorePresetDefaultChartType = "timeseries";
+export const ExploreStateDefaultTDDChartType = TDDChart.DEFAULT;
+export const ExploreStateDefaultChartType = "timeseries";

@@ -10,8 +10,8 @@ import {
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  ExplorePresetDefaultChartType,
-  URLStateDefaultTimezone,
+  ExploreStateDefaultChartType,
+  ExploreStateDefaultTimezone,
 } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   getMultiFieldError,
@@ -177,7 +177,7 @@ function fromLegacyTimeRangeFields(
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
   }
 
-  preset.timezone = legacyState.selectedTimezone ?? URLStateDefaultTimezone;
+  preset.timezone = legacyState.selectedTimezone ?? ExploreStateDefaultTimezone;
 
   // TODO: scrubRange
 
@@ -279,7 +279,7 @@ function fromLegacyTimeDimensionFields(
     if (legacyState.activePage) {
       preset.timeDimensionMeasure = "";
       preset.timeDimensionPin = false;
-      preset.timeDimensionChartType = ExplorePresetDefaultChartType;
+      preset.timeDimensionChartType = ExploreStateDefaultChartType;
     }
     return { preset, errors };
   }

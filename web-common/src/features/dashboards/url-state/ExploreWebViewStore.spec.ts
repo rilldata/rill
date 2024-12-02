@@ -28,7 +28,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import ExploreStateTestComponent from "@rilldata/web-common/features/dashboards/url-state/ExploreStateTestComponent.svelte";
 import { ExploreWebViewNonPivot } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -246,7 +246,7 @@ describe("ExploreWebViewStore", () => {
       metricsViewName: AD_BIDS_NAME,
       exploreName: AD_BIDS_EXPLORE_NAME,
     });
-    const defaultExplorePreset = getBasePreset(
+    const defaultExplorePreset = getDefaultExplorePreset(
       AD_BIDS_EXPLORE_INIT,
       {
         timeZone: "UTC",
@@ -287,7 +287,7 @@ describe("ExploreWebViewStore", () => {
         metricsViewName: AD_BIDS_NAME,
         exploreName: AD_BIDS_EXPLORE_NAME,
       });
-      const defaultExplorePreset = getBasePreset(
+      const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
         {
           timeZone: "UTC",

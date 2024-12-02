@@ -6,10 +6,10 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  URLStateDefaultSortDirection,
-  URLStateDefaultTDDChartType,
-  URLStateDefaultTimeRange,
-  URLStateDefaultTimezone,
+  ExploreStateDefaultSortDirection,
+  ExploreStateDefaultTDDChartType,
+  ExploreStateDefaultTimeRange,
+  ExploreStateDefaultTimezone,
 } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
@@ -39,7 +39,7 @@ import {
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
-export function convertMetricsEntityToURLSearchParams(
+export function convertExploreStateToURLSearchParams(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
@@ -106,7 +106,7 @@ function toTimeRangesUrl(
       exploreState.selectedTimeRange !== undefined &&
       exploreState.selectedTimeRange.name !== preset.timeRange) ||
     (preset.timeRange === undefined &&
-      exploreState.selectedTimeRange?.name !== URLStateDefaultTimeRange)
+      exploreState.selectedTimeRange?.name !== ExploreStateDefaultTimeRange)
   ) {
     searchParams.set("tr", toTimeRangeParam(exploreState.selectedTimeRange));
   }
@@ -115,7 +115,7 @@ function toTimeRangesUrl(
     shouldSetParamWithDefault(
       preset.timezone,
       exploreState.selectedTimezone,
-      URLStateDefaultTimezone,
+      ExploreStateDefaultTimezone,
     )
   ) {
     searchParams.set("tz", exploreState.selectedTimezone);
@@ -253,7 +253,7 @@ function toOverviewUrl(
       preset.overviewSortAsc !== sortAsc) ||
     // else if the direction is not the default then set the param
     (preset.overviewSortAsc === undefined &&
-      exploreState.sortDirection !== URLStateDefaultSortDirection)
+      exploreState.sortDirection !== ExploreStateDefaultSortDirection)
   ) {
     searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");
   }
@@ -318,7 +318,7 @@ function toTimeDimensionUrlParams(
     shouldSetParamWithDefault(
       preset.timeDimensionChartType,
       chartType,
-      URLStateDefaultTDDChartType,
+      ExploreStateDefaultTDDChartType,
     )
   ) {
     searchParams.set("chart_type", chartType ?? "");

@@ -12,7 +12,7 @@ import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboard
 import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -302,7 +302,7 @@ function getFilledInBookmark(
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const url = new URL(baseUrl);
-  const searchParamsFromBookmark = convertMetricsEntityToURLSearchParams(
+  const searchParamsFromBookmark = convertExploreStateToURLSearchParams(
     { ...dashboard, ...bookmark.metricsEntity },
     exploreSpec,
     defaultExplorePreset,

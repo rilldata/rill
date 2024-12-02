@@ -8,8 +8,8 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   getLocalUserPreferences,
   getLocalUserPreferencesState,
@@ -143,13 +143,13 @@ export function getDefaultMetricsExplorerEntity(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  defaultExplorePreset = getBasePreset(
+  defaultExplorePreset = getDefaultExplorePreset(
     explore,
     getLocalUserPreferencesState(name),
     fullTimeRange,
   ),
 ): MetricsExplorerEntity {
-  const { partialExploreState } = convertPresetToMetricsExplore(
+  const { partialExploreState } = convertPresetToExploreState(
     metricsView,
     explore,
     defaultExplorePreset,

@@ -1,9 +1,11 @@
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import {
-  URLStateDefaultTDDChartType,
-  URLStateDefaultTimeRange,
-  URLStateDefaultTimezone,
+  ExploreStateDefaultCompareMode,
+  ExploreStateDefaultTDDChartType,
+  ExploreStateDefaultTimeRange,
+  ExploreStateDefaultTimezone,
+  ExploreStateDefaultView,
 } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   ToURLParamTDDChartMap,
@@ -16,26 +18,25 @@ import {
   V1ExploreOverviewSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
-  V1ExploreWebView,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 
-export function getBasePreset(
+export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
   preferences: LocalUserPreferences,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
-    view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    view: ExploreStateDefaultView,
     where: createAndExpression([]),
 
     measures: explore.measures,
     dimensions: explore.dimensions,
 
-    timeRange: URLStateDefaultTimeRange,
-    timezone: preferences.timeZone ?? URLStateDefaultTimezone,
+    timeRange: ExploreStateDefaultTimeRange,
+    timezone: preferences.timeZone ?? ExploreStateDefaultTimezone,
     timeGrain: "",
-    comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
+    comparisonMode: ExploreStateDefaultCompareMode,
     compareTimeRange: "",
     comparisonDimension: "",
 
@@ -46,7 +47,8 @@ export function getBasePreset(
     overviewExpandedDimension: "",
 
     timeDimensionMeasure: "",
-    timeDimensionChartType: ToURLParamTDDChartMap[URLStateDefaultTDDChartType],
+    timeDimensionChartType:
+      ToURLParamTDDChartMap[ExploreStateDefaultTDDChartType],
     timeDimensionPin: false,
 
     pivotCols: [],

@@ -1,5 +1,5 @@
 import type { QueryFunction } from "@rilldata/svelte-query";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -58,7 +58,7 @@ export async function fetchExploreSpec(
     });
   }
 
-  const defaultExplorePreset = getBasePreset(
+  const defaultExplorePreset = getDefaultExplorePreset(
     exploreResource.explore.state?.validSpec ?? {},
     getLocalUserPreferencesState(exploreName),
     fullTimeRange,

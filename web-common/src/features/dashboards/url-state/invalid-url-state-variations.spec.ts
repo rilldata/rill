@@ -10,7 +10,7 @@ import {
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
@@ -156,7 +156,7 @@ describe("Invalid Human readable URL State", () => {
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
       const initState = getCleanMetricsExploreForAssertion();
-      const defaultExplorePreset = getBasePreset(
+      const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
         {
           timeZone: "UTC",

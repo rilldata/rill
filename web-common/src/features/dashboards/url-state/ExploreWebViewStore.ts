@@ -1,8 +1,8 @@
 import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
-import { convertMetricsExploreToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsExploreToPreset";
-import { convertPresetToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
 import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
@@ -141,7 +141,7 @@ export class ExploreWebViewStore {
   ) {
     // convert the MetricsExplorerEntity to V1ExplorePreset
     // TODO: we should eventually only use V1ExplorePreset across the app
-    const currentPreset = convertMetricsExploreToPreset(
+    const currentPreset = convertExploreStateToPreset(
       exploreState,
       exploreSpec,
     );
@@ -158,12 +158,12 @@ export class ExploreWebViewStore {
       preset.view = view;
     }
 
-    const { partialExploreState } = convertPresetToMetricsExplore(
+    const { partialExploreState } = convertPresetToExploreState(
       metricsSpec,
       exploreSpec,
       preset,
     );
-    const searchParams = convertMetricsEntityToURLSearchParams(
+    const searchParams = convertExploreStateToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
       defaultExplorePreset,
@@ -182,7 +182,7 @@ export class ExploreWebViewStore {
     forView = storeView,
   ) {
     const store = this.stores[storeView];
-    const preset = convertMetricsExploreToPreset(exploreState, exploreSpec);
+    const preset = convertExploreStateToPreset(exploreState, exploreSpec);
     const storedPreset: V1ExplorePreset = {};
 
     for (const key of ExploreViewKeys[forView]) {

@@ -8,7 +8,7 @@ import {
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
-import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   getLocalUserPreferencesState,
   initLocalUserPreferenceStore,
@@ -153,7 +153,7 @@ export function createStateManagers({
       if (!validSpec.data?.explore) {
         return {};
       }
-      return getBasePreset(
+      return getDefaultExplorePreset(
         validSpec.data?.explore ?? {},
         getLocalUserPreferencesState(exploreName),
         timeRangeSummary.data,

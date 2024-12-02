@@ -3,9 +3,9 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { convertURLToMetricsExplore } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToMetricsExplore";
+  import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
-  import { getBasePreset } from "@rilldata/web-common/features/dashboards/url-state/getBasePreset";
+  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -23,7 +23,7 @@
     $runtime.instanceId,
     $metricsViewName,
   );
-  $: defaultExplorePreset = getBasePreset(
+  $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     getLocalUserPreferencesState($exploreName),
     $metricsViewTimeRange.data,
@@ -32,7 +32,7 @@
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
   function parseUrl(url: URL) {
     const { partialExploreState: partialExploreStateFromUrl } =
-      convertURLToMetricsExplore(
+      convertURLToExploreState(
         url.searchParams,
         metricsViewSpec,
         exploreSpec,

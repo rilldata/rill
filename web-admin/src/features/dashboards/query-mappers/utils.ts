@@ -9,7 +9,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import { convertMetricsEntityToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertMetricsEntityToURLSearchParams";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -253,7 +253,7 @@ export async function getExplorePageUrl(
   url.pathname = `/${organization}/${project}/explore/${exploreName}`;
 
   const exploreSpec = explore?.explore?.state?.validSpec;
-  const searchParamsFromMetrics = convertMetricsEntityToURLSearchParams(
+  const searchParamsFromMetrics = convertExploreStateToURLSearchParams(
     dashboard,
     exploreSpec ?? {},
     exploreSpec?.defaultPreset ?? {},
