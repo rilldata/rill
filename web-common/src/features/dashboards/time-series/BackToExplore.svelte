@@ -3,25 +3,23 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { Button } from "../../../components/button";
 
   export let exploreName: string;
   export let isFetching = false;
 
-  function goBackToOverview() {
+  function goBackToExplore() {
     metricsExplorerStore.setExpandedMeasureName(exploreName, undefined);
   }
 </script>
 
-<button
-  class="flex flex-row items-center gap-x-1"
-  on:click={() => goBackToOverview()}
->
+<button class="flex items-center" on:click={() => goBackToExplore()}>
   {#if isFetching}
     <Spinner size="16px" status={EntityStatus.Running} />
   {:else}
-    <span class="ui-copy-icon">
-      <Back color="var(--color-primary-600)" size="16px" />
-    </span>
-    <span class="text-primary-600 font-medium">Overview</span>
+    <Button type="link" forcedStyle="padding: 0; gap: 0px;">
+      <Back size="16px" />
+      <span>All measures</span>
+    </Button>
   {/if}
 </button>

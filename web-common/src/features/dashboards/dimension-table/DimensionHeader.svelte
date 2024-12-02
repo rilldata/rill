@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
+  import { Button, Switch } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -12,21 +12,21 @@
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import exportToplist from "./export-toplist";
-  import {
-    createQueryServiceExport,
-    V1ExportFormat,
-  } from "@rilldata/web-common/runtime-client";
   import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
-  import { onDestroy } from "svelte";
+  import exportToplist from "./export-toplist";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -157,10 +157,10 @@
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
-      <span class="ui-copy-icon">
+      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
         <Back size="16px" />
-      </span>
-      <span>All Dimensions</span>
+        <span>All Dimensions</span>
+      </Button>
     {/if}
   </button>
 
