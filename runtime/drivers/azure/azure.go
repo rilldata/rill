@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
 
@@ -79,10 +80,9 @@ type configProperties struct {
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
-	TempDir          string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("azure driver can't be shared")
 	}
@@ -94,8 +94,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	}
 
 	conn := &Connection{
-		config: conf,
-		logger: logger,
+		config:  conf,
+		storage: storage,
+		logger:  logger,
 	}
 	return conn, nil
 }
@@ -129,8 +130,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	config *configProperties
-	logger *zap.Logger
+	config  *configProperties
+	storage *storage.Client
+	logger  *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}

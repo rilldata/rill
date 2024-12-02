@@ -279,11 +279,6 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
-	// data_dir stores persistent data
-	res.setPreset("data_dir", r.DataDir(instanceID, name), true)
-	// temp_dir stores temporary data. The logic that creates any temporary file here should also delete them.
-	// The contents will also be deleted on runtime restarts.
-	res.setPreset("temp_dir", r.TempDir(instanceID), true)
 
 	// Done
 	return res, nil

@@ -6,6 +6,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -132,7 +133,7 @@ func TestServer_UpdateLimit_UNION(t *testing.T) {
 }
 
 func prepareOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
+	conn, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)

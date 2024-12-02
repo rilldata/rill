@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
 
@@ -93,11 +94,10 @@ type ConfigProperties struct {
 	SessionToken    string `mapstructure:"aws_access_token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 	RetainFiles     bool   `mapstructure:"retain_files"`
-	TempDir         string `mapstructure:"temp_dir"`
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -145,8 +145,9 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type Connection struct {
 	// config is input configs passed to driver.Open
-	config *ConfigProperties
-	logger *zap.Logger
+	config  *ConfigProperties
+	storage *storage.Client
+	logger  *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}

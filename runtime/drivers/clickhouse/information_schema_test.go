@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
@@ -37,7 +38,7 @@ func TestInformationSchema(t *testing.T) {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
+	conn, err := drivers.Open("clickhouse", "default", map[string]any{"dsn": fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	prepareConn(t, conn)
 	t.Run("testInformationSchemaAll", func(t *testing.T) { testInformationSchemaAll(t, conn) })

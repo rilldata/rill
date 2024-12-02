@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("slack driver can't be shared")
 	}

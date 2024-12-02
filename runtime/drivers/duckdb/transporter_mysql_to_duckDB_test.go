@@ -7,6 +7,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -102,12 +103,12 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	_, err := db.ExecContext(ctx, mysqlInitStmt)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
+	handle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), drivers.OpenNilDataBucket, zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 

@@ -79,7 +79,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		TempDir:               c.config.TempDir,
+		TempDir:               c.storage.TempDir(),
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

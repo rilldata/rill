@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -60,10 +61,9 @@ type configProperties struct {
 	AccessToken string `mapstructure:"access_token"`
 	ProjectID   string `mapstructure:"project_id"`
 	Branch      string `mapstructure:"branch"`
-	TempDir     string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, ac *activity.Client, fn drivers.OpenDataBucketFn, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, storage *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("admin driver can't be shared")
 	}
@@ -105,6 +105,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type Handle struct {
 	config               *configProperties
 	logger               *zap.Logger
+	storage              *storage.Client
 	admin                *client.Client
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
@@ -391,7 +392,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if h.repoPath == "" {
-		h.repoPath, err = os.MkdirTemp(h.config.TempDir, "admin_driver_repo")
+		h.repoPath, err = os.MkdirTemp(h.storage.TempDir(), "admin_driver_repo")
 		if err != nil {
 			return err
 		}
@@ -577,7 +578,7 @@ func (h *Handle) stashVirtual() error {
 		return nil
 	}
 
-	dst, err := generateTmpPath(h.config.TempDir, "admin_driver_virtual_stash", "")
+	dst, err := generateTmpPath(h.storage.TempDir(), "admin_driver_virtual_stash", "")
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
@@ -622,7 +623,7 @@ func (h *Handle) download() error {
 	defer cancel()
 
 	// generate a temporary file to copy repo tar directory
-	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
+	downloadDst, err := generateTmpPath(h.storage.TempDir(), "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}

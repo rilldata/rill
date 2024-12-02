@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -198,6 +199,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				activityClient = activityClient.WithIsDev()
 			}
 
+			// storage client
+			bucketConfig := map[string]interface{}{
+				"bucket":                         conf.DataBucket,
+				"google_application_credentials": conf.DataBucketCredentialsJSON,
+			}
+			storage, err := storage.New(conf.DataDir, bucketConfig)
+			if err != nil {
+				logger.Fatal("error: could not create storage client", zap.Error(err))
+			}
+
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			// Init runtime
@@ -209,9 +220,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
-				DataDir:                      conf.DataDir,
-				DataBucket:                   conf.DataBucket,
-				DataBucketCredentialsJSON:    conf.DataBucketCredentialsJSON,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -220,7 +228,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient)
+			rt, err := runtime.New(ctx, opts, logger, storage, activityClient, emailClient)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
