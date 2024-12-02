@@ -10,21 +10,29 @@ sidebar_position: 1
 ## Overview
 [Google Cloud Storage (GCS)](https://cloud.google.com/storage/docs/introduction) is a scalable, fully managed, and highly reliable object storage service offered by Google Cloud, designed to store and access data from anywhere in the world. It provides a secure and cost-effective way to store data, including in common data storage formats such as CSV and parquet. Rill supports natively connecting to GCS using the provided [Google Cloud Storage URI](https://cloud.google.com/bigquery/docs/cloud-storage-transfer-overview#google-cloud-storage-uri) of your bucket to retrieve and read files.
 
-![Connecting to GCS](/img/reference/connectors/gcs/gcs.png)
+<img src = '/img/reference/connectors/gcs/gcs.png' class='rounded-png' />
+<br />
 
-## Local credentials
-
+## Rill Developer (Local credentials)
 When using Rill Developer on your local machine (i.e. `rill start`), Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
+:::note prerequisites
+In order to use the Google Cloud CLI, you will need to [install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). If you are unsure if this has been done, you can run the following command from the command line and see if it returns your authenticated user.
+```
+gcloud auth list
+```
 
-1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated. 
+If an error or no users are returned, please follow Google's documentation on setting up your command line before continuing. Make sure to run `gcloud init` after installation as described in the tutorial.
+:::
 
-2. If it did not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
+1. [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). 
+2. Initiate the Google Cloud CLI by running `gcloud init`.
+3. Set up your user by running `gcloud auth application-default login`.
 
-:::tip
+:::tip Service Accounts
 
-Once you have `gcloud` installed, run this command to set your default credentials via the CLI:
-```bash
-gcloud auth application-default login
+If you are using a service account, you will need to run the following command: 
+``` 
+gcloud auth activate-service-account --key-file=`path_to_json_key_file`
 ```
 
 :::
@@ -33,9 +41,7 @@ You have now configured Google Cloud access from your local environment. Rill wi
 
 :::info
 
-As an alternative, you can also run locally with assumed credentials such as a service account key. This is useful for when you have multiple profiles or may receive limited access to a bucket. 
-
-In that case, run the following command upon start - replacing the `path_to_json_key_file` with the service account file:
+As an alternative, to ensure that you are running rill with a specifc service account, you can provide the key in the `rill start` command. This is useful for when you have multiple profiles or may receive limited access to a bucket. 
 
  `GOOGLE_APPLICATION_CREDENTIALS=<path_to_json_key_file> rill start`
 
@@ -47,7 +53,7 @@ If this project has already been deployed to Rill Cloud and credentials have bee
 
 :::
 
-## Cloud deployment
+## Rill Cloud deployment
 
 When deploying a project to Rill Cloud, Rill requires a JSON key file to be explicitly provided for a Google Cloud service account with appropriate read access / permissions to the buckets used in your project. 
 
@@ -60,7 +66,7 @@ rill env configure
 
 :::info
 
-Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
+Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure` or set the `--project` flag in the command: `rill env configure --project 'project_name'`.
 
 :::
 

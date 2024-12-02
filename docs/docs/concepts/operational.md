@@ -1,6 +1,6 @@
 ---
 title: Operational BI vs. Traditional BI
-sidebar_label: What is Operational BI   
+sidebar_label: What is Operational BI?
 sidebar_position: 10
 hide_table_of_contents: true
 ---

@@ -24,7 +24,7 @@ rill start my-rill-project
   boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)"  /* Shadow effect */
 }}>
   <iframe credentialless="true"
-    src="https://www.youtube.com/embed/GMsUyj_Bv3Q?autoplay=1&mute=1&rel=0&si=CMltjZI4S5oAAAtg"
+    src="https://www.youtube.com/embed/7TlO6E5gZzY?autoplay=1&mute=1&rel=0&si=CMltjZI4S5oAAAtg"
     frameBorder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowFullScreen
