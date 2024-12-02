@@ -2,6 +2,7 @@ package rduckdb
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -266,6 +267,78 @@ func TestConcurrentReads(t *testing.T) {
 	err = conn3.QueryRowContext(ctx, "SELECT id, country FROM test").Scan(&id, &country)
 	require.Error(t, err)
 	require.NoError(t, release3())
+}
+
+func TestInconsistentSchema(t *testing.T) {
+	testDB, _, _ := prepareDB(t)
+	ctx := context.Background()
+
+	// create table
+	err := testDB.CreateTableAsSelect(ctx, "test", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// create view
+	err = testDB.CreateTableAsSelect(ctx, "test_view", "SELECT id, country FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+	verifyTable(t, testDB, "SELECT * FROM test_view", []testData{{ID: 2, Country: "USA"}})
+
+	// replace underlying table
+	err = testDB.CreateTableAsSelect(ctx, "test", "SELECT 20 AS id, 'USB' AS city", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	conn, release, err := testDB.AcquireReadConnection(ctx)
+	require.NoError(t, err)
+	defer release()
+
+	var (
+		id      int
+		country string
+	)
+	err = conn.QueryRowxContext(ctx, "SELECT * FROM test_view").Scan(&id, &country)
+	require.Error(t, err)
+
+	// but querying from table should work
+	err = conn.QueryRowxContext(ctx, "SELECT * FROM test").Scan(&id, &country)
+	require.NoError(t, err)
+	require.Equal(t, 20, id)
+	require.Equal(t, "USB", country)
+}
+
+func TestViews(t *testing.T) {
+	testDB, _, _ := prepareDB(t)
+	ctx := context.Background()
+
+	// create view
+	err := testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// create dependent view
+	err = testDB.CreateTableAsSelect(ctx, "child_view", "SELECT * FROM parent_view", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+	verifyTable(t, testDB, "SELECT id, country FROM child_view", []testData{{ID: 1, Country: "India"}})
+
+	// replace parent view
+	err = testDB.CreateTableAsSelect(ctx, "parent_view", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+	verifyTable(t, testDB, "SELECT id, country FROM child_view", []testData{{ID: 2, Country: "USA"}})
+
+	// rename child view
+	err = testDB.RenameTable(ctx, "child_view", "view0")
+	require.NoError(t, err)
+	verifyTable(t, testDB, "SELECT id, country FROM view0", []testData{{ID: 2, Country: "USA"}})
+
+	// old child view does not exist
+	err = testDB.DropTable(ctx, "child_view")
+	require.Error(t, err)
+
+	// create a chain of views
+	for i := 1; i <= 10; i++ {
+		err = testDB.CreateTableAsSelect(ctx, fmt.Sprintf("view%d", i), fmt.Sprintf("SELECT * FROM view%d", i-1), &CreateTableOptions{View: true})
+		require.NoError(t, err)
+	}
+	verifyTable(t, testDB, "SELECT id, country FROM view10", []testData{{ID: 2, Country: "USA"}})
+
+	require.NoError(t, testDB.Close())
 }
 
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
