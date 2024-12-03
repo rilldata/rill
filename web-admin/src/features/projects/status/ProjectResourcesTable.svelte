@@ -15,10 +15,7 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
-
-  function isSource(resource: V1Resource) {
-    return resource.meta.name.kind === ResourceKind.Source;
-  }
+  export let triggerRefresh: () => void;
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {
@@ -77,7 +74,10 @@
         flexRender(ActionsCell, {
           resourceKind: row.original.meta.name.kind,
           resourceName: row.original.meta.name.name,
-          isSource: isSource(row.original),
+          canRefresh:
+            row.original.meta.name.kind === ResourceKind.Model ||
+            row.original.meta.name.kind === ResourceKind.Source,
+          triggerRefresh,
         }),
       enableSorting: false,
       meta: {
