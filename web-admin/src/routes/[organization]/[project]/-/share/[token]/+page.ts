@@ -13,30 +13,12 @@ export const load = async ({ url, parent }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  let partialExploreState: Partial<MetricsExplorerEntity> = {};
-  const errors: Error[] = [];
-  if (metricsViewSpec && exploreSpec) {
-    const {
-      partialExploreState: partialExploreStateFromUrl,
-      errors: errorsFromConvert,
-    } = convertURLToExploreState(
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-    partialExploreState = partialExploreStateFromUrl;
-    errors.push(...errorsFromConvert);
-  }
-
+  // On the first dashboard load, if there are no URL params, append the token's state (in human-readable format) to the URL.
   if (
-    !(exploreName in get(metricsExplorerStore).entities) &&
     token.state &&
-    ![...url.searchParams.keys()].length
+    ![...url.searchParams.keys()].length &&
+    !(exploreName in get(metricsExplorerStore).entities)
   ) {
-    // Initial load of the dashboard.
-    // Merge home token state to url if present and there are no params in the url
-    // convert legacy state to new readable url format
     const exploreState = getDashboardStateFromUrl(
       token.state,
       metricsViewSpec,
@@ -51,6 +33,23 @@ export const load = async ({ url, parent }) => {
     );
     mergeSearchParams(searchParamsFromTokenState, newUrl.searchParams);
     throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
+  }
+
+  // Get Explore state from URL params
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const errors: Error[] = [];
+  if (metricsViewSpec && exploreSpec) {
+    const {
+      partialExploreState: partialExploreStateFromUrl,
+      errors: errorsFromConvert,
+    } = convertURLToExploreState(
+      url.searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+    partialExploreState = partialExploreStateFromUrl;
+    errors.push(...errorsFromConvert);
   }
 
   return {

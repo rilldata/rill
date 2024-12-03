@@ -6,6 +6,7 @@ export const load = async ({ url, parent }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
+  // Get Explore state from URL params
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
   if (metricsViewSpec && exploreSpec && url) {

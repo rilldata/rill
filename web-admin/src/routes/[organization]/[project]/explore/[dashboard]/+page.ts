@@ -13,6 +13,23 @@ export const load = async ({ url, parent, params }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
+  // On the first dashboard load, if there are no URL params, redirect to the "Home" bookmark.
+  if (
+    bookmarks.home?.metricsEntity &&
+    ![...url.searchParams.keys()].length &&
+    !(exploreName in get(metricsExplorerStore).entities)
+  ) {
+    const newUrl = new URL(url);
+    const searchParamsFromHomeBookmark = convertExploreStateToURLSearchParams(
+      bookmarks.home.metricsEntity,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+    mergeSearchParams(searchParamsFromHomeBookmark, newUrl.searchParams);
+    throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
+  }
+
+  // Get Explore state from URL params
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
   const errors: Error[] = [];
   if (metricsViewSpec && exploreSpec) {
@@ -27,23 +44,6 @@ export const load = async ({ url, parent, params }) => {
     );
     partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
-  }
-
-  if (
-    !(exploreName in get(metricsExplorerStore).entities) &&
-    bookmarks.home?.metricsEntity &&
-    ![...url.searchParams.keys()].length
-  ) {
-    // Initial load of the dashboard.
-    // Merge home bookmark to url if present and there are no params in the url
-    const newUrl = new URL(url);
-    const searchParamsFromHomeBookmark = convertExploreStateToURLSearchParams(
-      bookmarks.home.metricsEntity,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-    mergeSearchParams(searchParamsFromHomeBookmark, newUrl.searchParams);
-    throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
   }
 
   return {

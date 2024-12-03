@@ -29,6 +29,7 @@
     $metricsViewTimeRange.data,
   );
 
+  // Get Explore state from URL params
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
   function parseUrl(url: URL) {
     const { partialExploreState: partialExploreStateFromUrl } =
