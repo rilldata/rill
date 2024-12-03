@@ -32,7 +32,7 @@ import { derived, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
   resource: V1Bookmark;
-  metricsEntity: Partial<MetricsExplorerEntity>;
+  exploreState: Partial<MetricsExplorerEntity>;
   filtersOnly: boolean;
   absoluteTimeRange: boolean;
   url: string;
@@ -278,7 +278,7 @@ function parseBookmarkEntry(
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
 ): BookmarkEntry {
-  const metricsEntity = getDashboardStateFromUrl(
+  const exploreState = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
     exploreSpec,
@@ -286,10 +286,10 @@ function parseBookmarkEntry(
   );
   return {
     resource: bookmarkResource,
-    metricsEntity,
+    exploreState,
     absoluteTimeRange:
-      metricsEntity.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
-    filtersOnly: !metricsEntity.pivot,
+      exploreState.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
+    filtersOnly: !exploreState.pivot,
     url: "", // will be filled in along with existing dashboard
   };
 }
@@ -303,7 +303,7 @@ function getFilledInBookmark(
 ) {
   const url = new URL(baseUrl);
   const searchParamsFromBookmark = convertExploreStateToURLSearchParams(
-    { ...dashboard, ...bookmark.metricsEntity },
+    { ...dashboard, ...bookmark.exploreState },
     exploreSpec,
     defaultExplorePreset,
   );

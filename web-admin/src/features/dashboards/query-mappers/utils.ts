@@ -229,7 +229,7 @@ export async function getExplorePageUrl(
   organization: string,
   project: string,
   exploreName: string,
-  dashboard: MetricsExplorerEntity,
+  exploreState: MetricsExplorerEntity,
 ) {
   const instanceId = get(runtime).instanceId;
   const { explore } = await queryClient.fetchQuery({
@@ -254,7 +254,7 @@ export async function getExplorePageUrl(
 
   const exploreSpec = explore?.explore?.state?.validSpec;
   const searchParamsFromMetrics = convertExploreStateToURLSearchParams(
-    dashboard,
+    exploreState,
     exploreSpec ?? {},
     exploreSpec?.defaultPreset ?? {},
   );

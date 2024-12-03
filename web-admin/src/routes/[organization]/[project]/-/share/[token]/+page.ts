@@ -37,7 +37,7 @@ export const load = async ({ url, parent }) => {
     // Initial load of the dashboard.
     // Merge home token state to url if present and there are no params in the url
     // convert legacy state to new readable url format
-    const metricsEntity = getDashboardStateFromUrl(
+    const exploreState = getDashboardStateFromUrl(
       token.state,
       metricsViewSpec,
       exploreSpec,
@@ -45,7 +45,7 @@ export const load = async ({ url, parent }) => {
     );
     const newUrl = new URL(url);
     const searchParamsFromTokenState = convertExploreStateToURLSearchParams(
-      metricsEntity,
+      exploreState,
       exploreSpec,
       defaultExplorePreset,
     );
