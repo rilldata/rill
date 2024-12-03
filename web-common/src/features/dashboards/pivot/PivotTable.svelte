@@ -375,7 +375,8 @@
     } else return colNumber > 0;
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
+  function isCellActive(cell: Cell<PivotDataRow, unknown> | undefined) {
+    if (!cell) return false;
     return (
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
@@ -423,70 +424,77 @@
     style:width="{tableWidth}px"
     style:height="{tableHeight}px"
   >
-    <div
-      style:width="{firstColumnWidth}px"
-      class="sticky left-0 flex-none flex"
-    >
-      <Resizer
-        side="right"
-        direction="EW"
-        min={WIDTHS.MIN_COL_WIDTH}
-        max={WIDTHS.MAX_COL_WIDTH}
-        dimension={firstColumnWidth}
-        onUpdate={(d) => (firstColumnWidth = d)}
-        onMouseDown={(e) => {
-          resizingMeasure = false;
-          resizing = true;
-          onResizeStart(e);
-        }}
-        onMouseUp={() => {
-          resizing = false;
-          resizingMeasure = false;
-        }}
+    <!-- FIXME: Uncomment to fix first column's width resizer -->
+    <!-- {#if firstColumnName && firstColumnWidth}
+      <div
+        style:width="{firstColumnWidth}px"
+        class="sticky left-0 flex-none flex"
       >
-        <div class="resize-bar" />
-      </Resizer>
-    </div>
+        <Resizer
+          side="right"
+          direction="EW"
+          min={WIDTHS.MIN_COL_WIDTH}
+          max={WIDTHS.MAX_COL_WIDTH}
+          dimension={firstColumnWidth}
+          onUpdate={(d) => (firstColumnWidth = d)}
+          onMouseDown={(e) => {
+            resizingMeasure = false;
+            resizing = true;
+            onResizeStart(e);
+          }}
+          onMouseUp={() => {
+            resizing = false;
+            resizingMeasure = false;
+          }}
+        >
+          <div class="resize-bar" />
+        </Resizer>
+      </div>
+    {/if} -->
 
-    {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
+    <!-- FIXME: Uncomment to fix virtual columns' width resizer -->
+    <!-- {#each measureGroups as measureGroup, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
-        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-          {@const length =
-            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
-          {@const last =
-            i === subHeaders.length - 1 &&
-            groupIndex === measureGroups.length - 1}
-          <div style:width="{length}px" class="h-full relative">
-            <Resizer
-              side="right"
-              direction="EW"
-              min={WIDTHS.MIN_MEASURE_WIDTH}
-              max={WIDTHS.MAX_MEASURE_WIDTH}
-              dimension={length}
-              justify={last ? "end" : "center"}
-              hang={!last}
-              onUpdate={(d) => {
-                measureLengths.update((measureLengths) => {
-                  return measureLengths.set(name, d);
-                });
-              }}
-              onMouseDown={(e) => {
-                resizingMeasure = true;
-                resizing = true;
-                initialMeasureIndexOnResize = i;
-                onResizeStart(e);
-              }}
-              onMouseUp={() => {
-                resizing = false;
-                resizingMeasure = false;
-              }}
-            >
-              <div class="resize-bar" />
-            </Resizer>
-          </div>
+        {#each virtualColumns.filter((vc) => Math.floor(vc.index / measureCount) === groupIndex) as virtualColumn (virtualColumn.index)}
+          {@const measureIndex = virtualColumn.index % measureCount}
+          {@const subHeader = measureGroup.subHeaders[measureIndex]}
+          {#if subHeader}
+            {@const measureName = subHeader.column.columnDef.name}
+            {@const length =
+              $measureLengths.get(measureName) ?? WIDTHS.INIT_MEASURE_WIDTH}
+            {@const last = virtualColumn.index === virtualColumns.length - 1}
+            <div style:width="{length}px" class="h-full relative">
+              <Resizer
+                side="right"
+                direction="EW"
+                min={WIDTHS.MIN_MEASURE_WIDTH}
+                max={WIDTHS.MAX_MEASURE_WIDTH}
+                dimension={length}
+                justify={last ? "end" : "center"}
+                hang={!last}
+                onUpdate={(d) => {
+                  measureLengths.update((measureLengths) => {
+                    return measureLengths.set(measureName, d);
+                  });
+                }}
+                onMouseDown={(e) => {
+                  resizingMeasure = true;
+                  resizing = true;
+                  initialMeasureIndexOnResize = measureIndex;
+                  onResizeStart(e);
+                }}
+                onMouseUp={() => {
+                  resizing = false;
+                  resizingMeasure = false;
+                }}
+              >
+                <div class="resize-bar" />
+              </Resizer>
+            </div>
+          {/if}
         {/each}
       </div>
-    {/each}
+    {/each} -->
   </div>
 
   <table
@@ -495,99 +503,65 @@
     style:height="{tableHeight}px"
     on:click={modified({ shift: handleClick })}
   >
-    <!-- ORIGINAL COLGROUP -->
     <colgroup>
-      {#if firstColumnName && firstColumnWidth}
+      <!-- FIXME -->
+      <!-- {#if firstColumnName && firstColumnWidth}
         <col
           style:width="{firstColumnWidth}px"
+          style:min-width="{firstColumnWidth}px"
           style:max-width="{firstColumnWidth}px"
         />
-      {/if}
+      {/if} -->
 
-      {#each measureGroups as { subHeaders }, i (i)}
-        {#each subHeaders as { column: { columnDef: { name } } } (name)}
+      {#each virtualColumns as virtualColumn (virtualColumn.index)}
+        {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+        {@const measureIndex = virtualColumn.index % measureCount}
+        {@const measureGroup = measureGroups[groupIndex]}
+        {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+        {#if measureGroup && subHeader}
+          {@const measureName = subHeader?.column.columnDef.name}
           {@const length =
-            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+            $measureLengths.get(measureName) ?? WIDTHS.INIT_MEASURE_WIDTH}
           <col style:width="{length}px" style:max-width="{length}px" />
-        {/each}
+        {/if}
       {/each}
     </colgroup>
 
-    <!-- FIXME: measure groups vs virtual columns -->
-    <!-- <colgroup>
-      {#if firstColumnName && firstColumnWidth}
-        <col
-          style:width="{firstColumnWidth}px"
-          style:max-width="{firstColumnWidth}px"
-        />
-      {/if}
-      {#each virtualColumns as virtualColumn (virtualColumn.index)}
-        {@const length =
-          $measureLengths.get(columns[virtualColumn.index].id) ??
-          WIDTHS.INIT_MEASURE_WIDTH}
-        <col style:width="{length}px" style:max-width="{length}px" />
-      {/each}
-    </colgroup> -->
-
-    <!-- ORIGINAL THEAD -->
     <thead>
-      {#each headerGroups as headerGroup (headerGroup.id)}
+      {#each headerGroups as headerGroup, groupIndex (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header, i (header.id)}
-            {@const sortDirection = header.column.getIsSorted()}
-
-            <th colSpan={header.colSpan}>
-              <button
-                class="header-cell"
-                class:cursor-pointer={header.column.getCanSort()}
-                class:select-none={header.column.getCanSort()}
-                class:flex-row-reverse={isMeasureColumn(header, i)}
-                on:click={header.column.getToggleSortingHandler()}
-              >
-                {#if !header.isPlaceholder}
+          {#if firstColumnName && firstColumnWidth}
+            <th>
+              <button class="header-cell">
+                {#if groupIndex === 1}
                   <p class="truncate">
-                    {header.column.columnDef.header}
+                    {headerGroup.headers[0]?.column.columnDef.header}
                   </p>
-                  {#if sortDirection}
-                    <span
-                      class="transition-transform -mr-1"
-                      class:-rotate-180={sortDirection === "asc"}
-                    >
-                      <ArrowDown />
-                    </span>
-                  {/if}
                 {/if}
               </button>
             </th>
-          {/each}
-        </tr>
-      {/each}
-    </thead>
+          {/if}
 
-    <!-- <thead>
-      {#each headerGroups as headerGroup (headerGroup.id)}
-        <tr>
-          {#each headerGroup.headers as header, idx (header.id)}
-            {#if virtualColumns.some((vc) => vc.index === header.index)}
-              {@const sortDirection = header.column.getIsSorted()}
-              <th
-                colSpan={header.colSpan}
-                aria-sort={sortDirection
-                  ? sortDirection === "asc"
-                    ? "ascending"
-                    : "descending"
-                  : "none"}
-                data-id={slugify(header.id)}
-                data-index={header.index}
-              >
+          {#each virtualColumns as virtualColumn (virtualColumn.index)}
+            {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+            {@const measureIndex = virtualColumn.index % measureCount}
+            {@const measureGroup = measureGroups[groupIndex]}
+            {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+            {#if measureGroup && subHeader}
+              {@const measureName = subHeader?.column.columnDef.name}
+              {@const header =
+                headerGroup.headers[
+                  virtualColumn.index + (hasDimension ? 1 : 0)
+                ]}
+              {@const sortDirection = header?.column.getIsSorted()}
+              <th>
                 <button
                   class="header-cell"
-                  class:cursor-pointer={header.column.getCanSort()}
-                  class:select-none={header.column.getCanSort()}
-                  class:flex-row-reverse={isMeasureColumn(header, idx)}
-                  on:click={header.column.getToggleSortingHandler()}
+                  class:cursor-pointer={header?.column.getCanSort()}
+                  class:select-none={header?.column.getCanSort()}
+                  on:click={header?.column.getToggleSortingHandler()}
                 >
-                  {#if !header.isPlaceholder}
+                  {#if !header?.isPlaceholder && header?.column.columnDef.header !== undefined}
                     <p class="truncate">
                       {header.column.columnDef.header}
                     </p>
@@ -606,54 +580,99 @@
           {/each}
         </tr>
       {/each}
-    </thead> -->
+    </thead>
 
-    <!-- ORIGINAL TBODY -->
     <tbody>
       <tr style:height="{before}px" />
       {#each virtualRows as row (row.index)}
-        {@const cells = rows[row.index].getVisibleCells()}
+        {@const rowData = rows[row.index]}
+        {@const cells = rowData.getVisibleCells()}
         <tr>
-          {#each cells as cell, i (cell.id)}
-            {@const result =
-              typeof cell.column.columnDef.cell === "function"
-                ? cell.column.columnDef.cell(cell.getContext())
-                : cell.column.columnDef.cell}
-            {@const isActive = isCellActive(cell)}
+          {#if hasDimension}
+            {@const firstCell = cells[0]}
+            {@const firstCellResult =
+              typeof firstCell?.column.columnDef.cell === "function"
+                ? firstCell?.column.columnDef.cell(firstCell?.getContext())
+                : firstCell?.column.columnDef.cell}
             <td
-              class="ui-copy-number"
-              class:active-cell={isActive}
               class:interactive-cell={canShowDataViewer}
-              class:border-r={i % measureCount === 0 && i}
-              on:click={() => handleCellClick(cell)}
+              on:click={() => firstCell && handleCellClick(firstCell)}
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
-              data-value={cell.getValue()}
-              data-id={slugify(cell.id)}
-              class:totals-column={i > 0 && i <= measureCount}
+              data-value={firstCell?.getValue()}
             >
               <div
                 class="cell pointer-events-none truncate"
                 role="presentation"
               >
-                {#if result?.component && result?.props}
+                {#if firstCellResult?.component && firstCellResult?.props}
                   <svelte:component
-                    this={result.component}
-                    {...result.props}
+                    this={firstCellResult.component}
+                    {...firstCellResult.props}
                     {assembled}
                   />
-                {:else if typeof result === "string" || typeof result === "number"}
-                  {result}
+                {:else if typeof firstCellResult === "string" || typeof firstCellResult === "number"}
+                  {firstCellResult}
                 {:else}
                   <svelte:component
                     this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
+                      firstCell?.column.columnDef.cell,
+                      firstCell?.getContext(),
                     )}
                   />
                 {/if}
               </div>
             </td>
+          {/if}
+
+          {#each virtualColumns as virtualColumn (virtualColumn.index)}
+            {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+            {@const measureIndex = virtualColumn.index % measureCount}
+            {@const measureGroup = measureGroups[groupIndex]}
+            {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+            {#if measureGroup && subHeader}
+              {@const cell =
+                cells[virtualColumn.index + (hasDimension ? 1 : 0)]}
+              {@const result =
+                typeof cell?.column.columnDef.cell === "function"
+                  ? cell?.column.columnDef.cell(cell?.getContext())
+                  : cell?.column.columnDef.cell}
+              {@const isActive = cell ? isCellActive(cell) : false}
+              <td
+                class="ui-copy-number"
+                class:active-cell={isActive}
+                class:interactive-cell={canShowDataViewer}
+                class:border-r={measureIndex === 0}
+                on:click={() => cell && handleCellClick(cell)}
+                on:mouseenter={handleHover}
+                on:mouseleave={handleLeave}
+                data-value={cell?.getValue()}
+                class:totals-column={virtualColumn.index > 0 &&
+                  virtualColumn.index <= measureCount}
+              >
+                <div
+                  class="cell pointer-events-none truncate"
+                  role="presentation"
+                >
+                  {#if result?.component && result?.props}
+                    <svelte:component
+                      this={result.component}
+                      {...result.props}
+                      {assembled}
+                    />
+                  {:else if typeof result === "string" || typeof result === "number"}
+                    {result}
+                  {:else}
+                    <svelte:component
+                      this={flexRender(
+                        cell?.column.columnDef.cell,
+                        cell?.getContext(),
+                      )}
+                    />
+                  {/if}
+                </div>
+              </td>
+            {/if}
           {/each}
         </tr>
       {/each}
@@ -734,14 +753,9 @@
     @apply border-b-0;
   }
 
-  .with-row-dimension tr > th:first-of-type {
-    @apply sticky left-0 z-20;
-    @apply bg-white;
-  }
-
+  .with-row-dimension tr > th:first-of-type,
   .with-row-dimension tr > td:first-of-type {
-    @apply sticky left-0 z-10;
-    @apply bg-white;
+    @apply sticky left-0 z-20 bg-white;
   }
 
   tr > td:first-of-type:not(:last-of-type) {
