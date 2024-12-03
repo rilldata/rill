@@ -86,12 +86,18 @@
         if (!form.valid) return;
         const values = form.data;
 
-        // Omit draft variables that do not have a key
+        // Check for duplicates before proceeding
+        const duplicates = checkForExistingKeys();
+        if (duplicates > 0) {
+          // Early return without resetting the form
+          return;
+        }
+
+        // Only filter and process if there are no duplicates
         const filteredVariables = values.variables.filter(
           ({ key }) => key !== "",
         );
 
-        // Flatten the variables to match the schema
         const flatVariables = Object.fromEntries(
           filteredVariables.map(({ key, value }) => [key, value]),
         );
@@ -109,8 +115,6 @@
   async function handleUpdateProjectVariables(
     flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
-    checkForExistingKeys();
-
     try {
       await $updateProjectVariables.mutateAsync({
         organization,
@@ -170,9 +174,7 @@
 
     const existingKeys = $form.variables.map((variable) => {
       return {
-        environment: getEnvironmentLabel(
-          getCurrentEnvironment(isDevelopment, isProduction),
-        ),
+        environment: getCurrentEnvironment(isDevelopment, isProduction),
         name: variable.key,
       };
     });
