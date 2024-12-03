@@ -1,8 +1,5 @@
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import {
-  convertExprToToplist,
-  fillTimeRange,
-} from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import { fillTimeRange } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -10,7 +7,6 @@ import {
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
   SortType,

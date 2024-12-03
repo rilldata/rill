@@ -41,7 +41,7 @@
         organization,
         project,
         $dashboardStateForReport.data.exploreName,
-        $dashboardStateForReport.data.dashboard,
+        $dashboardStateForReport.data.exploreState,
       ),
     );
   }

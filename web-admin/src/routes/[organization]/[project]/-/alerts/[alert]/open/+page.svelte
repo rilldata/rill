@@ -53,7 +53,7 @@
         organization,
         project,
         $dashboardStateForAlert.data.exploreName,
-        $dashboardStateForAlert.data.dashboard,
+        $dashboardStateForAlert.data.exploreState,
       ),
     );
   }
