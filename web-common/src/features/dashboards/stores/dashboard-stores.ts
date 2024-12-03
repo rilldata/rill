@@ -32,7 +32,7 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
-import { type Readable, derived, writable } from "svelte/store";
+import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
@@ -558,7 +558,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricsViewReducers,
 };
 
-export function useExploreStore(name: string): Readable<MetricsExplorerEntity> {
+export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });

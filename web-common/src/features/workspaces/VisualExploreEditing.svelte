@@ -1,39 +1,39 @@
 <script lang="ts">
+  import { replaceState } from "$app/navigation";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
+  import {
+    DEFAULT_TIMEZONES,
+    DEFAULT_TIME_RANGES,
+    LATEST_WINDOW_TIME_RANGES,
+    PERIOD_TO_DATE_RANGES,
+    PREVIOUS_COMPLETE_DATE_RANGES,
+  } from "@rilldata/web-common/lib/time/config";
+  import {
+    TimeRangePreset,
+    type DashboardTimeControls,
+  } from "@rilldata/web-common/lib/time/types";
+  import type { V1Explore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { InfoIcon } from "lucide-svelte";
+  import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
+  import {
+    metricsExplorerStore,
+    useExploreState,
+  } from "../dashboards/stores/dashboard-stores";
+  import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { FileArtifact } from "../entity-management/file-artifact";
   import {
     ResourceKind,
     useFilteredResources,
   } from "../entity-management/resource-selectors";
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { YAMLSeq, Scalar, YAMLMap, parseDocument } from "yaml";
-  import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
   import MeasureDimensionSelector from "../visual-editing/MeasureDimensionSelector.svelte";
-  import ThemeInput from "../visual-editing/ThemeInput.svelte";
-  import type { V1Explore } from "@rilldata/web-common/runtime-client";
-  import {
-    metricsExplorerStore,
-    useExploreStore,
-  } from "../dashboards/stores/dashboard-stores";
-  import {
-    TimeRangePreset,
-    type DashboardTimeControls,
-  } from "@rilldata/web-common/lib/time/types";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { InfoIcon } from "lucide-svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import MultiSelectInput from "../visual-editing/MultiSelectInput.svelte";
-  import {
-    PERIOD_TO_DATE_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PREVIOUS_COMPLETE_DATE_RANGES,
-    DEFAULT_TIME_RANGES,
-    DEFAULT_TIMEZONES,
-  } from "@rilldata/web-common/lib/time/config";
-  import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
-  import { replaceState } from "$app/navigation";
+  import SidebarWrapper from "../visual-editing/SidebarWrapper.svelte";
+  import ThemeInput from "../visual-editing/ThemeInput.svelte";
 
   const ranges = [
     ...Object.keys(LATEST_WINDOW_TIME_RANGES),
@@ -161,16 +161,16 @@
         ? exploreSpec?.embeddedTheme
         : undefined;
 
-  $: exploreStateStore = useExploreStore(exploreName);
+  $: exploreStateStore = useExploreState(exploreName);
 
-  $: exploreStore = $exploreStateStore;
+  $: exploreState = $exploreStateStore;
 
   $: newDefaults = constructDefaultState(
-    exploreStore?.showTimeComparison,
-    exploreStore?.selectedComparisonDimension,
-    exploreStore?.visibleDimensionKeys,
-    exploreStore?.visibleMeasureKeys,
-    exploreStore?.selectedTimeRange,
+    exploreState?.showTimeComparison,
+    exploreState?.selectedComparisonDimension,
+    exploreState?.visibleDimensionKeys,
+    exploreState?.visibleMeasureKeys,
+    exploreState?.selectedTimeRange,
   );
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;

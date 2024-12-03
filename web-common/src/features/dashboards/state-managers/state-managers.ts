@@ -1,7 +1,7 @@
 import {
-  contextColWidthDefaults,
   type ContextColWidths,
   type MetricsExplorerEntity,
+  contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getPersistentDashboardStore,
@@ -18,10 +18,10 @@ import {
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
-  type V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
   type RpcStatus,
   type V1ExplorePreset,
+  type V1MetricsViewTimeRangeResponse,
+  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -38,9 +38,9 @@ import {
   type MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
-  useExploreStore,
+  useExploreState,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import { createStateManagerActions, type StateManagerActions } from "./actions";
+import { type StateManagerActions, createStateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
   type StateManagerReadables,
@@ -103,8 +103,8 @@ export function createStateManagers({
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
     [exploreNameStore],
     ([name], set) => {
-      const store = useExploreStore(name);
-      return store.subscribe(set);
+      const exploreState = useExploreState(name);
+      return exploreState.subscribe(set);
     },
   );
 

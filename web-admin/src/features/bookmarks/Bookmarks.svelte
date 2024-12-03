@@ -15,7 +15,7 @@
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -28,7 +28,7 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
 
   const queryClient = useQueryClient();
@@ -40,7 +40,7 @@
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(getBookmarkDataForDashboard($exploreStore));
+    await homeBookmarkModifier(getBookmarkDataForDashboard($exploreState));
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });

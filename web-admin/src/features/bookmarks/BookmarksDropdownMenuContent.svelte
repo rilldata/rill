@@ -1,5 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
+  import {
+    getBookmarks,
+    getFilledInBookmarks,
+    searchBookmarks,
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
   import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
   import {
     DropdownMenuContent,
@@ -8,15 +14,10 @@
     DropdownMenuLabel,
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
-  import {
-    getBookmarks,
-    getFilledInBookmarks,
-    searchBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -24,7 +25,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
-  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -34,7 +34,7 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  $: dashboard = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
   $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
@@ -60,7 +60,7 @@
   $: filledInBookmarks = getFilledInBookmarks(
     $bookmarks.data,
     `/${organization}/${project}/explore/${exploreName}`,
-    $dashboard,
+    $exploreState,
     exploreSpec,
     defaultExplorePreset,
   );
