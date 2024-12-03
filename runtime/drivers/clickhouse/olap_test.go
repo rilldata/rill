@@ -136,7 +136,7 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 	cases := []struct {
 		query string
-		ms    int
+		ms    int64
 	}{
 		{query: "SELECT INTERVAL '1' SECOND", ms: 1000},
 		{query: "SELECT INTERVAL '2' MINUTES", ms: 2 * 60 * 1000},
