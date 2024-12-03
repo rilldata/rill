@@ -3,7 +3,7 @@ import { page } from "$app/stores";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { createTimeRangeSummary } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
@@ -151,7 +151,7 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
           proto: "",
         };
 
-      const metricsExplorer = getDefaultMetricsExplorerEntity(
+      const metricsExplorer = getDefaultExploreState(
         get(ctx.metricsViewName),
         validSpec.data.metricsView,
         validSpec.data.explore,

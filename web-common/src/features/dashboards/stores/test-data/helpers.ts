@@ -1,6 +1,6 @@
 import { QueryClient } from "@rilldata/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -58,12 +58,7 @@ export function createDashboardState(
   whereFilter: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
-  const explorer = getDefaultMetricsExplorerEntity(
-    name,
-    metrics,
-    explore,
-    undefined,
-  );
+  const explorer = getDefaultExploreState(name, metrics, explore, undefined);
   explorer.whereFilter = whereFilter;
   explorer.selectedTimeRange = timeRange;
   return explorer;

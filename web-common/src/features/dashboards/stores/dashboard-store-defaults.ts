@@ -1,9 +1,5 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
-  SortDirection,
-  SortType,
-} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -138,7 +134,7 @@ function setDefaultComparisonTimeRange(
 }
 
 // TODO: Remove this in favour of just `getBasePreset`
-export function getDefaultMetricsExplorerEntity(
+export function getDefaultExploreState(
   name: string,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,

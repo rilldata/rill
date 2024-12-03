@@ -1,22 +1,22 @@
 import { protoBase64, Value } from "@bufbuild/protobuf";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import {
-  AD_BIDS_METRICS_INIT_WITH_TIME,
-  AD_BIDS_NAME,
-  AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
-  AD_BIDS_SCHEMA,
-  AD_BIDS_METRICS_WITH_BOOL_DIMENSION,
-  TestTimeConstants,
-  AD_BIDS_EXPLORE_INIT,
-  AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION,
+  AD_BIDS_METRICS_INIT_WITH_TIME,
+  AD_BIDS_METRICS_WITH_BOOL_DIMENSION,
+  AD_BIDS_NAME,
+  AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+  AD_BIDS_SCHEMA,
+  TestTimeConstants,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -39,7 +39,7 @@ describe("toProto/fromProto", () => {
   });
 
   it("backwards compatibility for time controls", () => {
-    const metricsExplorer = getDefaultMetricsExplorerEntity(
+    const metricsExplorer = getDefaultExploreState(
       AD_BIDS_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,
       AD_BIDS_EXPLORE_INIT,
