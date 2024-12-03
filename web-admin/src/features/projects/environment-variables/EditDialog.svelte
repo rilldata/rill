@@ -199,8 +199,8 @@
 
   function handleReset() {
     reset();
-    isDevelopment = true;
-    isProduction = true;
+    isDevelopment = false;
+    isProduction = false;
     inputErrors = {};
     isKeyAlreadyExists = false;
   }
@@ -240,12 +240,16 @@
     }
   }
 
-  onMount(() => {
+  function handleDialogOpen() {
     setInitialCheckboxState();
     initialEnvironment = {
       isDevelopment,
       isProduction,
     };
+  }
+
+  onMount(() => {
+    handleDialogOpen();
   });
 </script>
 
