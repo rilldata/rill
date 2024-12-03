@@ -45,25 +45,17 @@ rill uninstall
 ```
 
 
-
-
 ## Rill Developer
 
+![dev](/img/concepts/rcvsrd/empty-project.png)
+
 ### What is Rill Developer?
-Please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer).
+Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer).
 
 ### I'm having issues with Rill Developer...
 
-Please refer to our tutorials to get started using Rill! (coming soon!)
+Please refer to [our tutorials](/tutorials) to get started using Rill. If you still have any questions, please [contact us!](/contact)
 
-
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-a
-</div>
 
 ### How do I start more than one instance of Rill Developer?
 
@@ -83,8 +75,11 @@ You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/depl
 
 ## Rill Cloud
 
+![dev](/img/concepts/rcvsrd/Rill-Cloud.png)
+
+
 ### What is Rill Cloud?
-Please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
+Rill Cloud is where your deployed Rill project exists and can be shared to your colleagues, or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
 
 ### How do I deploy to Rill Cloud?
 You can deploy your project directly from the UI by selecting [the Deploy button](https://docs.rilldata.com/deploy/existing-project/#deploying-a-project-via-the-ui).
@@ -95,8 +90,63 @@ You can deploy your project directly from the UI by selecting [the Deploy button
 
 ### How do I make changes to my dashboard in Rill Cloud?
 
-You can follow the same steps as above. The button will have changed from `deploy` to `update`. After selecting this, the objects in your Rill project will be updated.
+You can follow the same steps as above. The button will have changed from `deploy` to `update`. After selecting this, the objects in your Rill project will be updated. Or, after syncing your Rill project to Github, simply push changes directly to the repository and this will automatically update your project on Rill Cloud.
 
 ### How do I share my dashboard to other users?
 
 You will need to [invite users to your organization/project](https://docs.rilldata.com/manage/user-management#option-1---admin-invites-user) or send them a URL for them to [request access to your dashboard](https://docs.rilldata.com/manage/user-management#option-2---user-requests-access). If you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+
+
+## Rill Cloud Trial
+
+### What is Rill Cloud Trial?
+
+We now offer a self serve option for our users using Rill Cloud to get started. Before signing up for a [Teams plan](https://www.rilldata.com/pricing), you can create an account and start your free trial. Note that the banner will show you the remaining days for your trial and will update as the expiration gets closer! 
+
+![img](/img/FAQ/rill-trial-banner.png)
+
+### When does my trial start?
+
+Your trial will start when you deploy a project to Rill Cloud. An Organization will be autoamatically created during this process using your email.
+
+### How long does my Rill Cloud Trial last?
+
+Currently, a Rill Cloud Trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
+
+### What is included in the free trial? 
+
+The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required. 
+
+### What happens to my project if I do not pay on time?
+
+Your projects will hibernate. Your project metadata will still be available once you've activated your team plan.
+
+![expired](/img/FAQ/expired-project.png)
+
+### What is project hibernation?
+
+When a project is inactive for a specific number of days or your trial has expired, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed. Once the payment is confirmed, you can redeploy the project with the following:
+
+```
+rill project hibernate <project_id> --redeploy
+```
+
+## Rill Cloud Team Plan (Billing)
+
+### How do I activate my Team Plan?
+
+You can activate your Team Plan via the Billing page from the settings in Rill Cloud. If you have not already, you will be prompted to add a payment method via Stripe. Please note that the cost of your plan depends on how much data you will be ingesting into Rill. For more information on costs, please refer to our [pricing page](https://www.rilldata.com/pricing). 
+
+![billing](/img/FAQ/rill-org-billing.png)
+
+
+### What does the Team Plan include?
+
+The base Team Plan starts at $250/month with 10GB of data included. For data over 10GB, this is priced at $25/GB. For more information, please refer to our [pricing page](https://www.rilldata.com/pricing). 
+
+
+### How can I see my current data usage?
+
+This is viewable via the Usage page in the Organization Settings page.
+
+! [usage] ()

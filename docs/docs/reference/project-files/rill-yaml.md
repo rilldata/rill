@@ -9,7 +9,9 @@ The `rill.yaml` file contains metadata about your project.
 
 ## Properties
 
-**`title`** — the name of your project which will be displayed in the upper left hand corner
+**`title`** — the name of your project which will be displayed in the upper left hand corner [deprecated, use `display_name`] _(required)_.
+
+**`display_name`** - Refers to the display name for the metrics view _(required)_.
 
 **`compiler`** — the Rill project compiler version compatible with your project files (currently defaults to: `rillv1`)
 

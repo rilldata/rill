@@ -36,19 +36,19 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	if org.BillingCustomerID == "" {
-		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
 	}
 
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+			return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org),
+		Organization:     organizationToDTO(org, true),
 		Subscription:     subscriptionToDTO(sub),
 		BillingPortalUrl: sub.Customer.PortalURL,
 	}, nil
@@ -135,7 +135,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
-				Organization: organizationToDTO(updatedOrg),
+				Organization: organizationToDTO(updatedOrg, true),
 				Subscription: subscriptionToDTO(sub),
 			}, nil
 		}
@@ -220,7 +220,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	return &adminv1.UpdateBillingSubscriptionResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -419,7 +419,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -563,12 +563,12 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 
 	if sub == nil {
 		return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-			Organization: organizationToDTO(org),
+			Organization: organizationToDTO(org, true),
 		}, nil
 	}
 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }

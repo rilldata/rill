@@ -14,7 +14,9 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`metrics_view`** — Refers to the metrics view resource _(required)_. 
 
-**`title`** — Refers to the display name for the dashboard _(required)_.
+**`title`** — Refers to the display name for the dashboard [deprecated, use `display_name`] _(required)_.
+
+**`display_name`** - Refers to the display name for the metrics view _(required)_.
 
 **`description`** - A description for the project. _(optional)_.
 
