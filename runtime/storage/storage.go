@@ -129,6 +129,7 @@ func RemoveInstance(c *Client, instanceID string) error {
 		return fmt.Errorf("storage: should not call RemoveInstance with prefixed client")
 	}
 
+	c = c.WithPrefix(instanceID)
 	err := os.RemoveAll(c.DataDir())
 	if err != nil {
 		return fmt.Errorf("could not remove instance directory: %w", err)
