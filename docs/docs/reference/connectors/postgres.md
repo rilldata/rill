@@ -21,7 +21,8 @@ Using the same example, this would be an equivalent connection URI:
 postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 ```
 
-![Connecting to PostgreSQL](/img/reference/connectors/postgres/postgresql.png)
+<img src = '/img/reference/connectors/postgres/postgresql.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 

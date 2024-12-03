@@ -300,7 +300,7 @@
 
     <LeaderboardHeader
       {hovered}
-      displayName={displayName ?? dimensionName}
+      displayName={displayName || dimensionName}
       dimensionDescription={description}
       {dimensionName}
       {isBeingCompared}

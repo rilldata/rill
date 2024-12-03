@@ -15,7 +15,7 @@ export function formatUsageVsQuota(
   const formattedUsage = formatMemorySize(usageInBytes);
   const formattedQuota = formatMemorySize(quota);
   const percent =
-    formattedUsage > formattedQuota
+    usageInBytes > quota
       ? "100+"
       : Math.round((usageInBytes * 100) / quota) + "";
   return `${formattedUsage} of ${formattedQuota} (${percent}%)`;
@@ -29,12 +29,12 @@ export function isTeamPlan(plan: V1BillingPlan) {
   return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_TEAM;
 }
 
-export function isPOCPlan(plan: V1BillingPlan) {
+export function isManagedPlan(plan: V1BillingPlan) {
   return plan.planType === V1BillingPlanType.BILLING_PLAN_TYPE_MANAGED;
 }
 
 export function isEnterprisePlan(plan: V1BillingPlan) {
-  return !isTrialPlan(plan) && !isTeamPlan(plan) && !isPOCPlan(plan);
+  return !isTrialPlan(plan) && !isTeamPlan(plan) && !isManagedPlan(plan);
 }
 
 export function getSubscriptionResumedText(endDate: string) {

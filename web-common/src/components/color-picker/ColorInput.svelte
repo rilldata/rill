@@ -236,6 +236,11 @@
         e.currentTarget.blur();
       }
     }}
+    on:blur={() => {
+      if (stringColor) {
+        onChange(stringColor);
+      }
+    }}
   />
 
   <p class:text-gray-500={!disabled}>{label}</p>

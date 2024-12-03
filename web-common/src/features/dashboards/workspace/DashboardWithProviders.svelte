@@ -10,7 +10,7 @@
 </script>
 
 {#if metricsViewName}
-  {#key exploreName}
+  {#key exploreName + metricsViewName}
     <StateManagersProvider {metricsViewName} {exploreName} visualEditing>
       <DashboardURLStateSyncWrapper>
         <DashboardThemeProvider>
