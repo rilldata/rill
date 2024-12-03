@@ -26,11 +26,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
-  import {
-    getCurrentEnvironment,
-    getEnvironmentLabel,
-    isDuplicateKey,
-  } from "./utils";
+  import { getCurrentEnvironment, isDuplicateKey } from "./utils";
 
   export let open = false;
   export let variableNames: VariableNames = [];
