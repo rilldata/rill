@@ -139,10 +139,10 @@ func testIntervalType(t *testing.T, olap drivers.OLAPStore) {
 		ms    int
 	}{
 		{query: "SELECT INTERVAL '1' SECOND", ms: 1000},
-		{query: "SELECT INTERVAL '2' MINUTE", ms: 2 * 60 * 1000},
-		{query: "SELECT INTERVAL '3' HOUR", ms: 3 * 60 * 60 * 1000},
-		{query: "SELECT INTERVAL '4' DAY", ms: 4 * 24 * 60 * 60 * 1000},
-		{query: "SELECT INTERVAL '5' MONTH", ms: 5 * 30 * 24 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '2' MINUTES", ms: 2 * 60 * 1000},
+		{query: "SELECT INTERVAL '3' HOURS", ms: 3 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '4' DAYS", ms: 4 * 24 * 60 * 60 * 1000},
+		{query: "SELECT INTERVAL '5' MONTHS", ms: 5 * 30 * 24 * 60 * 60 * 1000},
 		{query: "SELECT INTERVAL '6' YEAR", ms: 6 * 365 * 24 * 60 * 60 * 1000},
 	}
 	for _, c := range cases {

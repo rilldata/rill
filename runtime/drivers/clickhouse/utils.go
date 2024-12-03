@@ -10,36 +10,41 @@ import (
 // ParseIntervalToMillis parses a ClickHouse INTERVAL string into milliseconds.
 // ClickHouse currently returns INTERVALs as strings in the format "1 Month", "2 Minutes", etc.
 // This function follows our current policy of treating months as 30 days when converting to milliseconds.
-func ParseIntervalToMillis(s string) (int, bool) {
+func ParseIntervalToMillis(s string) (int64, bool) {
 	s1, s2, ok := strings.Cut(s, " ")
 	if !ok {
 		return 0, false
 	}
 
-	units, err := strconv.Atoi(s1)
+	units, err := strconv.ParseInt(s1, 10, 64)
 	if err != nil {
 		return 0, false
 	}
 
-	var multiplier int
 	switch s2 {
+	case "Nanosecond", "Nanoseconds":
+		return int64(float64(units) / 1_000_000), true
+	case "Microsecond", "Microseconds":
+		return int64(float64(units) / 1_000), true
+	case "Millisecond", "Milliseconds":
+		return units * 1, true
 	case "Second", "Seconds":
-		multiplier = 1000
+		return units * 1000, true
 	case "Minute", "Minutes":
-		multiplier = 60 * 1000
+		return units * 60 * 1000, true
 	case "Hour", "Hours":
-		multiplier = 60 * 60 * 1000
+		return units * 60 * 60 * 1000, true
 	case "Day", "Days":
-		multiplier = 24 * 60 * 60 * 1000
+		return units * 24 * 60 * 60 * 1000, true
 	case "Month", "Months":
-		multiplier = 30 * 24 * 60 * 60 * 1000
+		return units * 30 * 24 * 60 * 60 * 1000, true
+	case "Quarter", "Quarters":
+		return units * 3 * 30 * 24 * 60 * 60 * 1000, true
 	case "Year", "Years":
-		multiplier = 365 * 24 * 60 * 60 * 1000
+		return units * 365 * 24 * 60 * 60 * 1000, true
 	default:
 		return 0, false
 	}
-
-	return units * multiplier, true
 }
 
 func safeSQLName(name string) string {
