@@ -29,7 +29,7 @@
   export let onTitleChange: (title: string) => void = () => {};
 
   let width: number;
-  let editing: boolean;
+  let editing = false;
 
   $: value = titleInput;
   $: workspaceLayout = workspaces.get(filePath);
