@@ -2,9 +2,9 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import Select from "./Select.svelte";
-  import InputLabel from "./InputLabel.svelte";
   import FieldSwitcher from "./FieldSwitcher.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import Select from "./Select.svelte";
 
   const voidFunction = () => {};
 
@@ -54,7 +54,7 @@
     },
   ) => void = voidFunction;
   export let onEnter: (
-    e: FocusEvent & {
+    e: KeyboardEvent & {
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
@@ -97,7 +97,7 @@
     if (e.key === "Enter") {
       hitEnter = true;
       inputElement?.blur();
-      onEnter();
+      onEnter(e);
     } else if (e.key === "Escape") {
       e.preventDefault();
       onEscape();

@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -15,15 +12,14 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import {
-    type MetricsViewSpecMeasureV2,
     V1ExploreWebView,
+    type MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import {
-    type CrossfadeParams,
-    type FlyParams,
     crossfade,
     fly,
+    type CrossfadeParams,
+    type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
@@ -41,8 +37,6 @@
     comparisonValue && value !== undefined && value !== null
       ? (value - comparisonValue) / comparisonValue
       : undefined;
-
-  const dispatch = createEventDispatcher();
 
   const { dashboardStore, validSpecStore, webViewStore, defaultExploreState } =
     getStateManagers();

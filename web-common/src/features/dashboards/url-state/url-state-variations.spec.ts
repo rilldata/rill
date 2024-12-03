@@ -32,7 +32,6 @@ import {
   AD_BIDS_SORT_BY_PERCENT_VALUE,
   AD_BIDS_SORT_BY_VALUE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
-  AD_BIDS_SORT_PIVOT_BY_DOMAIN_DESC,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
   AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD,
@@ -57,7 +56,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
