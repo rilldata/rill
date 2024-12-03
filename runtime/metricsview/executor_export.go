@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -23,10 +24,12 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		return "", err
 	}
 	name = format.Filename(name)
-	tempPath, err := e.rt.TempDir(e.instanceID, name)
+
+	tempDir, err := e.rt.TempDir(e.instanceID)
 	if err != nil {
 		return "", err
 	}
+	tempPath := filepath.Join(tempDir, name)
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {
