@@ -16,36 +16,35 @@ For a full list of available dashboard properties and configurations, please see
 :::
 
 
-**`time_ranges`**
+**`time_ranges:`**
 
 One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 ```yaml
-  available_time_ranges:
-  - PT15M 
-  - PT1H
-  - P7D
-  - P4W
-  - rill-TD ## Today
-  - rill-WTD ## Week-To-date
+- PT15M 
+- PT1H
+- P7D
+- P4W
+- rill-TD ## Today
+- rill-WTD ## Week-To-date
 ```
 
-**`time_zones`**
+**`time_zones:`**
 
 Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove from this list for the relevant time zones for your team.
 
 ```yaml
-  - America/Los_Angeles
-  - America/Chicago
-  - America/New_York
-  - Europe/London
-  - Europe/Paris
-  - Asia/Jerusalem
-  - Europe/Moscow
-  - Asia/Kolkata
-  - Asia/Shanghai
-  - Asia/Tokyo
-  - Australia/Sydney
+- America/Los_Angeles
+- America/Chicago
+- America/New_York
+- Europe/London
+- Europe/Paris
+- Asia/Jerusalem
+- Europe/Moscow
+- Asia/Kolkata
+- Asia/Shanghai
+- Asia/Tokyo
+- Australia/Sydney
 ```
 
 ### Setting Default Views for Dashboards
