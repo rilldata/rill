@@ -477,7 +477,9 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 
-	dbpath := filepath.Join(rt.storage.DataDir(), inst.ID, "duckdb", "main.db")
+	dataDir, err := rt.storage.DataDir(inst.ID, "duckdb")
+	require.NoError(t, err)
+	dbpath := filepath.Join(dataDir, "main.db")
 
 	// Put some data into it to create a .db file on disk
 	olap, release, err := rt.OLAP(ctx, inst.ID, "")

@@ -23,7 +23,10 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		return "", err
 	}
 	name = format.Filename(name)
-	path := e.rt.TempDir(e.instanceID, name)
+	tempPath, err := e.rt.TempDir(e.instanceID, name)
+	if err != nil {
+		return "", err
+	}
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {
@@ -39,7 +42,7 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	defer or()
 
 	outputProps := map[string]any{
-		"path":                  path,
+		"path":                  tempPath,
 		"format":                format,
 		"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
 	}
@@ -73,12 +76,12 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		InputProperties:      inputProps,
 		OutputProperties:     outputProps,
 		Priority:             e.priority,
-		TempDir:              e.rt.TempDir(e.instanceID),
+		TempDir:              tempPath,
 	})
 	if err != nil {
-		_ = os.Remove(path)
+		_ = os.Remove(tempPath)
 		return "", fmt.Errorf("failed to execute export: %w", err)
 	}
 
-	return path, nil
+	return tempPath, nil
 }

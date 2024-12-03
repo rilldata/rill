@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -55,23 +55,72 @@ func (c *Client) WithPrefix(prefix ...string) *Client {
 	return newClient
 }
 
-func (c *Client) DataDir(elem ...string) string {
-	paths := []string{c.dataDirPath}
+func (c *Client) RemovePrefix(ctx context.Context, prefix ...string) error {
 	if c.prefixes != nil {
-		paths = append(paths, c.prefixes...)
+		return fmt.Errorf("storage: RemovePrefix is not supported for prefixed client")
 	}
-	paths = append(paths, elem...)
-	return filepath.Join(paths...)
+
+	// clean data dir
+	removeErr := os.RemoveAll(c.path(c.dataDirPath, prefix...))
+
+	// clean temp dir
+	removeErr = errors.Join(removeErr, os.RemoveAll(c.path(os.TempDir(), prefix...)))
+
+	// clean bucket
+	bkt, ok, err := c.OpenBucket(ctx, prefix...)
+	if err != nil {
+		return errors.Join(removeErr, err)
+	}
+	if !ok {
+		return removeErr
+	}
+	defer bkt.Close()
+
+	iter := bkt.List(&blob.ListOptions{})
+	for {
+		obj, err := iter.Next(ctx)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return errors.Join(removeErr, err)
+		}
+		err = bkt.Delete(ctx, obj.Key)
+		if err != nil {
+			return errors.Join(removeErr, err)
+		}
+	}
+	return removeErr
 }
 
-func (c *Client) TempDir(elem ...string) string {
-	paths := []string{c.dataDirPath}
-	if c.prefixes != nil {
-		paths = append(paths, c.prefixes...)
+func (c *Client) DataDir(elem ...string) (string, error) {
+	path := c.path(c.dataDirPath, elem...)
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		return "", err
 	}
-	paths = append(paths, "tmp")
-	paths = append(paths, elem...)
-	return filepath.Join(paths...)
+	return path, nil
+}
+
+func (c *Client) TempDir(elem ...string) (string, error) {
+	path := c.path(os.TempDir(), elem...)
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func (c *Client) RandomTempDir(pattern string, elem ...string) (string, error) {
+	path, err := c.TempDir(elem...)
+	if err != nil {
+		return "", err
+	}
+	path, err = os.MkdirTemp(path, pattern)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, bool, error) {
@@ -101,40 +150,13 @@ func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, 
 	return blob.PrefixedBucket(bucket, prefix), true, nil
 }
 
-func AddInstance(c *Client, instanceID string) error {
+func (c *Client) path(base string, elem ...string) string {
+	paths := []string{base}
 	if c.prefixes != nil {
-		return fmt.Errorf("storage: should not call AddInstance with prefixed client")
+		paths = append(paths, c.prefixes...)
 	}
-
-	c = c.WithPrefix(instanceID)
-	err := os.Mkdir(c.DataDir(), os.ModePerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("could not create instance directory: %w", err)
-	}
-
-	// recreate instance's tmp directory
-	tmpDir := c.TempDir()
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return fmt.Errorf("could not remove instance tmp directory: %w", err)
-	}
-	if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return err
-	}
-
-	return nil
-}
-
-func RemoveInstance(c *Client, instanceID string) error {
-	if c.prefixes != nil {
-		return fmt.Errorf("storage: should not call RemoveInstance with prefixed client")
-	}
-
-	c = c.WithPrefix(instanceID)
-	err := os.RemoveAll(c.DataDir())
-	if err != nil {
-		return fmt.Errorf("could not remove instance directory: %w", err)
-	}
-	return nil
+	paths = append(paths, elem...)
+	return filepath.Join(paths...)
 }
 
 func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
