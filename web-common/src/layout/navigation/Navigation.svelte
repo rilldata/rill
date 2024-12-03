@@ -1,6 +1,6 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const { subscribe, update, set } = writable<boolean | null>(null);
+    const { subscribe, update, set } = writable<boolean | null>(true);
     return {
       toggle: () => update((open) => !open),
       set,
