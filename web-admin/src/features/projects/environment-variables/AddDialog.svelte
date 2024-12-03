@@ -177,6 +177,7 @@
       };
     });
 
+    let duplicateCount = 0;
     existingKeys.forEach((key, idx) => {
       const variableEnvironment = key.environment;
       const variableKey = key.name;
@@ -184,8 +185,11 @@
       if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
         inputErrors[idx] = true;
         isKeyAlreadyExists = true;
+        duplicateCount++;
       }
     });
+
+    return duplicateCount;
   }
 
   function handleFileUpload(event) {
@@ -359,7 +363,9 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  These keys already exist for this project.
+                  {Object.keys(inputErrors).length > 1
+                    ? "These keys already exist for your target environment(s)"
+                    : "This key already exists for your target environment(s)"}
                 </p>
               </div>
             {/if}
