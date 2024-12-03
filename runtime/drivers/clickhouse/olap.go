@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -262,9 +261,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 		}
 		// Get the engine info of the given table
-		var engine, engineFull string
+		var engine string
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT engine, engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
+			Query:    "SELECT engine FROM system.tables WHERE database = currentDatabase() AND name = ?",
 			Args:     []any{name},
 			Priority: 1,
 		})
@@ -273,20 +272,13 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		defer res.Close()
 		if res.Next() {
-			if err := res.Scan(&engine, &engineFull); err != nil {
+			if err := res.Scan(&engine); err != nil {
 				return err
 			}
 		}
-		// Distributed table cannot be altered directly, so we need to alter the underlying table
+		// Distributed table cannot be altered directly, so we need to alter the local table
 		if engine == "Distributed" {
-			// Parse the engine_full string to extract underlying table name
-			// Example engine_full: Distributed('cluster', 'db', 'underlying_table', sharding_key)
-			re := regexp.MustCompile(`Distributed\('[^,]+',\s*'[^']+',\s*'([^']+)'`)
-			matches := re.FindStringSubmatch(engineFull)
-			if len(matches) < 1 {
-				return fmt.Errorf("unable to parse underlying table info from engine expression: %q", engineFull)
-			}
-			name = matches[1]
+			name = localTableName(name)
 		}
 		// create temp table with the same schema
 		tempName := tempName(name)
@@ -297,6 +289,16 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return err
 		}
+		// clean up the temp table
+		defer func() {
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
+				Priority: 1,
+			})
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+			}
+		}()
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
@@ -314,13 +316,18 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return err
 		}
 		defer res.Close()
-		// iterate over partitions and replace them in the main table
+		// collect partitions
+		var partitions []string
 		for res.Next() {
 			var part string
 			if err := res.Scan(&part); err != nil {
 				return err
 			}
-			// alter the main table to replace partitions with the temp table
+			partitions = append(partitions, part)
+		}
+		// iterate over partitions and replace them in the main table
+		for _, part := range partitions {
+			// alter the main table to replace the partition
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION %s FROM %s", safeSQLName(name), onClusterClause, part, safeSQLName(tempName)),
 				Priority: 1,
