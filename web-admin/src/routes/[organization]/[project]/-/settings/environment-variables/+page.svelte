@@ -15,7 +15,7 @@
     EnvironmentType,
     type EnvironmentTypes,
   } from "@rilldata/web-admin/features/projects/environment-variables/types";
-  import { getEnvironmentLabel } from "@rilldata/web-admin/features/projects/environment-variables/utils";
+  import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
 
   let open = false;
   let searchText = "";
@@ -37,7 +37,7 @@
 
   $: variableNames = projectVariables.map((variable) => {
     return {
-      environment: getEnvironmentLabel(variable.environment),
+      environment: getEnvironmentType(variable.environment),
       name: variable.name,
     };
   });

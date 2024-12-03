@@ -5,7 +5,7 @@
   export let name: string;
 
   // NOTE: if environment is empty, the variable is shared for all environments
-  function getEnvironmentLabel(environment: string) {
+  function getEnvironmentType(environment: string) {
     if (environment === EnvironmentType.UNDEFINED) {
       return "Development, Production";
     }
@@ -18,7 +18,7 @@
     return "";
   }
 
-  $: environmentLabel = getEnvironmentLabel(environment);
+  $: environmentLabel = getEnvironmentType(environment);
 </script>
 
 <div class="flex flex-col">

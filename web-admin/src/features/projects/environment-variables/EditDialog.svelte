@@ -25,7 +25,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import {
     getCurrentEnvironment,
-    getEnvironmentLabel,
+    getEnvironmentType,
     isDuplicateKey,
   } from "./utils";
 
@@ -212,7 +212,7 @@
     isKeyAlreadyExists = false;
 
     const existingKey = {
-      environment: getEnvironmentLabel(
+      environment: getEnvironmentType(
         getCurrentEnvironment(isDevelopment, isProduction),
       ),
       name: $form.key,

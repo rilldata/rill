@@ -5,7 +5,7 @@ import { EnvironmentType, type VariableNames } from "./types";
  * - Environment it belongs to ("prod" or "dev").
  * - If empty, then the value is used as the fallback for all environments.
  */
-export function getEnvironmentLabel(environment: string) {
+export function getEnvironmentType(environment: string) {
   return environment === EnvironmentType.UNDEFINED ? "" : environment;
 }
 
@@ -13,7 +13,7 @@ export function getEnvironmentLabel(environment: string) {
  * Checks if a key would create a duplicate environment variable.
  *
  * Rules for environment variables:
- * 1. A key can only be tied to one environment configuration
+ * 1. A key can be tied to multiple environment configurations, e.g. my_key[dev] & my_key[prod]
  * 2. If a key exists in all environments (UNDEFINED), it cannot be created in dev or prod
  * 3. If a key exists in dev or prod, it cannot be created in all environments
  * 4. If a key exists in dev, it cannot be created in dev but CAN be created in prod
