@@ -113,7 +113,7 @@ export function isRangeLargerThanDuration(
   end: Date,
   duration: string,
 ) {
-  if (duration === TimeComparisonOption.CONTIGUOUS) {
+  if (duration === TimeComparisonOption.CONTIGUOUS.toString()) {
     return false;
   }
 
@@ -281,7 +281,7 @@ export function inferCompareTimeRange(
   ]?.defaultComparison as TimeComparisonOption;
   return (
     defaultForTimeRange ??
-    timeRanges.find((tr) => tr.range === selectedTimeRangeName)
+    timeRanges?.find((tr) => tr.range === selectedTimeRangeName)
       ?.comparisonTimeRanges?.[0]?.offset ??
     TimeComparisonOption.CONTIGUOUS
   );

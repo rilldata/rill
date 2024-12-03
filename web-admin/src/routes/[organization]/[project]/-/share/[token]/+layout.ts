@@ -8,10 +8,14 @@ export const load = async ({ params: { token }, parent }) => {
   try {
     const tokenData = await fetchMagicAuthToken(token);
 
+    if (!tokenData.token?.resourceName) {
+      throw new Error("Token does not have an associated resource name");
+    }
+
     const { explore, metricsView, defaultExplorePreset } =
       await fetchExploreSpec(
-        runtime?.instanceId,
-        tokenData.token?.resourceName,
+        runtime.instanceId as string,
+        tokenData.token.resourceName,
       );
 
     return {

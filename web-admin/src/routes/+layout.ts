@@ -27,7 +27,7 @@ export const load = async ({ params, url, route }) => {
 
   let searchParamToken: string | undefined;
   if (url.searchParams.has("token")) {
-    searchParamToken = url.searchParams.get("token");
+    searchParamToken = url.searchParams.get("token") ?? undefined;
   }
   const token = searchParamToken ?? routeToken;
 
@@ -61,8 +61,8 @@ export const load = async ({ params, url, route }) => {
       queryClient,
       fixLocalhostRuntimePort(runtimeData.host),
       runtimeData.instanceId,
-      runtimeData.jwt.token,
-      runtimeData.jwt.authContext,
+      runtimeData.jwt?.token,
+      runtimeData.jwt?.authContext,
     );
 
     return {
