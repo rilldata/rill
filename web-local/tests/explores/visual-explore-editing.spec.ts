@@ -7,15 +7,12 @@ import { test } from "../utils/test";
 test.describe("visual explore editing", () => {
   test("visual explore editor runthrough", async ({ page }) => {
     await createAdBidsModel(page);
-    await createExploreFromModel(page, false);
+    await createExploreFromModel(page);
 
-    await openFileNavEntryContextMenu(
-      page,
-      "/metrics/AdBids_model_metrics.yaml",
+    await page.waitForURL(
+      "**/files/dashboards/AdBids_model_metrics_explore.yaml",
     );
 
-    await page.getByRole("button", { name: "Edit" }).click();
-    await page.getByRole("menuitem", { name: "Explore" }).click();
     await page.getByLabel("code").click();
 
     await page.getByRole("button", { name: "Subset" }).first().click();

@@ -18,7 +18,7 @@ export async function createExploreFromSource(
 
 export async function createExploreFromModel(
   page: Page,
-  navigateToFile = true,
+  navigateToPreview = false,
   modelPath = "/models/AdBids_model.sql",
   metricsViewPath = "/metrics/AdBids_model_metrics.yaml",
 ) {
@@ -26,8 +26,10 @@ export async function createExploreFromModel(
   await clickMenuButton(page, "Generate metrics");
   await waitForFileNavEntry(page, metricsViewPath, true);
   await page.getByText("Create explore").click();
-  if (navigateToFile) {
-    await page.getByRole("button", { name: "Edit" }).click();
-    await page.getByRole("menuitem", { name: "Explore" }).click();
+
+  if (navigateToPreview) {
+    await page.getByRole("button", { name: "Preview" }).click();
   }
+
+  await page.waitForTimeout(1000);
 }
