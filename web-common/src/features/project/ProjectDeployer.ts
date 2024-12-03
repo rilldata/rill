@@ -167,13 +167,13 @@ export class ProjectDeployer {
       checkNextOrg = inferredCheckNextOrg;
     }
 
-    const frontendUrl = await this.tryDeployWithOrg(
+    const projectUrl = await this.tryDeployWithOrg(
       org,
       projectResp.localProjectName,
       checkNextOrg,
     );
-    const projectUrl = frontendUrl; // https://ui.rilldata.com/<org>/<project>
     if (projectUrl) {
+      // projectUrl: https://ui.rilldata.com/<org>/<project>
       const projectInviteUrl = projectUrl + "/-/invite";
       const projectInviteUrlWithSessionId =
         addPosthogSessionIdToUrl(projectInviteUrl);
