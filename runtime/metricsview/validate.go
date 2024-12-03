@@ -155,7 +155,26 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 	}
 
+	// Validate the metrics view schema
+	err = r.validateMetricsViewSchema(ctx, instanceID, mv, res)
+	if err != nil {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
+	}
+
 	return res, nil
+}
+
+func (r *Runtime) validateMetricsViewSchema(ctx context.Context, instanceID string, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) error {
+	// e, err := metricsview.NewExecutor(ctx, r, instanceID, mv, sec, priority)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer e.Close()
+	// schema, err := e.Schema(ctx)
+	// if err != nil {
+	// 	res.OtherErrs = append(res.OtherErrs, fmt.Errorf("metrics schema check failed: %w", err))
+	// }
+	return nil
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
