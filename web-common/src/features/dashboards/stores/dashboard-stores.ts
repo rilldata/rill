@@ -250,7 +250,6 @@ const metricsViewReducers = {
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      console.log("sync");
       // remove references to non existent measures
       syncMeasures(explore, metricsExplorer);
 

@@ -365,7 +365,6 @@ describe("time-control-store", () => {
       "2022-04-01T00:00:00.000Z",
     );
 
-    console.log("refetch");
     dashboardFetchMocks.mockMetricsExplore(
       AD_BIDS_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,

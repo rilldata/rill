@@ -68,7 +68,6 @@ export function createDashboardStateSync(
         // Successive syncs with metrics view spec
         // metricsExplorerStore.sync(exploreName, explore);
       } else {
-        console.log("init");
         // Running for the 1st time. Initialise the dashboard store.
         metricsExplorerStore.init(
           exploreName,
