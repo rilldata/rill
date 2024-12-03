@@ -34,20 +34,19 @@
     $report?.data?.resource?.report?.spec?.annotations ?? {},
   );
 
-  async function gotExplorePage() {
-    return goto(
-      await getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForReport.data.exploreName,
-        $dashboardStateForReport.data.exploreState,
-      ),
-    );
+  $: if ($dashboardStateForReport?.data) {
+    void gotoExplorePage();
   }
 
-  $: if ($dashboardStateForReport?.data) {
-    void gotExplorePage();
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForReport.data.exploreName,
+      $dashboardStateForReport.data.exploreState,
+    );
+    return goto(explorePageUrl);
   }
 
   // TODO: error handling

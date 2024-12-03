@@ -46,20 +46,19 @@
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
   }
 
-  async function gotExplorePage() {
-    return goto(
-      await getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForAlert.data.exploreName,
-        $dashboardStateForAlert.data.exploreState,
-      ),
-    );
+  $: if ($dashboardStateForAlert.data) {
+    void gotoExplorePage();
   }
 
-  $: if ($dashboardStateForAlert.data) {
-    void gotExplorePage();
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForAlert.data.exploreName,
+      $dashboardStateForAlert.data.exploreState,
+    );
+    return goto(explorePageUrl);
   }
 </script>
 
