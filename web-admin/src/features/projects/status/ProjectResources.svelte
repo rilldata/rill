@@ -16,7 +16,7 @@
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  let isReconciling = false;
+  let startRefetchInterval = false;
   let isRefreshConfirmDialogOpen = false;
 
   $: allResources = createRuntimeServiceListResources(
@@ -33,7 +33,7 @@
           );
         },
         refetchOnMount: true,
-        refetchInterval: isReconciling ? 500 : false,
+        refetchInterval: startRefetchInterval ? 500 : false,
       },
     },
   );
@@ -47,7 +47,7 @@
   );
 
   function refreshAllSourcesAndModels() {
-    isReconciling = true;
+    startRefetchInterval = true;
 
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
@@ -66,7 +66,13 @@
   }
 
   $: if (!isAnySourceOrModelReconciling) {
-    isReconciling = false;
+    startRefetchInterval = false;
+  }
+
+  function triggerRefresh() {
+    startRefetchInterval = true;
+
+    void $allResources.refetch();
   }
 </script>
 
@@ -78,9 +84,9 @@
       on:click={() => {
         isRefreshConfirmDialogOpen = true;
       }}
-      disabled={isReconciling}
+      disabled={startRefetchInterval}
     >
-      {#if isReconciling}
+      {#if startRefetchInterval}
         Refreshing...
       {:else}
         Refresh all sources and models
@@ -94,7 +100,7 @@
       Error loading resources: {$allResources.error?.message}
     </div>
   {:else if $allResources.isSuccess}
-    <ProjectResourcesTable data={$allResources?.data} />
+    <ProjectResourcesTable data={$allResources?.data} {triggerRefresh} />
   {/if}
 </section>
 
