@@ -23,7 +23,6 @@
   import { object, string } from "yup";
   import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { onMount } from "svelte";
   import {
     getCurrentEnvironment,
     getEnvironmentLabel,
@@ -97,6 +96,9 @@
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
+
+      checkForExistingKeys();
+      if (isKeyAlreadyExists) return;
 
       const flatVariable = {
         [values.key]: values.value,
@@ -248,9 +250,9 @@
     };
   }
 
-  onMount(() => {
+  $: if (open) {
     handleDialogOpen();
-  });
+  }
 </script>
 
 <Dialog
@@ -306,11 +308,6 @@
                   : ""}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
-                onBlur={() => {
-                  if ($form.key !== initialValues.key) {
-                    checkForExistingKeys();
-                  }
-                }}
               />
               <Input
                 bind:value={$form.value}
@@ -330,7 +327,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  This key already exists for this project.
+                  This key already exists for your target environment(s)
                 </p>
               </div>
             {/if}
