@@ -962,7 +962,8 @@ func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) 
 	defer d.metaSem.Release(1)
 
 	if s.ready {
-		return nil
+		_, err = conn.ExecContext(ctx, "USE "+schemaName(s.id))
+		return err
 	}
 
 	_, err = conn.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS "+schemaName(s.id))
