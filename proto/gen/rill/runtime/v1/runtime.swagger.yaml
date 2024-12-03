@@ -4073,16 +4073,6 @@ definitions:
         description: |-
           ISO 8601 duration string for the duration of the comparison time range.
           If not specified, it should fallback to the range of the base time range.
-  v1ExploreOverviewSortType:
-    type: string
-    enum:
-      - EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
-      - EXPLORE_OVERVIEW_SORT_TYPE_VALUE
-      - EXPLORE_OVERVIEW_SORT_TYPE_PERCENT
-      - EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT
-      - EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE
-      - EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION
-    default: EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
   v1ExplorePreset:
     type: object
     properties:
@@ -4126,13 +4116,13 @@ definitions:
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
       view:
         $ref: '#/definitions/v1ExploreWebView'
-      overviewSortBy:
+      exploreSortBy:
         type: string
-      overviewSortAsc:
+      exploreSortAsc:
         type: boolean
-      overviewSortType:
-        $ref: '#/definitions/v1ExploreOverviewSortType'
-      overviewExpandedDimension:
+      exploreSortType:
+        $ref: '#/definitions/v1ExploreSortType'
+      exploreExpandedDimension:
         type: string
       timeDimensionMeasure:
         type: string
@@ -4152,6 +4142,16 @@ definitions:
         type: string
       pivotSortAsc:
         type: boolean
+  v1ExploreSortType:
+    type: string
+    enum:
+      - EXPLORE_SORT_TYPE_UNSPECIFIED
+      - EXPLORE_SORT_TYPE_VALUE
+      - EXPLORE_SORT_TYPE_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_ABSOLUTE
+      - EXPLORE_SORT_TYPE_DIMENSION
+    default: EXPLORE_SORT_TYPE_UNSPECIFIED
   v1ExploreSpec:
     type: object
     properties:
@@ -4236,7 +4236,7 @@ definitions:
     type: string
     enum:
       - EXPLORE_WEB_VIEW_UNSPECIFIED
-      - EXPLORE_WEB_VIEW_OVERVIEW
+      - EXPLORE_WEB_VIEW_EXPLORE
       - EXPLORE_WEB_VIEW_TIME_DIMENSION
       - EXPLORE_WEB_VIEW_PIVOT
       - EXPLORE_WEB_VIEW_CANVAS

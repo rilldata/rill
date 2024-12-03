@@ -105,10 +105,10 @@ export function convertURLToExplorePreset(
 
   // only extract params if the view is explicitly set to the relevant one
   switch (preset.view) {
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW:
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
     case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
       // eslint-disable-next-line no-case-declarations
-      const { preset: ovPreset, errors: ovErrors } = fromOverviewUrlParams(
+      const { preset: ovPreset, errors: ovErrors } = fromExploreUrlParams(
         searchParams,
         measures,
         dimensions,
@@ -305,7 +305,7 @@ function fromTimeRangesParams(
   return { preset, errors };
 }
 
-function fromOverviewUrlParams(
+function fromExploreUrlParams(
   searchParams: URLSearchParams,
   measures: Map<string, MetricsViewSpecMeasureV2>,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
@@ -357,7 +357,7 @@ function fromOverviewUrlParams(
       // we are unsetting from a default preset
       dim === ""
     ) {
-      preset.overviewExpandedDimension = dim;
+      preset.exploreExpandedDimension = dim;
     } else {
       errors.push(getSingleFieldError("expanded dimension", dim));
     }
@@ -366,20 +366,20 @@ function fromOverviewUrlParams(
   if (searchParams.has("sort_by")) {
     const sortBy = searchParams.get("sort_by") as string;
     if (measures.has(sortBy)) {
-      preset.overviewSortBy = sortBy;
+      preset.exploreSortBy = sortBy;
     } else {
       errors.push(getSingleFieldError("sort by measure", sortBy));
     }
   }
 
   if (searchParams.has("sort_dir")) {
-    preset.overviewSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
+    preset.exploreSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
   }
 
   if (searchParams.has("sort_type")) {
     const sortType = searchParams.get("sort_type") as string;
     if (sortType in FromURLParamsSortTypeMap) {
-      preset.overviewSortType = FromURLParamsSortTypeMap[sortType];
+      preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
       errors.push(getSingleFieldError("sort type", sortType));
     }

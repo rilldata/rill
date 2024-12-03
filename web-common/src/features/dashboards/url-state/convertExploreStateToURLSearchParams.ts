@@ -53,7 +53,7 @@ export function convertExploreStateToURLSearchParams(
     shouldSetParamWithDefault(
       preset.view,
       currentView,
-      V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+      V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     )
   ) {
     searchParams.set("view", ToURLParamViewMap[currentView] as string);
@@ -74,7 +74,7 @@ export function convertExploreStateToURLSearchParams(
     case DashboardState_ActivePage.DEFAULT:
     case DashboardState_ActivePage.DIMENSION_TABLE:
       mergeSearchParams(
-        toOverviewUrl(exploreState, exploreSpec, preset),
+        toExploreUrl(exploreState, exploreSpec, preset),
         searchParams,
       );
       break;
@@ -195,7 +195,7 @@ function toTimeRangeParam(timeRange: TimeRange | undefined) {
   return `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
 }
 
-function toOverviewUrl(
+function toExploreUrl(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
   preset: V1ExplorePreset,
@@ -222,7 +222,7 @@ function toOverviewUrl(
 
   if (
     shouldSetParam(
-      preset.overviewExpandedDimension,
+      preset.exploreExpandedDimension,
       exploreState.selectedDimensionName,
     )
   ) {
@@ -233,7 +233,7 @@ function toOverviewUrl(
     preset.measures?.[0] ?? exploreSpec.measures?.[0];
   if (
     shouldSetParamWithDefault(
-      preset.overviewSortBy,
+      preset.exploreSortBy,
       exploreState.leaderboardMeasureName,
       defaultLeaderboardMeasure,
     )
@@ -242,17 +242,17 @@ function toOverviewUrl(
   }
 
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
-  if (shouldSetParam(preset.overviewSortType, sortType)) {
+  if (shouldSetParam(preset.exploreSortType, sortType)) {
     searchParams.set("sort_type", ToURLParamSortTypeMap[sortType] ?? "");
   }
 
   const sortAsc = exploreState.sortDirection === SortDirection.ASCENDING;
   if (
     // if preset has a sort direction then only set if not the same
-    (preset.overviewSortAsc !== undefined &&
-      preset.overviewSortAsc !== sortAsc) ||
+    (preset.exploreSortAsc !== undefined &&
+      preset.exploreSortAsc !== sortAsc) ||
     // else if the direction is not the default then set the param
-    (preset.overviewSortAsc === undefined &&
+    (preset.exploreSortAsc === undefined &&
       exploreState.sortDirection !== ExploreStateDefaultSortDirection)
   ) {
     searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");

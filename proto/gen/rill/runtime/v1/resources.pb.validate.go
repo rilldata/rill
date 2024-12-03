@@ -4951,20 +4951,20 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for View
 	}
 
-	if m.OverviewSortBy != nil {
-		// no validation rules for OverviewSortBy
+	if m.ExploreSortBy != nil {
+		// no validation rules for ExploreSortBy
 	}
 
-	if m.OverviewSortAsc != nil {
-		// no validation rules for OverviewSortAsc
+	if m.ExploreSortAsc != nil {
+		// no validation rules for ExploreSortAsc
 	}
 
-	if m.OverviewSortType != nil {
-		// no validation rules for OverviewSortType
+	if m.ExploreSortType != nil {
+		// no validation rules for ExploreSortType
 	}
 
-	if m.OverviewExpandedDimension != nil {
-		// no validation rules for OverviewExpandedDimension
+	if m.ExploreExpandedDimension != nil {
+		// no validation rules for ExploreExpandedDimension
 	}
 
 	if m.TimeDimensionMeasure != nil {

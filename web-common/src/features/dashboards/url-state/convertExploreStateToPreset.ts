@@ -36,23 +36,18 @@ export function convertExploreStateToPreset(
     );
   }
 
-  Object.assign(preset, fromMetricsExploreTimeRangeFields(exploreState));
+  Object.assign(preset, getTimeRangeFields(exploreState));
 
-  Object.assign(
-    preset,
-    fromMetricsExploreOverviewFields(exploreState, explore),
-  );
+  Object.assign(preset, getExploreFields(exploreState, explore));
 
-  Object.assign(preset, fromMetricsExploreTimeDimensionFields(exploreState));
+  Object.assign(preset, getTimeDimensionFields(exploreState));
 
-  Object.assign(preset, fromMetricsExplorePivotFields(exploreState));
+  Object.assign(preset, getPivotFields(exploreState));
 
   return preset;
 }
 
-function fromMetricsExploreTimeRangeFields(
-  exploreState: Partial<MetricsExplorerEntity>,
-) {
+function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
   const preset: V1ExplorePreset = {};
 
   if (exploreState.selectedTimeRange?.name) {
@@ -90,7 +85,7 @@ function fromMetricsExploreTimeRangeFields(
   return preset;
 }
 
-function fromMetricsExploreOverviewFields(
+function getExploreFields(
   exploreState: Partial<MetricsExplorerEntity>,
   explore: V1ExploreSpec,
 ) {
@@ -109,11 +104,11 @@ function fromMetricsExploreOverviewFields(
   }
 
   if (exploreState.leaderboardMeasureName !== undefined) {
-    preset.overviewSortBy = exploreState.leaderboardMeasureName;
+    preset.exploreSortBy = exploreState.leaderboardMeasureName;
   }
 
   if (exploreState.sortDirection) {
-    preset.overviewSortAsc =
+    preset.exploreSortAsc =
       exploreState.sortDirection ===
       DashboardState_LeaderboardSortDirection.ASCENDING;
   }
@@ -123,20 +118,18 @@ function fromMetricsExploreOverviewFields(
   }
 
   if (exploreState.dashboardSortType) {
-    preset.overviewSortType =
+    preset.exploreSortType =
       FromLegacySortTypeMap[exploreState.dashboardSortType];
   }
 
   if (exploreState.selectedDimensionName !== undefined) {
-    preset.overviewExpandedDimension = exploreState.selectedDimensionName;
+    preset.exploreExpandedDimension = exploreState.selectedDimensionName;
   }
 
   return preset;
 }
 
-function fromMetricsExploreTimeDimensionFields(
-  exploreState: Partial<MetricsExplorerEntity>,
-) {
+function getTimeDimensionFields(exploreState: Partial<MetricsExplorerEntity>) {
   const preset: V1ExplorePreset = {};
 
   if (!exploreState.tdd) {
@@ -151,9 +144,7 @@ function fromMetricsExploreTimeDimensionFields(
   return preset;
 }
 
-function fromMetricsExplorePivotFields(
-  exploreState: Partial<MetricsExplorerEntity>,
-) {
+function getPivotFields(exploreState: Partial<MetricsExplorerEntity>) {
   const preset: V1ExplorePreset = {};
 
   if (!exploreState.pivot) {

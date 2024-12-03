@@ -3,13 +3,13 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
-  V1ExploreOverviewSortType,
+  V1ExploreSortType,
   V1ExploreWebView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
 export const FromURLParamViewMap: Record<string, V1ExploreWebView> = {
-  explore: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+  explore: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
   pivot: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
   ttd: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
 };
@@ -22,28 +22,23 @@ export const FromActivePageMap: Record<
   [DashboardState_ActivePage.UNSPECIFIED]:
     V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED,
   [DashboardState_ActivePage.DEFAULT]:
-    V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
   [DashboardState_ActivePage.PIVOT]: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
   [DashboardState_ActivePage.DIMENSION_TABLE]:
-    V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
   [DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL]:
     V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
 };
 export const ToActivePageViewMap = reverseMap(FromActivePageMap);
-ToActivePageViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW] =
+ToActivePageViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE] =
   DashboardState_ActivePage.DEFAULT;
 
-export const FromURLParamsSortTypeMap: Record<
-  string,
-  V1ExploreOverviewSortType
-> = {
-  value: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_VALUE,
-  percent: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_PERCENT,
-  delta_abs:
-    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE,
-  delta_percent:
-    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT,
-  dim: V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION,
+export const FromURLParamsSortTypeMap: Record<string, V1ExploreSortType> = {
+  value: V1ExploreSortType.EXPLORE_SORT_TYPE_VALUE,
+  percent: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+  delta_abs: V1ExploreSortType.EXPLORE_SORT_TYPE_DELTA_ABSOLUTE,
+  delta_percent: V1ExploreSortType.EXPLORE_SORT_TYPE_DELTA_PERCENT,
+  dim: V1ExploreSortType.EXPLORE_SORT_TYPE_DIMENSION,
 };
 export const ToURLParamSortTypeMap = reverseMap(FromURLParamsSortTypeMap);
 

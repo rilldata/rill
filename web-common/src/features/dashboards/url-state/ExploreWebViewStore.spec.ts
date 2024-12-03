@@ -48,13 +48,13 @@ import type { Page } from "@sveltejs/kit";
 import { render } from "@testing-library/svelte";
 import { get, type Readable, readable } from "svelte/store";
 import {
-  describe,
-  it,
-  expect,
+  afterAll,
   beforeAll,
   beforeEach,
+  describe,
+  expect,
+  it,
   vi,
-  afterAll,
 } from "vitest";
 
 const pageMock: Readable<Page> = vi.hoisted(() => ({}) as any);
@@ -78,9 +78,9 @@ const TestCases: {
   view: TestView;
 }[] = [
   {
-    title: "overview <=> TTD",
+    title: "Explore <=> TTD",
     initView: {
-      view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [],
       expectedUrl:
         "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
@@ -98,7 +98,7 @@ const TestCases: {
   {
     title: "dimension table <=> TTD",
     initView: {
-      view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
         "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
@@ -115,9 +115,9 @@ const TestCases: {
   },
 
   {
-    title: "overview <=> Pivot",
+    title: "Explore <=> Pivot",
     initView: {
-      view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [],
       expectedUrl:
         "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
@@ -136,7 +136,7 @@ const TestCases: {
   {
     title: "dimension table <=> Pivot",
     initView: {
-      view: V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+      view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
         "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",

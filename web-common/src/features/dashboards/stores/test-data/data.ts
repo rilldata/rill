@@ -20,15 +20,16 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
-  V1ExploreOverviewSortType,
+  TypeCode,
   type V1ExplorePreset,
+  V1ExploreSortType,
   type V1ExploreSpec,
   V1ExploreWebView,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1StructType,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { TypeCode, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
@@ -240,13 +241,12 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   compareTimeRange: "rill-PP",
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-  overviewSortBy: AD_BIDS_BID_PRICE_MEASURE,
-  overviewSortAsc: true,
-  overviewSortType:
-    V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_PERCENT,
+  exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
 };
 export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
-  overviewExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+  exploreExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
 };
 export const AD_BIDS_TIME_DIMENSION_DETAILS_PRESET: V1ExplorePreset = {
   view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,

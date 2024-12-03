@@ -1831,7 +1831,7 @@ export type V1ExploreWebView =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_UNSPECIFIED: "EXPLORE_WEB_VIEW_UNSPECIFIED",
-  EXPLORE_WEB_VIEW_OVERVIEW: "EXPLORE_WEB_VIEW_OVERVIEW",
+  EXPLORE_WEB_VIEW_EXPLORE: "EXPLORE_WEB_VIEW_EXPLORE",
   EXPLORE_WEB_VIEW_TIME_DIMENSION: "EXPLORE_WEB_VIEW_TIME_DIMENSION",
   EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
@@ -1873,20 +1873,17 @@ export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
 }
 
-export type V1ExploreOverviewSortType =
-  (typeof V1ExploreOverviewSortType)[keyof typeof V1ExploreOverviewSortType];
+export type V1ExploreSortType =
+  (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ExploreOverviewSortType = {
-  EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED:
-    "EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED",
-  EXPLORE_OVERVIEW_SORT_TYPE_VALUE: "EXPLORE_OVERVIEW_SORT_TYPE_VALUE",
-  EXPLORE_OVERVIEW_SORT_TYPE_PERCENT: "EXPLORE_OVERVIEW_SORT_TYPE_PERCENT",
-  EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT:
-    "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT",
-  EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE:
-    "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE",
-  EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION: "EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION",
+export const V1ExploreSortType = {
+  EXPLORE_SORT_TYPE_UNSPECIFIED: "EXPLORE_SORT_TYPE_UNSPECIFIED",
+  EXPLORE_SORT_TYPE_VALUE: "EXPLORE_SORT_TYPE_VALUE",
+  EXPLORE_SORT_TYPE_PERCENT: "EXPLORE_SORT_TYPE_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
+  EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
 } as const;
 
 export interface V1ExploreComparisonTimeRange {
@@ -1928,10 +1925,10 @@ If not found in `time_ranges`, it should be added to the list. */
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
   view?: V1ExploreWebView;
-  overviewSortBy?: string;
-  overviewSortAsc?: boolean;
-  overviewSortType?: V1ExploreOverviewSortType;
-  overviewExpandedDimension?: string;
+  exploreSortBy?: string;
+  exploreSortAsc?: boolean;
+  exploreSortType?: V1ExploreSortType;
+  exploreExpandedDimension?: string;
   timeDimensionMeasure?: string;
   timeDimensionChartType?: string;
   timeDimensionPin?: boolean;

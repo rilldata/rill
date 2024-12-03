@@ -35,8 +35,8 @@ import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   V1ExploreComparisonMode,
-  V1ExploreOverviewSortType,
   type V1ExplorePreset,
+  V1ExploreSortType,
   type V1ExploreSpec,
   V1ExploreWebView,
   type V1MetricsViewSpec,
@@ -107,7 +107,7 @@ export function convertPresetToExploreState(
   errors.push(...trErrors);
 
   const { partialExploreState: ovPartialState, errors: ovErrors } =
-    fromOverviewUrlParams(measures, dimensions, explore, preset);
+    fromExploreUrlParams(measures, dimensions, explore, preset);
   Object.assign(partialExploreState, ovPartialState);
   errors.push(...ovErrors);
 
@@ -206,7 +206,7 @@ function fromTimeRangeUrlParam(tr: string) {
   } as DashboardTimeControls;
 }
 
-function fromOverviewUrlParams(
+function fromExploreUrlParams(
   measures: Map<string, MetricsViewSpecMeasureV2>,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
   explore: V1ExploreSpec,
@@ -244,34 +244,31 @@ function fromOverviewUrlParams(
     partialExploreState.visibleDimensionKeys = new Set(selectedDimensions);
   }
 
-  if (preset.overviewSortBy) {
-    if (measures.has(preset.overviewSortBy)) {
-      partialExploreState.leaderboardMeasureName = preset.overviewSortBy;
+  if (preset.exploreSortBy) {
+    if (measures.has(preset.exploreSortBy)) {
+      partialExploreState.leaderboardMeasureName = preset.exploreSortBy;
     } else {
-      errors.push(
-        getSingleFieldError("sort by measure", preset.overviewSortBy),
-      );
+      errors.push(getSingleFieldError("sort by measure", preset.exploreSortBy));
     }
   }
 
-  if (preset.overviewSortAsc !== undefined) {
-    partialExploreState.sortDirection = preset.overviewSortAsc
+  if (preset.exploreSortAsc !== undefined) {
+    partialExploreState.sortDirection = preset.exploreSortAsc
       ? SortDirection.ASCENDING
       : SortDirection.DESCENDING;
   }
 
   if (
-    preset.overviewSortType !== undefined &&
-    preset.overviewSortType !==
-      V1ExploreOverviewSortType.EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED
+    preset.exploreSortType !== undefined &&
+    preset.exploreSortType !== V1ExploreSortType.EXPLORE_SORT_TYPE_UNSPECIFIED
   ) {
     partialExploreState.dashboardSortType =
-      Number(ToLegacySortTypeMap[preset.overviewSortType]) ??
+      Number(ToLegacySortTypeMap[preset.exploreSortType]) ??
       DashboardState_LeaderboardSortType.UNSPECIFIED;
   }
 
-  if (preset.overviewExpandedDimension !== undefined) {
-    if (preset.overviewExpandedDimension === "") {
+  if (preset.exploreExpandedDimension !== undefined) {
+    if (preset.exploreExpandedDimension === "") {
       partialExploreState.selectedDimensionName = "";
       // if preset didnt have a view then this is a dimension table unset.
       if (
@@ -280,11 +277,11 @@ function fromOverviewUrlParams(
       ) {
         partialExploreState.activePage = DashboardState_ActivePage.DEFAULT;
       }
-    } else if (dimensions.has(preset.overviewExpandedDimension)) {
+    } else if (dimensions.has(preset.exploreExpandedDimension)) {
       partialExploreState.selectedDimensionName =
-        preset.overviewExpandedDimension;
+        preset.exploreExpandedDimension;
       if (
-        preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW ||
+        preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE ||
         preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED ||
         preset.view === undefined
       ) {
@@ -295,7 +292,7 @@ function fromOverviewUrlParams(
       errors.push(
         getSingleFieldError(
           "expanded dimension",
-          preset.overviewExpandedDimension,
+          preset.exploreExpandedDimension,
         ),
       );
     }

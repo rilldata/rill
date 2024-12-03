@@ -85,9 +85,9 @@ export enum ExploreWebView {
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EXPLORE_WEB_VIEW_OVERVIEW = 1;
+   * @generated from enum value: EXPLORE_WEB_VIEW_EXPLORE = 1;
    */
-  OVERVIEW = 1,
+  EXPLORE = 1,
 
   /**
    * @generated from enum value: EXPLORE_WEB_VIEW_TIME_DIMENSION = 2;
@@ -107,54 +107,54 @@ export enum ExploreWebView {
 // Retrieve enum metadata with: proto3.getEnumType(ExploreWebView)
 proto3.util.setEnumType(ExploreWebView, "rill.runtime.v1.ExploreWebView", [
   { no: 0, name: "EXPLORE_WEB_VIEW_UNSPECIFIED" },
-  { no: 1, name: "EXPLORE_WEB_VIEW_OVERVIEW" },
+  { no: 1, name: "EXPLORE_WEB_VIEW_EXPLORE" },
   { no: 2, name: "EXPLORE_WEB_VIEW_TIME_DIMENSION" },
   { no: 3, name: "EXPLORE_WEB_VIEW_PIVOT" },
   { no: 4, name: "EXPLORE_WEB_VIEW_CANVAS" },
 ]);
 
 /**
- * @generated from enum rill.runtime.v1.ExploreOverviewSortType
+ * @generated from enum rill.runtime.v1.ExploreSortType
  */
-export enum ExploreOverviewSortType {
+export enum ExploreSortType {
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: EXPLORE_SORT_TYPE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_VALUE = 1;
+   * @generated from enum value: EXPLORE_SORT_TYPE_VALUE = 1;
    */
   VALUE = 1,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_PERCENT = 2;
+   * @generated from enum value: EXPLORE_SORT_TYPE_PERCENT = 2;
    */
   PERCENT = 2,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT = 3;
+   * @generated from enum value: EXPLORE_SORT_TYPE_DELTA_PERCENT = 3;
    */
   DELTA_PERCENT = 3,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE = 4;
+   * @generated from enum value: EXPLORE_SORT_TYPE_DELTA_ABSOLUTE = 4;
    */
   DELTA_ABSOLUTE = 4,
 
   /**
-   * @generated from enum value: EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION = 5;
+   * @generated from enum value: EXPLORE_SORT_TYPE_DIMENSION = 5;
    */
   DIMENSION = 5,
 }
-// Retrieve enum metadata with: proto3.getEnumType(ExploreOverviewSortType)
-proto3.util.setEnumType(ExploreOverviewSortType, "rill.runtime.v1.ExploreOverviewSortType", [
-  { no: 0, name: "EXPLORE_OVERVIEW_SORT_TYPE_UNSPECIFIED" },
-  { no: 1, name: "EXPLORE_OVERVIEW_SORT_TYPE_VALUE" },
-  { no: 2, name: "EXPLORE_OVERVIEW_SORT_TYPE_PERCENT" },
-  { no: 3, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_PERCENT" },
-  { no: 4, name: "EXPLORE_OVERVIEW_SORT_TYPE_DELTA_ABSOLUTE" },
-  { no: 5, name: "EXPLORE_OVERVIEW_SORT_TYPE_DIMENSION" },
+// Retrieve enum metadata with: proto3.getEnumType(ExploreSortType)
+proto3.util.setEnumType(ExploreSortType, "rill.runtime.v1.ExploreSortType", [
+  { no: 0, name: "EXPLORE_SORT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "EXPLORE_SORT_TYPE_VALUE" },
+  { no: 2, name: "EXPLORE_SORT_TYPE_PERCENT" },
+  { no: 3, name: "EXPLORE_SORT_TYPE_DELTA_PERCENT" },
+  { no: 4, name: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE" },
+  { no: 5, name: "EXPLORE_SORT_TYPE_DIMENSION" },
 ]);
 
 /**
@@ -2504,24 +2504,24 @@ export class ExplorePreset extends Message<ExplorePreset> {
   view?: ExploreWebView;
 
   /**
-   * @generated from field: optional string overview_sort_by = 17;
+   * @generated from field: optional string explore_sort_by = 17;
    */
-  overviewSortBy?: string;
+  exploreSortBy?: string;
 
   /**
-   * @generated from field: optional bool overview_sort_asc = 18;
+   * @generated from field: optional bool explore_sort_asc = 18;
    */
-  overviewSortAsc?: boolean;
+  exploreSortAsc?: boolean;
 
   /**
-   * @generated from field: optional rill.runtime.v1.ExploreOverviewSortType overview_sort_type = 19;
+   * @generated from field: optional rill.runtime.v1.ExploreSortType explore_sort_type = 19;
    */
-  overviewSortType?: ExploreOverviewSortType;
+  exploreSortType?: ExploreSortType;
 
   /**
-   * @generated from field: optional string overview_expanded_dimension = 20;
+   * @generated from field: optional string explore_expanded_dimension = 20;
    */
-  overviewExpandedDimension?: string;
+  exploreExpandedDimension?: string;
 
   /**
    * @generated from field: optional string time_dimension_measure = 21;
@@ -2579,10 +2579,10 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 15, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView), opt: true },
-    { no: 17, name: "overview_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 18, name: "overview_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 19, name: "overview_sort_type", kind: "enum", T: proto3.getEnumType(ExploreOverviewSortType), opt: true },
-    { no: 20, name: "overview_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 17, name: "explore_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
+    { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },

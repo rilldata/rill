@@ -101,14 +101,14 @@ export function convertLegacyStateToExplorePreset(
   Object.assign(preset, trPreset);
   errors.push(...trErrors);
 
-  const { preset: ovPreset, errors: ovErrors } = fromLegacyOverviewFields(
+  const { preset: ePreset, errors: eErrors } = fromLegacyExploreFields(
     legacyState,
     measures,
     dimensions,
     explore,
   );
-  Object.assign(preset, ovPreset);
-  errors.push(...ovErrors);
+  Object.assign(preset, ePreset);
+  errors.push(...eErrors);
 
   const { preset: tddPreset, errors: tddErrors } =
     fromLegacyTimeDimensionFields(legacyState, measures);
@@ -184,7 +184,7 @@ function fromLegacyTimeRangeFields(
   return { preset, errors };
 }
 
-function fromLegacyOverviewFields(
+function fromLegacyExploreFields(
   legacyState: DashboardState,
   measures: Map<string, MetricsViewSpecMeasureV2>,
   dimensions: Map<string, MetricsViewSpecDimensionV2>,
@@ -225,7 +225,7 @@ function fromLegacyOverviewFields(
 
   if (legacyState.leaderboardMeasure !== undefined) {
     if (measures.has(legacyState.leaderboardMeasure)) {
-      preset.overviewSortBy = legacyState.leaderboardMeasure;
+      preset.exploreSortBy = legacyState.leaderboardMeasure;
     } else {
       errors.push(
         getSingleFieldError("sort by measure", legacyState.leaderboardMeasure),
@@ -234,7 +234,7 @@ function fromLegacyOverviewFields(
   }
 
   if (legacyState.leaderboardSortDirection) {
-    preset.overviewSortAsc =
+    preset.exploreSortAsc =
       legacyState.leaderboardSortDirection ===
       DashboardState_LeaderboardSortDirection.ASCENDING;
   }
@@ -244,13 +244,13 @@ function fromLegacyOverviewFields(
   }
 
   if (legacyState.leaderboardSortType) {
-    preset.overviewSortType =
+    preset.exploreSortType =
       FromLegacySortTypeMap[legacyState.leaderboardSortType];
   }
 
   if (legacyState.selectedDimension) {
     if (dimensions.has(legacyState.selectedDimension)) {
-      preset.overviewExpandedDimension = legacyState.selectedDimension;
+      preset.exploreExpandedDimension = legacyState.selectedDimension;
     } else {
       errors.push(
         getSingleFieldError(
@@ -262,7 +262,7 @@ function fromLegacyOverviewFields(
   } else if (legacyState.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
     // UNSPECIFIED means it was a partial state stored to proto state
     // So anything other than that would need to unset this
-    preset.overviewExpandedDimension = "";
+    preset.exploreExpandedDimension = "";
   }
 
   return { preset, errors };

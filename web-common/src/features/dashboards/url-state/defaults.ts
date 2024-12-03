@@ -6,7 +6,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const ExploreStateDefaultView =
-  V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW;
+  V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE;
 
 export const ExploreStateDefaultTimeRange = "inf";
 export const ExploreStateDefaultTimezone = "UTC";

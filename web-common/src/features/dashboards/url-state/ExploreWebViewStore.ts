@@ -1,7 +1,7 @@
 import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
@@ -18,14 +18,14 @@ export const ExploreWebViewNonPivot = "NON_PIVOT";
 type ExploreWebView = V1ExploreWebView | typeof ExploreWebViewNonPivot;
 const ExploreViewKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> = {
   [V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]: [],
-  [V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW]: [
+  [V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]: [
     "view",
     "measures",
     "dimensions",
-    "overviewExpandedDimension",
-    "overviewSortBy",
-    "overviewSortAsc",
-    "overviewSortType",
+    "exploreExpandedDimension",
+    "exploreSortBy",
+    "exploreSortAsc",
+    "exploreSortType",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [
     "view",
@@ -44,7 +44,7 @@ const ExploreViewKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> = {
   [V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]: [],
 };
 ExploreViewKeys[ExploreWebViewNonPivot] = [
-  ...ExploreViewKeys[V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW],
+  ...ExploreViewKeys[V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE],
   ...ExploreViewKeys[V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION],
   ...ExploreViewKeys[V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS],
 ];
@@ -52,7 +52,7 @@ ExploreViewKeys[ExploreWebViewNonPivot] = [
 const ExploreViewOtherKeys: Record<ExploreWebView, (keyof V1ExplorePreset)[]> =
   {
     [V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]: [],
-    [V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW]: [],
+    [V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]: [],
     [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [],
     [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [],
     [ExploreWebViewNonPivot]: [],
@@ -88,9 +88,9 @@ export class ExploreWebViewStore {
           exploreName,
           V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED,
         ),
-      [V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW]: getStoreForExploreWebView(
+      [V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]: getStoreForExploreWebView(
         exploreName,
-        V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+        V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       ),
       [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]:
         getStoreForExploreWebView(

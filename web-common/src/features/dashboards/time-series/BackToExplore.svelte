@@ -10,7 +10,7 @@
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
   $: href = webViewStore.getUrlForView(
-    V1ExploreWebView.EXPLORE_WEB_VIEW_OVERVIEW,
+    V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     $dashboardStore,
     metricsSpec,
     exploreSpec,
