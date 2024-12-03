@@ -25,7 +25,7 @@
 
   export let resources: (V1Resource | undefined)[];
   export let allResources: V1Resource[];
-  export let selectedResource: V1Resource | undefined;
+  export let selectedResource: V1Resource | undefined = undefined;
   export let current = false;
   export let downstream = false;
   export let upstream = false;

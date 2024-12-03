@@ -383,6 +383,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	} else {
 		typ = "TABLE"
 	}
+	newMeta.Type = typ
 	if opts.BeforeCreateFn != nil {
 		err = opts.BeforeCreateFn(ctx, conn)
 		if err != nil {
@@ -720,8 +721,9 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	for k, v := range settings {
 		query.Set(k, v)
 	}
-	dsn.RawQuery = query.Encode()
-	connector, err := duckdb.NewConnector(dsn.String(), func(execer driver.ExecerContext) error {
+	// Rebuild DuckDB DSN (which should be "path?key=val&...")
+	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
+	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range d.opts.InitQueries {
 			_, err := execer.ExecContext(context.Background(), qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
@@ -1007,20 +1009,14 @@ func renameTable(ctx context.Context, dbFile, old, newName string) error {
 	}
 	defer db.Close()
 
-	var isView bool
-	err = db.QueryRowContext(ctx, "SELECT lower(table_type) = 'view' FROM INFORMATION_SCHEMA.TABLES WHERE table_name = ?", old).Scan(&isView)
+	// TODO :: create temporary views when attaching tables to write connection to avoid left views in .db file
+	// In that case this will not be required.
+	_, err = db.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(newName)))
 	if err != nil {
 		return err
 	}
 
-	var typ string
-	if isView {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
-
-	_, err = db.ExecContext(ctx, fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, old, newName))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(old), safeSQLName(newName)))
 	return err
 }
 
@@ -1092,4 +1088,11 @@ func humanReadableSizeToBytes(sizeStr string) (float64, error) {
 
 func schemaName(gen int) string {
 	return fmt.Sprintf("main_%v", gen)
+}
+
+func generateDSN(path, encodedQuery string) string {
+	if encodedQuery == "" {
+		return path
+	}
+	return path + "?" + encodedQuery
 }
