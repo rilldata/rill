@@ -92,7 +92,7 @@ For more information about available metrics view properties, feel free to check
 :::
 
 
-### Multi-editor and external IDE support
+## Multi-editor and external IDE support
 
 Rill Developer is meant to be developer friendly and has been built around the idea of keystroke-by-keystroke feedback when modeling your data, allowing live interactivity and a real-time feedback loop to iterate quickly (or make adjustments as necessary) with your models and dashboards. Additionally, Rill Developer has support for the concept of "hot reloading", which means that you can keep two windows of Rill open at the same time and/or use a preferred editor of choice, such as VSCode, side-by-side with the dashboard that you're actively developing!
 

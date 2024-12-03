@@ -33,7 +33,12 @@ When you invite a user to an organization on Rill Cloud, they automatically get 
 For a detailed list of permissions, please refer to the [Roles and Permissions](roles-permissions.md).
 
 ### How to add an Organization User
-Administrators can be invited to an organization via the CLI directly or via a user group.
+Administrators can be invited to an organization from the *users* page, or via the CLI.
+
+### Administrator adds from Rill Cloud User page
+From the organization page, you can manage users under the *Users* tab. Adding users from this page will add the user to the organization.
+
+![img](/img/manage/user-management/add-user-cloud.png)
 
 
 ### Administrator invites user via the CLI
@@ -57,9 +62,15 @@ rill user add --group <group_with_org_permissions>
 User "<email here>" added to the user group "<group_with_org_permissions>"
 ```
 
+![] add image here
+
 ### Automatically add members by email domain
 
-You can automatically add users to your organization by their email domain. For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
+You can automatically add users to your organization by their email domain. During the deployment process and in the Organization settings page, you can input the domain to whitelist.
+
+![img](/img/manage/user-management/domain.png)
+
+ For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
 
 :::info Interested in whitelisting a different domain?
 
@@ -84,7 +95,7 @@ There are a few ways to add a project user to Rill Cloud.
 
 
 
-### Admin invites user
+### Admin invites user from Rill Cloud
 
 From the project's splash screen, please select share and type the email[s] along with the type of permissions.
 
@@ -135,12 +146,16 @@ There are two ways to add a user to a user group.
 2. Administrator adds them via the CLI
 
 ### Administrator adds from Rill Cloud
+
 import ComingSoon from '@site/src/components/ComingSoon';
+
+
+
 
 <ComingSoon />
 
 <div class='contents_to_overlay'>
-a
+![img] Update this image
 </div>
 
 ### Administrator adds from the CLI

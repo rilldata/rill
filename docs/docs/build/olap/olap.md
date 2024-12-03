@@ -23,10 +23,19 @@ Rill supports the use of several different OLAP engines to power your dashboards
 - [Pinot](/reference/olap-engines/pinot.md)
 
 :::note Additional OLAP Engines
-
 Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, you can refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md)!
-
 :::
+
+## Externally Hosted Services
+If you have a firewall in front of your externally hosted service, you will need to whitelist the below IP addresses. This will allow you to connect to/from your service once your project is deployed to Rill Cloud. 
+```
+35.196.245.100
+34.74.117.37
+35.196.153.31
+34.75.22.143
+34.148.167.51
+35.237.60.193
+```
 
 
 ## DuckDB
