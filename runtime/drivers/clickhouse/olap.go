@@ -564,6 +564,12 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	} else {
 		fmt.Fprintf(&create, " %s ", outputProps.Columns)
 	}
+
+	// validate incremental strategy
+	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyMerge && outputProps.PartitionBy == "" {
+		return fmt.Errorf("clickhouse: incremental strategy merge requires a partition key")
+	}
+
 	create.WriteString(outputProps.tblConfig())
 
 	// create table
