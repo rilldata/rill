@@ -751,7 +751,7 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 
 func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = ?"),
+		Query:    "SELECT DISTINCT partition FROM system.parts WHERE table = ?",
 		Args:     []any{name},
 		Priority: 1,
 	})
