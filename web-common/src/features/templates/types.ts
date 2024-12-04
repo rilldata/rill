@@ -93,3 +93,13 @@ export type TemplateSpec =
   | ImageTemplateT
   | SelectPropertiesT
   | SwitchPropertiesT;
+
+export enum RendererType {
+  Select = "select",
+  VegaLite = "vega_lite",
+  KPI = "kpi",
+  Table = "table",
+  Markdown = "markdown",
+  Image = "image",
+  Switch = "switch",
+}
