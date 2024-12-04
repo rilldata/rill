@@ -25,8 +25,8 @@ export function getComparisonTransform(
   if (
     comparison === TimeComparisonOption.CONTIGUOUS ||
     comparison === TimeComparisonOption.CUSTOM ||
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-    comparison === TimeRangePreset.CUSTOM // hack for `comparison` not being the correct type
+    // @ts-expect-error Hack for `comparison` not being the correct type
+    comparison === TimeRangePreset.CUSTOM
   ) {
     /** for custom & otherwise-contiguous comparisons,
      * we will calculate the width of the time range
