@@ -125,6 +125,10 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 			return nil, err
 		}
 	}
+	tempDir, err := c.storage.TempDir()
+	if err != nil {
+		return nil, err
+	}
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -136,7 +140,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
 		RetainFiles:           c.config.RetainFiles,
-		TempDir:               c.config.TempDir,
+		TempDir:               tempDir,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
