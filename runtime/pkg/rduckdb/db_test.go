@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -223,7 +224,149 @@ func TestResetLocal(t *testing.T) {
 		Logger:        logger,
 	})
 	require.NoError(t, err)
+
+	// acquire connection
+	conn, release, err := db.AcquireReadConnection(ctx)
+	require.NoError(t, err)
+
+	// drop table
+	err = db.DropTable(ctx, "test")
+	require.NoError(t, err)
+
+	// verify table is still accessible
+	verifyTableForConn(t, conn, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, release())
+
+	// verify table is now dropped
+	err = db.DropTable(ctx, "test")
+	require.ErrorContains(t, err, "not found")
+
+	require.NoError(t, db.Close())
+}
+
+func TestResetSelectiveLocal(t *testing.T) {
+	db, localDir, remoteDir := prepareDB(t)
+	ctx := context.Background()
+
+	// create table
+	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+
+	// create two views on this
+	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+	err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// create another table
+	err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// create views on this
+	err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// reset local for some tables
+	require.NoError(t, db.Close())
+	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test2")))
+	require.NoError(t, os.RemoveAll(filepath.Join(localDir, "test_view2")))
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	bucket, err := fileblob.OpenBucket(remoteDir, nil)
+	require.NoError(t, err)
+	db, err = NewDB(ctx, &DBOptions{
+		LocalPath:     localDir,
+		Remote:        bucket,
+		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
+		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
+		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:        logger,
+	})
+	require.NoError(t, err)
+	verifyTable(t, db, "SELECT id, country FROM test2_view", []testData{{ID: 2, Country: "USA"}})
+	verifyTable(t, db, "SELECT id, country FROM test_view2", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, db.Close())
+}
+
+func TestResetTablesRemote(t *testing.T) {
+	db, localDir, remoteDir := prepareDB(t)
+	ctx := context.Background()
+
+	// create table
+	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	require.NoError(t, db.Close())
+
+	// remove remote data
+	require.NoError(t, os.RemoveAll(remoteDir))
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	bucket, err := fileblob.OpenBucket(remoteDir, &fileblob.Options{CreateDir: true})
+	require.NoError(t, err)
+	db, err = NewDB(ctx, &DBOptions{
+		LocalPath:     localDir,
+		Remote:        bucket,
+		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
+		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
+		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:        logger,
+	})
+	require.NoError(t, err)
+	require.ErrorContains(t, db.DropTable(ctx, "test"), "not found")
+	require.NoError(t, db.Close())
+}
+
+func TestResetSelectiveTablesRemote(t *testing.T) {
+	db, localDir, remoteDir := prepareDB(t)
+	ctx := context.Background()
+
+	// create table
+	err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// create two views on this
+	err = db.CreateTableAsSelect(ctx, "test_view", "SELECT * FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+	err = db.CreateTableAsSelect(ctx, "test_view2", "SELECT * FROM test", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	// create another table
+	err = db.CreateTableAsSelect(ctx, "test2", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+	require.NoError(t, err)
+
+	// create views on this
+	err = db.CreateTableAsSelect(ctx, "test2_view", "SELECT * FROM test2", &CreateTableOptions{View: true})
+	require.NoError(t, err)
+
+	require.NoError(t, db.Close())
+
+	// remove remote data for some tables
+	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test2")))
+	require.NoError(t, os.RemoveAll(filepath.Join(remoteDir, "test_view2")))
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	bucket, err := fileblob.OpenBucket(remoteDir, nil)
+	require.NoError(t, err)
+	db, err = NewDB(ctx, &DBOptions{
+		LocalPath:     localDir,
+		Remote:        bucket,
+		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
+		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
+		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:        logger,
+	})
+	require.NoError(t, err)
+	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+	verifyTable(t, db, "SELECT id, country FROM test_view", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, db.Close())
 }
 
 func TestConcurrentReads(t *testing.T) {

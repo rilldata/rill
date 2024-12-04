@@ -42,14 +42,25 @@ type catalog struct {
 // newCatalog creates a new catalog.
 // The removeSnapshotFunc func will be called exactly once for each snapshot ID when it is no longer the current snapshot and is no longer held by any readers.
 // The removeVersionFunc func will be called exactly once for each table version when it is no longer the current version and is no longer used by any active snapshots.
-func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), logger *slog.Logger) *catalog {
-	return &catalog{
+func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), tables []*tableMeta, logger *slog.Logger) *catalog {
+	c := &catalog{
 		tables:             make(map[string]*table),
 		snapshots:          make(map[int]*snapshot),
 		removeVersionFunc:  removeVersionFunc,
 		removeSnapshotFunc: removeSnapshotFunc,
 		logger:             logger,
 	}
+	for _, meta := range tables {
+		c.tables[meta.Name] = &table{
+			name:                   meta.Name,
+			currentVersion:         meta.Version,
+			versionReferenceCounts: map[string]int{},
+			versionMeta:            map[string]*tableMeta{meta.Version: meta},
+		}
+		c.acquireVersion(c.tables[meta.Name], meta.Version)
+	}
+	_ = c.acquireSnapshotUnsafe()
+	return c
 }
 
 func (c *catalog) tableMeta(name string) (*tableMeta, error) {
@@ -62,7 +73,7 @@ func (c *catalog) tableMeta(name string) (*tableMeta, error) {
 	}
 	meta, ok := t.versionMeta[t.currentVersion]
 	if !ok {
-		return nil, fmt.Errorf("internal error: meta for version %q not found", t.currentVersion)
+		panic(fmt.Errorf("internal error: meta for table %q and version %q not found", name, t.currentVersion))
 	}
 	return meta, nil
 }
@@ -109,6 +120,7 @@ func (c *catalog) removeTable(name string) {
 	t, ok := c.tables[name]
 	if !ok {
 		c.logger.Debug("table not found in rduckdb catalog", slog.String("name", name))
+		return
 	}
 
 	oldVersion := t.currentVersion
@@ -168,7 +180,7 @@ func (c *catalog) acquireSnapshotUnsafe() *snapshot {
 
 		meta, ok := t.versionMeta[t.currentVersion]
 		if !ok {
-			c.logger.Error("internal error: meta for table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			panic(fmt.Errorf("internal error: meta for table %q version %q not found in catalog", t.name, t.currentVersion))
 		}
 		s.tables = append(s.tables, meta)
 		c.acquireVersion(t, t.currentVersion)
@@ -193,7 +205,7 @@ func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 	for _, meta := range s.tables {
 		t, ok := c.tables[meta.Name]
 		if !ok {
-			c.logger.Error("internal error: table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+			panic(fmt.Errorf("internal error: table %q not found in catalog", meta.Name))
 		}
 		c.releaseVersion(t, meta.Version)
 	}
@@ -214,7 +226,7 @@ func (c *catalog) acquireVersion(t *table, version string) {
 func (c *catalog) releaseVersion(t *table, version string) {
 	referenceCount, ok := t.versionReferenceCounts[version]
 	if !ok {
-		c.logger.Error("internal error: version of table not found in catalog", slog.String("name", t.name), slog.String("version", t.currentVersion))
+		panic(fmt.Errorf("internal error: version %q of table %q not found in catalog", t.currentVersion, t.name))
 	}
 	referenceCount--
 	if referenceCount > 0 {

@@ -225,6 +225,25 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		ctx:        bgctx,
 		cancel:     cancel,
 	}
+	// create local path
+	err = os.MkdirAll(db.localPath, fs.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create local path: %w", err)
+	}
+
+	// sync local data
+	err = db.pullFromRemote(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// collect all tables
+	var tables []*tableMeta
+	_ = db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+		tables = append(tables, meta)
+		return nil
+	})
+
 	// catalog
 	db.catalog = newCatalog(
 		func(name, version string) {
@@ -243,22 +262,10 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 				}
 			}()
 		},
+		tables,
 		opts.Logger,
 	)
 
-	// create local path
-	err = os.MkdirAll(db.localPath, fs.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create local path: %w", err)
-	}
-
-	// sync local data
-	err = db.pullFromRemote(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// create db handle
 	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
@@ -333,7 +340,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
-	err = d.pullFromRemote(ctx)
+	err = d.pullFromRemote(ctx, true)
 	if err != nil {
 		return err
 	}
@@ -436,7 +443,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
-	err = d.pullFromRemote(ctx)
+	err = d.pullFromRemote(ctx, true)
 	if err != nil {
 		return err
 	}
@@ -509,7 +516,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
-	err = d.pullFromRemote(ctx)
+	err = d.pullFromRemote(ctx, true)
 	if err != nil {
 		return fmt.Errorf("drop: unable to pull from remote: %w", err)
 	}
@@ -548,7 +555,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	defer d.writeSem.Release(1)
 
 	// pull latest changes from remote
-	err = d.pullFromRemote(ctx)
+	err = d.pullFromRemote(ctx, true)
 	if err != nil {
 		return fmt.Errorf("rename: unable to pull from remote: %w", err)
 	}
@@ -628,8 +635,10 @@ func (d *db) localDBMonitor() {
 			return
 		case <-ticker.C:
 			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil && !errors.Is(err, context.Canceled) {
-				d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
+			if err != nil {
+				if !errors.Is(err, context.Canceled) {
+					d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
+				}
 				continue
 			}
 			if !d.localDirty {
@@ -637,7 +646,7 @@ func (d *db) localDBMonitor() {
 				// all good
 				continue
 			}
-			err = d.pullFromRemote(d.ctx)
+			err = d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
@@ -648,25 +657,14 @@ func (d *db) localDBMonitor() {
 
 func (d *db) Size() int64 {
 	var paths []string
-	entries, err := os.ReadDir(d.localPath)
-	if err != nil { // ignore error
-		return 0
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
+	_ = d.iterateLocalTables(false, func(name string, meta *tableMeta) error {
 		// this is to avoid counting temp tables during source ingestion
 		// in certain cases we only want to compute the size of the serving db files
-		// TODO :: remove this when removing staged table concepts
-		if strings.HasPrefix(entry.Name(), "__rill_tmp_") {
-			continue
-		}
-		meta, _ := d.catalog.tableMeta(entry.Name())
-		if meta != nil {
+		if !strings.HasPrefix(name, "__rill_tmp_") {
 			paths = append(paths, d.localDBPath(meta.Name, meta.Version))
 		}
-	}
+		return nil
+	})
 	return fileSize(paths)
 }
 
@@ -755,7 +753,11 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	tables := d.catalog.listTables()
 	err = d.attachTables(ctx, conn, tables, ignoreTable)
 	if err != nil {
+		conn.Close()
 		db.Close()
+		return nil, err
+	}
+	if err := conn.Close(); err != nil {
 		return nil, err
 	}
 
@@ -831,6 +833,10 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 	}
 
 	// retry creating views
+	// views may depend on other views, without building a dependency graph we can not recreate them in correct order
+	// so we recreate all failed views and collect the ones that failed
+	// once a view is created successfully, it may be possible that other views that depend on it can be created in the next iteration
+	// if in a iteration no views are created successfully, it means either all views are invalid or there is a circular dependency
 	for len(failedViews) > 0 {
 		allViewsFailed := true
 		size := len(failedViews)
@@ -850,7 +856,6 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 			allViewsFailed = false
 		}
 		if !allViewsFailed {
-			// at least one view should always be created unless there is a circular dependency which is not allowed
 			continue
 		}
 
@@ -859,7 +864,14 @@ func (d *db) attachTables(ctx context.Context, conn *sqlx.Conn, tables []*tableM
 		for i := 0; i < len(failedViews); i++ {
 			table := failedViews[i]
 			safeTable := safeSQLName(table.Name)
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT error('View %s is incompatible with the underlying data')", safeTable, safeTable))
+			// capture the error in creating the view
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeTable, table.SQL))
+			if err == nil {
+				// not possible but just to be safe
+				continue
+			}
+			safeErr := strings.Trim(safeSQLString(err.Error()), "'")
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT error('View %s is incompatible with the underlying data: %s')", safeTable, safeTable, safeErr))
 			if err != nil {
 				return err
 			}
@@ -952,6 +964,34 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 // deleteLocalTableFiles delete table files for the given table name. If version is provided, only that version is deleted.
 func (d *db) deleteLocalTableFiles(name, version string) error {
 	return os.RemoveAll(d.localTableDir(name, version))
+}
+
+func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, meta *tableMeta) error) error {
+	entries, err := os.ReadDir(d.localPath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		meta, err := d.tableMeta(entry.Name())
+		if err != nil {
+			if !removeInvalidTable {
+				continue
+			}
+			err = d.deleteLocalTableFiles(entry.Name(), "")
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		err = fn(entry.Name(), meta)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *db) prepareSnapshot(ctx context.Context, conn *sqlx.Conn, s *snapshot) error {
