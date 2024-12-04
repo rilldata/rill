@@ -9,7 +9,7 @@ import (
 )
 
 func TestClient_DataDir(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	client := &Client{
 		dataDirPath: tempDir,
 	}
@@ -70,13 +70,13 @@ func TestClient_TempDir(t *testing.T) {
 			if _, err := os.Stat(got); os.IsNotExist(err) {
 				t.Errorf("Client.TempDir() path = %v, directory does not exist", got)
 			}
-			require.Equal(t, filepath.Join(append([]string{tempDir, "testprefix", "testtempdir"}, tt.elem...)...), got)
+			require.Equal(t, filepath.Join(append([]string{client.tempDirPath, "testprefix", "testtempdir"}, tt.elem...)...), got)
 		})
 	}
 }
 
 func TestClient_RandomTempDir(t *testing.T) {
-	tempDir := os.TempDir()
+	tempDir := t.TempDir()
 	client := &Client{
 		dataDirPath: tempDir,
 	}
@@ -105,7 +105,7 @@ func TestClient_RandomTempDir(t *testing.T) {
 			if _, err := os.Stat(got); os.IsNotExist(err) {
 				t.Errorf("Client.RandomTempDir() path = %v, directory does not exist", got)
 			}
-			require.Equal(t, filepath.Join(append([]string{tempDir}, tt.elem...)...), filepath.Dir(got))
+			require.Equal(t, filepath.Join(append([]string{client.tempDirPath}, tt.elem...)...), filepath.Dir(got))
 		})
 	}
 }

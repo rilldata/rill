@@ -17,13 +17,19 @@ import (
 
 type Client struct {
 	dataDirPath  string
+	tempDirPath  string
 	bucketConfig *gcsBucketConfig
 	prefixes     []string
 }
 
 func New(dataDir string, bucketCfg map[string]any) (*Client, error) {
+	tempDirPath, err := os.MkdirTemp("", "rill")
+	if err != nil {
+		return nil, err
+	}
 	c := &Client{
 		dataDirPath: dataDir,
+		tempDirPath: tempDirPath,
 	}
 
 	if len(bucketCfg) != 0 {
@@ -64,7 +70,7 @@ func (c *Client) RemovePrefix(ctx context.Context, prefix ...string) error {
 	removeErr := os.RemoveAll(c.path(c.dataDirPath, prefix...))
 
 	// clean temp dir
-	removeErr = errors.Join(removeErr, os.RemoveAll(c.path(os.TempDir(), prefix...)))
+	removeErr = errors.Join(removeErr, os.RemoveAll(c.path(c.tempDirPath, prefix...)))
 
 	// clean bucket
 	bkt, ok, err := c.OpenBucket(ctx, prefix...)
@@ -103,7 +109,7 @@ func (c *Client) DataDir(elem ...string) (string, error) {
 }
 
 func (c *Client) TempDir(elem ...string) (string, error) {
-	path := c.path(os.TempDir(), elem...)
+	path := c.path(c.tempDirPath, elem...)
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		return "", err
