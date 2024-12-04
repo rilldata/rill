@@ -3,7 +3,6 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
@@ -26,12 +25,11 @@ export const load = async ({ url, parent }) => {
       {}, // TODO
     );
     const newUrl = new URL(url);
-    const searchParamsFromTokenState = convertExploreStateToURLSearchParams(
-      exploreState,
+    newUrl.search = convertExploreStateToURLSearchParams(
+      exploreState as MetricsExplorerEntity,
       exploreSpec,
       defaultExplorePreset,
     );
-    mergeSearchParams(searchParamsFromTokenState, newUrl.searchParams);
     throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
   }
 

@@ -1,16 +1,17 @@
+import { browser } from "$app/environment";
 import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import {
+  FromActivePageMap,
+  ToURLParamViewMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { sessionStorageStore } from "@rilldata/web-common/lib/store-utils/session-storage";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
   V1ExploreWebView,
-  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -70,46 +71,106 @@ for (const webView in ExploreViewOtherKeys) {
   ExploreViewOtherKeys[webView] = [...otherKeys];
 }
 
-function getStoreForExploreWebView(exploreName: string, view: ExploreWebView) {
-  const key = `rill:app:explore:${exploreName}:${view}`;
-  return sessionStorageStore<V1ExplorePreset>(key, {});
+function getKeyForSessionStore(
+  exploreName: string,
+  prefix: string | undefined,
+  view: string,
+) {
+  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`;
 }
 
 export class ExploreWebViewStore {
   public readonly stores: Record<
     ExploreWebView,
-    ReturnType<typeof getStoreForExploreWebView>
+    ReturnType<typeof sessionStorageStore<V1ExplorePreset>>
   >;
 
-  public constructor(exploreName: string) {
+  public constructor(exploreName: string, prefix: string | undefined) {
     this.stores = {
       [V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]:
-        getStoreForExploreWebView(
-          exploreName,
-          V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED,
+        sessionStorageStore<V1ExplorePreset>(
+          getKeyForSessionStore(
+            exploreName,
+            prefix,
+            ToURLParamViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED]!,
+          ),
+          {},
         ),
-      [V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]: getStoreForExploreWebView(
-        exploreName,
-        V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
-      ),
+      [V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]:
+        sessionStorageStore<V1ExplorePreset>(
+          getKeyForSessionStore(
+            exploreName,
+            prefix,
+            ToURLParamViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE]!,
+          ),
+          {},
+        ),
       [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]:
-        getStoreForExploreWebView(
-          exploreName,
-          V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+        sessionStorageStore<V1ExplorePreset>(
+          getKeyForSessionStore(
+            exploreName,
+            prefix,
+            ToURLParamViewMap[
+              V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION
+            ]!,
+          ),
+          {},
         ),
-      [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: getStoreForExploreWebView(
-        exploreName,
-        V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+      [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]:
+        sessionStorageStore<V1ExplorePreset>(
+          getKeyForSessionStore(
+            exploreName,
+            prefix,
+            ToURLParamViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]!,
+          ),
+          {},
+        ),
+      [ExploreWebViewNonPivot]: sessionStorageStore<V1ExplorePreset>(
+        getKeyForSessionStore(
+          exploreName,
+          prefix,
+          ToURLParamViewMap[ExploreWebViewNonPivot],
+        ),
+        {},
       ),
-      [ExploreWebViewNonPivot]: getStoreForExploreWebView(
-        exploreName,
-        ExploreWebViewNonPivot,
-      ),
-      [V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]: getStoreForExploreWebView(
-        exploreName,
-        V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS,
-      ),
+      [V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]:
+        sessionStorageStore<V1ExplorePreset>(
+          getKeyForSessionStore(
+            exploreName,
+            prefix,
+            ToURLParamViewMap[V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]!,
+          ),
+          {},
+        ),
     };
+  }
+
+  public static hasPresetForView(
+    exploreName: string,
+    prefix: string | undefined,
+    view: string,
+  ) {
+    if (!browser) return false;
+    const key = getKeyForSessionStore(exploreName, prefix, view);
+    return !!sessionStorage.getItem(key);
+  }
+
+  public static getPresetForView(
+    exploreName: string,
+    prefix: string | undefined,
+    view: string,
+  ): V1ExplorePreset {
+    if (!browser) return {};
+    const key = getKeyForSessionStore(exploreName, prefix, view);
+    const stored = sessionStorage.getItem(key);
+    if (!stored) return {};
+    try {
+      const parsed = JSON.parse(stored);
+      return parsed as V1ExplorePreset;
+    } catch {
+      // ignore
+    }
+    return {};
   }
 
   public updateStores(
@@ -128,50 +189,10 @@ export class ExploreWebViewStore {
     this.updateStoreForView(view, exploreState, exploreSpec);
   }
 
-  public getUrlForView(
-    view: ExploreWebView,
-    exploreState: MetricsExplorerEntity,
-    metricsSpec: V1MetricsViewSpec,
-    exploreSpec: V1ExploreSpec,
-    // default set of fields used to determine which params will not be set in url
-    defaultExplorePreset: V1ExplorePreset,
-    // additional fields to be applied on top of fields in session store. this is used to parameterise opening of page.
-    // currently it is used to set the active measure for TTD
-    additionalPresetForView: V1ExplorePreset = {},
-  ) {
-    // convert the MetricsExplorerEntity to V1ExplorePreset
-    // TODO: we should eventually only use V1ExplorePreset across the app
-    const currentPreset = convertExploreStateToPreset(
-      exploreState,
-      exploreSpec,
-    );
-    const preset = {
-      ...currentPreset,
-      ...get(this.stores[view]),
-      ...additionalPresetForView,
-    };
-
-    for (const key of ExploreViewOtherKeys[view]) {
-      preset[key] = defaultExplorePreset[key] as any;
-    }
-    if (view !== ExploreWebViewNonPivot) {
-      preset.view = view;
-    }
-
-    const { partialExploreState } = convertPresetToExploreState(
-      metricsSpec,
-      exploreSpec,
-      preset,
-    );
-    const searchParams = convertExploreStateToURLSearchParams(
-      partialExploreState as MetricsExplorerEntity,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-    const u = new URL(get(page).url);
-    // clear any existing search params.
+  public static getUrlForView(pageUrl: URL, view: V1ExploreWebView) {
+    const u = new URL(pageUrl);
     u.search = "";
-    mergeSearchParams(searchParams, u.searchParams);
+    u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
     return u.pathname + u.search;
   }
 
@@ -183,10 +204,12 @@ export class ExploreWebViewStore {
   ) {
     const store = this.stores[storeView];
     const preset = convertExploreStateToPreset(exploreState, exploreSpec);
-    const storedPreset: V1ExplorePreset = {};
+    const storedPreset: V1ExplorePreset = {
+      ...preset,
+    };
 
-    for (const key of ExploreViewKeys[forView]) {
-      storedPreset[key] = preset[key] as any;
+    for (const key of ExploreViewOtherKeys[forView]) {
+      delete storedPreset[key];
     }
 
     store.set(storedPreset);

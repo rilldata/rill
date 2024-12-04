@@ -6,7 +6,6 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-  import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -43,12 +42,11 @@
     const u = new URL(
       `${$page.url.protocol}//${$page.url.host}${$page.url.pathname}`,
     );
-    const searchParamsFromDashboardState = convertExploreStateToURLSearchParams(
+    u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
       defaultExplorePreset,
     );
-    mergeSearchParams(searchParamsFromDashboardState, u.searchParams);
     const newUrl = u.toString();
     if (window.location.href !== newUrl) {
       void goto(newUrl);

@@ -1,7 +1,20 @@
 import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import {
+  convertPresetToExploreState,
+  convertURLToExploreState,
+} from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import {
+  FromURLParamViewMap,
+  ToURLParamViewMap,
+} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import type { ExploreState } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 import {
   createRuntimeServiceGetExplore,
   getQueryServiceMetricsViewTimeRangeQueryKey,
@@ -13,9 +26,10 @@ import {
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1ExplorePreset,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
-import { error } from "@sveltejs/kit";
+import { error, redirect } from "@sveltejs/kit";
 
 export function useExplore(
   instanceId: string,
@@ -131,4 +145,101 @@ export async function fetchExploreSpec(
     metricsView: metricsViewResource,
     defaultExplorePreset,
   };
+}
+
+// converts the url search params to a partial explore state.
+// if only the `view` param is set then it redirects to a new url with params loaded from sessionStorage for the view
+export function getPartialExploreStateOrRedirect(
+  exploreName: string,
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+  exploreSpec: V1ExploreSpec | undefined,
+  defaultExplorePreset: V1ExplorePreset,
+  prefix: string | undefined,
+  url: URL,
+) {
+  if (!metricsViewSpec || !exploreSpec) {
+    return {
+      partialExploreState: {},
+      errors: [],
+    };
+  }
+
+  maybeRedirectToViewWithParams(
+    exploreName,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+    prefix,
+    url,
+  );
+
+  // we didnt redirect so get partial state for current url
+  return convertURLToExploreState(
+    url.searchParams,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+  );
+}
+
+/**
+ * Redirects to a view with params loaded from session storage.
+ * 1. If only view param is set then load the params from session storage and build a new url.
+ * 2. If no param is set then load the params for the default view from session storage and build a new url.
+ * If the url from above either of the above is not the same as the current one then redirect.
+ *
+ * Since there could be some defaults defined, the new url even with no params could end up being the same as the current url.
+ * So to avoid a redirect loop we need to not redirect in this case.
+ */
+function maybeRedirectToViewWithParams(
+  exploreName: string,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  defaultExplorePreset: V1ExplorePreset,
+  prefix: string | undefined,
+  url: URL,
+) {
+  if (
+    // more than one param is set. ignore this case
+    url.searchParams.size > 1 ||
+    // exactly one param is set, but it is not `view`. ignore this case as well
+    (url.searchParams.size === 1 &&
+      !url.searchParams.has(ExploreStateURLParams.WebView))
+  ) {
+    return;
+  }
+
+  const view =
+    url.searchParams.get(ExploreStateURLParams.WebView) ??
+    ToURLParamViewMap[defaultExplorePreset.view!] ??
+    "unknown";
+  if (!ExploreWebViewStore.hasPresetForView(exploreName, prefix, view)) {
+    // session store has no data for the view
+    return;
+  }
+
+  const presetForView = ExploreWebViewStore.getPresetForView(
+    exploreName,
+    prefix,
+    view,
+  );
+
+  const { partialExploreState } = convertPresetToExploreState(
+    metricsViewSpec,
+    exploreSpec,
+    presetForView,
+  );
+
+  const newUrl = new URL(url);
+  newUrl.search = convertExploreStateToURLSearchParams(
+    partialExploreState as MetricsExplorerEntity,
+    exploreSpec,
+    defaultExplorePreset,
+  );
+  if (newUrl.toString() === url.toString()) {
+    // url hasn't changed, avoid redirect loop
+    return;
+  }
+
+  throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
 }

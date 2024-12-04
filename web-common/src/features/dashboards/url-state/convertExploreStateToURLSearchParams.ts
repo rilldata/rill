@@ -40,7 +40,7 @@ export function convertExploreStateToURLSearchParams(
 ) {
   const searchParams = new URLSearchParams();
 
-  if (!exploreState) return searchParams;
+  if (!exploreState) return searchParams.toString();
 
   const currentView = FromActivePageMap[exploreState.activePage];
   if (shouldSetParam(preset.view, currentView)) {
@@ -85,7 +85,7 @@ export function convertExploreStateToURLSearchParams(
       break;
   }
 
-  return searchParams;
+  return searchParams.toString();
 }
 
 function toTimeRangesUrl(

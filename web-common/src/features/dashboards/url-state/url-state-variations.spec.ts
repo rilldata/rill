@@ -49,7 +49,6 @@ import {
   initLocalUserPreferenceStore,
 } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -365,13 +364,10 @@ describe("Human readable URL state variations", () => {
 
         // load url params with updated metrics state
         const url = new URL("http://localhost");
-        mergeSearchParams(
-          convertExploreStateToURLSearchParams(
-            get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-            explore,
-            defaultExplorePreset,
-          ),
-          url.searchParams,
+        url.search = convertExploreStateToURLSearchParams(
+          get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+          explore,
+          defaultExplorePreset,
         );
         expect(url.toString()).to.eq(expectedUrl);
 

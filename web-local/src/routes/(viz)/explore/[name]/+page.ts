@@ -1,27 +1,19 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { getPartialExploreStateOrRedirect } from "@rilldata/web-common/features/explores/selectors";
 
-export const load = async ({ url, parent }) => {
+export const load = async ({ url, parent, params }) => {
   const { explore, metricsView, defaultExplorePreset } = await parent();
+  const { name: exploreName } = params;
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  // Get Explore state from URL params
-  let partialExploreState: Partial<MetricsExplorerEntity> = {};
-  const errors: Error[] = [];
-  if (metricsViewSpec && exploreSpec && url) {
-    const {
-      partialExploreState: partialExploreStateFromUrl,
-      errors: errorsFromConvert,
-    } = convertURLToExploreState(
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-    partialExploreState = partialExploreStateFromUrl;
-    errors.push(...errorsFromConvert);
-  }
+  const { partialExploreState, errors } = getPartialExploreStateOrRedirect(
+    exploreName,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+    undefined,
+    url,
+  );
 
   return {
     partialExploreState,

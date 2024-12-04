@@ -1,20 +1,13 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
   import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
 
-  const { dashboardStore, validSpecStore, webViewStore, defaultExploreState } =
-    getStateManagers();
-  $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
-  $: exploreSpec = $validSpecStore.data?.explore ?? {};
-
-  $: href = webViewStore.getUrlForView(
+  $: href = ExploreWebViewStore.getUrlForView(
+    $page.url,
     V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
-    $dashboardStore,
-    metricsSpec,
-    exploreSpec,
-    $defaultExploreState,
   );
 </script>
 

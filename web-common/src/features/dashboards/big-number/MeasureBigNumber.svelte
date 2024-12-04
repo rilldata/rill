@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -37,11 +38,6 @@
     comparisonValue && value !== undefined && value !== null
       ? (value - comparisonValue) / comparisonValue
       : undefined;
-
-  const { dashboardStore, validSpecStore, webViewStore, defaultExploreState } =
-    getStateManagers();
-  $: metricsSpec = $validSpecStore.data?.metricsView ?? {};
-  $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
   $: measureValueFormatter = createMeasureValueFormatter<null>(
     measure,
@@ -88,15 +84,9 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
-  $: tddHref = webViewStore.getUrlForView(
+  $: tddHref = ExploreWebViewStore.getUrlForView(
+    $page.url,
     V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-    $dashboardStore,
-    metricsSpec,
-    exploreSpec,
-    $defaultExploreState,
-    {
-      timeDimensionMeasure: measure.name,
-    },
   );
 
   function shiftClickHandler(number: string | undefined) {

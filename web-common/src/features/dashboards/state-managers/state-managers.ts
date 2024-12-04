@@ -146,7 +146,7 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
-  const webViewStore = new ExploreWebViewStore(exploreName);
+  const webViewStore = new ExploreWebViewStore(exploreName, extraKeyPrefix);
   const defaultExploreState = derived(
     [validSpecStore, timeRangeSummaryStore],
     ([validSpec, timeRangeSummary]) => {

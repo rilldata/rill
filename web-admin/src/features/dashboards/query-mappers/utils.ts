@@ -17,7 +17,6 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { mergeSearchParams } from "@rilldata/web-common/lib/url-utils";
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
   getRuntimeServiceGetExploreQueryKey,
@@ -253,11 +252,10 @@ export async function getExplorePageUrl(
   url.pathname = `/${organization}/${project}/explore/${exploreName}`;
 
   const exploreSpec = explore?.explore?.state?.validSpec;
-  const searchParamsFromMetrics = convertExploreStateToURLSearchParams(
+  url.search = convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec ?? {},
     exploreSpec?.defaultPreset ?? {},
   );
-  mergeSearchParams(searchParamsFromMetrics, url.searchParams);
   return url.toString();
 }
