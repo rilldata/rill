@@ -387,7 +387,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if h.repoPath == "" {
-		h.repoPath, err = os.MkdirTemp(h.storage.TempDir(), "admin_driver_repo")
+		h.repoPath, err = h.storage.RandomTempDir("admin_driver_repo")
 		if err != nil {
 			return err
 		}
@@ -573,7 +573,11 @@ func (h *Handle) stashVirtual() error {
 		return nil
 	}
 
-	dst, err := generateTmpPath(h.storage.TempDir(), "admin_driver_virtual_stash", "")
+	tempPath, err := h.storage.TempDir()
+	if err != nil {
+		return fmt.Errorf("stash virtual: %w", err)
+	}
+	dst, err := generateTmpPath(tempPath, "admin_driver_virtual_stash", "")
 	if err != nil {
 		return fmt.Errorf("stash virtual: %w", err)
 	}
@@ -618,7 +622,11 @@ func (h *Handle) download() error {
 	defer cancel()
 
 	// generate a temporary file to copy repo tar directory
-	downloadDst, err := generateTmpPath(h.storage.TempDir(), "admin_driver_zipped_repo", ".tar.gz")
+	tempPath, err := h.storage.TempDir()
+	if err != nil {
+		return fmt.Errorf("download: %w", err)
+	}
+	downloadDst, err := generateTmpPath(tempPath, "admin_driver_zipped_repo", ".tar.gz")
 	if err != nil {
 		return fmt.Errorf("download: %w", err)
 	}

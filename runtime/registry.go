@@ -16,12 +16,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gocloud.dev/blob"
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
@@ -110,7 +108,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
-	if err := storage.RemoveInstance(r.storage, inst.ID); err != nil {
+	if err := r.storage.RemovePrefix(ctx, inst.ID); err != nil {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
@@ -128,27 +126,17 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-// DataBucket returns a prefixed bucket for the given instance.
-// This bucket is used for storing data that is expected to be persisted across resets.
-func (r *Runtime) DataBucket(instanceID string, elem ...string) *blob.Bucket {
-	b := blob.PrefixedBucket(r.dataBucket, instanceID)
-	for _, e := range elem {
-		b = blob.PrefixedBucket(b, e)
-	}
-	return b
-}
-
-// DataDir returns the path to a persistent data directory for the given instance.
+// DataDir returns the path to a persistent data directory for the given instance. The directory is created if it doesn't exist.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
-func (r *Runtime) DataDir(instanceID string, elem ...string) string {
+func (r *Runtime) DataDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).DataDir(elem...)
 }
 
-// TempDir returns the path to a temporary directory for the given instance.
-// The TempDir is a fixed location. The caller is responsible for using a unique subdirectory name and cleaning up after use.
+// TempDir returns the path to a temporary directory for the given instance. The directory is created if it doesn't exist.
+// The TempDir is a fixed location. The caller is responsible for cleaning up after use.
 // The TempDir may be cleared after restarts.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
-func (r *Runtime) TempDir(instanceID string, elem ...string) string {
+func (r *Runtime) TempDir(instanceID string, elem ...string) (string, error) {
 	return r.storage.WithPrefix(instanceID).TempDir(elem...)
 }
 
@@ -337,10 +325,6 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
-	err := storage.AddInstance(r.rt.storage, inst.ID)
-	if err != nil {
-		return err
-	}
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
@@ -560,7 +544,11 @@ func (r *registryCache) emitHeartbeats() {
 }
 
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
-	dataDir := r.rt.storage.WithPrefix(inst.ID).DataDir()
+	dataDir, err := r.rt.storage.WithPrefix(inst.ID).DataDir()
+	if err != nil {
+		r.logger.Error("failed to send instance heartbeat event, could not get data directory", zap.String("instance_id", inst.ID), zap.Error(err))
+		return
+	}
 
 	// Add instance annotations as attributes to pass organization id, project id, etc.
 	attrs := instanceAnnotationsToAttribs(inst)

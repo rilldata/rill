@@ -361,7 +361,11 @@ func (r *globResolver) transformResult(ctx context.Context, rows []map[string]an
 }
 
 func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error) {
-	f, err := os.CreateTemp(r.runtime.TempDir(r.instanceID), "glob_result_*.ndjson")
+	tempDir, err := r.runtime.TempDir(r.instanceID)
+	if err != nil {
+		return "", err
+	}
+	f, err := os.CreateTemp(tempDir, "glob_result_*.ndjson")
 	if err != nil {
 		return "", err
 	}

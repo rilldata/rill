@@ -173,7 +173,16 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	} else {
 		// run clickhouse locally
-		embed = newEmbedClickHouse(conf.EmbedPort, st.DataDir(), st.TempDir(), logger)
+		dataDir, err := st.DataDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+		tempDir, err := st.TempDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err
