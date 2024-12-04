@@ -34,6 +34,7 @@
   export let isRowsEmpty = true;
   export let searchText: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const exportDash = createQueryServiceExport();
 
@@ -219,14 +220,16 @@
         exploreName={$exploreName}
       />
     {/if}
-    <button
-      class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
-      on:click={() => {
-        startPivotForDimensionTable();
-      }}
-    >
-      Start Pivot
-    </button>
+    {#if !hideStartPivotButton}
+      <button
+        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
+        on:click={() => {
+          startPivotForDimensionTable();
+        }}
+      >
+        Start Pivot
+      </button>
+    {/if}
   </div>
 </div>
 
