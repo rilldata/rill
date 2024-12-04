@@ -37,6 +37,9 @@
         },
         refetchOnMount: true,
         keepPreviousData: true,
+        onError: () => {
+          stopPolling();
+        },
       },
     },
   );
