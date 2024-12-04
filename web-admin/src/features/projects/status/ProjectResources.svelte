@@ -18,6 +18,7 @@
 
   let startRefetchInterval = false;
   let isRefreshConfirmDialogOpen = false;
+  let refetchKey = 0;
 
   $: allResources = createRuntimeServiceListResources(
     $runtime.instanceId,
@@ -34,16 +35,19 @@
         },
         refetchOnMount: true,
         refetchInterval: startRefetchInterval ? 500 : false,
+        queryKey: ["resources", refetchKey],
       },
     },
   );
 
-  $: isAnySourceOrModelReconciling = $allResources?.data?.some(
-    (resource) =>
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+  $: isAnySourceOrModelReconciling = Boolean(
+    $allResources?.data?.some(
+      (resource) =>
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    ),
   );
 
   function refreshAllSourcesAndModels() {
@@ -70,8 +74,12 @@
   }
 
   function triggerRefresh() {
+    // Force a new query
+    refetchKey++;
+
     startRefetchInterval = true;
 
+    // Refetch the resources
     void $allResources.refetch();
   }
 </script>
