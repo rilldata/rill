@@ -543,7 +543,7 @@ test.describe("pivot run through", () => {
     const previewButton = page.getByRole("button", { name: "Preview" });
     await previewButton.click();
 
-    const pivotButton = page.getByRole("button", {
+    const pivotButton = page.getByRole("link", {
       name: "Pivot",
       exact: true,
     });
