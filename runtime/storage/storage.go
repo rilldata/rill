@@ -54,6 +54,7 @@ func MustNew(dataDir string, bucketCfg map[string]any) *Client {
 func (c *Client) WithPrefix(prefix ...string) *Client {
 	newClient := &Client{
 		dataDirPath:  c.dataDirPath,
+		tempDirPath:  c.tempDirPath,
 		bucketConfig: c.bucketConfig,
 	}
 	newClient.prefixes = append(newClient.prefixes, c.prefixes...)
