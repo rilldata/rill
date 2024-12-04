@@ -296,7 +296,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return err
 		}
-		// list partitions from the temp table using system.parts
+		// list partitions from the temp table
 		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
 			return err
@@ -541,12 +541,13 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 		fmt.Fprintf(&create, " %s ", outputProps.Columns)
 	}
 
+	tableConfig := outputProps.tblConfig()
+	create.WriteString(tableConfig)
+
 	// validate incremental strategy
-	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyMerge && outputProps.PartitionBy == "" {
+	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyMerge && !strings.Contains(tableConfig, "PARTITION BY") {
 		return fmt.Errorf("clickhouse: incremental strategy merge requires a partition key")
 	}
-
-	create.WriteString(outputProps.tblConfig())
 
 	// create table
 	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
@@ -749,7 +750,8 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 
 func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = '%s'", name),
+		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = ?"),
+		Args:     []any{name},
 		Priority: 1,
 	})
 	if err != nil {
