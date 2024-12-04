@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
@@ -269,8 +270,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		if engine == "Distributed" {
 			name = localTableName(name)
 		}
-		// create temp table with the same schema
-		tempName := tempName(name)
+		// create temp table with the same schema using a deterministic name
+		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
 		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
 			Priority: 1,
@@ -280,6 +281,16 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		// clean up the temp table
 		defer func() {
+			var cancel context.CancelFunc
+
+			// If the original context is cancelled, create a new context for cleanup
+			if ctx.Err() != nil {
+				ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
+			} else {
+				cancel = func() {}
+			}
+			defer cancel()
+
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
 				Priority: 1,
