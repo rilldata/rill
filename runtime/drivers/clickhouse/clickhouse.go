@@ -93,6 +93,8 @@ var maxOpenConnections = 20
 type driver struct{}
 
 type configProperties struct {
+	// Provision is set on local if `managed: true` is set for the connector.
+	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
 	DSN      string `mapstructure:"dsn"`
 	Username string `mapstructure:"username"`
@@ -173,7 +175,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
 		}
-	} else {
+	} else if conf.Provision {
 		// run clickhouse locally
 		embed = newEmbedClickHouse(conf.EmbedPort, conf.DataDir, conf.TempDir, logger)
 		opts, err = embed.start()

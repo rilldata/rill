@@ -4872,6 +4872,49 @@ export class CharLocation extends Message<CharLocation> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ConnectorV2
+ */
+export class ConnectorV2 extends Message<ConnectorV2> {
+  /**
+   * @generated from field: rill.runtime.v1.ConnectorSpec spec = 1;
+   */
+  spec?: ConnectorSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.ConnectorState state = 2;
+   */
+  state?: ConnectorState;
+
+  constructor(data?: PartialMessage<ConnectorV2>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectorV2";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: ConnectorSpec },
+    { no: 2, name: "state", kind: "message", T: ConnectorState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectorV2 | PlainMessage<ConnectorV2> | undefined, b: ConnectorV2 | PlainMessage<ConnectorV2> | undefined): boolean {
+    return proto3.util.equals(ConnectorV2, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ConnectorSpec
  */
 export class ConnectorSpec extends Message<ConnectorSpec> {
@@ -4889,6 +4932,16 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    * @generated from field: repeated string templated_properties = 4;
    */
   templatedProperties: string[] = [];
+
+  /**
+   * @generated from field: bool provision = 5;
+   */
+  provision = false;
+
+  /**
+   * @generated from field: google.protobuf.Struct provision_args = 6;
+   */
+  provisionArgs?: Struct;
 
   /**
    * DEPRECATED: properties_from_variables stores properties whose value is a variable.
@@ -4909,6 +4962,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "provision_args", kind: "message", T: Struct },
     { no: 3, name: "properties_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -4963,49 +5018,6 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ConnectorV2
- */
-export class ConnectorV2 extends Message<ConnectorV2> {
-  /**
-   * @generated from field: rill.runtime.v1.ConnectorSpec spec = 1;
-   */
-  spec?: ConnectorSpec;
-
-  /**
-   * @generated from field: rill.runtime.v1.ConnectorState state = 2;
-   */
-  state?: ConnectorState;
-
-  constructor(data?: PartialMessage<ConnectorV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ConnectorV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "spec", kind: "message", T: ConnectorSpec },
-    { no: 2, name: "state", kind: "message", T: ConnectorState },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ConnectorV2 | PlainMessage<ConnectorV2> | undefined, b: ConnectorV2 | PlainMessage<ConnectorV2> | undefined): boolean {
-    return proto3.util.equals(ConnectorV2, a, b);
   }
 }
 
