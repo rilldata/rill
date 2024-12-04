@@ -172,7 +172,7 @@ function fromTimeRangesParams(
   if (preset.selectTimeRange) {
     partialExploreState.selectedScrubRange = {
       ...fromTimeRangeUrlParam(preset.selectTimeRange),
-      isScrubbing: true,
+      isScrubbing: false,
     };
   }
 
