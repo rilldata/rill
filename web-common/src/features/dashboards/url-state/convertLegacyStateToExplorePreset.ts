@@ -9,10 +9,7 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  ExploreStateDefaultChartType,
-  ExploreStateDefaultTimezone,
-} from "@rilldata/web-common/features/dashboards/url-state/defaults";
+import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -177,7 +174,7 @@ function fromLegacyTimeRangeFields(
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE;
   }
 
-  preset.timezone = legacyState.selectedTimezone ?? ExploreStateDefaultTimezone;
+  preset.timezone = legacyState.selectedTimezone ?? preset.timezone;
 
   // TODO: scrubRange
 

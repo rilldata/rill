@@ -20,6 +20,7 @@ import {
   FromURLParamTimeRangePresetMap,
   FromURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   getMapFromArray,
   getMissingValues,
@@ -64,8 +65,10 @@ export function convertURLToExplorePreset(
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.
-  if (searchParams.has("state")) {
-    const legacyState = searchParams.get("state") as string;
+  if (searchParams.has(ExploreStateURLParams.LegacyProtoState)) {
+    const legacyState = searchParams.get(
+      ExploreStateURLParams.LegacyProtoState,
+    ) as string;
     const { preset: presetFromLegacyState, errors: errorsFromLegacyState } =
       fromLegacyStateUrlParam(
         legacyState,
@@ -77,8 +80,8 @@ export function convertURLToExplorePreset(
     errors.push(...errorsFromLegacyState);
   }
 
-  if (searchParams.has("view")) {
-    const view = searchParams.get("view") as string;
+  if (searchParams.has(ExploreStateURLParams.WebView)) {
+    const view = searchParams.get(ExploreStateURLParams.WebView) as string;
     if (view in FromURLParamViewMap) {
       preset.view = FromURLParamViewMap[view];
     } else {
@@ -86,9 +89,9 @@ export function convertURLToExplorePreset(
     }
   }
 
-  if (searchParams.has("f")) {
+  if (searchParams.has(ExploreStateURLParams.Filters)) {
     const { expr, errors: filterErrors } = fromFilterUrlParam(
-      searchParams.get("f") as string,
+      searchParams.get(ExploreStateURLParams.Filters) as string,
       measures,
       dimensions,
     );
@@ -106,8 +109,7 @@ export function convertURLToExplorePreset(
   // only extract params if the view is explicitly set to the relevant one
   switch (preset.view) {
     case V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE:
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED:
-      // eslint-disable-next-line no-case-declarations
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED: {
       const { preset: ovPreset, errors: ovErrors } = fromExploreUrlParams(
         searchParams,
         measures,
@@ -117,17 +119,17 @@ export function convertURLToExplorePreset(
       Object.assign(preset, ovPreset);
       errors.push(...ovErrors);
       break;
+    }
 
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION:
-      // eslint-disable-next-line no-case-declarations
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION: {
       const { preset: tddPreset, errors: tddErrors } =
         fromTimeDimensionUrlParams(searchParams, measures);
       Object.assign(preset, tddPreset);
       errors.push(...tddErrors);
       break;
+    }
 
-    case V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT:
-      // eslint-disable-next-line no-case-declarations
+    case V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT: {
       const { preset: pivotPreset, errors: pivotErrors } = fromPivotUrlParams(
         searchParams,
         measures,
@@ -136,6 +138,7 @@ export function convertURLToExplorePreset(
       Object.assign(preset, pivotPreset);
       errors.push(...pivotErrors);
       break;
+    }
   }
 
   return { preset, errors };
@@ -239,8 +242,8 @@ function fromTimeRangesParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("tr")) {
-    const tr = searchParams.get("tr") as string;
+  if (searchParams.has(ExploreStateURLParams.TimeRange)) {
+    const tr = searchParams.get(ExploreStateURLParams.TimeRange) as string;
     if (
       tr in FromURLParamTimeRangePresetMap ||
       validateISODuration(tr) ||
@@ -252,12 +255,16 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("tz")) {
-    preset.timezone = searchParams.get("tz") as string;
+  if (searchParams.has(ExploreStateURLParams.TimeZone)) {
+    preset.timezone = searchParams.get(
+      ExploreStateURLParams.TimeZone,
+    ) as string;
   }
 
-  if (searchParams.has("compare_tr")) {
-    const ctr = searchParams.get("compare_tr") as string;
+  if (searchParams.has(ExploreStateURLParams.ComparisonTimeRange)) {
+    const ctr = searchParams.get(
+      ExploreStateURLParams.ComparisonTimeRange,
+    ) as string;
     if (ctr in TIME_COMPARISON || CustomTimeRangeRegex.test(ctr)) {
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
@@ -267,8 +274,8 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("grain")) {
-    const tg = searchParams.get("grain") as string;
+  if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
+    const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
     if (tg in FromURLParamTimeGrainMap) {
       preset.timeGrain = tg;
     } else {
@@ -276,8 +283,10 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("compare_dim")) {
-    const comparisonDimension = searchParams.get("compare_dim") as string;
+  if (searchParams.has(ExploreStateURLParams.ComparisonDimension)) {
+    const comparisonDimension = searchParams.get(
+      ExploreStateURLParams.ComparisonDimension,
+    ) as string;
     // unsetting a default from url
     if (comparisonDimension === "") {
       preset.comparisonDimension = "";
@@ -294,8 +303,10 @@ function fromTimeRangesParams(
     }
   }
 
-  if (searchParams.has("highlighted_tr")) {
-    const selectTr = searchParams.get("highlighted_tr") as string;
+  if (searchParams.has(ExploreStateURLParams.HighlightedTimeRange)) {
+    const selectTr = searchParams.get(
+      ExploreStateURLParams.HighlightedTimeRange,
+    ) as string;
     if (CustomTimeRangeRegex.test(selectTr)) {
       preset.selectTimeRange = selectTr;
     } else {
@@ -314,8 +325,10 @@ function fromExploreUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("measures")) {
-    const mes = searchParams.get("measures") as string;
+  if (searchParams.has(ExploreStateURLParams.VisibleMeasures)) {
+    const mes = searchParams.get(
+      ExploreStateURLParams.VisibleMeasures,
+    ) as string;
     if (mes === "*") {
       preset.measures = explore.measures ?? [];
     } else {
@@ -331,8 +344,10 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has("dims")) {
-    const dims = searchParams.get("dims") as string;
+  if (searchParams.has(ExploreStateURLParams.VisibleDimensions)) {
+    const dims = searchParams.get(
+      ExploreStateURLParams.VisibleDimensions,
+    ) as string;
     if (dims === "*") {
       preset.dimensions = explore.dimensions ?? [];
     } else {
@@ -350,8 +365,10 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has("expand_dim")) {
-    const dim = searchParams.get("expand_dim") as string;
+  if (searchParams.has(ExploreStateURLParams.ExpandedDimension)) {
+    const dim = searchParams.get(
+      ExploreStateURLParams.ExpandedDimension,
+    ) as string;
     if (
       dimensions.has(dim) ||
       // we are unsetting from a default preset
@@ -363,8 +380,8 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has("sort_by")) {
-    const sortBy = searchParams.get("sort_by") as string;
+  if (searchParams.has(ExploreStateURLParams.SortBy)) {
+    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
     if (measures.has(sortBy)) {
       preset.exploreSortBy = sortBy;
     } else {
@@ -372,12 +389,14 @@ function fromExploreUrlParams(
     }
   }
 
-  if (searchParams.has("sort_dir")) {
-    preset.exploreSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
+  if (searchParams.has(ExploreStateURLParams.SortDirection)) {
+    preset.exploreSortAsc =
+      (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
+      "ASC";
   }
 
-  if (searchParams.has("sort_type")) {
-    const sortType = searchParams.get("sort_type") as string;
+  if (searchParams.has(ExploreStateURLParams.SortType)) {
+    const sortType = searchParams.get(ExploreStateURLParams.SortType) as string;
     if (sortType in FromURLParamsSortTypeMap) {
       preset.exploreSortType = FromURLParamsSortTypeMap[sortType];
     } else {
@@ -395,8 +414,10 @@ function fromTimeDimensionUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("measure")) {
-    const mes = searchParams.get("measure") as string;
+  if (searchParams.has(ExploreStateURLParams.ExpandedMeasure)) {
+    const mes = searchParams.get(
+      ExploreStateURLParams.ExpandedMeasure,
+    ) as string;
     if (
       measures.has(mes) ||
       // we are unsetting from a default preset
@@ -407,10 +428,12 @@ function fromTimeDimensionUrlParams(
       errors.push(getSingleFieldError("expanded measure", mes));
     }
   }
-  if (searchParams.has("chart_type")) {
-    preset.timeDimensionChartType = searchParams.get("chart_type") as string;
+  if (searchParams.has(ExploreStateURLParams.ChartType)) {
+    preset.timeDimensionChartType = searchParams.get(
+      ExploreStateURLParams.ChartType,
+    ) as string;
   }
-  if (searchParams.has("pin")) {
+  if (searchParams.has(ExploreStateURLParams.Pin)) {
     preset.timeDimensionPin = true;
   }
 
@@ -428,8 +451,10 @@ function fromPivotUrlParams(
   const preset: V1ExplorePreset = {};
   const errors: Error[] = [];
 
-  if (searchParams.has("rows")) {
-    const rows = (searchParams.get("rows") as string).split(",");
+  if (searchParams.has(ExploreStateURLParams.PivotRows)) {
+    const rows = (
+      searchParams.get(ExploreStateURLParams.PivotRows) as string
+    ).split(",");
     const validRows = rows.filter(
       (r) => dimensions.has(r) || r in FromURLParamTimeDimensionMap,
     );
@@ -440,8 +465,10 @@ function fromPivotUrlParams(
     }
   }
 
-  if (searchParams.has("cols")) {
-    const cols = (searchParams.get("cols") as string).split(",");
+  if (searchParams.has(ExploreStateURLParams.PivotColumns)) {
+    const cols = (
+      searchParams.get(ExploreStateURLParams.PivotColumns) as string
+    ).split(",");
     const validCols = cols.filter(
       (c) =>
         dimensions.has(c) ||
@@ -455,13 +482,15 @@ function fromPivotUrlParams(
     }
   }
 
-  if (searchParams.has("sort_by")) {
-    const sortBy = searchParams.get("sort_by") as string;
+  if (searchParams.has(ExploreStateURLParams.SortBy)) {
+    const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
     preset.pivotSortBy = sortBy;
   }
 
-  if (searchParams.has("sort_dir")) {
-    preset.pivotSortAsc = (searchParams.get("sort_dir") as string) === "ASC";
+  if (searchParams.has(ExploreStateURLParams.SortDirection)) {
+    preset.pivotSortAsc =
+      (searchParams.get(ExploreStateURLParams.SortDirection) as string) ===
+      "ASC";
   }
 
   // TODO: other fields like expanded state and pin are not supported right now

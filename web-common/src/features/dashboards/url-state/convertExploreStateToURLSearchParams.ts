@@ -5,12 +5,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  ExploreStateDefaultSortDirection,
-  ExploreStateDefaultTDDChartType,
-  ExploreStateDefaultTimeRange,
-  ExploreStateDefaultTimezone,
-} from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
@@ -21,6 +15,7 @@ import {
   ToURLParamTimeGrainMapMap,
   ToURLParamViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import {
   arrayOrderedEquals,
   arrayUnorderedEquals,
@@ -36,7 +31,6 @@ import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/u
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
-  V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 
 export function convertExploreStateToURLSearchParams(
@@ -49,14 +43,11 @@ export function convertExploreStateToURLSearchParams(
   if (!exploreState) return searchParams;
 
   const currentView = FromActivePageMap[exploreState.activePage];
-  if (
-    shouldSetParamWithDefault(
-      preset.view,
-      currentView,
-      V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
-    )
-  ) {
-    searchParams.set("view", ToURLParamViewMap[currentView] as string);
+  if (shouldSetParam(preset.view, currentView)) {
+    searchParams.set(
+      ExploreStateURLParams.WebView,
+      ToURLParamViewMap[currentView] as string,
+    );
   }
 
   mergeSearchParams(
@@ -66,7 +57,10 @@ export function convertExploreStateToURLSearchParams(
 
   const expr = mergeMeasureFilters(exploreState);
   if (expr && expr?.cond?.exprs?.length) {
-    searchParams.set("f", convertExpressionToFilterParam(expr));
+    searchParams.set(
+      ExploreStateURLParams.Filters,
+      convertExpressionToFilterParam(expr),
+    );
   }
 
   switch (exploreState.activePage) {
@@ -101,24 +95,18 @@ function toTimeRangesUrl(
 ) {
   const searchParams = new URLSearchParams();
 
-  if (
-    (preset.timeRange !== undefined &&
-      exploreState.selectedTimeRange !== undefined &&
-      exploreState.selectedTimeRange.name !== preset.timeRange) ||
-    (preset.timeRange === undefined &&
-      exploreState.selectedTimeRange?.name !== ExploreStateDefaultTimeRange)
-  ) {
-    searchParams.set("tr", toTimeRangeParam(exploreState.selectedTimeRange));
+  if (shouldSetParam(preset.timeRange, exploreState.selectedTimeRange?.name)) {
+    searchParams.set(
+      ExploreStateURLParams.TimeRange,
+      toTimeRangeParam(exploreState.selectedTimeRange),
+    );
   }
 
-  if (
-    shouldSetParamWithDefault(
-      preset.timezone,
+  if (shouldSetParam(preset.timezone, exploreState.selectedTimezone)) {
+    searchParams.set(
+      ExploreStateURLParams.TimeZone,
       exploreState.selectedTimezone,
-      ExploreStateDefaultTimezone,
-    )
-  ) {
-    searchParams.set("tz", exploreState.selectedTimezone);
+    );
   }
 
   if (exploreState.showTimeComparison) {
@@ -130,7 +118,7 @@ function toTimeRangesUrl(
       preset.compareTimeRange === undefined
     ) {
       searchParams.set(
-        "compare_tr",
+        ExploreStateURLParams.ComparisonTimeRange,
         toTimeRangeParam(exploreState.selectedComparisonTimeRange),
       );
     } else if (
@@ -143,7 +131,10 @@ function toTimeRangesUrl(
         exploreState.selectedTimeRange.name,
       );
       if (inferredCompareTimeRange)
-        searchParams.set("compare_tr", inferredCompareTimeRange);
+        searchParams.set(
+          ExploreStateURLParams.ComparisonTimeRange,
+          inferredCompareTimeRange,
+        );
     }
   }
 
@@ -151,7 +142,7 @@ function toTimeRangesUrl(
     ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
     "";
   if (shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
-    searchParams.set("grain", mappedTimeGrain);
+    searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
   if (
@@ -162,7 +153,7 @@ function toTimeRangesUrl(
   ) {
     // TODO: move this based on expected param sequence
     searchParams.set(
-      "compare_dim",
+      ExploreStateURLParams.ComparisonDimension,
       exploreState.selectedComparisonDimension ?? "",
     );
   }
@@ -172,7 +163,7 @@ function toTimeRangesUrl(
     !exploreState.selectedScrubRange.isScrubbing
   ) {
     searchParams.set(
-      "highlighted_tr",
+      ExploreStateURLParams.HighlightedTimeRange,
       toTimeRangeParam(exploreState.selectedScrubRange),
     );
   }
@@ -208,7 +199,10 @@ function toExploreUrl(
     preset,
   );
   if (visibleMeasuresParam) {
-    searchParams.set("measures", visibleMeasuresParam);
+    searchParams.set(
+      ExploreStateURLParams.VisibleMeasures,
+      visibleMeasuresParam,
+    );
   }
 
   const visibleDimensionsParam = toVisibleDimensionsUrlParam(
@@ -217,7 +211,10 @@ function toExploreUrl(
     preset,
   );
   if (visibleDimensionsParam) {
-    searchParams.set("dims", visibleDimensionsParam);
+    searchParams.set(
+      ExploreStateURLParams.VisibleDimensions,
+      visibleDimensionsParam,
+    );
   }
 
   if (
@@ -226,36 +223,35 @@ function toExploreUrl(
       exploreState.selectedDimensionName,
     )
   ) {
-    searchParams.set("expand_dim", exploreState.selectedDimensionName ?? "");
+    searchParams.set(
+      ExploreStateURLParams.ExpandedDimension,
+      exploreState.selectedDimensionName ?? "",
+    );
   }
 
-  const defaultLeaderboardMeasure =
-    preset.measures?.[0] ?? exploreSpec.measures?.[0];
   if (
-    shouldSetParamWithDefault(
-      preset.exploreSortBy,
-      exploreState.leaderboardMeasureName,
-      defaultLeaderboardMeasure,
-    )
+    shouldSetParam(preset.exploreSortBy, exploreState.leaderboardMeasureName)
   ) {
-    searchParams.set("sort_by", exploreState.leaderboardMeasureName);
+    searchParams.set(
+      ExploreStateURLParams.SortBy,
+      exploreState.leaderboardMeasureName,
+    );
   }
 
   const sortType = FromLegacySortTypeMap[exploreState.dashboardSortType];
   if (shouldSetParam(preset.exploreSortType, sortType)) {
-    searchParams.set("sort_type", ToURLParamSortTypeMap[sortType] ?? "");
+    searchParams.set(
+      ExploreStateURLParams.SortType,
+      ToURLParamSortTypeMap[sortType] ?? "",
+    );
   }
 
   const sortAsc = exploreState.sortDirection === SortDirection.ASCENDING;
-  if (
-    // if preset has a sort direction then only set if not the same
-    (preset.exploreSortAsc !== undefined &&
-      preset.exploreSortAsc !== sortAsc) ||
-    // else if the direction is not the default then set the param
-    (preset.exploreSortAsc === undefined &&
-      exploreState.sortDirection !== ExploreStateDefaultSortDirection)
-  ) {
-    searchParams.set("sort_dir", sortAsc ? "ASC" : "DESC");
+  if (shouldSetParam(preset.exploreSortAsc, sortAsc)) {
+    searchParams.set(
+      ExploreStateURLParams.SortDirection,
+      sortAsc ? "ASC" : "DESC",
+    );
   }
 
   return searchParams;
@@ -310,18 +306,15 @@ function toTimeDimensionUrlParams(
       exploreState.tdd.expandedMeasureName,
     )
   ) {
-    searchParams.set("measure", exploreState.tdd.expandedMeasureName ?? "");
+    searchParams.set(
+      ExploreStateURLParams.ExpandedMeasure,
+      exploreState.tdd.expandedMeasureName ?? "",
+    );
   }
 
   const chartType = ToURLParamTDDChartMap[exploreState.tdd.chartType];
-  if (
-    shouldSetParamWithDefault(
-      preset.timeDimensionChartType,
-      chartType,
-      ExploreStateDefaultTDDChartType,
-    )
-  ) {
-    searchParams.set("chart_type", chartType ?? "");
+  if (shouldSetParam(preset.timeDimensionChartType, chartType)) {
+    searchParams.set(ExploreStateURLParams.ChartType, chartType ?? "");
   }
 
   // TODO: pin
@@ -344,7 +337,7 @@ function toPivotUrlParams(
 
   const rows = exploreState.pivot.rows.dimension.map(mapPivotEntry);
   if (!arrayOrderedEquals(rows, preset.pivotRows ?? [])) {
-    searchParams.set("rows", rows.join(","));
+    searchParams.set(ExploreStateURLParams.PivotRows, rows.join(","));
   }
 
   const cols = [
@@ -352,7 +345,7 @@ function toPivotUrlParams(
     ...exploreState.pivot.columns.measure.map(mapPivotEntry),
   ];
   if (!arrayOrderedEquals(cols, preset.pivotCols ?? [])) {
-    searchParams.set("cols", cols.join(","));
+    searchParams.set(ExploreStateURLParams.PivotColumns, cols.join(","));
   }
 
   const sort = exploreState.pivot.sorting?.[0];
@@ -361,10 +354,13 @@ function toPivotUrlParams(
       ? ToURLParamTimeDimensionMap[sort?.id]
       : sort?.id;
   if (shouldSetParam(preset.pivotSortBy, sortId)) {
-    searchParams.set("sort_by", sortId ?? "");
+    searchParams.set(ExploreStateURLParams.SortBy, sortId ?? "");
   }
   if (sort && !!preset.pivotSortAsc !== !sort?.desc) {
-    searchParams.set("sort_dir", sort?.desc ? "DESC" : "ASC");
+    searchParams.set(
+      ExploreStateURLParams.SortDirection,
+      sort?.desc ? "DESC" : "ASC",
+    );
   }
 
   // TODO: other fields like expanded state and pin are not supported right now
@@ -378,25 +374,6 @@ function shouldSetParam<T>(
   // there is no value in preset, set param only if state has a value
   if (presetValue === undefined) {
     return !!exploreStateValue;
-  }
-
-  // both preset and state value is non-truthy.
-  // EG: one is "" and another is undefined then we should not set param as empty string
-  if (!presetValue && !exploreStateValue) {
-    return false;
-  }
-
-  return presetValue !== exploreStateValue;
-}
-
-function shouldSetParamWithDefault<T>(
-  presetValue: T | undefined,
-  exploreStateValue: T | undefined,
-  defaultValue: T,
-) {
-  // there is no value in preset, set param only if state has a value
-  if (presetValue === undefined) {
-    return exploreStateValue != defaultValue;
   }
 
   // both preset and state value is non-truthy.

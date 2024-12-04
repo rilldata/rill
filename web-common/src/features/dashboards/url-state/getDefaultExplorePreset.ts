@@ -1,12 +1,6 @@
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
-import {
-  ExploreStateDefaultCompareMode,
-  ExploreStateDefaultTDDChartType,
-  ExploreStateDefaultTimeRange,
-  ExploreStateDefaultTimezone,
-  ExploreStateDefaultView,
-} from "@rilldata/web-common/features/dashboards/url-state/defaults";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
@@ -18,6 +12,7 @@ import {
   V1ExploreSortType,
   type V1ExplorePreset,
   type V1ExploreSpec,
+  V1ExploreWebView,
   type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 
@@ -27,27 +22,27 @@ export function getDefaultExplorePreset(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
-    view: ExploreStateDefaultView,
+    view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
     where: createAndExpression([]),
 
     measures: explore.measures,
     dimensions: explore.dimensions,
 
-    timeRange: ExploreStateDefaultTimeRange,
-    timezone: preferences.timeZone ?? ExploreStateDefaultTimezone,
+    timeRange: "inf",
+    timezone: preferences.timeZone ?? "UTC",
     timeGrain: "",
-    comparisonMode: ExploreStateDefaultCompareMode,
+    comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
     comparisonDimension: "",
 
-    exploreSortBy: explore.measures?.[0],
+    exploreSortBy:
+      explore.defaultPreset?.measures?.[0] ?? explore.measures?.[0],
     exploreSortAsc: false,
     exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_VALUE,
     exploreExpandedDimension: "",
 
     timeDimensionMeasure: "",
-    timeDimensionChartType:
-      ToURLParamTDDChartMap[ExploreStateDefaultTDDChartType],
+    timeDimensionChartType: ToURLParamTDDChartMap[TDDChart.DEFAULT],
     timeDimensionPin: false,
 
     pivotCols: [],
