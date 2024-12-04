@@ -57,6 +57,7 @@ func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(
 			versionReferenceCounts: map[string]int{},
 			versionMeta:            map[string]*tableMeta{meta.Version: meta},
 		}
+		c.acquireVersion(c.tables[meta.Name], meta.Version)
 	}
 	_ = c.acquireSnapshotUnsafe()
 	return c

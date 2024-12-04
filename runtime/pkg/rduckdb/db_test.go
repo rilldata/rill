@@ -224,7 +224,23 @@ func TestResetLocal(t *testing.T) {
 		Logger:        logger,
 	})
 	require.NoError(t, err)
-	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+
+	// acquire connection
+	conn, release, err := db.AcquireReadConnection(ctx)
+	require.NoError(t, err)
+
+	// drop table
+	err = db.DropTable(ctx, "test")
+	require.NoError(t, err)
+
+	// verify table is still accessible
+	verifyTableForConn(t, conn, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, release())
+
+	// verify table is now dropped
+	err = db.DropTable(ctx, "test")
+	require.ErrorContains(t, err, "not found")
+
 	require.NoError(t, db.Close())
 }
 

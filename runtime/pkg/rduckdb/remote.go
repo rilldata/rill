@@ -145,7 +145,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 
 	if !updateCatalog {
 		// delete all local tables which are not present in remote
-		_ = d.iterateLocalTables(func(name string, meta *tableMeta) error {
+		_ = d.iterateLocalTables(true, func(name string, meta *tableMeta) error {
 			if _, ok := remoteTables[name]; !ok {
 				return d.deleteLocalTableFiles(name, "")
 			}
@@ -171,7 +171,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 	}
 
 	// iterate over local entries and remove if not present in remote
-	_ = d.iterateLocalTables(func(name string, meta *tableMeta) error {
+	_ = d.iterateLocalTables(false, func(name string, meta *tableMeta) error {
 		if _, ok := remoteTables[name]; ok {
 			// table is present in remote
 			return nil

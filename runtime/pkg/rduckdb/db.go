@@ -239,7 +239,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 
 	// collect all tables
 	var tables []*tableMeta
-	_ = db.iterateLocalTables(func(name string, meta *tableMeta) error {
+	_ = db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
 		tables = append(tables, meta)
 		return nil
 	})
@@ -657,7 +657,7 @@ func (d *db) localDBMonitor() {
 
 func (d *db) Size() int64 {
 	var paths []string
-	_ = d.iterateLocalTables(func(name string, meta *tableMeta) error {
+	_ = d.iterateLocalTables(false, func(name string, meta *tableMeta) error {
 		// this is to avoid counting temp tables during source ingestion
 		// in certain cases we only want to compute the size of the serving db files
 		if !strings.HasPrefix(name, "__rill_tmp_") {
@@ -966,7 +966,7 @@ func (d *db) deleteLocalTableFiles(name, version string) error {
 	return os.RemoveAll(d.localTableDir(name, version))
 }
 
-func (d *db) iterateLocalTables(fn func(name string, meta *tableMeta) error) error {
+func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, meta *tableMeta) error) error {
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
@@ -977,6 +977,13 @@ func (d *db) iterateLocalTables(fn func(name string, meta *tableMeta) error) err
 		}
 		meta, err := d.tableMeta(entry.Name())
 		if err != nil {
+			if !removeInvalidTable {
+				continue
+			}
+			err = d.deleteLocalTableFiles(entry.Name(), "")
+			if err != nil {
+				return err
+			}
 			continue
 		}
 		err = fn(entry.Name(), meta)
