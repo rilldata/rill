@@ -203,7 +203,7 @@ func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
 	temp := t.TempDir()
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
