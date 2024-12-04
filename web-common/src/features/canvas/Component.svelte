@@ -9,6 +9,7 @@
   } from "../entity-management/resource-selectors";
   import Chart from "./Chart.svelte";
   import type ResizeHandle from "./ResizeHandle.svelte";
+  import { RendererType } from "../templates/types";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -67,7 +68,7 @@
   data-index={i}
   class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
-  style:z-index={renderer === "select" ? 100 : localZIndex}
+  style:z-index={renderer === RendererType.Select ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
@@ -107,7 +108,7 @@
           {/if}
         </div>
       {/if}
-      {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
+      {#if renderer === RendererType.VegaLite && rendererProperties?.spec && resolverProperties}
         <Chart {componentName} {chartView} {input} />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
