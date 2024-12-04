@@ -1618,11 +1618,11 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-vega_lite: |%s
+vega_lite: '%s'
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-vega_lite: |%s
+vega_lite: '%s'
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
