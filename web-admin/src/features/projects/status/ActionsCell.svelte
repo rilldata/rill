@@ -5,6 +5,9 @@
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon } from "lucide-svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -44,8 +47,15 @@
         class="font-normal flex items-center"
         on:click={() => refresh(resourceKind, resourceName)}
       >
-        <RefreshCcwIcon size="12px" />
-        <span class="ml-2">Refresh</span>
+        <Tooltip location="left" alignment="middle" distance={16}>
+          <div class="flex items-center">
+            <RefreshCcwIcon size="12px" />
+            <span class="ml-2">Refresh</span>
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            Refreshing this resource will update all dependent resources.
+          </TooltipContent>
+        </Tooltip>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
