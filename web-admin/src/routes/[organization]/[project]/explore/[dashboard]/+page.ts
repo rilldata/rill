@@ -24,7 +24,10 @@ export const load = async ({ url, parent, params }) => {
       exploreSpec,
       defaultExplorePreset,
     );
-    throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
+
+    if (newUrl.search !== url.search) {
+      throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
+    }
   }
 
   const { partialExploreState, errors } = getPartialExploreStateOrRedirect(
