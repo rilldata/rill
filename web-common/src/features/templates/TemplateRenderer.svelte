@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
+  import { RendererType } from "./types";
 
   export let chartView: boolean;
   export let renderer: string;
@@ -39,17 +40,17 @@
 </script>
 
 {#if rendererProperties}
-  {#if renderer === "kpi"}
+  {#if renderer === RendererType.KPI}
     <KPITemplate {rendererProperties} />
-  {:else if renderer === "table"}
+  {:else if renderer === RendererType.Table}
     <TableTemplate {rendererProperties} />
-  {:else if renderer === "markdown"}
+  {:else if renderer === RendererType.Markdown}
     <Markdown {rendererProperties} />
-  {:else if renderer === "image"}
+  {:else if renderer === RendererType.Image}
     <Image {rendererProperties} />
-  {:else if renderer === "select"}
+  {:else if renderer === RendererType.Select}
     <Select {data} {componentName} {output} {rendererProperties} />
-  {:else if renderer === "switch"}
+  {:else if renderer === RendererType.Switch}
     <Switch {output} {rendererProperties} />
   {:else if resolverProperties}
     <Chart {componentName} {chartView} {input} />
