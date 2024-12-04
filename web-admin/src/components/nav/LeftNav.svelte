@@ -8,9 +8,10 @@
     label: string;
     route: string;
   }[];
+  export let minWidth: string = "150px";
 </script>
 
-<div class="nav-items">
+<div class="nav-items" style:min-width={minWidth}>
   {#each navItems as { label, route } (route)}
     <LeftNavItem
       {label}
@@ -22,7 +23,6 @@
 
 <style lang="postcss">
   .nav-items {
-    @apply flex flex-col gap-y-1;
-    @apply min-w-[150px];
+    @apply flex flex-col gap-y-2;
   }
 </style>

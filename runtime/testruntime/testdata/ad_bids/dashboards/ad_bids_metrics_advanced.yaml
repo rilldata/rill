@@ -6,48 +6,48 @@ timeseries: timestamp
 smallest_time_grain: ""
 
 dimensions:
-  - label: Publisher
-    name: pub
+  - name: pub
+    display_name: Publisher
     property: publisher
     description: ""
-  - label: Domain
-    name: dom
+  - name: dom
+    display_name: Domain
     property: domain
     description: ""
   - name: nolabel_pub
     property: publisher
-  - label: Space Label
-    name: space_label
+  - name: space_label
+    display_name: Space Label
     expression: "publisher"
-  - label: Domain Parts
-    name: domain_parts
+  - name: domain_parts
+    display_name: Domain Parts
     expression: "string_split(domain, '.')"
     unnest: true
-  - label: TLD
-    name: tld
+  - name: tld
+    display_name: TLD
     expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
-  - label: Null Publisher
-    name: null_publisher
+  - name: null_publisher
+    display_name: Null Publisher
     expression: case when publisher is null then true else false end
 
 measures:
-  - label: "Number of bids"
-    name: bids
+  - name: bids
+    display_name: "Number of bids"
     expression: count(*)
     description: ""
-    format_preset: ""
-  - label: "Average bid price"
+    format_preset: humanize
+  - display_name: "Average bid price"
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: m1 
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: bid_price 
     expression: avg(bid_price)
     description: ""
-    format_preset: ""
+    format_preset: humanize
   - name: bids_1day_rolling_avg
     expression: AVG(bids)
     requires: [bids]

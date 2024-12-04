@@ -11,14 +11,16 @@ sidebar_position: 11
 
 [Snowflake](https://docs.snowflake.com/en/user-guide-intro) is a cloud-based data platform designed to facilitate data warehousing, data lakes, data engineering, data science, data application development, and data sharing. It separates compute and storage, enabling users to scale up or down instantly without downtime, providing a cost-effective solution for data management. With its unique architecture and support for multi-cloud environments, including AWS, Azure, and Google Cloud Platform, Snowflake offers seamless data integration, secure data sharing across organizations, and real-time access to data insights, making it a common choice to power many busienss intelligence applications or use cases. Rill supports natively connecting to and reading from Snowflake as a source using the [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake).
 
-![Connecting to Snowflake](/img/reference/connectors/snowflake/snowflake.png)
+
+<img src = '/img/reference/connectors/snowflake/snowflake.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 
 When using Rill Developer on your local machine (i.e. `rill start`), Rill will use the credentials passed via the Snowflake connection string in one of several ways:
 1. As defined in the [source YAML configuration](../../reference/project-files/sources.md#properties) directly via the `dsn` property
 2. As defined in the optional _Snowflake Connection String_ field from within the UI source creation workflow (this is equivalent to setting the `dsn` property in the underlying source YAML file)
-3. As defined from the CLI when running `rill start --var connector.snowflake.dsn=...`
+3. As defined from the CLI when running `rill start --env connector.snowflake.dsn=...`
 
 :::warning Beware of committing credentials to Git
 

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"cloud.google.com/go/storage"
@@ -47,7 +48,7 @@ type Service struct {
 	issuer              *auth.Issuer
 	VersionNumber       string
 	VersionCommit       string
-	metricsProjectID    string
+	MetricsProjectID    string
 	AutoscalerCron      string
 	ScaleDownConstraint int
 	Biller              billing.Biller
@@ -122,7 +123,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		issuer:              issuer,
 		VersionNumber:       opts.VersionNumber,
 		VersionCommit:       opts.VersionCommit,
-		metricsProjectID:    metricsProjectID,
+		MetricsProjectID:    metricsProjectID,
 		AutoscalerCron:      opts.AutoscalerCron,
 		ScaleDownConstraint: opts.ScaleDownConstraint,
 		Biller:              biller,
@@ -131,6 +132,20 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 }
 
 func (s *Service) Close() error {
+	var allErrs error
+	for _, p := range s.ProvisionerSet {
+		err := p.Close()
+		if err != nil {
+			allErrs = errors.Join(allErrs, err)
+		}
+	}
+
 	s.Used.Close()
-	return s.DB.Close()
+
+	err := s.DB.Close()
+	if err != nil {
+		allErrs = errors.Join(allErrs, err)
+	}
+
+	return allErrs
 }

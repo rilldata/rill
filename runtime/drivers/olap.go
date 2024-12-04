@@ -135,7 +135,7 @@ func (r *Result) Close() error {
 // InformationSchema contains information about existing tables in an OLAP driver.
 // Table lookups should be case insensitive.
 type InformationSchema interface {
-	All(ctx context.Context) ([]*Table, error)
+	All(ctx context.Context, like string) ([]*Table, error)
 	Lookup(ctx context.Context, db, schema, name string) (*Table, error)
 }
 
@@ -465,7 +465,7 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	unit := d.ConvertToDateTruncSpecifier(grain)
 	switch d {
 	case DialectClickHouse:
-		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+		return fmt.Sprintf("DATEDIFF('%s', parseDateTimeBestEffort('%s'), parseDateTimeBestEffort('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDruid:
 		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDuckDB:

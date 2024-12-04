@@ -1,21 +1,22 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import {
-    createSvelteTable,
-    flexRender,
-    getCoreRowModel,
-    getSortedRowModel,
-  } from "@tanstack/svelte-table";
   import type {
     ColumnDef,
     OnChangeFn,
     SortingState,
     TableOptions,
   } from "@tanstack/svelte-table";
+  import {
+    createSvelteTable,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+  } from "@tanstack/svelte-table";
+  import { writable } from "svelte/store";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
+  export let emptyIcon: any | null = null;
   export let emptyText = "No data available";
   export let scrollable = false;
 
@@ -64,7 +65,7 @@
 <div class="overflow-x-auto" class:scroll-container={scrollable}>
   <table class="w-full">
     <thead class={scrollable ? "sticky top-0 z-30 bg-white" : ""}>
-      {#each $table.getHeaderGroups() as headerGroup}
+      {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
         <tr>
           {#each headerGroup.headers as header (header.id)}
             {@const widthPercent = header.column.columnDef.meta?.widthPercent}
@@ -107,21 +108,22 @@
     <tbody>
       {#if $table.getRowModel().rows.length === 0}
         <tr>
-          <td
-            colspan={columns.length}
-            class="px-4 py-4 text-center text-gray-500"
-          >
-            {emptyText}
+          <td colspan={columns.length} class="px-4 py-10 text-center">
+            <div class="flex flex-col items-center gap-y-1">
+              {#if emptyIcon}
+                <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
+              {/if}
+              <span class="text-gray-600 font-semibold text-sm"
+                >{emptyText}</span
+              >
+            </div>
           </td>
         </tr>
       {:else}
-        {#each $table.getRowModel().rows as row}
+        {#each $table.getRowModel().rows as row (row.id)}
           <tr>
-            {#each row.getVisibleCells() as cell}
-              <td
-                class="px-4 py-2 truncate"
-                data-label={cell.column.columnDef.header}
-              >
+            {#each row.getVisibleCells() as cell (cell.id)}
+              <td class="px-4 py-2" data-label={cell.column.columnDef.header}>
                 <svelte:component
                   this={flexRender(
                     cell.column.columnDef.cell,

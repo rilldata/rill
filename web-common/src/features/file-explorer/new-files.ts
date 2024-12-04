@@ -53,7 +53,7 @@ export function getPathForNewResourceFile(
   return `${folderName}/${newName}${extension}`;
 }
 
-const ResourceKindMap: Record<
+export const ResourceKindMap: Record<
   UserFacingResourceKinds,
   {
     folderName: string;
@@ -163,7 +163,7 @@ measures:
       if (baseResource) {
         const metricsViewName = baseResource.meta!.name!.name;
         const metricsViewTitle =
-          baseResource.metricsView?.state?.validSpec?.title;
+          baseResource.metricsView?.state?.validSpec?.displayName;
 
         return `# Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards

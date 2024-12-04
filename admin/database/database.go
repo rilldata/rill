@@ -89,7 +89,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	CountProjectsQuotaUsage(ctx context.Context, orgID string) (*ProjectsQuotaUsage, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
 	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
@@ -103,13 +103,18 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
+	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
-	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
-	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
-	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
-	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+	// UpsertStaticRuntimeAssignment tracks the host and slots registered for a provisioner resource.
+	// It is used by the "static" runtime provisioner to track slot usage on each host.
+	UpsertStaticRuntimeAssignment(ctx context.Context, id string, host string, slots int) error
+	// DeleteStaticRuntimeAssignment removes the host and slots assignment for a provisioner resource.
+	// The implementation should be idempotent.
+	DeleteStaticRuntimeAssignment(ctx context.Context, id string) error
+	// ResolveStaticRuntimeSlotsUsed returns the current slot usage for each runtime host as tracked by UpsertStaticRuntimeAssignment.
+	ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*StaticRuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
@@ -172,7 +177,13 @@ type DB interface {
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindReportTokens(ctx context.Context, reportName string) ([]*ReportToken, error)
+	FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*ReportTokenWithSecret, error)
+	FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*ReportToken, error)
+	InsertReportToken(ctx context.Context, opts *InsertReportTokenOptions) (*ReportToken, error)
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -276,6 +287,15 @@ type DB interface {
 	UpdateBillingIssueOverdueAsProcessed(ctx context.Context, id string) error
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
+
+	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
+	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
+	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
+
+	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
+	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
+	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
+	DeleteProvisionerResource(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -391,7 +411,6 @@ type InsertProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
@@ -410,7 +429,6 @@ type UpdateProjectOptions struct {
 	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
-	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
@@ -445,10 +463,6 @@ func (d DeploymentStatus) String() string {
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
-	Provisioner       string           `db:"provisioner"`
-	ProvisionID       string           `db:"provision_id"`
-	RuntimeVersion    string           `db:"runtime_version"`
-	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
@@ -463,22 +477,28 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
-	Provisioner       string `validate:"required"`
-	ProvisionID       string
-	RuntimeVersion    string
-	Slots             int
 	Branch            string
-	RuntimeHost       string `validate:"required"`
-	RuntimeInstanceID string `validate:"required"`
+	RuntimeHost       string
+	RuntimeInstanceID string
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	StatusMessage     string
 }
 
-// RuntimeSlotsUsed is the result of a ResolveRuntimeSlotsUsed query.
-type RuntimeSlotsUsed struct {
-	RuntimeHost string `db:"runtime_host"`
-	SlotsUsed   int    `db:"slots_used"`
+// UpdateDeploymentOptions defines options for updating a Deployment.
+type UpdateDeploymentOptions struct {
+	Branch            string
+	RuntimeHost       string
+	RuntimeInstanceID string
+	RuntimeAudience   string
+	Status            DeploymentStatus
+	StatusMessage     string
+}
+
+// StaticRuntimeSlotsUsed is the number of slots currently assigned to a runtime host.
+type StaticRuntimeSlotsUsed struct {
+	Host  string `db:"host"`
+	Slots int    `db:"slots"`
 }
 
 // User is a person registered in Rill.
@@ -636,7 +656,8 @@ type MagicAuthToken struct {
 	FilterJSON            string         `db:"filter_json"`
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
-	Title                 string         `db:"title"`
+	DisplayName           string         `db:"display_name"`
+	Internal              bool           `db:"internal"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -659,7 +680,29 @@ type InsertMagicAuthTokenOptions struct {
 	FilterJSON      string
 	Fields          []string
 	State           string
-	Title           string
+	DisplayName     string
+	Internal        bool
+}
+
+type ReportToken struct {
+	ID               string
+	ReportName       string `db:"report_name"`
+	RecipientEmail   string `db:"recipient_email"`
+	MagicAuthTokenID string `db:"magic_auth_token_id"`
+}
+
+type ReportTokenWithSecret struct {
+	ID                   string
+	ReportName           string `db:"report_name"`
+	RecipientEmail       string `db:"recipient_email"`
+	MagicAuthTokenID     string `db:"magic_auth_token_id"`
+	MagicAuthTokenSecret []byte `db:"magic_auth_token_secret"`
+}
+
+type InsertReportTokenOptions struct {
+	ReportName       string
+	RecipientEmail   string
+	MagicAuthTokenID string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -809,9 +852,10 @@ type Invite struct {
 	InvitedBy string `db:"invited_by"`
 }
 
-type DeploymentsCount struct {
-	Deployments int
-	Slots       int
+type ProjectsQuotaUsage struct {
+	Projects    int `db:"projects"`
+	Deployments int `db:"deployments"`
+	Slots       int `db:"slots"`
 }
 
 type OrganizationWhitelistedDomain struct {
@@ -953,6 +997,18 @@ type Asset struct {
 	CreatedOn      time.Time `db:"created_on"`
 }
 
+type ProjectVariable struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Environment          string    `db:"environment"`
+	Name                 string    `db:"name"`
+	Value                string    `db:"value"`
+	ValueEncryptionKeyID string    `db:"value_encryption_key_id"`
+	UpdatedByUserID      *string   `db:"updated_by_user_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
 // EncryptionKey represents an encryption key for column-level encryption/decryption.
 // Column-level encryption provides an extra layer of security for highly sensitive columns in the database.
 // It is implemented on the application side before writes to and after reads from the database.
@@ -1071,4 +1127,66 @@ type UpsertBillingIssueOptions struct {
 	Type      BillingIssueType `validate:"required"`
 	Metadata  BillingIssueMetadata
 	EventTime time.Time `validate:"required"`
+}
+
+// ProvisionerResourceStatus is an enum representing the state of a provisioner resource
+type ProvisionerResourceStatus int
+
+const (
+	ProvisionerResourceStatusUnspecified ProvisionerResourceStatus = 0
+	ProvisionerResourceStatusPending     ProvisionerResourceStatus = 1
+	ProvisionerResourceStatusOK          ProvisionerResourceStatus = 2
+	ProvisionerResourceStatusError       ProvisionerResourceStatus = 4
+)
+
+func (d ProvisionerResourceStatus) String() string {
+	switch d {
+	case ProvisionerResourceStatusPending:
+		return "Pending"
+	case ProvisionerResourceStatusOK:
+		return "OK"
+	case ProvisionerResourceStatusError:
+		return "Error"
+	default:
+		return "Unspecified"
+	}
+}
+
+// ProvisionerResource represents a resource created by a provisioner (see admin/provisioner/README.md for details about provisioners).
+type ProvisionerResource struct {
+	ID            string                    `db:"id"`
+	DeploymentID  string                    `db:"deployment_id"`
+	Type          string                    `db:"type"`
+	Name          string                    `db:"name"`
+	Status        ProvisionerResourceStatus `db:"status"`
+	StatusMessage string                    `db:"status_message"`
+	Provisioner   string                    `db:"provisioner"`
+	Args          map[string]any            `db:"args_json"`
+	State         map[string]any            `db:"state_json"`
+	Config        map[string]any            `db:"config_json"`
+	CreatedOn     time.Time                 `db:"created_on"`
+	UpdatedOn     time.Time                 `db:"updated_on"`
+}
+
+// InsertProvisionerResourceOptions defines options for inserting a new ProvisionerResource.
+type InsertProvisionerResourceOptions struct {
+	ID            string
+	DeploymentID  string
+	Type          string
+	Name          string
+	Status        ProvisionerResourceStatus
+	StatusMessage string
+	Provisioner   string
+	Args          map[string]any
+	State         map[string]any
+	Config        map[string]any
+}
+
+// UpdateProvisionerResourceOptions defines options for updating a ProvisionerResource.
+type UpdateProvisionerResourceOptions struct {
+	Status        ProvisionerResourceStatus
+	StatusMessage string
+	Args          map[string]any
+	State         map[string]any
+	Config        map[string]any
 }

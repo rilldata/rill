@@ -10,10 +10,8 @@
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
-
-  const queryClient = useQueryClient();
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let data: PageData;
 

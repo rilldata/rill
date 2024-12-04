@@ -168,10 +168,11 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
 			OrgName:      org.Name,
+			FrontendURL:  s.URLs.Frontend(),
 			TrialEndDate: sub.TrialEndDate,
 		})
 		if err != nil {
-			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			s.Logger.Named("billing").Error("failed to send trial started email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
@@ -210,6 +211,9 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	sub, err := s.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
+			if errors.Is(err, billing.ErrCustomerIDRequired) {
+				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
 	}

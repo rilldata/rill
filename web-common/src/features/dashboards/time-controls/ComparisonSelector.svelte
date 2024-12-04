@@ -30,7 +30,7 @@
   /** compile the comparison options */
   $: options = (dimensions || []).map((d) => ({
     name: d.name,
-    label: d.label || d.name,
+    label: d.displayName || d.name,
   }));
 
   $: menuOptions = matchSorter(options, searchText, { keys: ["label"] });
@@ -42,7 +42,7 @@
   function getLabelForDimension(dimension: string) {
     if (!dimensions) return dimension;
     const dimensionObj = dimensions.find((d) => d.name === dimension);
-    return dimensionObj?.label || dimension;
+    return dimensionObj?.displayName || dimension;
   }
 
   function enableComparison(type: string, name = "") {
@@ -86,7 +86,7 @@
         showBorderOnFocus={false}
       />
     </div>
-    <DropdownMenu.Item on:select={disableAllComparisons}>
+    <DropdownMenu.Item on:click={disableAllComparisons}>
       <span
         class:font-bold={!selectedComparisonDimension && !showTimeComparison}
       >

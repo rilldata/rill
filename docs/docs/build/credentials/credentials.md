@@ -14,9 +14,9 @@ At a high level, configuring credentials and credentials management in Rill can 
 ## Setting credentials for Rill Developer
 
 When reading from a source (or using a different OLAP engine), Rill will attempt to use existing credentials that have been configured on your machine.
-1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs.md#local-credentials))
+1. Credentials that have been configured in your local environment via the CLI (for [AWS](../../reference/connectors/s3.md#local-credentials) / [Azure](../../reference/connectors/azure.md#local-credentials) / [Google Cloud](../../reference/connectors/gcs#rill-developer-local-credentials))
 2. Credentials that have been passed in directly through the connection string or DSN (typically for databases - see [Source YAML](../../reference/project-files/sources.md) and [Connector YAML](../../reference/project-files/connectors.md) for more details)
-3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --var key=value`
+3. Credentials that have been passed in as a [variable](../../deploy/templating.md) when starting Rill Developer via `rill start --env key=value`
 4. Credentials that have been specified in your *`<RILL_PROJECT_HOME>/.env`* file
 
 For more details, please refer to the corresponding [connector](../../reference/connectors/connectors.md) or [OLAP engine](../../reference/olap-engines/olap-engines.md) page.

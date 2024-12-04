@@ -3,24 +3,27 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
+  import { isEnterprisePlan } from "@rilldata/web-admin/features/billing/plans/utils";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+
+  $: ({ subscription, neverSubscribed } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
+  $: onEnterprisePlan =
+    subscription?.plan && isEnterprisePlan(subscription?.plan);
+  $: hideBillingSettings = neverSubscribed;
 
-  const navItems = [
-    {
-      label: "General",
-      route: "",
-    },
-    // TODO: Uncomment when we have billing and usage page
-    // {
-    //   label: "Billing",
-    //   route: "/billing",
-    // },
-    // {
-    //   label: "Usage",
-    //   route: "/usage",
-    // },
+  $: navItems = [
+    { label: "General", route: "" },
+    ...(hideBillingSettings
+      ? []
+      : [
+          { label: "Billing", route: "/billing" },
+          ...(onEnterprisePlan ? [] : [{ label: "Usage", route: "/usage" }]),
+        ]),
   ];
 </script>
 
@@ -28,7 +31,9 @@
   <h3>Settings</h3>
   <div class="container">
     <LeftNav {basePage} baseRoute="/[organization]/-/settings" {navItems} />
-    <slot />
+    <div class="contents-container">
+      <slot />
+    </div>
   </div>
 </div>
 
@@ -43,5 +48,9 @@
 
   .container {
     @apply flex flex-row pt-6 gap-x-6;
+  }
+
+  .contents-container {
+    @apply flex flex-col w-full gap-y-5 ml-16;
   }
 </style>

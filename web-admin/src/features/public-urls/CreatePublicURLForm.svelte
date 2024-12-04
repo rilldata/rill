@@ -32,6 +32,7 @@
     hasDashboardDimensionThresholdFilter,
     hasDashboardWhereFilter,
   } from "./form-utils";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   const queryClient = useQueryClient();
   const StateManagers = getStateManagers();
@@ -60,9 +61,11 @@
     exploreFields,
   );
 
-  let token: string;
+  let url: string | null = null;
   let setExpiration = false;
   let apiError: string;
+  let popoverOpen = false;
+  let copied = false;
 
   const formId = "create-public-url-form";
 
@@ -87,7 +90,7 @@
         const values = form.data;
 
         try {
-          const { token: _token } = await $issueMagicAuthToken.mutateAsync({
+          const { url: _url } = await $issueMagicAuthToken.mutateAsync({
             organization,
             project,
             data: {
@@ -99,15 +102,11 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               state: sanitizedState ? sanitizedState : undefined,
-              title: values.title,
+              displayName: values.title,
             },
           });
-          token = _token;
 
-          copyToClipboard(
-            `${window.location.origin}/${organization}/${project}/-/share/${token}`,
-            "URL copied to clipboard",
-          );
+          url = _url;
 
           void queryClient.invalidateQueries(
             getAdminServiceListMagicAuthTokensQueryKey(organization, project),
@@ -119,6 +118,15 @@
       },
     },
   );
+
+  function onCopy() {
+    copyToClipboard(url, "URL copied to clipboard", false);
+    copied = true;
+
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 
   $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
   $: hasDimensionThresholdFilter =
@@ -134,67 +142,64 @@
   $: ({ length: allErrorsLength } = $allErrors);
 
   $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
-
-  let popoverOpen = false;
 </script>
 
-{#if !token}
+{#if !url}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <div class="flex flex-col gap-y-4">
-      <h3 class="text-xs text-gray-800 font-normal">
-        Create a shareable public URL for this view.
-      </h3>
+    <h3 class="text-xs text-gray-800 font-normal">
+      Create a shareable public URL for this view.
+    </h3>
 
-      <div class="flex flex-col gap-y-1">
+    {#if !url}
+      <div class="flex flex-col gap-y-1 mt-4">
         <Input
           id="name-input"
           bind:value={$form.title}
           placeholder="Label this URL"
         />
       </div>
-    </div>
 
-    <div
-      class="mt-4"
-      class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
-    >
-      <div class="flex items-center gap-x-2">
-        <Switch small id="has-expiration" bind:checked={setExpiration} />
-        <Label class="text-xs" for="has-expiration">Set expiration</Label>
-      </div>
-      {#if setExpiration}
-        <div class="flex items-center gap-x-1 pl-[30px]">
-          <label for="expires-at" class="text-slate-500 font-medium">
-            Access expires {new Date($form.expiresAt).toLocaleDateString(
-              "en-US",
-              { year: "numeric", month: "short", day: "numeric" },
-            )}
-          </label>
-          <Popover bind:open={popoverOpen}>
-            <PopoverTrigger>
-              <IconButton>
-                <Pencil size="14px" class="text-primary-600" />
-              </IconButton>
-            </PopoverTrigger>
-            <PopoverContent align="end" class="p-0">
-              <Calendar
-                selection={DateTime.fromISO($form.expiresAt)}
-                singleDaySelection
-                minDate={includingTomorrowDate}
-                firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
-                onSelectDay={(date) => {
-                  $form.expiresAt = date.toISO();
-                  popoverOpen = false;
-                }}
-              />
-            </PopoverContent>
-          </Popover>
+      <div
+        class="mt-4"
+        class:mb-4={!hasWhereFilter && !hasDimensionThresholdFilter}
+      >
+        <div class="flex items-center gap-x-2">
+          <Switch small id="has-expiration" bind:checked={setExpiration} />
+          <Label class="text-xs" for="has-expiration">Set expiration</Label>
         </div>
-      {/if}
-    </div>
+        {#if setExpiration}
+          <div class="flex items-center gap-x-1 pl-[30px]">
+            <label for="expires-at" class="text-slate-500 font-medium">
+              Access expires {new Date($form.expiresAt).toLocaleDateString(
+                "en-US",
+                { year: "numeric", month: "short", day: "numeric" },
+              )}
+            </label>
+            <Popover bind:open={popoverOpen}>
+              <PopoverTrigger>
+                <IconButton>
+                  <Pencil size="14px" class="text-primary-600" />
+                </IconButton>
+              </PopoverTrigger>
+              <PopoverContent align="end" class="p-0">
+                <Calendar
+                  selection={DateTime.fromISO($form.expiresAt)}
+                  singleDaySelection
+                  minDate={includingTomorrowDate}
+                  firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
+                  onSelectDay={(date) => {
+                    $form.expiresAt = date.toISO();
+                    popoverOpen = false;
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        {/if}
+      </div>
 
-    <!-- TODO: revisit when time range lock is implemented -->
-    <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
+      <!-- TODO: revisit when time range lock is implemented -->
+      <!-- <div class="mt-4" class:mb-4={!hasWhereFilter}>
       <div class="flex items-center gap-x-2">
         <Switch small id="lock-time-range" bind:checked={lockTimeRange} />
 
@@ -221,27 +226,28 @@
       {/if}
     </div> -->
 
-    {#if hasWhereFilter || hasDimensionThresholdFilter}
-      <hr class="border-gray-200 mt-4 mb-4" />
+      {#if hasWhereFilter || hasDimensionThresholdFilter}
+        <hr class="border-gray-200 mt-4 mb-4" />
 
-      <div class="flex flex-col gap-y-1">
-        <p class="text-xs text-gray-800 font-normal">
-          The following filters will be locked and hidden:
-        </p>
-        <div class="flex flex-row gap-1 mt-2">
-          <FilterChipsReadOnly
-            exploreName={$exploreName}
-            filters={$dashboardStore.whereFilter}
-            dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
-            timeRange={undefined}
-            comparisonTimeRange={undefined}
-          />
+        <div class="flex flex-col gap-y-1">
+          <p class="text-xs text-gray-800 font-normal">
+            The following filters will be locked and hidden:
+          </p>
+          <div class="flex flex-row gap-1 mt-2">
+            <FilterChipsReadOnly
+              exploreName={$exploreName}
+              filters={$dashboardStore.whereFilter}
+              dimensionThresholdFilters={$dashboardStore.dimensionThresholdFilters}
+              timeRange={undefined}
+              comparisonTimeRange={undefined}
+            />
+          </div>
         </div>
-      </div>
 
-      <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
-        Measures and dimensions will be limited to current visible set.
-      </p>
+        <p class="text-xs text-gray-800 font-normal mt-4 mb-4">
+          Measures and dimensions will be limited to current visible set.
+        </p>
+      {/if}
     {/if}
 
     <Button
@@ -250,21 +256,28 @@
       form={formId}
       submitForm
     >
-      Create and copy URL
+      Create
     </Button>
 
     {#if allErrorsLength > 0}
       {#each $allErrors as error (error.path)}
-        <div class="text-red-500">{error.messages}</div>
+        <div class="text-red-500 mt-1">{error.messages}</div>
       {/each}
     {:else if apiError}
-      <div class="text-red-500">{apiError}</div>
+      <div class="text-red-500 mt-1">{apiError}</div>
     {/if}
   </form>
 {:else}
-  <!-- A successful form submission will automatically copy the link to the clipboard -->
-  <div class="flex flex-col gap-y-2">
-    <h3>Success! URL copied to clipboard.</h3>
+  <div class="flex flex-col gap-y-4">
+    <h3>Success! A public URL has been created.</h3>
+    <Button type="secondary" on:click={onCopy}>
+      {#if copied}
+        <Check size="16px" />
+        Copied URL
+      {:else}
+        Copy Public URL
+      {/if}</Button
+    >
   </div>
 {/if}
 

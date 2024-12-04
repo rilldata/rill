@@ -16,19 +16,39 @@
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { useTimeControlStore } from "../time-controls/time-control-store";
 
   export let exploreName: string;
   export let metricsViewName: string;
+  export let isEmbedded: boolean = false;
+
+  const StateManagers = getStateManagers();
+  const {
+    selectors: {
+      measures: { visibleMeasures },
+      activeMeasure: { activeMeasureName },
+      dimensions: { getDimensionByName },
+    },
+    dashboardStore,
+    validSpecStore,
+  } = StateManagers;
+
+  const timeControlsStore = useTimeControlStore(StateManagers);
 
   const { cloudDataViewer, readOnly } = featureFlags;
 
   let exploreContainerWidth: number;
+
+  $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
   $: exploreStore = useExploreStore(exploreName);
 
   $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: selectedDimension =
+    selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
   $: showPivot = $exploreStore?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -41,8 +61,27 @@
 
   // Check if the mock user (if selected) has access to the explore
   $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
+
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
+
+  $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
+
+  $: timeControls = $timeControlsStore;
+
+  $: timeRange = {
+    start: timeControls.timeStart,
+    end: timeControls.timeEnd,
+  };
+
+  $: comparisonTimeRange = timeControls.showTimeComparison
+    ? {
+        start: timeControls.comparisonTimeStart,
+        end: timeControls.comparisonTimeEnd,
+      }
+    : undefined;
+
+  $: metricsView = $validSpecStore.data?.metricsView ?? {};
 </script>
 
 <article
@@ -61,7 +100,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar />
+            <TabBar {hidePivot} />
           </div>
         </section>
       {/key}
@@ -100,13 +139,35 @@
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay {exploreName} {expandedMeasureName} />
-      {:else if selectedDimensionName}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <DimensionDisplay />
-        </div>
       {:else}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
-          <LeaderboardDisplay />
+          {#if selectedDimension}
+            <DimensionDisplay
+              dimension={selectedDimension}
+              {metricsViewName}
+              {whereFilter}
+              {dimensionThresholdFilters}
+              {timeRange}
+              {comparisonTimeRange}
+              activeMeasureName={$activeMeasureName}
+              timeControlsReady={!!timeControls.ready}
+              {metricsView}
+              visibleMeasureNames={$visibleMeasures.map(
+                ({ name }) => name ?? "",
+              )}
+            />
+          {:else}
+            <LeaderboardDisplay
+              {metricsViewName}
+              activeMeasureName={$activeMeasureName}
+              {whereFilter}
+              {dimensionThresholdFilters}
+              {timeRange}
+              {comparisonTimeRange}
+              {metricsView}
+              timeControlsReady={!!timeControls.ready}
+            />
+          {/if}
         </div>
       {/if}
     </div>

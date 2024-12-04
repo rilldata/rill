@@ -77,9 +77,9 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 			p.Typ = "VIEW"
 		}
 	}
-	if opts.Incremental || opts.SplitRun {
+	if opts.Incremental || opts.PartitionRun {
 		if p.Typ != "" && p.Typ != "TABLE" {
-			return fmt.Errorf("incremental or split models must be materialized")
+			return fmt.Errorf("incremental or partitioned models must be materialized")
 		}
 		p.Typ = "TABLE"
 	}
@@ -215,9 +215,9 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	return c.DropTable(ctx, table.Name, table.View)
 }
 
-func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
 	if a.Table != b.Table {
-		return nil, fmt.Errorf("cannot merge split results that output to different table names (%q != %q)", a.Table, b.Table)
+		return nil, fmt.Errorf("cannot merge partitioned results that output to different table names (%q != %q)", a.Table, b.Table)
 	}
 	return a, nil
 }

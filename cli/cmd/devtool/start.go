@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	minGoVersion   = "1.22"
+	minGoVersion   = "1.23"
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
@@ -46,14 +46,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "start [cloud|local]",
+		Use:   "start [cloud|local|e2e]",
 		Short: "Start a local development environment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var preset string
 			if len(args) > 0 {
 				preset = args[0]
 			} else {
-				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local"}, "cloud")
+				res, err := cmdutil.SelectPrompt("Select preset", []string{"cloud", "local", "e2e"}, "cloud")
 				if err != nil {
 					return err
 				}
@@ -92,7 +92,9 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "cloud", services)
+	case "e2e":
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, "e2e", services)
 	case "local":
 		err = local{}.start(ctx, verbose, reset, services)
 	default:
@@ -222,7 +224,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
 	if reset {
 		err := s.resetState(ctx)
 		if err != nil {
@@ -237,7 +239,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	if refreshDotenv {
-		err := downloadDotenv(ctx, "cloud")
+		err := downloadDotenv(ctx, preset)
 		if err != nil {
 			return fmt.Errorf("failed to refresh .env: %w", err)
 		}
@@ -387,7 +389,8 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 }
 
 func (s cloud) runDeps(ctx context.Context, verbose bool) error {
-	logInfo.Printf("Starting dependencies\n")
+	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
+	logInfo.Printf("Starting dependencies: docker compose -f %s up\n", composeFile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -395,7 +398,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
+	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -411,7 +414,7 @@ func (s cloud) awaitPostgres(ctx context.Context) error {
 		conn, err := pgx.Connect(ctx, dbURL)
 		if err == nil {
 			conn.Close(ctx)
-			logInfo.Printf("Postgres ready\n")
+			logInfo.Printf("Postgres ready at %s\n", dbURL)
 			return nil
 		}
 
@@ -440,7 +443,7 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 		res, err := c.Echo(ctx, "hello").Result()
 		c.Close()
 		if err == nil && res == "hello" {
-			logInfo.Printf("Redis ready\n")
+			logInfo.Printf("Redis ready at %s\n", dbURL)
 			return nil
 		}
 
@@ -477,7 +480,7 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("Admin ready\n")
+				logInfo.Printf("Admin ready at %s\n", pingURL)
 				return nil
 			}
 		}
@@ -515,7 +518,7 @@ func (s cloud) awaitRuntime(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("Runtime ready\n")
+				logInfo.Printf("Runtime ready at %s\n", pingURL)
 				return nil
 			}
 		}
@@ -534,7 +537,7 @@ func (s cloud) runUIInstall(ctx context.Context) (err error) {
 		if err == nil {
 			logInfo.Printf("Finished `npm install -w web-admin`\n")
 		} else {
-			logErr.Printf("Failed running `npm install -w web-admin`: %v", err)
+			logErr.Printf("Failed running `npm install -w web-admin`: %v\n", err)
 		}
 	}()
 
@@ -559,7 +562,7 @@ func (s cloud) awaitUI(ctx context.Context) error {
 		if err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				logInfo.Printf("UI ready\n")
+				logInfo.Printf("UI ready at %s\n", uiURL)
 				return nil
 			}
 		}
@@ -719,11 +722,9 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	outputDir := "dev-cloud-state"
-	outputFile := filepath.Join(outputDir, "stripe-config.toml")
+	outputFile := filepath.Join(stateDirCloud, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
-
 	if apiKey == "" {
 		logWarn.Printf("No Stripe API key found in .env, Stripe webhook events will not be processed\n")
 	}

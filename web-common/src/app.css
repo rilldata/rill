@@ -183,6 +183,10 @@
     --ring: 222.2 84% 4.9%;
   
     --radius: 0.5rem;
+
+    /* Used to set svg gradient */
+    --color-slate-200: theme("colors.slate.200");
+    --color-slate-300: theme("colors.slate.300");
   }
 
   h1,
@@ -246,3 +250,4 @@ a {
 .left-shift {
   @apply pl-8;
 }
+

@@ -4,6 +4,7 @@ import {
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { URI_DIMENSION_SUFFIX } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -149,13 +150,25 @@ export function getComparisonRequestMeasures(
   ];
 }
 
+export function getURIRequestMeasure(
+  dimensionName: string,
+): V1MetricsViewAggregationMeasure {
+  return {
+    name: dimensionName + URI_DIMENSION_SUFFIX,
+    uri: {
+      dimension: dimensionName,
+    },
+  };
+}
+
 export function getBreadcrumbOptions(
   exploreResources: V1Resource[],
   canvasResources: V1Resource[],
 ): Map<string, PathOption> {
   const exploreOptions = exploreResources.reduce((map, exploreResource) => {
     const name = exploreResource.meta?.name?.name ?? "";
-    const label = exploreResource.explore?.state?.validSpec?.title || name;
+    const label =
+      exploreResource.explore?.state?.validSpec?.displayName || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
@@ -165,7 +178,7 @@ export function getBreadcrumbOptions(
 
   const canvasOptions = canvasResources.reduce((map, canvasResource) => {
     const name = canvasResource.meta?.name?.name ?? "";
-    const label = canvasResource?.canvas?.spec?.title || name;
+    const label = canvasResource?.canvas?.spec?.displayName || name;
 
     if (label && name)
       map.set(name.toLowerCase(), { label, section: "custom", depth: 0 });

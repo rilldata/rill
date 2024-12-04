@@ -59,7 +59,11 @@ linters-settings:
     include:
       # Require explicit handling of all fields in the database options structs (to prevent nullification due to missing handling)
       - github.com/rilldata/rill/admin/database\..*Options
+      # Require explicit handling of all fields related to deployments
       - github.com/rilldata/rill/admin\..*DeploymentOptions
+      - github.com/rilldata/rill/admin\.provisionRuntimeOptions
+      - github.com/rilldata/rill/admin/provisioner\.Resource
+      - github.com/rilldata/rill/admin/provisioner\.ResourceOptions
   gocritic:
     enabled-tags:
       - diagnostic
@@ -121,6 +125,7 @@ linters-settings:
       - G107
       - G108
       - G112
+      - G115
       - G203
       - G204
       - G306

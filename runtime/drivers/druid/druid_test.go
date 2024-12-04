@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -108,7 +109,7 @@ func TestDruid(t *testing.T) {
 	require.NoError(t, err)
 
 	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -117,6 +118,7 @@ func TestDruid(t *testing.T) {
 	t.Run("count", func(t *testing.T) { testCount(t, olap) })
 	t.Run("max", func(t *testing.T) { testMax(t, olap) })
 	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, olap) })
+	t.Run("schema all like", func(t *testing.T) { testSchemaAllLike(t, olap) })
 	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, olap) })
 	// Add new tests here
 	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
@@ -178,7 +180,7 @@ func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
 }
 
 func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
-	tables, err := olap.InformationSchema().All(context.Background())
+	tables, err := olap.InformationSchema().All(context.Background(), "")
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(tables))
@@ -207,6 +209,13 @@ func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	f = mp["publisher"]
 	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
 	require.Equal(t, true, f.Type.Nullable)
+}
+
+func testSchemaAllLike(t *testing.T, olap drivers.OLAPStore) {
+	tables, err := olap.InformationSchema().All(context.Background(), "%test%")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tables))
+	require.Equal(t, testTable, tables[0].Name)
 }
 
 func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {

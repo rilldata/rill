@@ -246,7 +246,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:         measure.Name,
-			Label:        measure.Label,
+			DisplayName:  measure.DisplayName,
 			Expression:   measure.Expression,
 			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			FormatPreset: measure.FormatPreset,
@@ -296,11 +296,11 @@ func metricsViewYAMLSystemPrompt() string {
 	// We use the metricsViewYAML to generate a template of the YAML to guide the AI
 	// NOTE: The YAML fields have omitempty, so the AI will only know about (and populate) the fields below. We will populate the rest manually after inference.
 	template := metricsViewYAML{
-		Title: "<human-friendly title based on the table name and column names>",
+		DisplayName: "<human-friendly display name based on the table name and column names>",
 		Measures: []*metricsViewMeasureYAML{
 			{
 				Name:        "<unique name for the metric in snake case, such as average_sales>",
-				Label:       "<short descriptive label for the metric>",
+				DisplayName: "<short descriptive display name for the metric>",
 				Expression:  "<SQL expression to calculate the KPI in the requested SQL dialect>",
 				Description: "<short description of the metric>",
 			},
@@ -339,7 +339,7 @@ func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefau
 	doc := &metricsViewYAML{
 		Version:       1,
 		Type:          "metrics_view",
-		Title:         identifierToTitle(tbl.Name),
+		DisplayName:   identifierToDisplayName(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(tbl.Schema),
 		Measures:      generateMetricsViewYAMLSimpleMeasures(tbl),
@@ -379,8 +379,9 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_BOOL, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_UUID:
 			dims = append(dims, &metricsViewDimensionYAML{
-				Label:  identifierToTitle(f.Name),
-				Column: f.Name,
+				Name:        f.Name,
+				DisplayName: identifierToDisplayName(f.Name),
+				Column:      f.Name,
 			})
 		}
 	}
@@ -392,7 +393,7 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMea
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
 		Name:         "total_records",
-		Label:        "Total records",
+		DisplayName:  "Total records",
 		Expression:   "COUNT(*)",
 		Description:  "",
 		FormatPreset: "humanize",
@@ -404,7 +405,7 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMea
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
 				Name:         fmt.Sprintf("%s_sum", f.Name),
-				Label:        fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
+				DisplayName:  fmt.Sprintf("Sum of %s", identifierToDisplayName(f.Name)),
 				Expression:   fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
 				Description:  "",
 				FormatPreset: "humanize",
@@ -436,7 +437,7 @@ func generateMetricsViewYAMLSimpleMeasures(tbl *drivers.Table) []*metricsViewMea
 type metricsViewYAML struct {
 	Version        int                         `yaml:"version,omitempty"`
 	Type           string                      `yaml:"type,omitempty"`
-	Title          string                      `yaml:"title,omitempty"`
+	DisplayName    string                      `yaml:"display_name,omitempty"`
 	Connector      string                      `yaml:"connector,omitempty"`
 	Database       string                      `yaml:"database,omitempty"`
 	DatabaseSchema string                      `yaml:"database_schema,omitempty"`
@@ -447,13 +448,14 @@ type metricsViewYAML struct {
 }
 
 type metricsViewDimensionYAML struct {
-	Label  string `yaml:"label"`
-	Column string `yaml:"column"`
+	Name        string `yaml:"name"`
+	DisplayName string `yaml:"display_name"`
+	Column      string `yaml:"column"`
 }
 
 type metricsViewMeasureYAML struct {
 	Name         string `yaml:"name"`
-	Label        string `yaml:"label"`
+	DisplayName  string `yaml:"display_name"`
 	Expression   string `yaml:"expression"`
 	Description  string `yaml:"description"`
 	FormatPreset string `yaml:"format_preset,omitempty"`
@@ -501,8 +503,11 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 				keyNode := node.Content[i].Content[j]
 				valueNode := node.Content[i].Content[j+1]
 
-				if keyNode.Value == "title" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+				if keyNode.Value == "dimensions" || keyNode.Value == "measures" {
 					keyNode.HeadComment = "\n"
+				}
+				if keyNode.Value == "type" {
+					valueNode.LineComment = "\n\n"
 				}
 				insertEmptyLinesInYaml(valueNode)
 			}
@@ -516,7 +521,7 @@ func insertEmptyLinesInYaml(node *yaml.Node) {
 	}
 }
 
-func identifierToTitle(s string) string {
+func identifierToDisplayName(s string) string {
 	return cases.Title(language.English).String(strings.ReplaceAll(s, "_", " "))
 }
 

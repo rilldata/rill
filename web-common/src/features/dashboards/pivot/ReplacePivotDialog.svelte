@@ -12,7 +12,7 @@
     <AlertDialog.Title>Replace current pivot table?</AlertDialog.Title>
 
     <AlertDialog.Description>
-      Starting a new table will loose your previous work. Bookmark tables you
+      Starting a new table will lose your previous work. Bookmark tables you
       want to keep
     </AlertDialog.Description>
 

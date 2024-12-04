@@ -19,21 +19,18 @@ Maintaining user access is a vital role for administrators. There are a few key 
 ## Create a User
 
 ### Managing Users via Rill Cloud
-Starting from 0.48, we are starting to roll out some UI features for user managment with more features coming soon.
+There are two ways that a user can get access to Rill Cloud. 
 
-Please refer to the <a href='https://docs.rilldata.com/manage/user-management#via-the-ui' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
+**Organization invites from Admin**
+From the Users page on the Organization page, you can inivte a user to the organization. Please note that organization viewers have access to view all projects. 
+
+![img](/img/tutorials/admin/org-user-management.png)
+
+**Project level access requests**
+
+  Please refer to the <a href='https://docs.rilldata.com/manage/user-management#admin-invites-user' target = "blank">documentation how a user can request access to project, or how an admin can invite a user to the project. </a>
 
 
-Soon, you will be able to manage the users via the UI.
-
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-Historically (pre 0.48), user management was only possible via the CLI. Now, it is also possible to do so via the UI! 
-
-</div>
 
 ### Managing Users via the CLI
 
@@ -118,10 +115,11 @@ rill user list
 By adding the flag `--project <your_project>`, you can see the project users.
 
 ```bash
-rill user list --project my-rill-tutorial
-  NAME       EMAIL                   ROLE    CREATED ON            UPDATED ON           
- ---------- ----------------------- ------- --------------------- --------------------- 
-  Roy Endo   roy.endo@rilldata.com   admin   2024-07-03 15:33:57   2024-09-05 08:05:50  
+ rill user list --project my-rill-tutorial
+  NAME       EMAIL                       ROLE     CREATED ON            UPDATED ON           
+ ---------- --------------------------- --------- --------------------- --------------------- 
+  Roy Endo   <your_email>@domain.com     viewer   2024-05-16 01:08:14   2024-08-21 08:52:19  
+  Roy Endo   roy.endo@rilldata.com       admin    2024-07-02 23:33:57   2024-08-15 16:58:08  
 ```
 
 ### User group members

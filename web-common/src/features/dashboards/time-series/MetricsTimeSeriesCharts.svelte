@@ -3,6 +3,7 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import {
@@ -19,13 +20,14 @@
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
+  import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { timeGrainToDuration } from "@rilldata/web-common/lib/time/grains";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     TimeRangePreset,
@@ -44,7 +46,6 @@
     getOrderedStartEnd,
     updateChartInteractionStore,
   } from "./utils";
-  import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
 
   export let exploreName: string;
   export let workspaceWidth: number;
@@ -72,8 +73,8 @@
   let scrubEnd;
 
   let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
+  let startValue: Date | undefined;
+  let endValue: Date | undefined;
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
@@ -82,11 +83,11 @@
 
   $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
+
   $: comparisonDimension = $exploreStore?.selectedComparisonDimension;
-  $: showComparison = Boolean(
-    !comparisonDimension && $timeControlsStore.showTimeComparison,
-  );
+  $: showComparison = Boolean($timeControlsStore.showTimeComparison);
   $: tddChartType = $exploreStore?.tdd?.chartType;
+
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
@@ -133,15 +134,17 @@
   $: dimensionData = dimensionDataCopy;
 
   // FIXME: move this logic to a function + write tests.
-  $: if ($timeControlsStore.ready) {
+  $: if ($timeControlsStore.ready && interval) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.start,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
+      timeGrainToDuration(interval),
     );
     scrubEnd = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.end,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
+      timeGrainToDuration(interval),
     );
 
     const slicedData = isAllTime
@@ -265,7 +268,7 @@
       .map((m) => {
         return {
           id: m.name as string,
-          title: m.label || (m.name as string),
+          title: m.displayName || (m.name as string),
           type: PivotChipType.Measure,
         };
       });
@@ -289,7 +292,7 @@
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
-      <BackToOverview {exploreName} />
+      <BackToExplore {exploreName} />
       <ChartTypeSelector
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
@@ -302,9 +305,9 @@
         category="Measures"
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
-        selectableItems={$allMeasures.map(({ name, label }) => ({
+        selectableItems={$allMeasures.map(({ name, displayName }) => ({
           name: name ?? "",
-          label: label ?? name ?? "",
+          label: displayName ?? name ?? "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
@@ -421,7 +424,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -434,7 +437,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -464,7 +467,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
-              zone={$exploreStore.selectedTimezone}
+              zone={$exploreStore?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
               timeGrain={interval}

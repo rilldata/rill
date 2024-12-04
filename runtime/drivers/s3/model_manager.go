@@ -47,7 +47,7 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	return deleteObjectsInPrefix(ctx, sess, u.Host, base)
 }
 
-func (c *Connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+func (c *Connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
 	propsA := &drivers.ObjectStoreModelResultProperties{}
 	if err := mapstructure.Decode(a.Properties, propsA); err != nil {
 		return nil, err
@@ -59,16 +59,16 @@ func (c *Connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.Mode
 	}
 
 	if propsA.Format != propsB.Format {
-		return nil, fmt.Errorf("cannot merge split results that output to different file formats (format %q is not %q)", propsA.Format, propsB.Format)
+		return nil, fmt.Errorf("cannot merge partitioned results that output to different file formats (format %q is not %q)", propsA.Format, propsB.Format)
 	}
 
-	// NOTE: This makes an assumption that the common path of the individual split results only contains data for the model.
+	// NOTE: This makes an assumption that the common path of the individual partition results only contains data for the model.
 	// This is a convenient assumption, but may cause data loss if the common path contains other data.
 	// To protect against the most obvious error case, we check that the common path is not the bucket root.
 
 	commonPath := pathutil.CommonPrefix(propsA.Path, propsB.Path)
 	if commonPath == "" {
-		return nil, fmt.Errorf("cannot merge split results that do not share a common subpath (%q vs. %q)", propsA.Path, propsB.Path)
+		return nil, fmt.Errorf("cannot merge partitioned results that do not share a common subpath (%q vs. %q)", propsA.Path, propsB.Path)
 	}
 
 	p := &drivers.ObjectStoreModelResultProperties{

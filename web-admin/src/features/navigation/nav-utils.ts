@@ -2,7 +2,11 @@ import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/Met
 import type { Page } from "@sveltejs/kit";
 
 export function isOrganizationPage(page: Page): boolean {
-  return page.route.id === "/[organization]";
+  return (
+    page.route.id === "/[organization]" ||
+    !!page.route?.id?.startsWith("/[organization]/-/users") ||
+    !!page.route?.id?.startsWith("/[organization]/-/settings")
+  );
 }
 
 export function withinOrganization(page: Page): boolean {
@@ -17,6 +21,8 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/status" ||
     page.route.id === "/[organization]/[project]/-/settings" ||
     page.route.id === "/[organization]/[project]/-/settings/public-urls" ||
+    page.route.id ===
+      "/[organization]/[project]/-/settings/environment-variables" ||
     !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
 }
@@ -60,7 +66,18 @@ export function isReportExportPage(page: Page): boolean {
 }
 
 export function isPublicURLPage(page: Page): boolean {
-  return page.route.id === "/[organization]/[project]/-/share/[token]";
+  return (
+    page.route.id === "/[organization]/[project]/-/share/[token]" ||
+    isPublicReportPage(page)
+  );
+}
+
+export function isPublicReportPage(page: Page): boolean {
+  return (
+    !!page.route.id?.startsWith(
+      "/[organization]/[project]/-/reports/[report]",
+    ) && page.url.searchParams.has("token")
+  );
 }
 
 export function isProjectRequestAccessPage(page: Page): boolean {
@@ -71,6 +88,10 @@ export function isProjectRequestAccessPage(page: Page): boolean {
 
 export function isProjectInvitePage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/invite";
+}
+
+export function isBillingUpgradePage(page: Page): boolean {
+  return page.route.id === "/[organization]/-/upgrade-callback";
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

@@ -40,7 +40,8 @@
       }
     },
   });
-  $: exploreTitle = $explore.data?.explore?.explore?.state?.validSpec?.title;
+  $: exploreTitle =
+    $explore.data?.explore?.explore?.state?.validSpec?.displayName;
 
   $: isDashboardNotFound =
     !$explore.data &&
@@ -85,7 +86,7 @@
   {:else if isDashboardErrored}
     <DashboardErrored organization={orgName} project={projectName} />
   {:else if metricsViewName}
-    {#key metricsViewName}
+    {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
         {#if $user.isSuccess && $user.data.user}
           <DashboardBookmarksStateProvider {metricsViewName} {exploreName}>

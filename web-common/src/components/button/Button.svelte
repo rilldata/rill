@@ -39,6 +39,7 @@
   export let noWrap = false;
   export let gray = false;
   export let danger = false;
+  export let preload = true;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -82,6 +83,7 @@
   use:builderActions={{ builders }}
   on:click={handleClick}
   style={forcedStyle}
+  {...href ? { "data-sveltekit-preload-data": preload } : {}}
 >
   {#if loading}
     <svg
@@ -245,7 +247,7 @@
   }
 
   .subtle:disabled {
-    @apply text-slate-400 bg-transparent;
+    @apply text-slate-400 bg-slate-50;
   }
 
   /* LINK STYLES */
@@ -392,7 +394,11 @@
     @apply bg-white px-0;
   }
 
-  .gray {
-    @apply saturate-0;
+  .gray:not(:hover) {
+    @apply text-slate-600 border-slate-300;
+  }
+
+  .gray:not(.ghost):not(:hover) {
+    @apply bg-slate-50;
   }
 </style>

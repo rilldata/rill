@@ -1,7 +1,7 @@
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
 import type { YAMLMap } from "yaml";
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
 export const types: ItemType[] = ["measures", "dimensions"];
 
@@ -31,7 +31,7 @@ export class YAMLDimension {
   column: string;
   expression: string;
   name: string;
-  label: string;
+  display_name: string;
   description: string;
   unnest: boolean | undefined;
   resourceName: string;
@@ -43,7 +43,7 @@ export class YAMLDimension {
     this.column = item?.get("column") ?? "";
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("label") ?? "";
+    this.display_name = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.unnest =
       item?.get("unnest") === undefined
@@ -56,7 +56,7 @@ export class YAMLDimension {
 export class YAMLMeasure {
   expression: string;
   name: string;
-  label: string;
+  display_name: string;
   description: string;
   valid_percent_of_total: boolean;
   format_d3: string;
@@ -65,7 +65,7 @@ export class YAMLMeasure {
   constructor(item?: YAMLMap<string, string>) {
     this.expression = item?.get("expression") ?? "";
     this.name = item?.get("name") ?? "";
-    this.label = item?.get("label") ?? "";
+    this.display_name = item?.get("display_name") ?? item?.get("label") ?? "";
     this.description = item?.get("description") ?? "";
     this.valid_percent_of_total =
       item?.get("valid_percent_of_total") === undefined
@@ -74,7 +74,7 @@ export class YAMLMeasure {
     this.format_d3 = item?.get("format_d3") ?? "";
     this.format_preset =
       (item?.get("format_preset") as unknown as FormatPreset) ??
-      (this.format_d3 ? "" : FormatPreset.HUMANIZE);
+      (this.format_d3 ? "" : FormatPreset.NONE);
   }
 }
 

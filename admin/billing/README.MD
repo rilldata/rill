@@ -64,9 +64,9 @@ On first project deployment, org will automatically moved to trial plan having 3
 By default, each user across lifetime is restricted to 2 trials. This is **not** checked for superusers and if needed can be increased for any user using `rill sudo quota set --user <email> --trial-orgs <num>`
 
 ### Avoiding trial and restrictive quotas
-Immediately after org creation or at any time in the future, superusers can use `rill sudo org set-internal-plan` to set the org to internal plan which will have unlimited quotas and no trial.
+Immediately after org creation or at any time in the future, superusers can use `rill sudo org set-internal-plan <org-name>` to set the org to internal plan which will have unlimited quotas and no trial.
 
-If creating org through cli you can just use `rill org create <org-name> && rill sudo org set-internal-plan`.
+If creating org through cli you can just use `rill org create <org-name> && rill sudo org set-internal-plan <org-name>`.
 
 ### Continuing with Trial plan and upgrade
 To continue with trial plan, user can upgrade to Teams plan after entering payment details and address in billing portal. In test-mode, use any of the various test cards listed [here](https://docs.stripe.com/testing#cards)
@@ -101,3 +101,15 @@ If needed, trial can be extended using `rill sudo billing extend-trial --org <or
 
 ### Deleting billing issues
 If needed, billing issues can be deleted using `rill sudo billing delete-issue --org <org>`.
+
+## Local dev and testing
+`rill devtool start cloud` starts the admin service with Orb and Stripe integration (except for Orb webhooks, see above for manual setup).
+All billing related background jobs like checking for trial end, hibernation on subscription cancellation, etc. rely on end or grace end times set in respective billing issues.
+
+These times can be artificially advanced using `rill devtool subscription advance-time` to test out various billing scenarios.
+
+The command will use the default org and yesterday as due date. Pass `--org` or use `rill org switch` to change the org. Pass `--time` to advance due dates to a specific time.
+1. On a fresh trial plan running the above will advance time to trial's end date. To test "Ending soon" pass a time that is in the future but within 7 days.
+2. Once the trial has ended, running the command again will advance time to end the grace period.
+3. When on a cancelled team plan, running the command will advance time to end the plan end date (this is the billing cycle end date). Note that there will not be a grace period.
+4. When a invoice payment fails, running the command will end the grace period.

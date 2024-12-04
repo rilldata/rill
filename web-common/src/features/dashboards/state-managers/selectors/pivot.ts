@@ -1,6 +1,7 @@
 import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { DashboardDataSources } from "./types";
 import { PivotChipType } from "../../pivot/types";
+import { allDimensions } from "./dimensions";
 
 export const pivotSelectors = {
   showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
@@ -14,14 +15,18 @@ export const pivotSelectors = {
       .filter((m) => !columns.measure.find((c) => c.id === m.name))
       .map((measure) => ({
         id: measure.name || "Unknown",
-        title: measure.label || measure.name || "Unknown",
+        title: measure.displayName || measure.name || "Unknown",
         type: PivotChipType.Measure,
         description: measure.description,
       }));
   },
-  dimensions: ({ validMetricsView, dashboard }: DashboardDataSources) => {
+  dimensions: ({
+    validMetricsView,
+    dashboard,
+    validExplore,
+  }: DashboardDataSources) => {
     {
-      const dimensions = validMetricsView?.dimensions ?? [];
+      const dimensions = allDimensions({ validMetricsView, validExplore });
 
       const columns = dashboard.pivot.columns;
       const rows = dashboard.pivot.rows;
@@ -36,7 +41,10 @@ export const pivotSelectors = {
         .map((dimension) => ({
           id: dimension.name || dimension.column || "Unknown",
           title:
-            dimension.label || dimension.name || dimension.column || "Unknown",
+            dimension.displayName ||
+            dimension.name ||
+            dimension.column ||
+            "Unknown",
           type: PivotChipType.Dimension,
           description: dimension.description,
         }));

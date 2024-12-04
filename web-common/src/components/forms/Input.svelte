@@ -4,6 +4,7 @@
   import { slide } from "svelte/transition";
   import Select from "./Select.svelte";
   import InputLabel from "./InputLabel.svelte";
+  import FieldSwitcher from "./FieldSwitcher.svelte";
 
   const voidFunction = () => {};
 
@@ -31,10 +32,15 @@
   export let enableSearch = false;
   export let fields: string[] | undefined = [];
   export let disabled = false;
+  export let link: string = "";
+  export let lockable = false;
+  export let capitalizeLabel = true;
+  export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
     | { value: string; label: string; type?: string }[]
     | undefined = undefined;
+  export let additionalClass = "";
   export let onInput: (
     newValue: string,
     e: Event & {
@@ -50,6 +56,7 @@
   export let onEnter: () => void = voidFunction;
   export let onEscape: () => void = voidFunction;
 
+  let hitEnter = false;
   let showPassword = false;
   let inputElement: HTMLElement | undefined;
   let selectElement: HTMLButtonElement | undefined;
@@ -70,6 +77,10 @@
   function onElementBlur(
     e: FocusEvent & { currentTarget: EventTarget & HTMLDivElement },
   ) {
+    if (hitEnter) {
+      hitEnter = false;
+      return;
+    }
     focus = false;
     onBlur(e);
   }
@@ -80,7 +91,8 @@
     },
   ) {
     if (e.key === "Enter") {
-      e.preventDefault();
+      hitEnter = true;
+      inputElement?.blur();
       onEnter();
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -89,27 +101,26 @@
   }
 </script>
 
-<div class="component-wrapper" class:w-full={full} style:width>
+<div
+  class="component-wrapper {additionalClass}"
+  class:w-full={full}
+  style:width
+>
   {#if label}
-    <InputLabel {label} {optional} {id} {hint}>
+    <InputLabel
+      {label}
+      {optional}
+      {id}
+      {hint}
+      {link}
+      capitalize={capitalizeLabel}
+    >
       <slot name="mode-switch" slot="mode-switch" />
     </InputLabel>
   {/if}
 
   {#if fields && fields?.length > 1}
-    <div class="option-wrapper">
-      {#each fields as field, i (field)}
-        <button
-          on:click={() => {
-            selected = i;
-          }}
-          class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
-          class:selected={selected === i}
-        >
-          {field}
-        </button>
-      {/each}
-    </div>
+    <FieldSwitcher {fields} {selected} />
   {/if}
 
   {#if !options}
@@ -142,6 +153,7 @@
         />
       {:else}
         <input
+          title={value}
           {id}
           {type}
           {placeholder}
@@ -184,6 +196,8 @@
       ringFocus
       {sameWidth}
       {id}
+      {lockable}
+      {lockTooltip}
       bind:selectElement
       bind:value
       {options}
@@ -209,17 +223,13 @@
   {/if}
 
   {#if description}
-    <div>{description}</div>
+    <div class="description">{description}</div>
   {/if}
 </div>
 
 <style lang="postcss">
   .component-wrapper {
     @apply flex  flex-col gap-y-1 h-fit justify-center;
-  }
-
-  .option-wrapper {
-    @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
   }
 
   .sm {
@@ -236,11 +246,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center px-2;
+    @apply flex justify-center items-center pl-2 pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit;
+    @apply h-fit w-fit truncate;
   }
 
   input,
@@ -250,6 +260,7 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+    @apply truncate;
   }
 
   .multiline-input {
@@ -265,6 +276,11 @@
   .input-wrapper:focus-within {
     @apply border-primary-500;
     @apply ring-2 ring-primary-100;
+  }
+
+  .error-input-wrapper.input-wrapper {
+    @apply border-red-600;
+    @apply ring-1 ring-transparent;
   }
 
   .error {
@@ -283,7 +299,7 @@
     @apply bg-primary-100;
   }
 
-  .option-wrapper > .selected {
-    @apply border-primary-500 z-50 text-primary-500;
+  .description {
+    @apply text-xs text-gray-500;
   }
 </style>

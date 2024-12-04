@@ -35,10 +35,6 @@ export const primaryDimension = (
   );
 };
 
-export const dimensionTableSearchString = (
-  dashData: DashboardDataSources,
-): string | undefined => dashData.dashboard.dimensionSearchText;
-
 export const virtualizedTableColumns =
   (
     dashData: DashboardDataSources,
@@ -129,9 +125,4 @@ export const dimensionTableSelectors = {
    * and unfiltered total.
    */
   prepareDimTableRows,
-
-  /**
-   * gets the dimension table search string.
-   */
-  dimensionTableSearchString,
 };

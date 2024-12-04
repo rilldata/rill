@@ -15,7 +15,9 @@
   import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const workspaces = new Map([
     [ResourceKind.Source, SourceWorkspace],
@@ -32,6 +34,8 @@
 
   let editor: EditorView;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({ fileArtifact } = data);
   $: ({
     autoSave,
@@ -40,11 +44,16 @@
     resourceName,
     inferredResourceKind,
     path,
+    getResource,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
+
+  $: resourceQuery = getResource(queryClient, instanceId);
+
+  $: resource = $resourceQuery.data;
 
   $: extensions =
     resourceKind === ResourceKind.API
@@ -79,6 +88,7 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
       slot="header"
+      {resource}
       resourceKind={resourceKind ?? $inferredResourceKind ?? undefined}
       filePath={path}
       hasUnsavedChanges={$hasUnsavedChanges}

@@ -13,7 +13,8 @@ sidebar_position: 7
 
 [MotherDuck](https://motherduck.com/docs/getting-started/), on the other hand, is a managed DuckDB-in-the-cloud service, providing enhanced features for scalability, security, and collaboration within larger organizations. It offers advanced management tools, security features like access control and encryption, and support for concurrent access, enabling teams to leverage DuckDB's analytical capabilities at scale while ensuring data governance and security. Similarly, Rill supports natively connecting to and reading from Motherduck as a source by utilizing the [DuckDB Go driver](https://duckdb.org/docs/api/go.html)
 
-![Connecting to DuckDB/MotherDuck](/img/reference/connectors/motherduck/motherduck.png)
+<img src = '/img/reference/connectors/motherduck/motherduck.png' class='rounded-png' />
+<br />
 
 ## Connecting to External DuckDB as a Source
 
@@ -23,7 +24,8 @@ As noted above, if you wish to connect to a persistent DuckDB database to read e
 
 If creating a new DuckDB source from the UI, you should pass in the appropriate path to the DuckDB database file under **DB** and use the appopriate [DuckDB select statement](https://duckdb.org/docs/sql/statements/select.html) to read in the table under **SQL**:
 
-![Connecting to an existing DuckDB table](/img/reference/connectors/motherduck/duckdb_example.png)
+<img src = '/img/reference/olap-engines/duckdb/duckdb.png' class='rounded-png' />
+<br />
 
 On the other hand, if you are creating the source YAML file directly, the definition should look something like:
 
@@ -51,6 +53,15 @@ If the DuckDB database file is external to your Rill project directory, you will
 :::
 
 ## Connecting to MotherDuck
+
+If you are creating the source YAML file directly, the definition should look something like:
+
+```yaml
+type: "source"
+connector: "motherduck"
+sql: "SELECT * from <my_db>.<duckdb_table>"
+db: "md:<my_db>"
+```
 
 ### Local credentials
 

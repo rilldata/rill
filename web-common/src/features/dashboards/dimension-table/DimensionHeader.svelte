@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
+  import { Button, Switch } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -12,28 +12,29 @@
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "@rilldata/web-common/runtime-client";
+  import { onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import exportToplist from "./export-toplist";
-  import {
-    createQueryServiceExport,
-    V1ExportFormat,
-  } from "@rilldata/web-common/runtime-client";
   import { getDimensionTableExportArgs } from "./dimension-table-export-utils";
+  import exportToplist from "./export-toplist";
 
   export let dimensionName: string;
   export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
+  export let searchText: string;
+  export let onToggleSearchItems: () => void;
 
-  const dispatch = createEventDispatcher();
   const exportDash = createQueryServiceExport();
 
   const stateManagers = getStateManagers();
@@ -41,16 +42,12 @@
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensions: { getDimensionDisplayName },
-      dimensionTable: { dimensionTableSearchString },
+
       dimensionFilters: { isFilterExcludeMode },
       measures: { visibleMeasures },
     },
     actions: {
       sorting: { toggleSort },
-      dimensionTable: {
-        setDimensionTableSearchString,
-        clearDimensionTableSearchString,
-      },
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
@@ -69,24 +66,14 @@
 
   let searchBarOpen = false;
 
-  // FIXME: this extra `searchText` variable should be eliminated,
-  // but there is no way to make the <Search> component a fully
-  // "controlled" component for now, so we have to go through the
-  // `value` binding it exposes.
-  let searchText: string | undefined = undefined;
-  $: searchText = $dimensionTableSearchString;
-  function onSearch() {
-    setDimensionTableSearchString(searchText);
-  }
-
   function closeSearchBar() {
-    clearDimensionTableSearchString();
+    searchText = "";
     searchBarOpen = false;
   }
 
   function onSubmit() {
     if (!areAllTableRowsSelected) {
-      dispatch("toggle-all-search-items");
+      onToggleSearchItems();
       closeSearchBar();
     }
   }
@@ -134,7 +121,7 @@
       .map((m) => {
         return {
           id: m.name as string,
-          title: m.label || (m.name as string),
+          title: m.displayName || (m.name as string),
           type: PivotChipType.Measure,
         };
       });
@@ -149,10 +136,6 @@
     );
   }
 
-  onDestroy(() => {
-    clearDimensionTableSearchString();
-  });
-
   const scheduledReportsQueryArgs = getDimensionTableExportArgs(stateManagers);
 
   const handleExportTopList = async (format: V1ExportFormat) => {
@@ -160,8 +143,13 @@
       ctx: stateManagers,
       query: exportDash,
       format,
+      searchText,
     });
   };
+
+  onDestroy(() => {
+    searchText = "";
+  });
 </script>
 
 <div class="flex justify-between items-center p-1 pr-5 h-7">
@@ -169,10 +157,10 @@
     {#if isFetching}
       <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
-      <span class="ui-copy-icon">
+      <Button type="link" forcedStyle="padding: 0; gap: 0px;">
         <Back size="16px" />
-      </span>
-      <span>All Dimensions</span>
+        <span>All Dimensions</span>
+      </Button>
     {/if}
   </button>
 
@@ -186,11 +174,7 @@
         transition:slideRight={{ leftOffset: 8 }}
         class="flex items-center gap-x-2 p-1.5"
       >
-        <Search
-          bind:value={searchText}
-          on:input={onSearch}
-          on:submit={onSubmit}
-        />
+        <Search bind:value={searchText} on:submit={onSubmit} />
         <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
           <Close />
         </button>

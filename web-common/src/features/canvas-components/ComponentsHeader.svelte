@@ -3,7 +3,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import GenerateVegaSpecPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateVegaSpecPrompt.svelte";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     extractFileName,
     splitFolderAndFileName,
@@ -27,7 +26,6 @@
       newTitle,
       filePath,
       componentName,
-      fileArtifacts.getNamesForKind(ResourceKind.Component),
     );
 
     if (newRoute) await goto(newRoute);

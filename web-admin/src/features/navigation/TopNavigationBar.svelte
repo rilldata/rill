@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
+  import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -11,6 +11,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
+    createAdminServiceGetBillingSubscription,
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations as listOrgs,
     createAdminServiceListProjectsForOrganization as listProjects,
@@ -29,10 +30,12 @@
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMetricsExplorerPage,
+    isOrganizationPage,
     isProjectPage,
     isPublicURLPage,
   } from "./nav-utils";
 
+  export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
 
@@ -55,6 +58,7 @@
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
+  $: onOrgPage = isOrganizationPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -88,9 +92,20 @@
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
+  $: plan = createAdminServiceGetBillingSubscription(organization, {
+    query: {
+      enabled: Boolean(
+        !!organization && manageOrganization && !onPublicURLPage,
+      ),
+      select: (data) => data.subscription?.plan,
+    },
+  });
   $: organizationPaths = organizations.reduce(
     (map, { name, displayName }) =>
-      map.set(name.toLowerCase(), { label: displayName || name }),
+      map.set(name.toLowerCase(), {
+        label: displayName || name,
+        pill: $plan?.data?.displayName,
+      }),
     new Map<string, PathOption>(),
   );
 
@@ -105,8 +120,8 @@
     return map.set(name.toLowerCase(), {
       label:
         (isMetricsExplorer
-          ? resource?.explore?.spec?.title
-          : resource?.canvas?.spec?.title) || name,
+          ? resource?.explore?.spec?.displayName
+          : resource?.canvas?.spec?.displayName) || name,
       section: isMetricsExplorer ? "explore" : "-/dashboards",
     });
   }, new Map<string, PathOption>());
@@ -114,7 +129,7 @@
   $: alertPaths = alerts.reduce((map, alert) => {
     const name = alert.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: alert.alert.spec.title || name,
+      label: alert.alert.spec.displayName || name,
       section: "-/alerts",
     });
   }, new Map<string, PathOption>());
@@ -122,7 +137,7 @@
   $: reportPaths = reports.reduce((map, report) => {
     const name = report.meta.name.name;
     return map.set(name.toLowerCase(), {
-      label: report.report.spec.title || name,
+      label: report.report.spec.displayName || name,
       section: "-/reports",
     });
   }, new Map<string, PathOption>());
@@ -153,12 +168,15 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.title ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
-<div class="flex items-center w-full pr-4 pl-2 py-1">
+<div
+  class="flex items-center w-full pr-4 pl-2 py-1"
+  class:border-b={!onProjectPage && !onOrgPage}
+>
   <!-- Left side -->
   <a
     href={rillLogoHref}
@@ -195,7 +213,7 @@
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
-              <ShareDashboardButton {createMagicAuthTokens} />
+              <ShareDashboardPopover {createMagicAuthTokens} />
             {/if}
           </StateManagersProvider>
         {/key}

@@ -42,7 +42,7 @@ driver: ${connector.name}`;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
-        return `${key}: "{{ .vars.${makeDotEnvConnectorKey(
+        return `${key}: "{{ .env.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
         )} }}"`;

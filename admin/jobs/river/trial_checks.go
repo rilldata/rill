@@ -57,6 +57,7 @@ func (w *TrialEndingSoonWorker) trialEndingSoon(ctx context.Context) error {
 			ToEmail:      org.BillingEmail,
 			ToName:       org.Name,
 			OrgName:      org.Name,
+			UpgradeURL:   w.admin.URLs.Billing(org.Name, true),
 			TrialEndDate: m.EndDate,
 		})
 		if err != nil {
@@ -138,21 +139,23 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			EventTime: m.EndDate,
 		})
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to add billing error: %w", err)
+			return fmt.Errorf("failed to add billing error: %w", prevErr)
 		}
 
 		// delete the on-trial billing issue
 		err = w.admin.DB.DeleteBillingIssue(cctx, o.ID)
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to delete billing issue: %w", err)
+			return fmt.Errorf("failed to delete billing issue: %w", prevErr)
 		}
 
 		// send email
@@ -160,14 +163,16 @@ func (w *TrialEndCheckWorker) trialEndCheck(ctx context.Context) error {
 			ToEmail:            org.BillingEmail,
 			ToName:             org.Name,
 			OrgName:            org.Name,
+			UpgradeURL:         w.admin.URLs.Billing(org.Name, true),
 			GracePeriodEndDate: m.GracePeriodEndDate,
 		})
 		if err != nil {
+			prevErr := err
 			err = tx.Rollback()
 			if err != nil {
 				return fmt.Errorf("failed to rollback transaction: %w", err)
 			}
-			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, err)
+			return fmt.Errorf("failed to send trial period ended email for org %q: %w", org.Name, prevErr)
 		}
 
 		err = tx.Commit()
@@ -281,9 +286,10 @@ func (w *TrialGracePeriodCheckWorker) trialGracePeriodCheck(ctx context.Context)
 
 		// send email
 		err = w.admin.Email.SendTrialGracePeriodEnded(&email.TrialGracePeriodEnded{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			OrgName: org.Name,
+			ToEmail:    org.BillingEmail,
+			ToName:     org.Name,
+			OrgName:    org.Name,
+			UpgradeURL: w.admin.URLs.Billing(org.Name, true),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to send trial grace period ended email for org %q: %w", org.Name, err)

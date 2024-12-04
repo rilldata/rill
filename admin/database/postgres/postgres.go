@@ -367,16 +367,11 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
-	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &projectDTO{}
-	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version, prod_variables_encryption_key_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, vars, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion, encKeyID,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -397,16 +392,11 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 		opts.Annotations = make(map[string]string, 0)
 	}
 
-	vars, encKeyID, err := c.encryptMap(opts.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &projectDTO{}
-	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, subpath=$12, prod_ttl_seconds=$13, annotations=$14, prod_version=$15, prod_variables_encryption_key_id=$16, updated_on=now()
-		WHERE id=$17 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, vars, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, encKeyID, id,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, github_url=$5, github_installation_id=$6, archive_asset_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, subpath=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
+		WHERE id=$15 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.Subpath, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -414,13 +404,19 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return c.projectFromDTO(res)
 }
 
-func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
-	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
+func (c *connection) CountProjectsQuotaUsage(ctx context.Context, orgID string) (*database.ProjectsQuotaUsage, error) {
+	res := &database.ProjectsQuotaUsage{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		WITH t1 AS (SELECT * FROM projects WHERE org_id = $1)
+		SELECT
+			(SELECT COUNT(*) FROM t1) AS projects,
+			(SELECT COUNT(*) FROM deployments d WHERE d.project_id IN (SELECT id FROM t1)) AS deployments,
+			(SELECT COALESCE(SUM(prod_slots), 0) FROM t1) AS slots
+	`, orgID).StructScan(res)
 	if err != nil {
-		return 0, parseErr("project count", err)
+		return nil, parseErr("projects quota usage", err)
 	}
-	return count, nil
+	return res, nil
 }
 
 func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*database.ProjectWhitelistedDomainWithJoinedRoleNames, error) {
@@ -535,9 +531,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, provisioner, provision_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, runtime_version, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-		opts.ProjectID, opts.Provisioner, opts.ProvisionID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.RuntimeVersion, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ProjectID, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -550,18 +546,23 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
-func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
+func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE deployments
+		SET branch=$1, runtime_host=$2, runtime_instance_id=$3, runtime_audience=$4, status=$5, status_message=$6, updated_on=now()
+		WHERE id=$7 RETURNING *`,
+		opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage, id,
+	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET runtime_version=$1, updated_on=now() WHERE id=$2 RETURNING *", version, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -576,28 +577,36 @@ func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) e
 	return nil
 }
 
-func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET branch=$1, updated_on=now() WHERE id=$2 RETURNING *", branch, id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
+func (c *connection) UpsertStaticRuntimeAssignment(ctx context.Context, id, host string, slots int) error {
+	// If slots is 0, delete the assignment if it exists (may not exist due to idempotence, so not checking the affected row count).
+	if slots == 0 {
+		_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
+		if err != nil {
+			return parseErr("slots used", err)
+		}
+		return nil
 	}
-	return res, nil
+
+	// Upsert the assignment.
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO static_runtime_assignments (resource_id, host, slots) VALUES ($1, $2, $3) ON CONFLICT (resource_id) DO UPDATE SET slots = EXCLUDED.slots", id, host, slots)
+	if err != nil {
+		return parseErr("slots used", err)
+	}
+	return nil
 }
 
-func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
-	res := &database.DeploymentsCount{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COUNT(*) as deployments, COALESCE(SUM(slots), 0) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
+func (c *connection) DeleteStaticRuntimeAssignment(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM static_runtime_assignments WHERE resource_id=$1", id)
 	if err != nil {
-		return nil, parseErr("deployments count", err)
+		// Not using checkDeleteRow because this is operation must be idempotent, so the row may not exist.
+		return parseErr("slots used", err)
 	}
-	return res, nil
+	return nil
 }
 
-func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.RuntimeSlotsUsed, error) {
-	var res []*database.RuntimeSlotsUsed
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
+func (c *connection) ResolveStaticRuntimeSlotsUsed(ctx context.Context) ([]*database.StaticRuntimeSlotsUsed, error) {
+	var res []*database.StaticRuntimeSlotsUsed
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT host, SUM(slots) as slots FROM static_runtime_assignments GROUP BY host ORDER BY host")
 	if err != nil {
 		return nil, parseErr("slots used", err)
 	}
@@ -1112,7 +1121,7 @@ func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID 
 		n++
 	}
 
-	where += " AND (t.expires_on IS NULL OR t.expires_on > now())"
+	where += " AND (t.expires_on IS NULL OR t.expires_on > now()) AND t.internal=false"
 
 	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
 	args = append(args, limit)
@@ -1145,7 +1154,7 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string, withSecr
 
 func (c *connection) FindMagicAuthTokenWithUser(ctx context.Context, id string) (*database.MagicAuthTokenWithUser, error) {
 	res := &magicAuthTokenWithUserDTO{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE t.id=$1 AND t.internal=false", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
@@ -1168,9 +1177,9 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 
 	res := &magicAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, resource_type, resource_name, filter_json, fields, state, title)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.ResourceType, opts.ResourceName, opts.FilterJSON, opts.Fields, opts.State, opts.Title,
+		INSERT INTO magic_auth_tokens (id, secret_hash, secret, secret_encryption_key_id, project_id, expires_on, created_by_user_id, attributes, resource_type, resource_name, filter_json, fields, state, display_name, internal)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+		opts.ID, opts.SecretHash, encSecret, encKeyID, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.ResourceType, opts.ResourceName, opts.FilterJSON, opts.Fields, opts.State, opts.DisplayName, opts.Internal,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
@@ -1191,9 +1200,62 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 	return checkDeleteRow("magic auth token", res, err)
 }
 
+func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("magic auth token", err)
+}
+
+func (c *connection) FindReportTokens(ctx context.Context, reportName string) ([]*database.ReportToken, error) {
+	var res []*database.ReportToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM report_tokens WHERE report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindReportTokensWithSecret(ctx context.Context, reportName string) ([]*database.ReportTokenWithSecret, error) {
+	var res []*reportTokenWithSecretDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT t.*, m.secret as magic_auth_token_secret, m.secret_encryption_key_id FROM report_tokens t JOIN magic_auth_tokens m ON t.magic_auth_token_id=m.id WHERE t.report_name=$1`, reportName)
+	if err != nil {
+		return nil, parseErr("report tokens", err)
+	}
+
+	ret := make([]*database.ReportTokenWithSecret, len(res))
+	for i, dto := range res {
+		ret[i], err = c.reportTokenWithSecretFromDTO(dto)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ret, nil
+}
+
+func (c *connection) FindReportTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*database.ReportToken, error) {
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM report_tokens WHERE magic_auth_token_id=$1`, magicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertReportToken(ctx context.Context, opts *database.InsertReportTokenOptions) (*database.ReportToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ReportToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO report_tokens (report_name, recipient_email, magic_auth_token_id) VALUES ($1, $2, $3) RETURNING *`, opts.ReportName, opts.RecipientEmail, opts.MagicAuthTokenID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("report token", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -1740,7 +1802,7 @@ func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) 
 // FindBookmarks returns a list of bookmarks for a user per project
 func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and (user_id = $4 or shared = true or "default" = true)`,
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and (user_id = $4 or shared = true or "default" = true)`,
 		projectID, resourceKind, resourceName, userID)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
@@ -1760,7 +1822,7 @@ func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*data
 
 func (c *connection) FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*database.Bookmark, error) {
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and "default" = true`,
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and "default" = true`,
 		projectID, resourceKind, resourceName).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
@@ -2060,6 +2122,176 @@ func (c *connection) DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID s
 	return checkDeleteRow("billing issue", res, err)
 }
 
+func (c *connection) FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*database.ProjectVariable, error) {
+	q := `SELECT * FROM project_variables p WHERE p.project_id = $1`
+	args := []interface{}{projectID}
+	if environment != nil {
+		// Also include variables that are not environment specific and not set for the given environment
+		q += `
+			AND (
+				p.environment = $2 
+				OR (
+					p.environment = '' 
+					AND NOT EXISTS (
+						SELECT 1 
+						FROM project_variables p2 
+						WHERE p2.project_id = p.project_id 
+						AND p2.environment = $2 
+						AND lower(p2.name) = lower(p.name)
+					)
+				)
+			)
+		`
+		args = append(args, environment)
+	}
+	var res []*database.ProjectVariable
+	err := c.getDB(ctx).SelectContext(ctx, &res, q, args...)
+	if err != nil {
+		return nil, parseErr("project variables", err)
+	}
+
+	// Decrypt the variables
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *connection) UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*database.ProjectVariable, error) {
+	query := `INSERT INTO project_variables (project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on)
+	VALUES %s
+	ON CONFLICT (project_id, environment, lower(name)) DO UPDATE SET
+		value = EXCLUDED.value,
+		value_encryption_key_id = EXCLUDED.value_encryption_key_id,
+		updated_by_user_id = EXCLUDED.updated_by_user_id,
+		updated_on = now() RETURNING *`
+
+	var placeholders strings.Builder
+	args := []any{projectID, environment, userID}
+	i := 3
+	for key, value := range vars {
+		// Encrypt the variables
+		encryptedValue, valueEncryptionKeyID, err := c.encrypt([]byte(value))
+		if err != nil {
+			return nil, err
+		}
+
+		if valueEncryptionKeyID != "" {
+			value = base64.StdEncoding.EncodeToString(encryptedValue)
+		}
+		args = append(args, key, value, valueEncryptionKeyID)
+		if placeholders.Len() > 0 {
+			placeholders.WriteString(", ")
+		}
+		fmt.Fprintf(&placeholders, "($1, $2, $%d, $%d, $%d, $3, now())", i+1, i+2, i+3) // project_id, environment, name, value, value_encryption_key_id, updated_by_user_id, updated_on
+		i += 3
+	}
+
+	var res []*database.ProjectVariable
+	err := c.getDB(ctx).SelectContext(ctx, &res, fmt.Sprintf(query, placeholders.String()), args...)
+	if err != nil {
+		return nil, parseErr("project variables", err)
+	}
+
+	// Decrypt the variables
+	err = c.decryptProjectVariables(res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *connection) DeleteProjectVariables(ctx context.Context, projectID, environment string, names []string) error {
+	if len(names) == 0 {
+		return fmt.Errorf("no names provided to delete project variables")
+	}
+
+	placeholders := make([]string, len(names))
+	args := make([]interface{}, len(names)+2)
+	args[0] = projectID
+	args[1] = environment
+	for i, name := range names {
+		placeholders[i] = fmt.Sprintf("lower($%d)", i+3)
+		args[i+2] = name
+	}
+
+	query := fmt.Sprintf("DELETE FROM project_variables WHERE project_id = $1 AND environment = $2 AND lower(name) IN (%s)", strings.Join(placeholders, ","))
+	_, err := c.getDB(ctx).ExecContext(ctx, query, args...)
+	return err
+}
+
+func (c *connection) FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*database.ProvisionerResource, error) {
+	var res []*provisionerResourceDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM provisioner_resources WHERE deployment_id = $1`, deploymentID)
+	if err != nil {
+		return nil, parseErr("provisioner resources", err)
+	}
+	return c.provisionerResourcesFromDTOs(res)
+}
+
+func (c *connection) InsertProvisionerResource(ctx context.Context, opts *database.InsertProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &provisionerResourceDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO provisioner_resources (id, deployment_id, "type", name, status, status_message, provisioner, args_json, state_json, config_json)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.ID, opts.DeploymentID, opts.Type, opts.Name, opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, opts *database.UpdateProvisionerResourceOptions) (*database.ProvisionerResource, error) {
+	args, err := json.Marshal(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	state, err := json.Marshal(opts.State)
+	if err != nil {
+		return nil, err
+	}
+	config, err := json.Marshal(opts.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &provisionerResourceDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5, updated_on = now() WHERE id = $6 RETURNING *`,
+		opts.Status, opts.StatusMessage, args, state, config, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
+func (c *connection) DeleteProvisionerResource(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM provisioner_resources WHERE id = $1", id)
+	return checkDeleteRow("provisioner resource", res, err)
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -2068,17 +2300,7 @@ type projectDTO struct {
 }
 
 func (c *connection) projectFromDTO(dto *projectDTO) (*database.Project, error) {
-	err := dto.ProdVariables.AssignTo(&dto.Project.ProdVariables)
-	if err != nil {
-		return nil, err
-	}
-	m, err := c.decryptMap(dto.Project.ProdVariables, dto.Project.ProdVariablesEncryptionKeyID)
-	if err != nil {
-		return nil, err
-	}
-	dto.Project.ProdVariables = m
-
-	err = dto.Annotations.AssignTo(&dto.Project.Annotations)
+	err := dto.Annotations.AssignTo(&dto.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -2098,89 +2320,40 @@ func (c *connection) projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, 
 	return res, nil
 }
 
-// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
-func (c *connection) encrypt(text []byte) ([]byte, string, error) {
-	if len(c.encKeyring) == 0 {
-		return text, "", nil
-	}
-	// use the first key in the keyring for encryption
-	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+// provisionerResourceDTO wraps database.ProvisionerResource, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type provisionerResourceDTO struct {
+	*database.ProvisionerResource
+	Args   pgtype.JSON `db:"args_json"`
+	State  pgtype.JSON `db:"state_json"`
+	Config pgtype.JSON `db:"config_json"`
+}
+
+func (c *connection) provisionerResourceFromDTO(dto *provisionerResourceDTO) (*database.ProvisionerResource, error) {
+	err := dto.Args.AssignTo(&dto.ProvisionerResource.Args)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return encrypted, c.encKeyring[0].ID, nil
+	err = dto.State.AssignTo(&dto.ProvisionerResource.State)
+	if err != nil {
+		return nil, err
+	}
+	err = dto.Config.AssignTo(&dto.ProvisionerResource.Config)
+	if err != nil {
+		return nil, err
+	}
+	return dto.ProvisionerResource, nil
 }
 
-// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
-func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
-	if encKeyID == "" {
-		return text, nil
-	}
-	var encKey *database.EncryptionKey
-	for _, key := range c.encKeyring {
-		if key.ID == encKeyID {
-			encKey = key
-			break
-		}
-	}
-	if encKey == nil {
-		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-	}
-	return decrypt(text, encKey.Secret)
-}
-
-// returns the map with encrypted values and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the values are returned as is.
-func (c *connection) encryptMap(m map[string]string) (map[string]string, string, error) {
-	if len(c.encKeyring) == 0 {
-		return m, "", nil
-	}
-
-	encKeyID := ""
-	// copy the map to avoid modifying the original map
-	vars := make(map[string]string, len(m))
-	for k, v := range m {
-		// use the first key in the keyring for encryption
-		encKeyID = c.encKeyring[0].ID
-		encrypted, err := encrypt([]byte(v), c.encKeyring[0].Secret)
-		if err != nil {
-			return nil, "", err
-		}
-		vars[k] = base64.StdEncoding.EncodeToString(encrypted)
-	}
-	return vars, encKeyID, nil
-}
-
-// returns the map with decrypted values and the encryption key id used
-func (c *connection) decryptMap(m map[string]string, encKeyID string) (map[string]string, error) {
-	if encKeyID == "" {
-		return m, nil
-	}
-
-	var encKey *database.EncryptionKey
-	for _, key := range c.encKeyring {
-		if key.ID == encKeyID {
-			encKey = key
-			break
-		}
-	}
-	if encKey == nil {
-		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
-	}
-
-	// copy the map to avoid modifying the original map
-	vars := make(map[string]string, len(m))
-	for k, v := range m {
-		decoded, err := base64.StdEncoding.DecodeString(v)
+func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO) ([]*database.ProvisionerResource, error) {
+	res := make([]*database.ProvisionerResource, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = c.provisionerResourceFromDTO(dto)
 		if err != nil {
 			return nil, err
 		}
-		decrypted, err := decrypt(decoded, encKey.Secret)
-		if err != nil {
-			return nil, err
-		}
-		vars[k] = string(decrypted)
 	}
-	return vars, nil
+	return res, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
@@ -2236,6 +2409,23 @@ func (c *connection) magicAuthTokenWithUserFromDTO(dto *magicAuthTokenWithUserDT
 	}
 
 	return dto.MagicAuthTokenWithUser, nil
+}
+
+type reportTokenWithSecretDTO struct {
+	*database.ReportTokenWithSecret
+	SecretEncryptionKeyID string `db:"secret_encryption_key_id"`
+}
+
+func (c *connection) reportTokenWithSecretFromDTO(dto *reportTokenWithSecretDTO) (*database.ReportTokenWithSecret, error) {
+	if dto.SecretEncryptionKeyID == "" {
+		return dto.ReportTokenWithSecret, nil
+	}
+	decrypted, err := c.decrypt(dto.ReportTokenWithSecret.MagicAuthTokenSecret, dto.SecretEncryptionKeyID)
+	if err != nil {
+		return nil, err
+	}
+	dto.ReportTokenWithSecret.MagicAuthTokenSecret = decrypted
+	return dto.ReportTokenWithSecret, nil
 }
 
 type organizationInviteDTO struct {
@@ -2304,6 +2494,57 @@ func (b *billingIssueDTO) getBillingIssueLevel() database.BillingIssueLevel {
 		return database.BillingIssueLevelWarning
 	}
 	return database.BillingIssueLevelError
+}
+
+func (c *connection) decryptProjectVariables(res []*database.ProjectVariable) error {
+	for _, v := range res {
+		if v.ValueEncryptionKeyID == "" {
+			continue
+		}
+		dec, err := base64.StdEncoding.DecodeString(v.Value)
+		if err != nil {
+			return err
+		}
+
+		decryptedValue, err := c.decrypt(dec, v.ValueEncryptionKeyID)
+		if err != nil {
+			return err
+		}
+
+		v.Value = string(decryptedValue)
+	}
+	return nil
+}
+
+// returns the encrypted text and the encryption key id used. The first key in the keyring is used for encryption. If the keyring is empty, the text is returned as is along with an empty key id.
+func (c *connection) encrypt(text []byte) ([]byte, string, error) {
+	if len(c.encKeyring) == 0 {
+		return text, "", nil
+	}
+	// use the first key in the keyring for encryption
+	encrypted, err := encrypt(text, c.encKeyring[0].Secret)
+	if err != nil {
+		return nil, "", err
+	}
+	return encrypted, c.encKeyring[0].ID, nil
+}
+
+// returns the decrypted text, using the encryption key id provided. If the key id is empty, the text is returned as is.
+func (c *connection) decrypt(text []byte, encKeyID string) ([]byte, error) {
+	if encKeyID == "" {
+		return text, nil
+	}
+	var encKey *database.EncryptionKey
+	for _, key := range c.encKeyring {
+		if key.ID == encKeyID {
+			encKey = key
+			break
+		}
+	}
+	if encKey == nil {
+		return nil, fmt.Errorf("encryption key id %s not found in keyring", encKeyID)
+	}
+	return decrypt(text, encKey.Secret)
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

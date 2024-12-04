@@ -10,40 +10,17 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
-
-func TestOpenDrop(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	walpath := path + ".wal"
-	dsn := path
-
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	olap, ok := handle.AsOLAP("")
-	require.True(t, ok)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{Query: "CREATE TABLE foo (bar INTEGER)"})
-	require.NoError(t, err)
-
-	err = handle.Close()
-	require.NoError(t, err)
-	require.FileExists(t, path)
-
-	err = Driver{}.Drop(map[string]any{"path": dsn}, zap.NewNop())
-	require.NoError(t, err)
-	require.NoFileExists(t, path)
-	require.NoFileExists(t, walpath)
-}
 
 func TestNoFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -105,7 +82,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

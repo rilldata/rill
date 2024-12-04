@@ -108,12 +108,13 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 		}
 
 		err = w.admin.Email.SendSubscriptionEnded(&email.SubscriptionEnded{
-			ToEmail: org.BillingEmail,
-			ToName:  org.Name,
-			OrgName: org.Name,
+			ToEmail:    org.BillingEmail,
+			ToName:     org.Name,
+			OrgName:    org.Name,
+			BillingURL: w.admin.URLs.Billing(org.Name, false),
 		})
 		if err != nil {
-			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 
 		w.logger.Warn("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))

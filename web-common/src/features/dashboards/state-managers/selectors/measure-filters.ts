@@ -5,18 +5,6 @@ import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-man
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
-export const additionalMeasures = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  const measures = new Set<string>([dashData.dashboard.leaderboardMeasureName]);
-  dashData.dashboard.dimensionThresholdFilters.forEach(({ filters }) => {
-    filters.forEach((filter) => {
-      measures.add(filter.measure);
-    });
-  });
-  return [...measures];
-};
-
 export const measureHasFilter = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
@@ -87,7 +75,7 @@ export function getMeasureFilterForDimension(
     filteredMeasures.push({
       dimensionName: name,
       name: filter.measure,
-      label: measure.label || measure.expression || filter.measure,
+      label: measure.displayName || measure.expression || filter.measure,
       filter,
     });
   });

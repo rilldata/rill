@@ -7,6 +7,7 @@ import {
   GetCurrentProjectRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
+  ListOrganizationsAndBillingMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
   RedeployProjectRequest,
@@ -209,5 +210,38 @@ export function createLocalServiceGetCurrentProject<
     queryKey:
       queryOptions?.queryKey ?? getLocalServiceGetCurrentProjectQueryKey(),
     queryFn: queryOptions?.queryFn ?? localServiceGetCurrentProject,
+  });
+}
+
+export function localServiceListOrganizationsAndBillingMetadataRequest() {
+  return getClient().listOrganizationsAndBillingMetadata(
+    new ListOrganizationsAndBillingMetadataRequest(),
+  );
+}
+export const getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey =
+  () => [`/v1/local/list-organizations-billing-metadata`];
+export function createLocalServiceListOrganizationsAndBillingMetadataRequest<
+  TData = Awaited<
+    ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>
+  >,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<
+      ReturnType<typeof localServiceListOrganizationsAndBillingMetadataRequest>
+    >,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ??
+      getLocalServiceListOrganizationsAndBillingMetadataRequestQueryKey(),
+    queryFn:
+      queryOptions?.queryFn ??
+      localServiceListOrganizationsAndBillingMetadataRequest,
   });
 }

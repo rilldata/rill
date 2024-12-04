@@ -373,7 +373,8 @@ export class ExportRequest extends Message<ExportRequest> {
   query?: Query;
 
   /**
-   * @generated from field: string baked_query = 5;
+   * @generated from field: string baked_query = 5 [deprecated = true];
+   * @deprecated
    */
   bakedQuery = "";
 
@@ -443,6 +444,104 @@ export class ExportResponse extends Message<ExportResponse> {
 
   static equals(a: ExportResponse | PlainMessage<ExportResponse> | undefined, b: ExportResponse | PlainMessage<ExportResponse> | undefined): boolean {
     return proto3.util.equals(ExportResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExportReportRequest
+ */
+export class ExportReportRequest extends Message<ExportReportRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string report = 2;
+   */
+  report = "";
+
+  /**
+   * @generated from field: int64 limit = 3;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat format = 4;
+   */
+  format = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp execution_time = 5;
+   */
+  executionTime?: Timestamp;
+
+  constructor(data?: PartialMessage<ExportReportRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportReportRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 5, name: "execution_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportReportRequest {
+    return new ExportReportRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportReportRequest | PlainMessage<ExportReportRequest> | undefined, b: ExportReportRequest | PlainMessage<ExportReportRequest> | undefined): boolean {
+    return proto3.util.equals(ExportReportRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ExportReportResponse
+ */
+export class ExportReportResponse extends Message<ExportReportResponse> {
+  /**
+   * @generated from field: string download_url_path = 1;
+   */
+  downloadUrlPath = "";
+
+  constructor(data?: PartialMessage<ExportReportResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportReportResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "download_url_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportReportResponse {
+    return new ExportReportResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined, b: ExportReportResponse | PlainMessage<ExportReportResponse> | undefined): boolean {
+    return proto3.util.equals(ExportReportResponse, a, b);
   }
 }
 

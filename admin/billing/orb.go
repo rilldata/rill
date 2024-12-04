@@ -28,6 +28,8 @@ const (
 	avalaraTaxExemptionCode = "R" // code for NON-RESIDENT
 )
 
+var ErrCustomerIDRequired = errors.New("customer id is required")
+
 var _ Biller = &Orb{}
 
 type Orb struct {
@@ -202,7 +204,7 @@ func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Su
 	}
 
 	if len(subs) > 1 {
-		return nil, fmt.Errorf("multiple active subscriptions found for customer %s", customerID)
+		return nil, fmt.Errorf("multiple active subscriptions (%d) found for customer %s", len(subs), customerID)
 	}
 
 	return subs[0], nil
@@ -445,6 +447,10 @@ func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *P
 }
 
 func (o *Orb) getSubscriptions(ctx context.Context, customerID string, status orb.SubscriptionListParamsStatus) ([]*Subscription, error) {
+	if customerID == "" { // weird behaviour but empty external customer id returns all active subscriptions
+		return nil, ErrCustomerIDRequired
+	}
+
 	sub, err := o.client.Subscriptions.List(ctx, orb.SubscriptionListParams{
 		ExternalCustomerID: orb.String(customerID),
 		Status:             orb.F(status),
@@ -559,7 +565,8 @@ func (o *Orb) getBillingPlanFromOrbPlan(ctx context.Context, p *orb.Plan) (*Plan
 	billingPlan := &Plan{
 		ID:              p.ID,
 		Name:            p.ExternalPlanID,
-		DisplayName:     p.Name,
+		PlanType:        getPlanType(p.ExternalPlanID),
+		DisplayName:     getPlanDisplayName(p.ExternalPlanID),
 		Description:     p.Description,
 		TrialPeriodDays: trialPeriodDays,
 		Default:         metadata.Default,
@@ -609,6 +616,32 @@ func getBillingInvoiceFromOrbInvoice(i *orb.Invoice) *Invoice {
 		CreatedAt:      i.CreatedAt,
 		SubscriptionID: i.Subscription.ID,
 		Metadata:       map[string]interface{}{"issued_at": i.IssuedAt, "voided_at": i.VoidedAt, "paid_at": i.PaidAt, "payment_failed_at": i.PaymentFailedAt},
+	}
+}
+
+func getPlanType(externalID string) PlanType {
+	switch externalID {
+	case "free_trial":
+		return TrailPlanType
+	case "team":
+		return TeamPlanType
+	case "managed":
+		return ManagedPlanType
+	default:
+		return EnterprisePlanType
+	}
+}
+
+func getPlanDisplayName(externalID string) string {
+	switch externalID {
+	case "free_trial":
+		return "Free trial"
+	case "team":
+		return "Team"
+	case "managed":
+		return "Managed"
+	default:
+		return "Enterprise"
 	}
 }
 

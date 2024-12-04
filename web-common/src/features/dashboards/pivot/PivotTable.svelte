@@ -34,9 +34,10 @@
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
+  import { onMount } from "svelte";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
-  import { getPivotConfig } from "./pivot-data-store";
+  import { getPivotConfig } from "./pivot-data-config";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   // Distance threshold (in pixels) for triggering data fetch
@@ -209,12 +210,12 @@
       { description: "View raw data for aggregated cell", shortcut: "Click" },
     ];
   }
-
   function onExpandedChange(updater: Updater<ExpandedState>) {
-    // Something is off with tanstack's types
-    //@ts-expect-error-free
-    //eslint-disable-next-line
-    expanded = updater(expanded);
+    if (updater instanceof Function) {
+      expanded = updater(expanded);
+    } else {
+      expanded = updater;
+    }
     metricsExplorerStore.setPivotExpanded($exploreName, expanded);
   }
 
@@ -225,6 +226,7 @@
       sorting = updater;
     }
     metricsExplorerStore.setPivotSort($exploreName, sorting);
+    rowScrollOffset = 0;
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -234,17 +236,23 @@
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
 
-      // Fetch more data when scrolling near the bottom end
-      if (
-        bottomEndDistance < ROW_THRESHOLD &&
-        rows.length >= NUM_ROWS_PER_PAGE &&
-        !$pivotDataStore.isFetching &&
-        !reachedEndForRows
-      ) {
+      const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
+      const canFetchMoreData =
+        !$pivotDataStore.isFetching && !reachedEndForRows;
+      const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
+
+      if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
     }
   };
+
+  onMount(() => {
+    // wait for layout to be calculated
+    requestAnimationFrame(() => {
+      handleScroll(containerRefElement);
+    });
+  });
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
@@ -544,7 +552,7 @@
 
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
-    @apply font-normal select-none;
+    @apply font-normal;
     @apply bg-white table-fixed;
   }
 

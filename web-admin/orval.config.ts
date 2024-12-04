@@ -27,6 +27,11 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          AdminService_GetBillingProjectCredentials: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },

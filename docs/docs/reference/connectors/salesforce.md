@@ -11,13 +11,14 @@ sidebar_position: 12
 
 [Salesforce](https://www.salesforce.com/) is a leading cloud-based Customer Relationship Management (CRM) platform designed to help businesses connect with and understand their customers better. It offers a comprehensive suite of applications focused on sales, customer service, marketing automation, analytics, and application development. Salesforce enables organizations of all sizes to build stronger relationships with their customers through personalized experiences, streamlined communication, and predictive insights. Rill is able to ingest data from Salesforce as a source by utilizing the Bulk API, which requires a Salesforce username along with a password (and in some cases, a token, depending on the org configuration) to authenticate against a Salesforce org.
 
-![Connecting to Salesforce](/img/reference/connectors/salesforce/salesforce.png)
+<img src = '/img/reference/connectors/salesforce/salesforce.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 
-When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify credentials when running Rill using the `--var` flag. For example, you could run the following command via the terminal (when starting Rill):
+When using Rill Developer on your local machine (i.e. `rill start`), you have the option to specify credentials when running Rill using the `--env` flag. For example, you could run the following command via the terminal (when starting Rill):
 ```bash
-rill start --var connector.salesforce.username="user@example.com" --var connector.salesforce.password="MyPasswordMyToken"
+rill start --env connector.salesforce.username="user@example.com" --env connector.salesforce.password="MyPasswordMyToken"
 ```
 
 Alternatively, you can also include the credentials directly in the underlying source YAML by adding the `username` and `password` parameters. For example, your source YAML may contain the following properties (also can be configured through the UI during source creation):

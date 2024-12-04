@@ -46,8 +46,12 @@
     : null;
 
   function onKeyDown(e: KeyboardEvent) {
-    const targetTagName = (e.target as HTMLElement).tagName;
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTagName)) {
+    const target = e.target as HTMLElement;
+
+    if (
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+      target.isContentEditable
+    ) {
       return;
     }
 

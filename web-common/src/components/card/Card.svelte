@@ -13,7 +13,8 @@
   class:gradient={!imageUrl}
   on:click
   on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
-  aria-disabled={disabled && !isLoading}
+  aria-disabled={disabled}
+  class:loading={isLoading}
   style:background-image={imageUrl ? `url('${imageUrl}')` : ""}
 >
   {#if isLoading}
@@ -29,7 +30,7 @@
 <style lang="postcss">
   a {
     @apply bg-no-repeat bg-center bg-cover;
-    @apply relative;
+    @apply relative select-none;
     @apply size-60 rounded-md;
     @apply flex flex-col items-center justify-center gap-y-2;
     @apply transition duration-300 ease-out;
@@ -47,8 +48,11 @@
 
   a[aria-disabled="true"] {
     cursor: not-allowed;
-    opacity: 0.4;
     pointer-events: none;
+  }
+
+  a[aria-disabled="true"]:not(.loading) {
+    opacity: 0.4;
   }
 
   a:hover {

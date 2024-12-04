@@ -4352,7 +4352,7 @@ func (m *Example) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
@@ -4934,7 +4934,7 @@ func (m *UnpackEmptyRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Title
+	// no validation rules for DisplayName
 
 	// no validation rules for Force
 
@@ -6025,22 +6025,22 @@ var _ interface {
 	ErrorName() string
 } = LogValidationError{}
 
-// Validate checks the field values on ModelSplit with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on ModelPartition with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *ModelSplit) Validate() error {
+func (m *ModelPartition) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ModelSplit with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ModelSplitMultiError, or
-// nil if none found.
-func (m *ModelSplit) ValidateAll() error {
+// ValidateAll checks the field values on ModelPartition with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ModelPartitionMultiError,
+// or nil if none found.
+func (m *ModelPartition) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ModelSplit) validate(all bool) error {
+func (m *ModelPartition) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6053,7 +6053,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetData()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Data",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6061,7 +6061,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Data",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6070,7 +6070,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetData()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "Data",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6082,7 +6082,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetWatermark()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Watermark",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6090,7 +6090,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "Watermark",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6099,7 +6099,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetWatermark()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "Watermark",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6111,7 +6111,7 @@ func (m *ModelSplit) validate(all bool) error {
 		switch v := interface{}(m.GetExecutedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "ExecutedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6119,7 +6119,7 @@ func (m *ModelSplit) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelSplitValidationError{
+				errors = append(errors, ModelPartitionValidationError{
 					field:  "ExecutedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -6128,7 +6128,7 @@ func (m *ModelSplit) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetExecutedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return ModelSplitValidationError{
+			return ModelPartitionValidationError{
 				field:  "ExecutedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -6141,18 +6141,19 @@ func (m *ModelSplit) validate(all bool) error {
 	// no validation rules for ElapsedMs
 
 	if len(errors) > 0 {
-		return ModelSplitMultiError(errors)
+		return ModelPartitionMultiError(errors)
 	}
 
 	return nil
 }
 
-// ModelSplitMultiError is an error wrapping multiple validation errors
-// returned by ModelSplit.ValidateAll() if the designated constraints aren't met.
-type ModelSplitMultiError []error
+// ModelPartitionMultiError is an error wrapping multiple validation errors
+// returned by ModelPartition.ValidateAll() if the designated constraints
+// aren't met.
+type ModelPartitionMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ModelSplitMultiError) Error() string {
+func (m ModelPartitionMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6161,11 +6162,11 @@ func (m ModelSplitMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ModelSplitMultiError) AllErrors() []error { return m }
+func (m ModelPartitionMultiError) AllErrors() []error { return m }
 
-// ModelSplitValidationError is the validation error returned by
-// ModelSplit.Validate if the designated constraints aren't met.
-type ModelSplitValidationError struct {
+// ModelPartitionValidationError is the validation error returned by
+// ModelPartition.Validate if the designated constraints aren't met.
+type ModelPartitionValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6173,22 +6174,22 @@ type ModelSplitValidationError struct {
 }
 
 // Field function returns field value.
-func (e ModelSplitValidationError) Field() string { return e.field }
+func (e ModelPartitionValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ModelSplitValidationError) Reason() string { return e.reason }
+func (e ModelPartitionValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ModelSplitValidationError) Cause() error { return e.cause }
+func (e ModelPartitionValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ModelSplitValidationError) Key() bool { return e.key }
+func (e ModelPartitionValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ModelSplitValidationError) ErrorName() string { return "ModelSplitValidationError" }
+func (e ModelPartitionValidationError) ErrorName() string { return "ModelPartitionValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ModelSplitValidationError) Error() string {
+func (e ModelPartitionValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6200,14 +6201,14 @@ func (e ModelSplitValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sModelSplit.%s: %s%s",
+		"invalid %sModelPartition.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ModelSplitValidationError{}
+var _ error = ModelPartitionValidationError{}
 
 var _ interface {
 	Field() string
@@ -6215,7 +6216,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ModelSplitValidationError{}
+} = ModelPartitionValidationError{}
 
 // Validate checks the field values on GetLogsRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -7762,22 +7763,22 @@ var _ interface {
 	ErrorName() string
 } = GetExploreResponseValidationError{}
 
-// Validate checks the field values on GetModelSplitsRequest with the rules
+// Validate checks the field values on GetModelPartitionsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetModelSplitsRequest) Validate() error {
+func (m *GetModelPartitionsRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetModelSplitsRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GetModelPartitionsRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetModelSplitsRequestMultiError, or nil if none found.
-func (m *GetModelSplitsRequest) ValidateAll() error {
+// GetModelPartitionsRequestMultiError, or nil if none found.
+func (m *GetModelPartitionsRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetModelSplitsRequest) validate(all bool) error {
+func (m *GetModelPartitionsRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7795,7 +7796,7 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 10000 {
-			err := GetModelSplitsRequestValidationError{
+			err := GetModelPartitionsRequestValidationError{
 				field:  "PageSize",
 				reason: "value must be less than or equal to 10000",
 			}
@@ -7810,19 +7811,19 @@ func (m *GetModelSplitsRequest) validate(all bool) error {
 	// no validation rules for PageToken
 
 	if len(errors) > 0 {
-		return GetModelSplitsRequestMultiError(errors)
+		return GetModelPartitionsRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetModelSplitsRequestMultiError is an error wrapping multiple validation
-// errors returned by GetModelSplitsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetModelSplitsRequestMultiError []error
+// GetModelPartitionsRequestMultiError is an error wrapping multiple validation
+// errors returned by GetModelPartitionsRequest.ValidateAll() if the
+// designated constraints aren't met.
+type GetModelPartitionsRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetModelSplitsRequestMultiError) Error() string {
+func (m GetModelPartitionsRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7831,11 +7832,11 @@ func (m GetModelSplitsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetModelSplitsRequestMultiError) AllErrors() []error { return m }
+func (m GetModelPartitionsRequestMultiError) AllErrors() []error { return m }
 
-// GetModelSplitsRequestValidationError is the validation error returned by
-// GetModelSplitsRequest.Validate if the designated constraints aren't met.
-type GetModelSplitsRequestValidationError struct {
+// GetModelPartitionsRequestValidationError is the validation error returned by
+// GetModelPartitionsRequest.Validate if the designated constraints aren't met.
+type GetModelPartitionsRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7843,24 +7844,24 @@ type GetModelSplitsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetModelSplitsRequestValidationError) Field() string { return e.field }
+func (e GetModelPartitionsRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetModelSplitsRequestValidationError) Reason() string { return e.reason }
+func (e GetModelPartitionsRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetModelSplitsRequestValidationError) Cause() error { return e.cause }
+func (e GetModelPartitionsRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetModelSplitsRequestValidationError) Key() bool { return e.key }
+func (e GetModelPartitionsRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetModelSplitsRequestValidationError) ErrorName() string {
-	return "GetModelSplitsRequestValidationError"
+func (e GetModelPartitionsRequestValidationError) ErrorName() string {
+	return "GetModelPartitionsRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetModelSplitsRequestValidationError) Error() string {
+func (e GetModelPartitionsRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7872,14 +7873,14 @@ func (e GetModelSplitsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetModelSplitsRequest.%s: %s%s",
+		"invalid %sGetModelPartitionsRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetModelSplitsRequestValidationError{}
+var _ error = GetModelPartitionsRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7887,47 +7888,47 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetModelSplitsRequestValidationError{}
+} = GetModelPartitionsRequestValidationError{}
 
-// Validate checks the field values on GetModelSplitsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on GetModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetModelSplitsResponse) Validate() error {
+func (m *GetModelPartitionsResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetModelSplitsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on GetModelPartitionsResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetModelSplitsResponseMultiError, or nil if none found.
-func (m *GetModelSplitsResponse) ValidateAll() error {
+// GetModelPartitionsResponseMultiError, or nil if none found.
+func (m *GetModelPartitionsResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetModelSplitsResponse) validate(all bool) error {
+func (m *GetModelPartitionsResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	for idx, item := range m.GetSplits() {
+	for idx, item := range m.GetPartitions() {
 		_, _ = idx, item
 
 		if all {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetModelSplitsResponseValidationError{
-						field:  fmt.Sprintf("Splits[%v]", idx),
+					errors = append(errors, GetModelPartitionsResponseValidationError{
+						field:  fmt.Sprintf("Partitions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetModelSplitsResponseValidationError{
-						field:  fmt.Sprintf("Splits[%v]", idx),
+					errors = append(errors, GetModelPartitionsResponseValidationError{
+						field:  fmt.Sprintf("Partitions[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -7935,8 +7936,8 @@ func (m *GetModelSplitsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetModelSplitsResponseValidationError{
-					field:  fmt.Sprintf("Splits[%v]", idx),
+				return GetModelPartitionsResponseValidationError{
+					field:  fmt.Sprintf("Partitions[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -7948,19 +7949,19 @@ func (m *GetModelSplitsResponse) validate(all bool) error {
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
-		return GetModelSplitsResponseMultiError(errors)
+		return GetModelPartitionsResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetModelSplitsResponseMultiError is an error wrapping multiple validation
-// errors returned by GetModelSplitsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetModelSplitsResponseMultiError []error
+// GetModelPartitionsResponseMultiError is an error wrapping multiple
+// validation errors returned by GetModelPartitionsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetModelPartitionsResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetModelSplitsResponseMultiError) Error() string {
+func (m GetModelPartitionsResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7969,11 +7970,11 @@ func (m GetModelSplitsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetModelSplitsResponseMultiError) AllErrors() []error { return m }
+func (m GetModelPartitionsResponseMultiError) AllErrors() []error { return m }
 
-// GetModelSplitsResponseValidationError is the validation error returned by
-// GetModelSplitsResponse.Validate if the designated constraints aren't met.
-type GetModelSplitsResponseValidationError struct {
+// GetModelPartitionsResponseValidationError is the validation error returned
+// by GetModelPartitionsResponse.Validate if the designated constraints aren't met.
+type GetModelPartitionsResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7981,24 +7982,24 @@ type GetModelSplitsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetModelSplitsResponseValidationError) Field() string { return e.field }
+func (e GetModelPartitionsResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetModelSplitsResponseValidationError) Reason() string { return e.reason }
+func (e GetModelPartitionsResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetModelSplitsResponseValidationError) Cause() error { return e.cause }
+func (e GetModelPartitionsResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetModelSplitsResponseValidationError) Key() bool { return e.key }
+func (e GetModelPartitionsResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetModelSplitsResponseValidationError) ErrorName() string {
-	return "GetModelSplitsResponseValidationError"
+func (e GetModelPartitionsResponseValidationError) ErrorName() string {
+	return "GetModelPartitionsResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetModelSplitsResponseValidationError) Error() string {
+func (e GetModelPartitionsResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8010,14 +8011,14 @@ func (e GetModelSplitsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetModelSplitsResponse.%s: %s%s",
+		"invalid %sGetModelPartitionsResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetModelSplitsResponseValidationError{}
+var _ error = GetModelPartitionsResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -8025,7 +8026,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetModelSplitsResponseValidationError{}
+} = GetModelPartitionsResponseValidationError{}
 
 // Validate checks the field values on CreateTriggerRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9633,6 +9634,384 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = IssueDevJWTResponseValidationError{}
+
+// Validate checks the field values on AnalyzeVariablesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeVariablesRequestMultiError, or nil if none found.
+func (m *AnalyzeVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return AnalyzeVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeVariablesRequestMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeVariablesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeVariablesRequestMultiError) AllErrors() []error { return m }
+
+// AnalyzeVariablesRequestValidationError is the validation error returned by
+// AnalyzeVariablesRequest.Validate if the designated constraints aren't met.
+type AnalyzeVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeVariablesRequestValidationError) ErrorName() string {
+	return "AnalyzeVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeVariablesRequestValidationError{}
+
+// Validate checks the field values on AnalyzeVariablesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeVariablesResponseMultiError, or nil if none found.
+func (m *AnalyzeVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetVariables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzeVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzeVariablesResponseValidationError{
+						field:  fmt.Sprintf("Variables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzeVariablesResponseValidationError{
+					field:  fmt.Sprintf("Variables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzeVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeVariablesResponseMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeVariablesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeVariablesResponseMultiError) AllErrors() []error { return m }
+
+// AnalyzeVariablesResponseValidationError is the validation error returned by
+// AnalyzeVariablesResponse.Validate if the designated constraints aren't met.
+type AnalyzeVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeVariablesResponseValidationError) ErrorName() string {
+	return "AnalyzeVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeVariablesResponseValidationError{}
+
+// Validate checks the field values on AnalyzedVariable with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzedVariable) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzedVariable with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzedVariableMultiError, or nil if none found.
+func (m *AnalyzedVariable) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzedVariable) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for DefaultValue
+
+	for idx, item := range m.GetUsedBy() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzedVariableValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzedVariableValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzedVariableValidationError{
+					field:  fmt.Sprintf("UsedBy[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzedVariableMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzedVariableMultiError is an error wrapping multiple validation errors
+// returned by AnalyzedVariable.ValidateAll() if the designated constraints
+// aren't met.
+type AnalyzedVariableMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzedVariableMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzedVariableMultiError) AllErrors() []error { return m }
+
+// AnalyzedVariableValidationError is the validation error returned by
+// AnalyzedVariable.Validate if the designated constraints aren't met.
+type AnalyzedVariableValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzedVariableValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzedVariableValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzedVariableValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzedVariableValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzedVariableValidationError) ErrorName() string { return "AnalyzedVariableValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AnalyzedVariableValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzedVariable.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzedVariableValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzedVariableValidationError{}
 
 // Validate checks the field values on ConnectorDriver_Property with the rules
 // defined in the proto definition for this message. If any rules are

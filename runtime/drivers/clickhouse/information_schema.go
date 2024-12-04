@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -18,32 +19,40 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 	return informationSchema{c: c}
 }
 
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
+func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	conn, release, err := i.c.acquireMetaConn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = release() }()
 
+	var likeClause string
+	var args []any
+	if like != "" {
+		likeClause = "AND (LOWER(T.name) LIKE LOWER(?) OR CONCAT(T.database, '.', T.name) LIKE LOWER(?))"
+		args = []any{like, like}
+	}
+
 	// Clickhouse does not have a concept of schemas. Both table_catalog and table_schema refer to the database where table is located.
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
-	q := `
+	q := fmt.Sprintf(`
 		SELECT 
 			T.database AS SCHEMA,
 			T.database = currentDatabase() AS is_default_schema,
 			T.name AS NAME,
-			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			if(lower(T.engine) like '%%view%%', 'VIEW', 'TABLE') AS TABLE_TYPE,
 			C.name AS COLUMNS,
 			C.type AS COLUMN_TYPE,
 			C.position AS ORDINAL_POSITION
 		FROM system.tables T
 		JOIN system.columns C ON T.database = C.database AND T.name = C.table
-		WHERE lower(T.database) NOT IN ('information_schema', 'system') 
+		WHERE lower(T.database) NOT IN ('information_schema', 'system')
+		%s
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
-	`
+	`, likeClause)
 
-	rows, err := conn.QueryxContext(ctx, q)
+	rows, err := conn.QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

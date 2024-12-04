@@ -4,18 +4,11 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-  } from "@rilldata/web-common/components/alert-dialog";
-  import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getNeverSubscribedIssue } from "@rilldata/web-common/features/billing/issues";
+  import TrialDetailsDialog from "@rilldata/web-common/features/billing/TrialDetailsDialog.svelte";
   import PushToGitForDeployDialog from "@rilldata/web-common/features/project/PushToGitForDeployDialog.svelte";
   import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -24,11 +17,11 @@
     createLocalServiceGetCurrentProject,
     createLocalServiceGetCurrentUser,
     createLocalServiceGetMetadata,
+    createLocalServiceListOrganizationsAndBillingMetadataRequest,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import Rocket from "svelte-radix/Rocket.svelte";
   import { get, writable } from "svelte/store";
   import { Button } from "../../../components/button";
-  import Rocket from "svelte-radix/Rocket.svelte";
-  import CloudIcon from "@rilldata/web-common/components/icons/CloudIcon.svelte";
 
   export let hasValidDashboard: boolean;
 
@@ -36,12 +29,17 @@
   let deployConfirmOpen = false;
   let deployCTAUrl: string;
 
+  $: orgsMetadata =
+    createLocalServiceListOrganizationsAndBillingMetadataRequest();
   $: currentProject = createLocalServiceGetCurrentProject({
     query: {
       refetchOnWindowFocus: true,
     },
   });
   $: isDeployed = !!$currentProject.data?.project;
+  $: isFirstTimeDeploy =
+    !isDeployed &&
+    $orgsMetadata.data?.orgs?.every((o) => !!getNeverSubscribedIssue(o.issues));
 
   $: allowPrimary.set(isDeployed || !hasValidDashboard);
 
@@ -65,10 +63,17 @@
       return;
     }
 
-    window.open(deployCTAUrl, "_target");
+    window.open(deployCTAUrl, "_blank");
   }
 
   function onShowDeploy() {
+    if (!isFirstTimeDeploy) {
+      // do not show the confirmation dialog for successive deploys
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
+      window.open(deployCTAUrl, "_blank");
+      return;
+    }
+
     deployConfirmOpen = true;
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
@@ -105,45 +110,7 @@
   </Tooltip>
 {/if}
 
-<AlertDialog bind:open={deployConfirmOpen}>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <div class="flex flex-row">
-      <DeployIcon size="150px" />
-      <div class="flex flex-col">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Deploy this project</AlertDialogTitle>
-          <AlertDialogDescription>
-            You’re about to deploy to Rill Cloud, where you can set alerts,
-            share dashboards, and more.
-            <a
-              href="https://www.rilldata.com/pricing"
-              target="_blank"
-              class="text-primary-600"
-            >
-              See pricing details
-            </a>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter class="mt-5">
-          <Button on:click={() => (deployConfirmOpen = false)} type="secondary">
-            Back
-          </Button>
-          <Button
-            on:click={() => (deployConfirmOpen = false)}
-            type="primary"
-            href={deployCTAUrl}
-            target="_blank"
-          >
-            Continue
-          </Button>
-        </AlertDialogFooter>
-      </div>
-    </div>
-  </AlertDialogContent>
-</AlertDialog>
+<TrialDetailsDialog bind:open={deployConfirmOpen} {deployCTAUrl} />
 
 <PushToGitForDeployDialog
   bind:open={pushThroughGitOpen}
