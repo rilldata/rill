@@ -42,7 +42,6 @@
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
       ...invite,
-      userName: null,
       userEmail: invite.email,
       roleName: invite.role,
     }));
@@ -53,12 +52,15 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
+  // Search by email or name
   // Member users have a userName field, invites do not
   $: filteredUsers = combinedRows.filter((user) => {
     const searchLower = searchText.toLowerCase();
     return (
-      user.userEmail?.toLowerCase() || user.userName?.toLowerCase()
-    ).includes(searchLower);
+      (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
+      ("userName" in user &&
+        (user.userName?.toLowerCase() || "").includes(searchLower))
+    );
   });
 
   const currentUser = createAdminServiceGetCurrentUser();
