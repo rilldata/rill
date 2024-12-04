@@ -135,8 +135,8 @@ export function getDashboardStateFromProto(
     );
     // backwards compatibility
     entity.selectedComparisonTimeRange.name = correctComparisonTimeRange(
-      entity.selectedComparisonTimeRange.name,
-    );
+      entity.selectedComparisonTimeRange.name as string,
+    ) as TimeComparisonOption;
   }
   if (dashboard.showTimeComparison !== undefined) {
     entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
@@ -168,7 +168,7 @@ export function getDashboardStateFromProto(
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
-    entity.selectedComparisonDimension = undefined;
+    entity.selectedComparisonDimension = "";
   }
   if (dashboard.expandedMeasure) {
     entity.tdd = {
@@ -471,7 +471,7 @@ function fromActivePageProto(
       } else if (dashboard.expandedMeasure) {
         return {
           activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-          selectedDimensionName: undefined,
+          selectedDimensionName: "",
         };
       }
       // return empty so that nothing is overridden
@@ -483,7 +483,7 @@ function fromActivePageProto(
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: dashboard.activePage,
-        selectedDimensionName: undefined,
+        selectedDimensionName: "",
       };
 
     case DashboardState_ActivePage.DIMENSION_TABLE:

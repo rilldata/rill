@@ -39,6 +39,8 @@ export function getDefaultExploreState(
     temporaryFilterName: null,
     contextColumnWidths: { ...contextColWidthDefaults },
 
+    lastDefinedScrubRange: undefined,
+
     ...partialExploreState,
   } as MetricsExplorerEntity;
 }

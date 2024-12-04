@@ -28,7 +28,7 @@ export function getDefaultExplorePreset(
     measures: explore.measures,
     dimensions: explore.dimensions,
 
-    timeRange: "inf",
+    timeRange: fullTimeRange ? "inf" : "",
     timezone: preferences.timeZone ?? "UTC",
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,

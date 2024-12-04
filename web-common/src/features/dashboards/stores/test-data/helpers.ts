@@ -84,7 +84,10 @@ export function createAdBidsMirrorInStore({
 export function assertMetricsView(
   name: string,
   filters: V1Expression = createAndExpression([]),
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
+  timeRange = {
+    name: AD_BIDS_DEFAULT_TIME_RANGE.name,
+    interval: AD_BIDS_DEFAULT_TIME_RANGE.interval,
+  } as DashboardTimeControls,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE,
 ) {
   assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
