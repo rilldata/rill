@@ -30,7 +30,8 @@
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
-  $: isLegacy = false;
+  $: isSignup = false;
+  $: isRillDash = false;
 
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
@@ -45,16 +46,10 @@
       decodeURIComponent(escape(window.atob(configParams))),
     ) as Config;
 
-    // Entry point: FIXME - There is no way to tell if the user is signing up unless we ask them to make a selection
-    // Entry point: Email invite redirect to signup
-    const isSignup = config?.extraParams?.screen_hint === "signup";
-
-    if (isSignup) {
-      step = AuthStep.SignUp;
-    }
+    isSignup = config?.extraParams?.screen_hint === "signup";
 
     if (cloudClientIDsArr.includes(config?.clientID)) {
-      isLegacy = true;
+      isRillDash = true;
     }
 
     const authOptions: AuthOptions = Object.assign(
@@ -97,11 +92,9 @@
   function getHeadingText(step: AuthStep): string {
     switch (step) {
       case AuthStep.Base:
-        return "Log in or sign up";
       case AuthStep.Login:
-        return "Log in with email";
       case AuthStep.SignUp:
-        return "Sign up with email";
+        return "Log in or sign up";
       case AuthStep.Thanks:
         return "Thanks for signing up!";
       default:
@@ -112,7 +105,7 @@
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
       case AuthStep.Login:
-        return `Log in using <span class="font-medium">${email}</span>`;
+        return `Log in or sign up using <span class="font-medium">${email}</span>`;
       default:
         return "";
     }
@@ -171,10 +164,8 @@
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
-        {step}
         {email}
-        {isLegacy}
-        showForgetPassword={step === AuthStep.Login}
+        {isRillDash}
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}
