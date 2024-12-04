@@ -117,7 +117,7 @@ export const AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER: TestDashboardM
     metricsExplorerStore.displayTimeComparison(AD_BIDS_EXPLORE_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(
       AD_BIDS_EXPLORE_NAME,
-      { name: "rill-PWC" } as any,
+      { name: "rill-PW" } as any,
       AD_BIDS_METRICS_INIT,
     );
   };

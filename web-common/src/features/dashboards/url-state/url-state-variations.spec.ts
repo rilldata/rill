@@ -103,7 +103,7 @@ const TestCases: {
       AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
       AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
     ],
-    expectedUrl: "http://localhost/?tr=P4W&compare_tr=rill-PWC&grain=week",
+    expectedUrl: "http://localhost/?tr=P4W&compare_tr=rill-PW&grain=week",
   },
   {
     title: "Time range comparison with preset and state matching preset",
@@ -121,7 +121,7 @@ const TestCases: {
       AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
     ],
     preset: AD_BIDS_PRESET,
-    expectedUrl: "http://localhost/?tr=P4W&compare_tr=rill-PWC&grain=week",
+    expectedUrl: "http://localhost/?tr=P4W&compare_tr=rill-PW&grain=week",
   },
   {
     title: "Time range comparison enable and disable",

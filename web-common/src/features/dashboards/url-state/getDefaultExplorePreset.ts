@@ -6,6 +6,8 @@ import {
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   V1ExploreComparisonMode,
@@ -118,6 +120,23 @@ function getDefaultComparisonFields(
     };
   }
 
-  // TODO: time comparison
-  return {};
+  if (!defaultExplorePreset.timeRange) return {};
+
+  let comparisonOption = defaultExplorePreset.compareTimeRange;
+
+  if (!comparisonOption) {
+    const preset = ISODurationToTimePreset(
+      defaultExplorePreset.timeRange,
+      true,
+    );
+    if (!preset) return {};
+    comparisonOption = inferCompareTimeRange(explore.timeRanges, preset);
+  }
+
+  return {
+    compareTimeRange: comparisonOption,
+    exploreSortType:
+      defaultExplorePreset.exploreSortType ??
+      V1ExploreSortType.EXPLORE_SORT_TYPE_DELTA_PERCENT,
+  };
 }

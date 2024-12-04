@@ -12,7 +12,7 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName string                 `yaml:"display_name"`
 	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
