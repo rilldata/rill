@@ -7,7 +7,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
