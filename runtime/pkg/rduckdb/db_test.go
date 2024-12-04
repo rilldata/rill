@@ -224,6 +224,7 @@ func TestResetLocal(t *testing.T) {
 	})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
+	require.NoError(t, db.Close())
 }
 
 func TestConcurrentReads(t *testing.T) {

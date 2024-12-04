@@ -20,7 +20,7 @@ import (
 
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
-func (d *db) pullFromRemote(ctx context.Context) error {
+func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 	if !d.localDirty {
 		// optimisation to skip sync if write was already synced
 		return nil
@@ -34,7 +34,7 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		Delimiter: "/", // only list directories with a trailing slash and IsDir set to true
 	})
 
-	tblMetas := make(map[string]*tableMeta)
+	remoteTables := make(map[string]*tableMeta)
 	for {
 		// Stop the loop if the ctx was cancelled
 		var stop bool
@@ -80,33 +80,25 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 			}
 			return err
 		}
-		backedUpMeta := &tableMeta{}
-		err = json.Unmarshal(b, backedUpMeta)
+		remoteMeta := &tableMeta{}
+		err = json.Unmarshal(b, remoteMeta)
 		if err != nil {
 			d.logger.Debug("SyncWithObjectStorage: failed to unmarshal table metadata", slog.String("table", table), slog.Any("error", err))
 			continue
 		}
+		remoteTables[table] = remoteMeta
 
-		// check if table in catalog is already upto date
-		meta, _ := d.catalog.tableMeta(table)
-		if meta != nil && meta.Version == backedUpMeta.Version {
-			d.logger.Debug("SyncWithObjectStorage: table is already up to date", slog.String("table", table))
-			continue
-		}
-		tblMetas[table] = backedUpMeta
-
-		// check if table is locally present but not added to catalog yet
-		meta, _ = d.tableMeta(table)
-		if meta != nil && meta.Version == backedUpMeta.Version {
+		// check if table is locally present
+		meta, _ := d.tableMeta(table)
+		if meta != nil && meta.Version == remoteMeta.Version {
 			d.logger.Debug("SyncWithObjectStorage: local table is not present in catalog", slog.String("table", table))
-			tblMetas[table] = backedUpMeta
 			continue
 		}
-		if err := d.initLocalTable(table, backedUpMeta.Version); err != nil {
+		if err := d.initLocalTable(table, remoteMeta.Version); err != nil {
 			return err
 		}
 
-		tblIter := d.remote.List(&blob.ListOptions{Prefix: path.Join(table, backedUpMeta.Version)})
+		tblIter := d.remote.List(&blob.ListOptions{Prefix: path.Join(table, remoteMeta.Version)})
 		// download all objects in the table and current version
 		for {
 			obj, err := tblIter.Next(gctx)
@@ -143,29 +135,49 @@ func (d *db) pullFromRemote(ctx context.Context) error {
 		return err
 	}
 
-	// Update table versions
-	for table, meta := range tblMetas {
+	// Update table versions(updates even if local is same as remote)
+	for table, meta := range remoteTables {
 		err = d.writeTableMeta(table, meta)
 		if err != nil {
 			return err
 		}
-		d.catalog.addTableVersion(table, meta)
 	}
 
-	// mark tables that are not in remote for delete later
-	entries, err := os.ReadDir(d.localPath)
-	if err != nil {
-		return err
+	if !updateCatalog {
+		return nil
 	}
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
+
+	// iterate over all remote tables and update catalog
+	for table, remoteMeta := range remoteTables {
+		meta, err := d.catalog.tableMeta(table)
+		if err != nil {
+			if errors.Is(err, errNotFound) {
+				// table not found in catalog
+				d.catalog.addTableVersion(table, remoteMeta)
+			}
+			return err
 		}
-		if _, ok := tblMetas[entry.Name()]; ok {
-			continue
+		// table is present in catalog but has version mismatch
+		if meta.Version != remoteMeta.Version {
+			d.catalog.addTableVersion(table, remoteMeta)
 		}
-		d.catalog.removeTable(entry.Name())
 	}
+
+	// iterate over local entries and remove if not present in remote
+	_ = d.iterateLocalTables(func(name string, meta *tableMeta) error {
+		if _, ok := remoteTables[name]; ok {
+			// table is present in remote
+			return nil
+		}
+		// check if table is present in catalog
+		_, err := d.catalog.tableMeta(name)
+		if err != nil {
+			return d.deleteLocalTableFiles(name, "")
+		}
+		// remove table from catalog
+		d.catalog.removeTable(name)
+		return nil
+	})
 	return nil
 }
 
@@ -277,13 +289,10 @@ func retry(ctx context.Context, fn func() error) error {
 			break // break and return error
 		}
 
-		timer := time.NewTimer(_retryDelay)
 		select {
 		case <-ctx.Done():
-			timer.Stop()
 			return ctx.Err() // return on context cancellation
 		case <-time.After(_retryDelay):
-			timer.Stop()
 		}
 	}
 	return err
