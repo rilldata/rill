@@ -4,7 +4,7 @@
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
+  import { getUrlForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -30,7 +30,7 @@
       label: "Explore",
       Icon: Chart,
       beta: false,
-      href: ExploreWebViewStore.getUrlForView(
+      href: getUrlForWebView(
         $page.url,
         V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       ),
@@ -42,7 +42,7 @@
             label: "Pivot",
             Icon: Pivot,
             beta: false,
-            href: ExploreWebViewStore.getUrlForView(
+            href: getUrlForWebView(
               $page.url,
               V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
             ),

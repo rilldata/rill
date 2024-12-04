@@ -3,7 +3,8 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
+  import { getUrlForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -84,9 +85,12 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
-  $: tddHref = ExploreWebViewStore.getUrlForView(
+  $: tddHref = getUrlForWebView(
     $page.url,
     V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+    {
+      [ExploreStateURLParams.ExpandedMeasure]: measure.name,
+    } as Record<string, string>,
   );
 
   function shiftClickHandler(number: string | undefined) {

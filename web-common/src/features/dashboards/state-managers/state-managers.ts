@@ -7,7 +7,7 @@ import {
   getPersistentDashboardStore,
   initPersistentDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
+import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   getLocalUserPreferencesState,
@@ -76,7 +76,6 @@ export type StateManagers = {
    * it's a one-off solution that introduces another new pattern.
    */
   contextColumnWidths: Writable<ContextColWidths>;
-  webViewStore: ExploreWebViewStore;
   defaultExploreState: Readable<V1ExplorePreset>;
 };
 
@@ -146,7 +145,6 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
-  const webViewStore = new ExploreWebViewStore(exploreName, extraKeyPrefix);
   const defaultExploreState = derived(
     [validSpecStore, timeRangeSummaryStore],
     ([validSpec, timeRangeSummary]) => {
@@ -163,7 +161,12 @@ export function createStateManagers({
   dashboardStore.subscribe((dashState) => {
     const exploreState = get(validSpecStore).data?.explore;
     if (!dashState || !exploreState) return;
-    webViewStore.updateStores(dashState, exploreState);
+    updateExploreSessionStore(
+      exploreName,
+      extraKeyPrefix,
+      dashState,
+      exploreState,
+    );
   });
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
@@ -199,7 +202,6 @@ export function createStateManagers({
       persistentDashboardStore,
     }),
     contextColumnWidths,
-    webViewStore,
     defaultExploreState,
   };
 }

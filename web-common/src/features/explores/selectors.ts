@@ -5,16 +5,12 @@ import {
   convertPresetToExploreState,
   convertURLToExploreState,
 } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { ExploreWebViewStore } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
+import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import {
-  FromURLParamViewMap,
-  ToURLParamViewMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import type { ExploreState } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 import {
   createRuntimeServiceGetExplore,
   getQueryServiceMetricsViewTimeRangeQueryKey,
@@ -27,6 +23,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1ExplorePreset,
+  V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error, redirect } from "@sveltejs/kit";
@@ -200,42 +197,46 @@ function maybeRedirectToViewWithParams(
   url: URL,
 ) {
   if (
-    // more than one param is set. ignore this case
-    url.searchParams.size > 1 ||
-    // exactly one param is set, but it is not `view`. ignore this case as well
+    // exactly one param is set, but it is not `view`
     (url.searchParams.size === 1 &&
-      !url.searchParams.has(ExploreStateURLParams.WebView))
+      !url.searchParams.has(ExploreStateURLParams.WebView)) ||
+    // exactly 2 params are set and both `view` and `measure` are not set
+    (url.searchParams.size === 2 &&
+      !url.searchParams.has(ExploreStateURLParams.WebView) &&
+      !url.searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
+    // more than 2 params are set
+    url.searchParams.size > 2
   ) {
     return;
   }
 
-  const view =
-    url.searchParams.get(ExploreStateURLParams.WebView) ??
-    ToURLParamViewMap[defaultExplorePreset.view!] ??
-    "unknown";
-  if (!ExploreWebViewStore.hasPresetForView(exploreName, prefix, view)) {
-    // session store has no data for the view
-    return;
-  }
-
-  const presetForView = ExploreWebViewStore.getPresetForView(
+  const viewFromUrl = url.searchParams.get(ExploreStateURLParams.WebView);
+  const view = viewFromUrl
+    ? FromURLParamViewMap[viewFromUrl]
+    : (defaultExplorePreset.view ??
+      V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED);
+  const explorePresetFromSessionStorage = getExplorePresetForWebView(
     exploreName,
     prefix,
     view,
   );
+  if (!explorePresetFromSessionStorage) {
+    return;
+  }
 
   const { partialExploreState } = convertPresetToExploreState(
     metricsViewSpec,
     exploreSpec,
-    presetForView,
+    explorePresetFromSessionStorage,
   );
-
   const newUrl = new URL(url);
   newUrl.search = convertExploreStateToURLSearchParams(
     partialExploreState as MetricsExplorerEntity,
     exploreSpec,
     defaultExplorePreset,
   );
+  // copy over any partial params. this will include the view and measure param
+  url.searchParams.forEach((value, key) => newUrl.searchParams.set(key, value));
   if (newUrl.toString() === url.toString()) {
     // url hasn't changed, avoid redirect loop
     return;

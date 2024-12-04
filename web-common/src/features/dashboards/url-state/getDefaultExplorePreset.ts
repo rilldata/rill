@@ -120,7 +120,12 @@ function getDefaultComparisonFields(
     };
   }
 
-  if (!defaultExplorePreset.timeRange) return {};
+  if (
+    !defaultExplorePreset.timeRange ||
+    defaultExplorePreset.timeRange === "inf"
+  ) {
+    return {};
+  }
 
   let comparisonOption = defaultExplorePreset.compareTimeRange;
 

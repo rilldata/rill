@@ -45,6 +45,8 @@ export function getDefaultExploreState(
   } as MetricsExplorerEntity;
 }
 
+// TODO: move this to the same place where we load from session store.
+//       also move the type to V1ExplorePreset similar to session store.
 export function restorePersistedDashboardState(
   metricsExplorer: MetricsExplorerEntity,
 ) {

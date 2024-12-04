@@ -2,6 +2,7 @@ import { QueryClient } from "@rilldata/svelte-query";
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -26,8 +27,14 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import {
+  getExplorePresetForWebView,
+  getKeyForSessionStore,
+  SharedStateStoreKey,
+} from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import ExploreStateTestComponent from "@rilldata/web-common/features/dashboards/url-state/ExploreStateTestComponent.svelte";
-import { ExploreWebViewNonPivot } from "@rilldata/web-common/features/dashboards/url-state/ExploreWebViewStore";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
   applyURLToExploreState,
@@ -66,9 +73,8 @@ vi.mock("$app/stores", () => {
 });
 
 type TestView = {
-  view: string;
-  previousView?: string;
-  additionalPresetForView?: V1ExplorePreset;
+  view: V1ExploreWebView;
+  additionalParams?: string;
   mutations: TestDashboardMutation[];
   expectedUrl: string;
 };
@@ -83,16 +89,14 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-      additionalPresetForView: {
-        timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
-      },
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
   {
@@ -101,16 +105,14 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-      additionalPresetForView: {
-        timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
-      },
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
 
@@ -120,17 +122,16 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-      previousView: ExploreWebViewNonPivot,
       mutations: [
         AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
@@ -139,39 +140,35 @@ const TestCases: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedUrl:
-        "/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_by=bid_price&sort_type=percent&sort_dir=ASC",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-      previousView: ExploreWebViewNonPivot,
       mutations: [
         AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
     title: "TTD <=> Pivot",
     initView: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-      additionalPresetForView: {
-        timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
-      },
+      additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-      previousView: ExploreWebViewNonPivot,
       mutations: [
         AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
 ];
@@ -232,46 +229,18 @@ describe("ExploreWebViewStore", () => {
       `${AD_BIDS_EXPLORE_NAME}-userPreference`,
       `{"timezone":"UTC"}`,
     );
-  });
-
-  it("Empty states should only have view as a param", () => {
-    metricsExplorerStore.init(
-      AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      AD_BIDS_EXPLORE_INIT,
-      AD_BIDS_TIME_RANGE_SUMMARY,
+    sessionStorage.removeItem(
+      getKeyForSessionStore(AD_BIDS_NAME, undefined, SharedStateStoreKey),
     );
-    const stateManagers = createStateManagers({
-      queryClient,
-      metricsViewName: AD_BIDS_NAME,
-      exploreName: AD_BIDS_EXPLORE_NAME,
-    });
-    const defaultExplorePreset = getDefaultExplorePreset(
-      AD_BIDS_EXPLORE_INIT,
-      {
-        timeZone: "UTC",
-      },
-      AD_BIDS_TIME_RANGE_SUMMARY,
+    sessionStorage.removeItem(
+      getKeyForSessionStore(AD_BIDS_NAME, undefined, "explore"),
     );
-
-    const emptyPivotUrl = stateManagers.webViewStore.getUrlForView(
-      V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      AD_BIDS_EXPLORE_INIT,
-      defaultExplorePreset,
-      {},
+    sessionStorage.removeItem(
+      getKeyForSessionStore(AD_BIDS_NAME, undefined, "ttd"),
     );
-    expect(emptyPivotUrl).toEqual("/explore/AdBids_explore?view=pivot");
-    const emptyNonPivotUrl = stateManagers.webViewStore.getUrlForView(
-      ExploreWebViewNonPivot,
-      get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-      AD_BIDS_EXPLORE_INIT,
-      defaultExplorePreset,
-      {},
+    sessionStorage.removeItem(
+      getKeyForSessionStore(AD_BIDS_NAME, undefined, "pivot"),
     );
-    expect(emptyNonPivotUrl).toEqual("/explore/AdBids_explore");
   });
 
   for (const { title, initView, view } of TestCases) {
@@ -282,7 +251,7 @@ describe("ExploreWebViewStore", () => {
         AD_BIDS_EXPLORE_INIT,
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
-      const stateManagers = createStateManagers({
+      createStateManagers({
         queryClient,
         metricsViewName: AD_BIDS_NAME,
         exploreName: AD_BIDS_EXPLORE_NAME,
@@ -309,16 +278,10 @@ describe("ExploreWebViewStore", () => {
 
       // simulate going to the init view's url
       applyURLToExploreState(
-        new URL(
-          "http://localhost" +
-            stateManagers.webViewStore.getUrlForView(
-              initView.view as any,
-              get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-              AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-              AD_BIDS_EXPLORE_INIT,
-              defaultExplorePreset,
-              initView.additionalPresetForView,
-            ),
+        getUrlForWebView(
+          initView.view,
+          defaultExplorePreset,
+          initView.additionalParams,
         ),
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,
@@ -329,16 +292,10 @@ describe("ExploreWebViewStore", () => {
 
       // simulate going to the view's url
       applyURLToExploreState(
-        new URL(
-          "http://localhost" +
-            stateManagers.webViewStore.getUrlForView(
-              view.view as any,
-              get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-              AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-              AD_BIDS_EXPLORE_INIT,
-              defaultExplorePreset,
-              view.additionalPresetForView,
-            ),
+        getUrlForWebView(
+          view.view,
+          defaultExplorePreset,
+          view.additionalParams,
         ),
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,
@@ -346,30 +303,52 @@ describe("ExploreWebViewStore", () => {
       // apply any mutations in the view
       applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, view.mutations);
 
-      const backToInitUrl = stateManagers.webViewStore.getUrlForView(
-        (view.previousView ?? initView.view) as any,
-        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
+      const backToInitUrl = getUrlForWebView(
+        initView.view,
         defaultExplorePreset,
       );
-      expect(backToInitUrl).toEqual(initView.expectedUrl);
+      expect(backToInitUrl.toString()).toEqual(initView.expectedUrl);
       applyURLToExploreState(
-        new URL("http://localhost" + backToInitUrl),
+        backToInitUrl,
         AD_BIDS_EXPLORE_INIT,
         defaultExplorePreset,
       );
 
-      const backToViewUrl = stateManagers.webViewStore.getUrlForView(
-        view.view as any,
-        get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
-        defaultExplorePreset,
-      );
-      expect(backToViewUrl).toEqual(view.expectedUrl);
+      const backToViewUrl = getUrlForWebView(view.view, defaultExplorePreset);
+      expect(backToViewUrl.toString()).toEqual(view.expectedUrl);
       const currentState = getCleanMetricsExploreForAssertion();
       expect(initState).toEqual(currentState);
     });
   }
 });
+
+function getUrlForWebView(
+  view: V1ExploreWebView,
+  defaultExplorePreset: V1ExplorePreset,
+  additionalParams: string | undefined = undefined,
+) {
+  const newUrl = new URL("http://localhost/explore/AdBids_explore");
+
+  const explorePresetFromSessionStorage = getExplorePresetForWebView(
+    AD_BIDS_EXPLORE_NAME,
+    undefined,
+    view,
+  );
+  if (!explorePresetFromSessionStorage) {
+    return newUrl;
+  }
+
+  const { partialExploreState } = convertPresetToExploreState(
+    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+    AD_BIDS_EXPLORE_INIT,
+    explorePresetFromSessionStorage,
+  );
+
+  newUrl.search =
+    convertExploreStateToURLSearchParams(
+      partialExploreState as MetricsExplorerEntity,
+      AD_BIDS_EXPLORE_INIT,
+      defaultExplorePreset,
+    ) + (additionalParams ?? "");
+  return newUrl;
+}
