@@ -261,20 +261,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
 		}
 		// Get the engine info of the given table
-		var engine string
-		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT engine FROM system.tables WHERE database = currentDatabase() AND name = ?",
-			Args:     []any{name},
-			Priority: 1,
-		})
+		engine, err := c.getTableEngine(ctx, name)
 		if err != nil {
 			return err
-		}
-		defer res.Close()
-		if res.Next() {
-			if err := res.Scan(&engine); err != nil {
-				return err
-			}
 		}
 		// Distributed table cannot be altered directly, so we need to alter the local table
 		if engine == "Distributed" {
@@ -308,22 +297,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			return err
 		}
 		// list partitions from the temp table using system.parts
-		res, err = c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = '%s'", tempName),
-			Priority: 1,
-		})
+		partitions, err := c.getTablePartitions(ctx, tempName)
 		if err != nil {
 			return err
-		}
-		defer res.Close()
-		// collect partitions
-		var partitions []string
-		for res.Next() {
-			var part string
-			if err := res.Scan(&part); err != nil {
-				return err
-			}
-			partitions = append(partitions, part)
 		}
 		// iterate over partitions and replace them in the main table
 		for _, part := range partitions {
@@ -750,6 +726,46 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		return conn.Close()
 	}
 	return conn, release, nil
+}
+
+func (c *connection) getTableEngine(ctx context.Context, name string) (string, error) {
+	var engine string
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT engine FROM system.tables WHERE database = currentDatabase() AND name = ?",
+		Args:     []any{name},
+		Priority: 1,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+	if res.Next() {
+		if err := res.Scan(&engine); err != nil {
+			return "", err
+		}
+	}
+	return engine, nil
+}
+
+func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("SELECT DISTINCT partition FROM system.parts WHERE table = '%s'", name),
+		Priority: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	// collect partitions
+	var partitions []string
+	for res.Next() {
+		var part string
+		if err := res.Scan(&part); err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, part)
+	}
+	return partitions, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
