@@ -4285,14 +4285,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
   displayName = "";
 
   /**
-   * @generated from field: uint32 columns = 2;
+   * @generated from field: uint32 max_width = 2;
    */
-  columns = 0;
+  maxWidth = 0;
 
   /**
-   * @generated from field: uint32 gap = 3;
+   * @generated from field: string theme = 7;
    */
-  gap = 0;
+  theme = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
+   */
+  embeddedTheme?: ThemeSpec;
 
   /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
@@ -4318,8 +4323,9 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },

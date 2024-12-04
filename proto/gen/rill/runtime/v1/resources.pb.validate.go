@@ -10130,9 +10130,38 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
-	// no validation rules for Columns
+	// no validation rules for MaxWidth
 
-	// no validation rules for Gap
+	// no validation rules for Theme
+
+	if all {
+		switch v := interface{}(m.GetEmbeddedTheme()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEmbeddedTheme()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasSpecValidationError{
+				field:  "EmbeddedTheme",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	for idx, item := range m.GetVariables() {
 		_, _ = idx, item

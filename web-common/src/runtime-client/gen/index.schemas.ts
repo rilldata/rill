@@ -2229,8 +2229,9 @@ export interface V1CanvasItem {
 
 export interface V1CanvasSpec {
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  maxWidth?: number;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
   securityRules?: V1SecurityRule[];

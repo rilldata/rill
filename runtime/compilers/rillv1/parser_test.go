@@ -1539,6 +1539,18 @@ theme:
   colors:
     primary: red
 `,
+		// Canvas referencing the external theme resource
+		`canvases/c1.yaml`: `
+type: canvas
+theme: t1
+`,
+		// Canvas that defines an inline theme
+		`canvases/c2.yaml`: `
+type: canvas
+theme:
+  colors:
+    primary: red
+`,
 	})
 
 	resources := []*Resource{
@@ -1592,6 +1604,29 @@ theme:
 				},
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c1"},
+			Paths: []string{"/canvases/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				Theme: "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c2"},
+			Paths: []string{"/canvases/c2.yaml"},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
+				},
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -1618,11 +1653,13 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-vega_lite: '%s'
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-vega_lite: '%s'
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
@@ -1633,8 +1670,7 @@ kpi:
 `,
 		`canvases/d1.yaml`: `
 type: canvas
-columns: 4
-gap: 3
+max_width: 4
 items:
 - component: c1
 - component: c2
@@ -1690,8 +1726,7 @@ items:
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				Columns: 4,
-				Gap:     3,
+				MaxWidth: 4,
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
@@ -2075,4 +2110,11 @@ func normalizeJSON(t *testing.T, s string) string {
 	b, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

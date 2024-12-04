@@ -3,7 +3,6 @@ package rillv1
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -26,7 +25,6 @@ type ComponentYAML struct {
 	Input       []*ComponentVariableYAML  `yaml:"input"`
 	Output      *ComponentVariableYAML    `yaml:"output"`
 	Show        string                    `yaml:"show"`
-	VegaLite    *string                   `yaml:"vega_lite"`
 	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
@@ -82,12 +80,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	n := 0
 	var renderer string
 	var rendererProps *structpb.Struct
-	if tmp.VegaLite != nil {
-		n++
-
-		renderer = "vega_lite"
-		rendererProps = must(structpb.NewStruct(map[string]any{"spec": strings.TrimSpace(*tmp.VegaLite)}))
-	}
 	if len(tmp.Other) == 1 {
 		n++
 		var props map[string]any
@@ -186,11 +178,4 @@ func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
 		Type:         y.Type,
 		DefaultValue: val,
 	}, nil
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
 }

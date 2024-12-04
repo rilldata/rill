@@ -3470,12 +3470,13 @@ definitions:
     properties:
       displayName:
         type: string
-      columns:
+      maxWidth:
         type: integer
         format: int64
-      gap:
-        type: integer
-        format: int64
+      theme:
+        type: string
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
       variables:
         type: array
         items:
