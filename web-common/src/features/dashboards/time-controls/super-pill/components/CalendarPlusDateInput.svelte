@@ -8,7 +8,7 @@
 </script>
 
 <script lang="ts">
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let zone: string;
   export let firstVisibleMonth: DateTime<true>;
   export let applyRange: (range: Interval<true>) => void;
@@ -17,10 +17,11 @@
   let selectingStart = true;
   let displayError = false;
 
-  $: calendarInterval = interval.set({
-    start: interval.start.startOf("day"),
-    end: interval.end.minus({ millisecond: 1 }).startOf("day"),
-  });
+  $: calendarInterval =
+    interval?.set({
+      start: interval.start.startOf("day"),
+      end: interval.end.minus({ millisecond: 1 }).startOf("day"),
+    }) ?? Interval.invalid("Invalid interval");
 
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
@@ -59,14 +60,12 @@
   }}
 />
 
-{#if calendarInterval.isValid}
-  <Calendar
-    selection={calendarInterval}
-    {selectingStart}
-    {firstVisibleMonth}
-    onSelectDay={onValidDateInput}
-  />
-{/if}
+<Calendar
+  selection={calendarInterval}
+  {selectingStart}
+  {firstVisibleMonth}
+  onSelectDay={onValidDateInput}
+/>
 
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
@@ -77,7 +76,7 @@
     <DateInput
       bind:selectingStart
       bind:displayError
-      date={calendarInterval.start ?? DateTime.now()}
+      date={calendarInterval?.start ?? DateTime.now()}
       {zone}
       boundary="start"
       currentYear={firstVisibleMonth.year}
@@ -92,7 +91,7 @@
     <DateInput
       bind:selectingStart
       bind:displayError
-      date={calendarInterval.end ?? DateTime.now()}
+      date={calendarInterval?.end ?? DateTime.now()}
       {zone}
       boundary="end"
       currentYear={firstVisibleMonth.year}
@@ -106,11 +105,11 @@
     compact
     type="primary"
     on:click={() => {
-      const mapped = calendarInterval.set({
+      const mapped = calendarInterval?.set({
         end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
       });
 
-      if (mapped.isValid) {
+      if (mapped?.isValid) {
         applyRange(mapped);
       }
 

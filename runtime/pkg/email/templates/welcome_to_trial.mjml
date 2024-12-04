@@ -1,0 +1,69 @@
+<mjml>
+  <mj-head>
+    <mj-raw>
+      <meta name="color-scheme" content="light" />
+      <meta name="supported-color-schemes" content="light" />
+    </mj-raw>
+    <mj-attributes>
+      <mj-all font-family="Helvetica" font-size="14px" />
+      <mj-all align="left" />
+      <mj-text color="#4b5563" font-size="14px" line-height="1.25" />
+      <mj-section padding="0 0 32px 0" />
+      <mj-column padding-bottom="0px" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body>
+    <mj-section padding-top="24px">
+      <mj-column>
+        <mj-image container-background-color="#FFF" width="48px" src="https://cdn.rilldata.com/email-transactional/rill-logo-purple-square.png" />
+
+        <mj-text font-size="20px">
+          Welcome to Rill
+        </mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text>
+          {{ .WelcomeText }}
+          Let’s get started exploring your environment:
+        </mj-text>
+        <mj-button padding-top="24px" background-color="#4736F5" color="#fff" font-weight="600" href="{{ .FrontendURL }}">
+          Get Started
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section>
+      <mj-column>
+        <mj-button background-color="#FFF" color="#4736F5" padding="0px" href="https://docs.rilldata.com" font-weight="600" padding-bottom="0">Documentation and tutorials →</mj-button>
+        <mj-text padding-top="0" padding-bottom="32px">
+          Check out the quickstart, example projects, then dive deep into advanced features.
+        </mj-text>
+
+        <mj-button background-color="#FFF" color="#4736F5" padding="0px" href="https://docs.rilldata.com/notes" font-weight="600" padding-bottom="0">Release notes → </mj-button>
+        <mj-text padding-top="0" padding-bottom="32px">
+          We are constantly shipping new features. Follow our release notes to stay up to date.
+        </mj-text>
+        <mj-text>- The Rill Team</mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section>
+      <mj-column>
+        <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
+
+        <mj-spacer height="20px" />
+
+        <mj-text align="center" font-size="12px" line-height="1.5">
+          © 2024 Rill Data, Inc<br />
+          18 Bartol St. • San Francisco • CA<br />
+          <a href="https://www.rilldata.com/contact">Contact us</a> •
+          <a href="https://bit.ly/3unvA05">Community</a> •
+          <a href="https://www.rilldata.com/legal/privacy">Privacy Policy</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

@@ -3,6 +3,7 @@
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
 
   export let statusCode: number | undefined = undefined;
   export let header: string;
@@ -17,6 +18,8 @@
   <CtaContentContainer>
     {#if statusCode}
       <h1 class="status-code">{statusCode}</h1>
+    {:else}
+      <AlertCircleOutline size="64px" />
     {/if}
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>

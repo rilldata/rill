@@ -118,7 +118,9 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 		count++
 		resolver = "sql"
 		resolverProps["sql"] = raw.SQL
-		resolverProps["connector"] = raw.Connector
+		if raw.Connector != "" {
+			resolverProps["connector"] = raw.Connector
+		}
 	}
 
 	// Handle metrics SQL resolver

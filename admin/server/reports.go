@@ -74,7 +74,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			if errors.Is(err, database.ErrNotFound) {
 				externalEmails = append(externalEmails, email)
 			} else {
-				return nil, status.Errorf(codes.Internal, "failed to find user by email: %s", err.Error())
+				return nil, fmt.Errorf("failed to find user by email: %w", err)
 			}
 		}
 	}
@@ -82,7 +82,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	externalUrls := make(map[string]*adminv1.GetReportMetaResponse_URLs, len(externalEmails))
 	emailTokens, err := s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, externalEmails)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to issue magic auth tokens: %s", err.Error())
+		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
 	for email, token := range emailTokens {
@@ -149,15 +149,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		Data:      data,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile report: %w", err)
 	}
 
 	return &adminv1.CreateReportResponse{
@@ -219,15 +216,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		Data:      data,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to update virtual file: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile report: %w", err)
 	}
 
 	return &adminv1.EditReportResponse{}, nil
@@ -278,7 +272,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		userEmail = user.Email
 	}
@@ -320,11 +314,11 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
 		_, err = s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
+			return nil, fmt.Errorf("failed to clean up report tokens: %w", err)
 		}
 	} else {
 		data, err := s.yamlForManagedReport(opts, annotations.AdminOwnerUserID)
@@ -339,16 +333,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			Data:      data,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
+			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile report: %w", err)
 	}
 
 	return &adminv1.UnsubscribeReportResponse{}, nil
@@ -398,20 +389,17 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
+		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
 	}
 
 	_, err = s.reconcileMagicTokensForExternalEmails(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to clean up report tokens: %s", err.Error())
+		return nil, fmt.Errorf("failed to clean up report tokens: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, fmt.Errorf("failed to reconcile report: %w", err)
 	}
 
 	return &adminv1.DeleteReportResponse{}, nil
@@ -457,7 +445,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 	err = s.admin.TriggerReport(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to trigger report: %s", err.Error())
+		return nil, fmt.Errorf("failed to trigger report: %w", err)
 	}
 
 	return &adminv1.TriggerReportResponse{}, nil
@@ -630,11 +618,11 @@ func (s *Server) reconcileMagicTokensForExternalEmails(ctx context.Context, orgI
 		// Get the project-level permissions for the creating user.
 		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
@@ -644,7 +632,7 @@ func (s *Server) reconcileMagicTokensForExternalEmails(ctx context.Context, orgI
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
 		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		mgcOpts.Attributes = attrs
 	}

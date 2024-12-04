@@ -36,19 +36,19 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	if org.BillingCustomerID == "" {
-		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
 	}
 
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+			return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org),
+		Organization:     organizationToDTO(org, true),
 		Subscription:     subscriptionToDTO(sub),
 		BillingPortalUrl: sub.Customer.PortalURL,
 	}, nil
@@ -79,7 +79,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	bisc, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -94,7 +94,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		if errors.Is(err, billing.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "plan not found")
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 	// if its a trial plan, start trial only if its a new org
 	if plan.Default {
@@ -103,14 +103,14 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			if errors.Is(err, database.ErrNotFound) {
 				return nil, status.Errorf(codes.FailedPrecondition, "only new organizations can subscribe to the trial plan %s", plan.Name)
 			}
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		if bi != nil {
 			// check against trial orgs quota, skip for superusers
 			if org.CreatedByUserID != nil && !claims.Superuser(ctx) {
 				u, err := s.admin.DB.FindUser(ctx, *org.CreatedByUserID)
 				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
+					return nil, err
 				}
 				if u.QuotaTrialOrgs >= 0 && u.CurrentTrialOrgsCount >= u.QuotaTrialOrgs {
 					return nil, status.Errorf(codes.FailedPrecondition, "trial orgs quota of %d reached for user %s", u.QuotaTrialOrgs, u.Email)
@@ -119,7 +119,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 			updatedOrg, sub, err := s.admin.StartTrial(ctx, org)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 
 			// send trial started email
@@ -127,6 +127,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				ToEmail:      org.BillingEmail,
 				ToName:       org.Name,
 				OrgName:      org.Name,
+				FrontendURL:  s.admin.URLs.Frontend(),
 				TrialEndDate: sub.TrialEndDate,
 			})
 			if err != nil {
@@ -134,7 +135,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
-				Organization: organizationToDTO(updatedOrg),
+				Organization: organizationToDTO(updatedOrg, true),
 				Subscription: subscriptionToDTO(sub),
 			}, nil
 		}
@@ -160,7 +161,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -169,7 +170,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		// create new subscription
 		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 		planChange = true
 		s.logger.Named("billing").Info("new subscription created", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
@@ -179,7 +180,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		if oldPlan.ID != plan.ID {
 			sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 			planChange = true
 			s.logger.Named("billing").Info("plan changed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("old_plan_id", oldPlan.ID), zap.String("old_plan_name", oldPlan.Name), zap.String("new_plan_id", sub.Plan.ID), zap.String("new_plan_name", sub.Plan.Name))
@@ -188,24 +189,38 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 
 	org, err = s.updateQuotasAndHandleBillingIssues(ctx, org, sub)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if planChange {
 		// send plan changed email
-		err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
-			ToEmail:  org.BillingEmail,
-			ToName:   org.Name,
-			OrgName:  org.Name,
-			PlanName: plan.DisplayName,
-		})
+
+		if plan.PlanType == billing.TeamPlanType {
+			// special handling for team plan to send custom email
+			err = s.admin.Email.SendTeamPlanStarted(&email.TeamPlan{
+				ToEmail:          org.BillingEmail,
+				ToName:           org.Name,
+				OrgName:          org.Name,
+				FrontendURL:      s.admin.URLs.Frontend(),
+				PlanName:         plan.DisplayName,
+				BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+			})
+		} else {
+			err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
+				ToEmail:  org.BillingEmail,
+				ToName:   org.Name,
+				OrgName:  org.Name,
+				PlanName: plan.DisplayName,
+			})
+		}
+
 		if err != nil {
 			s.logger.Named("billing").Error("failed to send plan update email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 	}
 
 	return &adminv1.UpdateBillingSubscriptionResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -228,9 +243,14 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 		return nil, status.Error(codes.FailedPrecondition, "billing not yet initialized for the organization")
 	}
 
+	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, err
+	}
+
 	endDate, err := s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionEndOfSubscriptionTerm)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if !endDate.IsZero() {
@@ -244,23 +264,25 @@ func (s *Server) CancelBillingSubscription(ctx context.Context, req *adminv1.Can
 			EventTime: time.Now(),
 		})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
 	// clean up any trial related billing issues if present
 	err = s.admin.CleanupTrialBillingIssues(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	s.logger.Named("billing").Warn("subscription cancelled", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 
 	err = s.admin.Email.SendSubscriptionCancelled(&email.SubscriptionCancelled{
-		ToEmail: org.BillingEmail,
-		ToName:  org.Name,
-		OrgName: org.Name,
-		EndDate: endDate,
+		ToEmail:    org.BillingEmail,
+		ToName:     org.Name,
+		OrgName:    org.Name,
+		PlanName:   sub.Plan.DisplayName,
+		EndDate:    endDate,
+		BillingURL: s.admin.URLs.Billing(org.Name, false),
 	})
 	if err != nil {
 		s.logger.Named("billing").Error("failed to send subscription cancelled email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.String("billing_email", org.BillingEmail), zap.Error(err))
@@ -292,12 +314,12 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Errorf(codes.FailedPrecondition, "subscription not cancelled for the organization %s", org.Name)
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if plan.Default {
@@ -319,20 +341,20 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
 	if sub == nil {
 		sub, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	} else if sub.EndDate == sub.CurrentBillingCycleEndDate {
 		// To make request idempotent, if subscription is still on cancellation schedule, unschedule it
 		sub, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -340,7 +362,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		// change the plan, won't happen for new subscriptions
 		sub, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, sub.ID, plan)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -362,30 +384,42 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// delete the billing issue
 	err = s.admin.DB.DeleteBillingIssue(ctx, bisc.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	s.logger.Named("billing").Info("subscription renewed", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("plan_id", sub.Plan.ID), zap.String("plan_name", sub.Plan.Name))
 
 	// send subscription renewed email
-	err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
-		ToEmail:  org.BillingEmail,
-		ToName:   org.Name,
-		OrgName:  org.Name,
-		PlanName: sub.Plan.DisplayName,
-	})
+	if sub.Plan.PlanType == billing.TeamPlanType {
+		// special handling for team plan to send custom email
+		err = s.admin.Email.SendTeamPlanRenewal(&email.TeamPlan{
+			ToEmail:          org.BillingEmail,
+			ToName:           org.Name,
+			OrgName:          org.Name,
+			FrontendURL:      s.admin.URLs.Frontend(),
+			PlanName:         sub.Plan.DisplayName,
+			BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+		})
+	} else {
+		err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
+			ToEmail:  org.BillingEmail,
+			ToName:   org.Name,
+			OrgName:  org.Name,
+			PlanName: sub.Plan.DisplayName,
+		})
+	}
 	if err != nil {
 		s.logger.Named("billing").Error("failed to send subscription renewed email", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -415,7 +449,7 @@ func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPayme
 
 	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
@@ -448,7 +482,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                                req.Organization,
+		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		CustomDomain:                        org.CustomDomain,
@@ -470,7 +504,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		sub, err = s.admin.Biller.GetActiveSubscription(ctx, *req.BillingCustomerId)
 		if err != nil {
 			if !errors.Is(err, billing.ErrNotFound) {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 
@@ -493,13 +527,13 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		// fetch the customer
 		pc, err := s.admin.PaymentProvider.FindCustomer(ctx, *req.PaymentCustomerId)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// link the payment customer to the billing customer
 		err = s.admin.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, *req.PaymentCustomerId)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		if !pc.HasPaymentMethod {
@@ -510,7 +544,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 				EventTime: time.Now(),
 			})
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 
@@ -522,19 +556,19 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 				EventTime: time.Now(),
 			})
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 	}
 
 	if sub == nil {
 		return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-			Organization: organizationToDTO(org),
+			Organization: organizationToDTO(org, true),
 		}, nil
 	}
 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-		Organization: organizationToDTO(org),
+		Organization: organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -557,7 +591,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	ns, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeNeverSubscribed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -570,7 +604,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	onTrial, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeOnTrial)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 	if onTrial != nil {
@@ -581,7 +615,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		trialEnded, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeTrialEnded)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 		if trialEnded != nil {
@@ -593,7 +627,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		subCancelled, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypeSubscriptionCancelled)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		}
 		if subCancelled != nil {
@@ -610,7 +644,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 	// start a new trial, if already on trial plan, this will not create new subscription, if not on trial plan it will error
 	_, sub, err := s.admin.StartTrial(ctx, org)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	if sub.ID != "" {
@@ -627,7 +661,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 			EventTime: time.Now(),
 		})
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 
 		// send trial extended email
@@ -647,7 +681,7 @@ func (s *Server) SudoExtendTrial(ctx context.Context, req *adminv1.SudoExtendTri
 		// if trial subscription was cancelled then unschedule the cancellation
 		_, err = s.admin.Biller.UnscheduleCancellation(ctx, sub.ID)
 		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, err
 		}
 	}
 
@@ -662,7 +696,7 @@ func (s *Server) SudoTriggerBillingRepair(ctx context.Context, req *adminv1.Sudo
 
 	ids, err := s.admin.DB.FindOrganizationIDsWithoutBilling(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get organizations without billing id: %v", err))
+		return nil, fmt.Errorf("failed to get organizations without billing id: %w", err)
 	}
 
 	for _, orgID := range ids {
@@ -682,7 +716,7 @@ func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPu
 	// no permissions required to list public billing plans
 	plans, err := s.admin.Biller.GetPublicPlans(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	var dtos []*adminv1.BillingPlan
@@ -741,7 +775,7 @@ func (s *Server) GetBillingProjectCredentials(ctx context.Context, req *adminv1.
 		Attributes: map[string]any{"organization_id": org.ID, "is_embed": true},
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+		return nil, fmt.Errorf("could not issue jwt: %w", err)
 	}
 
 	s.admin.Used.Deployment(prodDepl.ID)
@@ -772,7 +806,7 @@ func (s *Server) ListOrganizationBillingIssues(ctx context.Context, req *adminv1
 
 	issues, err := s.admin.DB.FindBillingIssuesForOrg(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	var dtos []*adminv1.BillingIssue
@@ -812,7 +846,7 @@ func (s *Server) SudoDeleteOrganizationBillingIssue(ctx context.Context, req *ad
 
 	err = s.admin.DB.DeleteBillingIssueByTypeForOrg(ctx, org.ID, t)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.SudoDeleteOrganizationBillingIssueResponse{}, nil
@@ -836,7 +870,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		CreatedByUserID:                     org.CreatedByUserID,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// delete any trial related billing issues, irrespective of the new plan.
@@ -859,7 +893,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	var validationErrs []string
 	pc, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 	if err != nil {
-		return status.Error(codes.Internal, err.Error())
+		return err
 	}
 	if !pc.HasPaymentMethod {
 		validationErrs = append(validationErrs, "no payment method found")
@@ -872,7 +906,7 @@ func (s *Server) planChangeValidationChecks(ctx context.Context, org *database.O
 	be, err := s.admin.DB.FindBillingIssueByTypeForOrg(ctx, org.ID, database.BillingIssueTypePaymentFailed)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
-			return status.Error(codes.Internal, err.Error())
+			return err
 		}
 	}
 	if be != nil {
@@ -902,6 +936,7 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 	return &adminv1.BillingPlan{
 		Id:              plan.ID,
 		Name:            plan.Name,
+		PlanType:        planTypeToDTO(plan.PlanType),
 		DisplayName:     plan.DisplayName,
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
@@ -968,6 +1003,21 @@ func dtoBillingIssueTypeToDB(t adminv1.BillingIssueType) (database.BillingIssueT
 		return database.BillingIssueTypeNeverSubscribed, nil
 	default:
 		return database.BillingIssueTypeUnspecified, status.Error(codes.InvalidArgument, "invalid billing error type")
+	}
+}
+
+func planTypeToDTO(t billing.PlanType) adminv1.BillingPlanType {
+	switch t {
+	case billing.TrailPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_TRIAL
+	case billing.TeamPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_TEAM
+	case billing.ManagedPlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_MANAGED
+	case billing.EnterprisePlanType:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_ENTERPRISE
+	default:
+		return adminv1.BillingPlanType_BILLING_PLAN_TYPE_UNSPECIFIED
 	}
 }
 

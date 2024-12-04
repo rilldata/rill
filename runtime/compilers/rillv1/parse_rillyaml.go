@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
 
@@ -95,22 +96,11 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		return newYAMLError(err)
 	}
 
-	// Display name backwards compatibility
-	if tmp.Title != "" && tmp.DisplayName == "" {
-		tmp.DisplayName = tmp.Title
-	}
-
-	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
-	vars := make(map[string]string)
-	for k, v := range tmp.Vars { // Backwards compatibility
-		vars[k] = v
-	}
+	// Look for environment-specific overrides
 	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
 		if v.Kind == yaml.ScalarNode {
-			vars[k] = v.Value
 			continue
 		}
-
 		// Backwards compatibility hack: we renamed "env" to "environment_overrides".
 		// The only environments supported at the rename time were "dev" and "prod".
 		if k == "dev" || k == "prod" {
@@ -142,6 +132,29 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	if envOverride := tmp.EnvironmentOverrides[p.Environment]; !envOverride.IsZero() {
 		if err := envOverride.Decode(tmp); err != nil {
 			return newYAMLError(err)
+		}
+	}
+
+	// Display name backwards compatibility
+	if tmp.Title != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Title
+	}
+
+	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
+	vars := make(map[string]string)
+	for k, v := range tmp.Vars { // Backwards compatibility
+		if err := env.ValidateName(k); err != nil {
+			return err
+		}
+		vars[k] = v
+	}
+
+	for k, v := range tmp.Env { // nolint: gocritic // Using a pointer changes parser behavior
+		if v.Kind == yaml.ScalarNode {
+			if err := env.ValidateName(k); err != nil {
+				return err
+			}
+			vars[k] = v.Value
 		}
 	}
 

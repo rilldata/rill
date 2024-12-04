@@ -829,26 +829,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -862,13 +842,6 @@ If it resolves to false, the other fields are not set. */
   schema?: V1StructType;
   data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -899,6 +872,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -915,6 +895,26 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1363,11 +1363,6 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -1481,6 +1476,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1491,31 +1491,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -1565,6 +1540,31 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -2434,14 +2434,6 @@ export interface V1API {
   state?: V1APIState;
 }
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -2502,6 +2494,14 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2534,6 +2534,8 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
+export type MetricsViewSpecMeasureV2FormatD3Locale = { [key: string]: any };
+
 export type MetricsViewSpecMeasureType =
   (typeof MetricsViewSpecMeasureType)[keyof typeof MetricsViewSpecMeasureType];
 
@@ -2544,21 +2546,6 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
-
-export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  displayName?: string;
-  description?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  formatPreset?: string;
-  formatD3?: string;
-  validPercentOfTotal?: boolean;
-}
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
@@ -2581,6 +2568,22 @@ export interface MetricsViewSpecMeasureWindow {
   /** Dimensions to order the window by. Must be present in required_dimensions. */
   orderBy?: MetricsViewSpecDimensionSelector[];
   frameExpression?: string;
+}
+
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  displayName?: string;
+  description?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  formatPreset?: string;
+  formatD3?: string;
+  formatD3Locale?: MetricsViewSpecMeasureV2FormatD3Locale;
+  validPercentOfTotal?: boolean;
 }
 
 /**

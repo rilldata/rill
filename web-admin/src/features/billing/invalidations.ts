@@ -1,6 +1,7 @@
 import {
   adminServiceListOrganizationBillingIssues,
   getAdminServiceGetBillingSubscriptionQueryKey,
+  getAdminServiceGetOrganizationQueryKey,
   getAdminServiceListOrganizationBillingIssuesQueryKey,
   getAdminServiceListProjectsForOrganizationQueryKey,
   type V1BillingIssueType,
@@ -17,6 +18,7 @@ export function invalidateBillingInfo(
     queryClient.refetchQueries(
       getAdminServiceGetBillingSubscriptionQueryKey(org),
     ),
+    queryClient.invalidateQueries(getAdminServiceGetOrganizationQueryKey(org)),
     waitForUpdatedBillingIssues(org, expectedIssueTypes),
   ]);
 }

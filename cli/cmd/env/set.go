@@ -1,8 +1,11 @@
 package env
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	envValidator "github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -23,11 +26,15 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			if err := envValidator.ValidateName(key); err != nil {
+				return err
+			}
+
 			// Find the cloud project name
 			if projectName == "" {
 				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
 				if err != nil {
-					return err
+					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 

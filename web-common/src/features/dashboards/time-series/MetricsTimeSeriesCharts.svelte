@@ -20,7 +20,7 @@
   import TDDAlternateChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDAlternateChart.svelte";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
+  import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
   import {
     useTimeSeriesDataStore,
     type TimeSeriesDatum,
@@ -73,8 +73,8 @@
   let scrubEnd;
 
   let mouseoverValue: DomainCoordinates | undefined = undefined;
-  let startValue: Date;
-  let endValue: Date;
+  let startValue: Date | undefined;
+  let endValue: Date | undefined;
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
@@ -138,12 +138,12 @@
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.start,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
       timeGrainToDuration(interval),
     );
     scrubEnd = adjustOffsetForZone(
       $exploreStore?.selectedScrubRange?.end,
-      $exploreStore.selectedTimezone,
+      $exploreStore?.selectedTimezone,
       timeGrainToDuration(interval),
     );
 
@@ -292,7 +292,7 @@
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
-      <BackToOverview {exploreName} />
+      <BackToExplore {exploreName} />
       <ChartTypeSelector
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
@@ -424,7 +424,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -437,7 +437,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore.selectedTimezone,
+                  $exploreStore?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -467,7 +467,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
-              zone={$exploreStore.selectedTimezone}
+              zone={$exploreStore?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
               timeGrain={interval}

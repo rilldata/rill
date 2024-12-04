@@ -40,7 +40,7 @@
             {
               // TODO: Change this back to `/${organization}/${project}/-/settings`
               // Once project settings are implemented
-              route: `/${organization}/${project}/-/settings/public-urls`,
+              route: `/${organization}/${project}/-/settings/environment-variables`,
               label: "Settings",
             },
           ];

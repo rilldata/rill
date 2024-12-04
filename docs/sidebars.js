@@ -31,13 +31,14 @@ const sidebars = {
       items: [
         {
           type: 'category',
-          label: 'Rill Developer to Rill Cloud in 5 steps!',
+          label: 'Rill Developer to Rill Cloud in 6 steps!',
           description: 'Rill Developer to  to Rill Cloud',
 
           items: [
             'tutorials/rill_basics/launch',
             'tutorials/rill_basics/import',
             'tutorials/rill_basics/model',
+            'tutorials/rill_basics/metrics-view',
             'tutorials/rill_basics/dashboard',
             'tutorials/rill_basics/deploy',
             'tutorials/rill_basics/success',
@@ -83,28 +84,29 @@ const sidebars = {
               ]
           },
 */  
-/*
-            { some changes to syntax and adding 'tasks'
+
+            { 
               type: 'category',
-              label: 'Incremental Models',
+              label: 'Advanced Models',
               
               items: [
                 'tutorials/rill_advanced_features/incremental_models/introduction',
                 {
                   type: 'category',
-                  label: 'Basic Incremental and Partitioned Model Examples',
+                  label: 'Basic Incremental and Partitions Model Examples',
                   items: [
                     'tutorials/rill_advanced_features/incremental_models/simple-examples/incremental_now',
-                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partition_now',
+                    'tutorials/rill_advanced_features/incremental_models/simple-examples/partitions_now',
                   ]
                 },
                 'tutorials/rill_advanced_features/incremental_models/cloud-storage-partitions',
                 'tutorials/rill_advanced_features/incremental_models/data-warehouse-partitions',
+
                 'tutorials/rill_advanced_features/incremental_models/staging-connectors'
 
               ]
             },
-            */
+            
             {
               type: 'category',
               label: 'Custom APIs',
@@ -150,11 +152,17 @@ const sidebars = {
 
         {
           type: 'category',
-          label: 'Rill and ClickHouse to Dashboarding in 4 steps!',
+          label: 'Rill and ClickHouse to Dashboarding in 5 steps!',
           description: 'For our friends from ClickHouse, a revamped guide.',
+          link: {
+            type: 'doc',
+            id: 'tutorials/rill_clickhouse/index',
+
+          },
           items: [
             'tutorials/rill_clickhouse/r_ch_launch',
             'tutorials/rill_clickhouse/r_ch_connect',
+            'tutorials/rill_clickhouse/r_ch_metrics-view',
             'tutorials/rill_clickhouse/r_ch_dashboard',
             'tutorials/rill_clickhouse/r_ch_deploy',
             {
@@ -180,12 +188,11 @@ const sidebars = {
    //         'tutorials/other/create-map-component',
    //         'tutorials/other/component-variable-freedom',
             'tutorials/other/embed-dashboard',
-      //      'tutorials/other/deep-dive-incremental-modeling',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
       //      'tutorials/other/Rill Cloud/views',
       //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
        //     'tutorials/other/yaml-vs-ui',
-       //     'tutorials/other/trial-check',
+            'tutorials/other/trial-check',
             'tutorials/other/avg_avg',
 
           ]
