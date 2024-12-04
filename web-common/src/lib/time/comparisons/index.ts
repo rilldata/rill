@@ -24,7 +24,9 @@ export function getComparisonTransform(
 ): RelativeTimeTransformation {
   if (
     comparison === TimeComparisonOption.CONTIGUOUS ||
-    comparison === TimeComparisonOption.CUSTOM
+    comparison === TimeComparisonOption.CUSTOM ||
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
+    comparison === TimeRangePreset.CUSTOM // hack for `comparison` not being the correct type
   ) {
     /** for custom & otherwise-contiguous comparisons,
      * we will calculate the width of the time range
