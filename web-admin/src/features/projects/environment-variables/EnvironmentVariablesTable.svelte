@@ -8,10 +8,11 @@
   import KeyCell from "./KeyCell.svelte";
   import ValueCell from "./ValueCell.svelte";
   import ActionsCell from "./ActionsCell.svelte";
+  import type { VariableNames } from "./types";
 
   export let data: V1ProjectVariable[];
   export let emptyText: string = "No environment variables";
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   const columns: ColumnDef<V1ProjectVariable, any>[] = [
     {
