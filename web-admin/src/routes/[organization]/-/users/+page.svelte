@@ -42,6 +42,7 @@
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
       ...invite,
+      userName: "",
       userEmail: invite.email,
       roleName: invite.role,
     }));
@@ -56,10 +57,8 @@
   $: filteredUsers = combinedRows.filter((user) => {
     const searchLower = searchText.toLowerCase();
     return (
-      (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
-      ("userName" in user &&
-        (user.userName?.toLowerCase() || "").includes(searchLower))
-    );
+      user.userName?.toLowerCase() || user.userEmail?.toLowerCase()
+    ).includes(searchLower);
   });
 
   const currentUser = createAdminServiceGetCurrentUser();
