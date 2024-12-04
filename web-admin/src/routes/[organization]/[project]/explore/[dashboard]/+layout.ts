@@ -2,7 +2,7 @@ import {
   type Bookmarks,
   fetchBookmarks,
 } from "@rilldata/web-admin/features/bookmarks/selectors";
-import { fetchExploreSpec } from "@rilldata/web-admin/features/dashboards/selectors";
+import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExplorePreset,
   type V1Resource,

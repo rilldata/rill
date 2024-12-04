@@ -1,5 +1,5 @@
-import { fetchExploreSpec } from "@rilldata/web-admin/features/dashboards/selectors";
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
+import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ params: { token }, parent }) => {

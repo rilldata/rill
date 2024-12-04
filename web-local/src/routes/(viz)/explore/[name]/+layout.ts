@@ -1,4 +1,4 @@
-import { fetchExploreSpec } from "@rilldata/web-admin/features/dashboards/selectors";
+import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error } from "@sveltejs/kit";
 import { get } from "svelte/store";
