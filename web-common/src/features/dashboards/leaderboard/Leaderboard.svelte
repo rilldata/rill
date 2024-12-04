@@ -44,7 +44,7 @@
   } from "./leaderboard-widths";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
-  import LoadingRows from "./LoadingRows.svelte";
+  import DelayedLoadingRows from "./DelayedLoadingRows.svelte";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -311,7 +311,7 @@
 
     <tbody>
       {#if isFetching}
-        <LoadingRows columns={columnCount + 1} />
+        <DelayedLoadingRows columns={columnCount + 1} isLoading={isFetching} />
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
