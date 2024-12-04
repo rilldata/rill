@@ -52,9 +52,15 @@
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  $: filteredUsers = combinedRows.filter((user) =>
-    user.userEmail.toLowerCase().includes(searchText.toLowerCase()),
-  );
+  // Member users have a userName field, invites do not
+  $: filteredUsers = combinedRows.filter((user) => {
+    const searchLower = searchText.toLowerCase();
+    return (
+      (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
+      ("userName" in user &&
+        (user.userName?.toLowerCase() || "").includes(searchLower))
+    );
+  });
 
   const currentUser = createAdminServiceGetCurrentUser();
 </script>
