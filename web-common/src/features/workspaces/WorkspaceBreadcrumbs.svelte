@@ -32,7 +32,7 @@
 </script>
 
 <nav
-  class="flex gap-x-1.5 items-center h-7 flex-none w-full pr-3 truncate line-clamp-1"
+  class="flex gap-x-1.5 items-center h-7 flex-none w-full pr-3 truncate line-clamp-1 -pl-1"
 >
   <WorkspaceCrumb
     selectedResource={resource}
