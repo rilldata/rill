@@ -12,30 +12,31 @@
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
+  import { onDestroy } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  let startRefetchInterval = false;
   let isRefreshConfirmDialogOpen = false;
-  let refetchKey = 0;
+  let maxRefetchAttempts = 60; // 30 seconds maximum
+  let refetchAttempts = 0;
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
 
   $: allResources = createRuntimeServiceListResources(
     $runtime.instanceId,
-    // All resource "kinds"
     undefined,
     {
       query: {
         select: (data) => {
-          // Exclude the "ProjectParser" resource
+          // Exclude the "ProjectParser" resource and "RefreshTrigger" resource
           return data.resources.filter(
             (resource) =>
-              resource.meta.name.kind !== ResourceKind.ProjectParser,
+              resource.meta.name.kind !== ResourceKind.ProjectParser &&
+              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           );
         },
         refetchOnMount: true,
-        refetchInterval: startRefetchInterval ? 500 : false,
-        queryKey: ["resources", refetchKey],
+        keepPreviousData: true,
       },
     },
   );
@@ -50,8 +51,36 @@
     ),
   );
 
+  function startPolling() {
+    stopPolling(); // Clear any existing interval
+    refetchAttempts = 0;
+
+    pollInterval = setInterval(() => {
+      refetchAttempts++;
+
+      if (refetchAttempts >= maxRefetchAttempts) {
+        stopPolling();
+        return;
+      }
+
+      void $allResources.refetch();
+    }, 500);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    refetchAttempts = 0;
+  }
+
+  $: if (!isAnySourceOrModelReconciling) {
+    stopPolling();
+  }
+
   function refreshAllSourcesAndModels() {
-    startRefetchInterval = true;
+    startPolling();
 
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
@@ -61,27 +90,19 @@
     });
 
     void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
-        // All resource "kinds"
-        undefined,
-      ),
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, undefined),
     );
   }
 
-  $: if (!isAnySourceOrModelReconciling) {
-    startRefetchInterval = false;
-  }
-
   function triggerRefresh() {
-    // Force a new query
-    refetchKey++;
-
-    startRefetchInterval = true;
-
-    // Refetch the resources
+    startPolling();
     void $allResources.refetch();
   }
+
+  // Cleanup on component destroy
+  onDestroy(() => {
+    stopPolling();
+  });
 </script>
 
 <section class="flex flex-col gap-y-4">
@@ -92,23 +113,23 @@
       on:click={() => {
         isRefreshConfirmDialogOpen = true;
       }}
-      disabled={startRefetchInterval}
+      disabled={Boolean(pollInterval)}
     >
-      {#if startRefetchInterval}
+      {#if pollInterval}
         Refreshing...
       {:else}
         Refresh all sources and models
       {/if}
     </Button>
   </div>
-  {#if $allResources.isLoading}
+  {#if $allResources.isLoading && !$allResources.data}
     <DelayedSpinner isLoading={$allResources.isLoading} size="16px" />
   {:else if $allResources.isError}
     <div class="text-red-500">
       Error loading resources: {$allResources.error?.message}
     </div>
-  {:else if $allResources.isSuccess}
-    <ProjectResourcesTable data={$allResources?.data} {triggerRefresh} />
+  {:else if $allResources.data}
+    <ProjectResourcesTable data={$allResources.data} {triggerRefresh} />
   {/if}
 </section>
 
