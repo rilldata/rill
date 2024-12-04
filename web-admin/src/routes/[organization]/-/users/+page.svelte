@@ -42,7 +42,7 @@
   function coerceInvitesToUsers(invites: V1UserInvite[]) {
     return invites.map((invite) => ({
       ...invite,
-      userName: "",
+      userName: null,
       userEmail: invite.email,
       roleName: invite.role,
     }));
@@ -57,7 +57,7 @@
   $: filteredUsers = combinedRows.filter((user) => {
     const searchLower = searchText.toLowerCase();
     return (
-      user.userName?.toLowerCase() || user.userEmail?.toLowerCase()
+      user.userEmail?.toLowerCase() || user.userName?.toLowerCase()
     ).includes(searchLower);
   });
 
