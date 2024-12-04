@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 )
 
 func init() {

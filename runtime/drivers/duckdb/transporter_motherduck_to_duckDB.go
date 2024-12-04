@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/rduckdb"
@@ -72,7 +74,26 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 	}
 
-	return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, srcConfig.SQL, &rduckdb.CreateTableOptions{
-		// InitSQL: fmt.Sprintf("INSTALL 'motherduck'; LOAD 'motherduck'; SET motherduck_token='%s'; ATTACH '%s'", token, srcConfig.DSN),
+	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, "INSTALL 'motherduck'; LOAD 'motherduck';")
+		if err != nil {
+			return fmt.Errorf("failed to load motherduck extension %w", err)
+		}
+
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("SET motherduck_token='%s'", token))
+		if err != nil {
+			return fmt.Errorf("failed to set motherduck token %w", err)
+		}
+
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ATTACH '%s'", srcConfig.DSN))
+		if err != nil {
+			return fmt.Errorf("failed to attach motherduck DSN: %w", err)
+		}
+		return err
+	}
+	userQuery := strings.TrimSpace(srcConfig.SQL)
+	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+	return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
+		BeforeCreateFn: beforeCreateFn,
 	})
 }

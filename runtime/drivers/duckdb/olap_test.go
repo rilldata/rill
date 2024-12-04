@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/memblob"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -243,28 +242,13 @@ func prepareConn(t *testing.T) drivers.Handle {
 }
 
 func Test_safeSQLString(t *testing.T) {
-	conn := prepareConn(t)
 	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "let's t@st \"weird\" dirs")
 	err := os.Mkdir(path, fs.ModePerm)
 	require.NoError(t, err)
 
-	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-}
-
-	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-
-	olap, ok := conn.AsOLAP("")
-	require.True(t, ok)
-
-	ctx := context.Background()
-	err = olap.CreateTableAsSelect(ctx, "foo", false, "SELECT 'a' AS bar, 1 AS baz UNION ALL SELECT 'a', 2 UNION ALL SELECT 'b', 3 UNION ALL SELECT 'c', 4", nil)
-	require.NoError(t, err)
-
-	err = olap.CreateTableAsSelect(ctx, "bar", false, "SELECT 'a' AS bar, 1 AS baz UNION ALL SELECT 'a', 2 UNION ALL SELECT 'b', 3 UNION ALL SELECT 'c', 4", nil)
-	require.NoError(t, err)
-	return conn.(*connection)
+	require.NotNil(t, conn)
+	require.NoError(t, conn.Close())
 }

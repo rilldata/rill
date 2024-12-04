@@ -9,7 +9,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -243,7 +242,7 @@ path: data/foo.csv
 	// Delete the underlying table
 	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
-	err = olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE foo;"})
+	err = olap.DropTable(context.Background(), "foo", false)
 	require.NoError(t, err)
 	release()
 	testruntime.RequireNoOLAPTable(t, rt, id, "foo")

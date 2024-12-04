@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"golang.org/x/exp/maps"
 )
 

@@ -164,7 +164,6 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
-		data:           blob.PrefixedBucket(data, "duckdb"), // todo : ideally the drivers should get name prefixed buckets
 		metaSem:        semaphore.NewWeighted(1),
 		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
 		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
@@ -174,6 +173,13 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
+	}
+	remote, ok, err := st.OpenBucket(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		c.remote = remote
 	}
 
 	// register a callback to add a gauge on number of connections in use per db
@@ -269,7 +275,7 @@ type connection struct {
 	config   *config
 	logger   *zap.Logger
 	activity *activity.Client
-	data     *blob.Bucket
+	remote   *blob.Bucket
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -496,7 +502,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	var err error
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:      c.config.DataDir,
-		Remote:         c.data,
+		Remote:         c.remote,
 		ReadSettings:   c.config.readSettings(),
 		WriteSettings:  c.config.writeSettings(),
 		InitQueries:    bootQueries,

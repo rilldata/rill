@@ -191,7 +191,7 @@ func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
 	err := c.db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), newType))
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType))
 		return err
 	})
 	return c.checkErr(err)

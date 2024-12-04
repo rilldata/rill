@@ -18,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/fileblob"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
