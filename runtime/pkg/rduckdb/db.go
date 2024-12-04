@@ -237,6 +237,13 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, err
 	}
 
+	// collect all tables
+	var tables []*tableMeta
+	_ = db.iterateLocalTables(func(name string, meta *tableMeta) error {
+		tables = append(tables, meta)
+		return nil
+	})
+
 	// catalog
 	db.catalog = newCatalog(
 		func(name, version string) {
@@ -255,14 +262,9 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 				}
 			}()
 		},
+		tables,
 		opts.Logger,
 	)
-
-	// populate catalog
-	_ = db.iterateLocalTables(func(name string, meta *tableMeta) error {
-		db.catalog.addTableVersion(meta.Name, meta)
-		return nil
-	})
 
 	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
 	if err != nil {

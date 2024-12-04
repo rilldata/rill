@@ -144,6 +144,13 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 	}
 
 	if !updateCatalog {
+		// delete all local tables which are not present in remote
+		_ = d.iterateLocalTables(func(name string, meta *tableMeta) error {
+			if _, ok := remoteTables[name]; !ok {
+				return d.deleteLocalTableFiles(name, "")
+			}
+			return nil
+		})
 		return nil
 	}
 

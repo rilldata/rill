@@ -42,14 +42,24 @@ type catalog struct {
 // newCatalog creates a new catalog.
 // The removeSnapshotFunc func will be called exactly once for each snapshot ID when it is no longer the current snapshot and is no longer held by any readers.
 // The removeVersionFunc func will be called exactly once for each table version when it is no longer the current version and is no longer used by any active snapshots.
-func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), logger *slog.Logger) *catalog {
-	return &catalog{
+func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(int), tables []*tableMeta, logger *slog.Logger) *catalog {
+	c := &catalog{
 		tables:             make(map[string]*table),
 		snapshots:          make(map[int]*snapshot),
 		removeVersionFunc:  removeVersionFunc,
 		removeSnapshotFunc: removeSnapshotFunc,
 		logger:             logger,
 	}
+	for _, meta := range tables {
+		c.tables[meta.Name] = &table{
+			name:                   meta.Name,
+			currentVersion:         meta.Version,
+			versionReferenceCounts: map[string]int{},
+			versionMeta:            map[string]*tableMeta{meta.Version: meta},
+		}
+	}
+	_ = c.acquireSnapshotUnsafe()
+	return c
 }
 
 func (c *catalog) tableMeta(name string) (*tableMeta, error) {
