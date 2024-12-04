@@ -18,6 +18,7 @@
 
   let startRefetchInterval = false;
   let isRefreshConfirmDialogOpen = false;
+  let refetchKey = 0;
 
   $: ({ instanceId } = $runtime);
 
@@ -37,16 +38,19 @@
         refetchOnMount: true,
         refetchOnWindowFocus: true,
         refetchInterval: startRefetchInterval ? 500 : false,
+        queryKey: ["resources", refetchKey],
       },
     },
   );
 
-  $: isAnySourceOrModelReconciling = $resources?.data?.some(
-    (resource) =>
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+  $: isAnySourceOrModelReconciling = Boolean(
+    $allResources?.data?.some(
+      (resource) =>
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    ),
   );
 
   function refreshAllSourcesAndModels() {
@@ -73,8 +77,12 @@
   }
 
   function triggerRefresh() {
+    // Force a new query
+    refetchKey++;
+
     startRefetchInterval = true;
 
+    // Refetch the resources
     void $allResources.refetch();
   }
 </script>
@@ -103,13 +111,8 @@
     <div class="text-red-500">
       Error loading resources: {$resources.error?.message}
     </div>
-<<<<<<< HEAD
   {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources?.data} />
-=======
-  {:else if $allResources.isSuccess}
-    <ProjectResourcesTable data={$allResources?.data} {triggerRefresh} />
->>>>>>> 3f8e7d4c8 (refetch allResources on row reload click)
+    <ProjectResourcesTable data={$resources?.data} {triggerRefresh} />
   {/if}
 </section>
 
