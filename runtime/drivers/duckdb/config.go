@@ -38,7 +38,7 @@ type config struct {
 
 func newConfig(cfgMap map[string]any, dataDir string) (*config, error) {
 	cfg := &config{
-		DataDir:         dataDir,
+		DataDir: dataDir,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {

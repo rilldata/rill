@@ -248,7 +248,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	db.catalog = newCatalog(
 		func(name, version string) {
 			go func() {
-				err = db.removeTableVersion(bgctx, name, version)
+				err := db.removeTableVersion(bgctx, name, version)
 				if err != nil && !errors.Is(err, context.Canceled) {
 					db.logger.Error("error in removing table version", slog.String("name", name), slog.String("version", version), slog.String("error", err.Error()))
 				}
@@ -256,7 +256,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		},
 		func(i int) {
 			go func() {
-				err = db.removeSnapshot(bgctx, i)
+				err := db.removeSnapshot(bgctx, i)
 				if err != nil && !errors.Is(err, context.Canceled) {
 					db.logger.Error("error in removing snapshot", slog.Int("id", i), slog.String("error", err.Error()))
 				}
