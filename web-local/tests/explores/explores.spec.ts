@@ -30,7 +30,7 @@ test.describe("explores", () => {
 
   test("Autogenerate explore from model", async ({ page }) => {
     await createAdBidsModel(page);
-    await createExploreFromModel(page, false);
+    await createExploreFromModel(page, true);
     await assertAdBidsDashboard(page);
 
     // click on publisher=Facebook leaderboard value
@@ -62,7 +62,7 @@ test.describe("explores", () => {
     const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
-    await createExploreFromModel(page, false);
+    await createExploreFromModel(page, true);
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100k")).toBeVisible();
