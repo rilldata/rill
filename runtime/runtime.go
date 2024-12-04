@@ -98,7 +98,8 @@ func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, claims, res)
+	vars := inst.ResolveVariables(false)
+	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, vars, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
