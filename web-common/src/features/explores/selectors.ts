@@ -161,7 +161,7 @@ export function getPartialExploreStateOrRedirect(
     };
   }
 
-  maybeRedirectToViewWithParams(
+  const redirectUrl = shouldRedirectToViewWithParams(
     exploreName,
     metricsViewSpec,
     exploreSpec,
@@ -169,6 +169,9 @@ export function getPartialExploreStateOrRedirect(
     prefix,
     url,
   );
+  if (redirectUrl) {
+    throw redirect(307, redirectUrl);
+  }
 
   // we didnt redirect so get partial state for current url
   return convertURLToExploreState(
@@ -188,7 +191,7 @@ export function getPartialExploreStateOrRedirect(
  * Since there could be some defaults defined, the new url even with no params could end up being the same as the current url.
  * So to avoid a redirect loop we need to not redirect in this case.
  */
-function maybeRedirectToViewWithParams(
+export function shouldRedirectToViewWithParams(
   exploreName: string,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
@@ -242,5 +245,5 @@ function maybeRedirectToViewWithParams(
     return;
   }
 
-  throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
+  return `${newUrl.pathname}${newUrl.search}`;
 }

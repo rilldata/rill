@@ -1,11 +1,14 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import { shouldRedirectToViewWithParams } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -16,6 +19,11 @@
    */
 
   const { exploreName, metricsViewName, validSpecStore } = getStateManagers();
+
+  const orgName = $page.params.organization;
+  const projectName = $page.params.project;
+  const storeKeyPrefix =
+    orgName && projectName ? `__${orgName}__${projectName}` : "";
 
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
@@ -29,19 +37,33 @@
     $metricsViewTimeRange.data,
   );
 
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
   function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
-    // Get Explore state from URL params
-    const { partialExploreState } = convertURLToExploreState(
-      url.searchParams,
+    const redirectUrl = shouldRedirectToViewWithParams(
+      $exploreName,
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
+      storeKeyPrefix,
+      url,
     );
-    return partialExploreState;
+    if (redirectUrl) {
+      return goto(redirectUrl);
+    }
+
+    // Get Explore state from URL params
+    const { partialExploreState: partialExploreStateFromUrl } =
+      convertURLToExploreState(
+        url.searchParams,
+        metricsViewSpec,
+        exploreSpec,
+        defaultExplorePreset,
+      );
+    partialExploreState = partialExploreStateFromUrl;
   }
 
   // only reactive to url and defaultExplorePreset
-  $: partialExploreState = parseUrl($page.url, defaultExplorePreset);
+  $: parseUrl($page.url, defaultExplorePreset);
 </script>
 
 {#if !$validSpecStore.isLoading && !$metricsViewTimeRange.isLoading}
