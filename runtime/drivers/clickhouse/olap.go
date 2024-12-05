@@ -252,7 +252,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	if strategy == drivers.IncrementalStrategyMerge {
+	if strategy == drivers.IncrementalStrategyPartitionOverwrite {
 		_, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
 		if err != nil {
 			return err
@@ -556,9 +556,9 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	create.WriteString(tableConfig)
 
 	// validate incremental strategy
-	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyMerge &&
+	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite &&
 		!strings.Contains(strings.ToUpper(tableConfig), "PARTITION BY") {
-		return fmt.Errorf("clickhouse: incremental strategy merge requires a partition key")
+		return fmt.Errorf("clickhouse: incremental strategy partition_overwrite requires a partition key")
 	}
 
 	// create table

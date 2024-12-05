@@ -3,6 +3,7 @@ package clickhouse_test
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -181,13 +182,31 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		"table":                    "tbl",
 		"distributed.sharding_key": "rand()",
 		"incremental_strategy":     drivers.IncrementalStrategyMerge,
-		"partition_by":             "id",
 		"order_by":                 "value",
 		"primary_key":              "value",
 	})
 	require.NoError(t, err)
 
 	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, []string{"id"})
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "not supported")
+	}
+}
+
+func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
+		"typs":                     "TABLE",
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "id",
+		"order_by":                 "value",
+		"primary_key":              "value",
+	})
+	require.NoError(t, err)
+
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, nil)
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
