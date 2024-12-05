@@ -218,7 +218,7 @@ export class WatchResourcesClient {
             }
 
             queryClient
-              .invalidateQueries(
+              .refetchQueries(
                 getRuntimeServiceGetExploreQueryKey(this.instanceId, {
                   name: res.name.name,
                 }),

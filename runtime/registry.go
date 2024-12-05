@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -109,7 +108,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
-	if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
+	if err := r.storage.RemovePrefix(ctx, inst.ID); err != nil {
 		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
@@ -127,20 +126,18 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
-// DataDir returns the path to a persistent data directory for the given instance.
+// DataDir returns the path to a persistent data directory for the given instance. The directory is created if it doesn't exist.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
-func (r *Runtime) DataDir(instanceID string, elem ...string) string {
-	elem = append([]string{r.opts.DataDir, instanceID}, elem...)
-	return filepath.Join(elem...)
+func (r *Runtime) DataDir(instanceID string, elem ...string) (string, error) {
+	return r.storage.WithPrefix(instanceID).DataDir(elem...)
 }
 
-// TempDir returns the path to a temporary directory for the given instance.
-// The TempDir is a fixed location. The caller is responsible for using a unique subdirectory name and cleaning up after use.
+// TempDir returns the path to a temporary directory for the given instance. The directory is created if it doesn't exist.
+// The TempDir is a fixed location. The caller is responsible for cleaning up after use.
 // The TempDir may be cleared after restarts.
 // Storage usage in the returned directory will be reported in the instance's heartbeat events.
-func (r *Runtime) TempDir(instanceID string, elem ...string) string {
-	elem = append([]string{r.opts.DataDir, instanceID, "tmp"}, elem...)
-	return filepath.Join(elem...)
+func (r *Runtime) TempDir(instanceID string, elem ...string) (string, error) {
+	return r.storage.WithPrefix(instanceID).TempDir(elem...)
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
@@ -328,20 +325,6 @@ func (r *registryCache) add(inst *drivers.Instance) error {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
-	if r.rt.opts.DataDir != "" {
-		if err := os.Mkdir(filepath.Join(r.rt.opts.DataDir, inst.ID), os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
-
-		// also recreate instance's tmp directory
-		tmpDir := filepath.Join(r.rt.opts.DataDir, inst.ID, "tmp")
-		if err := os.RemoveAll(tmpDir); err != nil {
-			r.logger.Warn("failed to remove tmp directory", zap.String("instance_id", inst.ID), zap.Error(err))
-		}
-		if err := os.Mkdir(tmpDir, os.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
-	}
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
@@ -561,7 +544,11 @@ func (r *registryCache) emitHeartbeats() {
 }
 
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
-	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
+	dataDir, err := r.rt.storage.WithPrefix(inst.ID).DataDir()
+	if err != nil {
+		r.logger.Error("failed to send instance heartbeat event, could not get data directory", zap.String("instance_id", inst.ID), zap.Error(err))
+		return
+	}
 
 	// Add instance annotations as attributes to pass organization id, project id, etc.
 	attrs := instanceAnnotationsToAttribs(inst)
