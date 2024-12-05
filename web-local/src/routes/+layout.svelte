@@ -59,9 +59,10 @@
       posthogIdentify(config.userId, {
         installId: config.installId,
       });
-    }
 
-    removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
+      removeJavascriptListeners =
+        errorEventHandler.addJavascriptErrorListeners();
+    }
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
