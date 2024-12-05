@@ -26,6 +26,7 @@ import {
   localServiceGetCurrentUser,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
+import { addPosthogSessionIdToUrl } from "../../lib/analytics/posthog";
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
@@ -132,6 +133,8 @@ export class ProjectDeployer {
     await waitUntil(() => !get(this.project).isLoading);
 
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
+
+    // Project already exists
     if (projectResp.project) {
       if (projectResp.project.githubUrl) {
         // we do not support pushing to a project already connected to github
@@ -142,9 +145,13 @@ export class ProjectDeployer {
         projectId: projectResp.project.id,
         reupload: true,
       });
-      window.open(resp.frontendUrl, "_self");
+      const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
+      const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
+      window.open(projectUrlWithSessionId, "_self");
       return;
     }
+
+    // Project does not yet exist
 
     if (!org && this.useOrg) {
       org = this.useOrg;
@@ -160,12 +167,18 @@ export class ProjectDeployer {
       checkNextOrg = inferredCheckNextOrg;
     }
 
-    const frontendUrl = await this.tryDeployWithOrg(
+    const projectUrl = await this.tryDeployWithOrg(
       org,
       projectResp.localProjectName,
       checkNextOrg,
     );
-    if (frontendUrl) window.open(frontendUrl + "/-/invite", "_self");
+    if (projectUrl) {
+      // projectUrl: https://ui.rilldata.com/<org>/<project>
+      const projectInviteUrl = projectUrl + "/-/invite";
+      const projectInviteUrlWithSessionId =
+        addPosthogSessionIdToUrl(projectInviteUrl);
+      window.open(projectInviteUrlWithSessionId, "_self");
+    }
   }
 
   private async inferOrg(rillUserOrgs: string[]) {
