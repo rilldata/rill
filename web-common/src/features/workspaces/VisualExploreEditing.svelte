@@ -48,10 +48,12 @@
   export let exploreResource: V1Explore | undefined;
   export let metricsViewName: string | undefined;
   export let viewingDashboard: boolean;
+  export let autoSave: boolean;
   export let switchView: () => void;
 
   $: ({ instanceId } = $runtime);
-  $: ({ localContent, remoteContent, saveContent, path } = fileArtifact);
+  $: ({ localContent, remoteContent, saveContent, path, updateLocalContent } =
+    fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
 
@@ -241,7 +243,11 @@
 
     killState();
 
-    await saveContent(parsedDocument.toString());
+    if (autoSave) {
+      await saveContent(parsedDocument.toString());
+    } else {
+      updateLocalContent(parsedDocument.toString(), true);
+    }
   }
 
   function killState() {
@@ -339,7 +345,9 @@
 
 <Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
-    <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+    {#if autoSave}
+      <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+    {/if}
 
     <Input
       hint="Shown in global header and when deployed to Rill Cloud"

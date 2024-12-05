@@ -13,6 +13,7 @@
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
   export let lineBasedRuntimeErrors: LineStatus[];
+  export let forceLocalUpdates = false;
 
   let editor: EditorView;
 
@@ -21,6 +22,7 @@
 </script>
 
 <Editor
+  {forceLocalUpdates}
   bind:autoSave
   bind:editor
   onSave={(content) => {
