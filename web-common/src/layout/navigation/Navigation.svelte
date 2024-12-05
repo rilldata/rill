@@ -1,6 +1,6 @@
 <script lang="ts" context="module">
   export const navigationOpen = (() => {
-    const { subscribe, update, set } = writable(true);
+    const { subscribe, update, set } = writable<boolean | null>(true);
     return {
       toggle: () => update((open) => !open),
       set,
@@ -48,8 +48,12 @@
   ) {
     const currentWidth = e.currentTarget.innerWidth;
 
-    if (currentWidth < previousWidth && currentWidth < 768) {
-      $navigationOpen = false;
+    const open = $navigationOpen;
+
+    if (open && currentWidth < previousWidth && currentWidth < 768) {
+      $navigationOpen = null;
+    } else if (open === null && currentWidth > 768) {
+      $navigationOpen = true;
     }
 
     previousWidth = currentWidth;
@@ -77,7 +81,10 @@
     min={MIN_NAV_WIDTH}
     basis={DEFAULT_NAV_WIDTH}
     max={MAX_NAV_WIDTH}
-    bind:dimension={width}
+    dimension={width}
+    onUpdate={(w) => {
+      width = w;
+    }}
     bind:resizing
     side="right"
   />
@@ -160,7 +167,7 @@
 <SurfaceControlButton
   {resizing}
   navWidth={width}
-  navOpen={$navigationOpen}
+  navOpen={!!$navigationOpen}
   onClick={navigationOpen.toggle}
 />
 
