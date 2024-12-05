@@ -190,14 +190,16 @@
     return duplicateCount;
   }
 
-  function handleFileUpload(event) {
-    const file = event.target.files[0];
+  function handleFileUpload(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const contents = e.target.result;
-        parseFile(contents);
-        checkForExistingKeys();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const contents = e.target?.result;
+        if (typeof contents === "string") {
+          parseFile(contents);
+          checkForExistingKeys();
+        }
       };
       reader.readAsText(file);
     }

@@ -48,7 +48,6 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasNewChanges =
     $form.key !== initialValues.key ||
     $form.value !== initialValues.value ||
@@ -347,13 +346,11 @@
       <Button
         type="primary"
         form={$formId}
-        disabled={$submitting ||
-          !hasNewChanges ||
-          !isEnvironmentSelected ||
-          hasExistingKeys ||
-          $allErrors.length > 0}
-        submitForm>Edit</Button
+        disabled={$submitting || !hasNewChanges || hasExistingKeys}
+        submitForm
       >
+        Edit
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
