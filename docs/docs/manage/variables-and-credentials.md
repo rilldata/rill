@@ -10,12 +10,15 @@ The credentials in a deployed Rill Cloud projects can be managed on the Settings
 
 ![img](/img/tutorials/admin/env-var-ui.png)
 
+### Adding / Editing Environmental Variables
+![img](/img/manage/var-and-creds/add-variable.png)
 
-
+:::tip Can't find the .env file?
+By default, the hidden files will not be visible in the finder window. In order to view hidden files, you will need to enable "show hidden files".  
+Keyboard shortcut: Command + Shift + .
+:::
 
 ## Pushing and pulling credentials to / from Rill Cloud via the CLI
-
-
 
 If you have a project deployed to Rill Cloud, Rill provides the ability to **sync** the credentials between your local instance of Rill Developer and Rill cloud. This provides the ability to quickly reuse existing credentials, if configured, instead of having to manually input credentials each time. This can be accomplished by leveraging the `rill env push` and `rill env pull` CLI commands respectively.
 
