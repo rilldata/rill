@@ -68,11 +68,11 @@ func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 
 	// rename to unknown view
-	err = olap.RenameTable(ctx, "foo_view", "foo_view1", true)
+	err = olap.RenameTable(ctx, "foo_view", "foo_view1")
 	require.NoError(t, err)
 
 	// rename to existing view
-	err = olap.RenameTable(ctx, "foo_view1", "bar_view", true)
+	err = olap.RenameTable(ctx, "foo_view1", "bar_view")
 	require.NoError(t, err)
 
 	// check that views no longer exist
@@ -89,10 +89,10 @@ func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 
 func testRenameTable(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	err := olap.RenameTable(ctx, "foo", "foo1", false)
+	err := olap.RenameTable(ctx, "foo", "foo1")
 	require.NoError(t, err)
 
-	err = olap.RenameTable(ctx, "foo1", "bar", false)
+	err = olap.RenameTable(ctx, "foo1", "bar")
 	require.NoError(t, err)
 
 	notExists(t, olap, "foo")
@@ -123,7 +123,7 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	err := olap.CreateTableAsSelect(context.Background(), "dict", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{"table": "Dictionary", "primary_key": "id"})
 	require.NoError(t, err)
 
-	err = olap.RenameTable(context.Background(), "dict", "dict1", false)
+	err = olap.RenameTable(context.Background(), "dict", "dict1")
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM dict1"})
@@ -136,7 +136,7 @@ func testDictionary(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, 1, id)
 	require.Equal(t, "Earth", planet)
 
-	require.NoError(t, olap.DropTable(context.Background(), "dict1", false))
+	require.NoError(t, olap.DropTable(context.Background(), "dict1"))
 }
 
 func prepareClusterConn(t *testing.T, olap drivers.OLAPStore, cluster string) {

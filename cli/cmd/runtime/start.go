@@ -24,8 +24,6 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gocloud.dev/gcp"
-	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
@@ -280,13 +278,4 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	return startCmd
-}
-
-func newClient(ctx context.Context, jsonData string) (*gcp.HTTPClient, error) {
-	creds, err := google.CredentialsFromJSON(ctx, []byte(jsonData), "https://www.googleapis.com/auth/cloud-platform")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create credentials: %w", err)
-	}
-	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
-	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
 }

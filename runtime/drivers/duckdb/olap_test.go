@@ -212,7 +212,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

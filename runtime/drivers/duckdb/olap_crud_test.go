@@ -112,8 +112,7 @@ func Test_connection_DropTable(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1", nil)
 	require.NoError(t, err)
 
-	// Note: true since at lot of places we look at information_schema lookup on main db to determine whether tbl is a view or table
-	err = c.DropTable(context.Background(), "test-drop", true)
+	err = c.DropTable(context.Background(), "test-drop")
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM information_schema.tables WHERE table_name='test-drop' AND table_type='VIEW'"})
@@ -164,7 +163,7 @@ func Test_connection_RenameTable(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-rename", false, "select 1", nil)
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "test-rename", "rename-test", false)
+	err = c.RenameTable(context.Background(), "test-rename", "rename-test")
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'rename-test'"})
@@ -190,7 +189,7 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA", nil)
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
+	err = c.RenameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
@@ -235,7 +234,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 }
 
 func Test_connection_RenameToExistingTableOld(t *testing.T) {
-	handle, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:", "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
@@ -247,7 +246,7 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA", nil)
 	require.NoError(t, err)
 
-	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
+	err = c.RenameTable(context.Background(), "_tmp_source", "source")
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
@@ -262,8 +261,7 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
-	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": false}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")

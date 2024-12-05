@@ -67,11 +67,11 @@ func New(t TestingT) *runtime.Runtime {
 	}
 
 	logger := zap.NewNop()
-	// var err error
-	// if os.Getenv("DEBUG") == "1" {
-	// logger, err := zap.NewDevelopment()
-	// require.NoError(t, err)
-	// }
+	var err error
+	if os.Getenv("DEBUG") == "1" {
+		logger, err = zap.NewDevelopment()
+		require.NoError(t, err)
+	}
 
 	rt, err := runtime.New(context.Background(), opts, logger, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
@@ -100,7 +100,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
 	if olapDSN == "" {
-		// TODO : fix - ignored for duckdb
 		olapDSN = ":memory:"
 	}
 

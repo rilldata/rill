@@ -20,9 +20,9 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
-	// CPU cores available for the read DB. If no CPUWrite is set and external_table_storage is enabled then this is split evenly between read and write.
+	// CPU cores available for the read DB. If no CPUWrite is set then this is split evenly between read and write.
 	CPU int `mapstructure:"cpu"`
-	// MemoryLimitGB is the amount of memory available for the read DB. If no MemoryLimitGBWrite is set and external_table_storage is enabled then this is split evenly between read and write.
+	// MemoryLimitGB is the amount of memory available for the read DB. If no MemoryLimitGBWrite is set then this is split evenly between read and write.
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
 	// CPUWrite is CPU available for the DB when writing data.
 	CPUWrite int `mapstructure:"cpu_write"`
@@ -47,13 +47,8 @@ func newConfig(cfgMap map[string]any, dataDir string) (*config, error) {
 
 	// Set pool size
 	poolSize := cfg.PoolSize
-	threads := cfg.CPU
-	if poolSize == 0 && threads != 0 {
-		poolSize = threads
-		if cfg.CPU != 0 && cfg.CPU < poolSize {
-			poolSize = cfg.CPU
-		}
-		poolSize = min(poolSizeMax, poolSize) // Only enforce max pool size when inferred from threads/CPU
+	if poolSize == 0 && cfg.CPU != 0 {
+		poolSize = min(poolSizeMax, cfg.CPU) // Only enforce max pool size when inferred from CPU
 	}
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize

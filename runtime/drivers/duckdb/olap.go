@@ -209,12 +209,12 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
+func (c *connection) DropTable(ctx context.Context, name string) error {
 	return c.db.DropTable(ctx, name)
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
+func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
 	return c.db.RenameTable(ctx, oldName, newName)
 }
 
