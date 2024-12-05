@@ -22,13 +22,14 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string, array } from "yup";
-  import { EnvironmentType } from "./types";
+  import { type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
+  import { getCurrentEnvironment, isDuplicateKey } from "./utils";
 
   export let open = false;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let inputErrors: { [key: number]: boolean } = {};
   let isKeyAlreadyExists = false;
@@ -61,8 +62,9 @@
           key: string()
             .optional()
             .matches(
-              /^[a-zA-Z0-9_]+$/,
-              "Key must only contain letters, numbers, and underscores.",
+              /^[a-zA-Z_][a-zA-Z0-9_.]*$/,
+              // See: https://github.com/rilldata/rill/pull/6121/files#diff-04140a6ac071a4bac716371f8b66a56c89c9d52cfbf2b05ea1e14ee8d4e301e7R12
+              "Key must start with a letter or underscore and can only contain letters, digits, underscores, and dots",
             ),
           value: string().optional(),
         }),
@@ -80,12 +82,18 @@
         if (!form.valid) return;
         const values = form.data;
 
-        // Omit draft variables that do not have a key
+        // Check for duplicates before proceeding
+        const duplicates = checkForExistingKeys();
+        if (duplicates > 0) {
+          // Early return without resetting the form
+          return;
+        }
+
+        // Only filter and process if there are no duplicates
         const filteredVariables = values.variables.filter(
           ({ key }) => key !== "",
         );
 
-        // Flatten the variables to match the schema
         const flatVariables = Object.fromEntries(
           filteredVariables.map(({ key, value }) => [key, value]),
         );
@@ -93,27 +101,12 @@
         try {
           await handleUpdateProjectVariables(flatVariables);
           open = false;
+          handleReset();
         } catch (error) {
           console.error(error);
         }
       },
     });
-
-  function getCurrentEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
-
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
-
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
-
-    return undefined;
-  }
 
   async function handleUpdateProjectVariables(
     flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -123,7 +116,7 @@
         organization,
         project,
         data: {
-          environment: getCurrentEnvironment(),
+          environment: getCurrentEnvironment(isDevelopment, isProduction),
           variables: flatVariables,
         },
       });
@@ -172,17 +165,29 @@
   }
 
   function checkForExistingKeys() {
-    const existingKeys = $form.variables.map((variable) => variable.key);
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
+    const existingKeys = $form.variables.map((variable) => {
+      return {
+        environment: getCurrentEnvironment(isDevelopment, isProduction),
+        name: variable.key,
+      };
+    });
+
+    let duplicateCount = 0;
+    existingKeys.forEach((key, idx) => {
+      const variableEnvironment = key.environment;
+      const variableKey = key.name;
+
+      if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+        inputErrors[idx] = true;
         isKeyAlreadyExists = true;
+        duplicateCount++;
       }
     });
+
+    return duplicateCount;
   }
 
   function handleFileUpload(event) {
@@ -356,7 +361,9 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  These keys already exist for this project.
+                  {Object.keys(inputErrors).length > 1
+                    ? "These keys already exist for your target environment(s)"
+                    : "This key already exists for your target environment(s)"}
                 </p>
               </div>
             {/if}

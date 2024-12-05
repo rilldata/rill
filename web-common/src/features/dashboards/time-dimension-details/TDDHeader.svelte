@@ -15,25 +15,27 @@
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import {
+    dimensionSearchText,
+    metricsExplorerStore,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
+  import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
-  import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import exportTDD from "./export-tdd";
-  import ExportMenu from "../../exports/ExportMenu.svelte";
-  import {
-    createQueryServiceExport,
-    V1ExportFormat,
-  } from "@rilldata/web-common/runtime-client";
   import { getTDDExportArgs } from "./getTDDExportArgs";
-  import { dimensionSearchText } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import type { TDDComparison } from "./types";
 
   export let exploreName: string;
   export let dimensionName: string;
@@ -43,6 +45,7 @@
   export let isRowsEmpty = false;
   export let expandedMeasureName: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
   const exportDash = createQueryServiceExport();
@@ -262,15 +265,17 @@
           {exploreName}
         />
       {/if}
-      <Button
-        compact
-        type="text"
-        on:click={() => {
-          startPivotForTDD();
-        }}
-      >
-        Start Pivot
-      </Button>
+      {#if !hideStartPivotButton}
+        <Button
+          compact
+          type="text"
+          on:click={() => {
+            startPivotForTDD();
+          }}
+        >
+          Start Pivot
+        </Button>
+      {/if}
     </div>
   {/if}
 </div>

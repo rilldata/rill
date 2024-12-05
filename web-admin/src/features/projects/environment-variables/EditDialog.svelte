@@ -21,16 +21,20 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { onMount } from "svelte";
+  import {
+    getCurrentEnvironment,
+    getEnvironmentType,
+    isDuplicateKey,
+  } from "./utils";
 
   export let open = false;
   export let id: string;
   export let environment: string;
   export let name: string;
   export let value: string;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let initialEnvironment: {
     isDevelopment: boolean;
@@ -45,7 +49,7 @@
   $: project = $page.params.project;
 
   $: isEnvironmentSelected = isDevelopment || isProduction;
-  $: hasChanges =
+  $: hasNewChanges =
     $form.key !== initialValues.key ||
     $form.value !== initialValues.value ||
     initialEnvironment?.isDevelopment !== isDevelopment ||
@@ -67,8 +71,9 @@
       key: string()
         .optional()
         .matches(
-          /^[a-zA-Z0-9_]+$/,
-          "Key must only contain letters, numbers, and underscores",
+          /^[a-zA-Z_][a-zA-Z0-9_.]*$/,
+          // See: https://github.com/rilldata/rill/pull/6121/files#diff-04140a6ac071a4bac716371f8b66a56c89c9d52cfbf2b05ea1e14ee8d4e301e7R12
+          "Key must start with a letter or underscore and can only contain letters, digits, underscores, and dots",
         ),
       value: string().optional(),
     }),
@@ -92,6 +97,9 @@
       if (!form.valid) return;
       const values = form.data;
 
+      checkForExistingKeys();
+      if (isKeyAlreadyExists) return;
+
       const flatVariable = {
         [values.key]: values.value,
       };
@@ -99,31 +107,17 @@
       try {
         await handleUpdateProjectVariables(flatVariable);
         open = false;
+        handleReset();
       } catch (error) {
         console.error(error);
       }
     },
   });
 
-  function processEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
-
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
-
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
-
-    return undefined;
-  }
-
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
+    // Check if the key has changed, if so, check for existing keys
     if ($form.key !== initialValues.key) {
       checkForExistingKeys();
     }
@@ -146,7 +140,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -155,7 +149,10 @@
       // If the key remains the same, update the environment or value
       if (initialValues.key === $form.key) {
         // If environment has changed, remove the old key and add the new key
-        if (initialValues.environment !== processEnvironment()) {
+        if (
+          initialValues.environment !==
+          getCurrentEnvironment(isDevelopment, isProduction)
+        ) {
           await $updateProjectVariables.mutateAsync({
             organization,
             project,
@@ -170,7 +167,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -204,21 +201,30 @@
 
   function handleReset() {
     reset();
+    isDevelopment = false;
+    isProduction = false;
+    inputErrors = {};
     isKeyAlreadyExists = false;
   }
 
   function checkForExistingKeys() {
-    const existingKeys = [$form.key];
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
-        isKeyAlreadyExists = true;
-      }
-    });
+    const existingKey = {
+      environment: getEnvironmentType(
+        getCurrentEnvironment(isDevelopment, isProduction),
+      ),
+      name: $form.key,
+    };
+
+    const variableEnvironment = existingKey.environment;
+    const variableKey = existingKey.name;
+
+    if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+      inputErrors[0] = true;
+      isKeyAlreadyExists = true;
+    }
   }
 
   function setInitialCheckboxState() {
@@ -236,13 +242,17 @@
     }
   }
 
-  onMount(() => {
+  function handleDialogOpen() {
     setInitialCheckboxState();
     initialEnvironment = {
       isDevelopment,
       isProduction,
     };
-  });
+  }
+
+  $: if (open) {
+    handleDialogOpen();
+  }
 </script>
 
 <Dialog
@@ -298,11 +308,6 @@
                   : ""}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
-                onBlur={() => {
-                  if ($form.key !== initialValues.key) {
-                    checkForExistingKeys();
-                  }
-                }}
               />
               <Input
                 bind:value={$form.value}
@@ -322,7 +327,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  This key already exists for this project.
+                  This key already exists for your target environment(s)
                 </p>
               </div>
             {/if}
@@ -343,7 +348,7 @@
         type="primary"
         form={$formId}
         disabled={$submitting ||
-          !hasChanges ||
+          !hasNewChanges ||
           !isEnvironmentSelected ||
           hasExistingKeys ||
           $allErrors.length > 0}
