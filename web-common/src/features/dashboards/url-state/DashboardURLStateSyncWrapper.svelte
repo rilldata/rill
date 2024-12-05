@@ -2,11 +2,11 @@
   import { page } from "$app/stores";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   /**
@@ -29,23 +29,23 @@
     $metricsViewTimeRange.data,
   );
 
-  // Get Explore state from URL params
-  let partialExploreState: Partial<MetricsExplorerEntity> = {};
-  function parseUrl(url: URL) {
-    const { partialExploreState: partialExploreStateFromUrl } =
-      convertURLToExploreState(
-        url.searchParams,
-        metricsViewSpec,
-        exploreSpec,
-        defaultExplorePreset,
-      );
-    partialExploreState = partialExploreStateFromUrl;
+  function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
+    // Get Explore state from URL params
+    const { partialExploreState } = convertURLToExploreState(
+      url.searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+    return partialExploreState;
   }
 
-  // only reactive to url
-  $: parseUrl($page.url);
+  // only reactive to url and defaultExplorePreset
+  $: partialExploreState = parseUrl($page.url, defaultExplorePreset);
 </script>
 
-<DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
-  <slot />
-</DashboardURLStateSync>
+{#if !$validSpecStore.isLoading && !$metricsViewTimeRange.isLoading}
+  <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+    <slot />
+  </DashboardURLStateSync>
+{/if}
