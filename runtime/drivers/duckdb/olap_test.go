@@ -218,24 +218,10 @@ func prepareConn(t *testing.T) drivers.Handle {
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
-	})
+	err = olap.CreateTableAsSelect(context.Background(), "foo", false, "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", nil)
 	require.NoError(t, err)
 
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
-	require.NoError(t, err)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
-	})
-	require.NoError(t, err)
-
-	err = olap.Exec(context.Background(), &drivers.Statement{
-		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-	})
+	err = olap.CreateTableAsSelect(context.Background(), "bar", false, "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", nil)
 	require.NoError(t, err)
 
 	return conn

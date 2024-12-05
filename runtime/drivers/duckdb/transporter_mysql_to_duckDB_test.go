@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/rilldata/rill/runtime/drivers/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
