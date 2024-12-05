@@ -90,8 +90,6 @@
   }
 
   function handleLogin(email: string, password: string) {
-    // NOTE: offloaded to Auth0 to handle both login and signup
-    // We don't need to check if the user exists in our database
     return webAuth.login(
       {
         realm: DATABASE_CONNECTION,

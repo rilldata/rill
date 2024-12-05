@@ -6,7 +6,6 @@
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
   import AuthContainer from "./AuthContainer.svelte";
-  import EmailPasswordForm from "./EmailPasswordForm.svelte";
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
   import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
@@ -17,12 +16,10 @@
 
   export let configParams: string;
   export let cloudClientIDs = "";
-  export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
 
   const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
-  const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
   $: errorText = "";
 
@@ -33,48 +30,77 @@
   $: isSignup = false;
   $: isRillDash = false;
 
-  function isDomainDisabled(email: string): boolean {
-    return disableForgotPassDomainsArr.some((domain) =>
-      email.toLowerCase().endsWith(domain.toLowerCase()),
-    );
-  }
-
-  $: domainDisabled = isDomainDisabled(email);
+  let verifying = false;
+  let verificationCode: string = "";
 
   function initConfig() {
-    const config = JSON.parse(
-      decodeURIComponent(escape(window.atob(configParams))),
-    ) as Config;
+    try {
+      if (
+        import.meta.env.DEV &&
+        (!configParams || configParams === "undefined")
+      ) {
+        console.warn(
+          "No auth config provided. In development mode - auth flows will not work.",
+        );
+        errorText = "Authentication is not configured in development mode";
+        return;
+      }
 
-    isSignup = config?.extraParams?.screen_hint === "signup";
+      const config = JSON.parse(
+        decodeURIComponent(escape(window.atob(configParams))),
+      ) as Config;
 
-    if (cloudClientIDsArr.includes(config?.clientID)) {
-      isRillDash = true;
-    }
+      isSignup = config?.extraParams?.screen_hint === "signup";
 
-    const authOptions: AuthOptions = Object.assign(
-      {
-        overrides: {
-          __tenant: config.auth0Tenant,
-          __token_issuer: config.authorizationServer.issuer,
+      if (cloudClientIDsArr.includes(config?.clientID)) {
+        isRillDash = true;
+      }
+
+      const authOptions: AuthOptions = Object.assign(
+        {
+          overrides: {
+            __tenant: config.auth0Tenant,
+            __token_issuer: config.authorizationServer.issuer,
+          },
+          domain: config.auth0Domain,
+          clientID: config.clientID,
+          redirectUri: config.callbackURL,
+          responseType: "code",
         },
-        domain: config.auth0Domain,
-        clientID: config.clientID,
-        redirectUri: config.callbackURL,
-        responseType: "code",
-      },
-      config.internalOptions,
-    );
+        config.internalOptions,
+      );
 
-    webAuth = new auth0.WebAuth(authOptions);
+      webAuth = new auth0.WebAuth(authOptions);
+    } catch (e) {
+      console.error("Failed to initialize auth:", e);
+      errorText = "Failed to initialize authentication";
+    }
   }
 
   function authorizeSSO(email: string, connectionName: string) {
+    // See: https://community.auth0.com/t/home-realm-discovery-using-auth0-js/17643/2
     webAuth.authorize({
       connection: connectionName,
       login_hint: email,
       prompt: "login",
     });
+  }
+
+  function startPasswordless(email: string) {
+    webAuth.passwordlessStart(
+      {
+        connection: "email",
+        send: "code",
+        email: email,
+      },
+      (err) => {
+        if (err) {
+          errorText = err.description || "An error occurred";
+          return;
+        }
+        step = AuthStep.Thanks;
+      },
+    );
   }
 
   function processEmailSubmission(event) {
@@ -85,18 +111,16 @@
     if (connectionName) {
       authorizeSSO(email, connectionName);
     } else {
-      step = AuthStep.Login;
+      startPasswordless(email);
     }
   }
 
   function getHeadingText(step: AuthStep): string {
     switch (step) {
       case AuthStep.Base:
-      case AuthStep.Login:
-      case AuthStep.SignUp:
         return "Log in or sign up";
       case AuthStep.Thanks:
-        return "Thanks for signing up!";
+        return "Check your email";
       default:
         return "";
     }
@@ -104,8 +128,8 @@
 
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
-      case AuthStep.Login:
-        return `Log in or sign up using <span class="font-medium">${email}</span>`;
+      case AuthStep.Thanks:
+        return `We sent a verification code to <span class="font-medium">${email}</span>`;
       default:
         return "";
     }
@@ -115,8 +139,45 @@
     step = AuthStep.Base;
   }
 
+  function parseQueryString() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      code: params.get("code"),
+      email: params.get("email"),
+    };
+  }
+
+  function verifyPasswordlessCode(email: string, code: string) {
+    verifying = true;
+    errorText = "";
+
+    webAuth.passwordlessVerify(
+      {
+        connection: "email",
+        email: email,
+        verificationCode: code,
+      },
+      (err) => {
+        verifying = false;
+        if (err) {
+          errorText = err.description || "Failed to verify email code";
+          console.error("Verification error:", err);
+        }
+      },
+    );
+  }
+
+  function handleCodeSubmit(code: string) {
+    verifyPasswordlessCode(email, code);
+  }
+
   onMount(() => {
     initConfig();
+
+    const { code, email } = parseQueryString();
+    if (code && email) {
+      verifyPasswordlessCode(email, code);
+    }
   });
 
   $: headingText = getHeadingText(step);
@@ -140,7 +201,9 @@
   </div>
 
   <div class="flex flex-col gap-y-4 mt-6" style:width="400px">
-    {#if step === AuthStep.Base}
+    {#if verifying}
+      <div class="text-center text-gray-600">Verifying your email...</div>
+    {:else if step === AuthStep.Base}
       {#each LOGIN_OPTIONS as { label, icon, style, connection } (connection)}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
@@ -162,14 +225,27 @@
       <EmailSubmissionForm on:submit={processEmailSubmission} />
     {/if}
 
-    {#if step === AuthStep.Login || step === AuthStep.SignUp}
-      <EmailPasswordForm
-        {email}
-        {isRillDash}
-        isDomainDisabled={domainDisabled}
-        {webAuth}
-        on:back={backToBaseStep}
-      />
+    {#if step === AuthStep.Thanks}
+      <div class="text-center text-gray-600">
+        Enter the verification code sent to your email
+      </div>
+      <div class="flex flex-col gap-y-4">
+        <input
+          type="text"
+          bind:value={verificationCode}
+          placeholder="Enter verification code"
+          class="p-2 border rounded"
+        />
+        <CtaButton
+          variant="primary"
+          on:click={() => handleCodeSubmit(verificationCode)}
+        >
+          Verify Code
+        </CtaButton>
+        <CtaButton variant="secondary" on:click={backToBaseStep}>
+          Use a different email
+        </CtaButton>
+      </div>
     {/if}
   </div>
 
