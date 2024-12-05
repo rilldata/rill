@@ -1918,6 +1918,7 @@ message GetReportMetaRequest {
   string owner_id = 5;
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
+  bool anon_recipients = 8;
   reserved 4;
 }
 
@@ -1925,10 +1926,10 @@ message GetReportMetaResponse {
   message URLs {
     string open_url = 1;
     string export_url = 2;
-    string edit_url = 3;
+    string unsubscribe_url = 3;
   }
-  URLs base_urls = 1;
   map<string, URLs> recipient_urls = 2;
+  reserved 1;
 }
 
 message GetAlertMetaRequest {
@@ -1972,6 +1973,8 @@ message UnsubscribeReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
+  optional string email = 4 [(validate.rules).string.email = true];
+  optional string slack_user = 5 [(validate.rules).string.email = true];
 }
 
 message UnsubscribeReportResponse {}
