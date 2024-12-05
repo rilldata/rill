@@ -133,21 +133,18 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	if c.config.RoleARN != "" {
 		stsClient := sts.NewFromConfig(awsConfig)
 		assumeRoleOptions := []func(*stscreds.AssumeRoleOptions){}
-
 		if c.config.RoleSessionName != "" {
 			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
 				o.RoleSessionName = c.config.RoleSessionName
 			})
 		}
-
 		if c.config.ExternalID != "" {
 			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
 				o.ExternalID = &c.config.ExternalID
 			})
 		}
-
-		creds := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, assumeRoleOptions...)
-		awsConfig.Credentials = aws.NewCredentialsCache(creds)
+		provider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, assumeRoleOptions...)
+		awsConfig.Credentials = aws.NewCredentialsCache(provider)
 	}
 
 	return awsConfig, nil
