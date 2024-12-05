@@ -56,7 +56,6 @@ export function createStateManagers({
   canvasResource: V1Canvas;
   fileArtifact: FileArtifact;
 }): StateManagers {
-  console.log("fileArtifact", fileArtifact);
   const canvasNameStore = writable(canvasName);
 
   const fileArtifactStore = readable(fileArtifact);

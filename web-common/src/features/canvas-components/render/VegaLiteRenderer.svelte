@@ -35,8 +35,6 @@
     void viewVL.runAsync();
   }
 
-  $: console.log(height);
-
   $: options = <EmbedOptions>{
     config: getRillTheme(canvasDashboard),
     renderer: "svg",
