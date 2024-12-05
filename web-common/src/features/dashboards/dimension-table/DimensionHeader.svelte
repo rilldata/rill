@@ -168,7 +168,10 @@
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
     {#if !isRowsEmpty}
-      <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
+      <SelectAllButton
+        {areAllTableRowsSelected}
+        on:toggle-all-search-items={onToggleSearchItems}
+      />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div

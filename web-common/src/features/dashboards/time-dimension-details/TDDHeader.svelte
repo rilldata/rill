@@ -207,7 +207,10 @@
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
       {#if !isRowsEmpty}
-        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
+        <SelectAllButton
+          {areAllTableRowsSelected}
+          on:toggle-all-search-items={onToggleSearchItems}
+        />
       {/if}
 
       {#if !searchToggle}
