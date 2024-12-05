@@ -2,13 +2,13 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import Select from "./Select.svelte";
-  import InputLabel from "./InputLabel.svelte";
   import FieldSwitcher from "./FieldSwitcher.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import Select from "./Select.svelte";
 
   const voidFunction = () => {};
 
-  export let value: string | undefined;
+  export let value: number | string | undefined;
   export let id = "";
   export let label = "";
   export let description = "";
@@ -55,6 +55,7 @@
   ) => void = voidFunction;
   export let onEnter: () => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let inputType: "text" | "number" = "text";
 
   let hitEnter = false;
   let showPassword = false;
@@ -62,7 +63,7 @@
   let selectElement: HTMLButtonElement | undefined;
   let focus = false;
 
-  $: type = secret && !showPassword ? "password" : "text";
+  $: type = secret && !showPassword ? "password" : inputType;
 
   onMount(() => {
     if (claimFocusOnMount) {
@@ -135,7 +136,7 @@
         </span>
       {/if}
 
-      {#if multiline}
+      {#if multiline && typeof value !== "number"}
         <div
           {id}
           contenteditable
@@ -153,7 +154,7 @@
         />
       {:else}
         <input
-          title={value}
+          title={label}
           {id}
           {type}
           {placeholder}
@@ -189,7 +190,7 @@
         </button>
       {/if}
     </div>
-  {:else}
+  {:else if typeof value !== "number"}
     <Select
       {disabled}
       {enableSearch}

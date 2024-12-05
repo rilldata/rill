@@ -7,7 +7,7 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import CanvasDashboardWorkspace from "@rilldata/web-common/features/workspaces/CanvasDashboardWorkspace.svelte";
+  import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
   import ComponentWorkspace from "@rilldata/web-common/features/workspaces/ComponentWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
@@ -23,7 +23,7 @@
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],
     [ResourceKind.Component, ComponentWorkspace],
-    [ResourceKind.Canvas, CanvasDashboardWorkspace],
+    [ResourceKind.Canvas, CanvasWorkspace],
     [null, null],
     [undefined, null],
   ]);

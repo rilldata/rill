@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { canvasVariablesStore } from "@rilldata/web-common/features/canvas/variables-store";
-  import type {
-    V1CanvasItem,
-    V1ComponentVariable,
-  } from "@rilldata/web-common/runtime-client";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
@@ -15,15 +13,14 @@
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
-  export let canvasDashboardName: string;
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  export let variables: V1ComponentVariable[];
   export let showGrid = false;
   export let snap = true;
-  export let selectedComponentName: string | null;
   export let selectedIndex: number | null = null;
+
+  const { canvasName } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -63,9 +60,6 @@
   $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
-  $: if (variables.length) {
-    canvasVariablesStore.init(canvasDashboardName, variables);
-  }
 
   function handleMouseUp() {
     if (selectedIndex === null || !changing) return;
@@ -134,7 +128,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    selectedComponentName = items[index].component ?? null;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
     changing = true;
   }
 
@@ -165,7 +159,7 @@
 
   function deselect() {
     selectedIndex = null;
-    selectedComponentName = null;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 
   $: maxBottom = items.reduce((max, el) => {

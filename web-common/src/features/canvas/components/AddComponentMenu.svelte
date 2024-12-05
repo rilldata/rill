@@ -6,11 +6,11 @@
     useClientFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import { getNameFromFile } from "../entity-management/entity-mappers";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { getNameFromFile } from "../../entity-management/entity-mappers";
   // import { featureFlags } from "../feature-flags";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { createResourceFile } from "../file-explorer/new-files";
+  import { createResourceFile } from "../../file-explorer/new-files";
 
   // const { ai } = featureFlags;
 

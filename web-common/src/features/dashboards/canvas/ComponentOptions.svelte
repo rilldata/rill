@@ -32,6 +32,8 @@
   }
 </script>
 
+<h2>Add component</h2>
+
 <div class="section">
   <InputLabel
     label="Charts"
@@ -86,8 +88,11 @@
 
 <style lang="postcss">
   .section {
-    @apply flex flex-col gap-y-2 p-4;
-    @apply border-b border-slate-200;
+    @apply flex flex-col gap-y-2;
+  }
+
+  h2 {
+    @apply text-base font-medium mt-1;
   }
 
   .chart-icons,
