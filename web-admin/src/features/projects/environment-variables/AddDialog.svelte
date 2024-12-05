@@ -203,30 +203,104 @@
     }
   }
 
-  function parseFile(contents) {
-    const lines = contents.split("\n");
+  // TEST CASES:
+  // Basic:
+  // KEY=value                     -> { key: "KEY", value: "value" }
+  // KEY=                          -> { key: "KEY", value: "" }
+  //
+  // Quoted strings:
+  // STRING="hello world"          -> { key: "STRING", value: "hello world" }
+  // STRING='hello world'          -> { key: "STRING", value: "hello world" }
+  // STRING="hello 'world'"        -> { key: "STRING", value: "hello 'world'" }
+  // STRING='hello "world"'        -> { key: "STRING", value: 'hello "world"' }
+  //
+  // Escaped quotes:
+  // JSON="{\"key\": \"value\"}"   -> { key: "JSON", value: '{"key": "value"}' }
+  // QUOTE="String with \"quotes\"" -> { key: "QUOTE", value: 'String with "quotes"' }
+  //
+  // Special cases:
+  // EMPTY=""                      -> { key: "EMPTY", value: "" }
+  // EMPTY_SINGLE=''               -> { key: "EMPTY_SINGLE", value: "" }
+  // EQUALS="key=value"            -> { key: "EQUALS", value: "key=value" }
+  // MULTILINE="first\nsecond"     -> { key: "MULTILINE", value: "first\nsecond" }
+  // SPACES="  trim me  "          -> { key: "SPACES", value: "  trim me  " }
+  // UNICODE="🚀"                  -> { key: "UNICODE", value: "🚀" }
+  function parseFile(contents: string) {
+    const lines = contents.split(/\r?\n/); // Handle both CRLF and LF line endings
 
     lines.forEach((line) => {
-      // Trim the line and check if it starts with '#'
       const trimmedLine = line.trim();
-      if (trimmedLine.startsWith("#")) {
-        return; // Skip comment lines
+
+      // Skip empty lines, comments, and export statements
+      if (
+        !trimmedLine ||
+        trimmedLine.startsWith("#") ||
+        trimmedLine.startsWith("export ")
+      ) {
+        return;
       }
 
-      const [key, value] = trimmedLine.split("=");
-      if (key && value) {
-        if (key.trim() && value.trim()) {
-          const filteredVariables = $form.variables.filter(
-            (variable) =>
-              variable.key.trim() !== "" || variable.value.trim() !== "",
-          );
+      // Find the first non-escaped equals sign
+      let splitIndex = -1;
+      let inQuotes = false;
+      let quoteChar = "";
 
-          $form.variables = [
-            ...filteredVariables,
-            { key: key.trim(), value: value.trim() },
-          ];
+      for (let i = 0; i < trimmedLine.length; i++) {
+        const char = trimmedLine[i];
+
+        if ((char === '"' || char === "'") && trimmedLine[i - 1] !== "\\") {
+          if (!inQuotes) {
+            inQuotes = true;
+            quoteChar = char;
+          } else if (char === quoteChar) {
+            inQuotes = false;
+          }
+        }
+
+        if (char === "=" && !inQuotes) {
+          splitIndex = i;
+          break;
         }
       }
+
+      if (splitIndex === -1) return; // No valid equals sign found
+
+      const key = trimmedLine.slice(0, splitIndex).trim();
+      let value = trimmedLine.slice(splitIndex + 1).trim();
+
+      if (!key) return;
+
+      // Handle quoted values
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        try {
+          // Use JSON.parse for double-quoted strings to handle escapes properly
+          if (value.startsWith('"')) {
+            value = JSON.parse(value);
+          } else {
+            // For single quotes, manually handle basic escapes
+            value = value
+              .slice(1, -1)
+              .replace(/\\'/g, "'")
+              .replace(/\\n/g, "\n")
+              .replace(/\\r/g, "\r")
+              .replace(/\\t/g, "\t")
+              .replace(/\\\\/g, "\\");
+          }
+        } catch (error) {
+          console.warn(`Failed to parse quoted value for key "${key}":`, error);
+          // Keep the original value if parsing fails
+        }
+      }
+
+      const filteredVariables = $form.variables.filter(
+        (variable) =>
+          variable.key.trim() !== "" || variable.value.trim() !== "",
+      );
+
+      $form.variables = [...filteredVariables, { key, value }];
     });
   }
 
