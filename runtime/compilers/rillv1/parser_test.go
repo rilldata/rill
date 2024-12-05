@@ -1539,6 +1539,18 @@ theme:
   colors:
     primary: red
 `,
+		// Canvas referencing the external theme resource
+		`canvases/c1.yaml`: `
+type: canvas
+theme: t1
+`,
+		// Canvas that defines an inline theme
+		`canvases/c2.yaml`: `
+type: canvas
+theme:
+  colors:
+    primary: red
+`,
 	})
 
 	resources := []*Resource{
@@ -1592,6 +1604,29 @@ theme:
 				},
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c1"},
+			Paths: []string{"/canvases/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				Theme: "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c2"},
+			Paths: []string{"/canvases/c2.yaml"},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
+				},
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -1618,34 +1653,24 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: foo
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: bar
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
-data:
-  metrics_sql: SELECT 1
-line_chart:
-  x: time
-  y: total_sales
+kpi:
+  metrics_view: foo
+  measure: bar
+  time_range: P1W
 `,
 		`canvases/d1.yaml`: `
 type: canvas
-columns: 4
-gap: 3
+max_width: 4
 items:
 - component: c1
 - component: c2
@@ -1661,10 +1686,7 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1672,10 +1694,7 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1683,11 +1702,10 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
 			Paths: []string{"/components/c3.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-				Renderer:           "line_chart",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
 		},
 		{
@@ -1708,8 +1726,7 @@ items:
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				Columns: 4,
-				Gap:     3,
+				MaxWidth: 4,
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
@@ -2093,4 +2110,11 @@ func normalizeJSON(t *testing.T, s string) string {
 	b, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
