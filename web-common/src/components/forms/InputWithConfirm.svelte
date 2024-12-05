@@ -46,6 +46,7 @@
       onEnter={triggerConfirm}
       onEscape={reset}
       {textClass}
+      leftPadding={6}
       onBlur={(e) => {
         const target = e.relatedTarget;
         if (
@@ -113,7 +114,7 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-1;
+    @apply flex justify-center items-center pl-1.5;
     @apply justify-center;
     @apply border border-transparent rounded-[2px];
     @apply h-fit;
