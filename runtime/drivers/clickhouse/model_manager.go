@@ -88,7 +88,7 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	}
 
 	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend:
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite:
 	default:
 		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
 	}
