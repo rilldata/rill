@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
@@ -51,19 +52,20 @@ function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
   const preset: V1ExplorePreset = {};
 
   if (exploreState.selectedTimeRange?.name) {
-    preset.timeRange = exploreState.selectedTimeRange?.name;
-    // TODO: custom time range
+    preset.timeRange = toTimeRangeParam(exploreState.selectedTimeRange);
   }
   if (exploreState.selectedTimeRange?.interval) {
     preset.timeGrain =
       ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange.interval];
   }
 
-  if (exploreState.selectedComparisonTimeRange?.name) {
-    preset.compareTimeRange = exploreState.selectedComparisonTimeRange.name;
-    // TODO: custom time range
-  }
-  if (exploreState.showTimeComparison) {
+  if (
+    exploreState.showTimeComparison &&
+    exploreState.selectedComparisonTimeRange?.name
+  ) {
+    preset.compareTimeRange = toTimeRangeParam(
+      exploreState.selectedComparisonTimeRange,
+    );
     preset.comparisonMode =
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
   }
@@ -80,7 +82,9 @@ function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
     preset.timezone = exploreState.selectedTimezone;
   }
 
-  // TODO: scrubRange
+  if (exploreState.selectedScrubRange) {
+    preset.selectTimeRange = toTimeRangeParam(exploreState.selectedScrubRange);
+  }
 
   return preset;
 }

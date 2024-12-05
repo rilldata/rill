@@ -171,7 +171,7 @@ function toTimeRangesUrl(
   return searchParams;
 }
 
-function toTimeRangeParam(timeRange: TimeRange | undefined) {
+export function toTimeRangeParam(timeRange: TimeRange | undefined) {
   if (!timeRange) return "";
   if (
     timeRange.name &&
