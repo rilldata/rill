@@ -3,32 +3,19 @@
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let dimensionName: string | undefined;
-
-  const {
-    selectors: {
-      comparison: { isBeingCompared: isBeingComparedReadable },
-    },
-    actions: {
-      comparison: { setComparisonDimension },
-    },
-  } = getStateManagers();
-
-  $: isBeingCompared =
-    dimensionName !== undefined && $isBeingComparedReadable(dimensionName);
+  export let isBeingCompared: boolean;
+  export let toggleComparisonDimension: (
+    dimensionName: string | undefined,
+  ) => void;
 </script>
 
 <IconButton
   ariaLabel="Toggle breakdown for {dimensionName} dimension"
   on:click={(e) => {
-    if (isBeingCompared) {
-      setComparisonDimension(undefined);
-    } else {
-      setComparisonDimension(dimensionName);
-    }
     e.stopPropagation();
+    toggleComparisonDimension(dimensionName);
   }}
 >
   <Tooltip location="left" distance={8}>
