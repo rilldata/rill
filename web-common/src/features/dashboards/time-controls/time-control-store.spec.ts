@@ -44,6 +44,10 @@ describe("time-control-store", () => {
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
     getLocalUserPreferences().updateTimeZone("UTC");
+    localStorage.setItem(
+      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
+      `{"timezone":"UTC"}`,
+    );
   });
 
   it("Switching from no timestamp column to having one", async () => {
@@ -365,7 +369,6 @@ describe("time-control-store", () => {
       "2022-04-01T00:00:00.000Z",
     );
 
-    console.log("refetch");
     dashboardFetchMocks.mockMetricsExplore(
       AD_BIDS_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,

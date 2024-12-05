@@ -80,11 +80,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	h := &Handle{
-		config: cfg,
-		logger: logger,
-		admin:  admin,
-		repoMu: ctxsync.NewRWMutex(),
-		repoSF: &singleflight.Group{},
+		config:  cfg,
+		logger:  logger,
+		storage: st,
+		admin:   admin,
+		repoMu:  ctxsync.NewRWMutex(),
+		repoSF:  &singleflight.Group{},
 	}
 
 	return h, nil

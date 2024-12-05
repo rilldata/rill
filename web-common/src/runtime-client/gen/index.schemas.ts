@@ -582,6 +582,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -609,12 +615,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -829,6 +829,26 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -895,26 +915,6 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1825,48 +1825,21 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
-export interface V1ExploreState {
-  validSpec?: V1ExploreSpec;
-}
+export type V1ExploreWebView =
+  (typeof V1ExploreWebView)[keyof typeof V1ExploreWebView];
 
-export interface V1ExploreComparisonTimeRange {
-  /** ISO 8601 duration string to use as an offset from the base time range. */
-  offset?: string;
-  /** ISO 8601 duration string for the duration of the comparison time range.
-If not specified, it should fallback to the range of the base time range. */
-  range?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreWebView = {
+  EXPLORE_WEB_VIEW_UNSPECIFIED: "EXPLORE_WEB_VIEW_UNSPECIFIED",
+  EXPLORE_WEB_VIEW_EXPLORE: "EXPLORE_WEB_VIEW_EXPLORE",
+  EXPLORE_WEB_VIEW_TIME_DIMENSION: "EXPLORE_WEB_VIEW_TIME_DIMENSION",
+  EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
+  EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
+} as const;
 
 export interface V1ExploreTimeRange {
   range?: string;
   comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
-}
-
-export type V1ExploreComparisonMode =
-  (typeof V1ExploreComparisonMode)[keyof typeof V1ExploreComparisonMode];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ExploreComparisonMode = {
-  EXPLORE_COMPARISON_MODE_UNSPECIFIED: "EXPLORE_COMPARISON_MODE_UNSPECIFIED",
-  EXPLORE_COMPARISON_MODE_NONE: "EXPLORE_COMPARISON_MODE_NONE",
-  EXPLORE_COMPARISON_MODE_TIME: "EXPLORE_COMPARISON_MODE_TIME",
-  EXPLORE_COMPARISON_MODE_DIMENSION: "EXPLORE_COMPARISON_MODE_DIMENSION",
-} as const;
-
-export interface V1ExplorePreset {
-  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
-  dimensions?: string[];
-  dimensionsSelector?: V1FieldSelector;
-  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
-  measures?: string[];
-  measuresSelector?: V1FieldSelector;
-  /** Time range for the explore.
-It corresponds to the `range` property of the explore's `time_ranges`.
-If not found in `time_ranges`, it should be added to the list. */
-  timeRange?: string;
-  comparisonMode?: V1ExploreComparisonMode;
-  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
-  comparisonDimension?: string;
 }
 
 export interface V1ExploreSpec {
@@ -1894,6 +1867,75 @@ The values should be valid IANA location identifiers. */
   /** Security for the explore dashboard.
 These are not currently parsed from YAML, but will be derived from the parent metrics view. */
   securityRules?: V1SecurityRule[];
+}
+
+export interface V1ExploreState {
+  validSpec?: V1ExploreSpec;
+}
+
+export type V1ExploreSortType =
+  (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreSortType = {
+  EXPLORE_SORT_TYPE_UNSPECIFIED: "EXPLORE_SORT_TYPE_UNSPECIFIED",
+  EXPLORE_SORT_TYPE_VALUE: "EXPLORE_SORT_TYPE_VALUE",
+  EXPLORE_SORT_TYPE_PERCENT: "EXPLORE_SORT_TYPE_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
+  EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
+} as const;
+
+export interface V1ExploreComparisonTimeRange {
+  /** ISO 8601 duration string to use as an offset from the base time range. */
+  offset?: string;
+  /** ISO 8601 duration string for the duration of the comparison time range.
+If not specified, it should fallback to the range of the base time range. */
+  range?: string;
+}
+
+export type V1ExploreComparisonMode =
+  (typeof V1ExploreComparisonMode)[keyof typeof V1ExploreComparisonMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreComparisonMode = {
+  EXPLORE_COMPARISON_MODE_UNSPECIFIED: "EXPLORE_COMPARISON_MODE_UNSPECIFIED",
+  EXPLORE_COMPARISON_MODE_NONE: "EXPLORE_COMPARISON_MODE_NONE",
+  EXPLORE_COMPARISON_MODE_TIME: "EXPLORE_COMPARISON_MODE_TIME",
+  EXPLORE_COMPARISON_MODE_DIMENSION: "EXPLORE_COMPARISON_MODE_DIMENSION",
+} as const;
+
+export interface V1ExplorePreset {
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
+  dimensions?: string[];
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  where?: V1Expression;
+  /** Time range for the explore.
+It corresponds to the `range` property of the explore's `time_ranges`.
+If not found in `time_ranges`, it should be added to the list. */
+  timeRange?: string;
+  timezone?: string;
+  timeGrain?: string;
+  selectTimeRange?: string;
+  comparisonMode?: V1ExploreComparisonMode;
+  compareTimeRange?: string;
+  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
+  comparisonDimension?: string;
+  view?: V1ExploreWebView;
+  exploreSortBy?: string;
+  exploreSortAsc?: boolean;
+  exploreSortType?: V1ExploreSortType;
+  exploreExpandedDimension?: string;
+  timeDimensionMeasure?: string;
+  timeDimensionChartType?: string;
+  timeDimensionPin?: boolean;
+  pivotRows?: string[];
+  pivotCols?: string[];
+  pivotSortBy?: string;
+  pivotSortAsc?: boolean;
 }
 
 export interface V1Explore {

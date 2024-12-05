@@ -8,8 +8,8 @@
   export let exploreName: string;
   export let visualEditing = false;
 
-  $: orgName = $page.params.organization;
-  $: projectName = $page.params.project;
+  const orgName = $page.params.organization;
+  const projectName = $page.params.project;
 
   const queryClient = useQueryClient();
   const stateManagers = createStateManagers({

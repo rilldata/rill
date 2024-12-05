@@ -1,12 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListBookmarks,
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
   import BookmarkDialog from "@rilldata/web-admin/features/bookmarks/BookmarkDialog.svelte";
   import BookmarksContent from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuContent.svelte";
-  import { createBookmarkApplier } from "@rilldata/web-admin/features/bookmarks/applyBookmark";
   import { createHomeBookmarkModifier } from "@rilldata/web-admin/features/bookmarks/createOrUpdateHomeBookmark";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
@@ -16,10 +17,9 @@
     DropdownMenu,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
 
@@ -29,29 +29,32 @@
   let showDialog = false;
   let bookmark: BookmarkEntry | null = null;
 
-  $: bookmarkApplier = createBookmarkApplier(
-    $runtime?.instanceId,
-    metricsViewName,
-    exploreName,
-  );
-
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
+  const userResp = createAdminServiceGetCurrentUser();
+  $: bookamrksResp = createAdminServiceListBookmarks(
+    {
+      projectId: $projectId.data,
+      resourceKind: ResourceKind.Explore,
+      resourceName: exploreName,
+    },
+    {
+      query: {
+        enabled: !!$projectId.data && !!$userResp.data.user,
+      },
+    },
+  );
 
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier(
-    $runtime?.instanceId,
-    metricsViewName,
-    exploreName,
-  );
+  $: homeBookmarkModifier = createHomeBookmarkModifier(exploreName);
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
-  function selectBookmark(bookmark: BookmarkEntry) {
-    bookmarkApplier(bookmark.resource);
-  }
-
   async function createHomeBookmark() {
-    await homeBookmarkModifier(getBookmarkDataForDashboard($exploreStore));
+    await homeBookmarkModifier(
+      getBookmarkDataForDashboard($exploreState),
+      $projectId.data,
+      $bookamrksResp.data?.bookmarks ?? [],
+    );
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });
@@ -102,7 +105,6 @@
       showDialog = true;
       bookmark = detail;
     }}
-    on:select={({ detail }) => selectBookmark(detail)}
     {metricsViewName}
     {exploreName}
   />

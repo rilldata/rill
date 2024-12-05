@@ -86,7 +86,6 @@ export function getSanitizedDashboardStateParam(
     sortDirection: dashboard.sortDirection,
     // Remove the where filter
     // whereFilter: dashboard.whereFilter,
-    havingFilter: dashboard.havingFilter,
     dimensionThresholdFilters: dashboard.dimensionThresholdFilters,
     dimensionFilterExcludeMode: dashboard.dimensionFilterExcludeMode,
     // There's no need to share filters-in-progress

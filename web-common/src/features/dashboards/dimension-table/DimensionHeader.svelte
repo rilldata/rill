@@ -34,6 +34,7 @@
   export let isRowsEmpty = true;
   export let searchText: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const exportDash = createQueryServiceExport();
 
@@ -82,7 +83,7 @@
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
-    setPrimaryDimension(undefined);
+    setPrimaryDimension("");
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
@@ -167,7 +168,10 @@
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-1 cursor-pointer h-9">
     {#if !isRowsEmpty}
-      <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
+      <SelectAllButton
+        {areAllTableRowsSelected}
+        on:toggle-all-search-items={onToggleSearchItems}
+      />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
@@ -219,14 +223,16 @@
         exploreName={$exploreName}
       />
     {/if}
-    <button
-      class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
-      on:click={() => {
-        startPivotForDimensionTable();
-      }}
-    >
-      Start Pivot
-    </button>
+    {#if !hideStartPivotButton}
+      <button
+        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
+        on:click={() => {
+          startPivotForDimensionTable();
+        }}
+      >
+        Start Pivot
+      </button>
+    {/if}
   </div>
 </div>
 

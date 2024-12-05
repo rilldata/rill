@@ -1,35 +1,57 @@
-import {
-  adminServiceGetMagicAuthToken,
-  getAdminServiceGetMagicAuthTokenQueryKey,
-} from "@rilldata/web-admin/features/public-urls/get-magic-auth-token";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { error } from "@sveltejs/kit";
-import { type QueryFunction } from "@tanstack/svelte-query";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { redirect } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
-export const load = async ({ params: { token }, url: { searchParams } }) => {
-  const queryKey = getAdminServiceGetMagicAuthTokenQueryKey(token);
-  const queryFunction: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetMagicAuthToken>>
-  > = ({ signal }) => adminServiceGetMagicAuthToken(token, signal);
+export const load = async ({ url, parent }) => {
+  const { explore, metricsView, defaultExplorePreset, token } = await parent();
+  const exploreName = token.resourceName;
+  const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
+  const exploreSpec = explore.explore?.state?.validSpec;
 
-  try {
-    const tokenData = await queryClient.fetchQuery({
-      queryKey,
-      queryFn: queryFunction,
-    });
-
-    const state = searchParams.get("state");
-
-    // Add the token's `state` to the URL (only if there's no existing URL `state`)
-    if (tokenData?.token?.state && !state) {
-      searchParams.set("state", tokenData.token.state);
-    }
-
-    return {
-      token: tokenData?.token,
-    };
-  } catch (e) {
-    console.error(e);
-    throw error(404, "Unable to find token");
+  // On the first dashboard load, if there are no URL params, append the token's state (in human-readable format) to the URL.
+  if (
+    token.state &&
+    ![...url.searchParams.keys()].length &&
+    !(exploreName in get(metricsExplorerStore).entities)
+  ) {
+    const exploreState = getDashboardStateFromUrl(
+      token.state,
+      metricsViewSpec,
+      exploreSpec,
+      {}, // TODO
+    );
+    const newUrl = new URL(url);
+    newUrl.search = convertExploreStateToURLSearchParams(
+      exploreState as MetricsExplorerEntity,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+    throw redirect(307, `${newUrl.pathname}${newUrl.search}`);
   }
+
+  // Get Explore state from URL params
+  let partialExploreState: Partial<MetricsExplorerEntity> = {};
+  const errors: Error[] = [];
+  if (metricsViewSpec && exploreSpec) {
+    const {
+      partialExploreState: partialExploreStateFromUrl,
+      errors: errorsFromConvert,
+    } = convertURLToExploreState(
+      url.searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+    partialExploreState = partialExploreStateFromUrl;
+    errors.push(...errorsFromConvert);
+  }
+
+  return {
+    partialExploreState,
+    errors,
+  };
 };

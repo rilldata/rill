@@ -18,14 +18,18 @@ describe("expression", () => {
   describe("positive cases", () => {
     const Cases = [
       {
-        expr: "country IN ('US','IN') and state = 'ABC'",
+        expr: "country IN ('US','IN')",
+        expected_expression: createInExpression("country", ["US", "IN"]),
+      },
+      {
+        expr: "country IN ('US','IN') and state eq 'ABC'",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
         ]),
       },
       {
-        expr: "country IN ('US','IN') and state = 'ABC' and lat >= 12.56",
+        expr: "country IN ('US','IN') and state eq 'ABC' and lat gte 12.56",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -33,7 +37,7 @@ describe("expression", () => {
         ]),
       },
       {
-        expr: "country IN ('US','IN') AND state = 'ABC' OR lat >= 12.56",
+        expr: "country IN ('US','IN') AND state eq 'ABC' OR lat gte 12.56",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createOrExpression([
@@ -43,7 +47,7 @@ describe("expression", () => {
         ]),
       },
       {
-        expr: "country not in ('US','IN') and (state = 'ABC' or lat >= 12.56)",
+        expr: "country not in ('US','IN') and (state eq 'ABC' or lat gte 12.56)",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createOrExpression([
@@ -53,7 +57,7 @@ describe("expression", () => {
         ]),
       },
       {
-        expr: "country NIN ('US','IN') and state having (lat >= 12.56)",
+        expr: "country NIN ('US','IN') and state having (lat gte 12.56)",
         expected_expression: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createSubQueryExpression(
@@ -73,7 +77,7 @@ describe("expression", () => {
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        expect(convertFilterParamToExpression(expr)).toEqual(
+        expect(convertFilterParamToExpression(expr)).to.deep.eq(
           expected_expression,
         );
       });
@@ -83,19 +87,19 @@ describe("expression", () => {
   describe("negative cases", () => {
     const Cases = [
       {
-        expr: "country ('US','IN') and state = 'ABC'",
+        expr: "country ('US','IN') and state eq 'ABC'",
         err: `Syntax error at line 1 col 9:
 
-1 country ('US','IN') and state = 'ABC'
+1 country ('US','IN') and state eq 'ABC'
           ^
 
 Unexpected "(".`,
       },
       {
-        expr: "country IN (US,'IN') and state = 'ABC'",
+        expr: "country IN (US,'IN') and state eq 'ABC'",
         err: `Syntax error at line 1 col 13:
 
-1 country IN (US,'IN') and state = 'ABC'
+1 country IN (US,'IN') and state eq 'ABC'
               ^
 
 Unexpected "U".`,

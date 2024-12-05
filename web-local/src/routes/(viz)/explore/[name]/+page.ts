@@ -1,52 +1,22 @@
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import {
-  getRuntimeServiceGetExploreQueryKey,
-  runtimeServiceGetExplore,
-} from "@rilldata/web-common/runtime-client";
-import { error } from "@sveltejs/kit";
-import type { QueryFunction } from "@tanstack/svelte-query";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import { getPartialExploreStateOrRedirect } from "@rilldata/web-common/features/explores/selectors";
 
-export const load = async ({ params, depends }) => {
-  const { instanceId } = get(runtime);
+export const load = async ({ url, parent, params }) => {
+  const { explore, metricsView, defaultExplorePreset } = await parent();
+  const { name: exploreName } = params;
+  const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
+  const exploreSpec = explore.explore?.state?.validSpec;
 
-  const exploreName = params.name;
+  const { partialExploreState, errors } = getPartialExploreStateOrRedirect(
+    exploreName,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+    undefined,
+    url,
+  );
 
-  depends(exploreName, "explore");
-
-  const queryParams = {
-    name: exploreName,
+  return {
+    partialExploreState,
+    errors,
   };
-
-  const queryKey = getRuntimeServiceGetExploreQueryKey(instanceId, queryParams);
-
-  const queryFunction: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceGetExplore>>
-  > = ({ signal }) => runtimeServiceGetExplore(instanceId, queryParams, signal);
-
-  try {
-    const response = await queryClient.fetchQuery({
-      queryFn: queryFunction,
-      queryKey,
-    });
-
-    const exploreResource = response.explore;
-    const metricsViewResource = response.metricsView;
-
-    if (!exploreResource?.explore) {
-      throw error(404, "Explore not found");
-    }
-    if (!metricsViewResource?.metricsView) {
-      throw error(404, "Metrics view not found");
-    }
-
-    return {
-      explore: exploreResource,
-      metricsView: metricsViewResource,
-    };
-  } catch (e) {
-    console.error(e);
-    throw error(404, "Explore not found");
-  }
 };

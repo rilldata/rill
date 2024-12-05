@@ -212,6 +212,7 @@ schema: default
 `,
 	}
 
+	timeRange := "P4W"
 	resources := []*Resource{
 		// init.sql
 		{
@@ -317,7 +318,7 @@ schema: default
 				DefaultPreset: &runtimev1.ExplorePreset{
 					DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 					MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
-					TimeRange:          "P4W",
+					TimeRange:          &timeRange,
 					ComparisonMode:     runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
 				},
 			},

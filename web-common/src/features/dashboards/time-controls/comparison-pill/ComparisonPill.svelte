@@ -3,17 +3,17 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    type DashboardTimeControls,
     TimeComparisonOption,
+    type DashboardTimeControls,
     type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import * as Elements from "../super-pill/components";
   import { SortType } from "../../proto-state/derived-types";
+  import * as Elements from "../super-pill/components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -33,9 +33,9 @@
     validSpecStore,
   } = ctx;
 
-  $: exploreStore = useExploreStore($exploreName);
+  $: exploreState = useExploreState($exploreName);
 
-  $: activeTimeZone = $exploreStore?.selectedTimezone;
+  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(

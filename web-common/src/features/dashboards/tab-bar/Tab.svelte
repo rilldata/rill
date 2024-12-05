@@ -3,9 +3,10 @@
 
   export let disabled = false;
   export let selected = false;
+  export let href: string;
 </script>
 
-<button class="relative group" class:selected {disabled} on:click>
+<a class="relative group" class:selected {href} on:click>
   <slot />
   {#if disabled}
     <div
@@ -14,10 +15,10 @@
       <TooltipContent>Coming Soon</TooltipContent>
     </div>
   {/if}
-</button>
+</a>
 
 <style lang="postcss">
-  button {
+  a {
     @apply border-b-2 border-transparent;
     @apply flex items-center relative;
     @apply p-1 gap-x-2;

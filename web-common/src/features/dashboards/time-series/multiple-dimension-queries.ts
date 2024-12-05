@@ -31,12 +31,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { dimensionSearchText } from "../stores/dashboard-stores";
 import {
   getFilterForComparedDimension,
   prepareTimeSeries,
   transformAggregateDimensionData,
 } from "./utils";
-import { dimensionSearchText } from "../stores/dashboard-stores";
 
 const MAX_TDD_VALUES_LENGTH = 250;
 const BATCH_SIZE = 50;
@@ -58,7 +58,7 @@ interface DimensionTopList {
  * Returns a list of dimension values which for which to fetch
  * timeseries data for a given dimension.
  *
- * For Overview Page -
+ * For Explore Page -
  * Use the included values if present,
  * otherwise fetch the top values for the dimension
  *
@@ -97,7 +97,7 @@ export function getDimensionValuesForComparison(
         })(dimensionName);
 
         if (dimensionValues?.length) {
-          // For TDD view max 11 allowed, for overview max 7 allowed
+          // For TDD view max 11 allowed, for Explore max 7 allowed
           comparisonValues = dimensionValues.slice(
             0,
             isInTimeDimensionView ? 11 : 7,
