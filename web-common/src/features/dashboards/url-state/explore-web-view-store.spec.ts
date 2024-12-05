@@ -30,9 +30,8 @@ import {
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
+  clearExploreSessionStore,
   getExplorePresetForWebView,
-  getKeyForSessionStore,
-  SharedStateStoreKey,
 } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import ExploreStateTestComponent from "@rilldata/web-common/features/dashboards/url-state/ExploreStateTestComponent.svelte";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -229,18 +228,7 @@ describe("ExploreWebViewStore", () => {
       `${AD_BIDS_EXPLORE_NAME}-userPreference`,
       `{"timezone":"UTC"}`,
     );
-    sessionStorage.removeItem(
-      getKeyForSessionStore(AD_BIDS_NAME, undefined, SharedStateStoreKey),
-    );
-    sessionStorage.removeItem(
-      getKeyForSessionStore(AD_BIDS_NAME, undefined, "explore"),
-    );
-    sessionStorage.removeItem(
-      getKeyForSessionStore(AD_BIDS_NAME, undefined, "ttd"),
-    );
-    sessionStorage.removeItem(
-      getKeyForSessionStore(AD_BIDS_NAME, undefined, "pivot"),
-    );
+    clearExploreSessionStore(AD_BIDS_NAME, undefined);
   });
 
   for (const { title, initView, view } of TestCases) {

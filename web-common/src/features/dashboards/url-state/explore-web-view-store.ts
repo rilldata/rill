@@ -21,12 +21,14 @@ const ExploreViewKeys: Record<V1ExploreWebView, (keyof V1ExplorePreset)[]> = {
     "exploreSortBy",
     "exploreSortAsc",
     "exploreSortType",
+    "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [
     "view",
     "timeDimensionMeasure",
     "timeDimensionChartType",
     "timeDimensionPin",
+    "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [
     "view",
@@ -48,18 +50,37 @@ const ExploreViewOtherKeys: Record<
   [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_CANVAS]: [],
 };
+// Keys shared between views.
+const ExploreViewSharedKeys = {} as Record<
+  V1ExploreWebView,
+  Record<V1ExploreWebView, (keyof V1ExplorePreset)[]>
+>;
+// keys shared between views but to be ignored because they are set exclusively
+const ExploreViewIgnoredKeysForShared: (keyof V1ExplorePreset)[] = ["view"];
 for (const webView in ExploreViewOtherKeys) {
   const keys = new Set(ExploreViewKeys[webView]);
+  ExploreViewSharedKeys[webView] = {};
   const otherKeys = new Set<keyof V1ExplorePreset>();
+
   for (const otherWebView in ExploreViewKeys) {
+    if (webView === otherWebView) continue;
+    ExploreViewSharedKeys[webView][otherWebView] = [];
+
     for (const key of ExploreViewKeys[otherWebView]) {
-      if (keys.has(key)) continue;
+      if (keys.has(key)) {
+        if (!ExploreViewIgnoredKeysForShared.includes(key)) {
+          ExploreViewSharedKeys[webView][otherWebView].push(key);
+        }
+        continue;
+      }
       otherKeys.add(key);
     }
   }
   ExploreViewOtherKeys[webView] = [...otherKeys];
 }
-export const SharedStateStoreKey = "__common";
+// Values shared across the views. Any keys not defined in ExploreViewKeys will fall under this.
+// Having a catch-all like this will avoid issues where new fields added are not lost.
+const SharedStateStoreKey = "__shared";
 
 export function getKeyForSessionStore(
   exploreName: string,
@@ -99,6 +120,43 @@ export function updateExploreSessionStore(
 
   sessionStorage.setItem(key, JSON.stringify(storedPreset));
   sessionStorage.setItem(sharedKey, JSON.stringify(sharedPreset));
+
+  for (const otherView in ExploreViewSharedKeys[view]) {
+    const sharedKeys = ExploreViewSharedKeys[view][otherView];
+    if (!sharedKeys?.length) continue;
+
+    const otherViewKey = getKeyForSessionStore(exploreName, prefix, otherView);
+    const otherViewRawPreset = sessionStorage.getItem(otherViewKey);
+    if (!otherViewRawPreset) continue;
+
+    try {
+      const otherViewPreset = JSON.parse(otherViewRawPreset) as V1ExplorePreset;
+      for (const sharedKey of sharedKeys) {
+        if (!(sharedKey in storedPreset)) continue;
+        otherViewPreset[sharedKey] = storedPreset[sharedKey];
+      }
+      sessionStorage.setItem(otherViewKey, JSON.stringify(otherViewPreset));
+    } catch {
+      // ignore errors
+    }
+  }
+}
+
+export function clearExploreSessionStore(
+  exploreName: string,
+  prefix: string | undefined,
+) {
+  for (const view in ExploreViewKeys) {
+    const key = getKeyForSessionStore(exploreName, prefix, view);
+    sessionStorage.removeItem(key);
+  }
+
+  const sharedKey = getKeyForSessionStore(
+    exploreName,
+    prefix,
+    SharedStateStoreKey,
+  );
+  sessionStorage.removeItem(sharedKey);
 }
 
 export function getExplorePresetForWebView(
