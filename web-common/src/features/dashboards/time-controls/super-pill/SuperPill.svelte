@@ -13,7 +13,7 @@
   import { onMount } from "svelte";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
@@ -44,9 +44,9 @@
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: exploreStore = useExploreStore($exploreName);
+  $: exploreState = useExploreState($exploreName);
   $: selectedRange =
-    $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
+    $exploreState?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
   $: defaultTimeRange = exploreSpec?.defaultPreset?.timeRange;
 
@@ -57,7 +57,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: activeTimeZone = $exploreStore?.selectedTimezone;
+  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
@@ -143,7 +143,7 @@
      */
     if (
       !availableTimeZones.length &&
-      $exploreStore?.selectedTimezone !== "UTC"
+      $exploreState?.selectedTimezone !== "UTC"
     ) {
       metricsExplorerStore.setTimeZone($exploreName, "UTC");
       localUserPreferences.set({ timeZone: "UTC" });
@@ -159,7 +159,7 @@
       getValidComparisonOption(
         exploreSpec,
         range,
-        $exploreStore.selectedComparisonTimeRange?.name as
+        $exploreState.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
         allTimeRange,

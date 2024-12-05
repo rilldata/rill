@@ -4888,11 +4888,104 @@ func (m *ExplorePreset) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for TimeRange
-
 	// no validation rules for ComparisonMode
 
-	// no validation rules for ComparisonDimension
+	if m.Where != nil {
+
+		if all {
+			switch v := interface{}(m.GetWhere()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Where",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Where",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExplorePresetValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.TimeRange != nil {
+		// no validation rules for TimeRange
+	}
+
+	if m.Timezone != nil {
+		// no validation rules for Timezone
+	}
+
+	if m.TimeGrain != nil {
+		// no validation rules for TimeGrain
+	}
+
+	if m.SelectTimeRange != nil {
+		// no validation rules for SelectTimeRange
+	}
+
+	if m.CompareTimeRange != nil {
+		// no validation rules for CompareTimeRange
+	}
+
+	if m.ComparisonDimension != nil {
+		// no validation rules for ComparisonDimension
+	}
+
+	if m.View != nil {
+		// no validation rules for View
+	}
+
+	if m.ExploreSortBy != nil {
+		// no validation rules for ExploreSortBy
+	}
+
+	if m.ExploreSortAsc != nil {
+		// no validation rules for ExploreSortAsc
+	}
+
+	if m.ExploreSortType != nil {
+		// no validation rules for ExploreSortType
+	}
+
+	if m.ExploreExpandedDimension != nil {
+		// no validation rules for ExploreExpandedDimension
+	}
+
+	if m.TimeDimensionMeasure != nil {
+		// no validation rules for TimeDimensionMeasure
+	}
+
+	if m.TimeDimensionChartType != nil {
+		// no validation rules for TimeDimensionChartType
+	}
+
+	if m.TimeDimensionPin != nil {
+		// no validation rules for TimeDimensionPin
+	}
+
+	if m.PivotSortBy != nil {
+		// no validation rules for PivotSortBy
+	}
+
+	if m.PivotSortAsc != nil {
+		// no validation rules for PivotSortAsc
+	}
 
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)

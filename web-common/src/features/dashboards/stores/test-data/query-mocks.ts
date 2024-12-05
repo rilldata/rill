@@ -2,6 +2,7 @@ import type { CreateQueryResult } from "@rilldata/svelte-query";
 import {
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,
+  AD_BIDS_METRICS_INIT,
   AD_BIDS_NAME,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
@@ -63,6 +64,7 @@ export function createMetricsMetaQueryMock(
 export function createValidSpecQueryMock(
   metricsView = AD_BIDS_NAME,
   shouldInit = true,
+  initMetrics: V1MetricsViewSpec = AD_BIDS_METRICS_INIT,
 ): CreateQueryResult<ExploreValidSpecResponse, RpcStatus> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
   setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
@@ -120,8 +122,8 @@ export function createValidSpecQueryMock(
   };
 
   if (shouldInit) {
-    mock.setMeasures(AD_BIDS_INIT_MEASURES);
-    mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
+    mock.setMeasures(initMetrics.measures!);
+    mock.setDimensions(initMetrics.dimensions!);
   }
 
   return mock;

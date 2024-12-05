@@ -25,8 +25,8 @@
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    V1ExportFormat,
     createQueryServiceExport,
+    V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";

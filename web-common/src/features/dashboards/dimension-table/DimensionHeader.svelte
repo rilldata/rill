@@ -83,7 +83,7 @@
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
-    setPrimaryDimension(undefined);
+    setPrimaryDimension("");
   };
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);

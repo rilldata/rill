@@ -1,8 +1,5 @@
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import {
-  convertExprToToplist,
-  fillTimeRange,
-} from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import { fillTimeRange } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -10,7 +7,6 @@ import {
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
   SortType,
@@ -18,7 +14,9 @@ import {
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
+  createSubQueryExpression,
   forEachIdentifier,
+  getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -79,24 +77,18 @@ export async function getDashboardFromAggregationRequest({
       exprHasComparison(req.having) ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
-      const expr = await convertExprToToplist(
-        queryClient,
-        instanceId,
-        dashboard.name,
+      const extraFilter = createSubQueryExpression(
         dimension,
-        req.measures?.[0]?.name ?? "",
-        req.timeRange,
-        req.comparisonTimeRange,
-        executionTime,
-        req.where,
+        getAllIdentifiers(req.having),
         req.having,
       );
-      if (expr) {
-        dashboard.whereFilter =
-          mergeFilters(
-            dashboard.whereFilter ?? createAndExpression([]),
-            createAndExpression([expr]),
-          ) ?? createAndExpression([]);
+      if (dashboard.whereFilter?.cond?.exprs?.length) {
+        dashboard.whereFilter = createAndExpression([
+          dashboard.whereFilter,
+          extraFilter,
+        ]);
+      } else {
+        dashboard.whereFilter = extraFilter;
       }
     } else {
       dashboard.dimensionThresholdFilters = [

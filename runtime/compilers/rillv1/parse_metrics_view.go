@@ -899,14 +899,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if len(spec.DefaultMeasures) == 0 {
 		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
+	var tr *string
+	if spec.DefaultTimeRange != "" {
+		tr = &spec.DefaultTimeRange
+	}
+	var compareDim *string
+	if spec.DefaultComparisonDimension != "" {
+		compareDim = &spec.DefaultComparisonDimension
+	}
 	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
 		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
 		MeasuresSelector:    presetMeasuresSelector,
-		TimeRange:           spec.DefaultTimeRange,
+		TimeRange:           tr,
 		ComparisonMode:      exploreComparisonMode,
-		ComparisonDimension: spec.DefaultComparisonDimension,
+		ComparisonDimension: compareDim,
 	}
 
 	return nil
