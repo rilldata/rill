@@ -81,9 +81,12 @@ type driver struct{}
 
 type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	ExternalID      string `mapstructure:"external_id"`
+	RoleARN         string `mapstructure:"role_arn"`
+	RoleSessionName string `mapstructure:"role_session_name"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

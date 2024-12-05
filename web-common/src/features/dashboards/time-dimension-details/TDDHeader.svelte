@@ -25,8 +25,8 @@
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -45,6 +45,7 @@
   export let isRowsEmpty = false;
   export let expandedMeasureName: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
   const exportDash = createQueryServiceExport();
@@ -267,15 +268,17 @@
           {exploreName}
         />
       {/if}
-      <Button
-        compact
-        type="text"
-        on:click={() => {
-          startPivotForTDD();
-        }}
-      >
-        Start Pivot
-      </Button>
+      {#if !hideStartPivotButton}
+        <Button
+          compact
+          type="text"
+          on:click={() => {
+            startPivotForTDD();
+          }}
+        >
+          Start Pivot
+        </Button>
+      {/if}
     </div>
   {/if}
 </div>
