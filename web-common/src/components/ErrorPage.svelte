@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { isEmbedPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
 
   export let statusCode: number | undefined = undefined;

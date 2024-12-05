@@ -1,11 +1,12 @@
 import { appScreen } from "@rilldata/web-common/layout/app-store";
-import { get } from "svelte/store";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 import {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
+import type { Page } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
 export function getNavURLToScreenMap(href: string) {
   if (href.includes("/source/")) return MetricsEventScreenName.Source;
@@ -25,4 +26,8 @@ export async function emitNavigationTelemetry(href: string, name: string) {
     previousActiveEntity,
     screenName,
   );
+}
+
+export function isEmbedPage(page: Page): boolean {
+  return page.route.id === "/-/embed";
 }
