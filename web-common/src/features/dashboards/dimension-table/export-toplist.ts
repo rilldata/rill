@@ -37,10 +37,12 @@ export default async function exportToplist({
               start: timeControlState.timeStart,
               end: timeControlState.timeEnd,
             },
-            {
-              start: timeControlState.comparisonTimeStart,
-              end: timeControlState.comparisonTimeEnd,
-            },
+            timeControlState.showTimeComparison
+              ? {
+                  start: timeControlState.comparisonTimeStart,
+                  end: timeControlState.comparisonTimeEnd,
+                }
+              : undefined,
             searchText,
           ),
       },

@@ -109,8 +109,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config: cfg,
-		logger: logger,
+		config:  cfg,
+		storage: st,
+		logger:  logger,
 	}
 	return conn, nil
 }

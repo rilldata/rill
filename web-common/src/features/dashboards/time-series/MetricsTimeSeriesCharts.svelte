@@ -49,6 +49,7 @@
 
   export let exploreName: string;
   export let workspaceWidth: number;
+  export let hideStartPivotButton = false;
 
   const {
     selectors: {
@@ -315,14 +316,16 @@
         }}
       />
 
-      <button
-        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
-        on:click={() => {
-          startPivotForTimeseries();
-        }}
-      >
-        Start Pivot
-      </button>
+      {#if !hideStartPivotButton}
+        <button
+          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+          on:click={() => {
+            startPivotForTimeseries();
+          }}
+        >
+          Start Pivot
+        </button>
+      {/if}
     {/if}
   </div>
 

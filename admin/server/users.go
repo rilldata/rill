@@ -26,7 +26,7 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 
 	users, err := s.admin.DB.FindSuperusers(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	dtos := make([]*adminv1.User, len(users))
@@ -330,7 +330,7 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -347,7 +347,7 @@ func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProj
 
 	users, err := s.admin.DB.SearchProjectUsers(ctx, proj.ID, req.EmailQuery, token.Val, pageSize)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	nextToken := ""

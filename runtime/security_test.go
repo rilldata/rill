@@ -495,7 +495,7 @@ func TestResolveMetricsView(t *testing.T) {
 
 			claims := &SecurityClaims{UserAttributes: tt.args.attr}
 			p := newSecurityEngine(1, zap.NewNop())
-			got, err := p.resolveSecurity("", "test", claims, r)
+			got, err := p.resolveSecurity("", "test", map[string]string{}, claims, r)
 			if tt.wantErr {
 				if err == nil || !strings.Contains(err.Error(), tt.errMsgContains) {
 					t.Errorf("ResolveSecurity() error = %v, wantErr %v", err, tt.wantErr)

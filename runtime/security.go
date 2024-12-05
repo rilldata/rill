@@ -191,7 +191,7 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
-func (p *securityEngine) resolveSecurity(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
+func (p *securityEngine) resolveSecurity(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
 	// If security checks are skipped, return open access
 	if claims.SkipChecks {
 		return openAccess, nil
@@ -232,6 +232,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 	templateData := rillv1.TemplateData{
 		Environment: environment,
 		User:        attrs,
+		Variables:   vars,
 		Self:        rillv1.TemplateResource{Meta: r.Meta},
 	}
 
