@@ -1,11 +1,16 @@
 ---
-title: Create Dashboards
+title: Create Explore Dashboards
 description: Create dashboards using source data and models with time, dimensions, and measures
-sidebar_label: Create Dashboards
+sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
+:::tip
+Starting in version 0.50, metrics views has been separated from explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
 
-In Rill, dashboards are one of many components that access the metrics layer. Currently, it is only possible to create an explore dashboard but more features are on the way!
+For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
+:::
+
+In Rill, explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
 
 ![img](/img/build/dashboard/explore-dashboard.png)
 
@@ -17,18 +22,28 @@ When including dimensions and measures only the named resources will be included
 Rill also supports the ability to exclude a set of named dimensions and measures.
 
 ```yaml
-metrics_view: my_metrics_view
 
-dimensions: [country, region, product_category] # Only these three dimensions will be included
-measures:
-  exclude: [profit] # All measures except profit will be included
+type: explore
+
+title: Title of your Explore Dashboard
+description: a description for your explore dashboard
+metrics_view: my_metricsview
+
+dimensions: '*' #can use regex
+measures: '*' #can use regex
+
+time_ranges: #was available_time_ranges, list the time of available time ranges that can be selected in your dashboard
+time_zones: #was available_time_zones, list the time zones that are selectable in the dashboard
+
+defaults: #define all the defaults within here, was default_* in previous dashboard YAML
+    dimensions: 
+    measures:
+    ...
+security:
+    access: #only dashboard access can be defined here, other security policies must be set on the metrics view
 ```
 
-:::tip
-Starting in version 0.50, metrics view has been separated from dashboard. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics layer. For more information on why we decided to do this, please refer to the following: [Why separate the dashboard and metrics layer](/concepts/metrics-layer)
 
-For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
-:::
 
 
 :::note Dashboard Properties
@@ -39,6 +54,19 @@ For more details about available configurations and properties, check our [Dashb
 Once a dashboard is ready to preview, before [deploying to Rill Cloud](/deploy/deploy-dashboard/), you can preview the dashboard in Rill Developer. Especially if you are setting up [dashboard policies](/manage/security), it is recommended to preview and test the dashboard before deploying.
 
 ![preview](/img/build/dashboard/preview-dashboard.png)
+
+
+### Clickable Dimension Links 
+Adding an additional parameter to your dimension in the [metrics view](/build/metrics-view/) can allow for clickable links directly from the dashboard.
+
+```yaml
+dimensions:
+  - label: Company Url
+    column: Company URL
+    uri: true #if already set to the URL, also accepts SQL expressions
+```
+ 
+![url-click](/img/build/dashboard/clickable-dimension.png)
 
 
 ### Multi-editor and external IDE support

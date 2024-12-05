@@ -142,13 +142,17 @@ function syncDimensions(
   }
 
   metricsExplorer.pivot.rows.dimension =
-    metricsExplorer.pivot.rows.dimension.filter((dimension) =>
-      dimensionsSet.has(dimension.id),
+    metricsExplorer.pivot.rows.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
     );
 
   metricsExplorer.pivot.columns.dimension =
-    metricsExplorer.pivot.columns.dimension.filter((dimension) =>
-      dimensionsSet.has(dimension.id),
+    metricsExplorer.pivot.columns.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
     );
 
   if (metricsExplorer.allDimensionsVisible) {

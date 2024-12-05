@@ -5,19 +5,18 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
+import { dev } from "$app/environment";
 import {
   adminServiceGetProject,
   getAdminServiceGetProjectQueryKey,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
 } from "@rilldata/web-admin/client";
-import {
-  redirectToLoginIfNotLoggedIn,
-  redirectToLoginOrRequestAccess,
-} from "@rilldata/web-admin/features/authentication/checkUserAccess";
+import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
+import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-import { error, type Page } from "@sveltejs/kit";
+import { error, redirect, type Page } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
 import {
   adminServiceGetProjectWithBearerToken,
@@ -25,6 +24,7 @@ import {
 } from "../features/public-urls/get-project-with-bearer-token.js";
 
 export const load = async ({ params, url, route }) => {
+  // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
     url,
@@ -38,6 +38,30 @@ export const load = async ({ params, url, route }) => {
   }
   const token = searchParamToken ?? routeToken;
 
+  // Initialize analytics
+  const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
+  if (shouldSendAnalytics) {
+    const rillVersion = import.meta.env.RILL_UI_VERSION;
+    const posthogSessionId = url.searchParams.get("ph_session_id") as
+      | string
+      | null;
+    initPosthog(rillVersion, posthogSessionId);
+    if (posthogSessionId) {
+      // Remove the PostHog sessionID from the url
+      url.searchParams.delete("ph_session_id");
+      throw redirect(307, url.toString());
+    }
+  }
+
+  // If no organization or project, return empty permissions
+  if (!organization || !project) {
+    return {
+      organizationPermissions: <V1OrganizationPermissions>{},
+      projectPermissions: <V1ProjectPermissions>{},
+    };
+  }
+
+  // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
   if (organization && !token) {
     try {
@@ -47,24 +71,10 @@ export const load = async ({ params, url, route }) => {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
       }
-      // Use without access to anything within the org will hit this, so redirect to access page here.
-      const didRedirect = await redirectToLoginIfNotLoggedIn();
-      if (!didRedirect) {
-        return {
-          organizationPermissions,
-          projectPermissions: <V1ProjectPermissions>{},
-        };
-      }
     }
   }
 
-  if (!organization || !project) {
-    return {
-      organizationPermissions,
-      projectPermissions: <V1ProjectPermissions>{},
-    };
-  }
-
+  // Get project permissions
   let queryKey: QueryKey;
   let queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetProject>>

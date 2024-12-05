@@ -12,6 +12,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
@@ -49,7 +50,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.NumberPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Port",
 			Description: "Port number of the Druid server",
 			Placeholder: "8888",
@@ -101,7 +102,7 @@ type configProperties struct {
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("druid driver can't be shared")
 	}

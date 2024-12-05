@@ -1,9 +1,10 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
+import { getTrialIssue } from "@rilldata/web-common/features/billing/issues";
 import { sanitizeOrgName } from "@rilldata/web-common/features/organization/sanitizeOrgName";
 import {
   DeployErrorType,
-  extractDeployError,
+  getPrettyDeployError,
 } from "@rilldata/web-common/features/project/deploy-errors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -19,14 +20,18 @@ import {
   createLocalServiceGetCurrentProject,
   createLocalServiceGetCurrentUser,
   createLocalServiceGetMetadata,
+  createLocalServiceListOrganizationsAndBillingMetadataRequest,
   createLocalServiceRedeploy,
   getLocalServiceGetCurrentUserQueryKey,
   localServiceGetCurrentUser,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
+import { addPosthogSessionIdToUrl } from "../../lib/analytics/posthog";
 
 export class ProjectDeployer {
   public readonly metadata = createLocalServiceGetMetadata();
+  public readonly orgsMetadata =
+    createLocalServiceListOrganizationsAndBillingMetadataRequest();
   public readonly user = createLocalServiceGetCurrentUser();
   public readonly project = createLocalServiceGetCurrentProject();
   public readonly promptOrgSelection = writable(false);
@@ -53,27 +58,43 @@ export class ProjectDeployer {
     return derived(
       [
         this.metadata,
+        this.orgsMetadata,
         this.user,
         this.project,
+        this.org,
         this.deployMutation,
         this.redeployMutation,
       ],
-      ([metadata, user, project, deployMutation, redeployMutation]) => {
+      ([
+        metadata,
+        orgsMetadata,
+        user,
+        project,
+        org,
+        deployMutation,
+        redeployMutation,
+      ]) => {
         if (
           metadata.error ||
+          orgsMetadata.error ||
           user.error ||
           project.error ||
           deployMutation.error ||
           redeployMutation.error
         ) {
+          const orgMetadata = orgsMetadata?.data?.orgs.find(
+            (om) => om.name === org,
+          );
+          const onTrial = !!getTrialIssue(orgMetadata?.issues ?? []);
           return {
             isLoading: false,
-            error: extractDeployError(
+            error: getPrettyDeployError(
               (metadata.error as ConnectError) ??
                 (user.error as ConnectError) ??
                 (project.error as ConnectError) ??
                 (deployMutation.error as ConnectError) ??
                 (redeployMutation.error as ConnectError),
+              onTrial,
             ),
           };
         }
@@ -112,6 +133,8 @@ export class ProjectDeployer {
     await waitUntil(() => !get(this.project).isLoading);
 
     const projectResp = get(this.project).data as GetCurrentProjectResponse;
+
+    // Project already exists
     if (projectResp.project) {
       if (projectResp.project.githubUrl) {
         // we do not support pushing to a project already connected to github
@@ -122,9 +145,13 @@ export class ProjectDeployer {
         projectId: projectResp.project.id,
         reupload: true,
       });
-      window.open(resp.frontendUrl, "_self");
+      const projectUrl = resp.frontendUrl; // https://ui.rilldata.com/<org>/<project>
+      const projectUrlWithSessionId = addPosthogSessionIdToUrl(projectUrl);
+      window.open(projectUrlWithSessionId, "_self");
       return;
     }
+
+    // Project does not yet exist
 
     if (!org && this.useOrg) {
       org = this.useOrg;
@@ -140,12 +167,18 @@ export class ProjectDeployer {
       checkNextOrg = inferredCheckNextOrg;
     }
 
-    const frontendUrl = await this.tryDeployWithOrg(
+    const projectUrl = await this.tryDeployWithOrg(
       org,
       projectResp.localProjectName,
       checkNextOrg,
     );
-    if (frontendUrl) window.open(frontendUrl + "/-/invite", "_self");
+    if (projectUrl) {
+      // projectUrl: https://ui.rilldata.com/<org>/<project>
+      const projectInviteUrl = projectUrl + "/-/invite";
+      const projectInviteUrlWithSessionId =
+        addPosthogSessionIdToUrl(projectInviteUrl);
+      window.open(projectInviteUrlWithSessionId, "_self");
+    }
   }
 
   private async inferOrg(rillUserOrgs: string[]) {
@@ -189,7 +222,7 @@ export class ProjectDeployer {
         );
         return resp.frontendUrl;
       } catch (e) {
-        const err = extractDeployError(e);
+        const err = getPrettyDeployError(e, false);
         if (err.type === DeployErrorType.PermissionDenied && checkNextOrg) {
           i++;
         } else {

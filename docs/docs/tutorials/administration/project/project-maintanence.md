@@ -99,7 +99,7 @@ rill project refresh --model <your_model> --full
 
 If you notice that it is only a specific partition that is broken you can use the KEY to refresh that specific partition.
 ```bash
-rill project refresh --model <your_model> --partition SPLIT_KEY
+rill project refresh --model <your_model> --partition partition_key
 ```
 
 ### Data is not up to date
@@ -133,3 +133,4 @@ An additional page for administrators to manage objects in Rill Cloud.
 Along with the CLI, you can also view and manage the public URLs from the Settings page. As an administrator, you can re-copy the URL or delete the public URL.
 ![img](/img/tutorials/admin/settings-public-url.png)
 
+ 

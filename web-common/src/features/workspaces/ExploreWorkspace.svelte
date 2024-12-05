@@ -15,8 +15,10 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
+  import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
@@ -31,33 +33,31 @@
     path: filePath,
     resourceName,
     fileName,
-    getResource,
     getAllErrors,
     remoteContent,
   } = fileArtifact);
 
   $: exploreName = $resourceName?.name ?? getNameFromFile(filePath);
 
+  $: query = createRuntimeServiceGetExplore(instanceId, { name: exploreName });
+
+  $: ({ data: resources } = $query);
+
   $: initLocalUserPreferenceStore(exploreName);
 
-  $: resourceQuery = getResource(queryClient, instanceId);
-
-  $: ({ data } = $resourceQuery);
+  $: exploreResource = resources?.explore;
+  $: metricsViewResource = resources?.metricsView;
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
-  $: resourceIsReconciling = resourceIsLoading(data);
+  $: resourceIsReconciling = resourceIsLoading(exploreResource);
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
   $: selectedView = $selectedViewStore ?? "code";
 
-  $: exploreResource = data?.explore;
-
-  $: metricsViewName = data?.meta?.refs?.find(
-    (ref) => ref.kind === ResourceKind.MetricsView,
-  )?.name;
+  $: metricsViewName = metricsViewResource?.meta?.name?.name;
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     allErrors,
@@ -79,6 +79,7 @@
 
 <WorkspaceContainer>
   <WorkspaceHeader
+    resource={exploreResource}
     hasUnsavedChanges={$hasUnsavedChanges}
     onTitleChange={onChangeCallback}
     slot="header"
@@ -117,15 +118,17 @@
           header="Unable to load dashboard preview"
           statusCode={404}
         />
-      {:else if metricsViewName && exploreName}
+      {:else if exploreName && metricsViewName}
         <DashboardWithProviders {exploreName} {metricsViewName} />
+      {:else}
+        <Spinner status={1} size="48px" />
       {/if}
     {/if}
   </MetricsEditorContainer>
 
   <VisualExploreEditing
     slot="inspector"
-    {exploreResource}
+    exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}

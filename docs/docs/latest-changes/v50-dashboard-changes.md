@@ -29,7 +29,7 @@ With the split of metrics view, dashboard configurations experienced an overhaul
 
 ## How to migrate your current Dashboards
 
-### version 0.49 -> version 0.50
+### version 0.49 -> version 0.5X
 
 Due to the [separation of dashboards to metrics layer and dashboards](/concepts/metrics-layer), you will need to review your current dashboards and make the following changes (note: Legacy dashboards will continue to function.):
 

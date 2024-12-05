@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { dev } from "$app/environment";
+  import { page } from "$app/stores";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import RepresentingUserBanner from "@rilldata/web-common/features/authentication/RepresentingUserBanner.svelte";
@@ -6,9 +8,14 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import { RillTheme } from "@rilldata/web-common/layout";
+  import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import {
+    initPosthog,
+    posthogIdentify,
+  } from "@rilldata/web-common/lib/analytics/posthog";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     errorEventHandler,
@@ -22,8 +29,6 @@
   import type { AxiosError } from "axios";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import ApplicationHeader from "@rilldata/web-common/layout/ApplicationHeader.svelte";
-  import { page } from "$app/stores";
   import type { LayoutData } from "./$types";
 
   export let data: LayoutData;
@@ -44,12 +49,24 @@
   let removeJavascriptListeners: () => void;
   onMount(async () => {
     const config = await localServiceGetMetadata();
-    await initMetrics(config);
+
+    const shouldSendAnalytics =
+      config.analyticsEnabled && !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
+
+    if (shouldSendAnalytics) {
+      await initMetrics(config); // Proxies events through the Rill "intake" service
+      initPosthog(config.version);
+      posthogIdentify(config.userId, {
+        installId: config.installId,
+      });
+    }
+
     removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
 
+    // TODO: use TanStack Query, not this handmade store
     appBuildMetaStore.set({
       version: config.version,
       commitHash: config.buildCommit,

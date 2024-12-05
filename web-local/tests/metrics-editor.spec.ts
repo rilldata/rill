@@ -66,7 +66,7 @@ test.describe("Metrics editor", () => {
 
     // go to the dashboard and make sure the metrics and dimensions are there.
     await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
-    await page.waitForTimeout(3000);
+
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.

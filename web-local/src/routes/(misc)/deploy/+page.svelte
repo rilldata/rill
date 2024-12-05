@@ -15,12 +15,13 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ orgMetadata } = data);
+  $: ({ orgParam } = data);
 
-  const deployer = new ProjectDeployer(data.orgParam);
+  const deployer = new ProjectDeployer(orgParam);
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;
+  const orgsMetadata = deployer.orgsMetadata;
   const deployerStatus = deployer.getStatus();
   const promptOrgSelection = deployer.promptOrgSelection;
   // This org is set by the deployer.
@@ -29,7 +30,7 @@
   const org = deployer.org;
   let isEmptyOrg = false;
   $: {
-    const om = orgMetadata.orgs.find((o) => o.name === $org);
+    const om = $orgsMetadata?.data?.orgs.find((o) => o.name === $org);
     isEmptyOrg = !!om?.issues && !!getNeverSubscribedIssue(om.issues);
   }
 
@@ -59,7 +60,7 @@
   }
 
   function onBack() {
-    if (orgMetadata.orgs.length) {
+    if ($orgsMetadata.data?.orgs?.length) {
       promptOrgSelection.set(true);
     } else {
       void goto("/");

@@ -6,7 +6,7 @@
   import TeamPlan from "@rilldata/web-admin/features/billing/plans/TeamPlan.svelte";
   import TrialPlan from "@rilldata/web-admin/features/billing/plans/TrialPlan.svelte";
   import {
-    isPOCPlan,
+    isManagedPlan,
     isTeamPlan,
   } from "@rilldata/web-admin/features/billing/plans/utils";
   import { useCategorisedOrganizationBillingIssues } from "@rilldata/web-admin/features/billing/selectors";
@@ -28,8 +28,9 @@
   // ended subscription will have a cancelled issue associated with it
   $: subHasEnded = !!$categorisedIssues.data?.cancelled;
   $: subIsTeamPlan = plan && isTeamPlan(plan);
-  $: subIsPOCPlan = plan && isPOCPlan(plan);
-  $: subIsEnterprisePlan = plan && !isTrial && !subIsTeamPlan && !subIsPOCPlan;
+  $: subIsManagedPlan = plan && isManagedPlan(plan);
+  $: subIsEnterprisePlan =
+    plan && !isTrial && !subIsTeamPlan && !subIsManagedPlan;
 </script>
 
 {#if neverSubbed}
@@ -40,7 +41,7 @@
   <CancelledTeamPlan {organization} {showUpgradeDialog} {plan} />
 {:else if subIsTeamPlan}
   <TeamPlan {organization} {subscription} {plan} />
-{:else if subIsPOCPlan}
+{:else if subIsManagedPlan}
   <POCPlan {organization} {hasPayment} {plan} />
 {:else if subIsEnterprisePlan}
   <EnterprisePlan {organization} {plan} />

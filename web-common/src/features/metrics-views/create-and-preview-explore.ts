@@ -25,13 +25,5 @@ export async function createAndPreviewExplore(
   const name = get(resource).data?.meta?.name?.name;
   if (!name) throw new Error("Failed to create an Explore resource");
 
-  // Check if the Explore has errors
-  const hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
-
-  // Depending on the presence of errors, navigate to the Explore workspace or to the Explore Preview
-  if (get(hasErrors)) {
-    await goto(`/files${filePath}`);
-  } else {
-    await goto(`/explore/${name}`);
-  }
+  await goto(`/files${filePath}`);
 }
