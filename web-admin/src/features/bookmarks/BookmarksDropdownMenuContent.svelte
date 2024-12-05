@@ -1,12 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListBookmarks,
+  } from "@rilldata/web-admin/client";
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
-    getBookmarks,
-    getFilledInBookmarks,
+    categorizeBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
+  import {
+    getProjectPermissions,
+    useProjectId,
+  } from "@rilldata/web-admin/features/projects/selectors";
   import {
     DropdownMenuContent,
     DropdownMenuGroup,
@@ -20,9 +26,9 @@
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
 
@@ -30,12 +36,13 @@
   export let exploreName: string;
 
   const dispatch = createEventDispatcher();
-  const queryClient = useQueryClient();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
   $: exploreState = useExploreState(exploreName);
   $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
     $runtime.instanceId,
@@ -47,24 +54,31 @@
     $metricsViewTimeRange.data,
   );
 
-  let searchText: string;
-  let bookmarks: ReturnType<typeof getBookmarks>;
-  $: bookmarks = getBookmarks(
-    queryClient,
-    $runtime?.instanceId,
-    organization,
-    project,
-    metricsViewName,
-    exploreName,
+  $: projectIdResp = useProjectId(organization, project);
+  const userResp = createAdminServiceGetCurrentUser();
+  $: bookamrksResp = createAdminServiceListBookmarks(
+    {
+      projectId: $projectIdResp.data,
+      resourceKind: ResourceKind.Explore,
+      resourceName: exploreName,
+    },
+    {
+      query: {
+        enabled: !!$projectIdResp.data && !!$userResp.data.user,
+      },
+    },
   );
-  $: filledInBookmarks = getFilledInBookmarks(
-    $bookmarks.data,
-    `/${organization}/${project}/explore/${exploreName}`,
-    $exploreState,
+
+  let searchText: string;
+  $: categorizedBookmarks = categorizeBookmarks(
+    $bookamrksResp.data?.bookmarks ?? [],
+    metricsViewSpec,
     exploreSpec,
+    {},
+    $exploreState,
     defaultExplorePreset,
   );
-  $: filteredBookmarks = searchBookmarks(filledInBookmarks, searchText);
+  $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;

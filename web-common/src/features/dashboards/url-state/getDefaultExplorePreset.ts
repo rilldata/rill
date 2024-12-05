@@ -105,7 +105,9 @@ function getDefaultComparisonFields(
 ): V1ExplorePreset {
   if (
     defaultExplorePreset.comparisonMode ===
-    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED ||
+    defaultExplorePreset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE
   ) {
     return {};
   }

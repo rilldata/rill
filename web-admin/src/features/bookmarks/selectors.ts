@@ -1,12 +1,9 @@
+import { page } from "$app/stores";
 import {
   adminServiceListBookmarks,
-  createAdminServiceGetCurrentUser,
-  createAdminServiceListBookmarks,
   getAdminServiceListBookmarksQueryKey,
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
-import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
-import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -19,19 +16,16 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceMetricsViewSchema,
   type V1ExplorePreset,
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 
 export type BookmarkEntry = {
   resource: V1Bookmark;
-  exploreState: Partial<MetricsExplorerEntity>;
   filtersOnly: boolean;
   absoluteTimeRange: boolean;
   url: string;
@@ -42,58 +36,8 @@ export type Bookmarks = {
   personal: BookmarkEntry[];
   shared: BookmarkEntry[];
 };
-export function getBookmarks(
-  queryClient: QueryClient,
-  instanceId: string,
-  orgName: string,
-  projectName: string,
-  metricsViewName: string,
-  exploreName: string,
-): CreateQueryResult<Bookmarks> {
-  return derived(
-    [
-      useProjectId(orgName, projectName),
-      useExploreValidSpec(instanceId, exploreName),
-      createQueryServiceMetricsViewSchema(instanceId, metricsViewName),
-      createAdminServiceGetCurrentUser(),
-    ],
-    ([projectId, validSpec, schemaResp, userResp], set) =>
-      createAdminServiceListBookmarks(
-        {
-          projectId: projectId.data,
-          resourceKind: ResourceKind.Explore,
-          resourceName: exploreName,
-        },
-        {
-          query: {
-            enabled:
-              !!projectId?.data &&
-              !!metricsViewName &&
-              !!exploreName &&
-              !validSpec.isFetching &&
-              !schemaResp.isFetching &&
-              userResp.isSuccess &&
-              !!userResp.data.user,
-            select: (resp) =>
-              categorizeBookmarks(
-                resp.bookmarks ?? [],
-                validSpec.data?.metricsView,
-                validSpec.data?.explore,
-                schemaResp.data?.schema,
-              ),
-            queryClient,
-          },
-        },
-      ).subscribe(set),
-  );
-}
 
-export async function fetchBookmarks(
-  projectId: string,
-  exploreName: string,
-  metricsSpec: V1MetricsViewSpec | undefined,
-  exploreSpec: V1ExploreSpec | undefined,
-) {
+export async function fetchBookmarks(projectId: string, exploreName: string) {
   const params = {
     projectId,
     resourceKind: ResourceKind.Explore,
@@ -103,19 +47,20 @@ export async function fetchBookmarks(
     queryKey: getAdminServiceListBookmarksQueryKey(params),
     queryFn: ({ signal }) => adminServiceListBookmarks(params, signal),
   });
-  return categorizeBookmarks(
-    bookmarksResp.bookmarks ?? [],
-    metricsSpec,
-    exploreSpec,
-    undefined, // TODO
-  );
+  return bookmarksResp.bookmarks ?? [];
 }
 
-function categorizeBookmarks(
+export function isHomeBookmark(bookmark: V1Bookmark) {
+  return Boolean(bookmark.default);
+}
+
+export function categorizeBookmarks(
   bookmarkResp: V1Bookmark[],
   metricsSpec: V1MetricsViewSpec | undefined,
   exploreSpec: V1ExploreSpec | undefined,
   schema: V1StructType | undefined,
+  exploreState: MetricsExplorerEntity,
+  defaultExplorePreset: V1ExplorePreset,
 ) {
   const bookmarks: Bookmarks = {
     home: undefined,
@@ -123,13 +68,15 @@ function categorizeBookmarks(
     shared: [],
   };
   bookmarkResp?.forEach((bookmarkResource) => {
-    const bookmark = parseBookmarkEntry(
+    const bookmark = parseBookmark(
       bookmarkResource,
       metricsSpec ?? {},
       exploreSpec ?? {},
       schema ?? {},
+      exploreState,
+      defaultExplorePreset,
     );
-    if (bookmarkResource.default) {
+    if (isHomeBookmark(bookmarkResource)) {
       bookmarks.home = bookmark;
     } else if (bookmarkResource.shared) {
       bookmarks.shared.push(bookmark);
@@ -154,44 +101,6 @@ export function searchBookmarks(
     personal: bookmarks?.personal.filter(matchName) ?? [],
     shared: bookmarks?.shared.filter(matchName) ?? [],
   };
-}
-
-export function getHomeBookmarkData(
-  queryClient: QueryClient,
-  instanceId: string,
-  orgName: string,
-  projectName: string,
-  metricsViewName: string,
-  exploreName: string,
-): CompoundQueryResult<string> {
-  return derived(
-    getBookmarks(
-      queryClient,
-      instanceId,
-      orgName,
-      projectName,
-      metricsViewName,
-      exploreName,
-    ),
-    (bookmarks) => {
-      if (bookmarks.isFetching || !bookmarks.data) {
-        return {
-          isFetching: true,
-          error: "",
-        };
-      } else if (bookmarks.isError) {
-        return {
-          isFetching: false,
-          error: bookmarks.error,
-        };
-      }
-      return {
-        isFetching: false,
-        error: "",
-        data: bookmarks.data?.home?.resource?.data,
-      };
-    },
-  );
 }
 
 export function getPrettySelectedTimeRange(
@@ -226,88 +135,52 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function getFilledInBookmarks(
-  bookmarks: Bookmarks | undefined,
-  baseUrl: string,
-  dashboard: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-): Bookmarks | undefined {
-  if (!bookmarks) return undefined;
-
-  if (!baseUrl.startsWith("http")) {
-    // handle case where only path is provided
-    baseUrl = "http://localhost" + baseUrl;
-  }
-
-  return {
-    home: bookmarks.home
-      ? getFilledInBookmark(
-          bookmarks.home,
-          baseUrl,
-          dashboard,
-          exploreSpec,
-          defaultExplorePreset,
-        )
-      : undefined,
-    personal: bookmarks.personal.map((b) =>
-      getFilledInBookmark(
-        b,
-        baseUrl,
-        dashboard,
-        exploreSpec,
-        defaultExplorePreset,
-      ),
-    ),
-    shared: bookmarks.shared.map((b) =>
-      getFilledInBookmark(
-        b,
-        baseUrl,
-        dashboard,
-        exploreSpec,
-        defaultExplorePreset,
-      ),
-    ),
-  };
-}
-
-function parseBookmarkEntry(
+export function convertBookmarkToUrlSearchParams(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
-): BookmarkEntry {
-  const exploreState = getDashboardStateFromUrl(
+  exploreState: MetricsExplorerEntity | undefined,
+  defaultExplorePreset: V1ExplorePreset,
+) {
+  const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
     exploreSpec,
     schema,
   );
-  return {
-    resource: bookmarkResource,
-    exploreState,
-    absoluteTimeRange:
-      exploreState.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
-    filtersOnly: !exploreState.pivot,
-    url: "", // will be filled in along with existing dashboard
-  };
-}
-
-function getFilledInBookmark(
-  bookmark: BookmarkEntry,
-  baseUrl: string,
-  dashboard: MetricsExplorerEntity,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  const url = new URL(baseUrl);
-  url.search = convertExploreStateToURLSearchParams(
-    { ...dashboard, ...bookmark.exploreState },
+  return convertExploreStateToURLSearchParams(
+    {
+      ...(exploreState ?? {}),
+      ...exploreStateFromBookmark,
+    } as MetricsExplorerEntity,
     exploreSpec,
     defaultExplorePreset,
   );
+}
+
+function parseBookmark(
+  bookmarkResource: V1Bookmark,
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  schema: V1StructType,
+  exploreState: MetricsExplorerEntity,
+  defaultExplorePreset: V1ExplorePreset,
+): BookmarkEntry {
+  const url = new URL(get(page).url);
+  url.search = convertBookmarkToUrlSearchParams(
+    bookmarkResource,
+    metricsViewSpec,
+    exploreSpec,
+    schema,
+    exploreState,
+    defaultExplorePreset,
+  );
   return {
-    ...bookmark,
-    url: `${url.pathname}${url.search}`,
+    resource: bookmarkResource,
+    absoluteTimeRange:
+      exploreState.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
+    filtersOnly: !exploreState.pivot,
+    url: url.toString(),
   };
 }

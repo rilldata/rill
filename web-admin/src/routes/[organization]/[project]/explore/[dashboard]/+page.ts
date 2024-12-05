@@ -1,12 +1,11 @@
+import { convertBookmarkToUrlSearchParams } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getPartialExploreStateOrRedirect } from "@rilldata/web-common/features/explores/selectors";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
 export const load = async ({ url, parent, params }) => {
-  const { explore, metricsView, defaultExplorePreset, bookmarks } =
+  const { explore, metricsView, defaultExplorePreset, homeBookmark } =
     await parent();
   const { organization, project, dashboard: exploreName } = params;
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
@@ -14,14 +13,17 @@ export const load = async ({ url, parent, params }) => {
 
   // On the first dashboard load, if there are no URL params, redirect to the "Home" bookmark.
   if (
-    bookmarks.home?.exploreState &&
+    homeBookmark &&
     ![...url.searchParams.keys()].length &&
     !(exploreName in get(metricsExplorerStore).entities)
   ) {
     const newUrl = new URL(url);
-    newUrl.search = convertExploreStateToURLSearchParams(
-      bookmarks.home.exploreState as MetricsExplorerEntity,
+    newUrl.search = convertBookmarkToUrlSearchParams(
+      homeBookmark,
+      metricsViewSpec,
       exploreSpec,
+      {}, // TODO
+      undefined,
       defaultExplorePreset,
     );
 

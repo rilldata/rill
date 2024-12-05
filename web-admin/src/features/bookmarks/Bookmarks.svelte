@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListBookmarks,
     createAdminServiceRemoveBookmark,
     getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
@@ -18,7 +20,6 @@
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
 
@@ -30,17 +31,30 @@
 
   $: exploreState = useExploreState(exploreName);
   $: projectId = useProjectId($page.params.organization, $page.params.project);
+  const userResp = createAdminServiceGetCurrentUser();
+  $: bookamrksResp = createAdminServiceListBookmarks(
+    {
+      projectId: $projectId.data,
+      resourceKind: ResourceKind.Explore,
+      resourceName: exploreName,
+    },
+    {
+      query: {
+        enabled: !!$projectId.data && !!$userResp.data.user,
+      },
+    },
+  );
 
   const queryClient = useQueryClient();
-  $: homeBookmarkModifier = createHomeBookmarkModifier(
-    $runtime?.instanceId,
-    metricsViewName,
-    exploreName,
-  );
+  $: homeBookmarkModifier = createHomeBookmarkModifier(exploreName);
   const bookmarkDeleter = createAdminServiceRemoveBookmark();
 
   async function createHomeBookmark() {
-    await homeBookmarkModifier(getBookmarkDataForDashboard($exploreState));
+    await homeBookmarkModifier(
+      getBookmarkDataForDashboard($exploreState),
+      $projectId.data,
+      $bookamrksResp.data?.bookmarks ?? [],
+    );
     eventBus.emit("notification", {
       message: "Home bookmark created",
     });

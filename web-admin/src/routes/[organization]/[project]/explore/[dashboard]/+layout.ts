@@ -1,6 +1,6 @@
 import {
-  type Bookmarks,
   fetchBookmarks,
+  isHomeBookmark,
 } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
@@ -20,18 +20,13 @@ export const load = async ({ params, depends, parent }) => {
       await fetchExploreSpec(runtime?.instanceId, exploreName);
 
     // used to merge home bookmark to url state
-    const bookmarks = await fetchBookmarks(
-      project.id,
-      exploreName,
-      metricsView.metricsView?.state?.validSpec,
-      explore.explore?.state?.validSpec,
-    );
+    const bookmarks = await fetchBookmarks(project.id, exploreName);
 
     return {
       explore,
       metricsView,
       defaultExplorePreset,
-      bookmarks,
+      homeBookmark: bookmarks.find(isHomeBookmark),
     };
   } catch {
     // error handled in +page.svelte for now
@@ -40,7 +35,7 @@ export const load = async ({ params, depends, parent }) => {
       explore: <V1Resource>{},
       metricsView: <V1Resource>{},
       defaultExplorePreset: <V1ExplorePreset>{},
-      bookmarks: <Bookmarks>{},
+      homeBookmark: undefined,
     };
   }
 };
