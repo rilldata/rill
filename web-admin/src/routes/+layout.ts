@@ -5,6 +5,7 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
+import { dev } from "$app/environment";
 import {
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
@@ -12,12 +13,14 @@ import {
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
+import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { error, type Page } from "@sveltejs/kit";
+import { error, redirect, type Page } from "@sveltejs/kit";
 
 export const load = async ({ params, url, route }) => {
+  // Route params
   const { organization, project, token: routeToken } = params;
   const pageState = {
     url,
@@ -31,6 +34,30 @@ export const load = async ({ params, url, route }) => {
   }
   const token = searchParamToken ?? routeToken;
 
+  // Initialize analytics
+  const shouldSendAnalytics = !import.meta.env.VITE_PLAYWRIGHT_TEST && !dev;
+  if (shouldSendAnalytics) {
+    const rillVersion = import.meta.env.RILL_UI_VERSION;
+    const posthogSessionId = url.searchParams.get("ph_session_id") as
+      | string
+      | null;
+    initPosthog(rillVersion, posthogSessionId);
+    if (posthogSessionId) {
+      // Remove the PostHog sessionID from the url
+      url.searchParams.delete("ph_session_id");
+      throw redirect(307, url.toString());
+    }
+  }
+
+  // If no organization or project, return empty permissions
+  if (!organization || !project) {
+    return {
+      organizationPermissions: <V1OrganizationPermissions>{},
+      projectPermissions: <V1ProjectPermissions>{},
+    };
+  }
+
+  // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
   if (organization && !token) {
     try {
@@ -41,13 +68,6 @@ export const load = async ({ params, url, route }) => {
         throw error(e.response.status, "Error fetching organization");
       }
     }
-  }
-
-  if (!organization || !project) {
-    return {
-      organizationPermissions,
-      projectPermissions: <V1ProjectPermissions>{},
-    };
   }
 
   try {

@@ -129,6 +129,7 @@
             <MetricsTimeSeriesCharts
               {exploreName}
               workspaceWidth={exploreContainerWidth}
+              hideStartPivotButton={hidePivot}
             />
           {:else}
             <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
@@ -138,7 +139,11 @@
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay {exploreName} {expandedMeasureName} />
+        <TimeDimensionDisplay
+          {exploreName}
+          {expandedMeasureName}
+          hideStartPivotButton={hidePivot}
+        />
       {:else}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
           {#if selectedDimension}
@@ -155,6 +160,7 @@
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
+              hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay

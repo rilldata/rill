@@ -52,9 +52,10 @@ jobs:
       - name: Build and embed static UI
         run: make cli.prepare
         env:
-          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
           RILL_UI_PUBLIC_INTAKE_USER: "data-modeler"
           RILL_UI_PUBLIC_INTAKE_PASSWORD: ${{ secrets.RILL_INTAKE_PASSWORD }}
+          RILL_UI_PUBLIC_POSTHOG_API_KEY: "phc_4qnfUotXUuevk2zJN8ei8HgKXMynddEMI0wPI9XwzlS"
+          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
 
       - name: Build Rill using Goreleaser
         run: |-

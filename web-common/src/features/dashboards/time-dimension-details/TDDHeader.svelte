@@ -45,6 +45,7 @@
   export let isRowsEmpty = false;
   export let expandedMeasureName: string;
   export let onToggleSearchItems: () => void;
+  export let hideStartPivotButton = false;
 
   const { adminServer, exports } = featureFlags;
   const exportDash = createQueryServiceExport();
@@ -267,15 +268,17 @@
           {exploreName}
         />
       {/if}
-      <Button
-        compact
-        type="text"
-        on:click={() => {
-          startPivotForTDD();
-        }}
-      >
-        Start Pivot
-      </Button>
+      {#if !hideStartPivotButton}
+        <Button
+          compact
+          type="text"
+          on:click={() => {
+            startPivotForTDD();
+          }}
+        >
+          Start Pivot
+        </Button>
+      {/if}
     </div>
   {/if}
 </div>
