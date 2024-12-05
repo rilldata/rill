@@ -25,6 +25,7 @@ export interface PivotDataState {
   assembled: boolean;
   totalColumns: number; // total columns excluding row and group totals columns
   reachedEndForRowData?: boolean;
+  reachedEndForColumnData?: boolean;
   totalsRowData?: PivotDataRow;
   activeCellFilters?: PivotFilter;
 }

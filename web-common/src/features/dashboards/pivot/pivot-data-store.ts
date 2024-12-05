@@ -240,6 +240,7 @@ export function createPivotDataStore(
           getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
 
         const rowPage = config.pivot.rowPage;
+        const columnPage = config.pivot.columnPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
 
         let whereFilter: V1Expression = config.whereFilter;
@@ -370,6 +371,8 @@ export function createPivotDataStore(
 
             const rowDimensionValues =
               rowDimensionAxes?.data?.[anchorDimension] || [];
+            const columnDimensionValues =
+              columnDimensionAxes?.data?.[anchorDimension] || [];
 
             const totalColumns = getTotalColumnCount(totalsRowData);
 
@@ -549,6 +552,9 @@ export function createPivotDataStore(
 
                     const reachedEndForRowData =
                       rowDimensionValues.length === 0 && rowPage > 1;
+                    const reachedEndForColumnData =
+                      columnDimensionValues.length === 0 && columnPage > 1;
+
                     return {
                       isFetching: false,
                       data: tableDataExpanded,
@@ -557,6 +563,7 @@ export function createPivotDataStore(
                       activeCellFilters,
                       totalColumns,
                       reachedEndForRowData,
+                      reachedEndForColumnData,
                       totalsRowData: displayTotalsRow
                         ? totalsRowData
                         : undefined,

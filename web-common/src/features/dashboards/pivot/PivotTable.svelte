@@ -12,13 +12,17 @@
     calculateMeasureWidth,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
-  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+  import {
+    NUM_COLUMNS_PER_PAGE,
+    NUM_ROWS_PER_PAGE,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { dev } from "$app/environment";
   import {
     type Cell,
     type ExpandedState,
@@ -39,6 +43,7 @@
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-config";
   import type { PivotDataRow, PivotDataStore } from "./types";
+  import { slugify } from "@rilldata/web-common/lib/string-utils";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -103,6 +108,7 @@
   $: ({
     expanded,
     sorting,
+    columnPage,
     rowPage,
     rows: rowPills,
     columns: columnPills,
@@ -113,6 +119,7 @@
   $: hasDimension = rowPills.dimension.length > 0;
   $: hasColumnDimension = columnPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
+  $: reachedEndForColumns = !!$pivotDataStore?.reachedEndForColumnData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
@@ -169,7 +176,7 @@
       : 0;
 
   $: rows = $table.getRowModel().rows;
-  $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+  $: rowVirtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
     estimateSize: () => ROW_HEIGHT,
@@ -177,16 +184,34 @@
     initialOffset: rowScrollOffset,
     rangeExtractor: (range) => {
       const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
-
       return [...next].sort((a, b) => a - b);
     },
   });
 
-  $: virtualRows = $virtualizer.getVirtualItems();
-  $: totalRowSize = $virtualizer.getTotalSize();
+  $: columns = $table.getVisibleLeafColumns();
+  $: columnVirtualizer = createVirtualizer<
+    HTMLDivElement,
+    HTMLTableCellElement
+  >({
+    horizontal: true,
+    count: columns.length,
+    getScrollElement: () => containerRefElement,
+    estimateSize: (index) => columns[index].getSize(),
+    overscan: OVERSCAN,
+    rangeExtractor: (range) => {
+      const next = new Set([...defaultRangeExtractor(range)]);
+      return [...next].sort((a, b) => a - b);
+    },
+  });
 
-  $: rowScrollOffset = $virtualizer?.scrollOffset || 0;
+  $: virtualRows = $rowVirtualizer.getVirtualItems();
+  $: totalRowSize = $rowVirtualizer.getTotalSize();
 
+  $: virtualColumns = $columnVirtualizer.getVirtualItems();
+
+  $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+
+  // See: https://github.com/TanStack/virtual/issues/585#issuecomment-1716247313
   // In this virtualization model, we create buffer rows before and after our real data
   // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
@@ -229,30 +254,42 @@
     rowScrollOffset = 0;
   }
 
-  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+  function handleScroll(containerRefElement?: HTMLDivElement | null) {
     if (containerRefElement) {
       if (hovering) hovering = null;
-      const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
-      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      const {
+        scrollHeight,
+        scrollTop,
+        clientHeight,
+        scrollWidth,
+        clientWidth,
+      } = containerRefElement;
       scrollLeft = containerRefElement.scrollLeft;
+      const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
 
       const isReachingPageEnd = bottomEndDistance < ROW_THRESHOLD;
       const canFetchMoreData =
         !$pivotDataStore.isFetching && !reachedEndForRows;
-      const hasMoreDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
-
-      if (isReachingPageEnd && hasMoreDataThanOnePage && canFetchMoreData) {
+      const hasMoreRowsDataThanOnePage = rows.length >= NUM_ROWS_PER_PAGE;
+      if (isReachingPageEnd && hasMoreRowsDataThanOnePage && canFetchMoreData) {
         metricsExplorerStore.setPivotRowPage($exploreName, rowPage + 1);
       }
-    }
-  };
 
-  onMount(() => {
-    // wait for layout to be calculated
-    requestAnimationFrame(() => {
-      handleScroll(containerRefElement);
-    });
-  });
+      const isReachingColumnEnd = rightEndDistance < ROW_THRESHOLD;
+      const canFetchMoreColumns =
+        !$pivotDataStore.isFetching && !reachedEndForColumns;
+      const hasMoreColumnsDataThanOnePage =
+        columns.length >= NUM_COLUMNS_PER_PAGE;
+      if (
+        isReachingColumnEnd &&
+        hasMoreColumnsDataThanOnePage &&
+        canFetchMoreColumns
+      ) {
+        metricsExplorerStore.setPivotColumnPage($exploreName, columnPage + 1);
+      }
+    }
+  }
 
   function onResizeStart(e: MouseEvent) {
     initLengthOnResize = totalLength;
@@ -338,13 +375,38 @@
     } else return colNumber > 0;
   }
 
-  function isCellActive(cell: Cell<PivotDataRow, unknown>) {
+  function isCellActive(cell: Cell<PivotDataRow, unknown> | undefined) {
+    if (!cell) return false;
     return (
       cell.row.id === activeCell?.rowId &&
       cell.column.id === activeCell?.columnId
     );
   }
+
+  onMount(() => {
+    // wait for layout to be calculated
+    requestAnimationFrame(() => {
+      handleScroll(containerRefElement);
+    });
+  });
+
+  $: tableWidth = totalLength + firstColumnWidth;
+  $: tableHeight = totalRowSize + totalHeaderHeight + headerGroups.length;
 </script>
+
+<!-- DEBUG ONLY -->
+{#if dev}
+  <span>({headerGroups.length} Header Groups)</span>
+  <span>({measureGroups.length} Measure Groups)</span>
+  <span
+    >({columns.length} columns) ({virtualColumns.length} Virtual Columns) ({columnPage}
+    Column Page) ({tableWidth}px Table Width)</span
+  >
+  <span
+    >({rows.length} rows) ({virtualRows.length} Virtual Rows) ({rowPage} Row Page)
+    ({tableHeight}px Table Height)</span
+  >
+{/if}
 
 <div
   class="table-wrapper relative"
@@ -359,174 +421,258 @@
 >
   <div
     class="w-full absolute top-0 z-50 flex pointer-events-none"
-    style:width="{totalLength + firstColumnWidth}px"
-    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
+    style:width="{tableWidth}px"
+    style:height="{tableHeight}px"
   >
-    <div
-      style:width="{firstColumnWidth}px"
-      class="sticky left-0 flex-none flex"
-    >
-      <Resizer
-        side="right"
-        direction="EW"
-        min={WIDTHS.MIN_COL_WIDTH}
-        max={WIDTHS.MAX_COL_WIDTH}
-        dimension={firstColumnWidth}
-        onUpdate={(d) => (firstColumnWidth = d)}
-        onMouseDown={(e) => {
-          resizingMeasure = false;
-          resizing = true;
-          onResizeStart(e);
-        }}
-        onMouseUp={() => {
-          resizing = false;
-          resizingMeasure = false;
-        }}
+    <!-- FIXME: Uncomment to fix first column's width resizer -->
+    <!-- {#if firstColumnName && firstColumnWidth}
+      <div
+        style:width="{firstColumnWidth}px"
+        class="sticky left-0 flex-none flex"
       >
-        <div class="resize-bar" />
-      </Resizer>
-    </div>
+        <Resizer
+          side="right"
+          direction="EW"
+          min={WIDTHS.MIN_COL_WIDTH}
+          max={WIDTHS.MAX_COL_WIDTH}
+          dimension={firstColumnWidth}
+          onUpdate={(d) => (firstColumnWidth = d)}
+          onMouseDown={(e) => {
+            resizingMeasure = false;
+            resizing = true;
+            onResizeStart(e);
+          }}
+          onMouseUp={() => {
+            resizing = false;
+            resizingMeasure = false;
+          }}
+        >
+          <div class="resize-bar" />
+        </Resizer>
+      </div>
+    {/if} -->
 
-    {#each measureGroups as { subHeaders }, groupIndex (groupIndex)}
+    <!-- FIXME: Uncomment to fix virtual columns' width resizer -->
+    <!-- {#each measureGroups as measureGroup, groupIndex (groupIndex)}
       <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
-        {#each subHeaders as { column: { columnDef: { name } } }, i (name)}
-          {@const length =
-            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
-          {@const last =
-            i === subHeaders.length - 1 &&
-            groupIndex === measureGroups.length - 1}
-          <div style:width="{length}px" class="h-full relative">
-            <Resizer
-              side="right"
-              direction="EW"
-              min={WIDTHS.MIN_MEASURE_WIDTH}
-              max={WIDTHS.MAX_MEASURE_WIDTH}
-              dimension={length}
-              justify={last ? "end" : "center"}
-              hang={!last}
-              onUpdate={(d) => {
-                measureLengths.update((measureLengths) => {
-                  return measureLengths.set(name, d);
-                });
-              }}
-              onMouseDown={(e) => {
-                resizingMeasure = true;
-                resizing = true;
-                initialMeasureIndexOnResize = i;
-                onResizeStart(e);
-              }}
-              onMouseUp={() => {
-                resizing = false;
-                resizingMeasure = false;
-              }}
-            >
-              <div class="resize-bar" />
-            </Resizer>
-          </div>
+        {#each virtualColumns.filter((vc) => Math.floor(vc.index / measureCount) === groupIndex) as virtualColumn (virtualColumn.index)}
+          {@const measureIndex = virtualColumn.index % measureCount}
+          {@const subHeader = measureGroup.subHeaders[measureIndex]}
+          {#if subHeader}
+            {@const measureName = subHeader.column.columnDef.name}
+            {@const length =
+              $measureLengths.get(measureName) ?? WIDTHS.INIT_MEASURE_WIDTH}
+            {@const last = virtualColumn.index === virtualColumns.length - 1}
+            <div style:width="{length}px" class="h-full relative">
+              <Resizer
+                side="right"
+                direction="EW"
+                min={WIDTHS.MIN_MEASURE_WIDTH}
+                max={WIDTHS.MAX_MEASURE_WIDTH}
+                dimension={length}
+                justify={last ? "end" : "center"}
+                hang={!last}
+                onUpdate={(d) => {
+                  measureLengths.update((measureLengths) => {
+                    return measureLengths.set(measureName, d);
+                  });
+                }}
+                onMouseDown={(e) => {
+                  resizingMeasure = true;
+                  resizing = true;
+                  initialMeasureIndexOnResize = measureIndex;
+                  onResizeStart(e);
+                }}
+                onMouseUp={() => {
+                  resizing = false;
+                  resizingMeasure = false;
+                }}
+              >
+                <div class="resize-bar" />
+              </Resizer>
+            </div>
+          {/if}
         {/each}
       </div>
-    {/each}
+    {/each} -->
   </div>
 
   <table
     role="presentation"
-    style:width="{totalLength + firstColumnWidth}px"
+    style:width="{tableWidth}px"
+    style:height="{tableHeight}px"
     on:click={modified({ shift: handleClick })}
   >
     <colgroup>
-      {#if firstColumnName && firstColumnWidth}
+      <!-- FIXME -->
+      <!-- {#if firstColumnName && firstColumnWidth}
         <col
           style:width="{firstColumnWidth}px"
+          style:min-width="{firstColumnWidth}px"
           style:max-width="{firstColumnWidth}px"
         />
-      {/if}
+      {/if} -->
 
-      {#each measureGroups as { subHeaders }, i (i)}
-        {#each subHeaders as { column: { columnDef: { name } } } (name)}
+      {#each virtualColumns as virtualColumn (virtualColumn.index)}
+        {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+        {@const measureIndex = virtualColumn.index % measureCount}
+        {@const measureGroup = measureGroups[groupIndex]}
+        {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+        {#if measureGroup && subHeader}
+          {@const measureName = subHeader?.column.columnDef.name}
           {@const length =
-            $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH}
+            $measureLengths.get(measureName) ?? WIDTHS.INIT_MEASURE_WIDTH}
           <col style:width="{length}px" style:max-width="{length}px" />
-        {/each}
+        {/if}
       {/each}
     </colgroup>
 
     <thead>
-      {#each headerGroups as headerGroup (headerGroup.id)}
+      {#each headerGroups as headerGroup, groupIndex (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header, i (header.id)}
-            {@const sortDirection = header.column.getIsSorted()}
-
-            <th colSpan={header.colSpan}>
-              <button
-                class="header-cell"
-                class:cursor-pointer={header.column.getCanSort()}
-                class:select-none={header.column.getCanSort()}
-                class:flex-row-reverse={isMeasureColumn(header, i)}
-                on:click={header.column.getToggleSortingHandler()}
-              >
-                {#if !header.isPlaceholder}
+          {#if firstColumnName && firstColumnWidth}
+            <th>
+              <button class="header-cell">
+                {#if groupIndex === 1}
                   <p class="truncate">
-                    {header.column.columnDef.header}
+                    {headerGroup.headers[0]?.column.columnDef.header}
                   </p>
-                  {#if sortDirection}
-                    <span
-                      class="transition-transform -mr-1"
-                      class:-rotate-180={sortDirection === "asc"}
-                    >
-                      <ArrowDown />
-                    </span>
-                  {/if}
                 {/if}
               </button>
             </th>
+          {/if}
+
+          {#each virtualColumns as virtualColumn (virtualColumn.index)}
+            {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+            {@const measureIndex = virtualColumn.index % measureCount}
+            {@const measureGroup = measureGroups[groupIndex]}
+            {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+            {#if measureGroup && subHeader}
+              {@const measureName = subHeader?.column.columnDef.name}
+              {@const header =
+                headerGroup.headers[
+                  virtualColumn.index + (hasDimension ? 1 : 0)
+                ]}
+              {@const sortDirection = header?.column.getIsSorted()}
+              <th>
+                <button
+                  class="header-cell"
+                  class:cursor-pointer={header?.column.getCanSort()}
+                  class:select-none={header?.column.getCanSort()}
+                  on:click={header?.column.getToggleSortingHandler()}
+                >
+                  {#if !header?.isPlaceholder && header?.column.columnDef.header !== undefined}
+                    <p class="truncate">
+                      {header.column.columnDef.header}
+                    </p>
+                    {#if sortDirection}
+                      <span
+                        class="transition-transform -mr-1"
+                        class:-rotate-180={sortDirection === "asc"}
+                      >
+                        <ArrowDown />
+                      </span>
+                    {/if}
+                  {/if}
+                </button>
+              </th>
+            {/if}
           {/each}
         </tr>
       {/each}
     </thead>
+
     <tbody>
       <tr style:height="{before}px" />
       {#each virtualRows as row (row.index)}
-        {@const cells = rows[row.index].getVisibleCells()}
+        {@const rowData = rows[row.index]}
+        {@const cells = rowData.getVisibleCells()}
         <tr>
-          {#each cells as cell, i (cell.id)}
-            {@const result =
-              typeof cell.column.columnDef.cell === "function"
-                ? cell.column.columnDef.cell(cell.getContext())
-                : cell.column.columnDef.cell}
-            {@const isActive = isCellActive(cell)}
+          {#if hasDimension}
+            {@const firstCell = cells[0]}
+            {@const firstCellResult =
+              typeof firstCell?.column.columnDef.cell === "function"
+                ? firstCell?.column.columnDef.cell(firstCell?.getContext())
+                : firstCell?.column.columnDef.cell}
             <td
-              class="ui-copy-number"
-              class:active-cell={isActive}
               class:interactive-cell={canShowDataViewer}
-              class:border-r={i % measureCount === 0 && i}
-              on:click={() => handleCellClick(cell)}
+              on:click={() => firstCell && handleCellClick(firstCell)}
               on:mouseenter={handleHover}
               on:mouseleave={handleLeave}
-              data-value={cell.getValue()}
-              class:totals-column={i > 0 && i <= measureCount}
+              data-value={firstCell?.getValue()}
             >
               <div
                 class="cell pointer-events-none truncate"
                 role="presentation"
               >
-                {#if result?.component && result?.props}
+                {#if firstCellResult?.component && firstCellResult?.props}
                   <svelte:component
-                    this={result.component}
-                    {...result.props}
+                    this={firstCellResult.component}
+                    {...firstCellResult.props}
                     {assembled}
                   />
-                {:else if typeof result === "string" || typeof result === "number"}
-                  {result}
+                {:else if typeof firstCellResult === "string" || typeof firstCellResult === "number"}
+                  {firstCellResult}
                 {:else}
                   <svelte:component
                     this={flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext(),
+                      firstCell?.column.columnDef.cell,
+                      firstCell?.getContext(),
                     )}
                   />
                 {/if}
               </div>
             </td>
+          {/if}
+
+          {#each virtualColumns as virtualColumn (virtualColumn.index)}
+            {@const groupIndex = Math.floor(virtualColumn.index / measureCount)}
+            {@const measureIndex = virtualColumn.index % measureCount}
+            {@const measureGroup = measureGroups[groupIndex]}
+            {@const subHeader = measureGroup?.subHeaders[measureIndex]}
+            {#if measureGroup && subHeader}
+              {@const cell =
+                cells[virtualColumn.index + (hasDimension ? 1 : 0)]}
+              {@const result =
+                typeof cell?.column.columnDef.cell === "function"
+                  ? cell?.column.columnDef.cell(cell?.getContext())
+                  : cell?.column.columnDef.cell}
+              {@const isActive = cell ? isCellActive(cell) : false}
+              <td
+                class="ui-copy-number"
+                class:active-cell={isActive}
+                class:interactive-cell={canShowDataViewer}
+                class:border-r={measureIndex === 0}
+                on:click={() => cell && handleCellClick(cell)}
+                on:mouseenter={handleHover}
+                on:mouseleave={handleLeave}
+                data-value={cell?.getValue()}
+                class:totals-column={virtualColumn.index > 0 &&
+                  virtualColumn.index <= measureCount}
+              >
+                <div
+                  class="cell pointer-events-none truncate"
+                  role="presentation"
+                >
+                  {#if result?.component && result?.props}
+                    <svelte:component
+                      this={result.component}
+                      {...result.props}
+                      {assembled}
+                    />
+                  {:else if typeof result === "string" || typeof result === "number"}
+                    {result}
+                  {:else}
+                    <svelte:component
+                      this={flexRender(
+                        cell?.column.columnDef.cell,
+                        cell?.getContext(),
+                      )}
+                    />
+                  {/if}
+                </div>
+              </td>
+            {/if}
           {/each}
         </tr>
       {/each}
@@ -607,14 +753,9 @@
     @apply border-b-0;
   }
 
-  .with-row-dimension tr > th:first-of-type {
-    @apply sticky left-0 z-20;
-    @apply bg-white;
-  }
-
+  .with-row-dimension tr > th:first-of-type,
   .with-row-dimension tr > td:first-of-type {
-    @apply sticky left-0 z-10;
-    @apply bg-white;
+    @apply sticky left-0 z-20 bg-white;
   }
 
   tr > td:first-of-type:not(:last-of-type) {
