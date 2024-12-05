@@ -26,7 +26,6 @@
   export let selectedIndex: number | null = null;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  let scrollOffset = 0;
   let changing = false;
   let startMouse: Vector = [0, 0];
   let mousePosition: Vector = [0, 0];
@@ -55,12 +54,29 @@
     initialElementPosition,
   );
 
+  $: boundedDragPosition = [
+    Math.max(
+      0,
+      Math.min(
+        defaults.DASHBOARD_WIDTH -
+          (selectedIndex !== null
+            ? (items[selectedIndex].width ?? 1) * gridCell
+            : gridCell),
+        dragPosition[0],
+      ),
+    ),
+    Math.max(0, dragPosition[1]),
+  ] as Vector;
+
+  $: finalDrag = vector.multiply(
+    getCell(boundedDragPosition, snap),
+    gridVector,
+  );
+
   $: resizeDimenions = vector.add(
     vector.multiply(mouseDelta, dimensionChange),
     initialElementDimensions,
   );
-
-  $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
   $: if (variables.length) {
@@ -70,7 +86,7 @@
   function handleMouseUp() {
     if (selectedIndex === null || !changing) return;
 
-    const cellPosition = getCell(dragPosition, true);
+    const cellPosition = getCell(boundedDragPosition, true);
     const dimensions = getCell(resizeDimenions, true);
 
     items[selectedIndex].x = Math.max(
@@ -107,6 +123,14 @@
         zeroVector;
   }
 
+  function handleMouseDown(e: MouseEvent) {
+    if (selectedIndex === null) return;
+
+    startMouse = [e.clientX - contentRect.left, e.pageY - contentRect.top];
+    mousePosition = startMouse;
+    changing = true;
+  }
+
   function handleChange(
     e: CustomEvent<{
       e: MouseEvent & { currentTarget: HTMLButtonElement };
@@ -126,33 +150,16 @@
     initialElementDimensions = e.detail.dimensions;
     initialElementPosition = e.detail.position;
 
-    startMouse = [
-      e.detail.e.clientX - contentRect.left,
-      e.detail.e.clientY - contentRect.top - scrollOffset,
-    ];
-
-    mousePosition = startMouse;
-
     selectedIndex = index;
     selectedComponentName = items[index].component ?? null;
-    changing = true;
+
+    handleMouseDown(e.detail.e);
   }
 
   function handleMouseMove(e: MouseEvent) {
     if (selectedIndex === null || !changing) return;
 
-    mousePosition = [
-      e.clientX - contentRect.left,
-      e.clientY - contentRect.top - scrollOffset,
-    ];
-  }
-
-  function handleScroll(
-    e: UIEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
-    },
-  ) {
-    scrollOffset = e.currentTarget.scrollTop;
+    mousePosition = [e.clientX - contentRect.left, e.pageY - contentRect.top];
   }
 
   function getCell(rawVector: Vector, snap: boolean): Vector {
@@ -181,14 +188,12 @@
   {changing}
   {gapSize}
   {gridCell}
-  {scrollOffset}
   {radius}
   {scale}
   {showGrid}
   height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
-  on:scroll={handleScroll}
 >
   {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
