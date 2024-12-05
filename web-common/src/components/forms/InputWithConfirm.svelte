@@ -113,7 +113,7 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-2;
+    @apply flex justify-center items-center pl-1;
     @apply justify-center;
     @apply border border-transparent rounded-[2px];
     @apply h-fit;
