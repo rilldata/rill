@@ -18,6 +18,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -29,7 +30,9 @@
       measures: { visibleMeasures },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
+      pivot: { showPivot },
     },
+
     dashboardStore,
     validSpecStore,
   } = StateManagers;
@@ -50,7 +53,6 @@
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreState?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,
@@ -100,7 +102,13 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar {hidePivot} />
+            <TabBar
+              {hidePivot}
+              {exploreName}
+              view={$showPivot
+                ? V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT
+                : V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE}
+            />
           </div>
         </section>
       {/key}
