@@ -6,16 +6,14 @@
 
   export let dimensionName: string | undefined;
   export let isBeingCompared: boolean;
-  export let toggleComparisonDimension: (
-    dimensionName: string | undefined,
-  ) => void;
+  export let toggleComparisonDimension: (dimensionName: string) => void;
 </script>
 
 <IconButton
   ariaLabel="Toggle breakdown for {dimensionName} dimension"
   on:click={(e) => {
     e.stopPropagation();
-    toggleComparisonDimension(dimensionName);
+    if (dimensionName) toggleComparisonDimension(dimensionName);
   }}
 >
   <Tooltip location="left" distance={8}>
