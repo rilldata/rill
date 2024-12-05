@@ -122,7 +122,7 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
-  {:else if showPivot}
+  {:else if $showPivot}
     <PivotDisplay />
   {:else}
     <div
