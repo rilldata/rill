@@ -192,9 +192,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			if spec != nil {
 				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
-		} else if mdl.ResourceType == runtime.ResourceKindReport {
-			// include underlying metrics view for reports
-
 		}
 
 		attr = mdl.Attributes
