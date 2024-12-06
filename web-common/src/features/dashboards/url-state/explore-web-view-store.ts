@@ -191,11 +191,14 @@ export function getExplorePresetForWebView(
 export function getUrlForWebView(
   pageUrl: URL,
   view: V1ExploreWebView,
+  defaultExplorePreset: V1ExplorePreset,
   extraParams: Record<string, string> = {},
 ) {
   const u = new URL(pageUrl);
   u.search = "";
-  u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
+  if (view !== defaultExplorePreset.view) {
+    u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
+  }
   for (const param in extraParams) {
     u.searchParams.set(param, extraParams[param]);
   }

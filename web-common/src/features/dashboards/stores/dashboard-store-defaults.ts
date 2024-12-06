@@ -73,7 +73,5 @@ export function restorePersistedDashboardState(
     metricsExplorer.sortDirection = persistedState.sortDirection;
   }
 
-  // const
-
   return metricsExplorer;
 }

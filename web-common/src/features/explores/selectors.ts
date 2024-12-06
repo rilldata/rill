@@ -237,12 +237,7 @@ export function shouldRedirectToViewWithParams(
     defaultExplorePreset,
   );
   // copy over any partial params. this will include the view and measure param
-  url.searchParams.forEach((value, key) => {
-    // ignore `view` param since it is already part of partialExploreState
-    // in case `view` was same as default adding it here would mess up the order.
-    if (key === ExploreStateURLParams.WebView) return;
-    newUrl.searchParams.set(key, value);
-  });
+  url.searchParams.forEach((value, key) => newUrl.searchParams.set(key, value));
   if (newUrl.toString() === url.toString()) {
     // url hasn't changed, avoid redirect loop
     return;
