@@ -17,17 +17,19 @@ const ExploreViewKeys: Record<V1ExploreWebView, (keyof V1ExplorePreset)[]> = {
     "view",
     "measures",
     "dimensions",
+    "timeGrain",
+    "comparisonDimension",
     "exploreExpandedDimension",
     "exploreSortBy",
     "exploreSortAsc",
     "exploreSortType",
-    "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [
     "view",
     "timeDimensionMeasure",
     "timeDimensionChartType",
     "timeDimensionPin",
+    "timeGrain",
     "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [
@@ -126,8 +128,7 @@ export function updateExploreSessionStore(
     if (!sharedKeys?.length) continue;
 
     const otherViewKey = getKeyForSessionStore(exploreName, prefix, otherView);
-    const otherViewRawPreset = sessionStorage.getItem(otherViewKey);
-    if (!otherViewRawPreset) continue;
+    const otherViewRawPreset = sessionStorage.getItem(otherViewKey) ?? "{}";
 
     try {
       const otherViewPreset = JSON.parse(otherViewRawPreset) as V1ExplorePreset;

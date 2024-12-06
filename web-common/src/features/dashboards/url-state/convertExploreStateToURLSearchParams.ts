@@ -102,7 +102,10 @@ function toTimeRangesUrl(
     );
   }
 
-  if (shouldSetParam(preset.timezone, exploreState.selectedTimezone)) {
+  if (
+    exploreSpec.timeZones?.length &&
+    shouldSetParam(preset.timezone, exploreState.selectedTimezone)
+  ) {
     searchParams.set(
       ExploreStateURLParams.TimeZone,
       exploreState.selectedTimezone,
@@ -141,7 +144,7 @@ function toTimeRangesUrl(
   const mappedTimeGrain =
     ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
     "";
-  if (shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
+  if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }
 
