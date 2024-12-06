@@ -123,9 +123,13 @@
           />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger
-              class="min-w-fit flex flex-row gap-1 items-center rounded-sm border border-slate-300 {isDropdownOpen
-                ? 'bg-slate-200'
-                : 'hover:bg-slate-100'} px-2 py-1"
+              class={`min-w-fit flex flex-row gap-1 items-center rounded-sm border border-slate-300 ${
+                isDropdownOpen ? "bg-slate-200" : "hover:bg-slate-100"
+              } px-2 py-1 ${
+                projectVariables.length === 0
+                  ? "opacity-50 cursor-not-allowed pointer-events-none"
+                  : ""
+              }`}
             >
               <span class="text-slate-600 font-medium">{environmentLabel}</span>
               {#if isDropdownOpen}
