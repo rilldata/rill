@@ -2,10 +2,12 @@ package runtime
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -17,7 +19,7 @@ func InstallDuckDBExtensionsCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use: "install-duckdb-extensions",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := map[string]any{"dsn": ":memory:"} // In-memory
-			h, err := drivers.Open("duckdb", "default", cfg, activity.NewNoopClient(), zap.NewNop())
+			h, err := drivers.Open("duckdb", "default", cfg, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 			if err != nil {
 				return fmt.Errorf("failed to open ephemeral duckdb: %w", err)
 			}

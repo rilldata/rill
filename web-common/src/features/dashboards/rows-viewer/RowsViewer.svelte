@@ -9,7 +9,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { writable } from "svelte/store";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
   import ReconcilingSpinner from "../../entity-management/ReconcilingSpinner.svelte";
 
@@ -22,7 +22,7 @@
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let limit = writable(SAMPLE_SIZE);
@@ -38,7 +38,7 @@
     },
     {
       query: {
-        enabled: $timeControlsStore.ready && !!$exploreStore?.whereFilter,
+        enabled: $timeControlsStore.ready && !!$exploreState?.whereFilter,
       },
     },
   );

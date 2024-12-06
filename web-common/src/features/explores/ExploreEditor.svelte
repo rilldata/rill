@@ -3,6 +3,7 @@
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { yaml } from "@codemirror/lang-yaml";
@@ -12,6 +13,7 @@
   export let fileArtifact: FileArtifact;
   export let autoSave: boolean;
   export let lineBasedRuntimeErrors: LineStatus[];
+  export let forceLocalUpdates = false;
 
   let editor: EditorView;
 
@@ -20,6 +22,7 @@
 </script>
 
 <Editor
+  {forceLocalUpdates}
   bind:autoSave
   bind:editor
   onSave={(content) => {
@@ -27,6 +30,7 @@
     metricsExplorerStore.remove(exploreName);
     // Reset local persisted dashboard state for the metrics view
     createPersistentDashboardStore(exploreName).reset();
+    clearExploreSessionStore(exploreName, undefined);
 
     if (!content?.length) {
       setLineStatuses([], editor);

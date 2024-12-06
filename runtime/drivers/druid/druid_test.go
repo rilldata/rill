@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -108,7 +109,7 @@ func TestDruid(t *testing.T) {
 	require.NoError(t, err)
 
 	dd := &driver{}
-	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

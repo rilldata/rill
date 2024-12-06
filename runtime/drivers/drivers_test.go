@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -31,7 +32,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver, instanceID string, cfg map[string]any) {
 			// Open
-			conn, err := drivers.Open(driver, instanceID, cfg, activity.NewNoopClient(), zap.NewNop())
+			conn, err := drivers.Open(driver, instanceID, cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 

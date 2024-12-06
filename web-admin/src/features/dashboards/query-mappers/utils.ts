@@ -9,6 +9,8 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
@@ -17,13 +19,17 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
+  getRuntimeServiceGetExploreQueryKey,
   queryServiceMetricsViewAggregation,
   type QueryServiceMetricsViewAggregationBody,
+  runtimeServiceGetExplore,
   type V1Expression,
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { get } from "svelte/store";
 
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
@@ -217,15 +223,39 @@ export function getExploreName(webOpenPath: string) {
   return matches[1];
 }
 
-export function getExplorePageUrl(
+export async function getExplorePageUrl(
   curPageUrl: URL,
   organization: string,
   project: string,
   exploreName: string,
-  state: string,
+  exploreState: MetricsExplorerEntity,
 ) {
+  const instanceId = get(runtime).instanceId;
+  const { explore } = await queryClient.fetchQuery({
+    queryFn: ({ signal }) =>
+      runtimeServiceGetExplore(
+        instanceId,
+        {
+          name: exploreName,
+        },
+        signal,
+      ),
+    queryKey: getRuntimeServiceGetExploreQueryKey(instanceId, {
+      name: exploreName,
+    }),
+    // this loader function is run for every param change in url.
+    // so to avoid re-fetching explore everytime we set this so that it hits cache.
+    staleTime: Infinity,
+  });
+
   const url = new URL(`${curPageUrl.protocol}//${curPageUrl.host}`);
   url.pathname = `/${organization}/${project}/explore/${exploreName}`;
-  url.searchParams.set("state", state);
+
+  const exploreSpec = explore?.explore?.state?.validSpec;
+  url.search = convertExploreStateToURLSearchParams(
+    exploreState,
+    exploreSpec ?? {},
+    exploreSpec?.defaultPreset ?? {},
+  );
   return url.toString();
 }

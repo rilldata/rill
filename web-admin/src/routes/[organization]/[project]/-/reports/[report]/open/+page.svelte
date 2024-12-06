@@ -35,15 +35,18 @@
   );
 
   $: if ($dashboardStateForReport?.data) {
-    void goto(
-      getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForReport.data.exploreName,
-        $dashboardStateForReport.data.state,
-      ),
+    void gotoExplorePage();
+  }
+
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForReport.data.exploreName,
+      $dashboardStateForReport.data.exploreState,
     );
+    return goto(explorePageUrl);
   }
 
   // TODO: error handling

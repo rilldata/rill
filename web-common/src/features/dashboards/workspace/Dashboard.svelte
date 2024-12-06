@@ -6,7 +6,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -14,10 +14,10 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
-  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { useTimeControlStore } from "../time-controls/time-control-store";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -44,13 +44,13 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
 
-  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: selectedDimensionName = $exploreState?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreStore?.pivot?.active;
+  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
+  $: showPivot = $exploreState?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,
@@ -129,6 +129,7 @@
             <MetricsTimeSeriesCharts
               {exploreName}
               workspaceWidth={exploreContainerWidth}
+              hideStartPivotButton={hidePivot}
             />
           {:else}
             <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
@@ -138,7 +139,11 @@
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay {exploreName} {expandedMeasureName} />
+        <TimeDimensionDisplay
+          {exploreName}
+          {expandedMeasureName}
+          hideStartPivotButton={hidePivot}
+        />
       {:else}
         <div class="pt-2 pl-1 border-l overflow-auto w-full">
           {#if selectedDimension}
@@ -155,6 +160,7 @@
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
+              hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay

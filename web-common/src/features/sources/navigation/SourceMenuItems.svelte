@@ -93,7 +93,7 @@
         addDevLimit,
       );
       await goto(`/files${newModelPath}`);
-      await behaviourEvent.fireNavigationEvent(
+      await behaviourEvent?.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,

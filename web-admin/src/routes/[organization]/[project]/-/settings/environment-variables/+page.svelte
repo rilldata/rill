@@ -15,6 +15,7 @@
     EnvironmentType,
     type EnvironmentTypes,
   } from "@rilldata/web-admin/features/projects/environment-variables/types";
+  import { getEnvironmentType } from "@rilldata/web-admin/features/projects/environment-variables/utils";
 
   let open = false;
   let searchText = "";
@@ -34,7 +35,12 @@
 
   $: projectVariables = $getProjectVariables.data?.variables || [];
 
-  $: variableNames = projectVariables.map((variable) => variable.name);
+  $: variableNames = projectVariables.map((variable) => {
+    return {
+      environment: getEnvironmentType(variable.environment),
+      name: variable.name,
+    };
+  });
 
   $: searchedVariables = projectVariables.filter((variable) =>
     variable.name.toLowerCase().includes(searchText.toLowerCase()),

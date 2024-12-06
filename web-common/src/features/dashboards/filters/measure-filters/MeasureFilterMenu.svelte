@@ -123,6 +123,7 @@
       errors={$errors["value1"]}
       id="value1"
       onBlur={handleSubmit}
+      onEnter={handleSubmit}
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
     {#if isBetweenExpression}
@@ -132,6 +133,7 @@
         id="value2"
         placeholder="Higher Value"
         onBlur={handleSubmit}
+        onEnter={handleSubmit}
       />
     {/if}
   </form>

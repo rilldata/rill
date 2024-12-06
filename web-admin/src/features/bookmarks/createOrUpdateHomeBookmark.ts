@@ -1,45 +1,24 @@
-import { page } from "$app/stores";
 import {
   createAdminServiceCreateBookmark,
   createAdminServiceUpdateBookmark,
+  type V1Bookmark,
 } from "@rilldata/web-admin/client";
-import { getBookmarks } from "@rilldata/web-admin/features/bookmarks/selectors";
-import { useProjectId } from "@rilldata/web-admin/features/projects/selectors";
+import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { useQueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function createHomeBookmarkModifier(
-  instanceId: string,
-  metricsViewName: string,
-  exploreName: string,
-) {
+// TODO: move this to a compound mutation similar to ProjectGithubConnectionUpdater
+export function createHomeBookmarkModifier(exploreName: string) {
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
-  const projectIdRes = useProjectId(
-    get(page).params.organization,
-    get(page).params.project,
-  );
-  const bookmarksRes = getBookmarks(
-    useQueryClient(),
-    instanceId,
-    get(page).params.organization,
-    get(page).params.project,
-    metricsViewName,
-    exploreName,
-  );
 
-  return (data: string) => {
-    const bookmarks = get(bookmarksRes);
-    const projectId = get(projectIdRes);
-    if (bookmarks.isFetching || projectId.isFetching) {
-      return;
-    }
+  return (data: string, projectId: string, bookmarks: V1Bookmark[]) => {
+    const homeBookmark = bookmarks.find(isHomeBookmark);
 
-    if (bookmarks.data?.home) {
+    if (homeBookmark) {
       return get(bookmarkUpdater).mutateAsync({
         data: {
-          bookmarkId: bookmarks.data.home.resource.id,
+          bookmarkId: homeBookmark.id,
           displayName: "Home",
           description: "Main view For this dashboard",
           shared: true,
@@ -52,7 +31,7 @@ export function createHomeBookmarkModifier(
         data: {
           displayName: "Home",
           description: "Main view For this dashboard",
-          projectId: projectId.data,
+          projectId,
           resourceKind: ResourceKind.Explore,
           resourceName: exploreName,
           shared: true,

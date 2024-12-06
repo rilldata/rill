@@ -53,9 +53,10 @@ type config struct {
 	LogQueries bool `mapstructure:"log_queries"`
 }
 
-func newConfig(cfgMap map[string]any) (*config, error) {
+func newConfig(cfgMap map[string]any, dataDir string) (*config, error) {
 	cfg := &config{
 		ExtTableStorage: true,
+		DataDir:         dataDir,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {

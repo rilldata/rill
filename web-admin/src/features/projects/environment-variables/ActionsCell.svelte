@@ -5,12 +5,13 @@
   import { Trash2Icon, Pencil } from "lucide-svelte";
   import EditDialog from "./EditDialog.svelte";
   import DeleteDialog from "./DeleteDialog.svelte";
+  import type { VariableNames } from "./types";
 
   export let id: string;
   export let environment: string;
   export let name: string;
   export let value: string;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let isDropdownOpen = false;
   let isEditDialogOpen = false;

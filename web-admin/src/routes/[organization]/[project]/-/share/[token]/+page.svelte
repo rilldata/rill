@@ -2,10 +2,9 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import DashboardPublicURLStateProvider from "@rilldata/web-admin/features/public-urls/DashboardPublicURLStateProvider.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
@@ -14,7 +13,11 @@
 
   export let data: PageData;
 
-  $: ({ resourceName } = data.token);
+  $: ({
+    defaultExplorePreset,
+    partialExploreState,
+    token: { resourceName },
+  } = data);
   $: ({ organization, project } = $page.params);
 
   // Query the `GetProject` API with cookie-based auth to determine if the user has access to the original dashboard
@@ -52,21 +55,14 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardPublicURLStateProvider
-        token={data.token}
-        exploreName={resourceName}
-      >
-        <DashboardURLStateProvider
-          metricsViewName={explore.metricsView.meta.name.name}
-        >
-          <DashboardThemeProvider>
-            <Dashboard
-              exploreName={resourceName}
-              metricsViewName={explore.metricsView.meta.name.name}
-            />
-          </DashboardThemeProvider>
-        </DashboardURLStateProvider>
-      </DashboardPublicURLStateProvider>
+      <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+        <DashboardThemeProvider>
+          <Dashboard
+            exploreName={resourceName}
+            metricsViewName={explore.metricsView.meta.name.name}
+          />
+        </DashboardThemeProvider>
+      </DashboardURLStateSync>
     </StateManagersProvider>
   {/if}
 {/key}
