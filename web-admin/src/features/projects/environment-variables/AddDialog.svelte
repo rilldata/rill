@@ -226,6 +226,8 @@
   }
 
   function handleEnvironmentChange() {
+    checkForExistingKeys();
+    isKeyAlreadyExists = false;
     showEnvironmentError = true;
   }
 </script>
