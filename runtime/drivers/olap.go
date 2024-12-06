@@ -249,6 +249,9 @@ func (d Dialect) RequiresCastForLike() bool {
 
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
+	if d == DialectDuckDB {
+		return d.EscapeIdentifier(table)
+	}
 	var sb strings.Builder
 	if db != "" {
 		sb.WriteString(d.EscapeIdentifier(db))

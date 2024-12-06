@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -190,16 +189,11 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	}, connectionsInUse))
 
 	// Open the DB
-	err = c.reopenDB(ctx)
+	err = c.reopenDB(context.Background())
 	if err != nil {
 		// Check for another process currently accessing the DB
 		if strings.Contains(err.Error(), "Could not set lock on file") {
 			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
-		}
-		// Return nice error for old macOS versions
-		if strings.Contains(err.Error(), "Symbol not found") {
-			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
-			os.Exit(1)
 		}
 		return nil, err
 	}
@@ -266,7 +260,7 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	instanceID string
 	// do not use directly it can also be nil or closed
-	// use acquireOLAPConn/acquireMetaConn
+	// use acquireOLAPConn/acquireMetaConn for select and acquireDB for write queries
 	db rduckdb.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
@@ -336,7 +330,10 @@ func (c *connection) Config() map[string]any {
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
-	return c.db.Close()
+	if c.db != nil {
+		return c.db.Close()
+	}
+	return nil
 }
 
 // AsRegistry Registry implements drivers.Connection.
@@ -528,7 +525,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	conn, releaseConn, err := c.acquireReadConnection(ctx)
 	if err != nil {
 		c.metaSem.Release(1)
 		return nil, nil, err
@@ -571,7 +568,7 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	conn, releaseConn, err := c.acquireReadConnection(ctx)
 	if err != nil {
 		c.olapSem.Release()
 		if longRunning {
@@ -593,9 +590,32 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	return conn, release, nil
 }
 
-// acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
-// acquireConn implements the connection tracking and DB reopening logic described in the struct definition for connection.
-func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+// acquireReadConnection is a helper function to acquire a read connection from rduckdb.
+// Do not use this function directly for OLAP queries. Use acquireOLAPConn, acquireMetaConn instead.
+func (c *connection) acquireReadConnection(ctx context.Context) (*sqlx.Conn, func() error, error) {
+	db, releaseDB, err := c.acquireDB()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	conn, releaseConn, err := db.AcquireReadConnection(ctx)
+	if err != nil {
+		_ = releaseDB()
+		return nil, nil, err
+	}
+
+	release := func() error {
+		err := releaseConn()
+		return errors.Join(err, releaseDB())
+	}
+	return conn, release, nil
+}
+
+// acquireDB returns rduckDB handle.
+// acquireDB implements the connection tracking and DB reopening logic described in the struct definition for connection.
+// It should not be used directly for select queries. For select queries use acquireOLAPConn and acquireMetaConn.
+// It should only be used for write queries.
+func (c *connection) acquireDB() (rduckdb.DB, func() error, error) {
 	c.dbCond.L.Lock()
 	for {
 		if c.dbErr != nil {
@@ -611,11 +631,6 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	c.dbConnCount++
 	c.dbCond.L.Unlock()
 
-	conn, releaseConn, err := c.db.AcquireReadConnection(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	c.connTimesMu.Lock()
 	connID := c.nextConnID
 	c.nextConnID++
@@ -623,28 +638,38 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	c.connTimesMu.Unlock()
 
 	release := func() error {
-		err := releaseConn()
 		c.connTimesMu.Lock()
 		delete(c.connTimes, connID)
 		c.connTimesMu.Unlock()
 		c.dbCond.L.Lock()
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
-			c.dbReopen = false
-			err = c.reopenDB(ctx)
-			if err == nil {
-				c.logger.Debug("reopened DuckDB successfully")
-			} else {
-				c.logger.Debug("reopen of DuckDB failed - the handle is now permanently locked", zap.Error(err))
-			}
-			c.dbErr = err
-			c.dbCond.Broadcast()
+			c.triggerReopen()
 		}
 		c.dbCond.L.Unlock()
-		return err
+		return nil
 	}
+	return c.db, release, nil
+}
 
-	return conn, release, nil
+func (c *connection) triggerReopen() {
+	go func() {
+		c.dbCond.L.Lock()
+		defer c.dbCond.L.Unlock()
+		if !c.dbReopen || c.dbConnCount == 0 {
+			c.logger.Error("triggerReopen called but should not reopen", zap.Bool("dbReopen", c.dbReopen), zap.Int("dbConnCount", c.dbConnCount))
+			return
+		}
+		c.dbReopen = false
+		err := c.reopenDB(c.ctx)
+		if err != nil {
+			if !errors.Is(err, context.Canceled) {
+				c.logger.Error("reopen of DuckDB failed - the handle is now permanently locked", zap.Error(err))
+			}
+		}
+		c.dbErr = err
+		c.dbCond.Broadcast()
+	}()
 }
 
 // checkErr marks the DB for reopening if the error is an internal DuckDB error.

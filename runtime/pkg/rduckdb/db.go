@@ -1031,7 +1031,7 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 

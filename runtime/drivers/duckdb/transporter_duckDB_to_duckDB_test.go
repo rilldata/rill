@@ -1,54 +1,59 @@
 package duckdb
 
-// func TestDuckDBToDuckDBTransfer(t *testing.T) {
-// 	tempDir := t.TempDir()
-// 	conn, err := Driver{}.Open("default", map[string]any{"path": fmt.Sprintf("%s.db", filepath.Join(tempDir, "tranfser")), "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
-// 	require.NoError(t, err)
+import (
+	"context"
+	"database/sql"
+	"path/filepath"
+	"testing"
 
-// 	olap, ok := conn.AsOLAP("")
-// 	require.True(t, ok)
+	_ "github.com/marcboeker/go-duckdb"
+	"github.com/rilldata/rill/runtime/drivers"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
 
-// 	err = olap.Exec(context.Background(), &drivers.Statement{
-// 		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
-// 	})
-// 	require.NoError(t, err)
+func TestDuckDBToDuckDBTransfer(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "transfer.db")
+	db, err := sql.Open("duckdb", dbFile)
+	require.NoError(t, err)
 
-// 	err = olap.Exec(context.Background(), &drivers.Statement{
-// 		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
-// 	})
-// 	require.NoError(t, err)
-// 	require.NoError(t, conn.Close())
+	_, err = db.ExecContext(context.Background(), "CREATE TABLE foo(bar VARCHAR, baz INTEGER)")
+	require.NoError(t, err)
 
-// to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db"), "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
-// require.NoError(t, err)
+	_, err = db.ExecContext(context.Background(), "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)")
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
 
-// 	tr := newDuckDBToDuckDB(to.(*connection), zap.NewNop())
+	to, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
 
-// 	// transfer once
-// 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
-// 	require.NoError(t, err)
+	tr := newDuckDBToDuckDB(to.(*connection), "duckdb", zap.NewNop())
 
-// 	olap, ok = to.AsOLAP("")
-// 	require.True(t, ok)
+	// transfer once
+	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
+	require.NoError(t, err)
 
-// 	rows, err := to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
-// 	require.NoError(t, err)
+	rows, err := to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
+	require.NoError(t, err)
 
-// 	var count int
-// 	rows.Next()
-// 	require.NoError(t, rows.Scan(&count))
-// 	require.Equal(t, 4, count)
-// 	require.NoError(t, rows.Close())
+	var count int
+	rows.Next()
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, 4, count)
+	require.NoError(t, rows.Close())
 
-// 	// transfer again
-// 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": filepath.Join(tempDir, "tranfser.db")}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
-// 	require.NoError(t, err)
+	// transfer again
+	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
+	require.NoError(t, err)
 
-// 	rows, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
-// 	require.NoError(t, err)
+	rows, err = to.(*connection).Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM test"})
+	require.NoError(t, err)
 
-// 	rows.Next()
-// 	require.NoError(t, rows.Scan(&count))
-// 	require.Equal(t, 4, count)
-// 	require.NoError(t, rows.Close())
-// }
+	rows.Next()
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, 4, count)
+	require.NoError(t, rows.Close())
+}

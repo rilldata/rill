@@ -93,7 +93,14 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}
 	userQuery := strings.TrimSpace(srcConfig.SQL)
 	userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-	return t.to.db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
+	db, release, err := t.to.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	return db.CreateTableAsSelect(ctx, sinkCfg.Table, userQuery, &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
 	})
 }

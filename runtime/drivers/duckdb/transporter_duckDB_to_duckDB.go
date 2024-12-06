@@ -164,7 +164,14 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 		_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTempTable))
 		return err
 	}
-	return t.to.db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
+	db, release, err := t.to.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	return db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
 		BeforeCreateFn: beforeCreateFn,
 		AfterCreateFn:  afterCreateFn,
 	})
