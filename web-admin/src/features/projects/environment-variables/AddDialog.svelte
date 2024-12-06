@@ -78,6 +78,7 @@
     superForm(defaults(initialValues, schema), {
       SPA: true,
       validators: schema,
+      resetForm: false,
       // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
       async onUpdate({ form }) {
@@ -227,6 +228,7 @@
 
   function handleEnvironmentChange() {
     checkForExistingKeys();
+    inputErrors = {};
     isKeyAlreadyExists = false;
     showEnvironmentError = true;
   }
