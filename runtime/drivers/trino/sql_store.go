@@ -10,7 +10,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/trinodb/trino-go-client/trino"
+
+	_ "github.com/trinodb/trino-go-client/trino" // trino client is required so that database/sql can find trino driver
 )
 
 // Query implements drivers.SQLStore
