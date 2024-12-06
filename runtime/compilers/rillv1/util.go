@@ -7,7 +7,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-// toDisplayName converts a snake_case name to a display name by replacing underscores and dashes with spaces and capitalizing the first letter.
+// toDisplayName converts a snake_case name to a display name by replacing underscores and dashes with spaces and capitalizing every word.
 func ToDisplayName(name string) string {
 	// Don't transform names that start with an underscore (since it's probably internal).
 	if name != "" && name[0] == '_' {
