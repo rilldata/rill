@@ -101,10 +101,11 @@ measures:
 
 	// Verify the metrics view
 	mvSpec := &runtimev1.MetricsViewSpec{
-		Connector:  "duckdb",
-		Model:      "bar",
-		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
-		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		Connector:   "duckdb",
+		Model:       "bar",
+		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "a", Column: "a"}},
+		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		DisplayName: "foobar",
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
@@ -118,11 +119,12 @@ measures:
 				Spec: mvSpec,
 				State: &runtimev1.MetricsViewState{
 					ValidSpec: &runtimev1.MetricsViewSpec{
-						Connector:  "duckdb",
-						Model:      "bar",
-						Table:      "bar",
-						Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
-						Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						Connector:   "duckdb",
+						Table:       "bar",
+						Model:       "bar",
+						DisplayName: "foobar",
+						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "a", Column: "a"}},
+						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
 			},
@@ -1464,25 +1466,30 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 	}
 
 	for i, measure := range measures {
+		name := fmt.Sprintf("measure_%d", i)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       fmt.Sprintf("measure_%d", i),
-			Expression: measure,
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Name:        name,
+			DisplayName: name,
+			Expression:  measure,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       fmt.Sprintf("measure_%d", i),
-			Expression: measure,
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Name:        name,
+			DisplayName: name,
+			Expression:  measure,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:   dimension,
-			Column: dimension,
+			Name:        dimension,
+			DisplayName: dimension,
+			Column:      dimension,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:   dimension,
-			Column: dimension,
+			Name:        dimension,
+			DisplayName: dimension,
+			Column:      dimension,
 		}
 	}
 	metricsRes := &runtimev1.Resource{
