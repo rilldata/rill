@@ -26,6 +26,8 @@ func getDBTypeNameToMapperMap() map[string]mapper {
 	char := charMapper{}
 	bytes := byteMapper{}
 	date := dateMapper{}
+	time := timeMapper{}
+	timestamp := timestampMapper{}
 	json := jsonMapper{}
 
 	// boolean
@@ -50,12 +52,12 @@ func getDBTypeNameToMapperMap() map[string]mapper {
 	// date and time
 	m["DATE"] = date
 
-	m["TIMESTAMP"] = date
-	m["TIMESTAMP WITH TIME ZONE"] = date
+	m["TIMESTAMP"] = timestamp
+	m["TIMESTAMP WITH TIME ZONE"] = timestamp
 
 	// TIME is scanned as bytes and can be converted to string
-	m["TIME"] = date
-	m["TIME WITH TIME ZONE"] = date
+	m["TIME"] = time
+	m["TIME WITH TIME ZONE"] = time
 
 	m["INTERVAL YEAR TO MONTH"] = char
 	m["INTERVAL DAY TO SECOND"] = char
@@ -215,7 +217,7 @@ func (m byteMapper) value(p any) (any, error) {
 type dateMapper struct{}
 
 func (m dateMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}, nil
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}, nil
 }
 
 func (m dateMapper) dest(reflect.Type) (any, error) {
@@ -232,6 +234,52 @@ func (m dateMapper) value(p any) (any, error) {
 		return vl, nil
 	default:
 		return nil, fmt.Errorf("dateMapper: unsupported value type %v", v)
+	}
+}
+
+type timestampMapper struct{}
+
+func (m timestampMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}, nil
+}
+
+func (m timestampMapper) dest(reflect.Type) (any, error) {
+	return new(sql.NullTime), nil
+}
+
+func (m timestampMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *sql.NullTime:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("timestampMapper: unsupported value type %v", v)
+	}
+}
+
+type timeMapper struct{}
+
+func (m timeMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_TIME}, nil
+}
+
+func (m timeMapper) dest(reflect.Type) (any, error) {
+	return new(sql.NullTime), nil
+}
+
+func (m timeMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *sql.NullTime:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("timeMapper: unsupported value type %v", v)
 	}
 }
 
