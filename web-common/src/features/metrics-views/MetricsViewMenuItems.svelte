@@ -53,7 +53,7 @@
     if (!artifact) return;
     const previousScreenName = getScreenNameFromPage();
     await goto(`/files${artifact.path}`);
-    await behaviourEvent.fireNavigationEvent(
+    await behaviourEvent?.fireNavigationEvent(
       referenceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,

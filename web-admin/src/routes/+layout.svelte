@@ -43,13 +43,13 @@
   initCloudMetrics()
     .then(() => {
       removeJavascriptListeners =
-        errorEventHandler.addJavascriptErrorListeners();
+        errorEventHandler?.addJavascriptErrorListeners();
     })
     .catch(console.error);
   initPylonWidget();
 
   onMount(() => {
-    return () => removeJavascriptListeners();
+    return () => removeJavascriptListeners?.();
   });
 
   $: isEmbed = $page.url.pathname === "/-/embed";

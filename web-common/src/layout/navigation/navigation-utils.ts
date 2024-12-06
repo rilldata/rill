@@ -19,7 +19,7 @@ export async function emitNavigationTelemetry(href: string, name: string) {
   const screenName = getNavURLToScreenMap(href);
 
   if (!screenName) return;
-  await behaviourEvent.fireNavigationEvent(
+  await behaviourEvent?.fireNavigationEvent(
     name,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
