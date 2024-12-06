@@ -44,10 +44,7 @@ import {
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExplorePreset,
@@ -55,7 +52,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.stubEnv("TZ", "UTC");
 
 const TestCases: {
   title: string;
@@ -331,11 +330,6 @@ describe("Human readable URL state variations", () => {
 
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    getLocalUserPreferences().updateTimeZone("UTC");
-    localStorage.setItem(
-      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
-      `{"timezone":"UTC"}`,
-    );
   });
 
   describe("Should update url state and restore default state on empty params", () => {
@@ -344,6 +338,7 @@ describe("Human readable URL state variations", () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
+          timeZones: ["UTC", "Asia/Kathmandu"],
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
@@ -354,9 +349,6 @@ describe("Human readable URL state variations", () => {
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          {
-            timeZone: "UTC",
-          },
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -402,9 +394,6 @@ describe("Human readable URL state variations", () => {
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          {
-            timeZone: "UTC",
-          },
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 

@@ -6,7 +6,6 @@ import {
 import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type {
   V1ExploreSpec,
   V1MetricsViewSpec,
@@ -19,11 +18,7 @@ export function getDefaultExploreState(
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  defaultExplorePreset = getDefaultExplorePreset(
-    explore,
-    getLocalUserPreferencesState(name),
-    fullTimeRange,
-  ),
+  defaultExplorePreset = getDefaultExplorePreset(explore, fullTimeRange),
 ): MetricsExplorerEntity {
   const { partialExploreState } = convertPresetToExploreState(
     metricsView,
@@ -77,5 +72,6 @@ export function restorePersistedDashboardState(
   if (persistedState.sortDirection) {
     metricsExplorer.sortDirection = persistedState.sortDirection;
   }
+
   return metricsExplorer;
 }

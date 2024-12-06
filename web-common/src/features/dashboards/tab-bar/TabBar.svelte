@@ -23,6 +23,7 @@
     selectors: {
       pivot: { showPivot },
     },
+    defaultExploreState,
   } = StateManagers;
 
   $: tabs = [
@@ -33,6 +34,7 @@
       href: getUrlForWebView(
         $page.url,
         V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
+        $defaultExploreState,
       ),
     },
     ...(hidePivot
@@ -45,6 +47,7 @@
             href: getUrlForWebView(
               $page.url,
               V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+              $defaultExploreState,
             ),
           },
         ]),

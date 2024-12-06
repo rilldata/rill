@@ -5,10 +5,10 @@ import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   V1ExploreComparisonMode,
   V1ExploreSortType,
@@ -20,7 +20,6 @@ import {
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
-  preferences: LocalUserPreferences,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
@@ -31,7 +30,7 @@ export function getDefaultExplorePreset(
     dimensions: explore.dimensions,
 
     timeRange: fullTimeRange ? "inf" : "",
-    timezone: preferences.timeZone ?? "UTC",
+    timezone: explore.defaultPreset?.timezone ?? getLocalIANA(),
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
