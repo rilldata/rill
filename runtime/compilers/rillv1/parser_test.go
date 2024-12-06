@@ -276,14 +276,16 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Model:     "m2",
+				Connector:   "duckdb",
+				Model:       "m2",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{
 						Name:           "b",
+						DisplayName:    "B",
 						Expression:     "count(*)",
 						Type:           runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 						FormatD3:       "0,0",
@@ -1069,13 +1071,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
 			Paths: []string{"/mv1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t1",
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "Mv1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -1091,13 +1094,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
 			Paths: []string{"/mv2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t2",
+				Connector:   "duckdb",
+				Table:       "t2",
+				DisplayName: "Mv2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -1209,13 +1213,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t1",
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
@@ -1497,13 +1502,14 @@ measures:
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "d1",
+				Connector:   "duckdb",
+				Table:       "d1",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 			},
 		},
@@ -1901,33 +1907,38 @@ measures:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         "t1",
+				DisplayName:   "D1",
 				TimeDimension: "t",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "foo", Column: "foo"},
+					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{
-						Name:       "a",
-						Expression: "count(*)",
-						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+						Name:        "a",
+						DisplayName: "A",
+						Expression:  "count(*)",
+						Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 					},
 					{
 						Name:               "b",
+						DisplayName:        "B",
 						Expression:         "a+1",
 						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						ReferencedMeasures: []string{"a"},
 					},
 					{
 						Name:               "c",
+						DisplayName:        "C",
 						Expression:         "sum(a)",
 						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						PerDimensions:      []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "foo"}},
 						ReferencedMeasures: []string{"a"},
 					},
 					{
-						Name:       "d",
-						Expression: "a/lag(a)",
-						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						Name:        "d",
+						DisplayName: "D",
+						Expression:  "a/lag(a)",
+						Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						Window: &runtimev1.MetricsViewSpec_MeasureWindow{
 							Partition:       true,
 							OrderBy:         []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
