@@ -23,11 +23,7 @@
   import { object, string } from "yup";
   import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import {
-    getCurrentEnvironment,
-    getEnvironmentType,
-    isDuplicateKey,
-  } from "./utils";
+  import { getCurrentEnvironment, isDuplicateKey } from "./utils";
   import { onMount } from "svelte";
 
   export let open = false;
@@ -45,6 +41,7 @@
   let isProduction = false;
   let isKeyAlreadyExists = false;
   let inputErrors: { [key: number]: boolean } = {};
+  let showEnvironmentError = false;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -55,7 +52,7 @@
     initialEnvironment?.isDevelopment !== isDevelopment ||
     initialEnvironment?.isProduction !== isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
-  $: hasNoEnvironment = !isDevelopment && !isProduction;
+  $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -88,7 +85,7 @@
     errors,
     allErrors,
     submitting,
-    reset,
+    reset: formReset,
   } = superForm(defaults(initialValues, schema), {
     // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
     id: id,
@@ -201,11 +198,12 @@
   }
 
   function handleReset() {
-    reset();
+    formReset();
     isDevelopment = false;
     isProduction = false;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
@@ -248,7 +246,12 @@
   }
 
   function handleDialogOpen() {
+    handleReset();
     setInitialCheckboxState();
+  }
+
+  function handleEnvironmentChange() {
+    showEnvironmentError = true;
   }
 
   onMount(() => {
@@ -292,11 +295,13 @@
               bind:checked={isDevelopment}
               id="development"
               label="Development"
+              onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
               bind:checked={isProduction}
               id="production"
               label="Production"
+              onCheckedChange={handleEnvironmentChange}
             />
           </div>
           {#if hasNoEnvironment}
