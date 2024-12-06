@@ -1,8 +1,9 @@
 <script lang="ts">
+  import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
+  import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { EyeIcon, EyeOffIcon } from "lucide-svelte";
 
   export let value: string;
 
@@ -50,9 +51,9 @@
 <div class="flex flex-row gap-[10px] items-center">
   <button on:click={toggleShowValue}>
     {#if !showValue}
-      <EyeIcon color="#94A3B8" size="16" />
+      <Eye color="#374151" size="16px" />
     {:else}
-      <EyeOffIcon color="#94A3B8" size="16" />
+      <EyeInvisible color="#374151" size="16px" />
     {/if}
   </button>
   <Tooltip distance={6} location="top" suppress={isValueHidden || isEmpty}>
