@@ -5,7 +5,6 @@ import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
