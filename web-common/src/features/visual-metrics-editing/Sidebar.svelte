@@ -305,13 +305,16 @@
           {placeholder}
           multiline={key === "description"}
           enableSearch={key === "column"}
-          bind:selected
+          {selected}
           bind:value={editingClone[key]}
           fields={fields.map(({ label }) => label)}
           onChange={(e) => {
             if (!editing && key === "column" && type === "dimensions") {
               editingClone.name = e;
             }
+          }}
+          onFieldSwitch={(index) => {
+            selected = index;
           }}
           sameWidth={true}
         />
@@ -322,8 +325,6 @@
   </div>
 
   <div class="flex flex-col gap-y-3 mt-auto border-t px-5 pb-6 pt-3">
-    <!-- <h2>Preview</h2> -->
-
     <p>
       For more options,
       <button on:click={switchView} class="text-primary-600 font-medium">
