@@ -87,10 +87,10 @@
     submitting,
     reset: formReset,
   } = superForm(defaults(initialValues, schema), {
-    // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
     id: id,
     SPA: true,
     validators: schema,
+    resetForm: false,
     async onUpdate({ form }) {
       if (!form.valid) return;
       const values = form.data;
