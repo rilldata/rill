@@ -7,10 +7,7 @@
 <div class="option-wrapper">
   {#each fields as field, i (field)}
     <button
-      on:click={() => {
-        selected = i;
-        onClick(i, field);
-      }}
+      on:click={() => onClick(i, field)}
       class="-ml-[1px] first-of-type:-ml-0 px-2 border border-gray-300 first-of-type:rounded-l-[2px] last-of-type:rounded-r-[2px]"
       class:selected={selected === i}
     >
