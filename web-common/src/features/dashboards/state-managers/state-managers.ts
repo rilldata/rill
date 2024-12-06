@@ -9,10 +9,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import {
-  getLocalUserPreferencesState,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -153,7 +150,6 @@ export function createStateManagers({
       }
       return getDefaultExplorePreset(
         validSpec.data?.explore ?? {},
-        getLocalUserPreferencesState(exploreName),
         timeRangeSummary.data,
       );
     },

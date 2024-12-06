@@ -25,7 +25,6 @@
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -50,7 +49,6 @@
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
-    getLocalUserPreferencesState(exploreName),
     $metricsViewTimeRange.data,
   );
 

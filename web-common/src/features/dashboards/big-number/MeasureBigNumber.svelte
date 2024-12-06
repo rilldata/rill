@@ -3,6 +3,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { getUrlForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -34,6 +35,8 @@
   export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+
+  const { defaultExploreState } = getStateManagers();
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -88,6 +91,7 @@
   $: tddHref = getUrlForWebView(
     $page.url,
     V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+    $defaultExploreState,
     {
       [ExploreStateURLParams.ExpandedMeasure]: measure.name,
     } as Record<string, string>,

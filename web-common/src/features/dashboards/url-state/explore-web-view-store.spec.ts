@@ -39,10 +39,7 @@ import {
   applyURLToExploreState,
   getCleanMetricsExploreForAssertion,
 } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
-import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
@@ -70,6 +67,7 @@ vi.mock("$app/stores", () => {
     page: pageMock,
   };
 });
+vi.stubEnv("TZ", "UTC");
 
 type TestView = {
   view: V1ExploreWebView;
@@ -130,7 +128,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
@@ -148,7 +146,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
   {
@@ -167,7 +165,7 @@ const TestCases: {
         AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
       ],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
+        "http://localhost/explore/AdBids_explore?view=pivot&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&rows=publisher%2Ctime.hour&cols=domain%2Ctime.day%2Cimpressions&sort_by=time.day&sort_dir=ASC",
     },
   },
 ];
@@ -223,11 +221,6 @@ describe("ExploreWebViewStore", () => {
 
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    getLocalUserPreferences().updateTimeZone("UTC");
-    localStorage.setItem(
-      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
-      `{"timezone":"UTC"}`,
-    );
     clearExploreSessionStore(AD_BIDS_NAME, undefined);
   });
 
@@ -246,9 +239,6 @@ describe("ExploreWebViewStore", () => {
       });
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
-        {
-          timeZone: "UTC",
-        },
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 

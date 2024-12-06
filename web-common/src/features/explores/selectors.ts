@@ -9,7 +9,6 @@ import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashbo
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
@@ -133,7 +132,6 @@ export async function fetchExploreSpec(
 
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreResource.explore.state?.validSpec ?? {},
-    getLocalUserPreferencesState(exploreName),
     fullTimeRange,
   );
 
