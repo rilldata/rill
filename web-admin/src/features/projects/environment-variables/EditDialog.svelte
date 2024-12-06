@@ -55,6 +55,7 @@
     initialEnvironment?.isDevelopment !== isDevelopment ||
     initialEnvironment?.isProduction !== isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
+  $: hasNoEnvironment = !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -239,14 +240,15 @@
       isDevelopment = true;
       isProduction = true;
     }
-  }
 
-  function handleDialogOpen() {
-    setInitialCheckboxState();
     initialEnvironment = {
       isDevelopment,
       isProduction,
     };
+  }
+
+  function handleDialogOpen() {
+    setInitialCheckboxState();
   }
 
   onMount(() => {
@@ -297,6 +299,13 @@
               label="Production"
             />
           </div>
+          {#if hasNoEnvironment}
+            <div class="mt-1">
+              <p class="text-xs text-red-600 font-normal">
+                You must select at least one environment
+              </p>
+            </div>
+          {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variable</div>
@@ -350,7 +359,10 @@
       <Button
         type="primary"
         form={$formId}
-        disabled={$submitting || !hasNewChanges || hasExistingKeys}
+        disabled={$submitting ||
+          !hasNewChanges ||
+          hasExistingKeys ||
+          hasNoEnvironment}
         submitForm
       >
         Edit
