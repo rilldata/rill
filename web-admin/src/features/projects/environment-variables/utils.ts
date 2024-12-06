@@ -33,28 +33,24 @@ export function getEnvironmentType(environment: string) {
  * @returns true if the key would create a duplicate, false otherwise
  */
 export function isDuplicateKey(
-  environment: string,
+  environment: EnvironmentType,
   key: string,
   variableNames: VariableNames,
+  currentKey?: string,
 ): boolean {
-  return variableNames.some((variable) => {
-    // Only consider it a duplicate if the same key exists
-    if (variable.name === key) {
-      // If either the existing or new variable is for all environments, it's a duplicate
-      if (
-        variable.environment === EnvironmentType.UNDEFINED ||
-        environment === EnvironmentType.UNDEFINED
-      ) {
-        return true;
-      }
+  // If the key is the same as the current key, it's not a duplicate
+  if (currentKey && key === currentKey) return false;
 
-      // If trying to create in the same environment as existing variable
-      if (variable.environment === environment) {
-        return true;
-      }
-    }
-    return false;
-  });
+  const hasMatchingKey = (variable) => variable.name === key;
+  const isInTargetEnvironment = (variable) =>
+    environment === EnvironmentType.UNDEFINED ||
+    variable.environment === environment ||
+    variable.environment === EnvironmentType.UNDEFINED;
+
+  // Check if the key already exists in the target environment or all environments
+  return variableNames.some(
+    (variable) => hasMatchingKey(variable) && isInTargetEnvironment(variable),
+  );
 }
 
 export function getCurrentEnvironment(

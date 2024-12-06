@@ -210,17 +210,16 @@
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    const existingKey = {
-      environment: getEnvironmentType(
-        getCurrentEnvironment(isDevelopment, isProduction),
-      ),
-      name: $form.key,
-    };
+    const newEnvironment = getCurrentEnvironment(isDevelopment, isProduction);
 
-    const variableEnvironment = existingKey.environment;
-    const variableKey = existingKey.name;
-
-    if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
+    if (
+      isDuplicateKey(
+        newEnvironment,
+        $form.key,
+        variableNames,
+        initialValues.key,
+      )
+    ) {
       inputErrors[0] = true;
       isKeyAlreadyExists = true;
     }
