@@ -110,7 +110,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 
 	r.CanvasSpec.DisplayName = tmp.DisplayName
 	if r.CanvasSpec.DisplayName == "" {
-		r.CanvasSpec.DisplayName = node.Name
+		r.CanvasSpec.DisplayName = ToDisplayName(node.Name)
 	}
 	r.CanvasSpec.Columns = tmp.Columns
 	r.CanvasSpec.Gap = tmp.Gap

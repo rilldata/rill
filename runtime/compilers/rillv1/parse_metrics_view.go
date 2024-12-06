@@ -531,7 +531,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		if dim.DisplayName == "" {
-			dim.DisplayName = dim.Name
+			dim.DisplayName = ToDisplayName(dim.Name)
 		}
 
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
@@ -568,7 +568,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 
 		if measure.DisplayName == "" {
-			measure.DisplayName = measure.Name
+			measure.DisplayName = ToDisplayName(measure.Name)
 		}
 
 		lower := strings.ToLower(measure.Name)
@@ -792,7 +792,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Model = tmp.Model
 	spec.DisplayName = tmp.DisplayName
 	if spec.DisplayName == "" {
-		spec.DisplayName = node.Name
+		spec.DisplayName = ToDisplayName(node.Name)
 	}
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension

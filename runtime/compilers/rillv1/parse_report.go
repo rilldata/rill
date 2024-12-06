@@ -185,7 +185,7 @@ func (p *Parser) parseReport(node *Node) error {
 
 	r.ReportSpec.DisplayName = tmp.DisplayName
 	if r.ReportSpec.DisplayName == "" {
-		r.ReportSpec.DisplayName = node.Name
+		r.ReportSpec.DisplayName = ToDisplayName(node.Name)
 	}
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule

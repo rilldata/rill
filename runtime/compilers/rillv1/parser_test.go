@@ -1574,6 +1574,7 @@ theme:
 			Paths: []string{"/explores/e1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "E1",
 				MetricsView:        "missing",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
@@ -1585,6 +1586,7 @@ theme:
 			Paths: []string{"/explores/e2.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "E2",
 				MetricsView:        "missing",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
@@ -1670,6 +1672,7 @@ items:
 			Paths: []string{"/components/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C1",
 				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
 				Renderer:           "vega_lite",
@@ -1681,6 +1684,7 @@ items:
 			Paths: []string{"/components/c2.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C2",
 				Resolver:           "api",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				Renderer:           "vega_lite",
@@ -1691,6 +1695,7 @@ items:
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
 			Paths: []string{"/components/c3.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "C3",
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
 				Renderer:           "line_chart",
@@ -1715,8 +1720,9 @@ items:
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				Columns: 4,
-				Gap:     3,
+				DisplayName: "D1",
+				Columns:     4,
+				Gap:         3,
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},

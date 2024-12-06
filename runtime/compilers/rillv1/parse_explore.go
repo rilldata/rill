@@ -267,7 +267,7 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	r.ExploreSpec.DisplayName = tmp.DisplayName
 	if r.ExploreSpec.DisplayName == "" {
-		r.ExploreSpec.DisplayName = node.Name
+		r.ExploreSpec.DisplayName = ToDisplayName(node.Name)
 	}
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView

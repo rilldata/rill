@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -103,9 +104,9 @@ measures:
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:   "duckdb",
 		Model:       "bar",
-		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "a", Column: "a"}},
-		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
-		DisplayName: "foobar",
+		Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
+		Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+		DisplayName: "Foobar",
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
@@ -122,9 +123,9 @@ measures:
 						Connector:   "duckdb",
 						Table:       "bar",
 						Model:       "bar",
-						DisplayName: "foobar",
-						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "a", Column: "a"}},
-						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
+						DisplayName: "Foobar",
+						Dimensions:  []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", DisplayName: "A", Column: "a"}},
+						Measures:    []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 					},
 				},
 			},
@@ -698,7 +699,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar3
 dimensions:
 - column: b
@@ -849,7 +850,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -870,7 +871,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -892,7 +893,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -914,7 +915,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -937,7 +938,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -958,7 +959,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -979,7 +980,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -1000,7 +1001,7 @@ measures:
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -1046,7 +1047,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -1138,7 +1139,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: b
@@ -1274,7 +1275,7 @@ path: data/foo.csv
 		"/metrics/dash.yaml": `
 version: 1
 type: metrics_view
-display_name: dash
+display_name: Dash
 model: bar
 dimensions:
 - column: country
@@ -1449,7 +1450,7 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:   "duckdb",
 			Model:       model,
-			DisplayName: name,
+			DisplayName: rillv1.ToDisplayName(name),
 			Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 			Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 		},
@@ -1458,7 +1459,7 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 				Connector:   "duckdb",
 				Table:       model,
 				Model:       model,
-				DisplayName: name,
+				DisplayName: rillv1.ToDisplayName(name),
 				Measures:    make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 				Dimensions:  make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
 			},
@@ -1469,13 +1470,13 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 		name := fmt.Sprintf("measure_%d", i)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:        name,
-			DisplayName: name,
+			DisplayName: rillv1.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:        name,
-			DisplayName: name,
+			DisplayName: rillv1.ToDisplayName(name),
 			Expression:  measure,
 			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
@@ -1483,12 +1484,12 @@ func newMetricsView(name, model string, measures, dimensions []string) (*runtime
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dimension,
-			DisplayName: dimension,
+			DisplayName: rillv1.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dimension,
-			DisplayName: dimension,
+			DisplayName: rillv1.ToDisplayName(dimension),
 			Column:      dimension,
 		}
 	}

@@ -63,7 +63,7 @@ func (p *Parser) parseComponent(node *Node) error {
 
 	r.ComponentSpec = spec
 	if r.ComponentSpec.DisplayName == "" {
-		r.ComponentSpec.DisplayName = node.Name
+		r.ComponentSpec.DisplayName = ToDisplayName(node.Name)
 	}
 
 	return nil
