@@ -37,15 +37,16 @@
   let isDevelopment = true;
   let isProduction = true;
   let fileInput: HTMLInputElement;
+  let showEnvironmentError = false;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
   $: hasNewChanges = $form.variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
+  $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -163,6 +164,7 @@
     isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
@@ -222,6 +224,10 @@
   function getKeyFromError(error: { path: string; messages: string[] }) {
     return error.path.split("[")[1].split("]")[0];
   }
+
+  function handleEnvironmentChange() {
+    showEnvironmentError = true;
+  }
 </script>
 
 <Dialog
@@ -268,18 +274,25 @@
           <div class="text-sm font-medium text-gray-800">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
-              inverse
               bind:checked={isDevelopment}
               id="development"
               label="Development"
+              onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
-              inverse
               bind:checked={isProduction}
               id="production"
               label="Production"
+              onCheckedChange={handleEnvironmentChange}
             />
           </div>
+          {#if hasNoEnvironment}
+            <div class="mt-1">
+              <p class="text-xs text-red-600 font-normal">
+                You must select at least one environment
+              </p>
+            </div>
+          {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
@@ -375,7 +388,7 @@
         disabled={$submitting ||
           hasExistingKeys ||
           !hasNewChanges ||
-          !isEnvironmentSelected}
+          hasNoEnvironment}
         submitForm>Create</Button
       >
     </DialogFooter>
