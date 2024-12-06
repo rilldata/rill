@@ -78,33 +78,29 @@
     superForm(defaults(initialValues, schema), {
       SPA: true,
       validators: schema,
-      resetForm: false,
-      // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
+      onResult: ({ result }) => {
+        if (result.type === "success") {
+          handleReset();
+          open = false;
+        }
+      },
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
 
         // Check for duplicates before proceeding
         const duplicates = checkForExistingKeys();
-        if (duplicates > 0) {
-          // Early return without resetting the form
-          return;
-        }
-
-        // Only filter and process if there are no duplicates
-        const filteredVariables = values.variables.filter(
-          ({ key }) => key !== "",
-        );
-
-        const flatVariables = Object.fromEntries(
-          filteredVariables.map(({ key, value }) => [key, value]),
-        );
+        if (duplicates > 0) return;
 
         try {
+          const filteredVariables = values.variables.filter(
+            ({ key }) => key !== "",
+          );
+          const flatVariables = Object.fromEntries(
+            filteredVariables.map(({ key, value }) => [key, value]),
+          );
           await handleUpdateProjectVariables(flatVariables);
-          open = false;
-          handleReset();
         } catch (error) {
           console.error(error);
         }
