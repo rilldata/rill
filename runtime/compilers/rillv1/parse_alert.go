@@ -276,6 +276,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.AlertSpec.DisplayName = tmp.DisplayName
+	if r.AlertSpec.DisplayName == "" {
+		r.AlertSpec.DisplayName = node.Name
+	}
 	if schedule != nil {
 		r.AlertSpec.RefreshSchedule = schedule
 	}
