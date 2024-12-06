@@ -28,6 +28,7 @@
     getEnvironmentType,
     isDuplicateKey,
   } from "./utils";
+  import { onMount } from "svelte";
 
   export let open = false;
   export let id: string;
@@ -40,8 +41,8 @@
     isDevelopment: boolean;
     isProduction: boolean;
   };
-  let isDevelopment: boolean;
-  let isProduction: boolean;
+  let isDevelopment = false;
+  let isProduction = false;
   let isKeyAlreadyExists = false;
   let inputErrors: { [key: number]: boolean } = {};
 
@@ -247,6 +248,10 @@
       isProduction,
     };
   }
+
+  onMount(() => {
+    handleDialogOpen();
+  });
 
   $: if (open) {
     handleDialogOpen();
