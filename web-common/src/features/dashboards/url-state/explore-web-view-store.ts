@@ -17,17 +17,19 @@ const ExploreViewKeys: Record<V1ExploreWebView, (keyof V1ExplorePreset)[]> = {
     "view",
     "measures",
     "dimensions",
+    "timeGrain",
+    "comparisonDimension",
     "exploreExpandedDimension",
     "exploreSortBy",
     "exploreSortAsc",
     "exploreSortType",
-    "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION]: [
     "view",
     "timeDimensionMeasure",
     "timeDimensionChartType",
     "timeDimensionPin",
+    "timeGrain",
     "comparisonDimension",
   ],
   [V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT]: [
@@ -126,8 +128,7 @@ export function updateExploreSessionStore(
     if (!sharedKeys?.length) continue;
 
     const otherViewKey = getKeyForSessionStore(exploreName, prefix, otherView);
-    const otherViewRawPreset = sessionStorage.getItem(otherViewKey);
-    if (!otherViewRawPreset) continue;
+    const otherViewRawPreset = sessionStorage.getItem(otherViewKey) ?? "{}";
 
     try {
       const otherViewPreset = JSON.parse(otherViewRawPreset) as V1ExplorePreset;
@@ -190,11 +191,14 @@ export function getExplorePresetForWebView(
 export function getUrlForWebView(
   pageUrl: URL,
   view: V1ExploreWebView,
+  defaultExplorePreset: V1ExplorePreset,
   extraParams: Record<string, string> = {},
 ) {
   const u = new URL(pageUrl);
   u.search = "";
-  u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
+  if (view !== defaultExplorePreset.view) {
+    u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
+  }
   for (const param in extraParams) {
     u.searchParams.set(param, extraParams[param]);
   }

@@ -7,7 +7,6 @@
   import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { shouldRedirectToViewWithParams } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -33,7 +32,6 @@
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
-    getLocalUserPreferencesState($exploreName),
     $metricsViewTimeRange.data,
   );
 

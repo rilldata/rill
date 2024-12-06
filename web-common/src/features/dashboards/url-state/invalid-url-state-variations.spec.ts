@@ -158,9 +158,6 @@ describe("Invalid Human readable URL State", () => {
       const initState = getCleanMetricsExploreForAssertion();
       const defaultExplorePreset = getDefaultExplorePreset(
         AD_BIDS_EXPLORE_INIT,
-        {
-          timeZone: "UTC",
-        },
         AD_BIDS_TIME_RANGE_SUMMARY,
       );
 

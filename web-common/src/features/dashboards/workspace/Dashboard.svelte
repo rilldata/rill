@@ -19,6 +19,7 @@
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
+  import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 
   export let exploreName: string;
   export let metricsViewName: string;
@@ -102,13 +103,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar
-              {hidePivot}
-              {exploreName}
-              view={$showPivot
-                ? V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT
-                : V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE}
-            />
+            <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
         </section>
       {/key}
