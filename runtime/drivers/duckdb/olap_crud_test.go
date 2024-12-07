@@ -225,7 +225,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	err = c.AlterTableColumn(context.Background(), "test alter column", "data", "VARCHAR")
 	require.NoError(t, err)
 
-	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column'"})
+	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_schema=current_schema()"})
 	require.NoError(t, err)
 	require.True(t, res.Next())
 	require.NoError(t, res.Scan(&typ))

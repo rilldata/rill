@@ -118,27 +118,29 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
-	var attachSQL string
+	var initSQL []string
 	safeDBName := safeName(sinkProps.Table + "_external_db_")
 	safeTempTable := safeName(sinkProps.Table + "__temp__")
 	switch t.database {
 	case "mysql":
-		attachSQL = fmt.Sprintf("ATTACH %s AS %s (TYPE mysql)", safeSQLString(srcProps.Database), safeDBName)
+		initSQL = append(initSQL, "INSTALL 'MYSQL'; LOAD 'MYSQL';", fmt.Sprintf("ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	case "postgres":
-		attachSQL = fmt.Sprintf("ATTACH %s AS %s (TYPE postgres)", safeSQLString(srcProps.Database), safeDBName)
+		initSQL = append(initSQL, "INSTALL 'POSTGRES'; LOAD 'POSTGRES';", fmt.Sprintf("ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	case "duckdb":
-		attachSQL = fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeDBName)
+		initSQL = append(initSQL, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	default:
 		return fmt.Errorf("internal error: unsupported external database: %s", t.database)
 	}
 	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
-		_, err := conn.ExecContext(ctx, attachSQL)
-		if err != nil {
-			return err
+		for _, sql := range initSQL {
+			_, err := conn.ExecContext(ctx, sql)
+			if err != nil {
+				return err
+			}
 		}
 
 		var localDB, localSchema string
-		err = conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema)
+		err := conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema)
 		if err != nil {
 			return err
 		}

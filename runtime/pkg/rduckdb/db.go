@@ -954,7 +954,7 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+dbName(name, version))
+	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 	if err != nil {
 		return err
 	}
