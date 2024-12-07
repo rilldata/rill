@@ -83,6 +83,7 @@
       onResult: ({ result }) => {
         if (result.type === "success") {
           open = false;
+          handleReset();
         }
       },
       async onUpdate({ form }) {
@@ -162,13 +163,8 @@
   }
 
   function handleReset() {
-    // Reset form data to initial state
-    $form = {
-      variables: [{ key: "", value: "" }],
-    };
-    // Reset superForm state
+    $form.variables = [{ key: "", value: "" }];
     reset();
-    // Reset other state
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
