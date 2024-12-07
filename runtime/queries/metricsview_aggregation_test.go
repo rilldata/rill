@@ -657,7 +657,6 @@ func TestMetricsViewsAggregation_pivot_export_nolabel(t *testing.T) {
 			{
 				Name: "nolabel_pub",
 			},
-
 			{
 				Name:      "timestamp",
 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
@@ -711,7 +710,6 @@ func TestMetricsViewsAggregation_pivot_export_nolabel_measure(t *testing.T) {
 			{
 				Name: "nolabel_pub",
 			},
-
 			{
 				Name:      "timestamp",
 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
@@ -741,9 +739,9 @@ func TestMetricsViewsAggregation_pivot_export_nolabel_measure(t *testing.T) {
 
 	require.Equal(t, 4, len(q.Result.Schema.Fields))
 	require.Equal(t, "nolabel_pub", q.Result.Schema.Fields[0].Name)
-	require.Equal(t, "2022-01-01 00:00:00_m1", q.Result.Schema.Fields[1].Name)
-	require.Equal(t, "2022-02-01 00:00:00_m1", q.Result.Schema.Fields[2].Name)
-	require.Equal(t, "2022-03-01 00:00:00_m1", q.Result.Schema.Fields[3].Name)
+	require.Equal(t, "2022-01-01 00:00:00_M1", q.Result.Schema.Fields[1].Name)
+	require.Equal(t, "2022-02-01 00:00:00_M1", q.Result.Schema.Fields[2].Name)
+	require.Equal(t, "2022-03-01 00:00:00_M1", q.Result.Schema.Fields[3].Name)
 
 	i := 0
 	require.Equal(t, "Facebook", fieldsToString(rows[i], "nolabel_pub"))

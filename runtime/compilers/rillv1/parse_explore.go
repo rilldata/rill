@@ -266,6 +266,9 @@ func (p *Parser) parseExplore(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ExploreSpec.DisplayName = tmp.DisplayName
+	if r.ExploreSpec.DisplayName == "" {
+		r.ExploreSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
 	r.ExploreSpec.Dimensions = dimensions
