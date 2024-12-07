@@ -14,6 +14,22 @@ As a general best practice, it is strongly recommended to use service accounts a
 
 :::
 
+## Configure Environmental Variables and Credentials on Rill Cloud 
+
+Once you are ready to deploy or have already deployed and are experiencing issues connecting to your source, you will need to run the following command, `rill env configure`. When running this command, Rill will detect any connectors that are being used by the project and prompt you to fill in the required fields. When completed, this will be pushed to your Rill Cloud Deployment and automatically refresh the required objects. 
+
+
+```bash
+$rill env configure
+Finish deploying your project by providing access to the connectors. Rill requires credentials for the following connectors:
+
+ - your connectors here (used by models and sources)
+
+Configuring connector "bigquery":
+...
+
+Updated project variables
+```
 ## Service Accounts
 
 Service accounts are non-human user accounts that provide an identity for processes or services running on a server to interact with external resources, such as databases, APIs, and cloud services. Unlike personal user accounts, service accounts are intended for use by software applications or automated tools and do not require interactive login. In the context of Rill, service accounts are credentials that should be used for projects deployed to Rill Cloud.
