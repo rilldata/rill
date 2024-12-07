@@ -2,28 +2,30 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.uber.org/zap"
 )
 
 type duckDBToDuckDB struct {
-	to     drivers.OLAPStore
-	logger *zap.Logger
+	to       *connection
+	logger   *zap.Logger
+	database string // mysql, postgres, duckdb
 }
 
-func NewDuckDBToDuckDB(to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func newDuckDBToDuckDB(c *connection, db string, logger *zap.Logger) drivers.Transporter {
 	return &duckDBToDuckDB{
-		to:     to,
-		logger: logger,
+		to:       c,
+		logger:   logger,
+		database: db,
 	}
 }
 
@@ -43,7 +45,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
-		if !strings.HasPrefix(srcCfg.Database, "md:") {
+		if t.database == "duckdb" {
 			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
 			if err != nil {
 				return err
@@ -116,63 +118,65 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
-	var cleanupFunc func()
-	err := t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
-		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
+	var initSQL []string
+	safeDBName := safeName(sinkProps.Table + "_external_db_")
+	safeTempTable := safeName(sinkProps.Table + "__temp__")
+	switch t.database {
+	case "mysql":
+		initSQL = append(initSQL, "INSTALL 'MYSQL'; LOAD 'MYSQL';", fmt.Sprintf("ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
+	case "postgres":
+		initSQL = append(initSQL, "INSTALL 'POSTGRES'; LOAD 'POSTGRES';", fmt.Sprintf("ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
+	case "duckdb":
+		initSQL = append(initSQL, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
+	default:
+		return fmt.Errorf("internal error: unsupported external database: %s", t.database)
+	}
+	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
+		for _, sql := range initSQL {
+			_, err := conn.ExecContext(ctx, sql)
+			if err != nil {
+				return err
+			}
+		}
+
+		var localDB, localSchema string
+		err := conn.QueryRowxContext(ctx, "SELECT current_database(),current_schema();").Scan(&localDB, &localSchema)
 		if err != nil {
 			return err
 		}
 
-		var localDB, localSchema string
-		for res.Next() {
-			if err := res.Scan(&localDB, &localSchema); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-
-		// duckdb considers everything before first . as db name
-		// alternative solution can be to query `show databases()` before and after to identify db name
-		dbName, _, _ := strings.Cut(filepath.Base(srcProps.Database), ".")
-		if dbName == "main" {
-			return fmt.Errorf("`main` is a reserved db name")
-		}
-
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(srcProps.Database), safeSQLName(dbName))}); err != nil {
-			return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
-		}
-
-		cleanupFunc = func() {
-			// we don't want to run any detach db without `tx` lock
-			// tx=true will reopen duckdb handle(except in case of in-memory duckdb handle) which will detach the attached external db as well
-			err := t.to.WithConnection(context.Background(), 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
-				return nil
-			})
-			if err != nil {
-				t.logger.Debug("failed to detach db", zap.Error(err))
-			}
-		}
-
-		if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s;", safeDBName))
+		if err != nil {
 			return err
 		}
 
-		defer func() { // revert back to localdb
-			if err = t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))}); err != nil {
-				t.logger.Error("failed to switch to local database", zap.Error(err))
-			}
-		}()
-
 		userQuery := strings.TrimSpace(srcProps.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(sinkProps.Table), userQuery)
-		return t.to.Exec(ctx, &drivers.Statement{Query: query})
-	})
-	if cleanupFunc != nil {
-		cleanupFunc()
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeTempTable, userQuery)
+		_, err = conn.ExecContext(ctx, query)
+		// first revert back to localdb
+		if err != nil {
+			return err
+		}
+		// revert to localdb and schema before returning
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema)))
+		return err
 	}
-	return err
+	afterCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeTempTable))
+		return err
+	}
+	db, release, err := t.to.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	return db.CreateTableAsSelect(ctx, sinkProps.Table, fmt.Sprintf("SELECT * FROM %s", safeTempTable), &rduckdb.CreateTableOptions{
+		BeforeCreateFn: beforeCreateFn,
+		AfterCreateFn:  afterCreateFn,
+	})
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

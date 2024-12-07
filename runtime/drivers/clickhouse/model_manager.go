@@ -202,17 +202,14 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return fmt.Errorf("connector is not an OLAP")
 	}
 
-	stagingTable, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableNameFor(res.Table))
-	if err == nil {
-		_ = c.DropTable(ctx, stagingTable.Name, stagingTable.View)
-	}
+	_ = c.DropTable(ctx, stagingTableNameFor(res.Table))
 
 	table, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
 	if err != nil {
 		return err
 	}
 
-	return c.DropTable(ctx, table.Name, table.View)
+	return c.DropTable(ctx, table.Name)
 }
 
 func (c *connection) MergePartitionResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
@@ -250,7 +247,7 @@ func olapForceRenameTable(ctx context.Context, c *connection, fromName string, f
 	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 	if strings.EqualFold(fromName, toName) {
 		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-		err := c.RenameTable(ctx, fromName, tmpName, fromIsView)
+		err := c.RenameTable(ctx, fromName, tmpName)
 		if err != nil {
 			return err
 		}
@@ -258,7 +255,7 @@ func olapForceRenameTable(ctx context.Context, c *connection, fromName string, f
 	}
 
 	// Do the rename
-	return c.RenameTable(ctx, fromName, toName, fromIsView)
+	return c.RenameTable(ctx, fromName, toName)
 }
 
 func boolPtr(b bool) *bool {

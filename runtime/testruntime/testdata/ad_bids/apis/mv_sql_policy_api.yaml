@@ -2,7 +2,7 @@ kind : api
 
 metrics_sql: | 
   select 
-    publisher,
+    publisher_dim,
     domain, 
     "total impressions", 
     "total volume" 

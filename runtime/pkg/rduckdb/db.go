@@ -954,7 +954,7 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+dbName(name, version))
+	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 	if err != nil {
 		return err
 	}
@@ -1031,7 +1031,7 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 
