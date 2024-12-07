@@ -18,8 +18,6 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
-  import { V1ExploreWebView } from "@rilldata/web-common/runtime-client";
-  import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 
   export let exploreName: string;
   export let metricsViewName: string;
