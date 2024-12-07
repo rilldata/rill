@@ -27,6 +27,7 @@
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import { Trash2Icon, UploadIcon } from "lucide-svelte";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
+  import { parse as parseDotenv } from "dotenv";
 
   export let open = false;
   export let variableNames: VariableNames = [];
@@ -36,15 +37,16 @@
   let isDevelopment = true;
   let isProduction = true;
   let fileInput: HTMLInputElement;
+  let showEnvironmentError = false;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: isEnvironmentSelected = isDevelopment || isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
   $: hasNewChanges = $form.variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
+  $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -78,6 +80,12 @@
       validators: schema,
       // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
+      onResult: ({ result }) => {
+        if (result.type === "success") {
+          open = false;
+          handleReset();
+        }
+      },
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -100,8 +108,6 @@
 
         try {
           await handleUpdateProjectVariables(flatVariables);
-          open = false;
-          handleReset();
         } catch (error) {
           console.error(error);
         }
@@ -157,11 +163,13 @@
   }
 
   function handleReset() {
+    $form.variables = [{ key: "", value: "" }];
     reset();
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
@@ -190,48 +198,43 @@
     return duplicateCount;
   }
 
-  function handleFileUpload(event) {
-    const file = event.target.files[0];
+  function handleFileUpload(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const contents = e.target.result;
-        parseFile(contents);
-        checkForExistingKeys();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const contents = e.target?.result;
+        if (typeof contents === "string") {
+          parseFile(contents);
+          checkForExistingKeys();
+        }
       };
       reader.readAsText(file);
     }
   }
 
-  function parseFile(contents) {
-    const lines = contents.split("\n");
+  function parseFile(contents: string) {
+    const parsedVariables = parseDotenv(contents);
 
-    lines.forEach((line) => {
-      // Trim the line and check if it starts with '#'
-      const trimmedLine = line.trim();
-      if (trimmedLine.startsWith("#")) {
-        return; // Skip comment lines
-      }
+    for (const [key, value] of Object.entries(parsedVariables)) {
+      const filteredVariables = $form.variables.filter(
+        (variable) =>
+          variable.key.trim() !== "" || variable.value.trim() !== "",
+      );
 
-      const [key, value] = trimmedLine.split("=");
-      if (key && value) {
-        if (key.trim() && value.trim()) {
-          const filteredVariables = $form.variables.filter(
-            (variable) =>
-              variable.key.trim() !== "" || variable.value.trim() !== "",
-          );
-
-          $form.variables = [
-            ...filteredVariables,
-            { key: key.trim(), value: value.trim() },
-          ];
-        }
-      }
-    });
+      $form.variables = [...filteredVariables, { key, value }];
+    }
   }
 
   function getKeyFromError(error: { path: string; messages: string[] }) {
     return error.path.split("[")[1].split("]")[0];
+  }
+
+  function handleEnvironmentChange() {
+    checkForExistingKeys();
+    inputErrors = {};
+    isKeyAlreadyExists = false;
+    showEnvironmentError = true;
   }
 </script>
 
@@ -279,18 +282,25 @@
           <div class="text-sm font-medium text-gray-800">Environment</div>
           <div class="flex flex-row gap-4 mt-1">
             <Checkbox
-              inverse
               bind:checked={isDevelopment}
               id="development"
               label="Development"
+              onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
-              inverse
               bind:checked={isProduction}
               id="production"
               label="Production"
+              onCheckedChange={handleEnvironmentChange}
             />
           </div>
+          {#if hasNoEnvironment}
+            <div class="mt-1">
+              <p class="text-xs text-red-600 font-normal">
+                You must select at least one environment
+              </p>
+            </div>
+          {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variables</div>
@@ -386,7 +396,7 @@
         disabled={$submitting ||
           hasExistingKeys ||
           !hasNewChanges ||
-          !isEnvironmentSelected}
+          hasNoEnvironment}
         submitForm>Create</Button
       >
     </DialogFooter>
