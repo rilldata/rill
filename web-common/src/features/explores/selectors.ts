@@ -237,7 +237,13 @@ export function shouldRedirectToViewWithParams(
     defaultExplorePreset,
   );
   // copy over any partial params. this will include the view and measure param
-  url.searchParams.forEach((value, key) => newUrl.searchParams.set(key, value));
+  url.searchParams.forEach((value, key) => {
+    // Ignore default view
+    if (key === "view" && value === "explore") return;
+
+    newUrl.searchParams.set(key, value);
+  });
+
   if (newUrl.toString() === url.toString()) {
     // url hasn't changed, avoid redirect loop
     return;
