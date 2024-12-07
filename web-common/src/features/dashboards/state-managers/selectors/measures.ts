@@ -67,13 +67,15 @@ export const isMeasureValidPercentOfTotal = ({
 
 export const filteredSimpleMeasures = ({
   validMetricsView,
+  validExplore,
 }: DashboardDataSources) => {
   return () => {
     return (
       validMetricsView?.measures?.filter(
         (m) =>
           !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+          validExplore?.measures?.includes(m.name ?? ""),
       ) ?? []
     );
   };
