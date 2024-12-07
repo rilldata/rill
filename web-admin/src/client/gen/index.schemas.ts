@@ -39,6 +39,7 @@ export type AdminServiceGetReportMetaBody = {
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];
+  anonRecipients?: boolean;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -182,6 +183,11 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceUnsubscribeReportBody = {
+  email?: string;
+  slackUser?: string;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -1023,7 +1029,6 @@ export type V1GetReportMetaResponseRecipientUrls = {
 };
 
 export interface V1GetReportMetaResponse {
-  baseUrls?: GetReportMetaResponseURLs;
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
@@ -1551,5 +1556,5 @@ export interface ListGithubUserReposResponseRepo {
 export interface GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
-  editUrl?: string;
+  unsubscribeUrl?: string;
 }

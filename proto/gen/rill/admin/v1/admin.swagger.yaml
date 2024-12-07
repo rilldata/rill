@@ -1467,6 +1467,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/request-access:
@@ -2990,6 +2995,8 @@ paths:
                 type: array
                 items:
                   type: string
+              anonRecipients:
+                type: boolean
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3580,7 +3587,7 @@ definitions:
         type: string
       exportUrl:
         type: string
-      editUrl:
+      unsubscribeUrl:
         type: string
   ListGithubUserReposResponseRepo:
     type: object
@@ -4259,8 +4266,6 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      baseUrls:
-        $ref: '#/definitions/GetReportMetaResponseURLs'
       recipientUrls:
         type: object
         additionalProperties:
