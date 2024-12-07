@@ -15,7 +15,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
   import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
@@ -85,6 +84,7 @@
     slot="header"
     titleInput={fileName}
     {filePath}
+    codeToggle
     resourceKind={ResourceKind.Explore}
   >
     <div class="flex gap-x-2" slot="cta">
@@ -93,8 +93,6 @@
         disabled={allErrors.length > 0 || resourceIsReconciling}
         reconciling={resourceIsReconciling}
       />
-
-      <ViewSelector allowSplit={false} bind:selectedView={$selectedViewStore} />
     </div>
   </WorkspaceHeader>
 
@@ -111,7 +109,7 @@
         {lineBasedRuntimeErrors}
         forceLocalUpdates
       />
-    {:else if selectedView === "viz"}
+    {:else if selectedView === "no-code"}
       {#if mainError}
         <ErrorPage
           body={mainError.message}
@@ -128,13 +126,13 @@
   </MetricsEditorContainer>
 
   <VisualExploreEditing
-    autoSave={selectedView === "viz" || $autoSave}
+    autoSave={selectedView === "no-code" || $autoSave}
     slot="inspector"
     exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}
-    viewingDashboard={selectedView === "viz"}
+    viewingDashboard={selectedView === "no-code"}
     switchView={() => selectedViewStore.set("code")}
   />
 </WorkspaceContainer>

@@ -17,6 +17,7 @@
   import File from "@rilldata/web-common/components/icons/File.svelte";
   import WorkspaceBreadcrumbs from "@rilldata/web-common/features/workspaces/WorkspaceBreadcrumbs.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import CodeToggle from "@rilldata/web-common/features/visual-editing/CodeToggle.svelte";
 
   export let resourceKind: ResourceKind | undefined;
   export let titleInput: string;
@@ -25,6 +26,7 @@
   export let showTableToggle = false;
   export let hasUnsavedChanges: boolean;
   export let filePath: string;
+  export let codeToggle = false;
   export let resource: V1Resource | undefined = undefined;
   export let onTitleChange: (title: string) => void = () => {};
 
@@ -35,6 +37,8 @@
   $: workspaceLayout = workspaces.get(filePath);
   $: inspectorVisible = workspaceLayout.inspector.visible;
   $: tableVisible = workspaceLayout.table.visible;
+
+  $: view = workspaceLayout.view;
 </script>
 
 <header bind:clientWidth={width}>
@@ -47,17 +51,23 @@
 
   <div class="second-level-wrapper">
     <div class="flex gap-x-1 items-center w-full" class:truncate={!editing}>
-      <span class="flex-none">
-        <svelte:component
-          this={resourceKind
-            ? resourceIconMapping[resourceKind]
-            : filePath === "/.env" || filePath === "/rill.yaml"
-              ? Settings
-              : File}
-          size="19px"
-          color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
-        />
-      </span>
+      {#if codeToggle && resourceKind}
+        <CodeToggle bind:selectedView={$view} {resourceKind} />
+      {:else}
+        <span class="flex-none">
+          <svelte:component
+            this={resourceKind
+              ? resourceIconMapping[resourceKind]
+              : filePath === "/.env" || filePath === "/rill.yaml"
+                ? Settings
+                : File}
+            size="19px"
+            color={resourceKind
+              ? resourceColorMapping[resourceKind]
+              : "#9CA3AF"}
+          />
+        </span>
+      {/if}
 
       <InputWithConfirm
         bind:editing

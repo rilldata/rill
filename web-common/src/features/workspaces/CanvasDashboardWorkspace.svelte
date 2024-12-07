@@ -37,7 +37,7 @@
 
   let canvasDashboardName: string;
   let selectedComponentFileArtifact: FileArtifact | undefined;
-  let selectedView: "split" | "code" | "viz";
+  let selectedView: "split" | "code" | "no-code";
   let showGrid = true;
   let showComponentEditor = false;
   let containerWidth: number;
@@ -296,7 +296,7 @@
       />
     {/if}
 
-    {#if selectedView === "viz" || selectedView === "split"}
+    {#if selectedView === "no-code" || selectedView === "split"}
       <section
         class="size-full flex flex-col relative overflow-hidden border border-gray-300 rounded-[2px]"
       >
