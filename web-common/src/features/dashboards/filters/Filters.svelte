@@ -2,20 +2,22 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { useModelHasTimeSeries } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
-  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import FilterButton from "./FilterButton.svelte";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
 
   export let readOnly = false;
 
@@ -46,6 +48,7 @@
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
       pivot: { showPivot },
     },
+    dashboardStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -87,6 +90,8 @@
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, $metricsViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
+  $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
+
   function handleMeasureFilterApply(
     dimension: string,
     measureName: string,
@@ -124,7 +129,9 @@
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
     <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
-      {#if !allDimensionFilters.length && !allMeasureFilters.length}
+      {#if isComplexFilter}
+        <AdvancedFilter advancedFilter={$dashboardStore.whereFilter} />
+      {:else if !allDimensionFilters.length && !allMeasureFilters.length}
         <div
           in:fly={{ duration: 200, x: 8 }}
           class="ui-copy-disabled grid ml-1 items-center"

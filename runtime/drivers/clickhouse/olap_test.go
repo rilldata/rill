@@ -3,6 +3,7 @@ package clickhouse_test
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -37,6 +38,8 @@ func testClickhouseSingleHost(t *testing.T, dsn string) {
 	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
+	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 
 }
@@ -56,6 +59,8 @@ func testClickhouseCluster(t *testing.T, dsn, cluster string) {
 	})
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
+	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
+	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 }
 
@@ -117,6 +122,133 @@ func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
 		"distributed.sharding_key": "rand()",
 	})
 	require.NoError(t, err)
+}
+
+func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "append_tbl", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyAppend,
+	})
+	require.NoError(t, err)
+
+	err = olap.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", false, true, drivers.IncrementalStrategyAppend, nil)
+	require.NoError(t, err)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	var result []struct {
+		ID     int
+		Planet string
+	}
+
+	for res.Next() {
+		var r struct {
+			ID     int
+			Planet string
+		}
+		require.NoError(t, res.Scan(&r.ID, &r.Planet))
+		result = append(result, r)
+	}
+
+	expected := []struct {
+		ID     int
+		Planet string
+	}{
+		{1, "Earth"},
+		{2, "Mars"},
+	}
+
+	// Convert the result set to a map to represent the set
+	resultSet := make(map[int]string)
+	for _, r := range result {
+		resultSet[r.ID] = r.Planet
+	}
+
+	// Check if the expected values are present in the result set
+	for _, e := range expected {
+		value, exists := resultSet[e.ID]
+		require.True(t, exists, "Expected ID %d to be present in the result set", e.ID)
+		require.Equal(t, e.Planet, value, "Expected planet for ID %d to be %s, but got %s", e.ID, e.Planet, value)
+	}
+}
+
+func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
+		"typs":                     "TABLE",
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyMerge,
+		"order_by":                 "value",
+		"primary_key":              "value",
+	})
+	require.NoError(t, err)
+
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, []string{"id"})
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "not supported")
+	}
+}
+
+func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
+		"typs":                     "TABLE",
+		"engine":                   "MergeTree",
+		"table":                    "tbl",
+		"distributed.sharding_key": "rand()",
+		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+		"partition_by":             "id",
+		"order_by":                 "value",
+		"primary_key":              "value",
+	})
+	require.NoError(t, err)
+
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, nil)
+	require.NoError(t, err)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	var result []struct {
+		ID    int
+		Value string
+	}
+
+	for res.Next() {
+		var r struct {
+			ID    int
+			Value string
+		}
+		require.NoError(t, res.Scan(&r.ID, &r.Value))
+		result = append(result, r)
+	}
+
+	expected := []struct {
+		ID    int
+		Value string
+	}{
+		{0, "insert"},
+		{1, "insert"},
+		{2, "replace"},
+		{3, "replace"},
+		{4, "replace"},
+	}
+
+	// Convert the result set to a map to represent the set
+	resultSet := make(map[int]string)
+	for _, r := range result {
+		resultSet[r.ID] = r.Value
+	}
+
+	// Check if the expected values are present in the result set
+	for _, e := range expected {
+		value, exists := resultSet[e.ID]
+		require.True(t, exists, "Expected ID %d to be present in the result set", e.ID)
+		require.Equal(t, e.Value, value, "Expected value for ID %d to be %s, but got %s", e.ID, e.Value, value)
+	}
 }
 
 func testDictionary(t *testing.T, olap drivers.OLAPStore) {

@@ -124,7 +124,7 @@ func Test_connection_DropTable(t *testing.T) {
 	require.NoError(t, res.Close())
 }
 
-func Test_connection_InsertTableAsSelect(t *testing.T) {
+func Test_connection_InsertTableAsSelect_WithAppendStrategy(t *testing.T) {
 	temp := t.TempDir()
 
 	handle, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
@@ -149,6 +149,51 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 	require.NoError(t, res.Scan(&count))
 	require.Equal(t, 2, count)
 	require.NoError(t, res.Close())
+}
+
+func Test_connection_InsertTableAsSelect_WithMergeStrategy(t *testing.T) {
+	temp := t.TempDir()
+
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open("default", map[string]any{"path": dbPath, "external_table_storage": true}, storage.MustNew(temp, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	err = c.CreateTableAsSelect(context.Background(), "test-merge", false, "SELECT range, 'insert' AS strategy FROM range(0, 4)", nil)
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test-merge", "SELECT range, 'merge' AS strategy FROM range(2, 4)", false, true, drivers.IncrementalStrategyMerge, []string{"range"})
+	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT range, strategy FROM 'test-merge' ORDER BY range"})
+	require.NoError(t, err)
+
+	var results []struct {
+		Range    int
+		Strategy string
+	}
+	for res.Next() {
+		var r struct {
+			Range    int
+			Strategy string
+		}
+		require.NoError(t, res.Scan(&r.Range, &r.Strategy))
+		results = append(results, r)
+	}
+	require.NoError(t, res.Close())
+
+	exptected := []struct {
+		Range    int
+		Strategy string
+	}{
+		{0, "insert"},
+		{1, "insert"},
+		{2, "merge"},
+		{3, "merge"},
+	}
+	require.Equal(t, exptected, results)
 }
 
 func Test_connection_RenameTable(t *testing.T) {

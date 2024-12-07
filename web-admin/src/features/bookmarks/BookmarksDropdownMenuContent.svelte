@@ -1,6 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { getProjectPermissions } from "@rilldata/web-admin/features/projects/selectors";
+  import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListBookmarks,
+  } from "@rilldata/web-admin/client";
+  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
+  import {
+    categorizeBookmarks,
+    searchBookmarks,
+  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import {
+    getProjectPermissions,
+    useProjectId,
+  } from "@rilldata/web-admin/features/projects/selectors";
   import {
     DropdownMenuContent,
     DropdownMenuGroup,
@@ -8,38 +20,63 @@
     DropdownMenuLabel,
     DropdownMenuSeparator,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
-  import {
-    getBookmarks,
-    searchBookmarks,
-  } from "@rilldata/web-admin/features/bookmarks/selectors";
+  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
-  import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
 
   export let metricsViewName: string;
   export let exploreName: string;
 
   const dispatch = createEventDispatcher();
-  const queryClient = useQueryClient();
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  let searchText: string;
-  let bookmarks: ReturnType<typeof getBookmarks>;
-  $: bookmarks = getBookmarks(
-    queryClient,
-    $runtime?.instanceId,
-    organization,
-    project,
+  $: exploreState = useExploreState(exploreName);
+  $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
+  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewTimeRange = useMetricsViewTimeRange(
+    $runtime.instanceId,
     metricsViewName,
-    exploreName,
   );
-  $: filteredBookmarks = searchBookmarks($bookmarks.data, searchText);
+  $: defaultExplorePreset = getDefaultExplorePreset(
+    exploreSpec,
+    $metricsViewTimeRange.data,
+  );
+
+  $: projectIdResp = useProjectId(organization, project);
+  const userResp = createAdminServiceGetCurrentUser();
+  $: bookamrksResp = createAdminServiceListBookmarks(
+    {
+      projectId: $projectIdResp.data,
+      resourceKind: ResourceKind.Explore,
+      resourceName: exploreName,
+    },
+    {
+      query: {
+        enabled: !!$projectIdResp.data && !!$userResp.data.user,
+      },
+    },
+  );
+
+  let searchText: string;
+  $: categorizedBookmarks = categorizeBookmarks(
+    $bookamrksResp.data?.bookmarks ?? [],
+    metricsViewSpec,
+    exploreSpec,
+    {},
+    $exploreState,
+    defaultExplorePreset,
+  );
+  $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 
   $: projectPermissions = getProjectPermissions(organization, project);
   $: manageProject = $projectPermissions.data?.manageProject;
@@ -108,7 +145,6 @@
             <BookmarkItem
               bookmark={filteredBookmarks.home}
               on:edit
-              on:select
               on:delete
               readOnly={!manageProject}
             />
@@ -119,7 +155,6 @@
             <BookmarkItem
               {bookmark}
               on:edit
-              on:select
               on:delete
               readOnly={!manageProject}
             />

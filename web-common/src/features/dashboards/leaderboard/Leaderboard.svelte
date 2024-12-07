@@ -15,29 +15,30 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    getSort,
+    type LeaderboardItemData,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+  import { SortType } from "../proto-state/derived-types";
+  import {
+    createAndExpression,
+    createOrExpression,
+    isExpressionUnsupported,
+    sanitiseExpression,
+  } from "../stores/filter-utils";
+  import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import { SortType } from "../proto-state/derived-types";
   import {
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import {
-    createAndExpression,
-    createOrExpression,
-    sanitiseExpression,
-  } from "../stores/filter-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
-  import {
-    cleanUpComparisonValue,
-    compareLeaderboardValues,
-    getSort,
-    prepareLeaderboardItemData,
-    type LeaderboardItemData,
-  } from "./leaderboard-utils";
   import {
     LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
     type ColumnWidths,
@@ -113,13 +114,16 @@
     uri,
   } = dimension);
 
-  $: where = sanitiseExpression(
-    mergeDimensionAndMeasureFilter(
-      getFiltersForOtherDimensions(whereFilter, dimensionName),
-      dimensionThresholdFilters,
-    ),
-    undefined,
-  );
+  $: isComplexFilter = isExpressionUnsupported(whereFilter);
+  $: where = isComplexFilter
+    ? whereFilter
+    : sanitiseExpression(
+        mergeDimensionAndMeasureFilter(
+          getFiltersForOtherDimensions(whereFilter, dimensionName),
+          dimensionThresholdFilters,
+        ),
+        undefined,
+      );
 
   $: measures = getIndependentMeasures(
     metricsView,

@@ -6,7 +6,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -44,13 +44,13 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
 
-  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: selectedDimensionName = $exploreState?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreStore?.pivot?.active;
+  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
+  $: showPivot = $exploreState?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,

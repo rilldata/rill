@@ -77,7 +77,7 @@
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
-      .fireNavigationEvent(
+      ?.fireNavigationEvent(
         filePath,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
