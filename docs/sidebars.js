@@ -32,7 +32,7 @@ const sidebars = {
         {
           type: 'category',
           label: 'Rill Developer to Rill Cloud in 6 steps!',
-          description: 'Rill Developer to  to Rill Cloud',
+          description: 'Rill Developer to  Rill Cloud',
 
           items: [
             'tutorials/rill_basics/launch',

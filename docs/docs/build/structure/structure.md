@@ -26,6 +26,12 @@ However, if you'd like to create a resource outside one of these native folders,
 
 :::
 
+## Navigating Upstream / Downstream Objects
+
+<img src = '/img/build/structure/breadcrumb.png' class='rounded-gif' />
+<br />
+When selecting between a source, model, metrics view and dashboard, you can view the upstream/downstream objects to the current view. For example, if you are selecting a metrics view, you can see all of the dashboards (in a dropdown) that are built on the metrics view. Likewise, if your model references several sources, this will be available to select. 
+
 ## Moving resources within your project
 
 From the UI, within the file explorer, you should be able to drag resources / objects around and move them from / to folders as necessary. 
