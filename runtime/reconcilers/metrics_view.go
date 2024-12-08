@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 func init() {
@@ -85,7 +86,12 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	validateResult, validateErr := r.C.Runtime.ValidateMetricsView(ctx, r.C.InstanceID, mv.Spec)
+	e, err := metricsview.NewExecutor(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, runtime.ResolvedSecurityOpen, 0)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
+	}
+	defer e.Close()
+	validateResult, validateErr := e.ValidateMetricsView(ctx)
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
