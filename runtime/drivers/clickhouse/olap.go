@@ -878,6 +878,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATETIME64":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "INTERVALNANOSECOND", "INTERVALMICROSECOND", "INTERVALMILLISECOND", "INTERVALSECOND", "INTERVALMINUTE", "INTERVALHOUR", "INTERVALDAY", "INTERVALWEEK", "INTERVALMONTH", "INTERVALQUARTER", "INTERVALYEAR":
+		t.Code = runtimev1.Type_CODE_INTERVAL
 	case "JSON":
 		t.Code = runtimev1.Type_CODE_JSON
 	case "UUID":

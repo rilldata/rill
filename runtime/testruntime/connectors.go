@@ -13,8 +13,21 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 )
 
+// AcquireConnector acquires a test connector by name.
+// For a list of available connectors, see the Connectors map below.
+func AcquireConnector(t TestingT, name string) map[string]any {
+	acquire, ok := Connectors[name]
+	require.True(t, ok, "connector not found")
+	vars := acquire(t)
+	cfg := make(map[string]any, len(vars))
+	for k, v := range vars {
+		cfg[k] = v
+	}
+	return cfg
+}
+
 // ConnectorAcquireFunc is a function that acquires a connector for a test.
-// It should return a map of variables to add to the test runtime instance.
+// It should return a map of config keys suitable for passing to drivers.Open.
 type ConnectorAcquireFunc func(t TestingT) (vars map[string]string)
 
 // Connectors is a map of available connectors for use in tests.
@@ -61,7 +74,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NoError(t, err)
 
 		dsn := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
-		return map[string]string{"connector.clickhouse.dsn": dsn}
+		return map[string]string{"dsn": dsn}
 	},
 
 	// druid connects to a real Druid cluster using the connection string in RILL_RUNTIME_DRUID_TEST_DSN.
@@ -77,6 +90,6 @@ var Connectors = map[string]ConnectorAcquireFunc{
 
 		dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 		require.NotEmpty(t, dsn, "Druid test DSN not configured")
-		return map[string]string{"connector.druid.dsn": dsn}
+		return map[string]string{"dsn": dsn}
 	},
 }

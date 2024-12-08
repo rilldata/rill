@@ -14,6 +14,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 )
 
 // ToValue converts a value scanned from a database/sql driver to a Go type that can be marshaled to JSON.
@@ -58,12 +59,22 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		}
 		return v, nil
 	case string:
-		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
-			// Evil cast to float until frontend can deal with bigs:
-			v2, ok := new(big.Float).SetString(v)
-			if ok {
-				f, _ := v2.Float64()
-				return f, nil
+		if t != nil {
+			switch t.Code {
+			case runtimev1.Type_CODE_DECIMAL:
+				// Evil cast to float until frontend can deal with bigs:
+				v2, ok := new(big.Float).SetString(v)
+				if ok {
+					f, _ := v2.Float64()
+					return f, nil
+				}
+			case runtimev1.Type_CODE_INTERVAL:
+				// ClickHouse currently returns INTERVALs as strings.
+				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
+				v2, ok := clickhouse.ParseIntervalToMillis(v)
+				if ok {
+					return v2, nil
+				}
 			}
 		}
 		return strings.ToValidUTF8(v, "�"), nil
@@ -110,7 +121,11 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 	case duckdb.Map:
 		return ToValue(map[any]any(v), t)
 	case duckdb.Interval:
-		return map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}, nil
+		// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
+		ms := v.Micros / 1000
+		ms += int64(v.Days) * 24 * 60 * 60 * 1000
+		ms += int64(v.Months) * 30 * 24 * 60 * 60 * 1000
+		return ms, nil
 	case net.IP:
 		return v.String(), nil
 	case orb.Point:

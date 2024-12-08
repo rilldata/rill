@@ -22,6 +22,7 @@ message Type {
     CODE_FLOAT32 = 12;
     CODE_FLOAT64 = 13;
     CODE_TIMESTAMP = 14;
+    CODE_INTERVAL = 27;
     CODE_DATE = 15;
     CODE_TIME = 16;
     CODE_STRING = 17;

@@ -13,6 +13,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/paulmach/orb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -103,12 +104,11 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		}
 		return structpb.NewStructValue(v2), nil
 	case duckdb.Interval:
-		m := map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}
-		v2, err := ToStruct(m, nil)
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewStructValue(v2), nil
+		// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
+		ms := v.Micros / 1000
+		ms += int64(v.Days) * 24 * 60 * 60 * 1000
+		ms += int64(v.Months) * 30 * 24 * 60 * 60 * 1000
+		return structpb.NewNumberValue(float64(ms)), nil
 	case []byte:
 		if t != nil && t.Code == runtimev1.Type_CODE_UUID {
 			uid, err := uuid.FromBytes(v)
@@ -117,12 +117,22 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			}
 		}
 	case string:
-		if t != nil && t.Code == runtimev1.Type_CODE_DECIMAL {
-			// Evil cast to float until frontend can deal with bigs:
-			v2, ok := new(big.Float).SetString(v)
-			if ok {
-				f, _ := v2.Float64()
-				return structpb.NewNumberValue(f), nil
+		if t != nil {
+			switch t.Code {
+			case runtimev1.Type_CODE_DECIMAL:
+				// Evil cast to float until frontend can deal with bigs:
+				v2, ok := new(big.Float).SetString(v)
+				if ok {
+					f, _ := v2.Float64()
+					return structpb.NewNumberValue(f), nil
+				}
+			case runtimev1.Type_CODE_INTERVAL:
+				// ClickHouse currently returns INTERVALs as strings.
+				// Our current policy is to convert INTERVALs to milliseconds, treating one month as 30 days.
+				v2, ok := clickhouse.ParseIntervalToMillis(v)
+				if ok {
+					return structpb.NewNumberValue(float64(v2)), nil
+				}
 			}
 		}
 		return structpb.NewStringValue(strings.ToValidUTF8(v, "�")), nil
