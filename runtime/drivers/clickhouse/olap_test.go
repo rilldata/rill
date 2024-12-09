@@ -3,7 +3,6 @@ package clickhouse_test
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -12,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -61,10 +61,10 @@ func TestClickhouseCluster(t *testing.T) {
 
 func testRenameView(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	err := olap.CreateTableAsSelect(ctx, "foo_view", true, "SELECT 1 AS id", map[string]any{"type": "VIEW"})
+	err := olap.CreateTableAsSelect(ctx, "foo_view", true, "SELECT 1 AS id", "", "", map[string]any{"type": "VIEW"})
 	require.NoError(t, err)
 
-	err = olap.CreateTableAsSelect(ctx, "bar_view", true, "SELECT 'city' AS name", map[string]any{"type": "VIEW"})
+	err = olap.CreateTableAsSelect(ctx, "bar_view", true, "SELECT 'city' AS name", "", "", map[string]any{"type": "VIEW"})
 	require.NoError(t, err)
 
 	// rename to unknown view
@@ -111,7 +111,7 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 }
 
 func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "tbl", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{
+	err := olap.CreateTableAsSelect(context.Background(), "tbl", false, "SELECT 1 AS id, 'Earth' AS planet", "", "", map[string]any{
 		"engine":                   "MergeTree",
 		"table":                    "tbl",
 		"distributed.sharding_key": "rand()",
@@ -120,7 +120,7 @@ func testCreateTableAsSelect(t *testing.T, olap drivers.OLAPStore) {
 }
 
 func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "append_tbl", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{
+	err := olap.CreateTableAsSelect(context.Background(), "append_tbl", false, "SELECT 1 AS id, 'Earth' AS planet", "", "", map[string]any{
 		"engine":                   "MergeTree",
 		"table":                    "tbl",
 		"distributed.sharding_key": "rand()",
@@ -128,7 +128,7 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 	})
 	require.NoError(t, err)
 
-	err = olap.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", false, true, drivers.IncrementalStrategyAppend, nil)
+	err = olap.InsertTableAsSelect(context.Background(), "append_tbl", "SELECT 2 AS id, 'Mars' AS planet", "", "", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, planet FROM append_tbl ORDER BY id"})
@@ -171,7 +171,7 @@ func testInsertTableAsSelect_WithAppend(t *testing.T, olap drivers.OLAPStore) {
 }
 
 func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", "", "", map[string]any{
 		"typs":                     "TABLE",
 		"engine":                   "MergeTree",
 		"table":                    "tbl",
@@ -182,14 +182,14 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 	})
 	require.NoError(t, err)
 
-	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, []string{"id"})
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", "", "", false, true, drivers.IncrementalStrategyMerge, []string{"id"})
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "not supported")
 	}
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", "", "", map[string]any{
 		"typs":                     "TABLE",
 		"engine":                   "MergeTree",
 		"table":                    "tbl",
@@ -201,7 +201,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 	})
 	require.NoError(t, err)
 
-	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyMerge, nil)
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", "", "", false, true, drivers.IncrementalStrategyMerge, nil)
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM replace_tbl ORDER BY id"})
@@ -247,7 +247,7 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 }
 
 func testDictionary(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "dict", false, "SELECT 1 AS id, 'Earth' AS planet", map[string]any{"table": "Dictionary", "primary_key": "id"})
+	err := olap.CreateTableAsSelect(context.Background(), "dict", false, "SELECT 1 AS id, 'Earth' AS planet", "", "", map[string]any{"table": "Dictionary", "primary_key": "id"})
 	require.NoError(t, err)
 
 	err = olap.RenameTable(context.Background(), "dict", "dict1")

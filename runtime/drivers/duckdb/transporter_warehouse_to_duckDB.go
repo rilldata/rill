@@ -75,10 +75,10 @@ func (w *warehouseToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		}
 
 		if create {
-			err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
+			err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), "", "", nil)
 			create = false
 		} else {
-			err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), false, true, drivers.IncrementalStrategyAppend, nil)
+			err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), "", "", false, true, drivers.IncrementalStrategyAppend, nil)
 		}
 		if err != nil {
 			return err
