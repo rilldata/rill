@@ -99,11 +99,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		return newYAMLError(err)
 	}
 
-	dec := yaml.NewDecoder(strings.NewReader(data))
-	dec.KnownFields(true)
-	err = dec.Decode(tmp)
-	if err != nil {
-		return newYAMLError(err)
+	if data != "" {
+		dec := yaml.NewDecoder(strings.NewReader(data))
+		dec.KnownFields(true)
+		err = dec.Decode(tmp)
+		if err != nil {
+			return newYAMLError(err)
+		}
 	}
 
 	// Look for environment-specific overrides
