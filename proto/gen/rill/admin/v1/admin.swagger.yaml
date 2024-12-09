@@ -2997,6 +2997,12 @@ paths:
                   type: string
               anonRecipients:
                 type: boolean
+              metricsView:
+                type: string
+              explore:
+                type: string
+              canvas:
+                type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -4880,6 +4886,13 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+      metricsViewName:
+        type: string
+        title: either metrics_view_name and explore_name or canvas_name will be set
+      exploreName:
+        type: string
+      canvasName:
+        type: string
   v1RequestProjectAccessResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:

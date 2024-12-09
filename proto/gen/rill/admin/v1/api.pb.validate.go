@@ -25819,6 +25819,12 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for AnonRecipients
 
+	// no validation rules for MetricsView
+
+	// no validation rules for Explore
+
+	// no validation rules for Canvas
+
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
 	}
@@ -35085,6 +35091,18 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for WebOpenPath
 
 	// no validation rules for WebOpenState
+
+	if m.MetricsViewName != nil {
+		// no validation rules for MetricsViewName
+	}
+
+	if m.ExploreName != nil {
+		// no validation rules for ExploreName
+	}
+
+	if m.CanvasName != nil {
+		// no validation rules for CanvasName
+	}
 
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)

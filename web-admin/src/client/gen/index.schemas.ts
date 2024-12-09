@@ -40,6 +40,9 @@ export type AdminServiceGetReportMetaBody = {
   executionTime?: string;
   emailRecipients?: string[];
   anonRecipients?: boolean;
+  metricsView?: string;
+  explore?: string;
+  canvas?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -659,6 +662,9 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+  metricsViewName?: string;
+  exploreName?: string;
+  canvasName?: string;
 }
 
 export interface V1RenewBillingSubscriptionResponse {

@@ -7,6 +7,7 @@ import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
+import "rill/runtime/v1/queries.proto";
 
 service AdminService {
   // Ping returns information about the server
@@ -1919,6 +1920,9 @@ message GetReportMetaRequest {
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
+  string metrics_view = 9;
+  string explore = 10;
+  string canvas = 11;
   reserved 4;
 }
 
@@ -2389,6 +2393,9 @@ message ReportOptions {
   repeated string slack_webhooks = 12;
   string web_open_path = 15; // Annotation for the subpath of <UI host>/org/project to open for the report.
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
+  optional string metrics_view_name = 16; // either metrics_view_name and explore_name or canvas_name will be set
+  optional string explore_name = 17;
+  optional string canvas_name = 18;
 }
 
 message AlertOptions {

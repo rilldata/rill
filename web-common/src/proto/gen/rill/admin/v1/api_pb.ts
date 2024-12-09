@@ -9260,6 +9260,21 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   anonRecipients = false;
 
+  /**
+   * @generated from field: string metrics_view = 9;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: string explore = 10;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: string canvas = 11;
+   */
+  canvas = "";
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9275,6 +9290,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -13008,6 +13026,23 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   webOpenState = "";
 
+  /**
+   * either metrics_view_name and explore_name or canvas_name will be set
+   *
+   * @generated from field: optional string metrics_view_name = 16;
+   */
+  metricsViewName?: string;
+
+  /**
+   * @generated from field: optional string explore_name = 17;
+   */
+  exploreName?: string;
+
+  /**
+   * @generated from field: optional string canvas_name = 18;
+   */
+  canvasName?: string;
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13030,6 +13065,9 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 17, name: "explore_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "canvas_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

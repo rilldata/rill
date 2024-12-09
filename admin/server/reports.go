@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -35,6 +36,10 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.StringSlice("args.email_recipients", req.EmailRecipients),
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
+		attribute.String("args.owner_id", req.OwnerId),
+		attribute.String("args.metrics_view", req.MetricsView),
+		attribute.String("args.explore", req.Explore),
+		attribute.String("args.canvas", req.Canvas),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -65,7 +70,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, err := s.reconcileMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients)
+	tokens, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.MetricsView, req.Explore, req.Canvas, recipients)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -321,10 +326,6 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
 		}
-		_, err = s.reconcileMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to clean up report tokens: %w", err)
-		}
 	} else {
 		data, err := s.yamlForManagedReport(opts, annotations.AdminOwnerUserID)
 		if err != nil {
@@ -395,11 +396,6 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete virtual file: %w", err)
-	}
-
-	_, err = s.reconcileMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Name, annotations.AdminOwnerUserID, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to clean up report tokens: %w", err)
 	}
 
 	err = s.admin.TriggerParserAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
@@ -493,6 +489,15 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
+	if opts.MetricsViewName != nil || opts.ExploreName != nil {
+		if opts.MetricsViewName == nil || opts.ExploreName == nil {
+			return nil, errors.New("both metricsViewName and exploreName must be provided")
+		}
+		res.Annotations.MetricsViewName = *opts.MetricsViewName
+		res.Annotations.ExploreName = *opts.ExploreName
+	} else if opts.CanvasName != nil {
+		res.Annotations.CanvasName = *opts.CanvasName
+	}
 	return yaml.Marshal(res)
 }
 
@@ -560,7 +565,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) reconcileMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string) (map[string]string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, metricsViewName, exploreName, canvasName string, emails []string) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -573,6 +578,33 @@ func (s *Server) reconcileMagicTokens(ctx context.Context, orgID, projectID, rep
 		ResourceName:    reportName,
 		Internal:        true,
 		TTL:             &ttl,
+	}
+
+	if metricsViewName != "" {
+		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
+			database.MgcTokenDependentResource{
+				Kind: runtime.ResourceKindMetricsView,
+				Name: metricsViewName,
+			},
+		)
+	}
+
+	if exploreName != "" {
+		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
+			database.MgcTokenDependentResource{
+				Kind: runtime.ResourceKindExplore,
+				Name: exploreName,
+			},
+		)
+	}
+
+	if canvasName != "" {
+		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
+			database.MgcTokenDependentResource{
+				Kind: runtime.ResourceKindCanvas,
+				Name: canvasName,
+			},
+		)
 	}
 
 	if ownerID != "" {
@@ -736,6 +768,9 @@ type reportAnnotations struct {
 	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenPath      string `yaml:"web_open_path"`
 	WebOpenState     string `yaml:"web_open_state"`
+	MetricsViewName  string `yaml:"metrics_view_name"`
+	ExploreName      string `yaml:"explore_name"`
+	CanvasName       string `yaml:"canvas_resource"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
@@ -749,6 +784,9 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminNonce = annotations["admin_nonce"]
 	res.WebOpenPath = annotations["web_open_path"]
 	res.WebOpenState = annotations["web_open_state"]
+	res.MetricsViewName = annotations["metrics_view_name"]
+	res.ExploreName = annotations["explore_name"]
+	res.CanvasName = annotations["canvas_name"]
 
 	return res
 }

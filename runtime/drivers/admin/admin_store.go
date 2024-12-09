@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, metricsViewName, exploreName, canvasName string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Branch:          h.config.Branch,
@@ -17,6 +17,9 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID stri
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
 		AnonRecipients:  anonRecipients,
+		MetricsView:     metricsViewName,
+		Explore:         exploreName,
+		Canvas:          canvasName,
 		ExecutionTime:   timestamppb.New(executionTime),
 	})
 	if err != nil {
