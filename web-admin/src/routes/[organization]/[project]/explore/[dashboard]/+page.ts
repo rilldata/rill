@@ -32,7 +32,7 @@ export const load = async ({ url, parent, params }) => {
     }
   }
 
-  const { partialExploreState, errors } = convertURLToExploreState(
+  const { partialExploreState, loaded, errors } = convertURLToExploreState(
     exploreName,
     `__${organization}__${project}`,
     url.searchParams,
@@ -43,6 +43,7 @@ export const load = async ({ url, parent, params }) => {
 
   return {
     partialExploreState,
+    loaded,
     errors,
   };
 };
