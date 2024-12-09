@@ -7,7 +7,6 @@ import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
-import "rill/runtime/v1/queries.proto";
 
 service AdminService {
   // Ping returns information about the server
