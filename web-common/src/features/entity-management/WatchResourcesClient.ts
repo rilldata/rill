@@ -185,7 +185,7 @@ export class WatchResourcesClient {
             // If it's a new source, show the "Source imported successfully" modal
             const isNewSource =
               res.name.kind === ResourceKind.Source &&
-              res.resource.meta.stateVersion === "2"; // The state version of a successfully-ingested new source
+              res.resource.meta.specVersion === "1";
             if (isNewSource) {
               const filePath = res.resource?.meta?.filePaths?.[0] as string;
               sourceImportedPath.set(filePath);
