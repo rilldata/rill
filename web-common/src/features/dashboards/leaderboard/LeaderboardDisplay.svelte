@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { LeaderboardItemData } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
     V1Expression,
@@ -11,9 +10,9 @@
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import {
-    calculateAndUpdateAllLeaderboardWidths,
-    columnWidths,
-    resetColumnWidths,
+    DEFAULT_COL_WIDTH,
+    deltaColumn,
+    valueColumn,
   } from "./leaderboard-widths";
 
   export let metricsViewName: string;
@@ -49,31 +48,25 @@
 
   let parentElement: HTMLDivElement;
 
-  function estimateAndUpdateLeaderboardWidths(
-    dimensionName: string,
-    aboveTheFold: LeaderboardItemData[],
-    selectedBelowTheFold: LeaderboardItemData[],
-  ) {
-    const firstColumnWidth =
-      !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
-    calculateAndUpdateAllLeaderboardWidths(
-      dimensionName,
-      firstColumnWidth,
-      aboveTheFold,
-      selectedBelowTheFold,
-      $activeMeasureFormatter,
-    );
+  $: ({ instanceId } = $runtime);
+
+  // Reset column widths when the measure changes
+  $: if (activeMeasureName) {
+    valueColumn.reset();
+    deltaColumn.reset();
   }
 
-  // Reset column widths when relevant data changes
-  $: {
-    activeMeasureName;
-    !!comparisonTimeRange;
-    !!timeRange;
-    $isValidPercentOfTotal;
-    resetColumnWidths();
-  }
-  $: ({ instanceId } = $runtime);
+  $: firstColumnWidth =
+    !comparisonTimeRange && !$isValidPercentOfTotal ? 240 : 164;
+
+  $: tableWidth =
+    firstColumnWidth +
+    $valueColumn +
+    (comparisonTimeRange
+      ? $deltaColumn + DEFAULT_COL_WIDTH
+      : $isValidPercentOfTotal
+        ? DEFAULT_COL_WIDTH
+        : 0);
 </script>
 
 <div class="flex flex-col overflow-hidden size-full">
@@ -92,7 +85,9 @@
               {whereFilter}
               {dimensionThresholdFilters}
               {instanceId}
+              {tableWidth}
               {timeRange}
+              {firstColumnWidth}
               sortedAscending={$sortedAscending}
               sortType={$sortType}
               filterExcludeMode={$isFilterExcludeMode(dimension.name)}
@@ -105,8 +100,6 @@
               {timeControlsReady}
               selectedValues={$selectedDimensionValues(dimension.name)}
               isBeingCompared={$isBeingComparedReadable(dimension.name)}
-              columnWidths={$columnWidths}
-              {estimateAndUpdateLeaderboardWidths}
               formatter={$activeMeasureFormatter}
               {setPrimaryDimension}
               {toggleSort}
