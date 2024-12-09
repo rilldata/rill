@@ -54,6 +54,15 @@ export function getDefaultExplorePreset(
     ...(explore.defaultPreset ?? {}),
   };
 
+  if (
+    // this is the old behaviour. if no timezones are configures for the explore, default it to UTC and not local IANA
+    !explore.timeZones?.length ||
+    // else if the default is not in the list of timezones
+    !explore.timeZones?.includes(defaultExplorePreset.timezone!)
+  ) {
+    defaultExplorePreset.timezone = "UTC";
+  }
+
   if (!defaultExplorePreset.timeGrain) {
     defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(
       defaultExplorePreset,
