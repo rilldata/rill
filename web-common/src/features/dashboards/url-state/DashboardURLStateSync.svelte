@@ -6,6 +6,8 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -79,9 +81,17 @@
         exploreSpec,
         defaultExplorePreset,
       );
-      curUrl.searchParams.forEach((value, key) =>
-        redirectUrl.searchParams.set(key, value),
-      );
+      curUrl.searchParams.forEach((value, key) => {
+        if (
+          key === ExploreStateURLParams.WebView &&
+          FromURLParamViewMap[value] === defaultExplorePreset.view
+        ) {
+          // ignore default view.
+          // since we do not add params equal to default this will append to the end of the URL breaking the param order.
+          return;
+        }
+        redirectUrl.searchParams.set(key, value);
+      });
       history.replaceState(history.state, "", redirectUrl);
       prevUrl = redirectUrl.toString();
     } else {

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -7,7 +6,6 @@
   import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { shouldRedirectToViewWithParams } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -36,28 +34,22 @@
   );
 
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
+  let loaded = false;
   function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
-    const redirectUrl = shouldRedirectToViewWithParams(
+    // Get Explore state from URL params
+    const {
+      partialExploreState: partialExploreStateFromUrl,
+      loaded: loadedFromStorage,
+    } = convertURLToExploreState(
       $exploreName,
+      storeKeyPrefix,
+      url.searchParams,
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
-      storeKeyPrefix,
-      url,
     );
-    if (redirectUrl) {
-      return goto(redirectUrl);
-    }
-
-    // Get Explore state from URL params
-    const { partialExploreState: partialExploreStateFromUrl } =
-      convertURLToExploreState(
-        url.searchParams,
-        metricsViewSpec,
-        exploreSpec,
-        defaultExplorePreset,
-      );
     partialExploreState = partialExploreStateFromUrl;
+    loaded = loadedFromStorage;
   }
 
   // only reactive to url and defaultExplorePreset
@@ -65,7 +57,7 @@
 </script>
 
 {#if !$validSpecStore.isLoading && !$metricsViewTimeRange.isLoading}
-  <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+  <DashboardURLStateSync {defaultExplorePreset} {partialExploreState} {loaded}>
     <slot />
   </DashboardURLStateSync>
 {/if}

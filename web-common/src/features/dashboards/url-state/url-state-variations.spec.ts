@@ -329,6 +329,7 @@ describe("Human readable URL state variations", () => {
   });
 
   beforeEach(() => {
+    sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
@@ -407,6 +408,8 @@ describe("Human readable URL state variations", () => {
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } = convertURLToExploreState(
+          AD_BIDS_EXPLORE_NAME,
+          undefined,
           url.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
@@ -418,6 +421,8 @@ describe("Human readable URL state variations", () => {
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
           convertURLToExploreState(
+            AD_BIDS_EXPLORE_NAME,
+            undefined,
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -438,6 +443,8 @@ export function applyURLToExploreState(
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLToExploreState(
+      AD_BIDS_EXPLORE_NAME,
+      undefined,
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,
