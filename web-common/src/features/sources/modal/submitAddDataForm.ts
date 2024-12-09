@@ -1,6 +1,5 @@
 import { goto, invalidate } from "$app/navigation";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -115,8 +114,6 @@ export async function submitAddDataForm(
       create: true,
       createOnly: false,
     });
-
-    await checkSourceImported(queryClient, newSourceFilePath);
 
     await goto(`/files/${newSourceFilePath}`);
 
