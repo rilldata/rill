@@ -44,23 +44,31 @@ import {
 import type { SortingState } from "@tanstack/svelte-table";
 
 export function convertURLToExploreState(
+  exploreName: string,
+  prefix: string | undefined,
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
-  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
+  const {
+    loaded,
+    preset,
+    errors: errorsFromPreset,
+  } = convertURLToExplorePreset(
+    exploreName,
+    prefix,
     searchParams,
     metricsView,
-    explore,
+    exploreSpec,
     defaultExplorePreset,
   );
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToExploreState(metricsView, explore, preset);
+    convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
-  return { partialExploreState, errors };
+  return { partialExploreState, loaded, errors };
 }
 
 /**
@@ -423,7 +431,9 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  if (!hasSomePivotFields) {
+  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+
+  if (!hasSomePivotFields && !pivotIsActive) {
     return {
       partialExploreState: {},
       errors,
@@ -445,7 +455,7 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+        active: pivotIsActive,
         rows: {
           dimension: rowDimensions,
         },

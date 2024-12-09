@@ -15,6 +15,7 @@
 
   export let defaultExplorePreset: V1ExplorePreset;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
+  export let loaded: boolean;
 
   const {
     metricsViewName,
@@ -70,7 +71,22 @@
       partialExploreState,
       metricsSpec,
     );
-    prevUrl = window.location.href;
+    if (loaded) {
+      const curUrl = new URL(location.href);
+      const redirectUrl = new URL(curUrl);
+      redirectUrl.search = convertExploreStateToURLSearchParams(
+        partialExploreState as MetricsExplorerEntity,
+        exploreSpec,
+        defaultExplorePreset,
+      );
+      curUrl.searchParams.forEach((value, key) =>
+        redirectUrl.searchParams.set(key, value),
+      );
+      history.replaceState(history.state, "", redirectUrl);
+      prevUrl = redirectUrl.toString();
+    } else {
+      prevUrl = window.location.href;
+    }
   }
 
   // reactive to only dashboardStore

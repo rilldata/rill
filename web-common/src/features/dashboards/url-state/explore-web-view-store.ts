@@ -89,7 +89,7 @@ export function getKeyForSessionStore(
   prefix: string | undefined,
   view: string,
 ) {
-  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`;
+  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`.toLowerCase();
 }
 
 export function updateExploreSessionStore(
@@ -117,6 +117,7 @@ export function updateExploreSessionStore(
     delete sharedPreset[key];
   }
   for (const key of ExploreViewOtherKeys[view]) {
+    storedPreset[key] = preset[key] as any;
     delete sharedPreset[key];
   }
 
@@ -176,8 +177,8 @@ export function getExplorePresetForWebView(
   if (!sharedRawPreset) return undefined;
   const rawPreset = sessionStorage.getItem(key) ?? "{}";
   try {
-    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     const sharedPreset = JSON.parse(sharedRawPreset) as V1ExplorePreset;
+    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     return {
       view,
       ...sharedPreset,

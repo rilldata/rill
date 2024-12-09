@@ -19,6 +19,7 @@
     explore,
     defaultExplorePreset,
     partialExploreState,
+    loaded,
     errors,
   } = data);
   $: if (errors?.length) {
@@ -83,7 +84,11 @@
 {:else}
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
-      <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+      <DashboardURLStateSync
+        {defaultExplorePreset}
+        {partialExploreState}
+        {loaded}
+      >
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
         </DashboardThemeProvider>
