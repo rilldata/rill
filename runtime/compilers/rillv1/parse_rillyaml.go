@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
@@ -40,6 +41,7 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
+	Compiler string `yaml:"compiler"`
 	// Title of the project
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
@@ -92,7 +94,15 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	tmp := &rillYAML{}
+
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
+		return newYAMLError(err)
+	}
+
+	dec := yaml.NewDecoder(strings.NewReader(data))
+	dec.KnownFields(true)
+	err = dec.Decode(tmp)
+	if err != nil {
 		return newYAMLError(err)
 	}
 
