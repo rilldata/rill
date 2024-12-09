@@ -50,7 +50,7 @@ export const load = async ({ params, url, route }) => {
   }
 
   // If no organization or project, return empty permissions
-  if (!organization || !project) {
+  if (!organization) {
     return {
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
@@ -68,6 +68,13 @@ export const load = async ({ params, url, route }) => {
         throw error(e.response.status, "Error fetching organization");
       }
     }
+  }
+
+  if (!project) {
+    return {
+      organizationPermissions,
+      projectPermissions: <V1ProjectPermissions>{},
+    };
   }
 
   try {

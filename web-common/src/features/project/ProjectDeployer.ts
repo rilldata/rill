@@ -153,10 +153,6 @@ export class ProjectDeployer {
 
     // Project does not yet exist
 
-    if (!org && this.useOrg) {
-      org = this.useOrg;
-    }
-
     let checkNextOrg = false;
     if (!org) {
       const { org: inferredOrg, checkNextOrg: inferredCheckNextOrg } =
@@ -182,6 +178,13 @@ export class ProjectDeployer {
   }
 
   private async inferOrg(rillUserOrgs: string[]) {
+    if (this.useOrg) {
+      return {
+        org: this.useOrg,
+        checkNextOrg: false,
+      };
+    }
+
     let org: string | undefined;
     let checkNextOrg = false;
     if (rillUserOrgs.length === 1) {
