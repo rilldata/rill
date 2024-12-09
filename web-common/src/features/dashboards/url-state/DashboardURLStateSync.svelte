@@ -6,6 +6,8 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -15,6 +17,7 @@
 
   export let defaultExplorePreset: V1ExplorePreset;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
+  export let loaded: boolean;
 
   const {
     metricsViewName,
@@ -70,7 +73,30 @@
       partialExploreState,
       metricsSpec,
     );
-    prevUrl = window.location.href;
+    if (loaded) {
+      const curUrl = new URL(location.href);
+      const redirectUrl = new URL(curUrl);
+      redirectUrl.search = convertExploreStateToURLSearchParams(
+        partialExploreState as MetricsExplorerEntity,
+        exploreSpec,
+        defaultExplorePreset,
+      );
+      curUrl.searchParams.forEach((value, key) => {
+        if (
+          key === ExploreStateURLParams.WebView &&
+          FromURLParamViewMap[value] === defaultExplorePreset.view
+        ) {
+          // ignore default view.
+          // since we do not add params equal to default this will append to the end of the URL breaking the param order.
+          return;
+        }
+        redirectUrl.searchParams.set(key, value);
+      });
+      history.replaceState(history.state, "", redirectUrl);
+      prevUrl = redirectUrl.toString();
+    } else {
+      prevUrl = window.location.href;
+    }
   }
 
   // reactive to only dashboardStore

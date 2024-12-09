@@ -1,6 +1,6 @@
 import { convertBookmarkToUrlSearchParams } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { getPartialExploreStateOrRedirect } from "@rilldata/web-common/features/explores/selectors";
+import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
@@ -32,17 +32,18 @@ export const load = async ({ url, parent, params }) => {
     }
   }
 
-  const { partialExploreState, errors } = getPartialExploreStateOrRedirect(
+  const { partialExploreState, loaded, errors } = convertURLToExploreState(
     exploreName,
+    `__${organization}__${project}`,
+    url.searchParams,
     metricsViewSpec,
     exploreSpec,
     defaultExplorePreset,
-    `__${organization}__${project}`,
-    url,
   );
 
   return {
     partialExploreState,
+    loaded,
     errors,
   };
 };
