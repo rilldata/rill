@@ -67,9 +67,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		_ = olap.DropTable(ctx, stagingTableName)
 
 		// Create the table
-		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, nil)
+		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, inputProps.PreInitSQL, inputProps.PostInitSQL, nil)
 		if err != nil {
-			_ = olap.DropTable(ctx, stagingTableName)
+			_ = e.c.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 
@@ -82,7 +82,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	} else {
 		// Insert into the table
-		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, inputProps.PreInitSQL, inputProps.PostInitSQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}
