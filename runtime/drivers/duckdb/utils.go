@@ -24,6 +24,7 @@ func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
 
 type dbSourceProperties struct {
 	Database string `mapstructure:"db"`
+	DSN      string `mapstructure:"dsn"`
 	SQL      string `mapstructure:"sql"`
 }
 
@@ -31,6 +32,9 @@ func parseDBSourceProperties(props map[string]any) (*dbSourceProperties, error) 
 	cfg := &dbSourceProperties{}
 	if err := mapstructure.Decode(props, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse source properties: %w", err)
+	}
+	if cfg.DSN != "" { // For mysql, postgres the property is called as dsn and not db
+		cfg.Database = cfg.DSN
 	}
 	if cfg.SQL == "" {
 		return nil, fmt.Errorf("property 'sql' is mandatory")

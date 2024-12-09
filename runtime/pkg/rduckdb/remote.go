@@ -23,6 +23,12 @@ import (
 func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 	if !d.localDirty || d.remote == nil {
 		// optimisation to skip sync if write was already synced
+		if !updateCatalog {
+			// cleanup of older versions of table
+			_ = d.iterateLocalTables(true, func(name string, meta *tableMeta) error {
+				return nil
+			})
+		}
 		return nil
 	}
 	d.logger.Debug("syncing from remote")

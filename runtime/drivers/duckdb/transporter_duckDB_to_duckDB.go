@@ -16,16 +16,16 @@ import (
 )
 
 type duckDBToDuckDB struct {
-	to       *connection
-	logger   *zap.Logger
-	database string // mysql, postgres, duckdb
+	to             *connection
+	logger         *zap.Logger
+	externalDBType string // mysql, postgres, duckdb
 }
 
 func newDuckDBToDuckDB(c *connection, db string, logger *zap.Logger) drivers.Transporter {
 	return &duckDBToDuckDB{
-		to:       c,
-		logger:   logger,
-		database: db,
+		to:             c,
+		logger:         logger,
+		externalDBType: db,
 	}
 }
 
@@ -45,7 +45,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
 
 	if srcCfg.Database != "" { // query to be run against an external DB
-		if t.database == "duckdb" {
+		if t.externalDBType == "duckdb" {
 			srcCfg.Database, err = fileutil.ResolveLocalPath(srcCfg.Database, opts.RepoRoot, opts.AllowHostAccess)
 			if err != nil {
 				return err
@@ -121,7 +121,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	var initSQL []string
 	safeDBName := safeName(sinkProps.Table + "_external_db_")
 	safeTempTable := safeName(sinkProps.Table + "__temp__")
-	switch t.database {
+	switch t.externalDBType {
 	case "mysql":
 		initSQL = append(initSQL, "INSTALL 'MYSQL'; LOAD 'MYSQL';", fmt.Sprintf("ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	case "postgres":
@@ -129,7 +129,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 	case "duckdb":
 		initSQL = append(initSQL, fmt.Sprintf("ATTACH %s AS %s (READ_ONLY)", safeSQLString(srcProps.Database), safeDBName))
 	default:
-		return fmt.Errorf("internal error: unsupported external database: %s", t.database)
+		return fmt.Errorf("internal error: unsupported external database: %s", t.externalDBType)
 	}
 	beforeCreateFn := func(ctx context.Context, conn *sqlx.Conn) error {
 		for _, sql := range initSQL {
