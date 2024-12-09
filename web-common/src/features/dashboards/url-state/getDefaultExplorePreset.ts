@@ -1,6 +1,7 @@
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { ExploreStateDefaultTimezone } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
@@ -54,13 +55,16 @@ export function getDefaultExplorePreset(
     ...(explore.defaultPreset ?? {}),
   };
 
-  if (
+  if (!explore.timeZones?.length) {
     // this is the old behaviour. if no timezones are configures for the explore, default it to UTC and not local IANA
-    !explore.timeZones?.length ||
+    defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
+  } else if (!explore.timeZones?.includes(defaultExplorePreset.timezone!)) {
     // else if the default is not in the list of timezones
-    !explore.timeZones?.includes(defaultExplorePreset.timezone!)
-  ) {
-    defaultExplorePreset.timezone = "UTC";
+    if (explore.timeZones?.includes(ExploreStateDefaultTimezone)) {
+      defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
+    } else {
+      defaultExplorePreset.timezone = explore.timeZones[0];
+    }
   }
 
   if (!defaultExplorePreset.timeGrain) {
