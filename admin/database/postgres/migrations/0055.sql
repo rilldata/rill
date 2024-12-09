@@ -1,0 +1,1 @@
+ALTER TABLE magic_auth_tokens ADD COLUMN dependent_resources JSONB NOT NULL DEFAULT '[]'::jsonb;

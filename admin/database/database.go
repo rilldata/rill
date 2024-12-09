@@ -642,22 +642,28 @@ type InsertDeploymentAuthTokenOptions struct {
 // MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
 type MagicAuthToken struct {
 	ID                    string
-	SecretHash            []byte         `db:"secret_hash"`
-	Secret                []byte         `db:"secret"`
-	SecretEncryptionKeyID string         `db:"secret_encryption_key_id"`
-	ProjectID             string         `db:"project_id"`
-	CreatedOn             time.Time      `db:"created_on"`
-	ExpiresOn             *time.Time     `db:"expires_on"`
-	UsedOn                time.Time      `db:"used_on"`
-	CreatedByUserID       *string        `db:"created_by_user_id"`
-	Attributes            map[string]any `db:"attributes"`
-	ResourceType          string         `db:"resource_type"`
-	ResourceName          string         `db:"resource_name"`
-	FilterJSON            string         `db:"filter_json"`
-	Fields                []string       `db:"fields"`
-	State                 string         `db:"state"`
-	DisplayName           string         `db:"display_name"`
-	Internal              bool           `db:"internal"`
+	SecretHash            []byte                      `db:"secret_hash"`
+	Secret                []byte                      `db:"secret"`
+	SecretEncryptionKeyID string                      `db:"secret_encryption_key_id"`
+	ProjectID             string                      `db:"project_id"`
+	CreatedOn             time.Time                   `db:"created_on"`
+	ExpiresOn             *time.Time                  `db:"expires_on"`
+	UsedOn                time.Time                   `db:"used_on"`
+	CreatedByUserID       *string                     `db:"created_by_user_id"`
+	Attributes            map[string]any              `db:"attributes"`
+	ResourceType          string                      `db:"resource_type"`
+	ResourceName          string                      `db:"resource_name"`
+	FilterJSON            string                      `db:"filter_json"`
+	Fields                []string                    `db:"fields"`
+	State                 string                      `db:"state"`
+	DisplayName           string                      `db:"display_name"`
+	Internal              bool                        `db:"internal"`
+	DependentResources    []MgcTokenDependentResource `db:"dependent_resources"`
+}
+
+type MgcTokenDependentResource struct {
+	Name string
+	Kind string
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -668,20 +674,21 @@ type MagicAuthTokenWithUser struct {
 
 // InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
 type InsertMagicAuthTokenOptions struct {
-	ID              string
-	SecretHash      []byte
-	Secret          []byte
-	ProjectID       string `validate:"required"`
-	ExpiresOn       *time.Time
-	CreatedByUserID *string
-	Attributes      map[string]any
-	ResourceType    string `validate:"required"`
-	ResourceName    string `validate:"required"`
-	FilterJSON      string
-	Fields          []string
-	State           string
-	DisplayName     string
-	Internal        bool
+	ID                 string
+	SecretHash         []byte
+	Secret             []byte
+	ProjectID          string `validate:"required"`
+	ExpiresOn          *time.Time
+	CreatedByUserID    *string
+	Attributes         map[string]any
+	ResourceType       string `validate:"required"`
+	ResourceName       string `validate:"required"`
+	FilterJSON         string
+	Fields             []string
+	State              string
+	DisplayName        string
+	Internal           bool
+	DependentResources []MgcTokenDependentResource
 }
 
 type ReportToken struct {
