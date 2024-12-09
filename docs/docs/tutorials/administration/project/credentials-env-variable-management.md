@@ -13,12 +13,9 @@ Please review the documentation on [Credential Managment](https://docs.rilldata.
 
 
 ## Managing Credentials and Variables on Rill Cloud 
-<ComingSoon />
 
-<div class='contents_to_overlay'>
-Historically (pre 0.48), management was only possible via the CLI. Now, it is also possible to do so via the UI! 
-
-</div>
+![env-ui](/img/tutorials/admin/env-var-ui.png)
+After pushing your initial credentials into Rill Cloud, you will be able to view them in the Settings page. In the above screenshot, we have already run `rill env configure` from the CLI so it has populated the required credentials in the UI via the .env file in your project directory. 
 
 ## Credentials
 
