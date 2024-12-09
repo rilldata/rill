@@ -23,6 +23,9 @@
   export let sortType: SortType;
   export let toggleSort: (sortType: SortType) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
+  export let toggleComparisonDimension: (
+    dimensionName: string | undefined,
+  ) => void;
 </script>
 
 <thead>
@@ -31,7 +34,11 @@
       {#if isFetching}
         <DelayedSpinner isLoading={isFetching} size="16px" />
       {:else if hovered || isBeingCompared}
-        <DimensionCompareMenu {dimensionName} />
+        <DimensionCompareMenu
+          {dimensionName}
+          {isBeingCompared}
+          {toggleComparisonDimension}
+        />
       {/if}
     </th>
 

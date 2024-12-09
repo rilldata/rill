@@ -43,6 +43,7 @@
       dimensions: { setPrimaryDimension },
       sorting: { toggleSort },
       dimensionsFilter: { toggleDimensionValueSelection },
+      comparison: { toggleComparisonDimension },
     },
     exploreName,
   } = StateManagers;
@@ -111,6 +112,7 @@
               {setPrimaryDimension}
               {toggleSort}
               {toggleDimensionValueSelection}
+              {toggleComparisonDimension}
             />
           {/if}
         {/each}
