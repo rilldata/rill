@@ -650,6 +650,7 @@ func (d *db) localDBMonitor() {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
+			d.localDirty = false
 			d.writeSem.Release(1)
 		}
 	}
