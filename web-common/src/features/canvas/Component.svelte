@@ -1,5 +1,4 @@
 <script lang="ts" context="module">
-  import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import type { ComponentType } from "svelte";
   import { onMount } from "svelte";
@@ -9,6 +8,7 @@
   } from "../entity-management/resource-selectors";
   import Chart from "./Chart.svelte";
   import type ResizeHandle from "./ResizeHandle.svelte";
+  import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -107,14 +107,11 @@
           {/if}
         </div>
       {/if}
-      {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
-        <Chart {componentName} {chartView} {input} />
-      {:else if renderer && rendererProperties}
-        <TemplateRenderer
+      {#if renderer && rendererProperties}
+        <ComponentRenderer
           {chartView}
           {renderer}
           {input}
-          {output}
           {resolverProperties}
           {componentName}
         />

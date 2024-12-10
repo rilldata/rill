@@ -5,9 +5,9 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import AddComponentMenu from "@rilldata/web-common/features/canvas/components/AddComponentMenu.svelte";
+  import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import CanvasStateProvider from "@rilldata/web-common/features/canvas/stores/CanvasStateProvider.svelte";
-  import VisualCanvasEditing from "@rilldata/web-common/features/canvas/VisualCanvasEditing.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -163,11 +163,7 @@
               {/if}
             </MetricsEditorContainer>
 
-            <VisualCanvasEditing
-              slot="inspector"
-              viewingDashboard={selectedView === "viz"}
-              switchView={() => selectedViewStore.set("code")}
-            />
+            <VisualCanvasEditing slot="inspector" />
           </WorkspaceContainer>
         </CanvasThemeProvider>
       </CanvasStateProvider>

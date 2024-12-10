@@ -7,13 +7,13 @@
     type PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import TableRenderer from "@rilldata/web-common/features/templates/table/TableRenderer.svelte";
   import type { TableProperties } from "@rilldata/web-common/features/templates/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { type Readable, writable } from "svelte/store";
   import { getTableConfig, hasValidTableSchema } from "./selector";
+  import TableRenderer from "./TableRenderer.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 

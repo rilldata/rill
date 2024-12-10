@@ -1,7 +1,6 @@
 <script lang="ts">
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
-  import { extent } from "d3-array";
   import MeasureBigNumber from "@rilldata/web-common/features/dashboards/big-number/MeasureBigNumber.svelte";
   import { useMetricsViewSpecMeasure } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -10,16 +9,17 @@
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useKPIComparisonTotal,
-    useKPISparkline,
-    useKPITotals,
-  } from "@rilldata/web-common/features/templates/kpi/selector";
   import type { KPIProperties } from "@rilldata/web-common/features/templates/types";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { extent } from "d3-array";
+  import {
+    useKPIComparisonTotal,
+    useKPISparkline,
+    useKPITotals,
+  } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 

@@ -7,7 +7,7 @@
 
   const { canvasStore, validSpecStore, fileArtifact } =
     getCanvasStateManagers();
-  $: selectedIndex = $canvasStore.selectedComponentIndex;
+  $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
   let showGrid = true;
   let spec: V1CanvasSpec = {

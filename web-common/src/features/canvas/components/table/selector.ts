@@ -1,3 +1,4 @@
+import { useStartEndTime } from "@rilldata/web-common/features/canvas/components/kpi/selector";
 import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -10,7 +11,6 @@ import {
   useMetricsViewValidSpec,
 } from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { useStartEndTime } from "@rilldata/web-common/features/templates/kpi/selector";
 import type { TableProperties } from "@rilldata/web-common/features/templates/types";
 import {
   validateDimensions,
