@@ -124,6 +124,8 @@ export function createStateManagers({
           query: {
             queryClient,
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
+            staleTime: Infinity,
+            cacheTime: Infinity,
           },
         },
       ).subscribe(set),

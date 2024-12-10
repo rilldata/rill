@@ -1,5 +1,4 @@
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 
 export const load = async ({ url, parent, params }) => {
   const { explore, metricsView, defaultExplorePreset } = await parent();
@@ -7,7 +6,7 @@ export const load = async ({ url, parent, params }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  const { partialExploreState, loadedOutsideOfURL, errors } =
+  const { partialExploreState, urlSearchForPartial, errors } =
     convertURLToExploreState(
       exploreName,
       `__${organization}__${project}`,
@@ -16,16 +15,8 @@ export const load = async ({ url, parent, params }) => {
       exploreSpec,
       defaultExplorePreset,
     );
-  const urlSearchForPartial = loadedOutsideOfURL
-    ? getUpdatedUrlForExploreState(
-        exploreSpec,
-        defaultExplorePreset,
-        partialExploreState,
-        url.searchParams,
-      )
-    : url.searchParams.toString();
+  console.log(partialExploreState, urlSearchForPartial);
 
-  console.log(exploreName, urlSearchForPartial);
   return {
     partialExploreState,
     urlSearchForPartial,

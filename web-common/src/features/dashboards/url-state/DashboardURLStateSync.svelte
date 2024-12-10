@@ -36,8 +36,6 @@
   $: ({ error, data: timeRangeSummary } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
 
-  $: console.log(exploreName, initUrlSearch, urlSearchForPartial);
-
   let prevUrl = "";
   function gotoNewState() {
     if (!exploreSpec) return;

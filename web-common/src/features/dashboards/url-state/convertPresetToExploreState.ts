@@ -11,6 +11,7 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
+import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromURLParamTDDChartMap,
@@ -68,7 +69,17 @@ export function convertURLToExploreState(
   const { partialExploreState, errors: errorsFromEntity } =
     convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
-  return { partialExploreState, loadedOutsideOfURL, errors };
+
+  const urlSearchForPartial = loadedOutsideOfURL
+    ? getUpdatedUrlForExploreState(
+        exploreSpec,
+        defaultExplorePreset,
+        partialExploreState,
+        searchParams,
+      )
+    : searchParams.toString();
+
+  return { partialExploreState, urlSearchForPartial, errors };
 }
 
 /**
@@ -316,9 +327,15 @@ function fromTimeDimensionUrlParams(
   partialExploreState: Partial<MetricsExplorerEntity>;
   errors: Error[];
 } {
-  if (preset.timeDimensionMeasure === undefined) {
+  if (!preset.timeDimensionMeasure) {
     return {
-      partialExploreState: {},
+      partialExploreState: {
+        tdd: {
+          expandedMeasureName: "",
+          chartType: TDDChart.DEFAULT,
+          pinIndex: -1,
+        },
+      },
       errors: [],
     };
   }
@@ -329,20 +346,6 @@ function fromTimeDimensionUrlParams(
   if (expandedMeasureName && !measures.has(expandedMeasureName)) {
     expandedMeasureName = "";
     errors.push(getSingleFieldError("expanded measure", expandedMeasureName));
-  }
-
-  // unset
-  if (expandedMeasureName === "") {
-    return {
-      partialExploreState: {
-        tdd: {
-          expandedMeasureName: "",
-          chartType: TDDChart.DEFAULT,
-          pinIndex: -1,
-        },
-      },
-      errors,
-    };
   }
 
   const partialExploreState: Partial<MetricsExplorerEntity> = {
@@ -435,7 +438,25 @@ function fromPivotUrlParams(
 
   if (!hasSomePivotFields && !pivotIsActive) {
     return {
-      partialExploreState: {},
+      partialExploreState: {
+        pivot: {
+          active: false,
+          rows: {
+            dimension: [],
+          },
+          columns: {
+            measure: [],
+            dimension: [],
+          },
+          sorting: [],
+          expanded: {},
+          columnPage: 1,
+          rowPage: 1,
+          enableComparison: true,
+          activeCell: null,
+          rowJoinType: "nest",
+        },
+      },
       errors,
     };
   }

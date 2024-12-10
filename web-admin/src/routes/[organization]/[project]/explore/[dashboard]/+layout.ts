@@ -24,16 +24,17 @@ export const load = async ({ params, depends, parent }) => {
   let initExploreState: Partial<MetricsExplorerEntity> = {};
   let initLoadedOutsideOfURL = false;
   try {
-    const fetchedExploreSpecDetails = await fetchExploreSpec(
+    ({
+      explore,
+      metricsView,
+      defaultExplorePreset,
+      initExploreState,
+      initLoadedOutsideOfURL,
+    } = await fetchExploreSpec(
       runtime?.instanceId,
       exploreName,
       `__${organization}__${projectName}`,
-    );
-    explore = fetchedExploreSpecDetails.explore;
-    metricsView = fetchedExploreSpecDetails.metricsView;
-    defaultExplorePreset = fetchedExploreSpecDetails.defaultExplorePreset;
-    initExploreState = fetchedExploreSpecDetails.initExploreState;
-    initLoadedOutsideOfURL = fetchedExploreSpecDetails.initLoadedOutsideOfURL;
+    ));
   } catch {
     // error handled in +page.svelte for now
     // TODO: move it here
