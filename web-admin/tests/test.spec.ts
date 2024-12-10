@@ -1,6 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./setup/test";
 
-test("empty test", async () => {
-  // TODO: Run admin behind the scenes to properly test this module
-  expect("hello world").toBe("hello world");
+test("Unauthenticated user can see the login page", async ({ page }) => {
+  await page.goto("http://localhost:3000/");
+  await expect(page.getByText("Log in to Rill")).toBeVisible();
 });
