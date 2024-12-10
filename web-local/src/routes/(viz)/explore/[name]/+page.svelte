@@ -18,9 +18,12 @@
     metricsView,
     explore,
     defaultExplorePreset,
+    initExploreState,
+    initUrlSearch,
     partialExploreState,
-    loaded,
+    urlSearchForPartial,
     errors,
+    exploreName,
   } = data);
   $: if (errors?.length) {
     setTimeout(() => {
@@ -36,7 +39,6 @@
 
   resetSelectedMockUserAfterNavigate(queryClient);
 
-  $: exploreName = explore.meta?.name?.name as string;
   $: metricsViewName = metricsView?.meta?.name?.name as string;
 
   $: ({ instanceId } = $runtime);
@@ -85,9 +87,13 @@
   {#key exploreName}
     <StateManagersProvider {metricsViewName} {exploreName}>
       <DashboardURLStateSync
+        {metricsViewName}
+        {exploreName}
         {defaultExplorePreset}
+        {initExploreState}
+        {initUrlSearch}
         {partialExploreState}
-        {loaded}
+        {urlSearchForPartial}
       >
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />
