@@ -32,6 +32,8 @@
 
   $: isLegacy = false;
 
+  let auth0Domain = "";
+
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
       email.toLowerCase().endsWith(domain.toLowerCase()),
@@ -45,8 +47,8 @@
       decodeURIComponent(escape(window.atob(configParams))),
     ) as Config;
 
-    // Entry point: FIXME - There is no way to tell if the user is signing up unless we ask them to make a selection
-    // Entry point: Email invite redirect to signup
+    auth0Domain = config.auth0Domain;
+
     const isSignup = config?.extraParams?.screen_hint === "signup";
 
     if (isSignup) {
@@ -82,15 +84,45 @@
     });
   }
 
-  function processEmailSubmission(event) {
-    email = event.detail.email;
+  // TODO: Revisit when we have the endpoint
+  async function checkUserExists(email: string): Promise<boolean> {
+    try {
+      const response = await fetch(
+        `https://${auth0Domain}/dbconnections/change_password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+          }),
+        },
+      );
 
+      const data = await response.json();
+
+      if (data.error === "user not found") {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error checking if user exists:", error);
+      return false;
+    }
+  }
+
+  async function processEmailSubmission(event) {
+    email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     if (connectionName) {
       authorizeSSO(email, connectionName);
     } else {
-      step = AuthStep.Login;
+      // Check if user exists before setting the step
+      const userExists = await checkUserExists(email);
+      step = userExists ? AuthStep.Login : AuthStep.SignUp;
     }
   }
 
@@ -171,9 +203,9 @@
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
-        {step}
         {email}
         {isLegacy}
+        {step}
         showForgetPassword={step === AuthStep.Login}
         isDomainDisabled={domainDisabled}
         {webAuth}

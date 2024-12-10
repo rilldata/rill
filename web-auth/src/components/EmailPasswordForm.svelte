@@ -6,8 +6,8 @@
   import { ArrowLeftIcon } from "lucide-svelte";
   import { WebAuth } from "auth0-js";
   import { DATABASE_CONNECTION } from "../constants";
-  import { AuthStep } from "../types";
   import type { Auth0Error } from "auth0-js";
+  import { AuthStep } from "../types";
 
   const dispatch = createEventDispatcher();
 
@@ -91,14 +91,13 @@
     disabled = false;
   }
 
-  function authenticateUser(email: string, password: string) {
+  async function authenticateUser(email: string, password: string) {
     disabled = true;
     errorText = "";
 
     try {
-      // NOTE: Sign up is only supported on Rill Cloud login pages, not Rill Dash
       if (step === AuthStep.SignUp && !isLegacy) {
-        // Directly attempt to sign up and log in the user
+        // User doesn't exist, attempt to sign up and login
         webAuth.redirect.signupAndLogin(
           {
             connection: DATABASE_CONNECTION,
@@ -114,6 +113,7 @@
           },
         );
       } else {
+        // User exists, attempt to login
         webAuth.login(
           {
             realm: DATABASE_CONNECTION,
