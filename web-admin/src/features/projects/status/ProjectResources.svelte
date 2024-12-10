@@ -10,41 +10,80 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
+  import { onDestroy } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  let isReconciling = false;
+  let isRefreshConfirmDialogOpen = false;
+  let maxRefetchAttempts = 60; // 30 seconds maximum
+  let refetchAttempts = 0;
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-  $: resources = createRuntimeServiceListResources(
+  $: allResources = createRuntimeServiceListResources(
     $runtime.instanceId,
-    // All resource "kinds"
     undefined,
     {
       query: {
         select: (data) => {
-          // Filter out the "ProjectParser" resource
+          // Exclude the "ProjectParser" resource and "RefreshTrigger" resource
           return data.resources.filter(
             (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
+              resource.meta.name.kind !== ResourceKind.ProjectParser &&
+              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           );
         },
         refetchOnMount: true,
-        refetchInterval: isReconciling ? 500 : false,
+        keepPreviousData: true,
+        onError: () => {
+          stopPolling();
+        },
       },
     },
   );
 
-  $: isAnySourceOrModelReconciling = $resources?.data?.some(
-    (resource) =>
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+  $: isAnySourceOrModelReconciling = Boolean(
+    $allResources?.data?.some(
+      (resource) =>
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    ),
   );
 
+  function startPolling() {
+    stopPolling(); // Clear any existing interval
+    refetchAttempts = 0;
+
+    pollInterval = setInterval(() => {
+      refetchAttempts++;
+
+      if (refetchAttempts >= maxRefetchAttempts) {
+        stopPolling();
+        return;
+      }
+
+      void $allResources.refetch();
+    }, 500);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    refetchAttempts = 0;
+  }
+
+  $: if (!isAnySourceOrModelReconciling) {
+    stopPolling();
+  }
+
   function refreshAllSourcesAndModels() {
-    isReconciling = true;
+    startPolling();
 
     void $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
@@ -54,17 +93,19 @@
     });
 
     void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
-        // All resource "kinds"
-        undefined,
-      ),
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, undefined),
     );
   }
 
-  $: if (!isAnySourceOrModelReconciling) {
-    isReconciling = false;
+  function triggerRefresh() {
+    startPolling();
+    void $allResources.refetch();
   }
+
+  // Cleanup on component destroy
+  onDestroy(() => {
+    stopPolling();
+  });
 </script>
 
 <section class="flex flex-col gap-y-4">
@@ -72,23 +113,30 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={refreshAllSourcesAndModels}
-      disabled={isReconciling}
+      on:click={() => {
+        isRefreshConfirmDialogOpen = true;
+      }}
+      disabled={Boolean(pollInterval)}
     >
-      {#if isReconciling}
+      {#if pollInterval}
         Refreshing...
       {:else}
         Refresh all sources and models
       {/if}
     </Button>
   </div>
-  {#if $resources.isLoading}
-    <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
-  {:else if $resources.isError}
+  {#if $allResources.isLoading && !$allResources.data}
+    <DelayedSpinner isLoading={$allResources.isLoading} size="16px" />
+  {:else if $allResources.isError}
     <div class="text-red-500">
-      Error loading resources: {$resources.error?.message}
+      Error loading resources: {$allResources.error?.message}
     </div>
-  {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} />
+  {:else if $allResources.data}
+    <ProjectResourcesTable data={$allResources.data} {triggerRefresh} />
   {/if}
 </section>
+
+<RefreshConfirmDialog
+  bind:open={isRefreshConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>
