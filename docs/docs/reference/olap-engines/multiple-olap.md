@@ -67,13 +67,13 @@ For more information about available configurations for `rill.yaml`, please see 
 
 :::
 
-### Setting the OLAP Engine in the dashboard YAML
+### Setting the OLAP Engine in the metrics view YAML
 
-For each dashboard that is using a separate OLAP engine (than the default), you'll want to set the `connector` and `table` properties in the underlying [dashboard YAML](../project-files/explore-dashboards.md) configuration to the OLAP engine and corresponding [external table](../../concepts/OLAP#external-olap-tables) that exists in your OLAP store respectively.
+For each metrics view that is using a separate OLAP engine (than the default), you'll want to set the `connector` and `table` properties in the underlying [metrics view YAML](../project-files/metrics-view.md) configuration to the OLAP engine and corresponding [external table](../../concepts/OLAP#external-olap-tables) that exists in your OLAP store respectively.
 
 ```yaml
 type: metrics_view
-title: <dashboard_name>
+title: <metrics_view_name>
 connector: <olap_engine>
 table: <external_table_in_olap>
 ...
