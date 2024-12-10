@@ -25,6 +25,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { getCurrentEnvironment, isDuplicateKey } from "./utils";
   import { onMount } from "svelte";
+  import { debounce } from "lodash";
 
   export let open = false;
   export let id: string;
@@ -260,6 +261,14 @@
 
   $: if (open) {
     handleDialogOpen();
+  }
+
+  const debouncedCheckForExistingKeys = debounce(() => {
+    checkForExistingKeys();
+  }, 500);
+
+  $: if ($form.key) {
+    debouncedCheckForExistingKeys();
   }
 </script>
 
