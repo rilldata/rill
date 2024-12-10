@@ -96,7 +96,7 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	defer db.Close()
 
 	t.Run("AllDataTypes", func(t *testing.T) {
-		allMySQLDataTypesTest(t, db, fmt.Sprintf("host=%s user=myuser password=mypassword port=%v database=mydb", host, port.Int()))
+		allMySQLDataTypesTest(t, db, dsn)
 	})
 }
 

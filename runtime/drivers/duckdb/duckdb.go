@@ -193,7 +193,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	if err != nil {
 		// Check for another process currently accessing the DB
 		if strings.Contains(err.Error(), "Could not set lock on file") {
-			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
+			panic(fmt.Errorf("failed to open database (is Rill already running?): %w", err))
 		}
 		return nil, err
 	}
