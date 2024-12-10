@@ -85,6 +85,13 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
+	// A list of mock users to test against dashboard security policies
+	MockUsers []struct {
+		Email  string   `yaml:"email"`
+		Name   string   `yaml:"name"`
+		Admin  bool     `yaml:"admin"`
+		Groups []string `yaml:"groups"`
+	} `yaml:"mock_users"`
 }
 
 // parseRillYAML parses rill.yaml
