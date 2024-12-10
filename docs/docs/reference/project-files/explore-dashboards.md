@@ -95,6 +95,12 @@ dimensions:
 **`time_zones`** — Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). By adding one or more time zones will make the dashboard time zone aware and allow users to change current time zone within the dashboard _(optional)_.
 
 **`theme`** — Refers to the default theme to apply to the dashboard. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes _(optional)_.
+```yaml
+theme:
+  colors:
+    primary: hsl(180, 100%, 50%)
+    secondary: lightgreen
+```
 
 **`security`** - Defines a [security policy](/manage/security) for the dashboard _(optional)_.
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean _(optional)_.
