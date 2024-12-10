@@ -13,8 +13,8 @@
 	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^3.1.2",
-		"@types/auth0-js": "^9.21.6",
-		"auth0-js": "^9.28.0",
+		"@types/auth0-js": "^9.14.7",
+		"auth0-js": "^9.20.2",
 		"autoprefixer": "^10.4.20",
 		"postcss": "^8.4.47",
 		"svelte": "^4.2.19",

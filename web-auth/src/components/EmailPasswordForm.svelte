@@ -6,16 +6,18 @@
   import { ArrowLeftIcon } from "lucide-svelte";
   import { WebAuth } from "auth0-js";
   import { DATABASE_CONNECTION } from "../constants";
+  import { AuthStep } from "../types";
   import type { Auth0Error } from "auth0-js";
 
   const dispatch = createEventDispatcher();
 
   export let disabled = false;
   export let email = "";
-  export let showForgetPassword = true;
+  export let showForgetPassword = false;
   export let isDomainDisabled = false;
-  export let isRillDash = false;
+  export let isLegacy = false;
   export let webAuth: WebAuth;
+  export let step: AuthStep;
 
   let password = "";
   let showPassword = false;
@@ -89,39 +91,44 @@
     disabled = false;
   }
 
-  function handleLogin(email: string, password: string) {
-    // NOTE: offloaded to Auth0 to handle both login and signup
-    // We don't need to check if the user exists in our database
-    return webAuth.login(
-      {
-        realm: DATABASE_CONNECTION,
-        username: email,
-        password: password,
-      },
-      (err) => {
-        if (err) {
-          if (isRillDash && err.code === "user_not_found") {
-            // More restrictive error for Rill Dash
-            displayError({
-              message:
-                "Invalid credentials. Please check your email and password.",
-            });
-          } else {
-            displayError({ message: err?.description });
-          }
-        } else {
-          disabled = false;
-        }
-      },
-    );
-  }
-
   function authenticateUser(email: string, password: string) {
     disabled = true;
     errorText = "";
 
     try {
-      handleLogin(email, password);
+      // NOTE: Sign up is only supported on Rill Cloud login pages, not Rill Dash
+      if (step === AuthStep.SignUp && !isLegacy) {
+        // Directly attempt to sign up and log in the user
+        webAuth.redirect.signupAndLogin(
+          {
+            connection: DATABASE_CONNECTION,
+            email: email,
+            password: password,
+          },
+          (signupErr: any) => {
+            if (signupErr) {
+              handleAuthError(signupErr);
+            } else {
+              disabled = false;
+            }
+          },
+        );
+      } else {
+        webAuth.login(
+          {
+            realm: DATABASE_CONNECTION,
+            username: email,
+            password: password,
+          },
+          (err) => {
+            if (err) {
+              displayError({ message: err?.description });
+            } else {
+              disabled = false;
+            }
+          },
+        );
+      }
     } catch (err) {
       handleAuthError(err);
     }
