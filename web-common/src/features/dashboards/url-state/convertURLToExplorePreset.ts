@@ -154,7 +154,7 @@ export function convertURLToExplorePreset(
     }
   }
 
-  return { loaded: false, preset, errors };
+  return { loadedOutsideOfURL: false, preset, errors };
 }
 
 function fromLegacyStateUrlParam(
@@ -232,7 +232,7 @@ function fromSessionStore(
   }
 
   return {
-    loaded: true,
+    loadedOutsideOfURL: true,
     preset: explorePresetFromSessionStorage,
     errors: [],
   };

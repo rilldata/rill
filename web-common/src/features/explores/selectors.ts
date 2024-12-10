@@ -1,4 +1,6 @@
 import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
+import { restorePersistedDashboardState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -75,6 +77,7 @@ export function useExploreValidSpec(
 export async function fetchExploreSpec(
   instanceId: string,
   exploreName: string,
+  prefix: string | undefined,
 ) {
   const queryParams = {
     name: exploreName,
@@ -100,12 +103,13 @@ export async function fetchExploreSpec(
     throw error(404, "Metrics view not found");
   }
 
+  const metricsViewSpec =
+    metricsViewResource.metricsView.state?.validSpec ?? {};
+  const exploreSpec = exploreResource.explore.state?.validSpec ?? {};
+
   let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined = undefined;
-  const metricsViewName = exploreResource.explore.state?.validSpec?.metricsView;
-  if (
-    metricsViewResource.metricsView.state?.validSpec?.timeDimension &&
-    metricsViewName
-  ) {
+  const metricsViewName = exploreSpec.metricsView;
+  if (metricsViewSpec.timeDimension && metricsViewName) {
     fullTimeRange = await queryClient.fetchQuery({
       queryFn: () =>
         queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
@@ -120,13 +124,32 @@ export async function fetchExploreSpec(
   }
 
   const defaultExplorePreset = getDefaultExplorePreset(
-    exploreResource.explore.state?.validSpec ?? {},
+    exploreSpec,
     fullTimeRange,
   );
+  const { partialExploreState: initExploreState, errors } =
+    convertPresetToExploreState(
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+
+  let initLoadedOutsideOfURL = false;
+  const stateFromLocalStorage = restorePersistedDashboardState(
+    exploreSpec,
+    (prefix ?? "") + exploreName,
+  );
+  if (stateFromLocalStorage) {
+    initLoadedOutsideOfURL = true;
+    Object.assign(initExploreState, stateFromLocalStorage);
+  }
 
   return {
     explore: exploreResource,
     metricsView: metricsViewResource,
     defaultExplorePreset,
+    initExploreState,
+    initLoadedOutsideOfURL,
+    errors,
   };
 }

@@ -2,6 +2,9 @@ import {
   fetchBookmarks,
   isHomeBookmark,
 } from "@rilldata/web-admin/features/bookmarks/selectors";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExplorePreset,
@@ -11,23 +14,26 @@ import {
 export const load = async ({ params, depends, parent }) => {
   const { project, runtime } = await parent();
 
-  const exploreName = params.dashboard;
+  const { organization, project: projectName, dashboard: exploreName } = params;
 
   depends(exploreName, "explore");
 
+  let explore: V1Resource | undefined;
+  let metricsView: V1Resource | undefined;
+  let defaultExplorePreset: V1ExplorePreset | undefined;
+  let initExploreState: Partial<MetricsExplorerEntity> = {};
+  let initLoadedOutsideOfURL = false;
   try {
-    const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(runtime?.instanceId, exploreName);
-
-    // used to merge home bookmark to url state
-    const bookmarks = await fetchBookmarks(project.id, exploreName);
-
-    return {
-      explore,
-      metricsView,
-      defaultExplorePreset,
-      homeBookmark: bookmarks.find(isHomeBookmark),
-    };
+    const fetchedExploreSpecDetails = await fetchExploreSpec(
+      runtime?.instanceId,
+      exploreName,
+      `__${organization}__${projectName}`,
+    );
+    explore = fetchedExploreSpecDetails.explore;
+    metricsView = fetchedExploreSpecDetails.metricsView;
+    defaultExplorePreset = fetchedExploreSpecDetails.defaultExplorePreset;
+    initExploreState = fetchedExploreSpecDetails.initExploreState;
+    initLoadedOutsideOfURL = fetchedExploreSpecDetails.initLoadedOutsideOfURL;
   } catch {
     // error handled in +page.svelte for now
     // TODO: move it here
@@ -35,7 +41,45 @@ export const load = async ({ params, depends, parent }) => {
       explore: <V1Resource>{},
       metricsView: <V1Resource>{},
       defaultExplorePreset: <V1ExplorePreset>{},
-      homeBookmark: undefined,
+      initExploreState: {},
+      initLoadedOutsideOfURL: false,
     };
   }
+
+  const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
+  const exploreSpec = explore.explore?.state?.validSpec ?? {};
+
+  try {
+    const bookmarks = await fetchBookmarks(project.id, exploreName);
+    const homeBookmark = bookmarks.find(isHomeBookmark);
+
+    if (homeBookmark) {
+      const exploreStateFromBookmark = getDashboardStateFromUrl(
+        homeBookmark.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        {}, // TODO
+      );
+      Object.assign(initExploreState, exploreStateFromBookmark);
+      initLoadedOutsideOfURL = true;
+    }
+  } catch {
+    // TODO
+  }
+  const initUrlSearch = initLoadedOutsideOfURL
+    ? getUpdatedUrlForExploreState(
+        exploreSpec,
+        defaultExplorePreset,
+        initExploreState,
+        new URLSearchParams(),
+      )
+    : "";
+
+  return {
+    explore,
+    metricsView,
+    defaultExplorePreset,
+    initExploreState,
+    initUrlSearch,
+  };
 };

@@ -3,10 +3,7 @@ import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboar
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import {
-  getDefaultExploreState,
-  restorePersistedDashboardState,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
@@ -183,9 +180,6 @@ const metricsViewReducers = {
         ...getDefaultExploreState(name, metricsView, explore, fullTimeRange),
         ...initState,
       };
-      state.entities[name] = restorePersistedDashboardState(
-        state.entities[name],
-      );
 
       updateMetricsExplorerProto(state.entities[name]);
 

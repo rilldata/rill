@@ -3,7 +3,7 @@ import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { getPersistentDashboardStateForKey } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import type {
@@ -40,38 +40,42 @@ export function getDefaultExploreState(
   } as MetricsExplorerEntity;
 }
 
-// TODO: move this to the same place where we load from session store.
-//       also move the type to V1ExplorePreset similar to session store.
 export function restorePersistedDashboardState(
-  metricsExplorer: MetricsExplorerEntity,
+  exploreSpec: V1ExploreSpec,
+  key: string,
 ) {
-  const persistedState = getPersistentDashboardState();
-  if (persistedState.visibleMeasures) {
-    metricsExplorer.allMeasuresVisible =
-      persistedState.visibleMeasures.length ===
-      metricsExplorer.visibleMeasureKeys.size; // TODO: check values
-    metricsExplorer.visibleMeasureKeys = new Set(
-      persistedState.visibleMeasures,
+  const stateFromLocalStorage = getPersistentDashboardStateForKey(key);
+  if (!stateFromLocalStorage) return undefined;
+
+  const partialExploreState: Partial<MetricsExplorerEntity> = {};
+
+  if (stateFromLocalStorage.visibleMeasures) {
+    partialExploreState.allMeasuresVisible =
+      stateFromLocalStorage.visibleMeasures.length ===
+      exploreSpec.measures?.length;
+    partialExploreState.visibleMeasureKeys = new Set(
+      stateFromLocalStorage.visibleMeasures,
     );
   }
-  if (persistedState.visibleDimensions) {
-    metricsExplorer.allDimensionsVisible =
-      persistedState.visibleDimensions.length ===
-      metricsExplorer.visibleDimensionKeys.size; // TODO: check values
-    metricsExplorer.visibleDimensionKeys = new Set(
-      persistedState.visibleDimensions,
+  if (stateFromLocalStorage.visibleDimensions) {
+    partialExploreState.allDimensionsVisible =
+      stateFromLocalStorage.visibleDimensions.length ===
+      exploreSpec.dimensions?.length;
+    partialExploreState.visibleDimensionKeys = new Set(
+      stateFromLocalStorage.visibleDimensions,
     );
   }
-  if (persistedState.leaderboardMeasureName) {
-    metricsExplorer.leaderboardMeasureName =
-      persistedState.leaderboardMeasureName;
+  if (stateFromLocalStorage.leaderboardMeasureName) {
+    partialExploreState.leaderboardMeasureName =
+      stateFromLocalStorage.leaderboardMeasureName;
   }
-  if (persistedState.dashboardSortType) {
-    metricsExplorer.dashboardSortType = persistedState.dashboardSortType;
+  if (stateFromLocalStorage.dashboardSortType) {
+    partialExploreState.dashboardSortType =
+      stateFromLocalStorage.dashboardSortType;
   }
-  if (persistedState.sortDirection) {
-    metricsExplorer.sortDirection = persistedState.sortDirection;
+  if (stateFromLocalStorage.sortDirection) {
+    partialExploreState.sortDirection = stateFromLocalStorage.sortDirection;
   }
 
-  return metricsExplorer;
+  return partialExploreState;
 }

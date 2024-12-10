@@ -6,8 +6,9 @@ import { convertURLToExploreState } from "@rilldata/web-common/features/dashboar
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
-export const load = async ({ url, parent }) => {
+export const load = async ({ url, parent, params }) => {
   const { explore, metricsView, defaultExplorePreset, token } = await parent();
+  const { organization, project } = params;
   const exploreName = token.resourceName;
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
@@ -35,12 +36,16 @@ export const load = async ({ url, parent }) => {
 
   // Get Explore state from URL params
   let partialExploreState: Partial<MetricsExplorerEntity> = {};
+  let loadedOutsideOfURL = false;
   const errors: Error[] = [];
   if (metricsViewSpec && exploreSpec) {
     const {
       partialExploreState: partialExploreStateFromUrl,
+      loadedOutsideOfURL: partialLoadedOutsideOfURL,
       errors: errorsFromConvert,
     } = convertURLToExploreState(
+      exploreName,
+      `__${organization}__${project}`,
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
@@ -48,10 +53,12 @@ export const load = async ({ url, parent }) => {
     );
     partialExploreState = partialExploreStateFromUrl;
     errors.push(...errorsFromConvert);
+    loadedOutsideOfURL = partialLoadedOutsideOfURL;
   }
 
   return {
     partialExploreState,
+    loadedOutsideOfURL,
     errors,
   };
 };

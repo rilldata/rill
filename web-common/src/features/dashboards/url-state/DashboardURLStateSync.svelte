@@ -6,8 +6,7 @@
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-  import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+  import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -15,28 +14,29 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  export let metricsViewName: string;
+  export let exploreName: string;
   export let defaultExplorePreset: V1ExplorePreset;
+  export let initExploreState: Partial<MetricsExplorerEntity>;
+  export let initUrlSearch: string;
   export let partialExploreState: Partial<MetricsExplorerEntity>;
-  export let loaded: boolean;
+  export let urlSearchForPartial: string;
 
-  const {
-    metricsViewName,
-    exploreName,
-    dashboardStore,
-    validSpecStore,
-    timeRangeSummaryStore,
-  } = getStateManagers();
+  const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
+    getStateManagers();
   $: exploreSpec = $validSpecStore.data?.explore;
   $: metricsSpec = $validSpecStore.data?.metricsView;
 
   const metricsViewSchema = createQueryServiceMetricsViewSchema(
     $runtime.instanceId,
-    $metricsViewName,
+    metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
 
   $: ({ error, data: timeRangeSummary } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
+
+  $: console.log(exploreName, initUrlSearch, urlSearchForPartial);
 
   let prevUrl = "";
   function gotoNewState() {
@@ -58,40 +58,38 @@
 
   function mergePartialExplorerEntity() {
     if (!metricsSpec || !exploreSpec) return;
-    if (!$dashboardStore) {
+    const isInit = !$dashboardStore;
+    if (isInit) {
       // initial page load, create an entry in metricsExplorerStore
       metricsExplorerStore.init(
-        $exploreName,
+        exploreName,
         metricsSpec,
         exploreSpec,
         timeRangeSummary,
+        initExploreState,
       );
     }
 
-    metricsExplorerStore.mergePartialExplorerEntity(
-      $exploreName,
-      partialExploreState,
-      metricsSpec,
-    );
-    if (loaded) {
-      const curUrl = new URL(location.href);
-      const redirectUrl = new URL(curUrl);
-      redirectUrl.search = convertExploreStateToURLSearchParams(
-        partialExploreState as MetricsExplorerEntity,
-        exploreSpec,
-        defaultExplorePreset,
+    if (
+      // if not dashboard init then always merge partial
+      !isInit ||
+      // else during init only merge if partial updates the url params
+      urlSearchForPartial !== ""
+    ) {
+      metricsExplorerStore.mergePartialExplorerEntity(
+        exploreName,
+        partialExploreState,
+        metricsSpec,
       );
-      curUrl.searchParams.forEach((value, key) => {
-        if (
-          key === ExploreStateURLParams.WebView &&
-          FromURLParamViewMap[value] === defaultExplorePreset.view
-        ) {
-          // ignore default view.
-          // since we do not add params equal to default this will append to the end of the URL breaking the param order.
-          return;
-        }
-        redirectUrl.searchParams.set(key, value);
-      });
+    }
+    const curSearch = $page.url.searchParams.toString();
+    const partialDifferentThanCurrent = curSearch !== urlSearchForPartial;
+    const initDifferentThanCurrent = curSearch !== initUrlSearch;
+    if (partialDifferentThanCurrent || (isInit && initDifferentThanCurrent)) {
+      const redirectUrl = new URL($page.url);
+      redirectUrl.search = partialDifferentThanCurrent
+        ? urlSearchForPartial
+        : initUrlSearch;
       history.replaceState(history.state, "", redirectUrl);
       prevUrl = redirectUrl.toString();
     } else {

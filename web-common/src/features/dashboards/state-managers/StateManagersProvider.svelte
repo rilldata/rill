@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { setContext } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
 
@@ -20,6 +20,8 @@
       orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
+
+  onMount(() => () => stateManagers.cleanup());
 
   // Our state management was not built around the ability to arbitrarily change the explore or metrics view name
   // This needs to change, but this is a workaround for now

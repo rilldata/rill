@@ -4,10 +4,6 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import {
   AD_BIDS_BASE_FILTER,
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_CLEARED_FILTER,
@@ -46,7 +42,6 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 describe("dashboard-stores", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-    initPersistentDashboardStore(AD_BIDS_EXPLORE_NAME);
     runtime.set({
       instanceId: "",
       host: "",
@@ -54,7 +49,6 @@ describe("dashboard-stores", () => {
   });
 
   beforeEach(() => {
-    getPersistentDashboardStore().reset();
     resetDashboardStore();
   });
 

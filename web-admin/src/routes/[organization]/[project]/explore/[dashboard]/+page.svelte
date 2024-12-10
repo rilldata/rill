@@ -19,7 +19,15 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ defaultExplorePreset, partialExploreState, loaded, errors } = data);
+  $: ({
+    defaultExplorePreset,
+    initExploreState,
+    initUrlSearch,
+    partialExploreState,
+    urlSearchForPartial,
+    errors,
+    exploreName,
+  } = data);
   $: if (errors?.length) {
     setTimeout(() => {
       eventBus.emit("notification", {
@@ -33,11 +41,7 @@
   }
   $: instanceId = $runtime?.instanceId;
 
-  $: ({
-    organization: orgName,
-    project: projectName,
-    dashboard: exploreName,
-  } = $page.params);
+  $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: () => {
@@ -99,9 +103,13 @@
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
         <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
           {defaultExplorePreset}
+          {initExploreState}
+          {initUrlSearch}
           {partialExploreState}
-          {loaded}
+          {urlSearchForPartial}
         >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />

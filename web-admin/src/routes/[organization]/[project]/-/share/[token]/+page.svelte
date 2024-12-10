@@ -16,6 +16,7 @@
   $: ({
     defaultExplorePreset,
     partialExploreState,
+    loadedOutsideOfURL,
     token: { resourceName },
   } = data);
   $: ({ organization, project } = $page.params);
@@ -55,7 +56,11 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+      <DashboardURLStateSync
+        {defaultExplorePreset}
+        {partialExploreState}
+        {loadedOutsideOfURL}
+      >
         <DashboardThemeProvider>
           <Dashboard
             exploreName={resourceName}

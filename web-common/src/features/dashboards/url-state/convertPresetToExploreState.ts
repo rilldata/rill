@@ -53,7 +53,7 @@ export function convertURLToExploreState(
 ) {
   const errors: Error[] = [];
   const {
-    loaded,
+    loadedOutsideOfURL,
     preset,
     errors: errorsFromPreset,
   } = convertURLToExplorePreset(
@@ -68,7 +68,7 @@ export function convertURLToExploreState(
   const { partialExploreState, errors: errorsFromEntity } =
     convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
-  return { partialExploreState, loaded, errors };
+  return { partialExploreState, loadedOutsideOfURL, errors };
 }
 
 /**
