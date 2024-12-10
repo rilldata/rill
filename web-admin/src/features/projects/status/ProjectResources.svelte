@@ -21,6 +21,7 @@
   let maxRefetchAttempts = 60; // 30 seconds maximum
   let refetchAttempts = 0;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let individualRefresh = false;
 
   $: allResources = createRuntimeServiceListResources(
     $runtime.instanceId,
@@ -54,12 +55,27 @@
     ),
   );
 
+  $: hasReconcileError = Boolean(
+    $allResources?.data?.some((resource) => !!resource.meta.reconcileError),
+  );
+
   function startPolling() {
-    stopPolling(); // Clear any existing interval
+    stopPolling();
     refetchAttempts = 0;
 
     pollInterval = setInterval(() => {
       refetchAttempts++;
+
+      // Check for reconcile error during polling
+      if (individualRefresh && hasReconcileError) {
+        stopPolling();
+
+        // Refetch resources for latest reconcile status
+        void $allResources.refetch();
+
+        individualRefresh = false;
+        return;
+      }
 
       if (refetchAttempts >= maxRefetchAttempts) {
         stopPolling();
@@ -97,7 +113,8 @@
     );
   }
 
-  function triggerRefresh() {
+  function refreshResource() {
+    individualRefresh = true;
     startPolling();
     void $allResources.refetch();
   }
@@ -132,7 +149,10 @@
       Error loading resources: {$allResources.error?.message}
     </div>
   {:else if $allResources.data}
-    <ProjectResourcesTable data={$allResources.data} {triggerRefresh} />
+    <ProjectResourcesTable
+      data={$allResources.data}
+      triggerRefresh={refreshResource}
+    />
   {/if}
 </section>
 
