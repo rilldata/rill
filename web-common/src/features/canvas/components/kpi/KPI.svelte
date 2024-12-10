@@ -1,14 +1,12 @@
 <script lang="ts">
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
-  import MeasureBigNumber from "@rilldata/web-common/features/dashboards/big-number/MeasureBigNumber.svelte";
   import { useMetricsViewSpecMeasure } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { KPIProperties } from "@rilldata/web-common/features/templates/types";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
@@ -86,17 +84,7 @@
   class="flex flex-row h-full w-full items-center bg-white"
 >
   {#if $measure.data && $measureValue.data}
-    <MeasureBigNumber
-      measure={$measure.data}
-      value={$measureValue.data}
-      withTimeseries={false}
-      showComparison
-      comparisonValue={$comparisonValue?.data}
-      status={$measureValue?.isFetching
-        ? EntityStatus.Running
-        : EntityStatus.Idle}
-      isMeasureExpanded={true}
-    />
+    <span>{$measureValue.data}</span>
   {/if}
 
   <div>
