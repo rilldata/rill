@@ -4,14 +4,12 @@ import { createAndExpression } from "@rilldata/web-common/features/dashboards/st
 export function clearAllFilters({ dashboard }: DashboardMutables) {
   const hasFilters =
     dashboard.whereFilter.cond?.exprs?.length ||
-    dashboard.havingFilter.cond?.exprs?.length ||
     dashboard.dimensionThresholdFilters?.length;
   if (!hasFilters) {
     return;
   }
 
   dashboard.whereFilter = createAndExpression([]);
-  dashboard.havingFilter = createAndExpression([]);
   dashboard.dimensionThresholdFilters = [];
   dashboard.temporaryFilterName = null;
   dashboard.dimensionFilterExcludeMode.clear();

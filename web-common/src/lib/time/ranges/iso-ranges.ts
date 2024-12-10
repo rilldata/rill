@@ -137,6 +137,11 @@ export function shiftToLargest(duration: Duration, units: DurationUnit[]) {
   });
 }
 
+export function validateISODuration(isoDuration: string) {
+  const duration = Duration.fromISO(isoDuration);
+  return duration.isValid;
+}
+
 function getStartTimeTransformations(
   isoDuration: string,
 ): Array<RelativeTimeTransformation> {

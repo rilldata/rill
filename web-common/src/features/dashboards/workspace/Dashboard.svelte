@@ -1,13 +1,12 @@
 <script lang="ts">
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
-  import CanvasDisplay from "@rilldata/web-common/features/dashboards/canvas/CanvasDisplay.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -30,7 +29,9 @@
       measures: { visibleMeasures },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
+      pivot: { showPivot },
     },
+
     dashboardStore,
     validSpecStore,
   } = StateManagers;
@@ -45,14 +46,12 @@
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
 
-  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: selectedDimensionName = $exploreState?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreStore?.pivot?.active;
-  $: showCanvas = $exploreStore?.canvas?.active;
+  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,
@@ -102,7 +101,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar {hidePivot} />
+            <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
         </section>
       {/key}
@@ -116,9 +115,7 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
-  {:else if showCanvas}
-    <CanvasDisplay />
-  {:else if showPivot}
+  {:else if $showPivot}
     <PivotDisplay />
   {:else}
     <div

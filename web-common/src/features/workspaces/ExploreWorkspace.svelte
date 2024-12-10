@@ -109,6 +109,7 @@
         {exploreName}
         {fileArtifact}
         {lineBasedRuntimeErrors}
+        forceLocalUpdates
       />
     {:else if selectedView === "viz"}
       {#if mainError}
@@ -127,6 +128,7 @@
   </MetricsEditorContainer>
 
   <VisualExploreEditing
+    autoSave={selectedView === "viz" || $autoSave}
     slot="inspector"
     exploreResource={exploreResource?.explore}
     {metricsViewName}

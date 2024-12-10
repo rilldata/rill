@@ -7,7 +7,6 @@ hide_table_of_contents: true
 
 In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
 
-
 ## Properties
 
 **`type`** — Refers to the resource type and must be `explore` _(required)_. 
@@ -18,15 +17,30 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`display_name`** - Refers to the display name for the metrics view _(required)_.
 
-**`description`** - A description for the project. _(optional)_.
+**`description`** - A description for the project _(optional)_.
 
-**`dimensions`** - List of dimensions to include, defaults to `*`. _(optional)_.
+**`dimensions`** - List of dimension names. Use `'*'` to select all dimensions (default) _(optional)_. 
+  - **`regex`** - Select dimensions using a regular expression _(optional)_.
+  - **`exclude`** - Select all dimensions *except* those listed here _(optional)_.
 
-  - **`exclude`** - Inversely a list of dimensions to exclude. Will ignore include if exclude is specified. _(optional)_.
+```yaml
+# Example: Select a dimension
+dimensions:
+  - country
 
-**`measures`** -  List of measures to include, defaults to `*`. _(optional)_.
+# Example: Select all dimensions except one
+dimensions:
+  exclude:
+    - country
 
-  - **`exclude`** - Inversely a list of measures to exclude. Will ignore include if exclude is specified. _(optional)_.
+# Example: Select all dimensions that match a regex
+dimensions:
+  regex: "^public_.*$"
+```
+
+**`measures`** - List of measure names. Use `'*'` to select all measures (default) _(optional)_. 
+  - **`regex`** - Select measures using a regular expression (see `dimensions` above for an example) _(optional)_.
+  - **`exclude`** - Select all measures *except* those listed here (see `dimensions` above for an example) _(optional)_.
 
 **`defaults`** - defines the defaults YAML struct
 
@@ -81,6 +95,12 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 **`time_zones`** — Refers to the time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). By adding one or more time zones will make the dashboard time zone aware and allow users to change current time zone within the dashboard _(optional)_.
 
 **`theme`** — Refers to the default theme to apply to the dashboard. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes _(optional)_.
+```yaml
+theme:
+  colors:
+    primary: hsl(180, 100%, 50%)
+    secondary: lightgreen
+```
 
 **`security`** - Defines a [security policy](/manage/security) for the dashboard _(optional)_.
   - **`access`** - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean _(optional)_.

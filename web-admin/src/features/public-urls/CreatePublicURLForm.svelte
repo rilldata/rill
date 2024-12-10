@@ -116,6 +116,7 @@
           apiError = typedError.response?.data?.message ?? typedError.message;
         }
       },
+      invalidateAll: false,
     },
   );
 

@@ -6,8 +6,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Inspector from "@rilldata/web-common/layout/workspace/Inspector.svelte";
   import {
-    DEFAULT_TIME_RANGES,
     DEFAULT_TIMEZONES,
+    DEFAULT_TIME_RANGES,
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
     PREVIOUS_COMPLETE_DATE_RANGES,
@@ -19,10 +19,10 @@
   import type { V1Explore } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { InfoIcon } from "lucide-svelte";
-  import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
+  import { Scalar, YAMLMap, YAMLSeq, parseDocument } from "yaml";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "../dashboards/stores/dashboard-stores";
   import ZoneDisplay from "../dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -48,10 +48,12 @@
   export let exploreResource: V1Explore | undefined;
   export let metricsViewName: string | undefined;
   export let viewingDashboard: boolean;
+  export let autoSave: boolean;
   export let switchView: () => void;
 
   $: ({ instanceId } = $runtime);
-  $: ({ localContent, remoteContent, saveContent, path } = fileArtifact);
+  $: ({ localContent, remoteContent, saveContent, path, updateLocalContent } =
+    fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
 
@@ -161,16 +163,16 @@
         ? exploreSpec?.embeddedTheme
         : undefined;
 
-  $: exploreStateStore = useExploreStore(exploreName);
+  $: exploreStateStore = useExploreState(exploreName);
 
-  $: exploreStore = $exploreStateStore;
+  $: exploreState = $exploreStateStore;
 
   $: newDefaults = constructDefaultState(
-    exploreStore?.showTimeComparison,
-    exploreStore?.selectedComparisonDimension,
-    exploreStore?.visibleDimensionKeys,
-    exploreStore?.visibleMeasureKeys,
-    exploreStore?.selectedTimeRange,
+    exploreState?.showTimeComparison,
+    exploreState?.selectedComparisonDimension,
+    exploreState?.visibleDimensionKeys,
+    exploreState?.visibleMeasureKeys,
+    exploreState?.selectedTimeRange,
   );
 
   $: hasDefaultsSet = rawDefaults instanceof YAMLMap;
@@ -241,7 +243,11 @@
 
     killState();
 
-    await saveContent(parsedDocument.toString());
+    if (autoSave) {
+      await saveContent(parsedDocument.toString());
+    } else {
+      updateLocalContent(parsedDocument.toString(), true);
+    }
   }
 
   function killState() {
@@ -339,7 +345,9 @@
 
 <Inspector filePath={path}>
   <SidebarWrapper title="Edit dashboard">
-    <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+    {#if autoSave}
+      <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+    {/if}
 
     <Input
       hint="Shown in global header and when deployed to Rill Cloud"

@@ -13,7 +13,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -53,7 +53,7 @@
             description: values.description,
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
-              $exploreStore,
+              $exploreState,
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -70,7 +70,7 @@
             resourceName: exploreName,
             shared: values.shared === "true",
             data: getBookmarkDataForDashboard(
-              $exploreStore,
+              $exploreState,
               values.filtersOnly,
               values.absoluteTimeRange,
               $timeControlsStore,
@@ -97,7 +97,7 @@
   const { handleSubmit, handleReset } = formState;
 
   $: ({ params } = $page);
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
   $: projectId = useProjectId(params.organization, params.project);
 </script>
 

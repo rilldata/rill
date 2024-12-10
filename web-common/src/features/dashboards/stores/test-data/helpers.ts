@@ -1,6 +1,6 @@
 import { QueryClient } from "@rilldata/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -17,10 +17,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import type {
-  V1ExploreSpec,
-  V1Expression,
-  V1MetricsViewSpec,
+import {
+  type V1ExploreSpec,
+  type V1Expression,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
@@ -58,12 +58,7 @@ export function createDashboardState(
   whereFilter: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
-  const explorer = getDefaultMetricsExplorerEntity(
-    name,
-    metrics,
-    explore,
-    undefined,
-  );
+  const explorer = getDefaultExploreState(name, metrics, explore, undefined);
   explorer.whereFilter = whereFilter;
   explorer.selectedTimeRange = timeRange;
   return explorer;
@@ -89,7 +84,10 @@ export function createAdBidsMirrorInStore({
 export function assertMetricsView(
   name: string,
   filters: V1Expression = createAndExpression([]),
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
+  timeRange = {
+    name: AD_BIDS_DEFAULT_TIME_RANGE.name,
+    interval: AD_BIDS_DEFAULT_TIME_RANGE.interval,
+  } as DashboardTimeControls,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE,
 ) {
   assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
@@ -108,20 +106,6 @@ export function assertMetricsViewRaw(
   expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
-}
-
-export function assertVisiblePartsOfMetricsView(
-  name: string,
-  measures: Array<string> | undefined,
-  dimensions: Array<string> | undefined,
-) {
-  const metricsView = get(metricsExplorerStore).entities[name];
-  if (measures)
-    expect([...metricsView.visibleMeasureKeys].sort()).toEqual(measures.sort());
-  if (dimensions)
-    expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
-      dimensions.sort(),
-    );
 }
 
 export function initStateManagers(metricsViewName?: string) {

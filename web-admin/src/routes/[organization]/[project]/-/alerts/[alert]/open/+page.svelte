@@ -47,15 +47,18 @@
   }
 
   $: if ($dashboardStateForAlert.data) {
-    void goto(
-      getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForAlert.data.exploreName,
-        $dashboardStateForAlert.data.state,
-      ),
+    void gotoExplorePage();
+  }
+
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForAlert.data.exploreName,
+      $dashboardStateForAlert.data.exploreState,
     );
+    return goto(explorePageUrl);
   }
 </script>
 

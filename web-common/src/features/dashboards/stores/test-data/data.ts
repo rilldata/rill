@@ -1,7 +1,10 @@
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -13,15 +16,20 @@ import {
   TimeOffsetType,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
-  V1ExploreSpec,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-  V1StructType,
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
+  TypeCode,
+  type V1ExplorePreset,
+  V1ExploreSortType,
+  type V1ExploreSpec,
+  V1ExploreWebView,
+  type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
+  type V1StructType,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { TypeCode, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export const AD_BIDS_NAME = "AdBids";
 export const AD_BIDS_EXPLORE_NAME = AD_BIDS_NAME + "_explore";
@@ -180,6 +188,12 @@ export const AD_BIDS_METRICS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
     },
   ],
 };
+export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
+  displayName: AD_BIDS_NAME,
+  table: AD_BIDS_SOURCE_NAME,
+  measures: AD_BIDS_THREE_MEASURES,
+  dimensions: AD_BIDS_THREE_DIMENSIONS,
+};
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {
   displayName: AD_BIDS_EXPLORE_NAME,
@@ -220,6 +234,37 @@ export const AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION: V1ExploreSpec = {
     AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
   ],
 };
+
+export const AD_BIDS_PRESET: V1ExplorePreset = {
+  timeRange: "P7D",
+  timezone: "Asia/Kathmandu",
+  compareTimeRange: "rill-PP",
+  measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+  dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+  exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+  exploreSortAsc: true,
+  exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
+};
+export const AD_BIDS_DIMENSION_TABLE_PRESET: V1ExplorePreset = {
+  exploreExpandedDimension: AD_BIDS_DOMAIN_DIMENSION,
+};
+export const AD_BIDS_TIME_DIMENSION_DETAILS_PRESET: V1ExplorePreset = {
+  view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+  timeDimensionMeasure: AD_BIDS_IMPRESSIONS_MEASURE,
+  timeDimensionChartType: "stacked_bar",
+};
+export const AD_BIDS_PIVOT_PRESET: V1ExplorePreset = {
+  view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+  pivotRows: ["publisher", "time.hour"],
+  pivotCols: ["domain", "time.day", "impressions"],
+  pivotSortBy: "time.day",
+  pivotSortAsc: true,
+};
+
+export const AD_BIDS_BASE_PRESET = getDefaultExplorePreset(
+  AD_BIDS_EXPLORE_INIT,
+  undefined,
+);
 
 export const AD_BIDS_SCHEMA: V1StructType = {
   fields: [
@@ -310,3 +355,52 @@ export const CUSTOM_TEST_CONTROLS = {
   start: TestTimeConstants.LAST_18_HOURS,
   end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;
+
+export const AD_BIDS_PIVOT_ENTITY: Partial<MetricsExplorerEntity> = {
+  activePage: DashboardState_ActivePage.PIVOT,
+  pivot: {
+    active: true,
+    rows: {
+      dimension: [
+        {
+          id: AD_BIDS_PUBLISHER_DIMENSION,
+          type: PivotChipType.Dimension,
+          title: AD_BIDS_PUBLISHER_DIMENSION,
+        },
+        {
+          id: V1TimeGrain.TIME_GRAIN_HOUR,
+          type: PivotChipType.Time,
+          title: "hour",
+        },
+      ],
+    },
+    columns: {
+      measure: [
+        {
+          id: AD_BIDS_IMPRESSIONS_MEASURE,
+          type: PivotChipType.Measure,
+          title: AD_BIDS_IMPRESSIONS_MEASURE,
+        },
+      ],
+      dimension: [
+        {
+          id: AD_BIDS_DOMAIN_DIMENSION,
+          type: PivotChipType.Dimension,
+          title: AD_BIDS_DOMAIN_DIMENSION,
+        },
+        {
+          id: V1TimeGrain.TIME_GRAIN_DAY,
+          type: PivotChipType.Time,
+          title: "day",
+        },
+      ],
+    },
+    expanded: {},
+    sorting: [],
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    rowJoinType: "nest",
+  },
+};

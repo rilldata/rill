@@ -160,9 +160,10 @@ type IngestionSummary struct {
 type IncrementalStrategy string
 
 const (
-	IncrementalStrategyUnspecified IncrementalStrategy = ""
-	IncrementalStrategyAppend      IncrementalStrategy = "append"
-	IncrementalStrategyMerge       IncrementalStrategy = "merge"
+	IncrementalStrategyUnspecified        IncrementalStrategy = ""
+	IncrementalStrategyAppend             IncrementalStrategy = "append"
+	IncrementalStrategyMerge              IncrementalStrategy = "merge"
+	IncrementalStrategyPartitionOverwrite IncrementalStrategy = "partition_overwrite"
 )
 
 // Dialect enumerates OLAP query languages.

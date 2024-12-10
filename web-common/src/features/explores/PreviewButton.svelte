@@ -18,7 +18,7 @@
   const viewDashboard = () => {
     if (!href) return;
     behaviourEvent
-      .fireNavigationEvent(
+      ?.fireNavigationEvent(
         href,
         BehaviourEventMedium.Button,
         MetricsEventSpace.Workspace,

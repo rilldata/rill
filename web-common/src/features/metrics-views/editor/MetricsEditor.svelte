@@ -5,6 +5,7 @@
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { yamlSchema } from "codemirror-json-schema/yaml";
@@ -44,6 +45,7 @@
       metricsExplorerStore.remove(metricsViewName);
       // Reset local persisted dashboard state for the metrics view
       createPersistentDashboardStore(metricsViewName).reset();
+      clearExploreSessionStore(metricsViewName, undefined);
 
       if (!content?.length) {
         setLineStatuses([], editor);
