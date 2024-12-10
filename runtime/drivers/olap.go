@@ -29,15 +29,15 @@ type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Cont
 // NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn WithConnectionFunc) error
+	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
 	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
-	DropTable(ctx context.Context, name string, view bool) error
-	RenameTable(ctx context.Context, name, newName string, view bool) error
+	DropTable(ctx context.Context, name string) error
+	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
 
@@ -250,6 +250,9 @@ func (d Dialect) RequiresCastForLike() bool {
 
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
+	if d == DialectDuckDB {
+		return d.EscapeIdentifier(table)
+	}
 	var sb strings.Builder
 	if db != "" {
 		sb.WriteString(d.EscapeIdentifier(db))

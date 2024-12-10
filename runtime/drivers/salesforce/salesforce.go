@@ -247,11 +247,6 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
 }
 
-// AsSQLStore implements drivers.Connection.
-func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
