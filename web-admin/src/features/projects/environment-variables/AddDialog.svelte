@@ -80,12 +80,6 @@
       validators: schema,
       // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
-      onResult: ({ result }) => {
-        if (result.type === "success") {
-          open = false;
-          handleReset();
-        }
-      },
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -108,6 +102,8 @@
 
         try {
           await handleUpdateProjectVariables(flatVariables);
+          open = false;
+          handleReset();
         } catch (error) {
           console.error(error);
         }
@@ -163,13 +159,11 @@
   }
 
   function handleReset() {
-    $form.variables = [{ key: "", value: "" }];
     reset();
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
-    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
