@@ -7,10 +7,8 @@
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
-  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
@@ -19,7 +17,6 @@
   import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
-  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
 
@@ -55,7 +52,6 @@
           tableName,
           EntityType.Table,
         );
-        await checkSourceImported(queryClient, newFilePath);
         await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);
