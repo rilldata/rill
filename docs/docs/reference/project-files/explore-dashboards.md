@@ -7,7 +7,6 @@ hide_table_of_contents: true
 
 In your Rill project directory, create a explore dashboard, `<dashboard_name>.yaml`, file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
 
-
 ## Properties
 
 **`type`** — Refers to the resource type and must be `explore` _(required)_. 
@@ -18,15 +17,30 @@ In your Rill project directory, create a explore dashboard, `<dashboard_name>.ya
 
 **`display_name`** - Refers to the display name for the metrics view _(required)_.
 
-**`description`** - A description for the project. _(optional)_.
+**`description`** - A description for the project _(optional)_.
 
-**`dimensions`** - List of dimensions to include, defaults to `*`. _(optional)_.
+**`dimensions`** - List of dimension names. Use `'*'` to select all dimensions (default) _(optional)_. 
+  - **`regex`** - Select dimensions using a regular expression _(optional)_.
+  - **`exclude`** - Select all dimensions *except* those listed here _(optional)_.
 
-  - **`exclude`** - Inversely a list of dimensions to exclude. Will ignore include if exclude is specified. _(optional)_.
+```yaml
+# Example: Select a dimension
+dimensions:
+  - country
 
-**`measures`** -  List of measures to include, defaults to `*`. _(optional)_.
+# Example: Select all dimensions except one
+dimensions:
+  exclude:
+    - country
 
-  - **`exclude`** - Inversely a list of measures to exclude. Will ignore include if exclude is specified. _(optional)_.
+# Example: Select all dimensions that match a regex
+dimensions:
+  regex: "^public_.*$"
+```
+
+**`measures`** - List of measure names. Use `'*'` to select all measures (default) _(optional)_. 
+  - **`regex`** - Select measures using a regular expression (see `dimensions` above for an example) _(optional)_.
+  - **`exclude`** - Select all measures *except* those listed here (see `dimensions` above for an example) _(optional)_.
 
 **`defaults`** - defines the defaults YAML struct
 
