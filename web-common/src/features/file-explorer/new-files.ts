@@ -116,6 +116,11 @@ export const ResourceKindMap: Record<
     baseName: "alert",
     extension: ".yaml",
   },
+  [ResourceKind.RefreshTrigger]: {
+    folderName: "triggers",
+    baseName: "refresh_trigger",
+    extension: ".yaml",
+  },
 };
 
 export function getBaseNameForNewResourceFile(
