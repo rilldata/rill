@@ -51,7 +51,6 @@ export const load = async ({
             new URLSearchParams(),
           )
         : "";
-    console.log(tokenData.token?.state, initExploreState, initUrlSearch);
 
     return {
       explore,

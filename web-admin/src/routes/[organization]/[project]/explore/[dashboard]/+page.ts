@@ -15,7 +15,6 @@ export const load = async ({ url, parent, params }) => {
       exploreSpec,
       defaultExplorePreset,
     );
-  console.log(partialExploreState, urlSearchForPartial);
 
   return {
     partialExploreState,

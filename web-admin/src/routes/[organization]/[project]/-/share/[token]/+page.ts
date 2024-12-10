@@ -29,7 +29,6 @@ export const load = async ({ url, parent, params }) => {
     errors.push(...errorsFromConvert);
     urlSearchForPartial = _urlSearchForPartial;
   }
-  console.log(partialExploreState, urlSearchForPartial);
 
   return {
     partialExploreState,

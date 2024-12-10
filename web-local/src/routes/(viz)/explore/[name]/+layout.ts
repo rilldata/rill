@@ -18,7 +18,7 @@ export const load = async ({ params, depends }) => {
       defaultExplorePreset,
       initExploreState,
       initLoadedOutsideOfURL,
-    } = await fetchExploreSpec(instanceId, exploreName);
+    } = await fetchExploreSpec(instanceId, exploreName, undefined);
     const initUrlSearch = initLoadedOutsideOfURL
       ? getUpdatedUrlForExploreState(
           explore.explore?.state?.validSpec ?? {},
