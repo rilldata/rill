@@ -42,7 +42,6 @@
     {
       header: "Activity",
       accessorFn: (row) => row.createdOn,
-      enableSorting: false,
       cell: ({ row }) => {
         return flexRender(ActivityCell, {
           updatedOn: row.original.updatedOn,
