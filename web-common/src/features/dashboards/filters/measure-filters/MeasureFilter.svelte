@@ -26,11 +26,11 @@
   export let label: string | undefined = undefined;
   export let filter: MeasureFilterEntry | undefined = undefined;
   export let onRemove: () => void;
-  export let onApply: (
-    dimension: string,
-    oldDimension: string,
-    filter: MeasureFilterEntry,
-  ) => void;
+  export let onApply: (params: {
+    dimension: string;
+    oldDimension: string;
+    filter: MeasureFilterEntry;
+  }) => void;
   export let allDimensions: MetricsViewSpecDimensionV2[];
 
   let active = !filter;
@@ -73,12 +73,16 @@
         if (!form.valid) return;
         const values = form.data;
 
-        onApply(values.dimension, dimensionName, {
-          measure: name,
-          operation: values.operation,
-          type: MeasureFilterType.Value,
-          value1: values.value1,
-          value2: values.value2 ?? "",
+        onApply({
+          dimension: values.dimension,
+          oldDimension: dimensionName,
+          filter: {
+            measure: name,
+            operation: values.operation,
+            type: MeasureFilterType.Value,
+            value1: values.value1,
+            value2: values.value2 ?? "",
+          },
         });
 
         active = false;

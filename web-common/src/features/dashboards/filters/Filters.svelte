@@ -170,7 +170,7 @@
               {dimensionName}
               {filter}
               onRemove={() => removeMeasureFilter(dimensionName, name)}
-              onApply={(dimension, oldDimension, filter) =>
+              onApply={({ dimension, oldDimension, filter }) =>
                 handleMeasureFilterApply(dimension, name, oldDimension, filter)}
             />
           </div>
