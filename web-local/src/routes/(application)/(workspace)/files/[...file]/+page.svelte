@@ -18,6 +18,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
   import { onMount } from "svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { PageData } from "./$types";
+  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
 
   const workspaces = new Map([
     [ResourceKind.Source, SourceWorkspace],
@@ -30,7 +32,7 @@
     [undefined, null],
   ]);
 
-  export let data;
+  export let data: PageData;
 
   let editor: EditorView;
 
@@ -44,7 +46,9 @@
     resourceName,
     inferredResourceKind,
     path,
+    remoteContent,
     getResource,
+    getAllErrors,
   } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
@@ -59,6 +63,13 @@
     resourceKind === ResourceKind.API
       ? [customYAMLwithJSONandSQL]
       : getExtensionsForFile(path);
+
+  $: allErrorsQuery = getAllErrors(queryClient, instanceId);
+  $: allErrors = $allErrorsQuery;
+
+  $: errors = mapParseErrorsToLines(allErrors, $remoteContent ?? "");
+
+  $: mainError = errors?.at(0);
 
   onMount(() => {
     expandDirectory(path);
@@ -93,7 +104,7 @@
       filePath={path}
       hasUnsavedChanges={$hasUnsavedChanges}
     />
-    <WorkspaceEditorContainer slot="body">
+    <WorkspaceEditorContainer slot="body" error={mainError}>
       <Editor
         {fileArtifact}
         {extensions}

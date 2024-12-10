@@ -25,11 +25,11 @@ export function useProjectTitle(instanceId: string) {
             // Ignore
           }
 
-          return (
+          return String(
             projectData?.display_name ||
-            projectData?.title ||
-            projectData?.name ||
-            "Untitled Rill Project"
+              projectData?.title ||
+              projectData?.name ||
+              "Untitled Rill Project",
           );
         },
       },
