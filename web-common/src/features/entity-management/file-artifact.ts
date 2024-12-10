@@ -74,6 +74,7 @@ export class FileArtifact {
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
+  lastSeenResource: V1Resource;
 
   private remoteCallbacks = new Set<(content: string, force?: true) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
@@ -231,6 +232,7 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
+    this.lastSeenResource = resource;
   }
 
   hardDeleteResource() {
