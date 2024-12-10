@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/pkg/env"
@@ -99,13 +100,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		return newYAMLError(err)
 	}
 
-	if data != "" {
-		dec := yaml.NewDecoder(strings.NewReader(data))
-		dec.KnownFields(true)
-		err = dec.Decode(tmp)
-		if err != nil {
-			return newYAMLError(err)
-		}
+	dec := yaml.NewDecoder(strings.NewReader(data))
+	dec.KnownFields(true)
+
+	err = dec.Decode(tmp)
+
+	if err != nil && err != io.EOF {
+		return newYAMLError(err)
 	}
 
 	// Look for environment-specific overrides
