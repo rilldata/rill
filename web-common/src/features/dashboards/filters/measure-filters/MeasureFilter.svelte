@@ -87,6 +87,7 @@
 
         active = false;
       },
+      invalidateAll: false,
       resetForm: false,
     },
   );
@@ -199,7 +200,6 @@
       autocomplete="off"
       class="flex flex-col gap-y-3"
       id="measure"
-      on:submit|preventDefault={submit}
     >
       <Select
         bind:value={$form["dimension"]}
@@ -245,7 +245,7 @@
         />
       {/if}
 
-      <Button submitForm type="primary" on:click={submit}>Apply</Button>
+      <Button submitForm type="primary" form="measure">Apply</Button>
     </form>
   </Popover.Content>
 </Popover.Root>
