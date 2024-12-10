@@ -15,7 +15,7 @@ type InternalOptions = {
   leeway: number;
 };
 
-export interface Config {
+export type Config = {
   auth0Domain: string;
   clientID: string;
   auth0Tenant: string;
@@ -25,4 +25,4 @@ export interface Config {
   callbackURL: string;
   internalOptions: InternalOptions;
   extraParams?: { screen_hint?: string };
-}
+};
