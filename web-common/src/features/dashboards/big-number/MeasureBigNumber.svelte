@@ -95,6 +95,7 @@
       isMeasureExpanded = true;
     }
   };
+  $: useDiv = isMeasureExpanded || !withTimeseries;
 </script>
 
 <Tooltip
@@ -106,17 +107,17 @@
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
-    {isMeasureExpanded}
+    isMeasureExpanded={useDiv}
     value={tooltipValue}
   />
 
   <svelte:element
-    this={isMeasureExpanded ? "div" : "a"}
-    role={isMeasureExpanded ? "presentation" : "button"}
-    tabindex={isMeasureExpanded ? -1 : 0}
+    this={useDiv ? "div" : "a"}
+    role={useDiv ? "presentation" : "button"}
+    tabindex={useDiv ? -1 : 0}
     class="group big-number"
-    class:shadow-grad={!isMeasureExpanded}
-    class:cursor-pointer={!isMeasureExpanded}
+    class:shadow-grad={!useDiv}
+    class:cursor-pointer={!useDiv}
     on:click={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
