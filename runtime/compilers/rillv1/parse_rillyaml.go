@@ -105,7 +105,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	err = dec.Decode(tmp)
 
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return newYAMLError(err)
 	}
 
