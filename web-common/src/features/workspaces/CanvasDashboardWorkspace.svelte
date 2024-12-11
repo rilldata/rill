@@ -131,8 +131,8 @@
   async function addComponent(componentName: string) {
     const newComponent = {
       component: componentName,
+      width: 12,
       height: 4,
-      width: 4,
       x: 0,
       y: 0,
     };

@@ -1,47 +1,46 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import * as defaults from "./constants";
 
-  export let gridCell = 50;
-  export let scrollOffset = 0;
-  export let gapSize: number;
-  export let radius: number;
   export let scale: number;
+  export let height: number;
 
-  $: clampedGap = Math.max(0.5, gapSize);
-  $: cellSize = gridCell * scale;
-  $: scaledGap = clampedGap * scale;
+  $: columnWidth = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
+  $: columns = Array.from({ length: defaults.COLUMN_COUNT + 1 });
+  $: rows = Array.from({ length: Math.ceil(height / defaults.ROW_HEIGHT) + 1 });
 </script>
 
 <svg
   in:fade={{ duration: 200 }}
   out:fade={{ duration: 700 }}
   width="100%"
-  height="100%"
+  {height}
   xmlns="http://www.w3.org/2000/svg"
-  class="bg-slate-100 pointer-events-none"
-  style:position="absolute"
-  style:opacity="1"
+  class="pointer-events-none absolute opacity-100"
 >
-  <defs>
-    <pattern
-      y={scrollOffset * -1}
-      id="cd-grid"
-      width={cellSize}
-      height={cellSize}
-      patternUnits="userSpaceOnUse"
-    >
-      <rect
-        rx={radius * scale}
-        x={scaledGap}
-        y={scaledGap}
-        width={cellSize - scaledGap * 2}
-        height={cellSize - scaledGap * 2}
-        class="fill-slate-200"
-      />
-    </pattern>
-  </defs>
+  <!-- Column lines -->
+  {#each columns as _, i}
+    <line
+      x1={i * columnWidth * scale}
+      y1={0}
+      x2={i * columnWidth * scale}
+      y2={height}
+      class="stroke-slate-200"
+      stroke-width="1"
+    />
+  {/each}
 
-  <rect width="100%" height="100%" fill="url(#cd-grid)" />
+  <!-- Row lines -->
+  {#each rows as _, i}
+    <line
+      x1={0}
+      y1={i * defaults.ROW_HEIGHT * scale}
+      x2={defaults.DASHBOARD_WIDTH * scale}
+      y2={i * defaults.ROW_HEIGHT * scale}
+      class="stroke-slate-200"
+      stroke-width="1"
+    />
+  {/each}
 </svg>
 
 <style>

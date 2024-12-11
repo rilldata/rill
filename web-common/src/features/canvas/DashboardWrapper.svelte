@@ -1,19 +1,15 @@
 <script lang="ts">
   import { type ComponentType, onMount } from "svelte";
   import type GridLines from "./GridLines.svelte";
+  import * as defaults from "./constants";
 
-  export let width: number;
+  export let width = defaults.DASHBOARD_WIDTH;
   export let height: number;
   export let scale: number;
   export let embed = false;
   export let showGrid = false;
   export let changing = false;
-  export let scrollOffset = 0;
-  export let gapSize = 0;
-  export let gridCell = 0;
-  export let radius = 0;
-  export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-slate-200";
+  export let contentRect: DOMRectReadOnly;
 
   let GridLinesComponent: ComponentType<GridLines>;
 
@@ -24,28 +20,18 @@
   });
 </script>
 
-<div
-  class="size-full bg-gray-100 flex justify-center overflow-y-auto"
-  on:scroll
->
+<div class="size-full bg-gray-100 flex justify-center overflow-y-auto">
   <div
     bind:contentRect
-    class="wrapper {color} max-w-[1440px] min-h-full"
+    class="wrapper bg-slate-200 max-w-[1200px] min-h-full relative"
     style:height="{height}px"
   >
     {#if GridLinesComponent && (showGrid || changing)}
-      <svelte:component
-        this={GridLinesComponent}
-        {gridCell}
-        {scrollOffset}
-        {gapSize}
-        {radius}
-        {scale}
-      />
+      <svelte:component this={GridLinesComponent} {height} {scale} />
     {/if}
-    <div role="presentation" class="size-full relative" on:click|self>
+    <div role="presentation" class="grid-container size-full" on:click|self>
       <div
-        class="dash pointer-events-none"
+        class="dash"
         role="presentation"
         style:width="{width}px"
         style:height="{height}px"
@@ -67,9 +53,20 @@
     pointer-events: auto;
   }
 
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    /* FIXME */
+    grid-template-rows: repeat(auto-fill, var(--row-height, 120px));
+    gap: var(--grid-gap, 24px);
+    position: relative;
+  }
+
   .dash {
     transform-origin: top left;
     position: absolute;
     touch-action: none;
+    width: 100%;
+    height: 100%;
   }
 </style>

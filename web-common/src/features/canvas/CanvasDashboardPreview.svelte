@@ -186,9 +186,6 @@
 <DashboardWrapper
   bind:contentRect
   {changing}
-  {gapSize}
-  {gridCell}
-  {radius}
   {scale}
   {showGrid}
   height={maxBottom * gridCell * scale}
