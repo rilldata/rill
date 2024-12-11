@@ -83,6 +83,9 @@
     | ((value: string | number) => string);
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
+  export let toggleComparisonDimension: (
+    dimensionName: string | undefined,
+  ) => void;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -289,6 +292,7 @@
       isTimeComparisonActive={!!comparisonTimeRange}
       {toggleSort}
       {setPrimaryDimension}
+      {toggleComparisonDimension}
     />
 
     <tbody>
