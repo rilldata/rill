@@ -29,7 +29,10 @@ TableCells – the cell contents.
   export let isFetching: boolean;
 
   const {
-    actions: { dimensionTable },
+    actions: {
+      dimensionTable,
+      comparison: { toggleComparisonDimension },
+    },
     selectors: {
       sorting: { sortMeasure },
       dimensionFilters: { isFilterExcludeMode },
@@ -228,6 +231,7 @@ TableCells – the cell contents.
             {isBeingCompared}
             {excludeMode}
             {dimensionName}
+            {toggleComparisonDimension}
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader
