@@ -5,6 +5,7 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
+  measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
@@ -111,8 +112,12 @@ export async function getDashboardFromAggregationRequest({
   }
 
   dashboard.visibleMeasureKeys = new Set(
-    req.measures?.map((m) => m.name ?? "") ?? [],
+    req.measures
+      ?.map((m) => m.name ?? "")
+      .filter((m) => !measureHasSuffix(m)) ?? [],
   );
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasureKeys.size === explore.measures.length;
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (
