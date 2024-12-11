@@ -328,6 +328,28 @@ Your frontend should request an iframe URL from your backend API (which you set 
 <iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="100%" />
 ```
 
+### Modifying the default iframe URL to apply filters
+Once the URL is created, it is possible to modify the iframeSrc URL to apply a specific filtered view of the explore dashboard. From the introduction of human readable URL in v0.52, you can append a series of filters such as :
+
+```https://www.your_url.com/explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')```
+
+When fetching the iframeURL from the backend, you can create a function to update the iframe dynamically. In the follow example, you can pass through a set of key and values for each of the desired filters and configurations. In the below exampl,e we are setting the default view to the time dimension detail page, using Past 3 Months for time range, viewing the total_line_changes measure and comparing on author_name.
+
+```js
+  const updateIframeParams = (params) => {
+    const newIframeSrc = new URL(iframeSrc);
+    for (const [key, value] of Object.entries(params)) {
+      newIframeSrc.searchParams.set(key, value);
+    }
+    setIframeSrc(newIframeSrc.toString());
+  };
+
+//used later in the code
+updateIframeParams({tr: 'P3M', view: 'ttd', measure: 'total_line_changes', compare_dim: 'author_name' })
+```
+
+For an example of this in action, please visit our sample embed website: [Rill Data Sample Embed Website](https://rill-embedding-example.netlify.app/views/custom-view)
+
 ## Appendix
 
 ### React Example
@@ -380,3 +402,35 @@ export default function RillDashboard() {
 ### Next.js Example
 
 You can find a different end-to-end example of embedding a Rill dashboard in a **Next.js** project in this sample [Github repo](https://github.com/rilldata/rill-embedding-example).
+
+
+### Human Readable URL Filters
+
+| **Property**                   | **URL Format** | **Example**                                    |
+|--------------------------------|----------------|------------------------------------------------|
+| `version`                      | `v`            | `v=0` (would be omitted for initial version)   |
+| `view`                         | `view`         | `view=explore`                                |
+| `time_range`                   | `tr`           | `tr='now-1D/now'`                             |
+| `"All time"`                   | `all`          | `tr='all'`                                    |
+| `timezone`                     | `tz`           | `tz=UTC`                                      |
+| `compare_time_range`           | `compare_tr`   | `compare_tr='now-2D/now-1D'`                  |
+| `grain`                        | `grain`        | `grain=day`                                   |
+| `filter_expr`                  | `f`            | `f='country IN US,IN and state=ABC'`          |
+| `explore.measures`             | `measures`     | `measures=measure1,measure2`                  |
+| `explore.dimensions`           | `dims`         | `dims=country,state`                          |
+| `compare_dimension`            | `compare_dim`  | `compare_dim=country`                         |
+| `explore.expand_dimension`     | `expand_dim`   | `expand_dim=country`                          |
+| `explore.sort_by`              | `sort_by`      | `sort_by=count`                               |
+| `explore.sort_dir`             | `sort_dir`     | `sort_dir=ASC`                                |
+| `explore.select_time_range`    | `select_tr`    | `select_tr='now-1D'`                          |
+| `time_dimension_detail.measure`| `measure`      | `view=tdd&measure=measure1`                   |
+| `time_dimension_detail.chart_type` | `chart_type` | `view=tdd&chart_type=bar`                     |
+| `time_dimension_detail.pin`    | `pin`          | `view=tdd&pin=true`                           |
+| `pivot.rows`                   | `rows`         | `view=pivot&rows=dim1,dim2`                   |
+| `pivot.columns`                | `cols`         | `view=pivot&cols=dim1,measure1,time.hour,measure2` |
+| `pivot.sort_by`                | `sort_by`      | `view=pivot&sort_by='syntax-TBD'`             |
+| `pivot.sort_dir`               | `sort_dir`     | `view=pivot&sort_dir=asc`                     |
+| `canvas.var1`                  | `var1`         | `c.var1=value1`                               |
+| `canvas.var2`                  | `var2`         | `c.var2=listitem1,listitem2`                  |
+
+
