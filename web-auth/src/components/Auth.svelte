@@ -31,8 +31,7 @@
   let webAuth: WebAuth;
 
   $: isLegacy = false;
-
-  let auth0Domain = "";
+  $: isSignup = false;
 
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
@@ -43,37 +42,47 @@
   $: domainDisabled = isDomainDisabled(email);
 
   function initConfig() {
-    const config = JSON.parse(
-      decodeURIComponent(escape(window.atob(configParams))),
-    ) as Config;
+    try {
+      if (
+        import.meta.env.DEV &&
+        (!configParams || configParams === "undefined")
+      ) {
+        console.warn(
+          "No auth config provided. In development mode - auth flows will not work.",
+        );
+        errorText = "Authentication is not configured in development mode";
+        return;
+      }
 
-    auth0Domain = config.auth0Domain;
+      const config = JSON.parse(
+        decodeURIComponent(escape(window.atob(configParams))),
+      ) as Config;
 
-    const isSignup = config?.extraParams?.screen_hint === "signup";
+      isSignup = config?.extraParams?.screen_hint === "signup";
 
-    if (isSignup) {
-      step = AuthStep.SignUp;
-    }
+      if (cloudClientIDsArr.includes(config?.clientID)) {
+        isLegacy = true;
+      }
 
-    if (cloudClientIDsArr.includes(config?.clientID)) {
-      isLegacy = true;
-    }
-
-    const authOptions: AuthOptions = Object.assign(
-      {
-        overrides: {
-          __tenant: config.auth0Tenant,
-          __token_issuer: config.authorizationServer.issuer,
+      const authOptions: AuthOptions = Object.assign(
+        {
+          overrides: {
+            __tenant: config.auth0Tenant,
+            __token_issuer: config.authorizationServer.issuer,
+          },
+          domain: config.auth0Domain,
+          clientID: config.clientID,
+          redirectUri: config.callbackURL,
+          responseType: "code",
         },
-        domain: config.auth0Domain,
-        clientID: config.clientID,
-        redirectUri: config.callbackURL,
-        responseType: "code",
-      },
-      config.internalOptions,
-    );
+        config.internalOptions,
+      );
 
-    webAuth = new auth0.WebAuth(authOptions);
+      webAuth = new auth0.WebAuth(authOptions);
+    } catch (e) {
+      console.error("Failed to initialize auth:", e);
+      errorText = "Failed to initialize authentication in development mode";
+    }
   }
 
   function authorizeSSO(email: string, connectionName: string) {
@@ -84,35 +93,6 @@
     });
   }
 
-  // TODO: Revisit when we have the endpoint
-  async function checkUserExists(email: string): Promise<boolean> {
-    try {
-      const response = await fetch(
-        `https://${auth0Domain}/dbconnections/change_password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email,
-          }),
-        },
-      );
-
-      const data = await response.json();
-
-      if (data.error === "user not found") {
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error checking if user exists:", error);
-      return false;
-    }
-  }
-
   async function processEmailSubmission(event) {
     email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
@@ -120,9 +100,7 @@
     if (connectionName) {
       authorizeSSO(email, connectionName);
     } else {
-      // Check if user exists before setting the step
-      const userExists = await checkUserExists(email);
-      step = userExists ? AuthStep.Login : AuthStep.SignUp;
+      step = AuthStep.SignUp;
     }
   }
 
@@ -133,7 +111,7 @@
       case AuthStep.Login:
         return "Log in with email";
       case AuthStep.SignUp:
-        return "Sign up with email";
+        return `Log in or sign up with <span class="font-medium">${email}</span>`;
       case AuthStep.Thanks:
         return "Thanks for signing up!";
       default:
@@ -167,7 +145,7 @@
   <Spacer />
   <div class="flex flex-col items-center gap-y-2 text-center">
     <div class="text-xl text-slate-800">
-      {headingText}
+      {@html headingText}
     </div>
     {#if subheadingText}
       <div class="text-base text-gray-500">
@@ -205,8 +183,6 @@
       <EmailPasswordForm
         {email}
         {isLegacy}
-        {step}
-        showForgetPassword={step === AuthStep.Login}
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}

@@ -7,18 +7,16 @@
   import { WebAuth } from "auth0-js";
   import { DATABASE_CONNECTION } from "../constants";
   import type { Auth0Error } from "auth0-js";
-  import { AuthStep } from "../types";
 
   const dispatch = createEventDispatcher();
 
   export let disabled = false;
   export let email = "";
-  export let showForgetPassword = false;
   export let isDomainDisabled = false;
   export let isLegacy = false;
   export let webAuth: WebAuth;
-  export let step: AuthStep;
 
+  let showForgetPassword = false;
   let password = "";
   let showPassword = false;
   let errorText = "";
@@ -94,43 +92,51 @@
   async function authenticateUser(email: string, password: string) {
     disabled = true;
     errorText = "";
+    showForgetPassword = false;
 
     try {
-      if (step === AuthStep.SignUp && !isLegacy) {
-        // User doesn't exist, attempt to sign up and login
-        webAuth.redirect.signupAndLogin(
-          {
-            connection: DATABASE_CONNECTION,
-            email: email,
-            password: password,
-          },
-          (signupErr: any) => {
-            if (signupErr) {
-              handleAuthError(signupErr);
+      console.log("attempt to sign up and login");
+      // Attempt to sign up and login the user
+      webAuth.redirect.signupAndLogin(
+        {
+          connection: DATABASE_CONNECTION,
+          email: email,
+          password: password,
+        },
+        (err) => {
+          if (err) {
+            console.log("err", err);
+            // Check if the error is about user already existing
+            if (err.description && err.description.includes("User exists.")) {
+              // If user exists, try logging them in
+              console.log("user exists, trying to login");
+              webAuth.login(
+                {
+                  realm: DATABASE_CONNECTION,
+                  username: email,
+                  password: password,
+                },
+                (loginErr) => {
+                  if (loginErr) {
+                    displayError({ message: loginErr?.description });
+                    showForgetPassword = true;
+                  } else {
+                    disabled = false;
+                  }
+                },
+              );
             } else {
-              disabled = false;
+              handleAuthError(err);
+              showForgetPassword = true;
             }
-          },
-        );
-      } else {
-        // User exists, attempt to login
-        webAuth.login(
-          {
-            realm: DATABASE_CONNECTION,
-            username: email,
-            password: password,
-          },
-          (err) => {
-            if (err) {
-              displayError({ message: err?.description });
-            } else {
-              disabled = false;
-            }
-          },
-        );
-      }
+          } else {
+            disabled = false;
+          }
+        },
+      );
     } catch (err) {
       handleAuthError(err);
+      showForgetPassword = true;
     }
   }
 
