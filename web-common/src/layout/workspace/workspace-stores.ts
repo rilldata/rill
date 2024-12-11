@@ -14,7 +14,7 @@ type WorkspaceLayout = {
     height: number;
     visible: boolean;
   };
-  view: "code" | "split" | "viz";
+  view: "code" | "split" | "no-code" | "viz";
 };
 
 class WorkspaceLayoutStore {
@@ -22,7 +22,7 @@ class WorkspaceLayoutStore {
   private inspectorWidth = writable<number>(DEFAULT_INSPECTOR_WIDTH);
   private tableVisible = writable<boolean>(true);
   private tableHeight = writable<number>(DEFAULT_PREVIEW_TABLE_HEIGHT);
-  public view = writable<"code" | "split" | "viz">("viz");
+  public view = writable<"code" | "split" | "no-code">("no-code");
 
   constructor(key: string) {
     const history = localStorage.getItem(key);
@@ -37,7 +37,8 @@ class WorkspaceLayoutStore {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
-      if (parsed?.view) this.view.set(parsed.view);
+      if (parsed?.view)
+        this.view.set(parsed.view === "viz" ? "no-code" : parsed.view);
     }
 
     const debouncer = debounce(
