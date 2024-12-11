@@ -34,7 +34,7 @@
 
   const formState = createForm<BookmarkFormValues>({
     initialValues: {
-      displayName: bookmark?.resource.displayName ?? "Default Label",
+      displayName: bookmark?.resource.displayName || "Default Label",
       description: bookmark?.resource.description ?? "",
       shared: bookmark?.resource.shared ? "true" : "false",
       filtersOnly: bookmark?.filtersOnly ?? false,

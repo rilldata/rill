@@ -11,10 +11,10 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    createAdminServiceGetBillingSubscription,
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListOrganizations as listOrgs,
-    createAdminServiceListProjectsForOrganization as listProjects,
+      createAdminServiceGetBillingSubscription,
+      createAdminServiceGetCurrentUser,
+      createAdminServiceListOrganizations as listOrgs,
+      createAdminServiceListProjectsForOrganization as listProjects,
   } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
@@ -29,10 +29,10 @@
   import { usePublicURLExplore } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
-    isMetricsExplorerPage,
-    isOrganizationPage,
-    isProjectPage,
-    isPublicURLPage,
+      isMetricsExplorerPage,
+      isOrganizationPage,
+      isProjectPage,
+      isPublicURLPage,
   } from "./nav-utils";
 
   export let manageOrganization: boolean;
@@ -168,7 +168,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName || dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
