@@ -241,7 +241,7 @@
 
 <style lang="postcss">
   .big-number {
-    @apply h-fit w-[138px] m-0.5 rounded p-2;
+    @apply h-fit w-[138px] m-0.5 rounded p-2 font-normal;
     min-height: 85px;
     @apply items-start flex flex-col text-left;
   }
