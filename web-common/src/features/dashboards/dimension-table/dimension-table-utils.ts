@@ -349,7 +349,7 @@ export function prepareVirtualizedDimTableColumns(
     .filter((column) => column !== undefined);
 
   // cast is safe, because we filtered out undefined columns
-  return (columns as VirtualizedTableColumns[]) ?? [];
+  return columns ?? [];
 }
 
 /**
@@ -426,10 +426,7 @@ export function prepareDimensionTableRows(
     );
 
   const tableRows: DimensionTableRow[] = queryRows
-    .filter(
-      (row) =>
-        row[activeMeasureName] !== undefined && row[activeMeasureName] !== null,
-    )
+    .filter((row) => row[activeMeasureName] !== undefined)
     .map((row) => {
       const measureValue = row[activeMeasureName];
 
