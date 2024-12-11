@@ -78,40 +78,32 @@
     }),
   );
 
-  const {
-    form,
-    enhance,
-    formId,
-    submit,
-    errors,
-    allErrors,
-    submitting,
-    reset: formReset,
-  } = superForm(defaults(initialValues, schema), {
-    id: id,
-    SPA: true,
-    validators: schema,
-    resetForm: false,
-    async onUpdate({ form }) {
-      if (!form.valid) return;
-      const values = form.data;
+  const { form, enhance, formId, submit, errors, allErrors, submitting } =
+    superForm(defaults(initialValues, schema), {
+      id: id,
+      SPA: true,
+      validators: schema,
+      resetForm: false,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
 
-      checkForExistingKeys();
-      if (isKeyAlreadyExists) return;
+        checkForExistingKeys();
+        if (isKeyAlreadyExists) return;
 
-      const flatVariable = {
-        [values.key]: values.value,
-      };
+        const flatVariable = {
+          [values.key]: values.value,
+        };
 
-      try {
-        await handleUpdateProjectVariables(flatVariable);
-        open = false;
-        handleReset();
-      } catch (error) {
-        console.error(error);
-      }
-    },
-  });
+        try {
+          await handleUpdateProjectVariables(flatVariable);
+          open = false;
+          handleReset();
+        } catch (error) {
+          console.error(error);
+        }
+      },
+    });
 
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,

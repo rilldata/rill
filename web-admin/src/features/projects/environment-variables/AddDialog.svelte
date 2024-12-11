@@ -182,7 +182,7 @@
       });
 
     let duplicateCount = 0;
-    existingKeys.forEach((key, idx) => {
+    existingKeys.forEach((key, _idx) => {
       const variableEnvironment = key.environment;
       const variableKey = key.name;
 
