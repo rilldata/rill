@@ -199,7 +199,9 @@
   }
 
   function handleReset() {
-    formReset();
+    $form.environment = initialValues.environment;
+    $form.key = initialValues.key;
+    $form.value = initialValues.value;
     isDevelopment = false;
     isProduction = false;
     inputErrors = {};

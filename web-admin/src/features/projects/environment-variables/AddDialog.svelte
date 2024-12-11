@@ -74,11 +74,11 @@
     }),
   );
 
-  const { form, enhance, submit, submitting, errors, allErrors, reset } =
-    superForm(defaults(initialValues, schema), {
+  const { form, enhance, submit, submitting, errors, allErrors } = superForm(
+    defaults(initialValues, schema),
+    {
       SPA: true,
       validators: schema,
-      // See: https://superforms.rocks/concepts/nested-data
       dataType: "json",
       async onUpdate({ form }) {
         if (!form.valid) return;
@@ -87,11 +87,9 @@
         // Check for duplicates before proceeding
         const duplicates = checkForExistingKeys();
         if (duplicates > 0) {
-          // Early return without resetting the form
           return;
         }
 
-        // Only filter and process if there are no duplicates
         const filteredVariables = values.variables.filter(
           ({ key }) => key !== "",
         );
@@ -108,7 +106,8 @@
           console.error(error);
         }
       },
-    });
+    },
+  );
 
   async function handleUpdateProjectVariables(
     flatVariables: AdminServiceUpdateProjectVariablesBodyVariables,
@@ -146,6 +145,8 @@
   function handleKeyChange(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
     $form.variables[index].key = target.value;
+    delete inputErrors[index];
+    isKeyAlreadyExists = false;
   }
 
   function handleValueChange(index: number, event: Event) {
@@ -159,23 +160,26 @@
   }
 
   function handleReset() {
-    reset();
+    $form = initialValues;
     isDevelopment = true;
     isProduction = true;
     inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    const existingKeys = $form.variables.map((variable) => {
-      return {
-        environment: getCurrentEnvironment(isDevelopment, isProduction),
-        name: variable.key,
-      };
-    });
+    const existingKeys = $form.variables
+      .filter((variable) => variable.key.trim() !== "")
+      .map((variable) => {
+        return {
+          environment: getCurrentEnvironment(isDevelopment, isProduction),
+          name: variable.key,
+        };
+      });
 
     let duplicateCount = 0;
     existingKeys.forEach((key, idx) => {
@@ -183,7 +187,10 @@
       const variableKey = key.name;
 
       if (isDuplicateKey(variableEnvironment, variableKey, variableNames)) {
-        inputErrors[idx] = true;
+        const originalIndex = $form.variables.findIndex(
+          (v) => v.key === variableKey,
+        );
+        inputErrors[originalIndex] = true;
         isKeyAlreadyExists = true;
         duplicateCount++;
       }
@@ -225,17 +232,29 @@
   }
 
   function handleEnvironmentChange() {
-    checkForExistingKeys();
-    inputErrors = {};
-    isKeyAlreadyExists = false;
     showEnvironmentError = true;
+    checkForExistingKeys();
   }
+
+  $: isSubmitDisabled =
+    $submitting ||
+    hasExistingKeys ||
+    !hasNewChanges ||
+    hasNoEnvironment ||
+    Object.values($form.variables).every((v) => !v.key.trim());
 </script>
 
 <Dialog
   bind:open
-  onOpenChange={() => handleReset()}
-  onOutsideClick={() => handleReset()}
+  onOpenChange={(isOpen) => {
+    if (!isOpen) {
+      handleReset();
+    }
+  }}
+  onOutsideClick={() => {
+    open = false;
+    handleReset();
+  }}
 >
   <DialogTrigger asChild>
     <div class="hidden"></div>
@@ -382,17 +401,18 @@
         on:click={() => {
           open = false;
           handleReset();
-        }}>Cancel</Button
+        }}
       >
+        Cancel
+      </Button>
       <Button
         type="primary"
         form={formId}
-        disabled={$submitting ||
-          hasExistingKeys ||
-          !hasNewChanges ||
-          hasNoEnvironment}
-        submitForm>Create</Button
+        disabled={isSubmitDisabled}
+        submitForm
       >
+        Create
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
