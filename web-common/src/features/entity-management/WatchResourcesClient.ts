@@ -21,6 +21,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+import { featureFlags } from "../feature-flags";
 import { sourceImportedPath } from "../sources/sources-store";
 
 export class WatchResourcesClient {
@@ -186,7 +187,10 @@ export class WatchResourcesClient {
             const isNewSource =
               res.name.kind === ResourceKind.Source &&
               res.resource.meta.specVersion === "1";
-            if (isNewSource) {
+            const showSourceImportedModal = get(
+              featureFlags.sourceImportedModal,
+            ); // This will be false when unpacking example projects
+            if (isNewSource && showSourceImportedModal) {
               const filePath = res.resource?.meta?.filePaths?.[0] as string;
               sourceImportedPath.set(filePath);
             }
