@@ -4,9 +4,6 @@ export const MEASURE_CONFIG = {
     height: 125,
     fullHeight: 220,
   },
-  container: {
-    width: { full: 580, breakpoint: 420 },
-  },
   bigNumber: {
     widthWithChart: 140,
     widthWithoutChart: {
