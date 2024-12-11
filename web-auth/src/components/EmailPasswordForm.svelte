@@ -95,45 +95,64 @@
     showForgetPassword = false;
 
     try {
-      console.log("attempt to sign up and login");
-      // Attempt to sign up and login the user
-      webAuth.redirect.signupAndLogin(
-        {
-          connection: DATABASE_CONNECTION,
-          email: email,
-          password: password,
-        },
-        (err) => {
-          if (err) {
-            console.log("err", err);
-            // Check if the error is about user already existing
-            if (err.description && err.description.includes("User exists.")) {
-              // If user exists, try logging them in
-              console.log("user exists, trying to login");
-              webAuth.login(
-                {
-                  realm: DATABASE_CONNECTION,
-                  username: email,
-                  password: password,
-                },
-                (loginErr) => {
-                  if (loginErr) {
-                    displayError({ message: loginErr?.description });
-                    showForgetPassword = true;
-                  } else {
-                    disabled = false;
-                  }
-                },
-              );
-            } else {
-              handleAuthError(err);
+      if (isLegacy) {
+        // For legacy users, attempt login directly
+        webAuth.login(
+          {
+            realm: DATABASE_CONNECTION,
+            username: email,
+            password: password,
+          },
+          (loginErr) => {
+            if (loginErr) {
+              displayError({ message: loginErr?.description });
               showForgetPassword = true;
+            } else {
+              disabled = false;
             }
-          } else {
-            disabled = false;
-          }
-        },
-      );
+          },
+        );
+      } else {
+        console.log("attempt to sign up and login");
+        // Attempt to sign up and login the user
+        webAuth.redirect.signupAndLogin(
+          {
+            connection: DATABASE_CONNECTION,
+            email: email,
+            password: password,
+          },
+          (err) => {
+            if (err) {
+              console.log("err", err);
+              // Check if the error is about user already existing
+              if (err.description && err.description.includes("User exists.")) {
+                // If user exists, try logging them in
+                console.log("user exists, trying to login");
+                webAuth.login(
+                  {
+                    realm: DATABASE_CONNECTION,
+                    username: email,
+                    password: password,
+                  },
+                  (loginErr) => {
+                    if (loginErr) {
+                      displayError({ message: loginErr?.description });
+                      showForgetPassword = true;
+                    } else {
+                      disabled = false;
+                    }
+                  },
+                );
+              } else {
+                handleAuthError(err);
+                showForgetPassword = true;
+              }
+            } else {
+              disabled = false;
+            }
+          },
+        );
+      }
     } catch (err) {
       handleAuthError(err);
       showForgetPassword = true;
