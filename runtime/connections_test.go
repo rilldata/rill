@@ -23,7 +23,7 @@ connectors:
     AWS_ACCESS_KEY_ID: us-east-1
     aws_secret_access_key: xxxx
 
-variables:
+vars:
   foo: bar
   allow_host_access: false
 `,
