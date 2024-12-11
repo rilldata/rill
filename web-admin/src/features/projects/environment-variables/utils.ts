@@ -17,40 +17,46 @@ export function getEnvironmentType(environment: string) {
  * 2. If a key exists in all environments (UNDEFINED), it cannot be created in dev or prod
  * 3. If a key exists in dev or prod, it cannot be created in all environments
  * 4. If a key exists in dev, it cannot be created in dev but CAN be created in prod
- *
- * Examples:
- * - If test[dev] exists:
- *   - Cannot create test[dev] (same environment)
- *   - Cannot create test[all] (key already used)
- *   - CAN create test[prod] (different environment)
- * - If test[all] exists:
- *   - Cannot create test[dev] (key used in all environments)
- *   - Cannot create test[prod] (key used in all environments)
- *
- * @param environment - The target environment ("development", "production", or "undefined" for all)
- * @param key - The environment variable key to check
- * @param variableNames - Existing environment variables
- * @returns true if the key would create a duplicate, false otherwise
+ * 5. Keys are case-insensitive across all environments
  */
 export function isDuplicateKey(
-  environment: EnvironmentType,
+  environment: string,
   key: string,
-  variableNames: VariableNames,
+  existingVariables: VariableNames,
   currentKey?: string,
 ): boolean {
-  // If the key is the same as the current key, it's not a duplicate
-  if (currentKey && key === currentKey) return false;
+  const normalizedKey = key.toLowerCase();
+  const normalizedCurrentKey = currentKey?.toLowerCase();
 
-  const hasMatchingKey = (variable) => variable.name === key;
-  const isInTargetEnvironment = (variable) =>
-    environment === EnvironmentType.UNDEFINED ||
-    variable.environment === environment ||
-    variable.environment === EnvironmentType.UNDEFINED;
+  return existingVariables.some((variable) => {
+    const existingKey = variable.name.toLowerCase();
 
-  // Check if the key already exists in the target environment or all environments
-  return variableNames.some(
-    (variable) => hasMatchingKey(variable) && isInTargetEnvironment(variable),
-  );
+    // Skip if this is the current variable being edited
+    if (
+      normalizedCurrentKey &&
+      existingKey === normalizedCurrentKey &&
+      variable.environment === environment
+    ) {
+      return false;
+    }
+
+    // Safety: Compares the lowercase keys for case-insensitive comparison
+    if (existingKey !== normalizedKey) {
+      return false;
+    }
+
+    // If the existing variable is in UNDEFINED (all environments),
+    // or we're trying to create in UNDEFINED, it's a duplicate
+    if (
+      variable.environment === EnvironmentType.UNDEFINED ||
+      environment === EnvironmentType.UNDEFINED
+    ) {
+      return true;
+    }
+
+    // Otherwise, it's only a duplicate if it's in the same environment
+    return variable.environment === environment;
+  });
 }
 
 export function getCurrentEnvironment(
