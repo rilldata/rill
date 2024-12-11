@@ -269,6 +269,7 @@ function toVisibleMeasuresUrlParam(
 
   const measures = [...exploreState.visibleMeasureKeys];
   const presetMeasures = preset.measures ?? exploreSpec.measures ?? [];
+  console.log(measures, presetMeasures);
   if (arrayUnorderedEquals(measures, presetMeasures)) {
     return undefined;
   }

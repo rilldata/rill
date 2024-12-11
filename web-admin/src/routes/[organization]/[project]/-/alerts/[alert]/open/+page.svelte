@@ -46,7 +46,7 @@
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
   }
 
-  $: if ($dashboardStateForAlert.data) {
+  $: if ($dashboardStateForAlert?.data) {
     void gotoExplorePage();
   }
 
