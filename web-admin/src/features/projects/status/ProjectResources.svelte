@@ -69,9 +69,17 @@
     pollInterval = setInterval(() => {
       refetchAttempts++;
 
-      // Check for reconcile error during polling
       if (individualRefresh && hasReconcileError) {
-        stopPolling();
+        // Check if any resources are still reconciling
+        const stillReconciling = $allResources.data.some(
+          (resource) =>
+            resource.meta.reconcileStatus !==
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+        );
+
+        if (!stillReconciling) {
+          stopPolling();
+        }
 
         // Refetch resources for latest reconcile status
         void $allResources.refetch();
