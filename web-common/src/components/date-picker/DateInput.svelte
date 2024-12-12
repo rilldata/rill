@@ -31,14 +31,20 @@
   const formats = [...formatsWithoutYear, ...formatsWithYear];
 
   export let selectingStart: boolean;
-  export let displayError: boolean;
   export let date: DateTime;
   export let zone: string;
   export let boundary: "start" | "end";
   export let currentYear: number;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let onValidDateInput: (date: DateTime) => void;
 
   let initialValue: string | null = null;
+  let displayError: boolean;
+
+  $: id = boundary + "-date";
+
+  $: label = boundary + " date";
 
   function validateInput(
     e: FocusEvent & {
@@ -71,6 +77,16 @@
       return;
     }
 
+    if (minDate && date < minDate) {
+      displayError = true;
+      return;
+    }
+
+    if (maxDate && date > maxDate) {
+      displayError = true;
+      return;
+    }
+
     if (
       date.year !== currentYear &&
       format &&
@@ -83,29 +99,39 @@
   }
 </script>
 
-<input
-  tabindex="0"
-  id="{boundary}-date"
-  aria-label="{boundary} date"
-  type="text"
-  class:active={(boundary === "start") === selectingStart}
-  class:error={displayError}
-  value={date.toLocaleString({
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })}
-  on:click={(e) => {
-    selectingStart = boundary === "start";
-    initialValue = e.currentTarget.value;
-  }}
-  on:keydown={({ currentTarget, key }) => {
-    if (key === "Enter") {
-      currentTarget.blur();
-    }
-  }}
-  on:blur={validateInput}
-/>
+<div class="flex flex-col gap-y-1 w-full">
+  <label
+    class="capitalize"
+    for={id}
+    class:error={selectingStart && displayError}
+  >
+    {label}
+  </label>
+
+  <input
+    tabindex="0"
+    {id}
+    aria-label={label}
+    type="text"
+    class:active={(boundary === "start") === selectingStart}
+    class:error={displayError}
+    value={date.toLocaleString({
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}
+    on:click={(e) => {
+      selectingStart = boundary === "start";
+      initialValue = e.currentTarget.value;
+    }}
+    on:keydown={({ currentTarget, key }) => {
+      if (key === "Enter") {
+        currentTarget.blur();
+      }
+    }}
+    on:blur={validateInput}
+  />
+</div>
 
 <style lang="postcss">
   input {
@@ -124,7 +150,11 @@
     outline: none;
   }
 
-  input.error.active {
+  input.error:not(:focus) {
     @apply border-destructive text-destructive;
+  }
+
+  label {
+    @apply font-semibold flex gap-x-1;
   }
 </style>
