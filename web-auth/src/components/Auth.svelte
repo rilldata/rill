@@ -30,8 +30,7 @@
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
-  $: isLegacy = false;
-  $: isSignup = false;
+  // $: isLegacy = false;
 
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
@@ -58,11 +57,18 @@
         decodeURIComponent(escape(window.atob(configParams))),
       ) as Config;
 
-      isSignup = config?.extraParams?.screen_hint === "signup";
+      const isSignup = config?.extraParams?.screen_hint === "signup";
 
-      if (cloudClientIDsArr.includes(config?.clientID)) {
-        isLegacy = true;
+      if (isSignup) {
+        step = AuthStep.SignUp;
       }
+
+      // UNCOMMENT to use `isLegacy` for rill dash check if needed
+      // NOTE: Check for cloud client ids from auth0 to allow sign up and login
+      // NOTE: Prevent rill dash (legacy) users from signing up
+      // if (cloudClientIDsArr.includes(config?.clientID)) {
+      //   isLegacy = true;
+      // }
 
       const authOptions: AuthOptions = Object.assign(
         {
