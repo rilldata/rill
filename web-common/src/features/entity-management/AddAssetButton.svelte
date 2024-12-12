@@ -23,6 +23,7 @@
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
@@ -34,7 +35,6 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import CreateExploreDialog from "./CreateExploreDialog.svelte";
 
   let active = false;
   let showExploreDialog = false;
@@ -85,6 +85,7 @@
    */
   async function handleAddSource() {
     addSourceModal.open();
+    featureFlags.set(true, "sourceImportedModal");
 
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,

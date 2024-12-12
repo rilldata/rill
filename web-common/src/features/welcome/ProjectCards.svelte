@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
@@ -9,11 +10,13 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
+  import {
+    createRuntimeServiceUnpackEmpty,
+    createRuntimeServiceUnpackExample,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { featureFlags } from "../feature-flags";
   import { EMPTY_PROJECT_TITLE } from "./constants";
-  import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
-  import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -99,6 +102,7 @@
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}
         on:click={async () => {
+          featureFlags.set(false, "sourceImportedModal");
           await unpackProject(example);
         }}
       >
