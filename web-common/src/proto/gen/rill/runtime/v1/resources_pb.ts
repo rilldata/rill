@@ -1331,6 +1331,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeZones: string[] = [];
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.Cache cache = 11;
+   */
+  cache?: MetricsViewSpec_Cache;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1362,6 +1367,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "cache", kind: "message", T: MetricsViewSpec_Cache },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1839,6 +1845,57 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
 
   static equals(a: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined, b: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_AvailableTimeRange, a, b);
+  }
+}
+
+/**
+ * Cache controls for the metrics view.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Cache
+ */
+export class MetricsViewSpec_Cache extends Message<MetricsViewSpec_Cache> {
+  /**
+   * @generated from field: optional bool enabled = 1;
+   */
+  enabled?: boolean;
+
+  /**
+   * @generated from field: string key_sql = 2;
+   */
+  keySql = "";
+
+  /**
+   * @generated from field: int64 key_ttl_seconds = 3;
+   */
+  keyTtlSeconds = protoInt64.zero;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Cache>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Cache";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 2, name: "key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Cache {
+    return new MetricsViewSpec_Cache().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Cache {
+    return new MetricsViewSpec_Cache().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Cache {
+    return new MetricsViewSpec_Cache().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Cache | PlainMessage<MetricsViewSpec_Cache> | undefined, b: MetricsViewSpec_Cache | PlainMessage<MetricsViewSpec_Cache> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Cache, a, b);
   }
 }
 

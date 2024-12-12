@@ -67,8 +67,7 @@ func (e *Executor) Close() {
 
 // Cacheable returns whether the result of running the given query is cacheable.
 func (e *Executor) Cacheable(qry *Query) bool {
-	// TODO: Get from OLAP instead of hardcoding
-	return e.olap.Dialect() == drivers.DialectDuckDB
+	return *e.metricsView.Cache.Enabled
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.
