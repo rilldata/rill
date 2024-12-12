@@ -85,23 +85,8 @@
     }
   }
 
-  function authorizeSSO(email: string, connectionName: string) {
-    webAuth.authorize({
-      connection: connectionName,
-      login_hint: email,
-      prompt: "login",
-    });
-  }
-
-  async function processEmailSubmission(event) {
-    email = event.detail.email;
-    const connectionName = getConnectionFromEmail(email, connectionMapObj);
-
-    if (connectionName) {
-      authorizeSSO(email, connectionName);
-    } else {
-      step = AuthStep.SignUp;
-    }
+  function processEmailSubmission() {
+    step = AuthStep.SignUp;
   }
 
   function getHeadingText(step: AuthStep): string {
@@ -176,7 +161,11 @@
 
       <OrSeparator />
 
-      <EmailSubmissionForm on:submit={processEmailSubmission} />
+      <EmailSubmissionForm
+        on:submit={processEmailSubmission}
+        {webAuth}
+        {connectionMapObj}
+      />
     {/if}
 
     {#if step === AuthStep.Login || step === AuthStep.SignUp}

@@ -1,9 +1,13 @@
 <script lang="ts">
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import { validateEmail } from "./utils";
+  import { getConnectionFromEmail, validateEmail } from "./utils";
   import { createEventDispatcher } from "svelte";
 
+  import { WebAuth } from "auth0-js";
+
   export let disabled = false;
+  export let webAuth: WebAuth;
+  export let connectionMapObj: Record<string, string[]>;
 
   let email = "";
   let errorText = "";
@@ -15,7 +19,7 @@
   const focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
-  function handleClick() {
+  function handleContinueEmailClick() {
     if (!email) {
       errorText = "Please enter your email";
       return;
@@ -33,7 +37,23 @@
 
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
-      handleClick();
+      handleContinueEmailClick();
+    }
+  }
+
+  function authorizeSSO(email: string, connectionName: string) {
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
+  }
+
+  function handleContinueSSOClick() {
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+
+    if (connectionName) {
+      authorizeSSO(email, connectionName);
     }
   }
 
@@ -58,8 +78,14 @@
   {/if}
 </div>
 
-<CtaButton {disabled} variant="secondary" on:click={handleClick}>
+<CtaButton {disabled} variant="secondary" on:click={handleContinueEmailClick}>
   <div class="flex justify-center font-medium">
     <span>Continue with email</span>
+  </div>
+</CtaButton>
+
+<CtaButton {disabled} variant="secondary" on:click={handleContinueSSOClick}>
+  <div class="flex justify-center font-medium">
+    <div>Continue with SAML SSO</div>
   </div>
 </CtaButton>
