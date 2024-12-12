@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
@@ -12,6 +12,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { AfterNavigate } from "@sveltejs/kit";
   import type { PageData } from "./$types";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
@@ -82,6 +83,12 @@
     });
   }
 
+  let previousNavigationType: AfterNavigate["type"];
+  afterNavigate(({ from, type }) => {
+    if (from !== null && !from.url) return;
+    previousNavigationType = type;
+  });
+
   onNavigate(() => {
     // Temporary: clear the mocked user when navigating away.
     // In the future, we should be able to handle the mocked user on all project pages.
@@ -110,6 +117,7 @@
           {exploreStateFromYAMLConfig}
           {partialExploreStateFromUrl}
           {exploreStateFromSessionStorage}
+          {previousNavigationType}
         >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />

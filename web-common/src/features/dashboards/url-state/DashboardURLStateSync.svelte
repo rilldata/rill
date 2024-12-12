@@ -13,6 +13,8 @@
   } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { AfterNavigate } from "@sveltejs/kit";
+  import { onMount } from "svelte";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -24,6 +26,7 @@
   export let exploreStateFromSessionStorage:
     | Partial<MetricsExplorerEntity>
     | undefined;
+  export let previousNavigationType: AfterNavigate["type"];
 
   const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
     getStateManagers();
@@ -127,6 +130,13 @@
   $: if ($dashboardStore) {
     gotoNewState();
   }
+
+  onMount(() => {
+    // safeguard to make sure we initialize the explore state in case afterNavigate is missed
+    if (!$dashboardStore) {
+      handleExploreInit(previousNavigationType === "enter");
+    }
+  });
 </script>
 
 {#if schemaError}

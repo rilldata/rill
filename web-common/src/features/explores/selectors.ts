@@ -22,7 +22,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
-import type { Part } from "@sveltejs/kit/src/core/sync/create_manifest_data/types";
 
 export function useExplore(
   instanceId: string,
