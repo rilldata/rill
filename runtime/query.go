@@ -9,13 +9,11 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 )
 
 var (
@@ -70,25 +68,12 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	}
 	deps := query.Deps()
 	depKeys := make([]string, 0, len(deps))
-	olapConnector := ""
 	for _, dep := range deps {
 		// Get the dependency resource
 		res, err := ctrl.Get(ctx, dep, false)
 		if err != nil {
 			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
 			continue
-		}
-
-		// Infer OLAP connector for common resource types used in a query
-		if mv := res.GetMetricsView(); mv != nil {
-			if mv.State.ValidSpec == nil {
-				return fmt.Errorf("metrics view spec is not valid")
-			}
-			olapConnector = mv.State.ValidSpec.Connector
-		} else if mdl := res.GetModel(); mdl != nil {
-			olapConnector = mdl.Spec.OutputConnector
-		} else if src := res.GetSource(); src != nil {
-			olapConnector = src.Spec.SinkConnector
 		}
 
 		// Add to cache key.
@@ -113,18 +98,6 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 
-	// Skip caching if the OLAP connector is not DuckDB.
-	// NOTE: This hack is removed in the new resolvers by letting the resolver itself decide whether to cache or not.
-	olap, release, err := r.OLAP(ctx, instanceID, olapConnector)
-	if err != nil {
-		return err
-	}
-	dialect := olap.Dialect()
-	release()
-	if dialect != drivers.DialectDuckDB {
-		return query.Resolve(ctx, r, instanceID, priority)
-	}
-
 	// Build cache key
 	depKey := strings.Join(depKeys, ";")
 	key := queryCacheKey{
@@ -136,7 +109,6 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
 		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
-		r.Logger.Info("query cache hit", zap.String("key", key))
 		return query.UnmarshalResult(val)
 	}
 	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))

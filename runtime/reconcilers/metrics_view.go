@@ -129,13 +129,21 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 	defer release()
 
+	validSpec := mv.State.ValidSpec
+	if validSpec != nil && validSpec.Cache != nil && validSpec.Cache.Enabled != nil && *validSpec.Cache.Enabled &&
+		mv.State.Streaming && validSpec.Cache.KeySql == "" && watermarkForMetricsView(validSpec) == "" {
+		return runtime.ReconcileResult{Err: fmt.Errorf("cache enabled for streaming metrics view %q but no `watermark` or `key_sql` provided", self.Meta.Name)}
+	}
+
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	// Override the cache control with our calculated cache control
-	mv.State.ValidSpec.Cache = metricsViewCacheControl(mv.Spec, mv.State.Streaming, self.Meta.StateUpdatedOn, olap.Dialect())
+	if validSpec != nil {
+		validSpec.Cache = metricsViewCacheControl(validSpec, mv.State.Streaming, self.Meta.StateUpdatedOn, olap.Dialect())
+	}
 
 	return runtime.ReconcileResult{Err: validateErr}
 }
@@ -160,12 +168,21 @@ func metricsViewCacheControl(spec *runtimev1.MetricsViewSpec, streaming bool, up
 		cache.KeySql = spec.Cache.KeySql
 	} else {
 		if streaming {
-			cache.KeySql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, dialect.EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
+			cache.KeySql = fmt.Sprintf("SELECT %s FROM %s", watermarkForMetricsView(spec), dialect.EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
 		} else {
 			cache.KeySql = "SELECT " + fmt.Sprintf("'%d:%d'", updatedOn.GetSeconds(), updatedOn.GetNanos()/int32(time.Millisecond))
 		}
 	}
 	return cache
+}
+
+func watermarkForMetricsView(spec *runtimev1.MetricsViewSpec) string {
+	if spec.WatermarkExpression != "" {
+		return spec.WatermarkExpression
+	} else if spec.TimeDimension != "" {
+		return fmt.Sprintf("MAX(%s)", spec.TimeDimension)
+	}
+	return ""
 }
 
 func boolPtr(b bool) *bool {
