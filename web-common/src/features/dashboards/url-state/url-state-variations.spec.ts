@@ -11,6 +11,7 @@ import {
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
@@ -343,9 +344,11 @@ describe("Human readable URL state variations", () => {
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
@@ -389,9 +392,11 @@ describe("Human readable URL state variations", () => {
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
@@ -408,8 +413,6 @@ describe("Human readable URL state variations", () => {
         url.searchParams.set("state", getProtoFromDashboardState(curState));
         // get back the entity from url params
         const { partialExploreState: entityFromUrl } = convertURLToExploreState(
-          AD_BIDS_EXPLORE_NAME,
-          undefined,
           url.searchParams,
           AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
           explore,
@@ -421,8 +424,6 @@ describe("Human readable URL state variations", () => {
         const defaultUrl = new URL("http://localhost");
         const { partialExploreState: entityFromDefaultUrl } =
           convertURLToExploreState(
-            AD_BIDS_EXPLORE_NAME,
-            undefined,
             defaultUrl.searchParams,
             AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
             explore,
@@ -443,8 +444,6 @@ export function applyURLToExploreState(
 ) {
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLToExploreState(
-      AD_BIDS_EXPLORE_NAME,
-      undefined,
       url.searchParams,
       AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
       exploreSpec,

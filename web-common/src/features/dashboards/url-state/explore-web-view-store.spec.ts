@@ -11,6 +11,7 @@ import {
   AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
@@ -228,9 +229,11 @@ describe("ExploreWebViewStore", () => {
     it(title, () => {
       metricsExplorerStore.init(
         AD_BIDS_EXPLORE_NAME,
-        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-        AD_BIDS_EXPLORE_INIT,
-        AD_BIDS_TIME_RANGE_SUMMARY,
+        getInitExploreStateForTest(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+          AD_BIDS_EXPLORE_INIT,
+          AD_BIDS_TIME_RANGE_SUMMARY,
+        ),
       );
       createStateManagers({
         queryClient,

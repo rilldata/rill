@@ -13,7 +13,6 @@ import {
   convertFilterParamToExpression,
   stripParserError,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
-import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
