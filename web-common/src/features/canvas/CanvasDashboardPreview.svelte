@@ -17,7 +17,8 @@
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
   export let showGrid = false;
-  export let snap = true;
+  // TODO(@lovincyrus): remove before shipping
+  export let snap = false;
   export let selectedIndex: number | null = null;
 
   const { canvasName } = getCanvasStateManagers();
