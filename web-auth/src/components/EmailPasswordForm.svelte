@@ -95,7 +95,6 @@
     showForgetPassword = false;
 
     try {
-      console.log("attempt to sign up and login");
       // Attempt to sign up and login the user
       webAuth.redirect.signupAndLogin(
         {
@@ -105,11 +104,9 @@
         },
         (err) => {
           if (err) {
-            console.log("err", err);
             // Check if the error is about user already existing
             if (err.description && err.description.includes("User exists.")) {
               // If user exists, try logging them in
-              console.log("user exists, trying to login");
               webAuth.login(
                 {
                   realm: DATABASE_CONNECTION,
