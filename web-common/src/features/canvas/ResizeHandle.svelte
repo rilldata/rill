@@ -38,22 +38,18 @@
   style:top="{side[1] * 100}%"
   class:rotate-90={ew}
   class:!z-50={corner}
-  class:cursor-ns-resize={!corner && ns}
-  class:cursor-ew-resize={!corner && ew}
-  class:cursor-nwse-resize={corner && side[0] === side[1]}
-  class:cursor-nesw-resize={corner && side[0] !== side[1]}
   on:mousedown={handleMouseDown}
 >
   {#if !corner}
     <span class="line" style:height="{1 / scale}px" class:hide={!selected} />
   {/if}
-  <span
+  <!-- <span
     class="square"
     style:width="{6 / scale}px"
     style:height="{6 / scale}px"
     style:border-width="{1 / scale}px"
     class:hide={!selected}
-  />
+  /> -->
 </button>
 
 <style lang="postcss">
