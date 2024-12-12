@@ -16,9 +16,9 @@
   $: ({
     defaultExplorePreset,
     initExploreState,
-    initUrlSearch,
-    partialExploreState,
-    urlSearchForPartial,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
     token: { resourceName },
   } = data);
   $: ({ organization, project } = $page.params);
@@ -63,9 +63,9 @@
         exploreName={resourceName}
         {defaultExplorePreset}
         {initExploreState}
-        {initUrlSearch}
-        {partialExploreState}
-        {urlSearchForPartial}
+        {exploreStateFromYAMLConfig}
+        {partialExploreStateFromUrl}
+        {exploreStateFromSessionStorage}
       >
         <DashboardThemeProvider>
           <Dashboard

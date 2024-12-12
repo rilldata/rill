@@ -18,10 +18,9 @@
     metricsView,
     explore,
     defaultExplorePreset,
-    initExploreState,
-    initUrlSearch,
-    partialExploreState,
-    urlSearchForPartial,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
     errors,
     exploreName,
   } = data);
@@ -90,10 +89,9 @@
         {metricsViewName}
         {exploreName}
         {defaultExplorePreset}
-        {initExploreState}
-        {initUrlSearch}
-        {partialExploreState}
-        {urlSearchForPartial}
+        {exploreStateFromYAMLConfig}
+        {partialExploreStateFromUrl}
+        {exploreStateFromSessionStorage}
       >
         <DashboardThemeProvider>
           <Dashboard {metricsViewName} {exploreName} />

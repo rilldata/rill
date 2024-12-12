@@ -1,13 +1,10 @@
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import { error } from "@sveltejs/kit";
 
-export const load = async ({
-  params: { token, organization, project },
-  parent,
-}) => {
+export const load = async ({ params: { token }, parent }) => {
   const { runtime } = await parent();
 
   try {
@@ -23,41 +20,28 @@ export const load = async ({
       explore,
       metricsView,
       defaultExplorePreset,
-      initExploreState,
-      initLoadedOutsideOfURL,
-    } = await fetchExploreSpec(
-      runtime?.instanceId,
-      exploreName,
-      `__${organization}__${project}`,
-    );
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(runtime?.instanceId, exploreName);
     const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
     const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
+    let initExploreState: Partial<MetricsExplorerEntity> | undefined =
+      undefined;
     if (tokenData.token?.state) {
-      const exploreStateFromToken = getDashboardStateFromUrl(
+      initExploreState = getDashboardStateFromUrl(
         tokenData.token?.state,
         metricsViewSpec,
         exploreSpec,
         {}, // TODO
       );
-      Object.assign(initExploreState, exploreStateFromToken);
     }
-    const initUrlSearch =
-      initLoadedOutsideOfURL || !!tokenData.token?.state
-        ? getUpdatedUrlForExploreState(
-            exploreSpec,
-            defaultExplorePreset,
-            initExploreState,
-            new URLSearchParams(),
-          )
-        : "";
 
     return {
       explore,
       metricsView,
       defaultExplorePreset,
+      exploreStateFromYAMLConfig,
       initExploreState,
-      initUrlSearch,
       token: tokenData?.token,
     };
   } catch (e) {

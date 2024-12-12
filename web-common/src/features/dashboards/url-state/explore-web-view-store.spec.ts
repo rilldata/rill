@@ -81,7 +81,7 @@ const TestCases: {
   view: TestView;
 }[] = [
   {
-    title: "Explore <=> TTD",
+    title: "Explore <=> tdd",
     initView: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [],
@@ -93,11 +93,11 @@ const TestCases: {
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
   {
-    title: "dimension table <=> TTD",
+    title: "dimension table <=> tdd",
     initView: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
@@ -109,7 +109,7 @@ const TestCases: {
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
   },
 
@@ -150,13 +150,13 @@ const TestCases: {
     },
   },
   {
-    title: "TTD <=> Pivot",
+    title: "tdd <=> Pivot",
     initView: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
       expectedUrl:
-        "http://localhost/explore/AdBids_explore?view=ttd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
+        "http://localhost/explore/AdBids_explore?view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions&chart_type=stacked_bar",
     },
     view: {
       view: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,

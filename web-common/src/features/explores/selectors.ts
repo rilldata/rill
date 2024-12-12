@@ -1,7 +1,11 @@
 import type { CreateQueryOptions, QueryFunction } from "@rilldata/svelte-query";
-import { restorePersistedDashboardState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  convertPresetToExploreState,
+  convertURLToExploreState,
+} from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createRuntimeServiceGetExplore,
@@ -14,9 +18,11 @@ import {
   type V1GetExploreResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1ExplorePreset,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
+import type { Part } from "@sveltejs/kit/src/core/sync/create_manifest_data/types";
 
 export function useExplore(
   instanceId: string,
@@ -77,7 +83,6 @@ export function useExploreValidSpec(
 export async function fetchExploreSpec(
   instanceId: string,
   exploreName: string,
-  prefix: string | undefined,
 ) {
   const queryParams = {
     name: exploreName,
@@ -127,29 +132,60 @@ export async function fetchExploreSpec(
     exploreSpec,
     fullTimeRange,
   );
-  const { partialExploreState: initExploreState, errors } =
+  const { partialExploreState: exploreStateFromYAMLConfig, errors } =
     convertPresetToExploreState(
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
     );
 
-  let initLoadedOutsideOfURL = false;
-  const stateFromLocalStorage = restorePersistedDashboardState(
-    exploreSpec,
-    (prefix ?? "") + exploreName,
-  );
-  if (stateFromLocalStorage) {
-    initLoadedOutsideOfURL = true;
-    Object.assign(initExploreState, stateFromLocalStorage);
-  }
-
   return {
     explore: exploreResource,
     metricsView: metricsViewResource,
     defaultExplorePreset,
-    initExploreState,
-    initLoadedOutsideOfURL,
+    exploreStateFromYAMLConfig,
+    errors,
+  };
+}
+
+export function getExploreStores(
+  exploreName: string,
+  prefix: string | undefined,
+  searchParams: URLSearchParams,
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+  exploreSpec: V1ExploreSpec | undefined,
+  defaultExplorePreset: V1ExplorePreset,
+) {
+  if (!metricsViewSpec || !exploreSpec) {
+    return {
+      partialExploreStateFromUrl: <Partial<MetricsExplorerEntity>>{},
+      exploreStateFromSessionStorage: undefined,
+      errors: [],
+    };
+  }
+
+  const { partialExploreState: partialExploreStateFromUrl, errors } =
+    convertURLToExploreState(
+      searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+
+  const { exploreStateFromSessionStorage, errors: errorsFromLoad } =
+    getExploreStateFromSessionStorage(
+      exploreName,
+      prefix,
+      searchParams,
+      metricsViewSpec,
+      exploreSpec,
+      defaultExplorePreset,
+    );
+  errors.push(...errorsFromLoad);
+
+  return {
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
     errors,
   };
 }

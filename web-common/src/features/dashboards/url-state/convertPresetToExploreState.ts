@@ -11,7 +11,6 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
-import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 import { ToLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromURLParamTDDChartMap,
@@ -45,21 +44,13 @@ import {
 import type { SortingState } from "@tanstack/svelte-table";
 
 export function convertURLToExploreState(
-  exploreName: string,
-  prefix: string | undefined,
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
-  const {
-    loadedOutsideOfURL,
-    preset,
-    errors: errorsFromPreset,
-  } = convertURLToExplorePreset(
-    exploreName,
-    prefix,
+  const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
     exploreSpec,
@@ -69,17 +60,7 @@ export function convertURLToExploreState(
   const { partialExploreState, errors: errorsFromEntity } =
     convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
-
-  const urlSearchForPartial = loadedOutsideOfURL
-    ? getUpdatedUrlForExploreState(
-        exploreSpec,
-        defaultExplorePreset,
-        partialExploreState,
-        searchParams,
-      )
-    : searchParams.toString();
-
-  return { partialExploreState, urlSearchForPartial, errors };
+  return { partialExploreState, errors };
 }
 
 /**

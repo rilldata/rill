@@ -1,4 +1,4 @@
-import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { getExploreStores } from "@rilldata/web-common/features/explores/selectors";
 
 export const load = async ({ url, parent, params }) => {
   const { explore, metricsView, defaultExplorePreset } = await parent();
@@ -6,20 +6,15 @@ export const load = async ({ url, parent, params }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  const { partialExploreState, urlSearchForPartial, errors } =
-    convertURLToExploreState(
+  return {
+    exploreName,
+    ...getExploreStores(
       exploreName,
-      `__${organization}__${project}`,
+      `${organization}__${project}__`,
       url.searchParams,
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
-    );
-
-  return {
-    partialExploreState,
-    urlSearchForPartial,
-    errors,
-    exploreName,
+    ),
   };
 };

@@ -253,7 +253,7 @@ const TestCases: {
       "Time dimensional details with no preset and has time dimensional details in state",
     mutations: [AD_BIDS_OPEN_IMP_TDD, AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
     expectedUrl:
-      "http://localhost/?view=ttd&measure=impressions&chart_type=stacked_bar",
+      "http://localhost/?view=tdd&measure=impressions&chart_type=stacked_bar",
   },
   {
     title: "Time dimensional details with no preset, open and close TDD",

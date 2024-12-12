@@ -9,11 +9,11 @@ import {
   getMultiFieldError,
   getSingleFieldError,
 } from "@rilldata/web-common/features/dashboards/url-state/error-message-helpers";
-import { getExplorePresetForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import {
   convertFilterParamToExpression,
   stripParserError,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
 import {
   FromURLParamsSortTypeMap,
   FromURLParamTimeDimensionMap,
@@ -42,8 +42,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export function convertURLToExplorePreset(
-  exploreName: string,
-  prefix: string | undefined,
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
   explore: V1ExploreSpec,
@@ -65,16 +63,6 @@ export function convertURLToExplorePreset(
     ) ?? [],
     (d) => d.name!,
   );
-
-  const explorePresetFromSessionStorage = fromSessionStore(
-    exploreName,
-    prefix,
-    searchParams,
-    defaultExplorePreset,
-  );
-  if (explorePresetFromSessionStorage) {
-    return explorePresetFromSessionStorage;
-  }
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.
@@ -183,59 +171,6 @@ function fromLegacyStateUrlParam(
       errors: [e], // TODO: parse and show meaningful error
     };
   }
-}
-
-/**
- * Redirects to a view with params loaded from session storage.
- * 1. If no param is set then load the params for the default view from session storage.
- * 2. If only view param is set then load the params from session storage.
- * 3. If view=ttd and `measure` is the only other param set load from session storage.
- */
-function fromSessionStore(
-  exploreName: string,
-  prefix: string | undefined,
-  searchParams: URLSearchParams,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  if (
-    // exactly one param is set, but it is not `view`
-    (searchParams.size === 1 &&
-      !searchParams.has(ExploreStateURLParams.WebView)) ||
-    // exactly 2 params are set and both `view` and `measure` are not set
-    (searchParams.size === 2 &&
-      !searchParams.has(ExploreStateURLParams.WebView) &&
-      !searchParams.has(ExploreStateURLParams.ExpandedMeasure)) ||
-    // more than 2 params are set
-    searchParams.size > 2
-  ) {
-    return undefined;
-  }
-
-  const viewFromUrl = searchParams.get(ExploreStateURLParams.WebView) as string;
-  const view = viewFromUrl
-    ? FromURLParamViewMap[viewFromUrl]
-    : (defaultExplorePreset.view ??
-      V1ExploreWebView.EXPLORE_WEB_VIEW_UNSPECIFIED);
-  const explorePresetFromSessionStorage = getExplorePresetForWebView(
-    exploreName,
-    prefix,
-    view,
-  );
-  if (!explorePresetFromSessionStorage) {
-    return undefined;
-  }
-
-  if (view === V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION) {
-    explorePresetFromSessionStorage.timeDimensionMeasure = searchParams.get(
-      ExploreStateURLParams.ExpandedMeasure,
-    ) as string;
-  }
-
-  return {
-    loadedOutsideOfURL: true,
-    preset: explorePresetFromSessionStorage,
-    errors: [],
-  };
 }
 
 function fromFilterUrlParam(

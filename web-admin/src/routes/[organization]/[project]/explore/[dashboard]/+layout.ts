@@ -4,7 +4,6 @@ import {
 } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExplorePreset,
@@ -14,27 +13,22 @@ import {
 export const load = async ({ params, depends, parent }) => {
   const { project, runtime } = await parent();
 
-  const { organization, project: projectName, dashboard: exploreName } = params;
+  const { dashboard: exploreName } = params;
 
   depends(exploreName, "explore");
 
   let explore: V1Resource | undefined;
   let metricsView: V1Resource | undefined;
   let defaultExplorePreset: V1ExplorePreset | undefined;
-  let initExploreState: Partial<MetricsExplorerEntity> = {};
-  let initLoadedOutsideOfURL = false;
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  let initExploreState: Partial<MetricsExplorerEntity> | undefined = undefined;
   try {
     ({
       explore,
       metricsView,
       defaultExplorePreset,
-      initExploreState,
-      initLoadedOutsideOfURL,
-    } = await fetchExploreSpec(
-      runtime?.instanceId,
-      exploreName,
-      `__${organization}__${projectName}`,
-    ));
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(runtime?.instanceId, exploreName));
   } catch {
     // error handled in +page.svelte for now
     // TODO: move it here
@@ -42,8 +36,7 @@ export const load = async ({ params, depends, parent }) => {
       explore: <V1Resource>{},
       metricsView: <V1Resource>{},
       defaultExplorePreset: <V1ExplorePreset>{},
-      initExploreState: {},
-      initLoadedOutsideOfURL: false,
+      exploreStateFromYAMLConfig,
     };
   }
 
@@ -55,32 +48,22 @@ export const load = async ({ params, depends, parent }) => {
     const homeBookmark = bookmarks.find(isHomeBookmark);
 
     if (homeBookmark) {
-      const exploreStateFromBookmark = getDashboardStateFromUrl(
+      initExploreState = getDashboardStateFromUrl(
         homeBookmark.data ?? "",
         metricsViewSpec,
         exploreSpec,
         {}, // TODO
       );
-      Object.assign(initExploreState, exploreStateFromBookmark);
-      initLoadedOutsideOfURL = true;
     }
   } catch {
     // TODO
   }
-  const initUrlSearch = initLoadedOutsideOfURL
-    ? getUpdatedUrlForExploreState(
-        exploreSpec,
-        defaultExplorePreset,
-        initExploreState,
-        new URLSearchParams(),
-      )
-    : "";
 
   return {
     explore,
     metricsView,
     defaultExplorePreset,
+    exploreStateFromYAMLConfig,
     initExploreState,
-    initUrlSearch,
   };
 };

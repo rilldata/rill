@@ -1,4 +1,3 @@
-import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error } from "@sveltejs/kit";
@@ -16,24 +15,14 @@ export const load = async ({ params, depends }) => {
       explore,
       metricsView,
       defaultExplorePreset,
-      initExploreState,
-      initLoadedOutsideOfURL,
-    } = await fetchExploreSpec(instanceId, exploreName, undefined);
-    const initUrlSearch = initLoadedOutsideOfURL
-      ? getUpdatedUrlForExploreState(
-          explore.explore?.state?.validSpec ?? {},
-          defaultExplorePreset,
-          initExploreState,
-          new URLSearchParams(),
-        )
-      : "";
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(instanceId, exploreName);
 
     return {
       explore,
       metricsView,
       defaultExplorePreset,
-      initExploreState,
-      initUrlSearch,
+      exploreStateFromYAMLConfig,
     };
   } catch (e) {
     console.error(e);

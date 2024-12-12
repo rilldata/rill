@@ -80,7 +80,7 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
-  $: ttdHref = `?${ExploreStateURLParams.WebView}=ttd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
+  $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
@@ -128,7 +128,7 @@
         }, 1000);
       },
     })}
-    href={ttdHref}
+    href={tddHref}
   >
     <h2
       class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"

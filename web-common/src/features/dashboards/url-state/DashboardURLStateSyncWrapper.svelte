@@ -2,15 +2,11 @@
   import { page } from "$app/stores";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { restorePersistedDashboardState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import {
-    convertPresetToExploreState,
-    convertURLToExploreState,
-  } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+  import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
+  import { getExploreStores } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -37,52 +33,27 @@
     exploreSpec,
     $metricsViewTimeRange.data,
   );
-  let initExploreState: Partial<MetricsExplorerEntity> = {};
-  let initUrlSearch = "";
-  $: {
-    ({ partialExploreState: initExploreState } = convertPresetToExploreState(
+  $: ({ partialExploreState: exploreStateFromYAMLConfig } =
+    convertPresetToExploreState(
       metricsViewSpec,
       exploreSpec,
       defaultExplorePreset,
     ));
 
-    let initLoadedOutsideOfURL = false;
-    const stateFromLocalStorage = restorePersistedDashboardState(
-      exploreSpec,
-      storeKeyPrefix + $exploreName,
-    );
-    if (stateFromLocalStorage) {
-      initLoadedOutsideOfURL = true;
-      Object.assign(initExploreState, stateFromLocalStorage);
-    }
-
-    initUrlSearch = initLoadedOutsideOfURL
-      ? getUpdatedUrlForExploreState(
-          exploreSpec,
-          defaultExplorePreset,
-          initExploreState,
-          new URLSearchParams(),
-        )
-      : "";
-  }
-
-  let partialExploreState: Partial<MetricsExplorerEntity> = {};
-  let urlSearchForPartial = "";
+  let partialExploreStateFromUrl: Partial<MetricsExplorerEntity> = {};
+  let exploreStateFromSessionStorage:
+    | Partial<MetricsExplorerEntity>
+    | undefined = undefined;
   function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
-    // Get Explore state from URL params
-    const {
-      partialExploreState: partialExploreStateFromUrl,
-      urlSearchForPartial: _urlSearchForPartial,
-    } = convertURLToExploreState(
-      $exploreName,
-      storeKeyPrefix,
-      url.searchParams,
-      metricsViewSpec,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-    partialExploreState = partialExploreStateFromUrl;
-    urlSearchForPartial = _urlSearchForPartial;
+    ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
+      getExploreStores(
+        $exploreName,
+        storeKeyPrefix,
+        url.searchParams,
+        metricsViewSpec,
+        exploreSpec,
+        defaultExplorePreset,
+      ));
   }
 
   // only reactive to url and defaultExplorePreset
@@ -93,11 +64,10 @@
   <DashboardURLStateSync
     metricsViewName={$metricsViewName}
     exploreName={$exploreName}
-    {initExploreState}
     {defaultExplorePreset}
-    {initUrlSearch}
-    {partialExploreState}
-    {urlSearchForPartial}
+    {exploreStateFromYAMLConfig}
+    {partialExploreStateFromUrl}
+    {exploreStateFromSessionStorage}
   >
     <slot />
   </DashboardURLStateSync>

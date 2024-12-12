@@ -4,27 +4,13 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStateForKey } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
-import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import type {
-  V1ExploreSpec,
-  V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 
 // TODO: Remove this in favour of just `getBasePreset`
 export function getDefaultExploreState(
   name: string,
-  metricsView: V1MetricsViewSpec,
-  explore: V1ExploreSpec,
-  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-  defaultExplorePreset = getDefaultExplorePreset(explore, fullTimeRange),
+  initState: Partial<MetricsExplorerEntity>,
 ): MetricsExplorerEntity {
-  const { partialExploreState } = convertPresetToExploreState(
-    metricsView,
-    explore,
-    defaultExplorePreset,
-  );
   return {
     // fields filled here are the ones that are not stored and loaded to/from URL
     name,
@@ -36,7 +22,7 @@ export function getDefaultExploreState(
 
     lastDefinedScrubRange: undefined,
 
-    ...partialExploreState,
+    ...initState,
   } as MetricsExplorerEntity;
 }
 
