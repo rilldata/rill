@@ -1,3 +1,4 @@
+import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
@@ -214,7 +215,11 @@ function fromFilterUrlParam(
           return false;
         }
 
-        if (measures.has(ident) || dimensions.has(ident)) {
+        if (
+          measures.has(ident) ||
+          measures.has(stripMeasureSuffix(ident)) ||
+          dimensions.has(ident)
+        ) {
           return true;
         }
         missingFields.push(ident);

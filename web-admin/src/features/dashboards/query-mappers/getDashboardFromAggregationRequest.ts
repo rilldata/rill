@@ -113,6 +113,7 @@ export async function getDashboardFromAggregationRequest({
   dashboard.visibleMeasureKeys = new Set(
     req.measures?.map((m) => m.name ?? "") ?? [],
   );
+  console.log(req.measures);
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (

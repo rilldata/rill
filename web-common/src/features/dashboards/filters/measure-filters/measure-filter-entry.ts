@@ -155,3 +155,7 @@ export function mapMeasureFilterToExpr(
       );
   }
 }
+
+export function stripMeasureSuffix(measureName: string) {
+  return measureName.replace(HasSuffixRegex, "");
+}
