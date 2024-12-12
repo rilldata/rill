@@ -4,10 +4,6 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import {
   AD_BIDS_BASE_FILTER,
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_CLEARED_FILTER,
@@ -30,6 +26,7 @@ import {
   assertMetricsView,
   assertMetricsViewRaw,
   createAdBidsMirrorInStore,
+  getInitExploreStateForTest,
   initStateManagers,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -46,7 +43,6 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 describe("dashboard-stores", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_EXPLORE_NAME);
-    initPersistentDashboardStore(AD_BIDS_EXPLORE_NAME);
     runtime.set({
       instanceId: "",
       host: "",
@@ -54,7 +50,6 @@ describe("dashboard-stores", () => {
   });
 
   beforeEach(() => {
-    getPersistentDashboardStore().reset();
     resetDashboardStore();
   });
 
@@ -200,12 +195,10 @@ describe("dashboard-stores", () => {
 
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME,
-      AD_BIDS_METRICS_INIT,
-      {
+      getInitExploreStateForTest(AD_BIDS_METRICS_INIT, {
         metricsView: AD_BIDS_NO_TIMESTAMP_NAME,
         ...AD_BIDS_EXPLORE_INIT,
-      },
-      undefined,
+      }),
     );
     assertMetricsViewRaw(
       AD_BIDS_EXPLORE_NO_TIMESTAMP_NAME,
@@ -230,22 +223,24 @@ describe("dashboard-stores", () => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_INIT,
-      {
-        ...AD_BIDS_EXPLORE_INIT,
-        defaultPreset: {
-          timeRange: "PT6H",
-          comparisonMode:
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT,
+        {
+          ...AD_BIDS_EXPLORE_INIT,
+          defaultPreset: {
+            timeRange: "PT6H",
+            comparisonMode:
+              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_UNSPECIFIED,
+          },
         },
-      },
-      {
-        timeRangeSummary: {
-          min: TestTimeConstants.LAST_DAY.toISOString(),
-          max: TestTimeConstants.NOW.toISOString(),
-          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+        {
+          timeRangeSummary: {
+            min: TestTimeConstants.LAST_DAY.toISOString(),
+            max: TestTimeConstants.NOW.toISOString(),
+            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+          },
         },
-      },
+      ),
     );
 
     let metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
@@ -257,22 +252,24 @@ describe("dashboard-stores", () => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_INIT,
-      {
-        ...AD_BIDS_EXPLORE_INIT,
-        defaultPreset: {
-          timeRange: "PT6H",
-          comparisonMode:
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT,
+        {
+          ...AD_BIDS_EXPLORE_INIT,
+          defaultPreset: {
+            timeRange: "PT6H",
+            comparisonMode:
+              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+          },
         },
-      },
-      {
-        timeRangeSummary: {
-          min: TestTimeConstants.LAST_DAY.toISOString(),
-          max: TestTimeConstants.NOW.toISOString(),
-          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+        {
+          timeRangeSummary: {
+            min: TestTimeConstants.LAST_DAY.toISOString(),
+            max: TestTimeConstants.NOW.toISOString(),
+            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+          },
         },
-      },
+      ),
     );
     metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
     expect(metrics.showTimeComparison).toBeFalsy();
@@ -284,23 +281,25 @@ describe("dashboard-stores", () => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
     metricsExplorerStore.init(
       AD_BIDS_EXPLORE_NAME,
-      AD_BIDS_METRICS_INIT,
-      {
-        ...AD_BIDS_EXPLORE_INIT,
-        defaultPreset: {
-          timeRange: "PT6H",
-          comparisonMode:
-            V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
-          comparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT,
+        {
+          ...AD_BIDS_EXPLORE_INIT,
+          defaultPreset: {
+            timeRange: "PT6H",
+            comparisonMode:
+              V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION,
+            comparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
+          },
         },
-      },
-      {
-        timeRangeSummary: {
-          min: TestTimeConstants.LAST_DAY.toISOString(),
-          max: TestTimeConstants.NOW.toISOString(),
-          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+        {
+          timeRangeSummary: {
+            min: TestTimeConstants.LAST_DAY.toISOString(),
+            max: TestTimeConstants.NOW.toISOString(),
+            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+          },
         },
-      },
+      ),
     );
     metrics = get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME];
     expect(metrics.selectedComparisonDimension).toBe(AD_BIDS_DOMAIN_DIMENSION);

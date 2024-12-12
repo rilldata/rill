@@ -381,7 +381,7 @@ function shouldSetParam<T>(
 
   // both preset and state value is non-truthy.
   // EG: one is "" and another is undefined then we should not set param as empty string
-  if (!presetValue && !exploreStateValue) {
+  if ((!presetValue && !exploreStateValue) || exploreStateValue === undefined) {
     return false;
   }
 

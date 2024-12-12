@@ -10,6 +10,7 @@ import {
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
+  getInitExploreStateForTest,
   getPartialDashboard,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
@@ -96,9 +97,11 @@ describe("sparse proto", () => {
       it(`from ${title}`, () => {
         const dashboard = getDefaultExploreState(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_INIT,
-          AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_INIT,
+            AD_BIDS_EXPLORE_INIT,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const defaultProto = getProtoFromDashboardState(dashboard);
 

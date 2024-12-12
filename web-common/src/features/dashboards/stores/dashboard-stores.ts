@@ -4,15 +4,14 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
-  getDefaultExploreState,
-  restorePersistedDashboardState,
-} from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  contextColWidthDefaults,
+  type MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,
@@ -24,7 +23,6 @@ import type {
   V1ExploreSpec,
   V1Expression,
   V1MetricsViewSpec,
-  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import {
@@ -169,23 +167,22 @@ function syncDimensions(
 }
 
 const metricsViewReducers = {
-  init(
-    name: string,
-    metricsView: V1MetricsViewSpec,
-    explore: V1ExploreSpec,
-    fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
-    initState: Partial<MetricsExplorerEntity> = {},
-  ) {
+  init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = {
-        ...getDefaultExploreState(name, metricsView, explore, fullTimeRange),
+      state.entities[name] = <MetricsExplorerEntity>{
+        // fields filled here are the ones that are not stored and loaded to/from URL
+        name,
+        dimensionFilterExcludeMode: new Map(),
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+
+        temporaryFilterName: null,
+        contextColumnWidths: { ...contextColWidthDefaults },
+
+        lastDefinedScrubRange: undefined,
         ...initState,
       };
-      state.entities[name] = restorePersistedDashboardState(
-        state.entities[name],
-      );
 
       updateMetricsExplorerProto(state.entities[name]);
 

@@ -15,7 +15,10 @@
 
   $: ({
     defaultExplorePreset,
-    partialExploreState,
+    initExploreState,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
     token: { resourceName },
   } = data);
   $: ({ organization, project } = $page.params);
@@ -55,7 +58,15 @@
       metricsViewName={explore.metricsView.meta.name.name}
       exploreName={resourceName}
     >
-      <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+      <DashboardURLStateSync
+        metricsViewName={explore.metricsView.meta.name.name}
+        exploreName={resourceName}
+        {defaultExplorePreset}
+        {initExploreState}
+        {exploreStateFromYAMLConfig}
+        {partialExploreStateFromUrl}
+        {exploreStateFromSessionStorage}
+      >
         <DashboardThemeProvider>
           <Dashboard
             exploreName={resourceName}

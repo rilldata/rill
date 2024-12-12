@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
@@ -12,6 +12,7 @@
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { AfterNavigate } from "@sveltejs/kit";
   import type { PageData } from "./$types";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
@@ -19,7 +20,15 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ defaultExplorePreset, partialExploreState, errors } = data);
+  $: ({
+    defaultExplorePreset,
+    initExploreState,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
+    errors,
+    exploreName,
+  } = data);
   $: if (errors?.length) {
     setTimeout(() => {
       eventBus.emit("notification", {
@@ -33,11 +42,7 @@
   }
   $: instanceId = $runtime?.instanceId;
 
-  $: ({
-    organization: orgName,
-    project: projectName,
-    dashboard: exploreName,
-  } = $page.params);
+  $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: () => {
@@ -78,6 +83,12 @@
     });
   }
 
+  let previousNavigationType: AfterNavigate["type"];
+  afterNavigate(({ from, type }) => {
+    if (from !== null && !from.url) return;
+    previousNavigationType = type;
+  });
+
   onNavigate(() => {
     // Temporary: clear the mocked user when navigating away.
     // In the future, we should be able to handle the mocked user on all project pages.
@@ -98,7 +109,16 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+        <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
+          {defaultExplorePreset}
+          {initExploreState}
+          {exploreStateFromYAMLConfig}
+          {partialExploreStateFromUrl}
+          {exploreStateFromSessionStorage}
+          {previousNavigationType}
+        >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>

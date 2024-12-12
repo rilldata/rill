@@ -1,41 +1,113 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
   } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { AfterNavigate } from "@sveltejs/kit";
+  import { onMount } from "svelte";
 
+  export let metricsViewName: string;
+  export let exploreName: string;
   export let defaultExplorePreset: V1ExplorePreset;
-  export let partialExploreState: Partial<MetricsExplorerEntity>;
+  export let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
+  export let initExploreState: Partial<MetricsExplorerEntity> | undefined =
+    undefined;
+  export let partialExploreStateFromUrl: Partial<MetricsExplorerEntity>;
+  export let exploreStateFromSessionStorage:
+    | Partial<MetricsExplorerEntity>
+    | undefined;
+  export let previousNavigationType: AfterNavigate["type"];
 
-  const {
-    metricsViewName,
-    exploreName,
-    dashboardStore,
-    validSpecStore,
-    timeRangeSummaryStore,
-  } = getStateManagers();
+  const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
+    getStateManagers();
   $: exploreSpec = $validSpecStore.data?.explore;
   $: metricsSpec = $validSpecStore.data?.metricsView;
 
   const metricsViewSchema = createQueryServiceMetricsViewSchema(
     $runtime.instanceId,
-    $metricsViewName,
+    metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-
-  $: ({ error, data: timeRangeSummary } = $timeRangeSummaryStore);
+  $: ({ error } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
 
+  afterNavigate(({ from, type }) => {
+    if (
+      // null checks
+      !metricsSpec ||
+      !exploreSpec ||
+      // seems like a sveltekit bug where an additional afterNavigate is triggered with invalid fields
+      (from !== null && !from.url)
+    ) {
+      return;
+    }
+
+    const isInit = !$dashboardStore;
+    if (isInit) {
+      handleExploreInit(type === "enter");
+    } else {
+      prevUrl = $page.url.toString();
+      metricsExplorerStore.mergePartialExplorerEntity(
+        exploreName,
+        exploreStateFromSessionStorage ?? partialExploreStateFromUrl,
+        metricsSpec,
+      );
+    }
+  });
+
   let prevUrl = "";
+  function handleExploreInit(isManualUrlChange: boolean) {
+    let initState: Partial<MetricsExplorerEntity> | undefined;
+    let shouldUpdateUrl = false;
+    if (exploreStateFromSessionStorage && !isManualUrlChange) {
+      // if there is state in session storage then merge state from config yaml with the state from session storage
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...exploreStateFromSessionStorage,
+      };
+      shouldUpdateUrl = true;
+    } else if ($page.url.searchParams.size === 0) {
+      // when there are no params set, state will be state from config yaml and any additional initial state like bookmark
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...(initExploreState ?? {}),
+      };
+      shouldUpdateUrl = !!initExploreState;
+    } else {
+      // else merge with explore from url
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...partialExploreStateFromUrl,
+      };
+    }
+
+    metricsExplorerStore.init(exploreName, initState);
+    const redirectUrl = new URL($page.url);
+    redirectUrl.search = getUpdatedUrlForExploreState(
+      exploreSpec!,
+      defaultExplorePreset,
+      initState,
+      $page.url.searchParams,
+    );
+    prevUrl = redirectUrl.toString();
+
+    if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
+      return;
+    }
+
+    replaceState(redirectUrl, $page.state);
+  }
+
   function gotoNewState() {
     if (!exploreSpec) return;
 
@@ -48,29 +120,9 @@
       defaultExplorePreset,
     );
     const newUrl = u.toString();
-    if (window.location.href !== newUrl) {
+    if (prevUrl !== newUrl) {
       void goto(newUrl);
     }
-  }
-
-  function mergePartialExplorerEntity() {
-    if (!metricsSpec || !exploreSpec) return;
-    if (!$dashboardStore) {
-      // initial page load, create an entry in metricsExplorerStore
-      metricsExplorerStore.init(
-        $exploreName,
-        metricsSpec,
-        exploreSpec,
-        timeRangeSummary,
-      );
-    }
-
-    metricsExplorerStore.mergePartialExplorerEntity(
-      $exploreName,
-      partialExploreState,
-      metricsSpec,
-    );
-    prevUrl = window.location.href;
   }
 
   // reactive to only dashboardStore
@@ -79,16 +131,12 @@
     gotoNewState();
   }
 
-  // reactive to only partialExploreState, metricsSpec & exploreSpec
-  // but mergePartialExplorerEntity checks other fields
-  $: if (
-    partialExploreState &&
-    metricsSpec &&
-    exploreSpec &&
-    prevUrl !== window.location.href
-  ) {
-    mergePartialExplorerEntity();
-  }
+  onMount(() => {
+    // safeguard to make sure we initialize the explore state in case afterNavigate is missed
+    if (!$dashboardStore) {
+      handleExploreInit(previousNavigationType === "enter");
+    }
+  });
 </script>
 
 {#if schemaError}

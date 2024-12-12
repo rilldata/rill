@@ -8,6 +8,8 @@
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
@@ -46,6 +48,22 @@
       // Reset local persisted dashboard state for the metrics view
       createPersistentDashboardStore(metricsViewName).reset();
       clearExploreSessionStore(metricsViewName, undefined);
+
+      // Reset local persisted explore state derived from this metrics view
+      fileArtifacts
+        .getResourcesForKind(ResourceKind.Explore)
+        .forEach((exploreResource) => {
+          const exploreName = exploreResource?.meta?.name?.name;
+          if (
+            !exploreName ||
+            !exploreResource?.explore?.state?.validSpec?.metricsView ||
+            exploreResource?.explore?.state?.validSpec?.metricsView !==
+              metricsViewName
+          )
+            return;
+          createPersistentDashboardStore(exploreName).reset();
+          clearExploreSessionStore(exploreName, undefined);
+        });
 
       if (!content?.length) {
         setLineStatuses([], editor);

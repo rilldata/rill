@@ -2,6 +2,8 @@ import {
   fetchBookmarks,
   isHomeBookmark,
 } from "@rilldata/web-admin/features/bookmarks/selectors";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExplorePreset,
@@ -11,23 +13,22 @@ import {
 export const load = async ({ params, depends, parent }) => {
   const { project, runtime } = await parent();
 
-  const exploreName = params.dashboard;
+  const { dashboard: exploreName } = params;
 
   depends(exploreName, "explore");
 
+  let explore: V1Resource | undefined;
+  let metricsView: V1Resource | undefined;
+  let defaultExplorePreset: V1ExplorePreset | undefined;
+  let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  let initExploreState: Partial<MetricsExplorerEntity> | undefined = undefined;
   try {
-    const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(runtime?.instanceId, exploreName);
-
-    // used to merge home bookmark to url state
-    const bookmarks = await fetchBookmarks(project.id, exploreName);
-
-    return {
+    ({
       explore,
       metricsView,
       defaultExplorePreset,
-      homeBookmark: bookmarks.find(isHomeBookmark),
-    };
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(runtime?.instanceId, exploreName));
   } catch {
     // error handled in +page.svelte for now
     // TODO: move it here
@@ -35,7 +36,34 @@ export const load = async ({ params, depends, parent }) => {
       explore: <V1Resource>{},
       metricsView: <V1Resource>{},
       defaultExplorePreset: <V1ExplorePreset>{},
-      homeBookmark: undefined,
+      exploreStateFromYAMLConfig,
     };
   }
+
+  const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
+  const exploreSpec = explore.explore?.state?.validSpec ?? {};
+
+  try {
+    const bookmarks = await fetchBookmarks(project.id, exploreName);
+    const homeBookmark = bookmarks.find(isHomeBookmark);
+
+    if (homeBookmark) {
+      initExploreState = getDashboardStateFromUrl(
+        homeBookmark.data ?? "",
+        metricsViewSpec,
+        exploreSpec,
+        {}, // TODO
+      );
+    }
+  } catch {
+    // TODO
+  }
+
+  return {
+    explore,
+    metricsView,
+    defaultExplorePreset,
+    exploreStateFromYAMLConfig,
+    initExploreState,
+  };
 };

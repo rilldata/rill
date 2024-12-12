@@ -11,7 +11,7 @@ import {
 export const FromURLParamViewMap: Record<string, V1ExploreWebView> = {
   explore: V1ExploreWebView.EXPLORE_WEB_VIEW_EXPLORE,
   pivot: V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
-  ttd: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
+  tdd: V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
 };
 export const ToURLParamViewMap = reverseMap(FromURLParamViewMap);
 

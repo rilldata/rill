@@ -141,7 +141,7 @@ export function convertURLToExplorePreset(
     }
   }
 
-  return { preset, errors };
+  return { loadedOutsideOfURL: false, preset, errors };
 }
 
 function fromLegacyStateUrlParam(
