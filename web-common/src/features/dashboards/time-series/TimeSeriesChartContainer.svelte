@@ -8,9 +8,11 @@ A container GraphicContext for the time series in a metrics dashboard.
   export let start: Date | undefined;
   export let end: Date | undefined;
   export let workspaceWidth: number;
+  export let timeSeriesWidth: number;
   export let enableFullWidth = false;
 
   const paddingForFullWidth = 80;
+  const paddingForSplitView = 30;
 </script>
 
 <div class="max-w-full h-fit flex flex-col max-h-full pr-2">
@@ -26,10 +28,7 @@ A container GraphicContext for the time series in a metrics dashboard.
     width={Math.max(
       enableFullWidth
         ? workspaceWidth - paddingForFullWidth
-        : workspaceWidth >= MEASURE_CONFIG.breakpoint
-          ? MEASURE_CONFIG.container.width.full
-          : MEASURE_CONFIG.container.width.breakpoint,
-      400,
+        : timeSeriesWidth - paddingForSplitView,
     ) - MEASURE_CONFIG.bigNumber.widthWithChart}
     xMax={end}
     xMaxTweenProps={{ duration: 400 }}
