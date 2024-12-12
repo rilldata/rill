@@ -1,5 +1,8 @@
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
-import { fillTimeRange } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
+import {
+  convertQueryFilterToToplistQuery,
+  fillTimeRange,
+} from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -8,6 +11,7 @@ import {
   measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
   SortType,
@@ -73,9 +77,20 @@ export async function getDashboardFromAggregationRequest({
   }
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
     const dimension = req.dimensions[0].name;
-    if (
+    if (exprHasComparison(req.having)) {
+      const expr = await convertQueryFilterToToplistQuery(
+        instanceId,
+        explore.metricsView ?? "",
+        req,
+        dimension,
+      );
+      dashboard.whereFilter =
+        mergeFilters(
+          dashboard.whereFilter ?? createAndExpression([]),
+          createAndExpression([expr]),
+        ) ?? createAndExpression([]);
+    } else if (
       req.having.cond.exprs.length > 1 ||
-      exprHasComparison(req.having) ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
       const extraFilter = createSubQueryExpression(
@@ -117,7 +132,7 @@ export async function getDashboardFromAggregationRequest({
       .filter((m) => !measureHasSuffix(m)) ?? [],
   );
   dashboard.allMeasuresVisible =
-    dashboard.visibleMeasureKeys.size === explore.measures.length;
+    dashboard.visibleMeasureKeys.size === explore.measures?.length;
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (

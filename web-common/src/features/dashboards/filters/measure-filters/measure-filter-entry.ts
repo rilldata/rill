@@ -156,6 +156,9 @@ export function mapMeasureFilterToExpr(
   }
 }
 
+export function measureHasSuffix(measureName: string) {
+  return HasSuffixRegex.test(measureName);
+}
 export function stripMeasureSuffix(measureName: string) {
   return measureName.replace(HasSuffixRegex, "");
 }

@@ -1,3 +1,4 @@
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
@@ -10,10 +11,14 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  getQueryServiceMetricsViewAggregationQueryKey,
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
+  queryServiceMetricsViewAggregation,
+  type QueryServiceMetricsViewAggregationBody,
   queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
+  type V1MetricsViewAggregationRequest,
   type V1MetricsViewTimeRangeResponse,
   type V1TimeRange,
   type V1TimeRangeSummary,
@@ -125,6 +130,30 @@ export function getExploreName(webOpenPath: string) {
   return matches[1];
 }
 
+export async function convertQueryFilterToToplistQuery(
+  instanceId: string,
+  metricsView: string,
+  req: V1MetricsViewAggregationRequest,
+  dimension: string,
+) {
+  const params = <QueryServiceMetricsViewAggregationBody>{
+    ...req,
+  };
+  const toplist = await queryClient.fetchQuery({
+    queryKey: getQueryServiceMetricsViewAggregationQueryKey(
+      instanceId,
+      metricsView,
+      params,
+    ),
+    queryFn: () =>
+      queryServiceMetricsViewAggregation(instanceId, metricsView, params),
+  });
+  return createInExpression(
+    dimension,
+    toplist.data?.map((d) => d[dimension]) ?? [],
+  );
+}
+
 export async function getExplorePageUrl(
   curPageUrl: URL,
   organization: string,
@@ -158,7 +187,7 @@ export async function getExplorePageUrl(
 
   let fullTimeRange: V1MetricsViewTimeRangeResponse | undefined;
   if (
-    metricsView.metricsView?.state?.validSpec?.timeDimension &&
+    metricsView?.metricsView?.state?.validSpec?.timeDimension &&
     metricsViewName
   ) {
     fullTimeRange = await queryClient.fetchQuery({
@@ -174,7 +203,6 @@ export async function getExplorePageUrl(
     });
   }
 
-  console.log(exploreState);
   url.search = convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec,
