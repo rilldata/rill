@@ -189,6 +189,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
