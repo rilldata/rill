@@ -146,7 +146,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 
 	// Handle generic resource triggers
 	for _, rn := range trigger.Spec.Resources {
-		res, err := r.C.Get(ctx, rn, false)
+		res, err := r.C.Get(ctx, rn, true)
 		if err != nil {
 			// Skip triggers for non-existent resources
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
