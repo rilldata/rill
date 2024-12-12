@@ -12,6 +12,11 @@ import (
 // Extracts out the base or comparison query into a CTE depending on the sort field.
 // This is done to enable more efficient query execution by adding filter in the join query to select only dimension values present in the CTE.
 func (e *Executor) rewriteApproxComparisons(ast *AST) {
+	// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
+	if e.olap.Dialect() == drivers.DialectClickHouse {
+		return
+	}
+
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
 	}
