@@ -57,7 +57,6 @@
     const dateString = e.currentTarget.value;
 
     let date: DateTime = DateTime.invalid("invalid");
-
     let format: string | null = null;
 
     for (const potentialFormat of formats) {
