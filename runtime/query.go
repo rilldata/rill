@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 )
 
 var (
@@ -93,6 +94,17 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		// Add to cache key.
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
+		if mv := res.GetMetricsView(); mv != nil {
+			if !*mv.State.ValidSpec.Cache.Enabled {
+				// can't cache if the metrics view is not cacheable
+				return query.Resolve(ctx, r, instanceID, priority)
+			}
+			cacheKey, err := r.metricsViewCacheKey(ctx, instanceID, res.Meta.Name.Name, priority)
+			if err != nil {
+				return err
+			}
+			key = key + ":" + string(cacheKey)
+		}
 		depKeys = append(depKeys, key)
 	}
 
@@ -124,6 +136,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
 		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
+		r.Logger.Info("query cache hit", zap.String("key", key))
 		return query.UnmarshalResult(val)
 	}
 	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))
@@ -156,6 +169,24 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.UnmarshalResult(val)
 	}
 	return nil
+}
+
+func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, error) {
+	cacheKeyResolver, err := r.Resolve(ctx, &ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           "metrics_cache_key",
+		ResolverProperties: map[string]any{"metrics_view": name},
+		Args:               map[string]any{"priority": priority},
+		Claims:             &SecurityClaims{SkipChecks: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+	cacheKey, err := cacheKeyResolver.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return cacheKey, nil
 }
 
 type queryCacheKey struct {

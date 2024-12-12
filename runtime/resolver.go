@@ -164,6 +164,21 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		if err := binary.Write(hash, binary.BigEndian, res.Meta.StateUpdatedOn.Nanos); err != nil {
 			return nil, err
 		}
+
+		if res.GetMetricsView() != nil && res.GetMetricsView().State.ValidSpec != nil {
+			if !*res.GetMetricsView().State.ValidSpec.Cache.Enabled {
+				// can't cache query results for non-cacheable metrics views
+				return resolver.ResolveInteractive(ctx)
+			}
+			key, err := r.metricsViewCacheKey(ctx, opts.InstanceID, res.Meta.Name.Name, 10)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := hash.Write(key); err != nil {
+				return nil, err
+			}
+		}
+
 	}
 	sum := hex.EncodeToString(hash.Sum(nil))
 	key := fmt.Sprintf("inst:%s:resolver:%s:hash:%s", opts.InstanceID, opts.Resolver, sum)

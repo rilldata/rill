@@ -100,7 +100,7 @@ func (r *metricsViewTimeRangeResolver) Close() error {
 }
 
 func (r *metricsViewTimeRangeResolver) Cacheable() bool {
-	return true
+	return *r.mv.Cache.Enabled
 }
 
 func (r *metricsViewTimeRangeResolver) Key() string {

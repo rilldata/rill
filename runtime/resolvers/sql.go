@@ -88,6 +88,7 @@ func (r *sqlResolver) Close() error {
 }
 
 func (r *sqlResolver) Cacheable() bool {
+	// TODO :: fix for clickhouse
 	if r.olap.Dialect() == drivers.DialectDuckDB {
 		return len(r.refs) != 0
 	}
