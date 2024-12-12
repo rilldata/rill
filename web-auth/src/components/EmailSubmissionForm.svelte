@@ -35,12 +35,6 @@
     dispatch("submit", { email });
   }
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      handleContinueEmailClick();
-    }
-  }
-
   function authorizeSSO(email: string, connectionName: string) {
     webAuth.authorize({
       connection: connectionName,
@@ -68,7 +62,6 @@
     placeholder="Enter your email address"
     id="email"
     bind:value={email}
-    on:keydown={handleKeyDown}
   />
 
   {#if errorText}
