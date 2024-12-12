@@ -173,8 +173,10 @@
 
     if (!items) {
       parsedDocument.set("items", [newComponent]);
+      selectedIndex = 0;
     } else {
       items.add(newComponent);
+      selectedIndex = items.items.length - 1;
     }
 
     updateLocalContent(parsedDocument.toString(), true);
@@ -195,7 +197,7 @@
     return `Component ${items.length + 1}`;
   }
 
-  async function handleDeleteEvent(
+  async function handlePreviewDelete(
     e: CustomEvent<{
       index: number;
     }>,
@@ -359,7 +361,7 @@
           bind:selectedComponentName
           bind:selectedIndex
           on:update={handlePreviewUpdate}
-          on:delete={handleDeleteEvent}
+          on:delete={handlePreviewDelete}
         />
 
         <div class="floating-grid-wrapper">
