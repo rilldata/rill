@@ -1,4 +1,4 @@
-import type { PlaywrightTestConfig } from "@playwright/test";
+import { devices, type PlaywrightTestConfig } from "@playwright/test";
 
 const config: PlaywrightTestConfig = {
   webServer: {
@@ -10,6 +10,17 @@ const config: PlaywrightTestConfig = {
   use: {
     baseURL: "http://localhost:3000",
   },
+  projects: [
+    { name: "auth", testMatch: "authenticate.ts" },
+    {
+      name: "authenticated user",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "playwright/.auth/user.json",
+      },
+      dependencies: ["auth"],
+    },
+  ],
 };
 
 export default config;
