@@ -2327,7 +2327,7 @@ message ProjectPermissions {
   bool read_dev_status = 7;
   bool manage_dev = 8;
   bool read_provisioner_resources = 19;
-	bool manage_provisioner_resources = 20;
+  bool manage_provisioner_resources = 20;
   bool read_project_members = 9;
   bool manage_project_members = 10;
   bool create_magic_auth_tokens = 15;
