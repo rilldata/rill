@@ -13,7 +13,6 @@
   export let disabled = false;
   export let email = "";
   export let isDomainDisabled = false;
-  export let isLegacy = false;
   export let webAuth: WebAuth;
 
   let showForgetPassword = false;

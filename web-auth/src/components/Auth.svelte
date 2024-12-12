@@ -182,7 +182,6 @@
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
         {email}
-        {isLegacy}
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}
