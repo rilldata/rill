@@ -85,7 +85,9 @@
     }
   }
 
-  function processEmailSubmission() {
+  function processEmailSubmission(event: any) {
+    email = event.detail.email;
+
     step = AuthStep.SignUp;
   }
 
