@@ -168,7 +168,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
