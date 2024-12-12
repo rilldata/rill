@@ -132,6 +132,10 @@
     changing = true;
   }
 
+  function handleDelete(e: CustomEvent<{ index: number }>) {
+    items.splice(e.detail.index, 1);
+  }
+
   function handleMouseMove(e: MouseEvent) {
     if (selectedIndex === null || !changing) return;
 
@@ -205,7 +209,7 @@
       top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
       left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
       on:change={handleChange}
-      on:delete
+      on:delete={handleDelete}
     />
   {/each}
 </DashboardWrapper>
