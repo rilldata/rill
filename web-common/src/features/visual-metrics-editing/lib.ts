@@ -9,12 +9,10 @@ export type ItemType = "measures" | "dimensions";
 
 export type MenuOption = { value: string; label: string; type?: string };
 
-export const editingItem = writable<{
-  item: YAMLMeasure | YAMLDimension;
+export const editingItemData = writable<{
+  index: number;
   type: ItemType;
 } | null>(null);
-
-export const editingIndex = writable<number | null>(null);
 
 export type Confirmation = {
   action: "cancel" | "delete" | "switch";

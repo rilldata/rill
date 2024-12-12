@@ -270,7 +270,7 @@
 
   .multiline-input {
     @apply py-1;
-    line-height: 1.6;
+    line-height: 1.58;
   }
 
   .multiline-input {

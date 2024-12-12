@@ -2,7 +2,7 @@
   import Checkbox from "./Checkbox.svelte";
   import MetricsTableRow from "./MetricsTableRow.svelte";
   import { ROW_HEIGHT } from "./lib";
-  import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
+  import { editingItemData, YAMLDimension, YAMLMeasure } from "./lib";
 
   const headers = [
     "Name",
@@ -174,7 +174,7 @@
       {#each filteredIndices as index (index)}
         <MetricsTableRow
           disableDrag={filteredIndices.length !== items.length}
-          sidebarOpen={!!$editingItem}
+          sidebarOpen={!!$editingItemData}
           i={index}
           item={items[index]}
           {type}
