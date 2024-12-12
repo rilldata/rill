@@ -5,7 +5,7 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import ComponentsEditor from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditor.svelte";
   import ComponentsEditorContainer from "@rilldata/web-common/features/canvas-components/editor/ComponentsEditorContainer.svelte";
-  import AddComponentMenu from "@rilldata/web-common/features/canvas/AddComponentMenu.svelte";
+  // import AddComponentMenu from "@rilldata/web-common/features/canvas/AddComponentMenu.svelte";
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/canvas/types";
@@ -151,6 +151,50 @@
     if ($autoSave) await updateComponentFile();
   }
 
+  async function addMarkdownComponent() {
+    const newComponent = {
+      component: {
+        markdown: {
+          content: getNextComponentName(),
+          css: {
+            "font-size": "40px",
+            "background-color": "#fff",
+          },
+        },
+      },
+      width: 12,
+      height: 2,
+      x: 0,
+      y: getNextYPosition(),
+    };
+
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const items = parsedDocument.get("items") as any;
+
+    if (!items) {
+      parsedDocument.set("items", [newComponent]);
+    } else {
+      items.add(newComponent);
+    }
+
+    updateLocalContent(parsedDocument.toString(), true);
+
+    if ($autoSave) await updateComponentFile();
+  }
+
+  function getNextYPosition(): number {
+    if (!items.length) return 0;
+
+    // Find the last item
+    const lastItem = items[items.length - 1];
+    // Position new item below the last item with a gap of 1 unit
+    return Number(lastItem.y) + Number(lastItem.height);
+  }
+
+  function getNextComponentName(): string {
+    return `Component ${items.length + 1}`;
+  }
+
   async function handleDeleteEvent(
     e: CustomEvent<{
       index: number;
@@ -204,7 +248,12 @@
         disabled={errors?.length > 0}
       />
 
-      <AddComponentMenu {addComponent} />
+      <Button type="secondary" on:click={addMarkdownComponent}
+        >Insert Markdown</Button
+      >
+
+      <!-- TODO(@lovincyrus): hiding this for now -->
+      <!-- <AddComponentMenu {addComponent} /> -->
       <ViewSelector bind:selectedView />
     </div>
   </WorkspaceHeader>
