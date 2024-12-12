@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	_ "github.com/rilldata/rill/runtime/resolvers"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )

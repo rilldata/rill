@@ -178,7 +178,6 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 				return nil, err
 			}
 		}
-
 	}
 	sum := hex.EncodeToString(hash.Sum(nil))
 	key := fmt.Sprintf("inst:%s:resolver:%s:hash:%s", opts.InstanceID, opts.Resolver, sum)
