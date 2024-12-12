@@ -103,7 +103,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	if t, err := e.c.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
+	if t, err := e.c.InformationSchema().Lookup(ctx, e.c.config.Database, "", stagingTableName); err == nil {
 		_ = e.c.DropTable(ctx, stagingTableName, t.View)
 	}
 

@@ -65,7 +65,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 
 		// Drop the staging view/table if it exists.
 		// NOTE: This intentionally drops the end table if not staging changes.
-		if t, err := e.c.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
+		if t, err := e.c.InformationSchema().Lookup(ctx, e.c.config.Database, "", stagingTableName); err == nil {
 			_ = e.c.DropTable(ctx, stagingTableName, t.View)
 		}
 

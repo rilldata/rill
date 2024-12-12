@@ -206,7 +206,7 @@ func (c *connection) Exists(ctx context.Context, res *drivers.ModelResult) (bool
 		return false, fmt.Errorf("connector is not an OLAP")
 	}
 
-	_, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
+	_, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	return err == nil, nil
 }
 
@@ -216,12 +216,12 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return fmt.Errorf("connector is not an OLAP")
 	}
 
-	stagingTable, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableNameFor(res.Table))
+	stagingTable, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", stagingTableNameFor(res.Table))
 	if err == nil {
 		_ = c.DropTable(ctx, stagingTable.Name, stagingTable.View)
 	}
 
-	table, err := olap.InformationSchema().Lookup(ctx, "", "", res.Table)
+	table, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	if err != nil {
 		return err
 	}
