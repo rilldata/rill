@@ -29,10 +29,12 @@ import {
 } from "svelte/store";
 import {
   DIRECTORIES_WITHOUT_AUTOSAVE,
+  FILE_SAVE_DEBOUNCE_TIME,
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
 import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
+import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -64,18 +66,22 @@ export class FileArtifact {
     undefined,
   );
   readonly reconciling = writable(false);
+  readonly merging = writable(false);
   readonly localContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
-  readonly hasUnsavedChanges = writable(false);
+  readonly inConflict = writable(false);
+  readonly hasUnsavedChanges = derived(
+    this.localContent,
+    ($local) => $local !== null,
+  );
   readonly fileExtension: string;
-  readonly ready: Promise<boolean>;
   readonly fileTypeUnsupported: boolean;
   readonly folderName: string;
   readonly fileName: string;
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
 
-  private remoteCallbacks = new Set<(content: string, force?: true) => void>();
+  private remoteCallbacks = new Set<(content: string) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
 
   // Last time the state of the resource `kind/name` was updated.
@@ -112,17 +118,7 @@ export class FileArtifact {
     });
   }
 
-  updateRemoteContent = (newContent: string, alert = true) => {
-    const hasNewContent = newContent !== get(this.remoteContent);
-    this.remoteContent.set(newContent);
-    if (alert && hasNewContent) {
-      for (const callback of this.remoteCallbacks) {
-        callback(newContent);
-      }
-    }
-  };
-
-  async fetchContent(invalidate = false) {
+  fetchContent = async (invalidate = false) => {
     const instanceId = get(runtime).instanceId;
     const queryParams = {
       path: this.path,
@@ -145,50 +141,57 @@ export class FileArtifact {
       throw new Error("Content undefined");
     }
 
-    this.updateRemoteContent(blob, true);
-  }
+    this.updateRemoteContent(blob);
+  };
+
+  private updateRemoteContent = (blob: string) => {
+    const existingRemoteContent = get(this.remoteContent);
+    const remoteContentUpdated = existingRemoteContent !== blob;
+
+    const localContent = get(this.localContent);
+
+    if (localContent && localContent === blob) {
+      this.updateLocalContent(null);
+      this.inConflict.set(false);
+    } else if (localContent && localContent !== blob) {
+      this.inConflict.set(true);
+    }
+
+    if (remoteContentUpdated) {
+      this.remoteContent.set(blob);
+
+      for (const callback of this.remoteCallbacks) {
+        callback(blob);
+      }
+    }
+  };
 
   updateLocalContent = (content: string | null, alert = false) => {
-    const hasUnsavedChanges = get(this.hasUnsavedChanges);
     const autoSave = get(this.autoSave);
 
+    // if (content === null || !autoSave) {
+    this.localContent.set(content);
+    // }
+
     if (content === null) {
-      this.hasUnsavedChanges.set(false);
       fileArtifacts.unsavedFiles.update((files) => {
         files.delete(this.path);
         return files;
       });
-    } else if (!hasUnsavedChanges && !autoSave) {
-      this.hasUnsavedChanges.set(true);
+    } else if (!autoSave) {
       fileArtifacts.unsavedFiles.update((files) => {
         files.add(this.path);
         return files;
       });
+    } else {
+      this.debounceSave(content);
     }
-
-    this.localContent.set(content);
 
     if (alert) {
       for (const callback of this.localCallbacks) {
         callback(content);
       }
     }
-  };
-
-  onRemoteContentChange = (
-    callback: (content: string, force?: true) => void,
-  ) => {
-    this.remoteCallbacks.add(callback);
-    return () => this.remoteCallbacks.delete(callback);
-  };
-
-  onLocalContentChange = (callback: (content: string | null) => void) => {
-    this.localCallbacks.add(callback);
-    return () => this.localCallbacks.delete(callback);
-  };
-
-  revert = () => {
-    this.updateLocalContent(null, true);
   };
 
   saveLocalContent = async () => {
@@ -214,14 +217,34 @@ export class FileArtifact {
         blob,
       }).catch(console.error);
 
-      // Optimistically update the remote content
-      this.remoteContent.set(blob);
-      this.remoteCallbacks.forEach((cb) => cb(blob, true));
+      this.merging.set(false);
 
-      this.updateLocalContent(null);
+      // Optimistically update the remote content
+      // this.remoteContent.set(blob);
     } catch (e) {
       console.error(e);
     }
+  };
+
+  debounceSave = debounce(this.saveContent, FILE_SAVE_DEBOUNCE_TIME);
+
+  onRemoteContentChange = (
+    callback: (content: string, force?: true) => void,
+  ) => {
+    this.remoteCallbacks.add(callback);
+    return () => this.remoteCallbacks.delete(callback);
+  };
+
+  onLocalContentChange = (callback: (content: string | null) => void) => {
+    this.localCallbacks.add(callback);
+    return () => this.localCallbacks.delete(callback);
+  };
+
+  revert = () => {
+    this.merging.set(false);
+    this.inConflict.set(false);
+
+    this.updateLocalContent(null, true);
   };
 
   updateResource(resource: V1Resource) {

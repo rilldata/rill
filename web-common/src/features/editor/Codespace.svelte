@@ -5,71 +5,46 @@
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
-  import { get } from "svelte/store";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { underlineSelection } from "./highlight-field";
+  import { MergeView } from "@codemirror/merge";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave: boolean = true;
   export let forceLocalUpdates: boolean = false;
   export let editor: EditorView | null = null;
-  export let debounceSave: () => void;
+  export let editorHasFocus = false;
 
   const extensionCompartment = new Compartment();
 
   let parent: HTMLElement;
-  let showWarning = false;
-  let saving = false;
   let unsubscribers: Array<() => void> = [];
+  let mergeView: MergeView | null = null;
 
   const {
-    updateLocalContent,
-    localContent,
-    saveLocalContent,
     remoteContent,
-    revert,
+    localContent,
+    merging,
+    updateLocalContent,
     onRemoteContentChange,
     onLocalContentChange,
   } = fileArtifact;
 
   onMount(() => {
-    // Check if the file artifact has a local content
-    // If it does, we want to use that as the initial content
-    // Otherwise, we'll use the remote content
-    editor = new EditorView({
-      state: EditorState.create({
-        doc: $localContent ?? $remoteContent ?? undefined,
-        extensions: [
-          baseExtensions(),
-          extensionCompartment.of([]),
-          EditorView.updateListener.of(
-            ({ docChanged, state: { doc }, view: { hasFocus } }) => {
-              if (hasFocus && docChanged) {
-                updateLocalContent(doc.toString());
-
-                if (autoSave) debounceSave();
-              }
-            },
-          ),
-        ],
-      }),
-      parent,
-    });
+    if ($merging) {
+      mountMergeView();
+    } else {
+      mountEditor();
+    }
 
     const unsubscribeRemoteContent = onRemoteContentChange(
-      (newRemoteContent, force) => {
-        if (editor && newRemoteContent !== null) {
-          if (editor.hasFocus && !force) return;
-          const local = get(localContent);
+      (newRemoteContent) => {
+        if (editor && !editor.hasFocus) {
           if (editor.state.doc.toString() === newRemoteContent) return;
 
-          if (local === null) {
+          if (autoSave) {
             updateEditorContent(newRemoteContent);
-          } else if (local !== newRemoteContent) {
-            showWarning = true;
           }
         }
       },
@@ -83,8 +58,9 @@
         content !== null &&
         editor &&
         !editor.hasFocus
-      )
+      ) {
         updateEditorContent(content);
+      }
     });
 
     const unsubscribeHighlighter = eventBus.on("highlightSelection", (refs) => {
@@ -103,15 +79,15 @@
     };
   });
 
-  $: if (editor) updateEditorExtensions(extensions);
+  // $: if (editor) updateEditorExtensions(extensions);
   $: if (fileArtifact) editor?.contentDOM.blur();
 
-  function updateEditorExtensions(newExtensions: Extension[]) {
-    editor?.dispatch({
-      effects: extensionCompartment.reconfigure(newExtensions),
-      scrollIntoView: true,
-    });
-  }
+  // function updateEditorExtensions(newExtensions: Extension[]) {
+  //   editor?.dispatch({
+  //     effects: extensionCompartment.reconfigure(newExtensions),
+  //     scrollIntoView: true,
+  //   });
+  // }
 
   function updateEditorContent(newContent: string) {
     const existingSelection = editor?.state.selection.ranges[0];
@@ -135,6 +111,58 @@
       },
     });
   }
+
+  export function mountMergeView() {
+    if (!$localContent || !$remoteContent) return;
+
+    const mergeExtensions = [
+      baseExtensions(),
+      ...extensions,
+      EditorView.editable.of(false),
+      EditorState.readOnly.of(true),
+    ];
+
+    merging.set(true);
+    editor?.destroy();
+
+    mergeView = new MergeView({
+      a: {
+        doc: $localContent,
+        extensions: mergeExtensions,
+      },
+      b: {
+        doc: $remoteContent,
+        extensions: mergeExtensions,
+      },
+      parent,
+    });
+  }
+
+  export function mountEditor() {
+    mergeView?.destroy();
+
+    const initialContent = $localContent ?? $remoteContent ?? "";
+
+    editor = new EditorView({
+      state: EditorState.create({
+        doc: initialContent,
+        extensions: [
+          baseExtensions(),
+          extensionCompartment.of([extensions]),
+          EditorView.updateListener.of(
+            ({ docChanged, state: { doc }, view: { hasFocus } }) => {
+              editorHasFocus = hasFocus;
+
+              if (hasFocus && docChanged) {
+                updateLocalContent(doc.toString());
+              }
+            },
+          ),
+        ],
+      }),
+      parent,
+    });
+  }
 </script>
 
 <div
@@ -152,46 +180,19 @@
   tabindex="0"
 />
 
-<AlertDialog.Root bind:open={showWarning}>
-  <AlertDialog.Content>
-    <AlertDialog.Title>File update received remotely</AlertDialog.Title>
-    <AlertDialog.Description>
-      You have unsaved changes. Do you want to save them before accepting the
-      remote changes?
-    </AlertDialog.Description>
+<style lang="postcss">
+  :global(.cm-mergeView) {
+    @apply h-full;
+  }
 
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="secondary"
-          loading={saving}
-          large
-          on:click={async () => {
-            saving = true;
-            await saveLocalContent();
-            saving = false;
-            showWarning = false;
-          }}
-        >
-          Save local changes
-        </Button>
-      </AlertDialog.Cancel>
+  :global(.cm-editor) {
+    padding-top: 2px;
+  }
+  :global(.cm-mergeViewEditors) {
+    @apply h-full;
+  }
 
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="primary"
-          large
-          on:click={() => {
-            showWarning = false;
-            revert();
-            if ($remoteContent !== null) updateEditorContent($remoteContent);
-          }}
-        >
-          Accept remote changes
-        </Button>
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+  :global(.cm-mergeViewEditor:first-of-type) {
+    @apply border-r;
+  }
+</style>

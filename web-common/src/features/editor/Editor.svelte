@@ -15,6 +15,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
+  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -27,12 +28,18 @@
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
+  let codespace: Codespace;
+  // let merging = false;
+  let editorHasFocus = false;
+
   $: ({
     hasUnsavedChanges,
     saveLocalContent,
     revert,
+    merging,
     localContent,
     disableAutoSave,
+    inConflict,
   } = fileArtifact);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
@@ -64,20 +71,52 @@
 <svelte:window on:keydown={handleKeydown} on:focus={handleRefocus} />
 
 <section>
+  {#if $merging}
+    <div class="flex w-full border-b">
+      <div class="w-full border-r p-1.5 pl-3 flex justify-between items-center">
+        <h1 class="text-[16px] italic font-semibold text-gray-400">
+          Unsaved Changes
+        </h1>
+        <Button
+          type="subtle"
+          on:click={() => {
+            save();
+            codespace.mountEditor();
+          }}
+        >
+          <Check size="14px" />
+          Save
+        </Button>
+      </div>
+      <div class="w-full p-1.5 pl-3 flex justify-between items-center">
+        <h2 class="text-[16px] font-semibold">Remote Content</h2>
+        <Button
+          type="primary"
+          on:click={() => {
+            codespace.mountEditor();
+            revertContent();
+          }}
+        >
+          Accept
+        </Button>
+      </div>
+    </div>
+  {/if}
   <div class="editor-container">
     {#key fileArtifact}
       <Codespace
         {extensions}
-        {debounceSave}
         {forceLocalUpdates}
         {fileArtifact}
         autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor
+        bind:editorHasFocus
+        bind:this={codespace}
       />
     {/key}
   </div>
 
-  {#if showSaveBar}
+  {#if !$merging && showSaveBar}
     <footer>
       <div class="flex gap-x-3">
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}
@@ -128,9 +167,34 @@
   {/if}
 </section>
 
+{#if $inConflict && !$merging && !editorHasFocus}
+  <AlertDialog.Root portal="#workspace-main-container" open>
+    <AlertDialog.Content>
+      <AlertDialog.Title>File update received remotely</AlertDialog.Title>
+      <AlertDialog.Description>
+        This file has been updated remotely. Resolve conflicts before
+        continuing.
+      </AlertDialog.Description>
+
+      <AlertDialog.Footer>
+        <AlertDialog.Action asChild let:builder>
+          <Button
+            builders={[builder]}
+            type="primary"
+            large
+            on:click={codespace.mountMergeView}
+          >
+            Resolve conflicts
+          </Button>
+        </AlertDialog.Action>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
+{/if}
+
 <style lang="postcss">
   .editor-container {
-    @apply size-full overflow-auto p-2 pb-0 flex flex-col;
+    @apply size-full overflow-auto p-0 pt-0 pb-0 flex flex-col;
   }
 
   footer {
