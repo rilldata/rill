@@ -142,7 +142,7 @@
 
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
-    metricsService.loadCloudFields({
+    metricsService?.loadCloudFields({
       isDev: window.location.host.startsWith("localhost"),
       projectId: project,
       organizationId: organization,

@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -192,6 +193,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			if spec != nil {
 				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
+		} else if mdl.ResourceType == runtime.ResourceKindReport {
+			// adding this rule to allow report resource accessible by non admin users
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_Access{
+					Access: &runtimev1.SecurityRuleAccess{
+						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))),
+						Allow:     true,
+					},
+				},
+			})
 		}
 
 		attr = mdl.Attributes
@@ -715,6 +726,16 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	}
+
+	var validationErr error
+	for k := range req.Variables {
+		if err := env.ValidateName(k); err != nil {
+			validationErr = errors.Join(validationErr, err)
+		}
+	}
+	if validationErr != nil {
+		return nil, status.Error(codes.InvalidArgument, validationErr.Error())
 	}
 
 	err = s.admin.UpdateProjectVariables(ctx, proj, req.Environment, req.Variables, req.UnsetVariables, claims.OwnerID())

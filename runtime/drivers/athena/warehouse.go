@@ -12,10 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	types2 "github.com/aws/aws-sdk-go-v2/service/athena/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -123,7 +125,29 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 		return aws.Config{}, fmt.Errorf("static creds are not provided, and host access is not allowed")
 	}
 
-	return config.LoadDefaultConfig(ctx, loadOptions...)
+	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	if c.config.RoleARN != "" {
+		stsClient := sts.NewFromConfig(awsConfig)
+		assumeRoleOptions := []func(*stscreds.AssumeRoleOptions){}
+		if c.config.RoleSessionName != "" {
+			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
+				o.RoleSessionName = c.config.RoleSessionName
+			})
+		}
+		if c.config.ExternalID != "" {
+			assumeRoleOptions = append(assumeRoleOptions, func(o *stscreds.AssumeRoleOptions) {
+				o.ExternalID = &c.config.ExternalID
+			})
+		}
+		provider := stscreds.NewAssumeRoleProvider(stsClient, c.config.RoleARN, assumeRoleOptions...)
+		awsConfig.Credentials = aws.NewCredentialsCache(provider)
+	}
+
+	return awsConfig, nil
 }
 
 func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {

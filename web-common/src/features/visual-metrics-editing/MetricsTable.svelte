@@ -4,7 +4,13 @@
   import { ROW_HEIGHT } from "./lib";
   import { editingItem, YAMLDimension, YAMLMeasure } from "./lib";
 
-  const headers = ["Name", "Label", "SQL expression", "Format", "Description"];
+  const headers = [
+    "Name",
+    "Display name",
+    "SQL expression",
+    "Format",
+    "Description",
+  ];
   const gutterWidth = 56;
 
   export let type: "measures" | "dimensions";
@@ -106,7 +112,7 @@
   function filter(item: YAMLDimension | YAMLMeasure, searchValue: string) {
     return (
       item?.name?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      item?.label?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      item?.display_name?.toLowerCase().includes(searchValue.toLowerCase()) ||
       item?.expression?.toLowerCase().includes(searchValue.toLowerCase()) ||
       (item instanceof YAMLDimension &&
         item?.column?.toLowerCase().includes(searchValue.toLowerCase()))

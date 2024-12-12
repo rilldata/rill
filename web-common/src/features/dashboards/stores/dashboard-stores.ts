@@ -4,7 +4,7 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
-  getDefaultMetricsExplorerEntity,
+  getDefaultExploreState,
   restorePersistedDashboardState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
@@ -32,7 +32,7 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
-import { type Readable, derived, writable } from "svelte/store";
+import { derived, writable, type Readable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 import type { PivotColumns, PivotRows } from "../pivot/types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
@@ -142,13 +142,17 @@ function syncDimensions(
   }
 
   metricsExplorer.pivot.rows.dimension =
-    metricsExplorer.pivot.rows.dimension.filter((dimension) =>
-      dimensionsSet.has(dimension.id),
+    metricsExplorer.pivot.rows.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
     );
 
   metricsExplorer.pivot.columns.dimension =
-    metricsExplorer.pivot.columns.dimension.filter((dimension) =>
-      dimensionsSet.has(dimension.id),
+    metricsExplorer.pivot.columns.dimension.filter(
+      (dimension) =>
+        dimensionsSet.has(dimension.id) ||
+        dimension.type === PivotChipType.Time,
     );
 
   if (metricsExplorer.allDimensionsVisible) {
@@ -170,17 +174,15 @@ const metricsViewReducers = {
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
     fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
+    initState: Partial<MetricsExplorerEntity> = {},
   ) {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = getDefaultMetricsExplorerEntity(
-        name,
-        metricsView,
-        explore,
-        fullTimeRange,
-      );
-
+      state.entities[name] = {
+        ...getDefaultExploreState(name, metricsView, explore, fullTimeRange),
+        ...initState,
+      };
       state.entities[name] = restorePersistedDashboardState(
         state.entities[name],
       );
@@ -220,6 +222,26 @@ const metricsViewReducers = {
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.whereFilter);
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
+    });
+  },
+
+  mergePartialExplorerEntity(
+    name: string,
+    partialExploreState: Partial<MetricsExplorerEntity>,
+    metricsView: V1MetricsViewSpec,
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      for (const key in partialExploreState) {
+        metricsExplorer[key] = partialExploreState[key];
+      }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partialExploreState.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
+      metricsExplorer.dimensionFilterExcludeMode =
+        includeExcludeModeFromFilters(partialExploreState.whereFilter);
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
     });
   },
@@ -382,6 +404,7 @@ const metricsViewReducers = {
 
   createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         active: true,
@@ -533,7 +556,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   ...metricsViewReducers,
 };
 
-export function useExploreStore(name: string): Readable<MetricsExplorerEntity> {
+export function useExploreState(name: string): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });

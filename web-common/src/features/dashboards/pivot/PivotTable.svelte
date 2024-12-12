@@ -37,7 +37,7 @@
   import { onMount } from "svelte";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
-  import { getPivotConfig } from "./pivot-data-store";
+  import { getPivotConfig } from "./pivot-data-config";
   import type { PivotDataRow, PivotDataStore } from "./types";
 
   // Distance threshold (in pixels) for triggering data fetch

@@ -5,8 +5,7 @@ import type {
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -20,7 +19,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable } from "svelte/store";
 
 type DashboardStateForQuery = {
-  state?: string;
+  exploreState?: MetricsExplorerEntity;
   exploreName?: string;
 };
 
@@ -118,7 +117,7 @@ export function mapQueryToDashboard(
       const { metricsView, explore } = validSpecResp.data;
 
       initLocalUserPreferenceStore(metricsViewName);
-      const defaultDashboard = getDefaultMetricsExplorerEntity(
+      const defaultExploreState = getDefaultExploreState(
         metricsViewName,
         metricsView,
         explore,
@@ -127,7 +126,7 @@ export function mapQueryToDashboard(
       getDashboardState({
         queryClient,
         instanceId,
-        dashboard: defaultDashboard,
+        dashboard: defaultExploreState,
         req,
         metricsView,
         explore,
@@ -135,12 +134,12 @@ export function mapQueryToDashboard(
         executionTime,
         annotations,
       })
-        .then((newDashboard) => {
+        .then((newExploreState) => {
           set({
             isFetching: false,
             error: "",
             data: {
-              state: getProtoFromDashboardState(newDashboard),
+              exploreState: newExploreState,
               exploreName,
             },
           });

@@ -94,7 +94,9 @@
 
   $: plan = createAdminServiceGetBillingSubscription(organization, {
     query: {
-      enabled: !!organization && manageOrganization && !onPublicURLPage,
+      enabled: Boolean(
+        !!organization && manageOrganization && !onPublicURLPage,
+      ),
       select: (data) => data.subscription?.plan,
     },
   });
@@ -166,7 +168,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>

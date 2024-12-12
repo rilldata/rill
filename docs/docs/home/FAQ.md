@@ -45,25 +45,17 @@ rill uninstall
 ```
 
 
-
-
 ## Rill Developer
 
+![dev](/img/concepts/rcvsrd/empty-project.png)
+
 ### What is Rill Developer?
-Please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer).
+Rill Developer is a local application used to preview your project and make any necessary changes before deploying to Rill Cloud. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-developer).
 
 ### I'm having issues with Rill Developer...
 
-Please refer to our tutorials to get started using Rill! (coming soon!)
+Please refer to [our tutorials](/tutorials) to get started using Rill. If you still have any questions, please [contact us!](/contact)
 
-
-import ComingSoon from '@site/src/components/ComingSoon';
-
-<ComingSoon />
-
-<div class='contents_to_overlay'>
-a
-</div>
 
 ### How do I start more than one instance of Rill Developer?
 
@@ -83,8 +75,11 @@ You need to [deploy your dashboard to Rill Cloud](https://docs.rilldata.com/depl
 
 ## Rill Cloud
 
+![dev](/img/concepts/rcvsrd/Rill-Cloud.png)
+
+
 ### What is Rill Cloud?
-Please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
+Rill Cloud is where your deployed Rill project exists and can be shared to your colleagues, or end-users. For more information, please review [our documentation](https://docs.rilldata.com/concepts/developerVsCloud#rill-cloud).
 
 ### How do I deploy to Rill Cloud?
 You can deploy your project directly from the UI by selecting [the Deploy button](https://docs.rilldata.com/deploy/existing-project/#deploying-a-project-via-the-ui).
@@ -95,7 +90,7 @@ You can deploy your project directly from the UI by selecting [the Deploy button
 
 ### How do I make changes to my dashboard in Rill Cloud?
 
-You can follow the same steps as above. The button will have changed from `deploy` to `update`. After selecting this, the objects in your Rill project will be updated.
+You can follow the same steps as above. The button will have changed from `deploy` to `update`. After selecting this, the objects in your Rill project will be updated. Or, after syncing your Rill project to Github, simply push changes directly to the repository and this will automatically update your project on Rill Cloud.
 
 ### How do I share my dashboard to other users?
 

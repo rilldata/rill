@@ -11,7 +11,9 @@ sidebar_position: 6
 
 [Amazon Redshift](https://docs.aws.amazon.com/redshift/) is a fully managed, petabyte-scale data warehouse service in the cloud, offering fast query and I/O performance for data analysis applications. It enables users to run complex analytical queries against structured data using SQL, ETL processes, and BI tools, leveraging massively parallel processing (MPP) to efficiently handle large volumes of data. Redshift's architecture is designed for high performance on large datasets, supporting data warehousing and analytics of all sizes, making it a pivotal component in a modern data-driven decision-making ecosystem. By leveraging the AWS SDK for Go and utilizing intermediary parquet files in S3 (to ensure performance), Rill is able to connect to and read from Redshift as a source.
 
-![Connecting to Redshift](/img/reference/connectors/redshift/redshift.png)
+
+<img src = '/img/reference/connectors/redshift/redshift.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 

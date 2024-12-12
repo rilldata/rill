@@ -6,10 +6,12 @@
   import { WorkspaceHeader } from "../../layout/workspace";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let filePath: string;
   export let hasUnsavedChanges: boolean;
   export let resourceKind: ResourceKind | undefined;
+  export let resource: V1Resource | undefined;
 
   let fileName: string;
 
@@ -35,4 +37,5 @@
   {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}
+  {resource}
 />

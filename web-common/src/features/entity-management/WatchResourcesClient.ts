@@ -21,6 +21,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/connector-explorer-store";
+import { sourceImportedPath } from "../sources/sources-store";
 
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
@@ -181,6 +182,15 @@ export class WatchResourcesClient {
             // The following invalidations are only needed if the Source/Model has an active table
             if (!connectorName || !tableName) return;
 
+            // If it's a new source, show the "Source imported successfully" modal
+            const isNewSource =
+              res.name.kind === ResourceKind.Source &&
+              res.resource.meta.specVersion === "1";
+            if (isNewSource) {
+              const filePath = res.resource?.meta?.filePaths?.[0] as string;
+              sourceImportedPath.set(filePath);
+            }
+
             // Invalidate the model partitions query
             if ((res.name.kind as ResourceKind) === ResourceKind.Model) {
               void queryClient.invalidateQueries(
@@ -218,7 +228,7 @@ export class WatchResourcesClient {
             }
 
             queryClient
-              .invalidateQueries(
+              .refetchQueries(
                 getRuntimeServiceGetExploreQueryKey(this.instanceId, {
                   name: res.name.name,
                 }),

@@ -63,7 +63,7 @@ The main feature-set component for dashboard filters
       <div animate:flip={{ duration: 200 }}>
         {#if dimension?.column || dimension?.expression}
           <DimensionFilterReadOnlyChip
-            label={label ?? name}
+            label={label || name}
             values={selectedValues}
             {isInclude}
           />
@@ -75,7 +75,7 @@ The main feature-set component for dashboard filters
     {#each measureFilters as { name, label, dimensionName, filter } (name)}
       <div animate:flip={{ duration: 200 }}>
         <MeasureFilterReadOnlyChip
-          label={label ?? name}
+          label={label || name}
           {dimensionName}
           {filter}
         />

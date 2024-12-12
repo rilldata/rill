@@ -208,6 +208,8 @@ func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
 		return "DOUBLE", nil
 	case runtimev1.Type_CODE_TIMESTAMP:
 		return "TIMESTAMP", nil
+	case runtimev1.Type_CODE_INTERVAL:
+		return "INTERVAL", nil
 	case runtimev1.Type_CODE_DATE:
 		return "DATE", nil
 	case runtimev1.Type_CODE_TIME:

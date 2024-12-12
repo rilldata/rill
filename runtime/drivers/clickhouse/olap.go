@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
@@ -251,7 +252,80 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	// merge strategy is also not supported for clickhouse
+	if strategy == drivers.IncrementalStrategyPartitionOverwrite {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// Get the engine info of the given table
+		engine, err := c.getTableEngine(ctx, name)
+		if err != nil {
+			return err
+		}
+		// Distributed table cannot be altered directly, so we need to alter the local table
+		if engine == "Distributed" {
+			name = localTableName(name)
+		}
+		// create temp table with the same schema using a deterministic name
+		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		// clean up the temp table
+		defer func() {
+			var cancel context.CancelFunc
+
+			// If the original context is cancelled, create a new context for cleanup
+			if ctx.Err() != nil {
+				ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
+			} else {
+				cancel = func() {}
+			}
+			defer cancel()
+
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
+				Priority: 1,
+			})
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+			}
+		}()
+		// insert into temp table
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		// list partitions from the temp table
+		partitions, err := c.getTablePartitions(ctx, tempName)
+		if err != nil {
+			return err
+		}
+		// iterate over partitions and replace them in the main table
+		for _, part := range partitions {
+			// alter the main table to replace the partition
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION %s FROM %s", safeSQLName(name), onClusterClause, part, safeSQLName(tempName)),
+				Priority: 1,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
@@ -477,7 +551,15 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	} else {
 		fmt.Fprintf(&create, " %s ", outputProps.Columns)
 	}
-	create.WriteString(outputProps.tblConfig())
+
+	tableConfig := outputProps.tblConfig()
+	create.WriteString(tableConfig)
+
+	// validate incremental strategy
+	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite &&
+		!strings.Contains(strings.ToUpper(tableConfig), "PARTITION BY") {
+		return fmt.Errorf("clickhouse: incremental strategy partition_overwrite requires a partition key")
+	}
 
 	// create table
 	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
@@ -659,6 +741,47 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	return conn, release, nil
 }
 
+func (c *connection) getTableEngine(ctx context.Context, name string) (string, error) {
+	var engine string
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT engine FROM system.tables WHERE database = currentDatabase() AND name = ?",
+		Args:     []any{name},
+		Priority: 1,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+	if res.Next() {
+		if err := res.Scan(&engine); err != nil {
+			return "", err
+		}
+	}
+	return engine, nil
+}
+
+func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT DISTINCT partition FROM system.parts WHERE table = ?",
+		Args:     []any{name},
+		Priority: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	// collect partitions
+	var partitions []string
+	for res.Next() {
+		var part string
+		if err := res.Scan(&part); err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, part)
+	}
+	return partitions, nil
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -755,6 +878,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATETIME64":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "INTERVALNANOSECOND", "INTERVALMICROSECOND", "INTERVALMILLISECOND", "INTERVALSECOND", "INTERVALMINUTE", "INTERVALHOUR", "INTERVALDAY", "INTERVALWEEK", "INTERVALMONTH", "INTERVALQUARTER", "INTERVALYEAR":
+		t.Code = runtimev1.Type_CODE_INTERVAL
 	case "JSON":
 		t.Code = runtimev1.Type_CODE_JSON
 	case "UUID":

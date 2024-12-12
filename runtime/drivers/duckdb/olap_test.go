@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -212,7 +213,7 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -248,11 +249,11 @@ func Test_safeSQLString(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, activity.NewNoopClient(), zap.NewNop())
+	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

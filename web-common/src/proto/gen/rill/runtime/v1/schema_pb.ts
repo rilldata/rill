@@ -171,6 +171,11 @@ export enum Type_Code {
   TIMESTAMP = 14,
 
   /**
+   * @generated from enum value: CODE_INTERVAL = 27;
+   */
+  INTERVAL = 27,
+
+  /**
    * @generated from enum value: CODE_DATE = 15;
    */
   DATE = 15,
@@ -239,6 +244,7 @@ proto3.util.setEnumType(Type_Code, "rill.runtime.v1.Type.Code", [
   { no: 12, name: "CODE_FLOAT32" },
   { no: 13, name: "CODE_FLOAT64" },
   { no: 14, name: "CODE_TIMESTAMP" },
+  { no: 27, name: "CODE_INTERVAL" },
   { no: 15, name: "CODE_DATE" },
   { no: 16, name: "CODE_TIME" },
   { no: 17, name: "CODE_STRING" },

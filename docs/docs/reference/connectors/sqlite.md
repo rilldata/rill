@@ -11,7 +11,9 @@ sidebar_position: 10
 
 [SQLite](https://www.sqlite.org/about.html) is a lightweight, self-contained SQL database engine renowned for its reliability, speed, and full-featured, serverless architecture. SQLite is primarily known as an in-process database and widely used in embedded systems, mobile applications, and various small-to-medium sized applications due to its simplicity, zero-configuration, and single-file database format. SQLite supports standard SQL syntax and includes features such as transactions and atomic commit and rollback, making it a practical choice for applications requiring a compact, efficient data management system. Rill supports connecting and reading from a SQLite database as a source through the [DuckDB SQLite extension](https://duckdb.org/docs/extensions/sqlite.html).
 
-![Connecting to SQLite](/img/reference/connectors/sqlite/sqlite.png)
+
+<img src = '/img/reference/connectors/sqlite/sqlite.png' class='rounded-png' />
+<br />
 
 ## Local credentials
 

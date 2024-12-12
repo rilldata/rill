@@ -28,6 +28,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/athena v1.40.4
 	github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.25.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.4
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.4
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
@@ -96,17 +97,17 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/compose v0.33.0
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.52.0
-	go.opentelemetry.io/otel v1.30.0
+	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0
-	go.opentelemetry.io/otel/metric v1.30.0
+	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.opentelemetry.io/otel/sdk/metric v1.27.0
-	go.opentelemetry.io/otel/trace v1.30.0
+	go.opentelemetry.io/otel/trace v1.32.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.2.0
@@ -191,7 +192,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.28.4 // indirect
 	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/buger/goterm v1.0.4 // indirect

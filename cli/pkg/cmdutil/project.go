@@ -2,9 +2,11 @@ package cmdutil
 
 import (
 	"context"
+	"os"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 
 	// Ensure file driver is loaded
@@ -14,7 +16,7 @@ import (
 // RepoForProjectPath creates an ad-hoc drivers.RepoStore for a local project file path
 func RepoForProjectPath(path string) (drivers.RepoStore, string, error) {
 	instanceID := "default"
-	repoHandle, err := drivers.Open("file", instanceID, map[string]any{"dsn": path}, activity.NewNoopClient(), zap.NewNop())
+	repoHandle, err := drivers.Open("file", instanceID, map[string]any{"dsn": path}, storage.MustNew(os.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	if err != nil {
 		return nil, "", err
 	}

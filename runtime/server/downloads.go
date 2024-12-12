@@ -264,7 +264,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) resolveExportLimit(base, override int64) int64 {
 	res := base
-	if override < res {
+	if override > 0 && override < res {
 		res = override
 	}
 	return res

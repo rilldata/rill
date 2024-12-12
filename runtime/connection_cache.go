@@ -138,7 +138,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
-	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, activityClient, logger)
+	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}

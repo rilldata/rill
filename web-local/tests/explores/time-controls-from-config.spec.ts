@@ -19,6 +19,7 @@ test.describe("time controls settings from explore preset", () => {
   comparison_mode: time
 `),
     );
+
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 

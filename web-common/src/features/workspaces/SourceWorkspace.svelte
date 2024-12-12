@@ -105,7 +105,7 @@
       addDevLimit,
     );
     await goto(`/files${newModelPath}`);
-    await behaviourEvent.fireNavigationEvent(
+    await behaviourEvent?.fireNavigationEvent(
       newModelName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
@@ -129,6 +129,7 @@
 <WorkspaceContainer>
   <WorkspaceHeader
     {filePath}
+    {resource}
     resourceKind={ResourceKind.Source}
     slot="header"
     titleInput={fileName}

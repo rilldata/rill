@@ -14,7 +14,7 @@ import {
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
-import { getPivotConfig } from "./pivot-data-store";
+import { getPivotConfig } from "./pivot-data-config";
 import { prepareMeasureForComparison } from "./pivot-utils";
 import {
   COMPARISON_DELTA,

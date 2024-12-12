@@ -275,10 +275,13 @@ func (builder *ExpressionBuilder) buildLikeExpression(cond *runtimev1.Condition)
 
 	// identify if immediate identifier has unnest
 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
+	if unnest {
+		leftExpr = builder.dialect.AutoUnnest(leftExpr)
+	}
 
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-	if unnest && builder.dialect != drivers.DialectDruid && builder.dialect != drivers.DialectPinot {
+	if unnest && builder.dialect == drivers.DialectDuckDB {
 		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
 	} else {
 		if builder.dialect == drivers.DialectDruid || builder.dialect == drivers.DialectPinot {
@@ -334,6 +337,9 @@ func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (
 
 	// identify if immediate identifier has unnest
 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
+	if unnest {
+		leftExpr = builder.dialect.AutoUnnest(leftExpr)
+	}
 
 	clauses := make([]string, 0)
 
@@ -342,7 +348,7 @@ func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (
 		questionMarks := strings.Join(valClauses, ",")
 		var clause string
 		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
-		if unnest && builder.dialect != drivers.DialectDruid {
+		if unnest && builder.dialect == drivers.DialectDuckDB {
 			clause = fmt.Sprintf("%s list_has_any((%s), ARRAY[%s])", notKeyword, leftExpr, questionMarks)
 		} else {
 			clause = fmt.Sprintf("(%s) %s IN (%s)", leftExpr, notKeyword, questionMarks)
@@ -642,7 +648,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			arrowField.Type = arrow.PrimitiveTypes.Float32
 		case runtimev1.Type_CODE_FLOAT64:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
+		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_INTERVAL:
 			arrowField.Type = arrow.BinaryTypes.String
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
@@ -701,6 +707,15 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 				}
 
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(string(bts))
+			case runtimev1.Type_CODE_INTERVAL:
+				switch v := v.GetKind().(type) {
+				case *structpb.Value_NumberValue:
+					s := fmt.Sprintf("%f", v.NumberValue)
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(s)
+				case *structpb.Value_StringValue:
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(v.StringValue)
+				default:
+				}
 			}
 		}
 	}

@@ -16,6 +16,7 @@ dimensions:
     property: domain
     description: ""
   - name: nolabel_pub
+    display_name: nolabel_pub
     property: publisher
   - name: space_label
     display_name: Space Label

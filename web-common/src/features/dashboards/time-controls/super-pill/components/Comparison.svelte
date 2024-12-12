@@ -160,7 +160,7 @@
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
-          {#if interval?.isValid}
+          {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
               {firstVisibleMonth}
               {interval}

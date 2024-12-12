@@ -10,10 +10,9 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { DateTime, Interval } from "luxon";
-  import { onMount } from "svelte";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
@@ -44,9 +43,9 @@
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
 
-  $: exploreStore = useExploreStore($exploreName);
+  $: exploreState = useExploreState($exploreName);
   $: selectedRange =
-    $exploreStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
+    $exploreState?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
   $: defaultTimeRange = exploreSpec?.defaultPreset?.timeRange;
 
@@ -57,7 +56,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: activeTimeZone = $exploreStore?.selectedTimezone;
+  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
@@ -133,23 +132,6 @@
     selectRange(baseTimeRange);
   }
 
-  // This is pulled directly from the old time controls and needs to be refactored
-  onMount(() => {
-    /**
-     * Remove the timezone selector if no timezone key is present
-     * or the available timezone list is empty. Set the default
-     * timezone to UTC in such cases.
-     *
-     */
-    if (
-      !availableTimeZones.length &&
-      $exploreStore?.selectedTimezone !== "UTC"
-    ) {
-      metricsExplorerStore.setTimeZone($exploreName, "UTC");
-      localUserPreferences.set({ timeZone: "UTC" });
-    }
-  });
-
   function selectRange(range: TimeRange) {
     const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
 
@@ -159,7 +141,7 @@
       getValidComparisonOption(
         exploreSpec,
         range,
-        $exploreStore.selectedComparisonTimeRange?.name as
+        $exploreState.selectedComparisonTimeRange?.name as
           | TimeComparisonOption
           | undefined,
         allTimeRange,
