@@ -1,8 +1,6 @@
 package duckdb
 
 import (
-	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,24 +9,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 )
-
-// rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
-func rawConn(conn *sql.Conn, f func(driver.Conn) error) error {
-	return conn.Raw(func(raw any) error {
-		// For details, see: https://github.com/XSAM/otelsql/issues/98
-		if c, ok := raw.(interface{ Raw() driver.Conn }); ok {
-			raw = c.Raw()
-		}
-
-		// This is currently guaranteed, but adding check to be safe
-		driverConn, ok := raw.(driver.Conn)
-		if !ok {
-			return fmt.Errorf("internal: did not obtain a driver.Conn")
-		}
-
-		return f(driverConn)
-	})
-}
 
 type sinkProperties struct {
 	Table string `mapstructure:"table"`
@@ -44,6 +24,7 @@ func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
 
 type dbSourceProperties struct {
 	Database string `mapstructure:"db"`
+	DSN      string `mapstructure:"dsn"`
 	SQL      string `mapstructure:"sql"`
 }
 
@@ -51,6 +32,9 @@ func parseDBSourceProperties(props map[string]any) (*dbSourceProperties, error) 
 	cfg := &dbSourceProperties{}
 	if err := mapstructure.Decode(props, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse source properties: %w", err)
+	}
+	if cfg.DSN != "" { // For mysql, postgres the property is called as dsn and not db
+		cfg.Database = cfg.DSN
 	}
 	if cfg.SQL == "" {
 		return nil, fmt.Errorf("property 'sql' is mandatory")

@@ -113,7 +113,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		timezone = q.TimeZone
 	}
 
-	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+	return olap.WithConnection(ctx, priority, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
 
