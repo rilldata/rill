@@ -10,7 +10,6 @@
   export let maxDate: MaybeDate = DateTime.now().startOf("day");
   export let visibleMonths = 1;
   export let selectingStart = true;
-
   export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)
     ? selection
     : isValidInterval(selection)

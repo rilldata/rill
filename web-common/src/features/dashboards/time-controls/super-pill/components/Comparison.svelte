@@ -24,6 +24,8 @@
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
   export let grain: string;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let onSelectComparisonRange: (
     name: string,
     start: Date,
@@ -162,6 +164,8 @@
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
           {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
+              {maxDate}
+              {minDate}
               {firstVisibleMonth}
               {interval}
               {zone}

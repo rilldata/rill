@@ -100,6 +100,8 @@
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
