@@ -13,6 +13,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -301,8 +302,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}()
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
-			Priority: 1,
+			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 		if err != nil {
 			return err
@@ -324,6 +326,50 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 		}
 		return nil
+	}
+
+	if strategy == drivers.IncrementalStrategyMerge {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// get the engine info of the given table
+		engine, err := c.getTableEngine(ctx, name)
+		if err != nil {
+			return err
+		}
+		if engine != "ReplacingMergeTree" {
+			return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
+		}
+
+		// get the sorting key of the table
+		sortingKey, err := c.getTableSortingKeys(ctx, name)
+		if err != nil {
+			return err
+		}
+		// Check if all keys in uniqueKey are part of sortingKey and vice versa
+		for _, key := range uniqueKey {
+			if !arrayutil.Contains(sortingKey, key) {
+				return fmt.Errorf("clickhouse: unique key %q must be part of the sorting key", key)
+			}
+		}
+		for _, key := range sortingKey {
+			if !arrayutil.Contains(uniqueKey, key) {
+				return fmt.Errorf("clickhouse: sorting key %q must be part of the unique key", key)
+			}
+		}
+
+		// insert into table using the merge strategy
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+
 	}
 
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
@@ -758,6 +804,25 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 		}
 	}
 	return engine, nil
+}
+
+func (c *connection) getTableSortingKeys(ctx context.Context, name string) ([]string, error) {
+	var keys string
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT sorting_key FROM system.tables WHERE database = currentDatabase() AND name = ?",
+		Args:     []any{name},
+		Priority: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	if res.Next() {
+		if err := res.Scan(&keys); err != nil {
+			return nil, err
+		}
+	}
+	return strings.Split(keys, ", "), nil
 }
 
 func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {

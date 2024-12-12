@@ -88,13 +88,27 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 	}
 
 	switch p.IncrementalStrategy {
-	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite:
+	case drivers.IncrementalStrategyUnspecified, drivers.IncrementalStrategyAppend, drivers.IncrementalStrategyPartitionOverwrite, drivers.IncrementalStrategyMerge:
 	default:
 		return fmt.Errorf("invalid incremental strategy %q", p.IncrementalStrategy)
 	}
 
+	// if incremntal strategy is partition overwrite, partition_by is required
+	if p.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite && p.PartitionBy == "" {
+		return fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, p.IncrementalStrategy)
+	}
+
+	// If incremental strategy is merge, unique key is required
+	if p.IncrementalStrategy == drivers.IncrementalStrategyMerge && len(p.UniqueKey) == 0 {
+		return fmt.Errorf(`must specify a "unique_key" when "incremental_strategy" is %q`, p.IncrementalStrategy)
+	}
+
 	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
-		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
+		if len(p.UniqueKey) == 0 {
+			p.IncrementalStrategy = drivers.IncrementalStrategyAppend
+		} else {
+			p.IncrementalStrategy = drivers.IncrementalStrategyMerge
+		}
 	}
 	return nil
 }
