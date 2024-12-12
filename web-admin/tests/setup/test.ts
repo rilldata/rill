@@ -5,8 +5,12 @@ import path from "path";
 import treeKill from "tree-kill";
 import { fileURLToPath } from "url";
 
+const skipGlobalSetup = process.env.E2E_SKIP_GLOBAL_SETUP === "true";
+
 // Global setup
 base.beforeAll(async () => {
+  if (skipGlobalSetup) return;
+
   const timeout = 120_000;
   base.setTimeout(timeout);
 
