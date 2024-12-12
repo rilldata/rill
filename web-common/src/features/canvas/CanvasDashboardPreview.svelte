@@ -16,7 +16,6 @@
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  export let showGrid = false;
   // TODO(@lovincyrus): remove before shipping
   export let snap = false;
   export let selectedIndex: number | null = null;
@@ -177,13 +176,7 @@
 
 <DashboardWrapper
   bind:contentRect
-  {changing}
-  {gapSize}
-  {gridCell}
-  {scrollOffset}
-  {radius}
   {scale}
-  {showGrid}
   height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
