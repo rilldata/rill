@@ -110,7 +110,7 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 
 	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
 	// By adding the password separately, we ensure all passwords will work.
-	// NOTE: Required ClickHouse 24.9 or later.
+	// NOTE: Requires ClickHouse 24.9 or later.
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s ADD IDENTIFIED WITH sha256_password BY ?", user), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
