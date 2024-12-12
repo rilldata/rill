@@ -6,6 +6,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -82,6 +83,10 @@
     : undefined;
 
   $: metricsView = $validSpecStore.data?.metricsView ?? {};
+
+  let metricsWidth = 580; // Default width for metrics section
+  const MIN_METRICS_WIDTH = 440;
+  let resizing = false;
 </script>
 
 <article
@@ -123,12 +128,13 @@
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      <div class="pt-2">
+      <div class="pt-2 flex-none" style:width="{metricsWidth}px">
         {#key exploreName}
           {#if !$metricTimeSeries.isLoading}
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
+                timeSeriesWidth={metricsWidth}
                 workspaceWidth={exploreContainerWidth}
                 hideStartPivotButton={hidePivot}
               />
@@ -147,7 +153,19 @@
           hideStartPivotButton={hidePivot}
         />
       {:else}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+        <div class="relative flex-none bg-gray-200 w-[1px]">
+          <Resizer
+            dimension={metricsWidth}
+            min={MIN_METRICS_WIDTH}
+            max={exploreContainerWidth - 500}
+            bind:resizing
+            side="right"
+            onUpdate={(width) => {
+              metricsWidth = width;
+            }}
+          />
+        </div>
+        <div class="pt-2 pl-1 overflow-auto w-full">
           {#if selectedDimension}
             <DimensionDisplay
               dimension={selectedDimension}
