@@ -1,9 +1,13 @@
 import { test as base } from "@playwright/test";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { exec } from "child_process";
 import { spawn } from "node:child_process";
 import path from "path";
 import treeKill from "tree-kill";
 import { fileURLToPath } from "url";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const skipGlobalSetup = process.env.E2E_SKIP_GLOBAL_SETUP === "true";
 
@@ -49,6 +53,11 @@ base.beforeAll(async () => {
   }
 
   process.env.CLOUD_PID = cloudProcess.pid?.toString();
+
+  // Pull the repositories to be used for testing
+  await execAsync(
+    "git clone https://github.com/rilldata/rill-examples.git tests/setup/git/repos/rill-examples",
+  );
 });
 
 base.afterAll(() => {
