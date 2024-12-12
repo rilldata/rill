@@ -3,11 +3,11 @@ import type { PlaywrightTestConfig } from "@playwright/test";
 const config: PlaywrightTestConfig = {
   webServer: {
     command: "npm run build && npm run preview",
-    port: 4173,
+    port: 3000,
     timeout: 120_000,
   },
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: "http://localhost:3000",
   },
 };
 
