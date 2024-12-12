@@ -46,9 +46,16 @@
   function handleContinueSSOClick() {
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
-    if (connectionName) {
-      authorizeSSO(email, connectionName);
+    if (!connectionName) {
+      errorText = `IDP for the email ${email} not found. Please contact your administrator.`;
+      return;
     }
+
+    authorizeSSO(email, connectionName);
+  }
+
+  $: if (email) {
+    errorText = "";
   }
 
   $: disabled = !(email.length > 0 && validateEmail(email));
