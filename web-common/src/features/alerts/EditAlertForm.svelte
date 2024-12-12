@@ -55,7 +55,9 @@
     { query: { queryClient } },
   );
 
-  $: exploreName = getExploreName(alertSpec.annotations?.web_open_path ?? "");
+  const exploreName = getExploreName(
+    alertSpec.annotations?.web_open_path ?? "",
+  );
 
   const formState = createForm<AlertFormValues>({
     initialValues: {

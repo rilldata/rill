@@ -75,7 +75,9 @@
     instanceId,
     metricsViewName,
     {
-      measures: [{ name: activeMeasureName }],
+      measures: visibleMeasureNames.map((measureName) => ({
+        name: measureName,
+      })),
       where: sanitiseExpression(
         mergeDimensionAndMeasureFilter(
           getFiltersForOtherDimensions(whereFilter, dimensionName),

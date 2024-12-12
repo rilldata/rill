@@ -18,6 +18,7 @@
   export let excludeMode = false;
   export let isBeingCompared = false;
   export let dimensionName: string;
+  export let toggleComparisonDimension: (dimensionName: string) => void;
 
   function getColor(i: number) {
     const posInSelection = selectedIndex.indexOf(i);
@@ -37,7 +38,11 @@
     style:height="{config.columnHeaderHeight}px"
     class="sticky left-0 top-0 surface z-40 flex items-center"
   >
-    <DimensionCompareMenu {dimensionName} />
+    <DimensionCompareMenu
+      {dimensionName}
+      {isBeingCompared}
+      {toggleComparisonDimension}
+    />
   </div>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const isSelected = selectedIndex.includes(row.index)}
