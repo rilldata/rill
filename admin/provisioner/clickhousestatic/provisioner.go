@@ -102,14 +102,15 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
-	// Idempotently create the user
-	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s DEFAULT DATABASE %s GRANTEES NONE", user, dbName))
+	// Idempotently create the user.
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
 	}
 
-	// Idempotently add the password to the user.
-	// Note that we can't do this as part of CREATE USER because it would not be idempotent.
+	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
+	// By adding the password separately, we ensure all passwords will work.
+	// NOTE: Required ClickHouse 24.9 or later.
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s ADD IDENTIFIED WITH sha256_password BY ?", user), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
