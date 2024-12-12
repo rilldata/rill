@@ -333,7 +333,8 @@ func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewR
 	for i, m := range e.metricsView.Measures {
 		typ, ok := types[m.Name]
 		if !ok {
-			return fmt.Errorf("internal: measure %q not found in schema", m.Name)
+			// Don't error: schemas are not always reliable
+			continue
 		}
 
 		switch typ.Code {
