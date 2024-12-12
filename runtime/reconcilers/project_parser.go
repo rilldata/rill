@@ -416,13 +416,9 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 // reconcileResourcesDiff is similar to reconcileResources, but uses a diff from parser.Reparse instead of doing a full comparison of all resources.
 func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
 	// Gather resource to delete so we can check for renames.
-	deleteResources := make([]*runtimev1.Resource, 0, len(diff.Deleted))
+	deleteResources := make([]*runtimev1.ResourceName, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
-		r, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(n), false)
-		if err != nil {
-			return err
-		}
-		deleteResources = append(deleteResources, r)
+		deleteResources = append(deleteResources, runtime.ResourceNameFromCompiler(n))
 	}
 
 	// Updates
@@ -444,13 +440,17 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 
 		// Rename if possible
 		renamed := false
-		for idx, rr := range deleteResources {
-			if rr == nil {
+		for idx, rn := range deleteResources {
+			if rn == nil {
 				// Already renamed
 				continue
 			}
 
-			var err error
+			rr, err := r.C.Get(ctx, rn, false)
+			if err != nil {
+				return err
+			}
+
 			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
 				return err
@@ -472,13 +472,13 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 	}
 
 	// Deletes
-	for _, rr := range deleteResources {
+	for _, rn := range deleteResources {
 		// The ones that got renamed were set to nil
-		if rr == nil {
+		if rn == nil {
 			continue
 		}
 
-		err := r.C.Delete(ctx, rr.Meta.Name)
+		err := r.C.Delete(ctx, rn)
 		if err != nil {
 			return err
 		}
@@ -565,16 +565,24 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
 	}
 
-	// The name may have changed to a different case (e.g. aAa -> Aaa)
+	// Handle changed name and/or path
 	if n.Kind == existing.Meta.Name.Kind && n.Name != existing.Meta.Name.Name {
+		// The name may have changed to a different case (e.g. aAa -> Aaa).
+		// Note that this also updates the paths (updating them separately with UpdateMeta would be considered a mutation of a renamed resource, which requires falling back to a less optimal reconciliation).
 		err := r.C.UpdateName(ctx, existing.Meta.Name, n, self.Meta.Name, def.Paths)
+		if err != nil {
+			return err
+		}
+	} else if !slices.Equal(existing.Meta.FilePaths, def.Paths) {
+		// The path may have been changed. Usually this case is covered in the UpdateName case above because changing a file path usually changes the name.
+		err := r.C.UpdateMeta(ctx, n, existing.Meta.Refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Update meta if refs or file paths changed
-	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !equalResourceNames(existing.Meta.Refs, refs) {
+	// Update meta if refs changed
+	if !equalResourceNames(existing.Meta.Refs, refs) {
 		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
