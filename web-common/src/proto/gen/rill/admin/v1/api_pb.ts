@@ -9255,6 +9255,26 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   emailRecipients: string[] = [];
 
+  /**
+   * @generated from field: bool anon_recipients = 8;
+   */
+  anonRecipients = false;
+
+  /**
+   * @generated from field: string metrics_view = 9;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: string explore = 10;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: string canvas = 11;
+   */
+  canvas = "";
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9269,6 +9289,10 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -9293,11 +9317,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
  */
 export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   /**
-   * @generated from field: rill.admin.v1.GetReportMetaResponse.URLs base_urls = 1;
-   */
-  baseUrls?: GetReportMetaResponse_URLs;
-
-  /**
    * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.URLs> recipient_urls = 2;
    */
   recipientUrls: { [key: string]: GetReportMetaResponse_URLs } = {};
@@ -9310,7 +9329,6 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "base_urls", kind: "message", T: GetReportMetaResponse_URLs },
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_URLs} },
   ]);
 
@@ -9346,9 +9364,9 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
   exportUrl = "";
 
   /**
-   * @generated from field: string edit_url = 3;
+   * @generated from field: string unsubscribe_url = 3;
    */
-  editUrl = "";
+  unsubscribeUrl = "";
 
   constructor(data?: PartialMessage<GetReportMetaResponse_URLs>) {
     super();
@@ -9360,7 +9378,7 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_URLs {
@@ -9694,6 +9712,16 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
    */
   name = "";
 
+  /**
+   * @generated from field: optional string email = 4;
+   */
+  email?: string;
+
+  /**
+   * @generated from field: optional string slack_user = 5;
+   */
+  slackUser?: string;
+
   constructor(data?: PartialMessage<UnsubscribeReportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9705,6 +9733,8 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "slack_user", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnsubscribeReportRequest {
@@ -12996,6 +13026,23 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   webOpenState = "";
 
+  /**
+   * either metrics_view_name and explore_name or canvas_name will be set
+   *
+   * @generated from field: optional string metrics_view_name = 16;
+   */
+  metricsViewName?: string;
+
+  /**
+   * @generated from field: optional string explore_name = 17;
+   */
+  exploreName?: string;
+
+  /**
+   * @generated from field: optional string canvas_name = 18;
+   */
+  canvasName?: string;
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13018,6 +13065,9 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 17, name: "explore_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "canvas_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

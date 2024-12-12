@@ -165,7 +165,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		// All themes
 		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
 		// The magic token's resource
-		condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
+		condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
 		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
 		if mdl.ResourceType == runtime.ResourceKindExplore {
 			client, err := s.admin.OpenRuntimeClient(depl)
@@ -190,7 +190,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 			spec := resp.Resource.GetExplore().State.ValidSpec
 			if spec != nil {
-				condition.WriteString(fmt.Sprintf(" OR '{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+				condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
 			}
 		} else if mdl.ResourceType == runtime.ResourceKindReport {
 			// adding this rule to allow report resource accessible by non admin users
@@ -205,6 +205,17 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 
 		attr = mdl.Attributes
+
+		if len(mdl.DependentResources) > 0 {
+			condition.WriteString(" OR (")
+			for i, r := range mdl.DependentResources {
+				if i > 0 {
+					condition.WriteString(" OR ")
+				}
+				condition.WriteString(fmt.Sprintf("('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Kind), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
+			}
+			condition.WriteString(")")
+		}
 
 		// Add a rule that denies access to anything that doesn't match the condition.
 		rules = append(rules, &runtimev1.SecurityRule{

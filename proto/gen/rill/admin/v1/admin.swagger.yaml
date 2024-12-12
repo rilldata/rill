@@ -1467,6 +1467,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/request-access:
@@ -2990,6 +2995,14 @@ paths:
                 type: array
                 items:
                   type: string
+              anonRecipients:
+                type: boolean
+              metricsView:
+                type: string
+              explore:
+                type: string
+              canvas:
+                type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3580,7 +3593,7 @@ definitions:
         type: string
       exportUrl:
         type: string
-      editUrl:
+      unsubscribeUrl:
         type: string
   ListGithubUserReposResponseRepo:
     type: object
@@ -4259,8 +4272,6 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      baseUrls:
-        $ref: '#/definitions/GetReportMetaResponseURLs'
       recipientUrls:
         type: object
         additionalProperties:
@@ -4875,6 +4886,13 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+      metricsViewName:
+        type: string
+        title: either metrics_view_name and explore_name or canvas_name will be set
+      exploreName:
+        type: string
+      canvasName:
+        type: string
   v1RequestProjectAccessResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:
