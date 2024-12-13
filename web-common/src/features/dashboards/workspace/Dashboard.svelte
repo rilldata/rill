@@ -85,13 +85,13 @@
 </script>
 
 <article
-  class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
   bind:clientWidth={exploreContainerWidth}
+  class="flex flex-col size-full overflow-y-hidden dashboard-theme-boundary"
 >
   <div
-    id="header"
     class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
     class:left-shift={extraLeftPadding}
+    id="header"
   >
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
@@ -125,14 +125,16 @@
     >
       <div class="pt-2">
         {#key exploreName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {exploreName}
-              workspaceWidth={exploreContainerWidth}
-              hideStartPivotButton={hidePivot}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+          {#if !$metricTimeSeries.isLoading}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {exploreName}
+                workspaceWidth={exploreContainerWidth}
+                hideStartPivotButton={hidePivot}
+              />
+            {:else}
+              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+            {/if}
           {/if}
         {/key}
       </div>
