@@ -30,7 +30,6 @@ type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 class FeatureFlags {
   adminServer = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
-  sourceImportedModal = new FeatureFlag("rill", true);
 
   ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
   exports = new FeatureFlag("user", true);

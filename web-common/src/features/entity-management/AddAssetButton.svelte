@@ -85,7 +85,6 @@
    */
   async function handleAddSource() {
     addSourceModal.open();
-    featureFlags.set(true, "sourceImportedModal");
 
     await behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,

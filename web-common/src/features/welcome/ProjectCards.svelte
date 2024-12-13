@@ -15,7 +15,6 @@
     createRuntimeServiceUnpackExample,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { featureFlags } from "../feature-flags";
   import { EMPTY_PROJECT_TITLE } from "./constants";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
@@ -102,7 +101,6 @@
         disabled={!!selectedProjectName}
         isLoading={selectedProjectName === example.name}
         on:click={async () => {
-          featureFlags.set(false, "sourceImportedModal");
           await unpackProject(example);
         }}
       >
