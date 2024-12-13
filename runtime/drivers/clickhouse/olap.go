@@ -13,7 +13,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -344,23 +343,6 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		if engine != "ReplacingMergeTree" {
 			return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
-		}
-
-		// get the sorting key of the table
-		sortingKey, err := c.getTableSortingKeys(ctx, name)
-		if err != nil {
-			return err
-		}
-		// Check if all keys in uniqueKey are part of sortingKey and vice versa
-		for _, key := range uniqueKey {
-			if !arrayutil.Contains(sortingKey, key) {
-				return fmt.Errorf("clickhouse: unique key %q must be part of the sorting key", key)
-			}
-		}
-		for _, key := range sortingKey {
-			if !arrayutil.Contains(uniqueKey, key) {
-				return fmt.Errorf("clickhouse: sorting key %q must be part of the unique key", key)
-			}
 		}
 
 		// insert into table using the merge strategy
@@ -822,32 +804,6 @@ func (c *connection) getTableEngine(ctx context.Context, name string) (string, e
 		}
 	}
 	return engine, nil
-}
-
-func (c *connection) getTableSortingKeys(ctx context.Context, name string) ([]string, error) {
-	var keys string
-	args := []any{c.config.Database, name}
-	if c.config.Database == "" {
-		args = []any{nil, name}
-	}
-	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT sorting_key FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
-		Args:     args,
-		Priority: 1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-	if res.Next() {
-		if err := res.Scan(&keys); err != nil {
-			return nil, err
-		}
-	}
-	if keys == "" {
-		return nil, errors.New("clickhouse: table has no order by fields")
-	}
-	return strings.Split(keys, ", "), nil
 }
 
 func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {

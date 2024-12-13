@@ -179,8 +179,6 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		"distributed.sharding_key": "rand()",
 		"incremental_strategy":     drivers.IncrementalStrategyMerge,
 		"order_by":                 "id",
-		"primary_key":              "id",
-		"unique_key":               "id",
 	})
 	require.NoError(t, err)
 

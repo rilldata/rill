@@ -98,17 +98,15 @@ func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) erro
 		return fmt.Errorf(`must specify a "partition_by" when "incremental_strategy" is %q`, p.IncrementalStrategy)
 	}
 
-	// If incremental strategy is merge, unique key is required
-	if p.IncrementalStrategy == drivers.IncrementalStrategyMerge && len(p.UniqueKey) == 0 {
-		return fmt.Errorf(`must specify a "unique_key" when "incremental_strategy" is %q`, p.IncrementalStrategy)
+	// ClickHouse enforces the requirement of either a primary key or an ORDER BY clause for the ReplacingMergeTree engine.
+	// When using the incremental strategy as 'merge', the engine must be ReplacingMergeTree.
+	// This ensures that duplicate rows are eventually replaced, maintaining data consistency.
+	if p.IncrementalStrategy == drivers.IncrementalStrategyMerge && !(strings.Contains(p.Engine, "ReplacingMergeTree") || strings.Contains(p.EngineFull, "ReplacingMergeTree")) {
+		return fmt.Errorf(`must use "ReplacingMergeTree" engine when "incremental_strategy" is %q`, p.IncrementalStrategy)
 	}
 
 	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
-		if len(p.UniqueKey) == 0 {
-			p.IncrementalStrategy = drivers.IncrementalStrategyAppend
-		} else {
-			p.IncrementalStrategy = drivers.IncrementalStrategyMerge
-		}
+		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
 	}
 	return nil
 }
