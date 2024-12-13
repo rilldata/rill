@@ -15,7 +15,7 @@ test.describe("Organizations", () => {
     await page.goto("/e2e");
     await expect(page.getByRole("heading", { name: "e2e" })).toBeVisible();
 
-    // Clean up
+    // Clean up quickly
     await execAsync("rill org delete e2e --force");
   });
 });

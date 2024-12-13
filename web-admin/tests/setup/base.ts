@@ -1,9 +1,11 @@
 import { test as base, type Page } from "@playwright/test";
-import { cliLogin, cliLogout } from "./cli";
+import { cliLogin, cliLogout } from "./fixtures/cli";
+import { orgCreate, orgDelete } from "./fixtures/org";
 
 type MyFixtures = {
   anonPage: Page;
   cli: void;
+  organization: void;
 };
 
 export const test = base.extend<MyFixtures>({
@@ -20,5 +22,11 @@ export const test = base.extend<MyFixtures>({
     await cliLogin(page);
     await use();
     await cliLogout();
+  },
+
+  organization: async ({ cli }, use) => {
+    await orgCreate();
+    await use();
+    await orgDelete();
   },
 });
