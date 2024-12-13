@@ -53,11 +53,11 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("row", { name: "null 32.9k" }),
     );
 
-    // add time comparison and select Pct change
-    await page.getByRole("button", { name: "Comparing" }).click();
-
     await openTimeRangeMenu();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
+
+    // add time comparison and select Pct change
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     // need a slight delay for the time range to update
     // and the "Pct change" option to be available

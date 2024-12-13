@@ -23,6 +23,7 @@
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
+  export let disabled: boolean;
   export let grain: string;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
@@ -97,6 +98,7 @@
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button
+      {disabled}
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
