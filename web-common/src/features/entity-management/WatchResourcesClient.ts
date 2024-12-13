@@ -22,6 +22,7 @@ import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-re
 import { get } from "svelte/store";
 import { connectorExplorerStore } from "../connectors/connector-explorer-store";
 import { sourceImportedPath } from "../sources/sources-store";
+import { isLeafResource } from "./dag-utils";
 
 export class WatchResourcesClient {
   public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
@@ -34,7 +35,7 @@ export class WatchResourcesClient {
     this.client.on("reconnect", () => this.invalidateAllRuntimeQueries());
   }
 
-  private handleWatchResourceResponse(res: V1WatchResourcesResponse) {
+  private async handleWatchResourceResponse(res: V1WatchResourcesResponse) {
     // Log resource status to the browser console during e2e tests. Currently, our e2e tests make assertions
     // based on these logs. However, the e2e tests really should make UI-based assertions.
     if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
@@ -185,7 +186,8 @@ export class WatchResourcesClient {
             // If it's a new source, show the "Source imported successfully" modal
             const isNewSource =
               res.name.kind === ResourceKind.Source &&
-              res.resource.meta.specVersion === "1";
+              res.resource.meta.specVersion === "1" &&
+              (await isLeafResource(res.resource, this.instanceId)); // Protects against existing projects reconciling anew
             if (isNewSource) {
               const filePath = res.resource?.meta?.filePaths?.[0] as string;
               sourceImportedPath.set(filePath);
