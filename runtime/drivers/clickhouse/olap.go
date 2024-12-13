@@ -454,7 +454,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		// capture the full engine of the old distributed table
 		var engineFull string
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT engine_full FROM system.tables WHERE coalesce(?, currentDatabase()) AND name = ?",
+			Query:    "SELECT engine_full FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
 			Args:     args,
 			Priority: 100,
 		})
