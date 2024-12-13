@@ -125,15 +125,7 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 	if err != nil {
 		return nil, err
 	}
-	var key string
-	for res.Next() {
-		if err := res.Scan(&key); err != nil {
-			return nil, err
-		}
-	}
-	if res.Err() != nil {
-		return nil, res.Err()
-	}
+	res.SetCap(1)
 	return runtime.NewDriverResolverResult(res), nil
 }
 
