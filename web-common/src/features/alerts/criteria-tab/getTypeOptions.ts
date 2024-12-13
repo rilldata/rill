@@ -17,7 +17,6 @@ export function getTypeOptions(
     disabled?: boolean;
     tooltip?: string;
   }[] = [...MeasureFilterBaseTypeOptions];
-  console.log(formValues.comparisonTimeRange);
 
   if (
     formValues.comparisonTimeRange?.isoDuration ||
