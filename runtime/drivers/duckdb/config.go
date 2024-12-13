@@ -14,8 +14,6 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// DataDir is the path to directory where duckdb files will be created.
-	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -36,10 +34,8 @@ type config struct {
 	LogQueries bool `mapstructure:"log_queries"`
 }
 
-func newConfig(cfgMap map[string]any, dataDir string) (*config, error) {
-	cfg := &config{
-		DataDir: dataDir,
-	}
+func newConfig(cfgMap map[string]any) (*config, error) {
+	cfg := &config{}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)

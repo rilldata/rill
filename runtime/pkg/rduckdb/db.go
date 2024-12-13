@@ -266,7 +266,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts.Logger,
 	)
 
-	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
+	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -275,14 +275,6 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, err
 	}
 
-	// We want to prevent multiple rill process accessing same db files.
-	// All the files are accessed in read-only mode so it is possible for multiple rill process to access same db files.
-	// To prevent this we attach a dummy db file to the main in-memory db in write mode.
-	// This is required for local rill only but since there is no way to determine it in this package so we do it for all.
-	_, err = db.dbHandle.ExecContext(ctx, fmt.Sprintf("ATTACH %s AS __ymmud__", safeSQLString(filepath.Join(db.localPath, "main.db"))))
-	if err != nil {
-		return nil, err
-	}
 	go db.localDBMonitor()
 	return db, nil
 }

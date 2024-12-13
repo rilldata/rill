@@ -141,12 +141,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		logger.Warn("failed to install embedded DuckDB extensions, let DuckDB download them", zap.Error(err))
 	}
 
-	dataDir, err := st.DataDir()
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := newConfig(cfgMap, dataDir)
+	cfg, err := newConfig(cfgMap)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +158,7 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 		config:         cfg,
 		logger:         logger,
 		activity:       ac,
+		storage:        st,
 		metaSem:        semaphore.NewWeighted(1),
 		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
 		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
@@ -191,9 +187,12 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, st *storage.Clien
 	// Open the DB
 	err = c.reopenDB(context.Background())
 	if err != nil {
+		if remote != nil {
+			_ = remote.Close()
+		}
 		// Check for another process currently accessing the DB
 		if strings.Contains(err.Error(), "Could not set lock on file") {
-			panic(fmt.Errorf("failed to open database (is Rill already running?): %w", err))
+			return nil, fmt.Errorf("failed to open database (is Rill already running?): %w", err)
 		}
 		return nil, err
 	}
@@ -269,6 +268,7 @@ type connection struct {
 	config   *config
 	logger   *zap.Logger
 	activity *activity.Client
+	storage  *storage.Client
 	remote   *blob.Bucket
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
@@ -330,6 +330,9 @@ func (c *connection) Config() map[string]any {
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
+	if c.remote != nil {
+		_ = c.remote.Close()
+	}
 	if c.db != nil {
 		return c.db.Close()
 	}
@@ -493,12 +496,15 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 
 	// Create new DB
+	dataDir, err := c.storage.DataDir()
+	if err != nil {
+		return err
+	}
 	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
 		AddSource: true,
 	}))
-	var err error
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
-		LocalPath:      c.config.DataDir,
+		LocalPath:      dataDir,
 		Remote:         c.remote,
 		ReadSettings:   c.config.readSettings(),
 		WriteSettings:  c.config.writeSettings(),

@@ -507,55 +507,6 @@ select 1
 	testruntime.RequireIsView(t, olap, "bar", true)
 }
 
-func TestModelCTE(t *testing.T) {
-	// Create a model that references a source
-	rt, id := testruntime.NewInstance(t)
-	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/data/foo.csv": `a,b,c,d,e
-1,2,3,4,5
-1,2,3,4,5
-1,2,3,4,5
-`,
-		"/sources/foo.yaml": `
-connector: local_file
-path: data/foo.csv
-`,
-		"/models/bar.sql": `SELECT * FROM foo`,
-	})
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	testruntime.RequireResource(t, rt, id, modelRes)
-	testruntime.RequireOLAPTable(t, rt, id, "bar")
-
-	// Update model to have a CTE with alias different from the source
-	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/models/bar.sql": `with CTEAlias as (select * from foo) select * from CTEAlias`,
-	})
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with CTEAlias as (select * from foo) select * from CTEAlias`}))
-	testruntime.RequireResource(t, rt, id, modelRes)
-	testruntime.RequireOLAPTable(t, rt, id, "bar")
-
-	// TODO :: Not sure how this can be tested
-	// The query will succeed when creating model (foo is attached in default schema so memory.foo will work)
-	// But when querying foo is attached in non default schema (memory.main_x.foo) so memory.foo will not work
-
-	// Update model to have a CTE with alias same as the source
-	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/models/bar.sql": `with foo as (select * from memory.foo) select * from foo`,
-	})
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with foo as (select * from memory.foo) select * from foo`}))
-	modelRes.Meta.Refs = []*runtimev1.ResourceName{}
-	testruntime.RequireResource(t, rt, id, modelRes)
-	// Refs are removed but the model is valid.
-	// TODO: is this expected?
-	// testruntime.RequireOLAPTable(t, rt, id, "bar")
-}
-
 func TestRename(t *testing.T) {
 	// Rename model A to B and model B to A, verify success
 	// Rename model A to B and source B to A, verify success

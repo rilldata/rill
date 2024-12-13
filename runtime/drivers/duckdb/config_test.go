@@ -16,21 +16,21 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	cfg, err := newConfig(map[string]any{}, "")
+	cfg, err := newConfig(map[string]any{})
 	require.NoError(t, err)
 	require.Equal(t, 2, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "", "cpu": 2}, "")
+	cfg, err = newConfig(map[string]any{"dsn": "", "cpu": 2})
 	require.NoError(t, err)
 	require.Equal(t, "2", cfg.readSettings()["threads"])
 	require.Subset(t, cfg.writeSettings(), map[string]string{"custom_user_agent": "rill"})
 	require.Equal(t, 2, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"pool_size": 10}, "path/to")
+	cfg, err = newConfig(map[string]any{"pool_size": 10})
 	require.NoError(t, err)
 	require.Equal(t, 10, cfg.PoolSize)
 
-	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"}, "path/to")
+	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"})
 	require.NoError(t, err)
 	require.Equal(t, "2", cfg.readSettings()["threads"])
 	require.Equal(t, "", cfg.writeSettings()["threads"])
