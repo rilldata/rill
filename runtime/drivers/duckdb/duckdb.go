@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -484,10 +485,23 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
 	)
 
+	dataDir, err := c.storage.DataDir()
+	if err != nil {
+		return err
+	}
+
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+		tempDir, err := c.storage.TempDir()
+		if err != nil {
+			return err
+		}
+		bootQueries = append(bootQueries,
+			"SET preserve_insertion_order TO false",
+			fmt.Sprintf("SET temp_directory = %s", safeSQLString(tempDir)),
+			fmt.Sprintf("SET secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
+		)
 	}
 
 	// Add init SQL if provided
@@ -496,10 +510,6 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	}
 
 	// Create new DB
-	dataDir, err := c.storage.DataDir()
-	if err != nil {
-		return err
-	}
 	logger := slog.New(zapslog.NewHandler(c.logger.Core(), &zapslog.HandlerOptions{
 		AddSource: true,
 	}))
