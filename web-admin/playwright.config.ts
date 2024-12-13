@@ -14,9 +14,9 @@ const config: PlaywrightTestConfig = {
     ...devices["Desktop Chrome"],
   },
   projects: [
-    { name: "auth", testMatch: "authenticate.test.ts" },
+    { name: "auth", testMatch: "authenticate.spec.ts" },
     {
-      name: "authenticated user",
+      name: "e2e",
       use: {
         storageState: "playwright/.auth/user.json",
       },
