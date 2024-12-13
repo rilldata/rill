@@ -3,6 +3,7 @@ import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboar
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
+import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
@@ -171,18 +172,7 @@ const metricsViewReducers = {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = <MetricsExplorerEntity>{
-        // fields filled here are the ones that are not stored and loaded to/from URL
-        name,
-        dimensionFilterExcludeMode: new Map(),
-        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-
-        temporaryFilterName: null,
-        contextColumnWidths: { ...contextColWidthDefaults },
-
-        lastDefinedScrubRange: undefined,
-        ...initState,
-      };
+      state.entities[name] = getDefaultExploreState(name, initState);
 
       updateMetricsExplorerProto(state.entities[name]);
 
