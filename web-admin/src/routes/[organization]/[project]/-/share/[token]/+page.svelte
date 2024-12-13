@@ -61,6 +61,7 @@
       <DashboardURLStateSync
         metricsViewName={explore.metricsView.meta.name.name}
         exploreName={resourceName}
+        extraKeyPrefix={`${organization}__${project}__`}
         {defaultExplorePreset}
         {initExploreState}
         {exploreStateFromYAMLConfig}

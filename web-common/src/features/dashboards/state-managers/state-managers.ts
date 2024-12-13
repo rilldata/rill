@@ -4,7 +4,6 @@ import {
   contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
@@ -71,8 +70,6 @@ export type StateManagers = {
    */
   contextColumnWidths: Writable<ContextColWidths>;
   defaultExploreState: Readable<V1ExplorePreset>;
-
-  cleanup: () => void;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -155,17 +152,6 @@ export function createStateManagers({
       );
     },
   );
-  const unsub = dashboardStore.subscribe((dashState) => {
-    const exploreState = get(validSpecStore).data?.explore;
-    if (!dashState || !exploreState || dashState.name !== get(exploreNameStore))
-      return;
-    updateExploreSessionStore(
-      get(exploreNameStore),
-      extraKeyPrefix,
-      dashState,
-      exploreState,
-    );
-  });
 
   const persistentDashboardStore = createPersistentDashboardStore(
     (extraKeyPrefix || "") + exploreName,
@@ -201,9 +187,5 @@ export function createStateManagers({
     }),
     contextColumnWidths,
     defaultExploreState,
-
-    cleanup: () => {
-      unsub();
-    },
   };
 }

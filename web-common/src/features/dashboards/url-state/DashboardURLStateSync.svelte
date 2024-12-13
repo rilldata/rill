@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
+  import { afterNavigate, goto, replaceState } from "$app/navigation";
   import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
   import {
     createQueryServiceMetricsViewSchema,
@@ -13,11 +14,11 @@
   } from "@rilldata/web-common/runtime-client";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { AfterNavigate } from "@sveltejs/kit";
   import { onMount } from "svelte";
 
   export let metricsViewName: string;
   export let exploreName: string;
+  export let extraKeyPrefix: string | undefined = undefined;
   export let defaultExplorePreset: V1ExplorePreset;
   export let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity>;
   export let initExploreState: Partial<MetricsExplorerEntity> | undefined =
@@ -26,7 +27,6 @@
   export let exploreStateFromSessionStorage:
     | Partial<MetricsExplorerEntity>
     | undefined;
-  export let previousNavigationType: AfterNavigate["type"];
 
   const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
     getStateManagers();
@@ -46,9 +46,9 @@
       // null checks
       !metricsSpec ||
       !exploreSpec ||
+      !to ||
       // seems like a sveltekit bug where an additional afterNavigate is triggered with invalid fields
-      (from !== null && !from.url) ||
-      !to
+      (from !== null && !from.url)
     ) {
       return;
     }
@@ -61,7 +61,7 @@
 
     let partialExplore = partialExploreStateFromUrl;
     let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage && type !== "popstate") {
+    if (exploreStateFromSessionStorage) {
       partialExplore = exploreStateFromSessionStorage;
       shouldUpdateUrl = true;
     }
@@ -80,14 +80,11 @@
     );
     prevUrl = redirectUrl.toString();
 
-    if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
+    if (!shouldUpdateUrl || redirectUrl.search === to.url.toString()) {
       return;
     }
 
-    void goto(redirectUrl, {
-      replaceState: true,
-      state: $page.state,
-    });
+    replaceState(redirectUrl, $page.state);
   });
 
   let prevUrl = "";
@@ -130,10 +127,13 @@
       return;
     }
 
-    void goto(redirectUrl, {
-      replaceState: true,
-      state: $page.state,
-    });
+    replaceState(redirectUrl, $page.state);
+    updateExploreSessionStore(
+      exploreName,
+      extraKeyPrefix,
+      $dashboardStore,
+      exploreSpec!,
+    );
   }
 
   function gotoNewState() {
@@ -148,9 +148,15 @@
       defaultExplorePreset,
     );
     const newUrl = u.toString();
-    if (prevUrl !== newUrl) {
-      void goto(newUrl);
-    }
+    if (!prevUrl || prevUrl === newUrl) return;
+
+    void goto(newUrl);
+    updateExploreSessionStore(
+      exploreName,
+      extraKeyPrefix,
+      $dashboardStore,
+      exploreSpec,
+    );
   }
 
   // reactive to only dashboardStore
@@ -160,10 +166,11 @@
   }
 
   onMount(() => {
-    // safeguard to make sure we initialize the explore state in case afterNavigate is missed
-    if (!$dashboardStore) {
-      handleExploreInit(previousNavigationType === "enter");
-    }
+    setTimeout(() => {
+      if (!$dashboardStore) {
+        handleExploreInit(true);
+      }
+    });
   });
 </script>
 
