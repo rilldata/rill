@@ -447,11 +447,11 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		if !onCluster {
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
+		// capture the full engine of the old distributed table
 		args := []any{c.config.Database, oldName}
 		if c.config.Database == "" {
 			args = []any{nil, oldName}
 		}
-		// capture the full engine of the old distributed table
 		var engineFull string
 		res, err := c.Execute(ctx, &drivers.Statement{
 			Query:    "SELECT engine_full FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
