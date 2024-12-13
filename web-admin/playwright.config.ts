@@ -1,6 +1,8 @@
 import { devices, type PlaywrightTestConfig } from "@playwright/test";
 
 const config: PlaywrightTestConfig = {
+  globalSetup: "./tests/setup/globalSetup.ts",
+  globalTeardown: "./tests/setup/globalTeardown.ts",
   webServer: {
     command: "npm run build && npm run preview",
     port: 3000,
