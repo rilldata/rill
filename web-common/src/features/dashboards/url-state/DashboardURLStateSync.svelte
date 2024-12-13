@@ -1,17 +1,11 @@
 <script lang="ts">
-  import {
-    afterNavigate,
-    beforeNavigate,
-    goto,
-    replaceState,
-  } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-  import { getExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/url-state/getExploreStateFromSessionStorage";
   import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
   import {
     createQueryServiceMetricsViewSchema,
@@ -34,10 +28,6 @@
     | undefined;
   export let previousNavigationType: AfterNavigate["type"];
 
-  $: ({ organization: orgName, project: projectName } = $page.params);
-  $: prefix =
-    orgName && projectName ? `${orgName}__${projectName}__` : undefined;
-
   const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
     getStateManagers();
   $: exploreSpec = $validSpecStore.data?.explore;
@@ -57,7 +47,8 @@
       !metricsSpec ||
       !exploreSpec ||
       // seems like a sveltekit bug where an additional afterNavigate is triggered with invalid fields
-      (from !== null && !from.url)
+      (from !== null && !from.url) ||
+      !to
     ) {
       return;
     }
@@ -65,19 +56,38 @@
     const isInit = !$dashboardStore;
     if (isInit) {
       handleExploreInit(type === "enter");
-    } else {
-      // let partialExplore = partialExploreStateFromUrl;
-      // if (exploreStateFromSessionStorage && type !== "popstate") {
-      //   partialExplore = exploreStateFromSessionStorage;
-      // }
-
-      prevUrl = to?.url.toString() ?? "";
-      metricsExplorerStore.mergePartialExplorerEntity(
-        exploreName,
-        partialExploreStateFromUrl,
-        metricsSpec,
-      );
+      return;
     }
+
+    let partialExplore = partialExploreStateFromUrl;
+    let shouldUpdateUrl = false;
+    if (exploreStateFromSessionStorage && type !== "popstate") {
+      partialExplore = exploreStateFromSessionStorage;
+      shouldUpdateUrl = true;
+    }
+
+    const redirectUrl = new URL(to.url);
+    metricsExplorerStore.mergePartialExplorerEntity(
+      exploreName,
+      partialExplore,
+      metricsSpec,
+    );
+    redirectUrl.search = getUpdatedUrlForExploreState(
+      exploreSpec,
+      defaultExplorePreset,
+      partialExplore,
+      $page.url.searchParams,
+    );
+    prevUrl = redirectUrl.toString();
+
+    if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
+      return;
+    }
+
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
   });
 
   let prevUrl = "";
@@ -125,38 +135,6 @@
       state: $page.state,
     });
   }
-  beforeNavigate(({ to }) => {
-    if (
-      !to ||
-      to.url.host !== $page.url.host ||
-      to.route.id !== $page.route.id ||
-      !metricsSpec ||
-      !exploreSpec
-    ) {
-      return;
-    }
-    const { exploreStateFromSessionStorage } =
-      getExploreStateFromSessionStorage(
-        exploreName,
-        prefix,
-        to.url.searchParams,
-        metricsSpec,
-        exploreSpec,
-        defaultExplorePreset,
-      );
-    if (exploreStateFromSessionStorage) {
-      metricsExplorerStore.mergePartialExplorerEntity(
-        exploreName,
-        exploreStateFromSessionStorage,
-        metricsSpec,
-      );
-      to.url.search = convertExploreStateToURLSearchParams(
-        exploreStateFromSessionStorage,
-        exploreSpec,
-        defaultExplorePreset,
-      );
-    }
-  });
 
   function gotoNewState() {
     if (!exploreSpec) return;

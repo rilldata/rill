@@ -46,7 +46,6 @@
       // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
       metricsExplorerStore.remove(metricsViewName);
       // Reset local persisted dashboard state for the metrics view
-      createPersistentDashboardStore(metricsViewName).reset();
       clearExploreSessionStore(metricsViewName, undefined);
 
       // Reset local persisted explore state derived from this metrics view
@@ -61,7 +60,6 @@
               metricsViewName
           )
             return;
-          createPersistentDashboardStore(exploreName).reset();
           clearExploreSessionStore(exploreName, undefined);
         });
 
