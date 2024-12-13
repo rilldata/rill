@@ -11,13 +11,13 @@ const config: PlaywrightTestConfig = {
   },
   use: {
     baseURL: "http://localhost:3000",
+    ...devices["Desktop Chrome"],
   },
   projects: [
-    { name: "auth", testMatch: "authenticate.ts" },
+    { name: "auth", testMatch: "authenticate.test.ts" },
     {
       name: "authenticated user",
       use: {
-        ...devices["Desktop Chrome"],
         storageState: "playwright/.auth/user.json",
       },
       dependencies: ["auth"],

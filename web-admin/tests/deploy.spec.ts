@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { test } from "./setup/test";
+import { test } from "./setup/base";
 
 const execAsync = promisify(exec);
 

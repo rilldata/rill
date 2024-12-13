@@ -1,11 +1,20 @@
 import dotenv from "dotenv";
-import { test } from "./test";
+import { test } from "./setup/base";
 
 dotenv.config();
 
 const authFile = "playwright/.auth/user.json";
 
 test("authenticate", async ({ page }) => {
+  if (
+    !process.env.RILL_STAGE_QA_ACCOUNT_EMAIL ||
+    !process.env.RILL_STAGE_QA_ACCOUNT_PASSWORD
+  ) {
+    throw new Error(
+      "Missing required environment variables for authentication",
+    );
+  }
+
   // Log in with the QA account
   await page.goto("/");
   await page.getByRole("button", { name: "Continue with Email" }).click();
