@@ -140,23 +140,25 @@ export async function updateCodeEditor(page: Page, code: string) {
   await page.waitForTimeout(600);
 }
 
-
-export async function duplicateFileUsingMenu(
-  page: Page,
-  filePath: string
-) {
+export async function duplicateFileUsingMenu(page: Page, filePath: string) {
   // open context menu and click rename
   await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Duplicate");
-
 }
 
-export async function refreshFileUsingMenu(
-  page: Page,
-  filePath: string
-) {
+export async function refreshFileUsingMenu(page: Page, filePath: string) {
   // open context menu and click rename
   await openFileNavEntryContextMenu(page, filePath);
   await clickMenuButton(page, "Refresh source");
+}
 
+//maybe better to generalize actions, so for duplicate, rename, refresh
+export async function actionUsingMenu(
+  page: Page,
+  filePath: string,
+  action: string,
+) {
+  // open context menu and click rename
+  await openFileNavEntryContextMenu(page, filePath);
+  await clickMenuButton(page, action);
 }
