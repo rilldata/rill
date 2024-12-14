@@ -14,10 +14,11 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import type {
-  DashboardTimeControls,
-  ScrubRange,
-  TimeRange,
+import {
+  TimeRangePreset,
+  type DashboardTimeControls,
+  type ScrubRange,
+  type TimeRange,
 } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -548,6 +549,10 @@ const metricsViewReducers = {
 
       // Reset scrub when range changes
       setSelectedScrubRange(metricsExplorer, undefined);
+
+      if (timeRange.name === TimeRangePreset.ALL_TIME) {
+        metricsExplorer.showTimeComparison = false;
+      }
 
       metricsExplorer.selectedTimeRange = {
         ...timeRange,

@@ -131,15 +131,17 @@
     >
       <div class="pt-2 flex-none" style:width="{metricsWidth}px">
         {#key exploreName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {exploreName}
-              timeSeriesWidth={metricsWidth}
-              workspaceWidth={exploreContainerWidth}
-              hideStartPivotButton={hidePivot}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+          {#if !$metricTimeSeries.isLoading}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {exploreName}
+                timeSeriesWidth={metricsWidth}
+                workspaceWidth={exploreContainerWidth}
+                hideStartPivotButton={hidePivot}
+              />
+            {:else}
+              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+            {/if}
           {/if}
         {/key}
       </div>

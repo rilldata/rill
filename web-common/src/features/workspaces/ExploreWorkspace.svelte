@@ -13,6 +13,7 @@
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
@@ -20,7 +21,6 @@
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
   import Spinner from "../entity-management/Spinner.svelte";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
 
@@ -98,7 +98,7 @@
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditorContainer
+  <WorkspaceEditorContainer
     slot="body"
     error={mainError}
     showError={!!$remoteContent && selectedView === "code"}
@@ -125,7 +125,7 @@
         <Spinner status={1} size="48px" />
       {/if}
     {/if}
-  </MetricsEditorContainer>
+  </WorkspaceEditorContainer>
 
   <VisualExploreEditing
     autoSave={selectedView === "viz" || $autoSave}

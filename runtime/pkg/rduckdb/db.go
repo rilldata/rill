@@ -266,7 +266,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts.Logger,
 	)
 
-	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
+	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -274,6 +274,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 		return nil, err
 	}
+
 	go db.localDBMonitor()
 	return db, nil
 }
@@ -650,6 +651,7 @@ func (d *db) localDBMonitor() {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
+			d.localDirty = false
 			d.writeSem.Release(1)
 		}
 	}
@@ -954,7 +956,7 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+dbName(name, version))
+	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 	if err != nil {
 		return err
 	}
@@ -966,7 +968,7 @@ func (d *db) deleteLocalTableFiles(name, version string) error {
 	return os.RemoveAll(d.localTableDir(name, version))
 }
 
-func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, meta *tableMeta) error) error {
+func (d *db) iterateLocalTables(cleanup bool, fn func(name string, meta *tableMeta) error) error {
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
@@ -977,14 +979,35 @@ func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, me
 		}
 		meta, err := d.tableMeta(entry.Name())
 		if err != nil {
-			if !removeInvalidTable {
+			if !cleanup {
 				continue
 			}
+			d.logger.Debug("cleanup: remove table", slog.String("table", entry.Name()))
 			err = d.deleteLocalTableFiles(entry.Name(), "")
 			if err != nil {
 				return err
 			}
 			continue
+		}
+		// also remove older versions
+		if cleanup {
+			versions, err := os.ReadDir(d.localTableDir(entry.Name(), ""))
+			if err != nil {
+				return err
+			}
+			for _, version := range versions {
+				if !version.IsDir() {
+					continue
+				}
+				if version.Name() == meta.Version {
+					continue
+				}
+				d.logger.Debug("cleanup: remove old version", slog.String("table", entry.Name()), slog.String("version", version.Name()))
+				err = d.deleteLocalTableFiles(entry.Name(), version.Name())
+				if err != nil {
+					return err
+				}
+			}
 		}
 		err = fn(entry.Name(), meta)
 		if err != nil {
@@ -1031,7 +1054,7 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 
