@@ -1,26 +1,22 @@
 import type { Writable } from "svelte/store";
 import type { ComponentInputParam } from "../inspector/types";
+import type { ChartConfig } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
 import type { TableSpec } from "./table";
 
-export interface ComponentCommonProperties {
-  position: PositionDef;
-  title?: string;
-  description?: string;
-}
-
-export interface ComponentSize {
-  width: number;
-  height: number;
-}
 // The CanvasComponent interface is generic over the spec type.
 export interface CanvasComponent<T> {
   /**
    * Svelte writable for the spec
    */
   specStore: Writable<T>;
+
+  /**
+   * Path in the YAML where the component is stored
+   */
+  pathInYAML: (string | number)[];
   /**
    * Minimum allowed size for the the component
    * container on the canvas
@@ -41,13 +37,24 @@ export interface CanvasComponent<T> {
    * UI builder
    */
   inputParams(): Record<keyof T, ComponentInputParam>;
+
+  /**
+   * Update the spec store with the new values
+   */
+  updateProperty(key: keyof T, value: T[keyof T]): Promise<void>;
+
+  /**
+   * Set the spec store with the new values
+   */
+  setSpec(spec: T): void;
 }
 
-// TODO: Make it more human friendly and readable, along
-// with perc, relative sizes etc.
-export interface PositionDef {
-  x: number;
-  y: number;
+export interface ComponentCommonProperties {
+  title?: string;
+  description?: string;
+}
+
+export interface ComponentSize {
   width: number;
   height: number;
 }
@@ -58,16 +65,40 @@ export type CanvasComponentInput =
   | ImageSpec
   | TableSpec;
 
-export const commonOptions: Record<
-  keyof ComponentCommonProperties,
-  ComponentInputParam
-> = {
-  title: { type: "string", required: false, showInUI: true, label: "Title" },
-  description: {
-    type: "string",
-    required: false,
-    showInUI: true,
-    label: "Description",
-  },
-  position: { type: "string", showInUI: false },
-};
+type ChartType = "line_chart" | "bar_chart";
+
+export type CanvasComponentType =
+  | ChartType
+  | "markdown"
+  | "kpi"
+  | "image"
+  | "table";
+
+interface LineChart {
+  line_chart: ChartConfig;
+}
+
+interface BarChart {
+  bar_chart: ChartConfig;
+}
+
+export type ChartTemplates = LineChart | BarChart;
+export interface KPITemplateT {
+  kpi: KPISpec;
+}
+export interface MarkdownTemplateT {
+  markdown: MarkdownSpec;
+}
+export interface ImageTemplateT {
+  image: ImageSpec;
+}
+export interface TableTemplateT {
+  table: TableSpec;
+}
+
+export type TemplateSpec =
+  | ChartTemplates
+  | KPITemplateT
+  | TableTemplateT
+  | MarkdownTemplateT
+  | ImageTemplateT;

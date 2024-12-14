@@ -7,8 +7,13 @@
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import { getStateManagers } from "../state-managers/state-managers";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    useAllDimensionFromMetric,
+    useAllSimpleMeasureFromMetric,
+  } from "./selectors";
 
+  export let metricName: string;
   export let label: string;
   export let id: string;
   export let selectedItem: string | undefined;
@@ -16,28 +21,29 @@
   export let searchableItems: string[] | undefined = undefined;
   export let onSelect: (item: string) => void;
 
-  const {
-    selectors: {
-      dimensions: { allDimensions },
-      measures: { filteredSimpleMeasures },
-    },
-  } = getStateManagers();
+  $: allDimensions = useAllDimensionFromMetric($runtime.instanceId, metricName);
+
+  $: allFilteredMeasures = useAllSimpleMeasureFromMetric(
+    $runtime.instanceId,
+    metricName,
+  );
 
   $: items =
     type === "measure"
-      ? ($filteredSimpleMeasures()?.map((m) => m.name as string) ?? [])
-      : ($allDimensions?.map((d) => d.name || (d.column as string)) ?? []);
+      ? ($allFilteredMeasures?.data?.map((m) => m.name as string) ?? [])
+      : ($allDimensions?.data?.map((d) => d.name || (d.column as string)) ??
+        []);
 
   $: displayMap =
     type === "measure"
       ? Object.fromEntries(
-          $filteredSimpleMeasures()?.map((m) => [
+          $allFilteredMeasures?.data?.map((m) => [
             m.name,
             getMeasureDisplayName(m),
           ]) ?? [],
         )
       : Object.fromEntries(
-          $allDimensions?.map((d) => [
+          $allDimensions?.data?.map((d) => [
             d.name || d.column,
             getDimensionDisplayName(d),
           ]) ?? [],

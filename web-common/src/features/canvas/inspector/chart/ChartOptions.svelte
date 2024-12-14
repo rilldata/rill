@@ -1,7 +1,5 @@
 <script lang="ts">
-  import FieldSelectorDropdown from "@rilldata/web-common/features/dashboards/canvas/FieldSelectorDropdown.svelte";
   import Tab from "@rilldata/web-common/features/dashboards/tab-bar/Tab.svelte";
-  import { chartConfig, updateAxis } from "./configStore";
 
   export let chartType = "bar";
 
@@ -38,7 +36,7 @@
 
 {#if currentTabIndex === 0}
   <div class="chart-options">
-    <FieldSelectorDropdown
+    <!-- <FieldSelectorDropdown
       label="X axis"
       id="x-axis"
       type="dimension"
@@ -60,7 +58,7 @@
       type="dimension"
       selectedItem={$chartConfig.data?.color?.field}
       onSelect={(field) => updateAxis("color", field)}
-    />
+    /> -->
   </div>
 {:else if currentTabIndex === 1}
   <div class="chart-options">

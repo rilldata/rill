@@ -7,6 +7,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ChartOptions from "@rilldata/web-common/features/canvas/inspector/chart/ChartOptions.svelte";
+  import ComponentInputs from "@rilldata/web-common/features/canvas/inspector/ComponentInputs.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     ResourceKind,
@@ -34,12 +35,10 @@
     { id: "leaderboard", title: "Leaderboard", icon: List },
   ];
 
-  // TODO: fix accessort
+  // TODO: fix accessor
   $: selectedComponent =
     $validSpecStore.items?.[$canvasStore.selectedComponentIndex || 0];
   let selectedChartType;
-
-  $: console.log($validSpecStore, selectedComponent);
 
   $: resourceQuery = useResource(
     $runtime.instanceId,
@@ -49,17 +48,8 @@
 
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({
-    renderer,
-    rendererProperties,
-    resolverProperties,
-    input,
-    output,
-    displayName,
-    description,
-  } = componentResource?.component?.spec ?? {});
-
-  $: console.log(renderer, rendererProperties);
+  $: ({ renderer, rendererProperties } =
+    componentResource?.component?.spec ?? {});
 
   function selectChartType(chartType) {
     selectedChartType = chartType.id;
@@ -67,61 +57,65 @@
   }
 </script>
 
-<SidebarWrapper title="Edit component">
+<SidebarWrapper title="Edit {renderer || 'component'} ">
   <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
-  <div class="section">
-    <InputLabel
-      label="Charts"
-      id="chart-components"
-      hint="Chose a chart component to add to your canvas"
-    />
-    <div class="chart-icons">
-      {#each chartTypes as chart}
-        <Tooltip distance={8} location="right">
-          <Button
-            square
-            small
-            type="secondary"
-            selected={selectedChartType === chart.id}
-            on:click={() => selectChartType(chart)}
-          >
-            <svelte:component this={chart.icon} size="20px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            {chart.title}
-          </TooltipContent>
-        </Tooltip>
-      {/each}
+  {#if !renderer}
+    <div class="section">
+      <InputLabel
+        label="Charts"
+        id="chart-components"
+        hint="Chose a chart component to add to your canvas"
+      />
+      <div class="chart-icons">
+        {#each chartTypes as chart}
+          <Tooltip distance={8} location="right">
+            <Button
+              square
+              small
+              type="secondary"
+              selected={selectedChartType === chart.id}
+              on:click={() => selectChartType(chart)}
+            >
+              <svelte:component this={chart.icon} size="20px" />
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              {chart.title}
+            </TooltipContent>
+          </Tooltip>
+        {/each}
+      </div>
+      {#if selectedChartType}
+        <ChartOptions chartType={selectedChartType} />
+      {/if}
     </div>
-    {#if selectedChartType}
-      <ChartOptions chartType={selectedChartType} />
-    {/if}
-  </div>
 
-  <div class="section">
-    <InputLabel
-      label="Core components"
-      id="core-components"
-      hint="Chose a core component to add to your canvas"
-    />
-    <div class="core-icons">
-      {#each coreComponents as component}
-        <Tooltip distance={8} location="right">
-          <Button
-            square
-            small
-            type="secondary"
-            on:click={() => selectChartType(component)}
-          >
-            <svelte:component this={component.icon} size="20px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            {component.title}
-          </TooltipContent>
-        </Tooltip>
-      {/each}
+    <div class="section">
+      <InputLabel
+        label="Core components"
+        id="core-components"
+        hint="Chose a core component to add to your canvas"
+      />
+      <div class="core-icons">
+        {#each coreComponents as component}
+          <Tooltip distance={8} location="right">
+            <Button
+              square
+              small
+              type="secondary"
+              on:click={() => selectChartType(component)}
+            >
+              <svelte:component this={component.icon} size="20px" />
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              {component.title}
+            </TooltipContent>
+          </Tooltip>
+        {/each}
+      </div>
     </div>
-  </div>
+  {:else}
+    <ComponentInputs componentType={renderer} params={rendererProperties} />
+  {/if}
 </SidebarWrapper>
 
 <style lang="postcss">

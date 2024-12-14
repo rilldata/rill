@@ -1,13 +1,17 @@
 import type {
   CanvasComponent,
   ComponentSize,
-} from "@rilldata/web-common/features/canvas/components/component-types";
+} from "@rilldata/web-common/features/canvas/components/types";
+import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-import { writable, type Writable } from "svelte/store";
+import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import { get, writable, type Writable } from "svelte/store";
 
 // A base class that implements all the store logic
 export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
   specStore: Writable<T>;
+  pathInYAML: (string | number)[] = [];
+  fileArtifact: FileArtifact;
 
   // Let child classes define these
   abstract minSize: ComponentSize;
@@ -15,17 +19,47 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
   abstract isValid(spec: T): boolean;
   abstract inputParams(): Record<keyof T, ComponentInputParam>;
 
-  constructor(defaultSpec: T, initialSpec: Partial<T> = {}) {
+  constructor(
+    fileArtifact: FileArtifact,
+    path: (string | number)[],
+    defaultSpec: T,
+    initialSpec: Partial<T> = {},
+  ) {
     // Initialize the store with merged spec
     const mergedSpec = { ...defaultSpec, ...initialSpec };
     this.specStore = writable(mergedSpec);
+    this.pathInYAML = path;
+    this.fileArtifact = fileArtifact;
+  }
+
+  private async updateYAML(newSpec: T): Promise<void> {
+    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parsedDocument = get(parseDocumentStore);
+
+    const { saveContent } = this.fileArtifact;
+
+    console.log("newSpec", newSpec);
+
+    // Update the Item
+    parsedDocument.setIn(this.pathInYAML, newSpec);
+
+    // Save the updated document
+    await saveContent(parsedDocument.toString());
   }
 
   setSpec(newSpec: T): void {
+    if (this.isValid(newSpec)) {
+      // Update YAML
+    }
     this.specStore.set(newSpec);
   }
 
-  updateSpec(updater: (spec: T) => T): void {
-    this.specStore.update(updater);
+  async updateProperty(key: keyof T, value: T[keyof T]): Promise<void> {
+    const currentSpec = get(this.specStore);
+    const newSpec = { ...currentSpec, [key]: value };
+    if (this.isValid(newSpec)) {
+      await this.updateYAML(newSpec);
+    }
+    this.specStore.set(newSpec);
   }
 }

@@ -1,17 +1,16 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-import {
-  commonOptions,
-  type ComponentCommonProperties,
-} from "../component-types";
+import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import { type ComponentCommonProperties } from "../types";
 
 export { default as KPI } from "./KPI.svelte";
 
 export interface KPISpec extends ComponentCommonProperties {
-  metric_view_name: string;
+  metrics_view: string;
   measure: string;
   time_range: string;
-  show_sparkline: boolean;
+  show_sparkline?: boolean;
   comparison_range?: string;
 }
 
@@ -19,17 +18,20 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 4, height: 2 };
 
-  constructor(initialSpec: Partial<KPISpec> = {}) {
+  constructor(
+    fileArtifact: FileArtifact,
+    path: (string | number)[],
+    initialSpec: Partial<KPISpec> = {},
+  ) {
     const defaultSpec: KPISpec = {
-      position: { x: 0, y: 0, width: 4, height: 2 },
-      metric_view_name: "",
+      metrics_view: "",
       measure: "",
       time_range: "",
       show_sparkline: false,
       title: "",
       description: "",
     };
-    super(defaultSpec, initialSpec);
+    super(fileArtifact, path, defaultSpec, initialSpec);
   }
 
   isValid(spec: KPISpec): boolean {
@@ -40,12 +42,12 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   inputParams(): Record<keyof KPISpec, ComponentInputParam> {
     return {
-      ...commonOptions,
-      metric_view_name: { type: "metrics_view", label: "Metric view" },
+      metrics_view: { type: "metrics_view", label: "Metric view" },
       measure: { type: "measure", label: "Measure" },
       time_range: { type: "rill_time", label: "Time Range" },
       comparison_range: { type: "rill_time", label: "Comparison Range" },
       show_sparkline: { type: "boolean", required: false, label: "Sparkline" },
+      ...commonOptions,
     };
   }
 }

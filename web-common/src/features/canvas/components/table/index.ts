@@ -1,14 +1,13 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-import {
-  commonOptions,
-  type ComponentCommonProperties,
-} from "../component-types";
+import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import { type ComponentCommonProperties } from "../types";
 
 export { default as Table } from "./TableTemplate.svelte";
 
 export interface TableSpec extends ComponentCommonProperties {
-  metric_view_name: string;
+  metrics_view: string;
   time_range: string;
   measures: string[];
   comparison_range?: string;
@@ -16,23 +15,26 @@ export interface TableSpec extends ComponentCommonProperties {
   col_dimensions?: string[];
 }
 
-export class TableComponent extends BaseCanvasComponent<TableSpec> {
+export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
   defaultSize = { width: 16, height: 10 };
 
-  constructor(initialSpec: Partial<TableSpec> = {}) {
+  constructor(
+    fileArtifact: FileArtifact,
+    path: (string | number)[],
+    initialSpec: Partial<TableSpec> = {},
+  ) {
     const defaultSpec: TableSpec = {
-      position: { x: 0, y: 0, width: 4, height: 2 },
       title: "",
       description: "",
-      metric_view_name: "",
+      metrics_view: "",
       measures: [],
       time_range: "",
       comparison_range: "",
       row_dimensions: [],
       col_dimensions: [],
     };
-    super(defaultSpec, initialSpec);
+    super(fileArtifact, path, defaultSpec, initialSpec);
   }
 
   isValid(spec: TableSpec): boolean {
@@ -47,13 +49,13 @@ export class TableComponent extends BaseCanvasComponent<TableSpec> {
 
   inputParams(): Record<keyof TableSpec, ComponentInputParam> {
     return {
-      ...commonOptions,
-      metric_view_name: { type: "metrics_view", label: "Metric view" },
+      metrics_view: { type: "metrics_view", label: "Metric view" },
       measures: { type: "multi_measures", label: "Measures" },
       time_range: { type: "rill_time" },
       comparison_range: { type: "rill_time" },
       col_dimensions: { type: "multi_dimensions" },
       row_dimensions: { type: "multi_dimensions" },
+      ...commonOptions,
     };
   }
 }

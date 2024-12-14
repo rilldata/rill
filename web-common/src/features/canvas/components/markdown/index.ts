@@ -1,9 +1,8 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
-import {
-  commonOptions,
-  type ComponentCommonProperties,
-} from "../component-types";
+import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import { type ComponentCommonProperties } from "../types";
 
 export { default as Markdown } from "./Markdown.svelte";
 
@@ -15,14 +14,17 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 6, height: 2 };
 
-  constructor(initialSpec: Partial<MarkdownSpec> = {}) {
+  constructor(
+    fileArtifact: FileArtifact,
+    path: (string | number)[],
+    initialSpec: Partial<MarkdownSpec> = {},
+  ) {
     const defaultSpec: MarkdownSpec = {
-      position: { x: 0, y: 0, width: 4, height: 2 },
       title: "",
       description: "",
       content: "Your text",
     };
-    super(defaultSpec, initialSpec);
+    super(fileArtifact, path, defaultSpec, initialSpec);
   }
 
   isValid(spec: MarkdownSpec): boolean {
@@ -31,8 +33,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
 
   inputParams(): Record<keyof MarkdownSpec, ComponentInputParam> {
     return {
-      ...commonOptions,
       content: { type: "textArea", required: true },
+      ...commonOptions,
     };
   }
 }

@@ -8,12 +8,12 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {
-  type Readable,
-  type Writable,
   derived,
   get,
   readable,
   writable,
+  type Readable,
+  type Writable,
 } from "svelte/store";
 import type { CanvasEntity } from "../stores/canvas-entity";
 import { updateCanvasByName, useCanvasStore } from "../stores/canvas-stores";
@@ -27,16 +27,6 @@ export type StateManagers = {
   validSpecStore: Readable<V1CanvasSpec>;
   updateCanvas: CanvasCallbackExecutor;
   queryClient: QueryClient;
-
-  // Enable later
-  /**
-   * A collection of Readables that can be used to select data from the dashboard.
-   */
-  // selectors: StateManagerReadables;
-  /**
-   * A collection of functions that update the dashboard data model.
-   */
-  // actions: StateManagerActions;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("canvas-state-managers");

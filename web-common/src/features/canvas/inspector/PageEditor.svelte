@@ -1,6 +1,7 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
+  import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     ResourceKind,
@@ -9,7 +10,7 @@
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "@rilldata/web-common/features/visual-editing/ThemeInput.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { parseDocument, YAMLMap } from "yaml";
+  import { YAMLMap } from "yaml";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -18,13 +19,12 @@
   const { fileArtifact, validSpecStore } = getCanvasStateManagers();
 
   $: ({ instanceId } = $runtime);
-  $: ({ localContent, remoteContent } = $fileArtifact);
 
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+  $: parsedDocument = getParsedDocument($fileArtifact);
 
-  $: rawTitle = parsedDocument.get("title");
-  $: rawDisplayName = parsedDocument.get("display_name");
-  $: rawTheme = parsedDocument.get("theme"); //Add property
+  $: rawTitle = $parsedDocument.get("title");
+  $: rawDisplayName = $parsedDocument.get("display_name");
+  $: rawTheme = $parsedDocument.get("theme");
   $: maxWidth = DASHBOARD_WIDTH; //Add property
 
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);

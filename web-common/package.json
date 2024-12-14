@@ -6,7 +6,7 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "orval && tsx src/runtime-client/add-signal-argument.ts src/runtime-client/gen/query-service/query-service.ts src/runtime-client/gen/runtime-service/runtime-service.ts",
-    "generate:template-schema": "ts-json-schema-generator -p src/features/templates/types.ts -t TemplateSpec -o ../runtime/compilers/rillv1/data/component-template-v1.json",
+    "generate:template-schema": "ts-json-schema-generator -p src/features/canvas/components/types.ts -t TemplateSpec -o ../runtime/compilers/rillv1/data/component-template-v1.json",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:watch": "vitest",

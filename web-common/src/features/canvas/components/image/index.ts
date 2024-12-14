@@ -1,9 +1,8 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import {
-  commonOptions,
-  type ComponentCommonProperties,
-} from "@rilldata/web-common/features/canvas/components/component-types";
+import { type ComponentCommonProperties } from "@rilldata/web-common/features/canvas/components/types";
+import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 
 export { default as Image } from "./Image.svelte";
 
@@ -11,18 +10,21 @@ export interface ImageSpec extends ComponentCommonProperties {
   url: string;
 }
 
-export class MarkdownCanvasComponent extends BaseCanvasComponent<ImageSpec> {
+export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   minSize = { width: 1, height: 1 };
   defaultSize = { width: 5, height: 5 };
 
-  constructor(initialSpec: Partial<ImageSpec> = {}) {
+  constructor(
+    fileArtifact: FileArtifact,
+    path: (string | number)[],
+    initialSpec: Partial<ImageSpec> = {},
+  ) {
     const defaultSpec: ImageSpec = {
-      position: { x: 0, y: 0, width: 4, height: 2 },
       url: "",
       title: "",
       description: "",
     };
-    super(defaultSpec, initialSpec);
+    super(fileArtifact, path, defaultSpec, initialSpec);
   }
 
   isValid(spec: ImageSpec): boolean {
@@ -31,8 +33,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<ImageSpec> {
 
   inputParams(): Record<keyof ImageSpec, ComponentInputParam> {
     return {
+      url: { type: "text", label: "URL" },
       ...commonOptions,
-      url: { type: "string", label: "URL" },
     };
   }
 }

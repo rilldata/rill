@@ -3,11 +3,10 @@
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import httpClient from "@rilldata/web-common/runtime-client/http-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { get } from "svelte/store";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  const instanceId = get(runtime).instanceId;
+  const instanceId = $runtime.instanceId;
   const DEFAULT_IMAGE_PROPERTIES: ImageProperties = {
     url: "",
     css: {
@@ -17,6 +16,7 @@
     },
   };
 
+  $: console.log("Called");
   $: imageProperties = {
     ...DEFAULT_IMAGE_PROPERTIES,
     ...rendererProperties,

@@ -1,11 +1,11 @@
-type NativeInputTypes = "string" | "number" | "boolean" | "textArea";
+type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
 type SemanticInputTypes =
   | "metrics_view"
   | "measure"
   | "dimension"
   | "multi_measures"
   | "multi_dimensions";
-type ChartInputTypes = "color" | "opacity";
+type ChartInputTypes = "positional" | "mark" | "tooltip";
 type CustomInputTypes = "rill_time";
 
 export type InputType =

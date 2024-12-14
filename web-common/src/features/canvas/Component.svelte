@@ -6,7 +6,6 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import Chart from "./Chart.svelte";
   import type ResizeHandle from "./ResizeHandle.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
 
@@ -41,15 +40,11 @@
   );
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({
-    renderer,
-    rendererProperties,
-    resolverProperties,
-    input,
-    output,
-    displayName,
-    description,
-  } = componentResource?.component?.spec ?? {});
+  $: ({ renderer, rendererProperties } =
+    componentResource?.component?.spec ?? {});
+
+  $: title = rendererProperties?.title;
+  $: description = rendererProperties?.description;
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -97,10 +92,10 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
-      {#if displayName || description}
-        <div class="w-full h-fit flex flex-col pb-2">
-          {#if displayName}
-            <h1 class="text-slate-900">{displayName}</h1>
+      {#if title || description}
+        <div class="w-full h-fit flex flex-col pb-2 border-b">
+          {#if title}
+            <h1 class="text-slate-900">{title}</h1>
           {/if}
           {#if description}
             <h2 class="text-slate-600 leading-none">{description}</h2>
@@ -108,13 +103,7 @@
         </div>
       {/if}
       {#if renderer && rendererProperties}
-        <ComponentRenderer
-          {chartView}
-          {renderer}
-          {input}
-          {resolverProperties}
-          {componentName}
-        />
+        <ComponentRenderer {renderer} {componentName} />
       {/if}
     </div>
   </div>
