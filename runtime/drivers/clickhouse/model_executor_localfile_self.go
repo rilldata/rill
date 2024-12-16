@@ -103,14 +103,12 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if opts.Env.StageChanges || outputProps.Typ == "DICTIONARY" {
 		stagingTableName = stagingTableNameFor(tableName)
 	}
-	if t, err := e.c.InformationSchema().Lookup(ctx, e.c.config.Database, "", stagingTableName); err == nil {
-		_ = e.c.DropTable(ctx, stagingTableName, t.View)
-	}
+	_ = e.c.DropTable(ctx, stagingTableName)
 
 	// create the table
 	err = e.c.createTable(ctx, stagingTableName, "", outputProps)
 	if err != nil {
-		_ = e.c.DropTable(ctx, stagingTableName, false)
+		_ = e.c.DropTable(ctx, stagingTableName)
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
 
@@ -131,7 +129,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if outputProps.Typ == "DICTIONARY" {
 		err = e.c.createDictionary(ctx, tableName, fmt.Sprintf("SELECT * FROM %s", safeSQLName(stagingTableName)), outputProps)
 		// drop the temp table
-		_ = e.c.DropTable(ctx, stagingTableName, false)
+		_ = e.c.DropTable(ctx, stagingTableName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create dictionary: %w", err)
 		}

@@ -83,6 +83,8 @@
   class:absolute
   class="{direction} {side} justify-{justify}"
   class:hang
+  class:minned={dimension === min}
+  class:maxed={dimension === max}
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick|stopPropagation={handleDoubleClick}
   on:mouseenter={() => {

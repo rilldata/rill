@@ -11,11 +11,12 @@
   export let interval: Interval<true> | undefined;
   export let zone: string;
   export let firstVisibleMonth: DateTime<true>;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let applyRange: (range: Interval<true>) => void;
   export let closeMenu: () => void;
 
   let selectingStart = true;
-  let displayError = false;
 
   $: calendarInterval =
     interval?.set({
@@ -61,6 +62,8 @@
 />
 
 <Calendar
+  {maxDate}
+  {minDate}
   selection={calendarInterval}
   {selectingStart}
   {firstVisibleMonth}
@@ -69,35 +72,27 @@
 
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
-  <label for="start-date" class:error={selectingStart && displayError}>
-    Start Date
-  </label>
-  <div class="flex gap-x-1">
-    <DateInput
-      bind:selectingStart
-      bind:displayError
-      date={calendarInterval?.start ?? DateTime.now()}
-      {zone}
-      boundary="start"
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
-  </div>
-  <label for="start-date" class:error={!selectingStart && displayError}>
-    End Date
-  </label>
+  <DateInput
+    bind:selectingStart
+    date={calendarInterval?.start ?? DateTime.now()}
+    {zone}
+    boundary="start"
+    {minDate}
+    {maxDate}
+    currentYear={firstVisibleMonth.year}
+    {onValidDateInput}
+  />
 
-  <div class="flex gap-x-1 w-full">
-    <DateInput
-      bind:selectingStart
-      bind:displayError
-      date={calendarInterval?.end ?? DateTime.now()}
-      {zone}
-      boundary="end"
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
-  </div>
+  <DateInput
+    bind:selectingStart
+    date={calendarInterval?.end ?? DateTime.now()}
+    {zone}
+    boundary="end"
+    {minDate}
+    {maxDate}
+    currentYear={firstVisibleMonth.year}
+    {onValidDateInput}
+  />
 </div>
 <div class="flex justify-end w-full py-1 px-2">
   <Button
@@ -119,9 +114,3 @@
     <span class="px-2 w-fit">Apply</span>
   </Button>
 </div>
-
-<style lang="postcss">
-  label {
-    @apply font-semibold flex gap-x-1;
-  }
-</style>

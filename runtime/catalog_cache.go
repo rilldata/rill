@@ -258,7 +258,7 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 
 // rename renames a resource in the catalog and sets the r.Meta.RenamedFrom field.
 func (c *catalogCache) rename(name, newName *runtimev1.ResourceName) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (c *catalogCache) rename(name, newName *runtimev1.ResourceName) error {
 
 // clearRenamedFrom clears the r.Meta.RenamedFrom field without bumping version numbers.
 func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
 
 // updateMeta updates the meta fields of a resource.
 func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
 	}
@@ -315,11 +315,11 @@ func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev
 // updateSpec updates the spec field of a resource.
 // It uses the spec from the passed resource and disregards its other fields.
 func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
 	}
-	// NOTE: No need to unlink/link because no indexed fields are edited.
+	c.unlink(r)
 	err = c.ctrl.reconciler(name.Kind).AssignSpec(from, r)
 	if err != nil {
 		return err
@@ -327,6 +327,7 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 	r.Meta.Version++
 	r.Meta.SpecVersion++
 	r.Meta.SpecUpdatedOn = timestamppb.Now()
+	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
 	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
 	return nil
@@ -335,11 +336,11 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 // updateState updates the state field of a resource.
 // It uses the state from the passed resource and disregards its other fields.
 func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, true, false)
+	r, err := c.get(name, true, true)
 	if err != nil {
 		return err
 	}
-	// NOTE: No need to unlink/link because no indexed fields are edited.
+	c.unlink(r)
 	err = c.ctrl.reconciler(name.Kind).AssignState(from, r)
 	if err != nil {
 		return err
@@ -347,6 +348,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
+	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
 	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
 	return nil
@@ -354,7 +356,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 
 // updateError updates the reconcile_error field of a resource.
 func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
-	r, err := c.get(name, true, false)
+	r, err := c.get(name, true, true)
 	if err != nil {
 		return err
 	}
@@ -366,11 +368,12 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
 		return nil
 	}
-	// NOTE: No need to unlink/link because no indexed fields are edited.
+	c.unlink(r)
 	r.Meta.ReconcileError = errStr
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
+	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
 	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
 	return nil
@@ -379,7 +382,7 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 // updateDeleted sets the deleted_on field of a resource (a soft delete).
 // Afterwards, the resource can still be accessed by passing withDeleted to the getters.
 func (c *catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, false, true)
 	if err != nil {
 		return err
 	}
@@ -397,16 +400,18 @@ func (c *catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 // updateStatus updates the ephemeral status fields on a resource.
 // The values of these fields are reset next time a catalog cache is created.
 func (c *catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn time.Time) error {
-	r, err := c.get(name, true, false)
+	r, err := c.get(name, true, true)
 	if err != nil {
 		return err
 	}
+	c.unlink(r)
 	r.Meta.ReconcileStatus = status
 	if reconcileOn.IsZero() {
 		r.Meta.ReconcileOn = nil
 	} else {
 		r.Meta.ReconcileOn = timestamppb.New(reconcileOn)
 	}
+	c.link(r)
 	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
 	return nil
 }

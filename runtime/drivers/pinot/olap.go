@@ -32,7 +32,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
+func (c *connection) DropTable(ctx context.Context, name string) error {
 	return fmt.Errorf("pinot: data transformation not yet supported")
 }
 
@@ -42,7 +42,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
+func (c *connection) RenameTable(ctx context.Context, name, newName string) error {
 	return fmt.Errorf("pinot: data transformation not yet supported")
 }
 
@@ -50,7 +50,7 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectPinot
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
 	return fmt.Errorf("pinot: WithConnection not supported")
 }
 

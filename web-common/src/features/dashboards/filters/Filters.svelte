@@ -164,12 +164,13 @@
         {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
+              allDimensions={dimensions}
               {name}
               {label}
               {dimensionName}
               {filter}
-              on:remove={() => removeMeasureFilter(dimensionName, name)}
-              on:apply={({ detail: { dimension, oldDimension, filter } }) =>
+              onRemove={() => removeMeasureFilter(dimensionName, name)}
+              onApply={({ dimension, oldDimension, filter }) =>
                 handleMeasureFilterApply(dimension, name, oldDimension, filter)}
             />
           </div>
