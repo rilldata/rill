@@ -14,9 +14,7 @@ import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/aut
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect, type Page } from "@sveltejs/kit";
 
 export const load = async ({ params, url, route }) => {

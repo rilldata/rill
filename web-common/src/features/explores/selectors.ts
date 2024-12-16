@@ -14,7 +14,6 @@ import {
   createRuntimeServiceGetExplore,
   getQueryServiceMetricsViewTimeRangeQueryKey,
   getRuntimeServiceGetExploreQueryKey,
-  queryServiceMetricsViewTimeRange,
   runtimeServiceGetExplore,
   type RpcStatus,
   type V1ExploreSpec,
