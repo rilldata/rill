@@ -18,6 +18,8 @@
   export let zone: string;
   export let showDefaultItem: boolean;
   export let grain: string;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
@@ -76,6 +78,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
+            {maxDate}
+            {minDate}
             applyRange={applyCustomRange}
             closeMenu={() => (open = false)}
           />

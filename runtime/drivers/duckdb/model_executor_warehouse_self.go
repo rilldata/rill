@@ -56,15 +56,13 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 
 		// NOTE: This intentionally drops the end table if not staging changes.
-		if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
-			_ = olap.DropTable(ctx, stagingTableName, t.View)
-		}
+		_ = olap.DropTable(ctx, stagingTableName)
 	}
 
 	err := e.queryAndInsert(ctx, opts, olap, stagingTableName, outputProps)
 	if err != nil {
 		if !opts.IncrementalRun {
-			_ = olap.DropTable(ctx, stagingTableName, false)
+			_ = olap.DropTable(ctx, stagingTableName)
 		}
 		return nil, err
 	}
@@ -113,8 +111,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 	for {
 		files, err := iter.Next()
 		if err != nil {
-			// TODO: Why is this not just one error?
-			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) || errors.Is(err, drivers.ErrIteratorDone) {
+			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) {
 				break
 			}
 			return err

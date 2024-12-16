@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -197,26 +196,13 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
-	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	defaultOLAP := false
 	olapCfg := make(map[string]string)
-	if opts.OlapDriver == DefaultOLAPDriver && opts.OlapDSN == DefaultOLAPDSN {
-		defaultOLAP = true
-		val, err := isExternalStorageEnabled(vars)
-		if err != nil {
-			return nil, err
-		}
-		olapCfg["external_table_storage"] = strconv.FormatBool(val)
-	}
-
 	if opts.OlapDriver == "duckdb" {
+		if opts.OlapDSN != DefaultOLAPDSN {
+			return nil, fmt.Errorf("setting DSN for DuckDB is not supported")
+		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
-		if !defaultOLAP {
-			// dsn is automatically computed by duckdb driver so we set only when non default dsn is passed
-			olapCfg["dsn"] = opts.OlapDSN
-			olapCfg["error_on_incompatible_version"] = "true"
-		}
 	}
 
 	// Add OLAP connector
@@ -608,15 +594,4 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 	if !skip {
 		s.Encoder.AddString(key, val)
 	}
-}
-
-// isExternalStorageEnabled determines if external storage can be enabled.
-func isExternalStorageEnabled(variables map[string]string) (bool, error) {
-	// check if flag explicitly passed
-	val, ok := variables["connector.duckdb.external_table_storage"]
-	if !ok {
-		// mark enabled by default
-		return true, nil
-	}
-	return strconv.ParseBool(val)
 }

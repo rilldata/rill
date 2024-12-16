@@ -213,6 +213,8 @@
   <!-- <Elements.Zoom /> -->
   {#if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
       {ranges}
       {showDefaultItem}
       {defaultTimeRange}
