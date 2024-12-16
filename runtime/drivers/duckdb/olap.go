@@ -247,7 +247,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeCreate, afterCreate string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeInsert, afterInsert string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -271,13 +271,13 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeC
 	if strategy == drivers.IncrementalStrategyMerge {
 		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
 			// Execute the pre-init SQL first
-			if beforeCreate != "" {
-				_, err := conn.ExecContext(ctx, beforeCreate)
+			if beforeInsert != "" {
+				_, err := conn.ExecContext(ctx, beforeInsert)
 				return err
 			}
-			afetExec := func() error {
-				if afterCreate != "" {
-					_, err := conn.ExecContext(ctx, afterCreate)
+			aferExec := func() error {
+				if afterInsert != "" {
+					_, err := conn.ExecContext(ctx, afterInsert)
 					return err
 				}
 				return nil
@@ -286,7 +286,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeC
 			tmp := uuid.New().String()
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
 			if err != nil {
-				return errors.Join(err, afetExec())
+				return errors.Join(err, aferExec())
 			}
 
 			// check the count of the new data
@@ -295,7 +295,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeC
 			var empty bool
 			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
 			if err != nil {
-				return errors.Join(err, afetExec())
+				return errors.Join(err, aferExec())
 			}
 			if empty {
 				return nil
@@ -312,12 +312,12 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeC
 			}
 			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
 			if err != nil {
-				return errors.Join(err, afetExec())
+				return errors.Join(err, aferExec())
 			}
 
 			// Insert the new data into the target table
 			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
-			return errors.Join(err, afetExec())
+			return errors.Join(err, aferExec())
 		})
 		return c.checkErr(err)
 	}

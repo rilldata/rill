@@ -240,7 +240,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeCreate, afterCreate string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql, beforeInsert, afterInsert string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	if !inPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
