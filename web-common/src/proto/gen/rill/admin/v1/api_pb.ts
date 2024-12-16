@@ -7586,16 +7586,18 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   ttlMinutes = protoInt64.zero;
 
   /**
-   * Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+   * Type of resource to grant access to.
    *
-   * @generated from field: string resource_type = 8;
+   * @generated from field: string resource_type = 8 [deprecated = true];
+   * @deprecated
    */
   resourceType = "";
 
   /**
    * Name of the resource to grant access to.
    *
-   * @generated from field: string resource_name = 9;
+   * @generated from field: string resource_name = 9 [deprecated = true];
+   * @deprecated
    */
   resourceName = "";
 
@@ -7629,6 +7631,13 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   displayName = "";
 
+  /**
+   * list of resources to grant access to.
+   *
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 11;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7646,6 +7655,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -7662,6 +7672,49 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
 
   static equals(a: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined, b: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined): boolean {
     return proto3.util.equals(IssueMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ResourceName
+ */
+export class ResourceName extends Message<ResourceName> {
+  /**
+   * @generated from field: string Type = 1;
+   */
+  Type = "";
+
+  /**
+   * @generated from field: string Name = 2;
+   */
+  Name = "";
+
+  constructor(data?: PartialMessage<ResourceName>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ResourceName";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "Type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "Name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResourceName {
+    return new ResourceName().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResourceName {
+    return new ResourceName().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResourceName {
+    return new ResourceName().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResourceName | PlainMessage<ResourceName> | undefined, b: ResourceName | PlainMessage<ResourceName> | undefined): boolean {
+    return proto3.util.equals(ResourceName, a, b);
   }
 }
 
@@ -9261,19 +9314,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   anonRecipients = false;
 
   /**
-   * @generated from field: string metrics_view = 9;
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 9;
    */
-  metricsView = "";
-
-  /**
-   * @generated from field: string explore = 10;
-   */
-  explore = "";
-
-  /**
-   * @generated from field: string canvas = 11;
-   */
-  canvas = "";
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
@@ -9290,9 +9333,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -12821,12 +12862,14 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   attributes?: Struct;
 
   /**
-   * @generated from field: string resource_type = 15;
+   * @generated from field: string resource_type = 15 [deprecated = true];
+   * @deprecated
    */
   resourceType = "";
 
   /**
-   * @generated from field: string resource_name = 9;
+   * @generated from field: string resource_name = 9 [deprecated = true];
+   * @deprecated
    */
   resourceName = "";
 
@@ -12849,6 +12892,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    * @generated from field: string display_name = 16;
    */
   displayName = "";
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 17;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
@@ -12874,6 +12922,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -13027,21 +13076,14 @@ export class ReportOptions extends Message<ReportOptions> {
   webOpenState = "";
 
   /**
-   * either metrics_view_name and explore_name or canvas_name will be set
-   *
-   * @generated from field: optional string metrics_view_name = 16;
+   * @generated from field: string explore = 16;
    */
-  metricsViewName?: string;
+  explore = "";
 
   /**
-   * @generated from field: optional string explore_name = 17;
+   * @generated from field: string canvas = 17;
    */
-  exploreName?: string;
-
-  /**
-   * @generated from field: optional string canvas_name = 18;
-   */
-  canvasName?: string;
+  canvas = "";
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -13065,9 +13107,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 17, name: "explore_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 18, name: "canvas_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

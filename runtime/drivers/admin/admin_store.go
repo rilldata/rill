@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"github.com/rilldata/rill/runtime"
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -9,7 +10,27 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, metricsViewName, exploreName, canvasName string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+	var resources []*adminv1.ResourceName
+	resources = append(resources, &adminv1.ResourceName{
+		Type: runtime.ResourceKindReport,
+		Name: reportName,
+	})
+
+	if explore != "" {
+		resources = append(resources, &adminv1.ResourceName{
+			Type: runtime.ResourceKindExplore,
+			Name: explore,
+		})
+	}
+
+	if canvas != "" {
+		resources = append(resources, &adminv1.ResourceName{
+			Type: runtime.ResourceKindCanvas,
+			Name: canvas,
+		})
+	}
+
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Branch:          h.config.Branch,
@@ -17,9 +38,6 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, met
 		OwnerId:         ownerID,
 		EmailRecipients: emailRecipients,
 		AnonRecipients:  anonRecipients,
-		MetricsView:     metricsViewName,
-		Explore:         exploreName,
-		Canvas:          canvasName,
 		ExecutionTime:   timestamppb.New(executionTime),
 	})
 	if err != nil {

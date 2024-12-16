@@ -1716,10 +1716,10 @@ message IssueMagicAuthTokenRequest {
   string project = 2 [(validate.rules).string.min_len = 1];
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
   int64 ttl_minutes = 3;
-  // Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
-  string resource_type = 8;
+  // Type of resource to grant access to.
+  string resource_type = 8 [deprecated = true];
   // Name of the resource to grant access to.
-  string resource_name = 9;
+  string resource_name = 9 [deprecated = true];
   // Optional filter to apply as a row filter in queries.
   // This will be translated to a rill.runtime.v1.SecurityRuleRowFilter, which currently applies to metric views queries.
   rill.runtime.v1.Expression filter = 5;
@@ -1730,6 +1730,13 @@ message IssueMagicAuthTokenRequest {
   string state = 7;
   // Optional display name to store with the token.
   string display_name = 10;
+  // list of resources to grant access to.
+  repeated ResourceName resources = 11;
+}
+
+message ResourceName {
+  string Type = 1;
+  string Name = 2;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1919,9 +1926,7 @@ message GetReportMetaRequest {
   google.protobuf.Timestamp execution_time = 6;
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
-  string metrics_view = 9;
-  string explore = 10;
-  string canvas = 11;
+  repeated ResourceName resources = 9;
   reserved 4;
 }
 
@@ -2362,12 +2367,13 @@ message MagicAuthToken {
   string created_by_user_id = 6;
   string created_by_user_email = 7;
   google.protobuf.Struct attributes = 8;
-  string resource_type = 15;
-  string resource_name = 9;
+  string resource_type = 15 [deprecated = true];
+  string resource_name = 9 [deprecated = true];
   rill.runtime.v1.Expression filter = 10;
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;
+  repeated ResourceName resources = 17;
 }
 
 message VirtualFile {
@@ -2392,9 +2398,8 @@ message ReportOptions {
   repeated string slack_webhooks = 12;
   string web_open_path = 15; // Annotation for the subpath of <UI host>/org/project to open for the report.
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
-  optional string metrics_view_name = 16; // either metrics_view_name and explore_name or canvas_name will be set
-  optional string explore_name = 17;
-  optional string canvas_name = 18;
+  string explore = 16; // either canvas or explore should be set
+  string canvas = 17;
 }
 
 message AlertOptions {

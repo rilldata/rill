@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -37,9 +36,6 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
-		attribute.String("args.metrics_view", req.MetricsView),
-		attribute.String("args.explore", req.Explore),
-		attribute.String("args.canvas", req.Canvas),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -70,24 +66,16 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, req.MetricsView, req.Explore, req.Canvas, recipients)
+	tokens, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
-	for _, recipient := range req.EmailRecipients {
+	for _, recipient := range recipients {
 		urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
 			OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
-		}
-	}
-
-	if req.AnonRecipients {
-		urls[""] = &adminv1.GetReportMetaResponse_URLs{
-			OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[""], req.ExecutionTime.AsTime()),
-			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[""]),
-			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[""], ""),
 		}
 	}
 
@@ -290,7 +278,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			if req.Email == nil {
 				return nil, status.Error(codes.InvalidArgument, "no email provided for unsubscribing")
 			}
-			if strings.EqualFold(userEmail, *req.Email) {
+			if !strings.EqualFold(userEmail, *req.Email) {
 				return nil, status.Error(codes.InvalidArgument, "email does not match token")
 			}
 		}
@@ -489,15 +477,11 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
-	if opts.MetricsViewName != nil || opts.ExploreName != nil {
-		if opts.MetricsViewName == nil || opts.ExploreName == nil {
-			return nil, errors.New("both metricsViewName and exploreName must be provided")
-		}
-		res.Annotations.MetricsViewName = *opts.MetricsViewName
-		res.Annotations.ExploreName = *opts.ExploreName
-	} else if opts.CanvasName != nil {
-		res.Annotations.CanvasName = *opts.CanvasName
+	if opts.Explore != "" && opts.Canvas != "" {
+		return nil, fmt.Errorf("cannot set both explore and canvas")
 	}
+	res.Annotations.Explore = opts.Explore
+	res.Annotations.Canvas = opts.Canvas
 	return yaml.Marshal(res)
 }
 
@@ -565,47 +549,32 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID, metricsViewName, exploreName, canvasName string, emails []string) (map[string]string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
 	}
-	ttl := 24 * 30 * 6 * time.Hour // approx 6 months
+	ttl := 3 * 30 * 24 * time.Hour // approx 3 months
 	mgcOpts := &admin.IssueMagicAuthTokenOptions{
 		ProjectID:       projectID,
 		CreatedByUserID: createdByUserID,
-		ResourceType:    runtime.ResourceKindReport,
-		ResourceName:    reportName,
 		Internal:        true,
 		TTL:             &ttl,
 	}
 
-	if metricsViewName != "" {
-		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
-			database.MgcTokenDependentResource{
-				Kind: runtime.ResourceKindMetricsView,
-				Name: metricsViewName,
-			},
-		)
+	res := make([]database.ResourceName, len(resources)+1)
+	res = append(res, database.ResourceName{
+		Type: runtime.ResourceKindReport,
+		Name: reportName,
+	})
+	for _, r := range resources {
+		res = append(res, database.ResourceName{
+			Type: r.Type,
+			Name: r.Name,
+		})
 	}
 
-	if exploreName != "" {
-		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
-			database.MgcTokenDependentResource{
-				Kind: runtime.ResourceKindExplore,
-				Name: exploreName,
-			},
-		)
-	}
-
-	if canvasName != "" {
-		mgcOpts.DependentResources = append(mgcOpts.DependentResources,
-			database.MgcTokenDependentResource{
-				Kind: runtime.ResourceKindCanvas,
-				Name: canvasName,
-			},
-		)
-	}
+	mgcOpts.Resources = res
 
 	if ownerID != "" {
 		// Get the project-level permissions for the creating user.
@@ -768,9 +737,8 @@ type reportAnnotations struct {
 	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenPath      string `yaml:"web_open_path"`
 	WebOpenState     string `yaml:"web_open_state"`
-	MetricsViewName  string `yaml:"metrics_view_name"`
-	ExploreName      string `yaml:"explore_name"`
-	CanvasName       string `yaml:"canvas_resource"`
+	Explore          string `yaml:"explore,omitempty"`
+	Canvas           string `yaml:"canvas,omitempty"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
@@ -784,9 +752,8 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminNonce = annotations["admin_nonce"]
 	res.WebOpenPath = annotations["web_open_path"]
 	res.WebOpenState = annotations["web_open_state"]
-	res.MetricsViewName = annotations["metrics_view_name"]
-	res.ExploreName = annotations["explore_name"]
-	res.CanvasName = annotations["canvas_name"]
+	res.Explore = annotations["explore"]
+	res.Canvas = annotations["canvas"]
 
 	return res
 }

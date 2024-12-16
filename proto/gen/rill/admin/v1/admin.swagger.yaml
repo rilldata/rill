@@ -1570,7 +1570,7 @@ paths:
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
               resourceType:
                 type: string
-                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+                description: Type of resource to grant access to.
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
@@ -1592,6 +1592,12 @@ paths:
               displayName:
                 type: string
                 description: Optional display name to store with the token.
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: list of resources to grant access to.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -2997,12 +3003,11 @@ paths:
                   type: string
               anonRecipients:
                 type: boolean
-              metricsView:
-                type: string
-              explore:
-                type: string
-              canvas:
-                type: string
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -4536,6 +4541,11 @@ definitions:
         type: string
       displayName:
         type: string
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1MemberUser:
     type: object
     properties:
@@ -4886,15 +4896,20 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
-      metricsViewName:
+      explore:
         type: string
-        title: either metrics_view_name and explore_name or canvas_name will be set
-      exploreName:
-        type: string
-      canvasName:
+        title: either canvas or explore should be set
+      canvas:
         type: string
   v1RequestProjectAccessResponse:
     type: object
+  v1ResourceName:
+    type: object
+    properties:
+      Type:
+        type: string
+      Name:
+        type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

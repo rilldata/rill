@@ -164,58 +164,50 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		var condition strings.Builder
 		// All themes
 		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
-		// The magic token's resource
-		condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(mdl.ResourceType), duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))))
-		// If the magic token's resource is an Explore, we also need to include its underlying metrics view
-		if mdl.ResourceType == runtime.ResourceKindExplore {
-			client, err := s.admin.OpenRuntimeClient(depl)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
-			}
-			defer client.Close()
 
-			resp, err := client.GetResource(ctx, &runtimev1.GetResourceRequest{
-				InstanceId: depl.RuntimeInstanceID,
-				Name: &runtimev1.ResourceName{
-					Kind: mdl.ResourceType,
-					Name: mdl.ResourceName,
-				},
-			})
-			if err != nil {
-				if status.Code(err) == codes.NotFound {
-					return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", mdl.ResourceName, mdl.ResourceType)
+		for _, r := range mdl.Resources {
+			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Type), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
+
+			// If the magic token's resource is an Explore, we also need to include its underlying metrics view
+			if r.Type == runtime.ResourceKindExplore {
+				client, err := s.admin.OpenRuntimeClient(depl)
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
 				}
-				return nil, fmt.Errorf("could not get resource for magic token: %w", err)
-			}
+				defer client.Close()
 
-			spec := resp.Resource.GetExplore().State.ValidSpec
-			if spec != nil {
-				condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
-			}
-		} else if mdl.ResourceType == runtime.ResourceKindReport {
-			// adding this rule to allow report resource accessible by non admin users
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(mdl.ResourceName))),
-						Allow:     true,
+				resp, err := client.GetResource(ctx, &runtimev1.GetResourceRequest{
+					InstanceId: depl.RuntimeInstanceID,
+					Name: &runtimev1.ResourceName{
+						Kind: r.Type,
+						Name: r.Name,
 					},
-				},
-			})
+				})
+				if err != nil {
+					if status.Code(err) == codes.NotFound {
+						return nil, status.Errorf(codes.NotFound, "resource for magic token not found (name=%q, type=%q)", r.Name, r.Type)
+					}
+					return nil, fmt.Errorf("could not get resource for magic token: %w", err)
+				}
+
+				spec := resp.Resource.GetExplore().State.ValidSpec
+				if spec != nil {
+					condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s)", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(strings.ToLower(spec.MetricsView))))
+				}
+			} else if r.Type == runtime.ResourceKindReport {
+				// adding this rule to allow report resource accessible by non admin users
+				rules = append(rules, &runtimev1.SecurityRule{
+					Rule: &runtimev1.SecurityRule_Access{
+						Access: &runtimev1.SecurityRuleAccess{
+							Condition: fmt.Sprintf("'{{.self.kind}}'='%s' AND '{{lower .self.name}}'=%s", runtime.ResourceKindReport, duckdbsql.EscapeStringValue(strings.ToLower(r.Name))),
+							Allow:     true,
+						},
+					},
+				})
+			}
 		}
 
 		attr = mdl.Attributes
-
-		if len(mdl.DependentResources) > 0 {
-			condition.WriteString(" OR (")
-			for i, r := range mdl.DependentResources {
-				if i > 0 {
-					condition.WriteString(" OR ")
-				}
-				condition.WriteString(fmt.Sprintf("('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Kind), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
-			}
-			condition.WriteString(")")
-		}
 
 		// Add a rule that denies access to anything that doesn't match the condition.
 		rules = append(rules, &runtimev1.SecurityRule{
