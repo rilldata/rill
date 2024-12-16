@@ -15,7 +15,7 @@
 
   $: ({
     defaultExplorePreset,
-    initExploreState,
+    tokenExploreState,
     exploreStateFromYAMLConfig,
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
@@ -63,7 +63,7 @@
         exploreName={resourceName}
         extraKeyPrefix={`${organization}__${project}__`}
         {defaultExplorePreset}
-        {initExploreState}
+        initExploreState={tokenExploreState}
         {exploreStateFromYAMLConfig}
         {partialExploreStateFromUrl}
         {exploreStateFromSessionStorage}

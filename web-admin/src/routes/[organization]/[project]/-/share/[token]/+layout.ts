@@ -25,10 +25,10 @@ export const load = async ({ params: { token }, parent }) => {
     const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
     const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
-    let initExploreState: Partial<MetricsExplorerEntity> | undefined =
+    let tokenExploreState: Partial<MetricsExplorerEntity> | undefined =
       undefined;
     if (tokenData.token?.state) {
-      initExploreState = getDashboardStateFromUrl(
+      tokenExploreState = getDashboardStateFromUrl(
         tokenData.token?.state,
         metricsViewSpec,
         exploreSpec,
@@ -41,7 +41,7 @@ export const load = async ({ params: { token }, parent }) => {
       metricsView,
       defaultExplorePreset,
       exploreStateFromYAMLConfig,
-      initExploreState,
+      tokenExploreState,
       token: tokenData?.token,
     };
   } catch (e) {

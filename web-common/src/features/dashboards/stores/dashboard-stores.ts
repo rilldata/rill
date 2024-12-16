@@ -9,10 +9,7 @@ import {
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  contextColWidthDefaults,
-  type MetricsExplorerEntity,
-} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { type MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
   DashboardTimeControls,

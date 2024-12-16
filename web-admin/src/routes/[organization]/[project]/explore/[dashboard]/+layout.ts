@@ -21,7 +21,6 @@ export const load = async ({ params, depends, parent }) => {
   let metricsView: V1Resource | undefined;
   let defaultExplorePreset: V1ExplorePreset | undefined;
   let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
-  let initExploreState: Partial<MetricsExplorerEntity> | undefined = undefined;
   try {
     ({
       explore,
@@ -43,12 +42,14 @@ export const load = async ({ params, depends, parent }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
   const exploreSpec = explore.explore?.state?.validSpec ?? {};
 
+  let homeBookmarkExploreState: Partial<MetricsExplorerEntity> | undefined =
+    undefined;
   try {
     const bookmarks = await fetchBookmarks(project.id, exploreName);
     const homeBookmark = bookmarks.find(isHomeBookmark);
 
     if (homeBookmark) {
-      initExploreState = getDashboardStateFromUrl(
+      homeBookmarkExploreState = getDashboardStateFromUrl(
         homeBookmark.data ?? "",
         metricsViewSpec,
         exploreSpec,
@@ -64,6 +65,6 @@ export const load = async ({ params, depends, parent }) => {
     metricsView,
     defaultExplorePreset,
     exploreStateFromYAMLConfig,
-    initExploreState,
+    homeBookmarkExploreState,
   };
 };

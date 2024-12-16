@@ -21,7 +21,7 @@
   export let data: PageData;
   $: ({
     defaultExplorePreset,
-    initExploreState,
+    homeBookmarkExploreState,
     exploreStateFromYAMLConfig,
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
@@ -107,7 +107,7 @@
           {exploreName}
           extraKeyPrefix={`${orgName}__${projectName}__`}
           {defaultExplorePreset}
-          {initExploreState}
+          initExploreState={homeBookmarkExploreState}
           {exploreStateFromYAMLConfig}
           {partialExploreStateFromUrl}
           {exploreStateFromSessionStorage}
