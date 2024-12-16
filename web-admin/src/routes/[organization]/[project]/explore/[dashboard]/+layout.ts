@@ -17,7 +17,7 @@ export const load = async ({ params, depends, parent }) => {
 
   try {
     const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(runtime?.instanceId, exploreName);
+      await fetchExploreSpec(runtime, exploreName);
 
     // used to merge home bookmark to url state
     const bookmarks = await fetchBookmarks(project.id, exploreName);

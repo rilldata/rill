@@ -24,7 +24,11 @@ import {
   type V1ExplorePreset,
   V1ExploreWebView,
 } from "@rilldata/web-common/runtime-client";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
+import {
+  type ErrorType,
+  httpClient,
+} from "@rilldata/web-common/runtime-client/http-client";
+import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { error, redirect } from "@sveltejs/kit";
 
 export function useExplore(
@@ -83,17 +87,26 @@ export function useExploreValidSpec(
   );
 }
 
-export async function fetchExploreSpec(
-  instanceId: string,
-  exploreName: string,
-) {
-  const queryParams = {
+export async function fetchExploreSpec(runtime: Runtime, exploreName: string) {
+  const params = {
     name: exploreName,
   };
-  const queryKey = getRuntimeServiceGetExploreQueryKey(instanceId, queryParams);
+  const queryKey = getRuntimeServiceGetExploreQueryKey(
+    runtime.instanceId,
+    params,
+  );
   const queryFunction: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceGetExplore>>
-  > = ({ signal }) => runtimeServiceGetExplore(instanceId, queryParams, signal);
+  > = ({ signal }) =>
+    httpClient<V1GetExploreResponse>(
+      {
+        url: `/v1/instances/${runtime.instanceId}/resources/explore`,
+        method: "get",
+        params,
+        signal,
+      },
+      runtime,
+    );
 
   const response = await queryClient.fetchQuery({
     queryFn: queryFunction,
@@ -118,10 +131,19 @@ export async function fetchExploreSpec(
     metricsViewName
   ) {
     fullTimeRange = await queryClient.fetchQuery({
-      queryFn: () =>
-        queryServiceMetricsViewTimeRange(instanceId, metricsViewName, {}),
+      queryFn: ({ signal }) =>
+        httpClient<V1MetricsViewTimeRangeResponse>(
+          {
+            url: `/v1/instances/${runtime.instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
+            method: "post",
+            headers: { "Content-Type": "application/json" },
+            data: {},
+            signal,
+          },
+          runtime,
+        ),
       queryKey: getQueryServiceMetricsViewTimeRangeQueryKey(
-        instanceId,
+        runtime.instanceId,
         metricsViewName,
         {},
       ),

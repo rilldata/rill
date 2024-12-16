@@ -84,13 +84,7 @@ export const load = async ({ params, url, route }) => {
       runtime: runtimeData,
     } = await fetchProjectDeploymentDetails(organization, project, token);
 
-    await runtime.setRuntime(
-      queryClient,
-      fixLocalhostRuntimePort(runtimeData.host ?? ""),
-      runtimeData.instanceId,
-      runtimeData.jwt?.token,
-      runtimeData.jwt?.authContext,
-    );
+    runtimeData.host = fixLocalhostRuntimePort(runtimeData.host ?? "");
 
     return {
       organizationPermissions,

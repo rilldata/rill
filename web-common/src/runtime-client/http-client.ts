@@ -20,15 +20,18 @@ export const httpRequestQueue = new HttpRequestQueue();
 
 export const httpClient = async <T>(
   config: FetchWrapperOptions,
+  // used to override the global runtime in cases where it is either not initialised or is stale
+  // this could happen when switching projects with different runtimes
+  runtimeData = get(runtime),
 ): Promise<T> => {
   // Naive request interceptors
 
   // Set host
-  const host = get(runtime).host;
+  const host = runtimeData.host;
   const interceptedConfig = { ...config, baseUrl: host };
 
   // Set JWT
-  let jwt = get(runtime).jwt;
+  let jwt = runtimeData.jwt;
   if (jwt && jwt.token) {
     jwt = await maybeWaitForFreshJWT(jwt);
     interceptedConfig.headers = {

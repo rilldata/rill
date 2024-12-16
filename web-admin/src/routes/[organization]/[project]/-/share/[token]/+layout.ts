@@ -13,10 +13,7 @@ export const load = async ({ params: { token }, parent }) => {
     }
 
     const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(
-        runtime.instanceId as string,
-        tokenData.token.resourceName,
-      );
+      await fetchExploreSpec(runtime, tokenData.token.resourceName);
 
     return {
       explore,
