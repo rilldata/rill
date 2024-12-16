@@ -230,8 +230,7 @@
     }
 
     const items = sequence.items as YAMLMap[];
-
-    const newItem = new YAMLMap();
+    const newItem = items[index] ?? new YAMLMap();
 
     properties[type].forEach(({ selected, fields }) => {
       const { key } = fields[selected];
@@ -246,6 +245,7 @@
     }
 
     await saveContent(parsedDocument.toString());
+
     resetEditing();
 
     eventBus.emit("notification", { message: "Item saved", type: "success" });
