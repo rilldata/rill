@@ -1,10 +1,14 @@
+import type { V1Bookmark } from "@rilldata/web-admin/client";
 import {
   fetchBookmarks,
   isHomeBookmark,
 } from "@rilldata/web-admin/features/bookmarks/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
+import {
+  fetchExploreSpec,
+  fetchMetricsViewSchema,
+} from "@rilldata/web-common/features/explores/selectors";
 import {
   type V1ExplorePreset,
   type V1Resource,
@@ -21,13 +25,21 @@ export const load = async ({ params, depends, parent }) => {
   let metricsView: V1Resource | undefined;
   let defaultExplorePreset: V1ExplorePreset | undefined;
   let exploreStateFromYAMLConfig: Partial<MetricsExplorerEntity> = {};
+  let bookmarks: V1Bookmark[] | undefined;
+
   try {
-    ({
-      explore,
-      metricsView,
-      defaultExplorePreset,
-      exploreStateFromYAMLConfig,
-    } = await fetchExploreSpec(runtime?.instanceId, exploreName));
+    [
+      {
+        explore,
+        metricsView,
+        defaultExplorePreset,
+        exploreStateFromYAMLConfig,
+      },
+      bookmarks,
+    ] = await Promise.all([
+      fetchExploreSpec(runtime?.instanceId, exploreName),
+      fetchBookmarks(project.id, exploreName),
+    ]);
   } catch {
     // error handled in +page.svelte for now
     // TODO: move it here
@@ -45,15 +57,18 @@ export const load = async ({ params, depends, parent }) => {
   let homeBookmarkExploreState: Partial<MetricsExplorerEntity> | undefined =
     undefined;
   try {
-    const bookmarks = await fetchBookmarks(project.id, exploreName);
     const homeBookmark = bookmarks.find(isHomeBookmark);
+    const schema = await fetchMetricsViewSchema(
+      runtime?.instanceId,
+      exploreSpec.metricsView ?? "",
+    );
 
     if (homeBookmark) {
       homeBookmarkExploreState = getDashboardStateFromUrl(
         homeBookmark.data ?? "",
         metricsViewSpec,
         exploreSpec,
-        {}, // TODO
+        schema,
       );
     }
   } catch {

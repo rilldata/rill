@@ -19,6 +19,8 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   type V1ExplorePreset,
+  getQueryServiceMetricsViewSchemaQueryKey,
+  queryServiceMetricsViewSchema,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { error } from "@sveltejs/kit";
@@ -145,6 +147,20 @@ export async function fetchExploreSpec(
     exploreStateFromYAMLConfig,
     errors,
   };
+}
+
+export async function fetchMetricsViewSchema(
+  instanceId: string,
+  metricsViewName: string,
+) {
+  const schemaResp = await queryClient.fetchQuery({
+    queryKey: getQueryServiceMetricsViewSchemaQueryKey(
+      instanceId,
+      metricsViewName,
+    ),
+    queryFn: () => queryServiceMetricsViewSchema(instanceId, metricsViewName),
+  });
+  return schemaResp.schema ?? {};
 }
 
 export function getExploreStores(

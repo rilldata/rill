@@ -55,7 +55,10 @@
 
     const isInit = !$dashboardStore;
     if (isInit) {
-      handleExploreInit(type === "enter");
+      // When a user changes url manually and clears the params the `type` will be "enter"
+      // This signal is used in handleExploreInit to make sure we do not use sessionStorage
+      const isManualUrlChange = type === "enter";
+      handleExploreInit(isManualUrlChange);
       return;
     }
 

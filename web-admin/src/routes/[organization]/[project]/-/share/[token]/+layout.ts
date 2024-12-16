@@ -1,7 +1,10 @@
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
+import {
+  fetchExploreSpec,
+  fetchMetricsViewSchema,
+} from "@rilldata/web-common/features/explores/selectors";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ params: { token }, parent }) => {
@@ -28,11 +31,15 @@ export const load = async ({ params: { token }, parent }) => {
     let tokenExploreState: Partial<MetricsExplorerEntity> | undefined =
       undefined;
     if (tokenData.token?.state) {
+      const schema = await fetchMetricsViewSchema(
+        runtime?.instanceId,
+        exploreSpec.metricsView ?? "",
+      );
       tokenExploreState = getDashboardStateFromUrl(
         tokenData.token?.state,
         metricsViewSpec,
         exploreSpec,
-        {}, // TODO
+        schema,
       );
     }
 
