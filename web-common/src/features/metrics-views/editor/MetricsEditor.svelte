@@ -49,19 +49,10 @@
 
       // Reset local persisted explore state derived from this metrics view
       fileArtifacts
-        .getResourcesForKind(ResourceKind.Explore)
-        .forEach((exploreResource) => {
-          const exploreName = exploreResource?.meta?.name?.name;
-          if (
-            !exploreName ||
-            !exploreResource?.explore?.state?.validSpec?.metricsView ||
-            exploreResource?.explore?.state?.validSpec?.metricsView !==
-              metricsViewName
-          )
-            return;
-          clearExploreSessionStore(exploreName, undefined);
-        });
-
+        .getNamesForKind(ResourceKind.Explore)
+        .forEach((resourceName) =>
+          clearExploreSessionStore(resourceName, undefined),
+        );
       if (!content?.length) {
         setLineStatuses([], editor);
       }

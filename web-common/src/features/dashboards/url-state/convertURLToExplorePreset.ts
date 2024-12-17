@@ -314,7 +314,7 @@ function fromTimeRangesParams(
     const selectTr = searchParams.get(
       ExploreStateURLParams.HighlightedTimeRange,
     ) as string;
-    if (CustomTimeRangeRegex.test(selectTr)) {
+    if (CustomTimeRangeRegex.test(selectTr) || selectTr === "") {
       preset.selectTimeRange = selectTr;
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));

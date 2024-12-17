@@ -19,7 +19,7 @@
     exploreStateFromYAMLConfig,
     partialExploreStateFromUrl,
     exploreStateFromSessionStorage,
-    token: { resourceName },
+    token: { resourceName, id: tokenId },
   } = data);
   $: ({ organization, project } = $page.params);
 
@@ -61,7 +61,7 @@
       <DashboardURLStateSync
         metricsViewName={explore.metricsView.meta.name.name}
         exploreName={resourceName}
-        extraKeyPrefix={`${organization}__${project}__`}
+        extraKeyPrefix={`${tokenId}__`}
         {defaultExplorePreset}
         initExploreState={tokenExploreState}
         {exploreStateFromYAMLConfig}

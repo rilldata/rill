@@ -4,7 +4,7 @@ import {
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 
-// TODO: Remove this in favour of just `getBasePreset`
+// TODO: Remove this in favour of just `getDefaultExplorePreset`
 export function getFullInitExploreState(
   name: string,
   partialInitState: Partial<MetricsExplorerEntity>,

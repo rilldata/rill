@@ -118,13 +118,6 @@ export class FileArtifacts {
       .map((artifact) => get(artifact.resourceName)?.name ?? "");
   }
 
-  getResourcesForKind(kind: ResourceKind): V1Resource[] {
-    return Array.from(this.artifacts.values())
-      .filter((artifact) => get(artifact.resourceName)?.kind === kind)
-      .map((artifact) => artifact.lastSeenResource)
-      .filter(Boolean);
-  }
-
   async saveAll() {
     await Promise.all(
       Array.from(this.artifacts.values()).map((artifact) =>
