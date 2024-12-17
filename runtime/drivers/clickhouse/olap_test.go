@@ -2,6 +2,7 @@ package clickhouse_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -25,6 +26,7 @@ func TestClickhouseSingle(t *testing.T) {
 
 	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
+	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
@@ -52,6 +54,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	prepareClusterConn(t, olap, cluster)
 
+	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
@@ -60,6 +63,33 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, olap) })
 	t.Run("InsertTableAsSelect_WithPartitionOverwrite_DatePartition", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
+}
+
+func testWithConnection(t *testing.T, olap drivers.OLAPStore) {
+	err := olap.WithConnection(context.Background(), 1, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		err := olap.Exec(ctx, &drivers.Statement{
+			Query: "CREATE table tbl engine=Memory AS SELECT 1 AS id, 'Earth' AS planet",
+		})
+		require.NoError(t, err)
+
+		res, err := olap.Execute(ctx, &drivers.Statement{
+			Query: "SELECT id, planet FROM tbl",
+		})
+		require.NoError(t, err)
+		var (
+			id     int
+			planet string
+		)
+		for res.Next() {
+			err = res.Scan(&id, &planet)
+			require.NoError(t, err)
+			require.Equal(t, 1, id)
+		}
+		require.NoError(t, res.Err())
+		require.NoError(t, res.Close())
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 func testRenameView(t *testing.T, olap drivers.OLAPStore) {
