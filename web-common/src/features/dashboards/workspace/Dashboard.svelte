@@ -128,7 +128,10 @@
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      <div class="pt-2 flex-none" style:width="{metricsWidth}px">
+      <div
+        class="pt-2 flex-none"
+        style:width={expandedMeasureName ? "auto" : `${metricsWidth}px`}
+      >
         {#key exploreName}
           {#if !$metricTimeSeries.isLoading}
             {#if hasTimeSeries}
