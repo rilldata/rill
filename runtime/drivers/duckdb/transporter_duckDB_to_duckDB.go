@@ -116,7 +116,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = rewrittenSQL
 	}
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL, "", "", nil)
+	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, srcCfg.SQL, &drivers.CreateTableOptions{})
 }
 
 func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *dbSourceProperties, sinkProps *sinkProperties) error {
