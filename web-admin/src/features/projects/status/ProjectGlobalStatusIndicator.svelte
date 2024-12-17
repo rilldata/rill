@@ -30,12 +30,17 @@
               .length > 0
           );
         },
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
       },
     },
   );
   $: hasResourceErrors = $hasResourceErrorsQuery.data;
 
-  $: projectParserQuery = useProjectParser(queryClient, instanceId);
+  $: projectParserQuery = useProjectParser(queryClient, instanceId, {
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
   $: hasParseErrors =
     $projectParserQuery?.data?.projectParser.state.parseErrors.length > 0;
 </script>
