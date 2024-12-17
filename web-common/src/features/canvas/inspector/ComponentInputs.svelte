@@ -12,7 +12,7 @@ It is used in the ComponentsEditor component to render the input fields for the 
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
   export let componentType: CanvasComponentType;
-  export let params: Record<string, any>;
+  export let paramValues: Record<string, any>;
 
   const { fileArtifact, canvasStore } = getCanvasStateManagers();
 
@@ -20,54 +20,59 @@ It is used in the ComponentsEditor component to render the input fields for the 
 
   $: path = ["items", selectedComponentIndex, "component", componentType];
 
-  $: component = getComponentObj($fileArtifact, path, componentType, params);
+  $: component = getComponentObj(
+    $fileArtifact,
+    path,
+    componentType,
+    paramValues,
+  );
+
   $: inputParams = component.inputParams();
 
   $: spec = component.specStore;
-
   $: metricsView = "metrics_view" in $spec ? $spec.metrics_view : null;
 </script>
 
 <div>
-  {#each Object.entries(inputParams) as [key, params]}
-    {#if params.showInUI !== false}
-      {#if params.type === "text" || params.type === "number" || params.type === "rill_time"}
+  {#each Object.entries(inputParams) as [key, config]}
+    {#if config.showInUI !== false}
+      {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
         <Input
-          inputType={params.type === "number" ? "number" : "text"}
+          inputType={config.type === "number" ? "number" : "text"}
           capitalizeLabel={false}
           textClass="text-sm"
-          optional={params.required == false}
-          label={params.label || key}
-          bind:value={params[key]}
+          optional={config.required == false}
+          label={config.label || key}
+          bind:value={paramValues[key]}
           onBlur={async () => {
-            component.updateProperty(key, params[key]);
+            component.updateProperty(key, paramValues[key]);
           }}
           onEnter={async () => {
-            component.updateProperty(key, params[key]);
+            component.updateProperty(key, paramValues[key]);
           }}
         />
-      {:else if params.type === "metrics_view"}
-        <MetricSelectorDropdown {component} {key} {params} />
-      {:else if metricsView && (params.type === "measure" || params.type === "dimension")}
+      {:else if config.type === "metrics"}
+        <MetricSelectorDropdown {component} {key} inputParam={config} />
+      {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
         <FieldSelectorDropdown
-          label={params.label || key}
+          label={config.label || key}
           metricName={metricsView}
           id={key}
-          type={params.type}
-          selectedItem={params[key]}
+          type={config.type}
+          selectedItem={paramValues[key]}
           onSelect={async (field) => {
             component.updateProperty(key, field);
           }}
         />
-      {:else if params.type === "textArea"}
+      {:else if config.type === "textArea"}
         <textarea
           class="w-full p-2 border border-gray-300 rounded-sm"
           rows="4"
-          value={params[key]}
+          value={paramValues[key]}
           on:blur={async () => {
-            component.updateProperty(key, params[key]);
+            component.updateProperty(key, paramValues[key]);
           }}
-          placeholder={params.label || key}
+          placeholder={config.label || key}
         ></textarea>
       {/if}
     {/if}

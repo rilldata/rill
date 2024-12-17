@@ -1,6 +1,6 @@
 type NativeInputTypes = "text" | "number" | "boolean" | "textArea";
 type SemanticInputTypes =
-  | "metrics_view"
+  | "metrics"
   | "measure"
   | "dimension"
   | "multi_measures"

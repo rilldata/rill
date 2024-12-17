@@ -16,7 +16,6 @@
     },
   };
 
-  $: console.log("Called");
   $: imageProperties = {
     ...DEFAULT_IMAGE_PROPERTIES,
     ...rendererProperties,

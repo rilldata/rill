@@ -49,7 +49,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
   inputParams(): Record<keyof TableSpec, ComponentInputParam> {
     return {
-      metrics_view: { type: "metrics_view", label: "Metric view" },
+      metrics_view: { type: "metrics", label: "Metric view" },
       measures: { type: "multi_measures", label: "Measures" },
       time_range: { type: "rill_time" },
       comparison_range: { type: "rill_time" },

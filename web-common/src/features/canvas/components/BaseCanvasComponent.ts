@@ -38,8 +38,6 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
 
     const { saveContent } = this.fileArtifact;
 
-    console.log("newSpec", newSpec);
-
     // Update the Item
     parsedDocument.setIn(this.pathInYAML, newSpec);
 

@@ -16,7 +16,6 @@
     ResourceKind,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import MetricsEditorContainer from "@rilldata/web-common/features/metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import {
@@ -24,6 +23,7 @@
     WorkspaceHeader,
   } from "@rilldata/web-common/layout/workspace";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
@@ -137,7 +137,7 @@
               </div>
             </WorkspaceHeader>
 
-            <MetricsEditorContainer
+            <WorkspaceEditorContainer
               slot="body"
               error={mainError}
               showError={!!$remoteContent && selectedView === "code"}
@@ -161,7 +161,7 @@
                   <Canvas />
                 {/if}
               {/if}
-            </MetricsEditorContainer>
+            </WorkspaceEditorContainer>
 
             <VisualCanvasEditing slot="inspector" />
           </WorkspaceContainer>

@@ -11,7 +11,7 @@
 
   export let component: CanvasComponent<any>;
   export let key: string;
-  export let params: ComponentInputParam;
+  export let inputParam: ComponentInputParam;
 
   $: ({ instanceId } = $runtime);
 
@@ -34,7 +34,7 @@
 <Input
   hint="View documentation"
   link="https://docs.rilldata.com/reference/project-files/metrics-view"
-  label={params.label}
+  label={inputParam.label}
   capitalizeLabel={false}
   bind:value={metricsView}
   sameWidth

@@ -5,25 +5,75 @@
     "ChartProperties": {
       "additionalProperties": false,
       "properties": {
-        "color": {
+        "config": {
+          "$ref": "#/definitions/ChartConfig"
+        },
+        "title": {
           "type": "string"
         },
-        "x": {
-          "type": "string"
-        },
-        "xLabel": {
-          "type": "string"
-        },
-        "y": {
-          "type": "string"
-        },
-        "yLabel": {
+        "description": {
           "type": "string"
         }
       },
       "required": [
-        "x",
-        "y"
+        "config"
+      ],
+      "type": "object"
+    },
+    "ChartConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics_view": {
+          "type": "string"
+        },
+        "x": {
+          "$ref": "#/definitions/FieldConfig"
+        },
+        "y": {
+          "$ref": "#/definitions/FieldConfig"
+        },
+        "color": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/FieldConfig"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "tooltip": {
+          "$ref": "#/definitions/FieldConfig"
+        }
+      },
+      "required": [
+        "metrics_view"
+      ],
+      "type": "object"
+    },
+    "FieldConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["quantitative", "ordinal", "nominal", "temporal", "geojson"]
+        },
+        "timeUnit": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "type"
       ],
       "type": "object"
     },
@@ -34,6 +84,12 @@
           "type": "object"
         },
         "url": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
           "type": "string"
         }
       },
@@ -71,6 +127,12 @@
         },
         "time_range": {
           "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
         }
       },
       "required": [
@@ -100,6 +162,12 @@
         },
         "css": {
           "type": "object"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
         }
       },
       "required": [
@@ -217,6 +285,12 @@
           "type": "array"
         },
         "time_range": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
           "type": "string"
         }
       },

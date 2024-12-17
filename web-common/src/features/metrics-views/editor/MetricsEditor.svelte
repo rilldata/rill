@@ -8,11 +8,11 @@
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
 
   export let filePath: string;
   export let metricsViewName: string;

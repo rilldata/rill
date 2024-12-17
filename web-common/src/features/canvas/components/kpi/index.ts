@@ -27,7 +27,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       metrics_view: "",
       measure: "",
       time_range: "",
-      show_sparkline: false,
+      // show_sparkline: false,
       title: "",
       description: "",
     };
@@ -42,7 +42,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   inputParams(): Record<keyof KPISpec, ComponentInputParam> {
     return {
-      metrics_view: { type: "metrics_view", label: "Metric view" },
+      metrics_view: { type: "metrics", label: "Metric view" },
       measure: { type: "measure", label: "Measure" },
       time_range: { type: "rill_time", label: "Time Range" },
       comparison_range: { type: "rill_time", label: "Comparison Range" },

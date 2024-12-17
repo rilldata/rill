@@ -37,7 +37,7 @@
 
   // TODO: fix accessor
   $: selectedComponent =
-    $validSpecStore.items?.[$canvasStore.selectedComponentIndex || 0];
+    $validSpecStore?.items?.[$canvasStore.selectedComponentIndex || 0];
   let selectedChartType;
 
   $: resourceQuery = useResource(
@@ -114,7 +114,10 @@
       </div>
     </div>
   {:else}
-    <ComponentInputs componentType={renderer} params={rendererProperties} />
+    <ComponentInputs
+      componentType={renderer}
+      paramValues={rendererProperties}
+    />
   {/if}
 </SidebarWrapper>
 
