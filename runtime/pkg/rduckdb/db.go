@@ -202,6 +202,7 @@ type CreateTableOptions struct {
 	// If BeforeCreateFn is set, it will be executed before the create query is executed.
 	BeforeCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
+	// This will execute even if the create query fails.
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 }
 
@@ -398,16 +399,24 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 			return fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
 		}
 	}
-	// ingest data
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
-	if err != nil {
-		return fmt.Errorf("create: create %s %q failed: %w", typ, name, err)
-	}
-	if opts.AfterCreateFn != nil {
+	execAfterCreate := func() error {
+		if opts.AfterCreateFn == nil {
+			return nil
+		}
 		err = opts.AfterCreateFn(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("create: AfterCreateFn returned error: %w", err)
 		}
+		return nil
+	}
+	// ingest data
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
+	if err != nil {
+		return errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
+	}
+	err = execAfterCreate()
+	if err != nil {
+		return err
 	}
 
 	// close write handle before syncing local so that temp files or wal files are removed
@@ -725,11 +734,18 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range d.opts.InitQueries {
-			_, err := execer.ExecContext(context.Background(), qry, nil)
+			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
+			if err != nil {
+				return err
+			}
+		}
+		if !read {
+			// disable any more configuration changes on the write handle via init queries
+			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
 			if err != nil {
 				return err
 			}
