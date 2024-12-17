@@ -47,7 +47,7 @@ compare_operator => "eq"i     {% id %}
                   | "lte"i    {% id %}
 
 column     => sqstring                 {% id %}
-            | [a-zA-Z] [a-zA-Z0-9_]:*  {% ([fst, rest]) => [fst, ...rest].join("") %}
+            | [a-zA-Z] [a-zA-Z0-9_.]:*  {% ([fst, rest]) => [fst, ...rest].join("") %}
 value      => sqstring                 {% id %}
             | int                      {% id %}
             | decimal                  {% id %}

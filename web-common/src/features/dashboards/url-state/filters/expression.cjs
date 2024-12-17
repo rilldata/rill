@@ -186,7 +186,7 @@ let ParserRules = [
     {"name": "compare_operator", "symbols": ["compare_operator$subexpression$6"], "postprocess": id},
     {"name": "column", "symbols": ["sqstring"], "postprocess": id},
     {"name": "column$ebnf$1", "symbols": []},
-    {"name": "column$ebnf$1", "symbols": ["column$ebnf$1", /[a-zA-Z0-9_]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "column$ebnf$1", "symbols": ["column$ebnf$1", /[a-zA-Z0-9_.]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "column", "symbols": [/[a-zA-Z]/, "column$ebnf$1"], "postprocess": ([fst, rest]) => [fst, ...rest].join("")},
     {"name": "value", "symbols": ["sqstring"], "postprocess": id},
     {"name": "value", "symbols": ["int"], "postprocess": id},
