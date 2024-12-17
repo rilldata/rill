@@ -45,14 +45,6 @@ export class AsyncSaveState {
     this.promise?.resolve();
     clearTimeout(this.timeoutId);
 
-    console.log(Date.now() - this.lastSaveTime);
-
-    const timeout = Math.max(
-      0,
-      MIN_SAVE_TIME - (Date.now() - this.lastSaveTime),
-    );
-    console.log({ timeout });
-
     setTimeout(
       () => {
         this.asyncSavingStore.set(false);

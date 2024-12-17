@@ -52,7 +52,7 @@
   export let switchView: () => void;
 
   $: ({ instanceId } = $runtime);
-  $: ({ localContent, remoteContent, saveContent, path, updateLocalContent } =
+  $: ({ localContent, remoteContent, path, updateLocalContent, saveContent } =
     fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
@@ -243,11 +243,7 @@
 
     killState();
 
-    if (autoSave) {
-      await saveContent(parsedDocument.toString());
-    } else {
-      updateLocalContent(parsedDocument.toString(), true);
-    }
+    updateLocalContent(parsedDocument.toString(), true, autoSave);
   }
 
   function killState() {

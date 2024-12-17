@@ -33,7 +33,6 @@
   let editorHasFocus = false;
 
   $: ({
-    hasUnsavedChanges,
     saveLocalContent,
     revert,
     merging,
@@ -41,13 +40,17 @@
     disableAutoSave,
     inConflict,
     saveState: { saving, error, resolve },
+    saveEnabled,
   } = fileArtifact);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
+  $: disabled = !$saveEnabled;
+
   async function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
+      if (disabled) return;
       await save();
     }
   }
@@ -85,7 +88,7 @@
           loading={$saving}
           loadingCopy="Saving"
           danger={!!$error && !$saving}
-          disabled={$saving || !$hasUnsavedChanges}
+          {disabled}
           on:click={async () => {
             await save();
             codespace.mountEditor();
@@ -96,7 +99,7 @@
           {/if}
 
           {#if $error}
-            {$error.message} Try again.
+            {$error?.message} Try again.
           {:else}
             Accept current
           {/if}
@@ -140,7 +143,7 @@
               loading={$saving}
               danger={!!$error && !$saving}
               loadingCopy="Saving"
-              disabled={$saving || !$hasUnsavedChanges}
+              {disabled}
               on:click={save}
             >
               {#if $error}
@@ -148,8 +151,9 @@
               {:else}
                 <Check size="14px" />
               {/if}
+
               {#if $error}
-                {$error.message} Try again.
+                {$error?.message} Try again.
               {:else}
                 Save
               {/if}
@@ -164,11 +168,7 @@
             </TooltipContent>
           </Tooltip>
 
-          <Button
-            type="text"
-            disabled={!$hasUnsavedChanges || $saving}
-            on:click={revertContent}
-          >
+          <Button type="text" {disabled} on:click={revertContent}>
             <UndoIcon size="14px" />
             Revert changes
           </Button>

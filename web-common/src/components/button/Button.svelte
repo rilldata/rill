@@ -80,6 +80,7 @@
   form={submitForm ? form : undefined}
   aria-label={label}
   {target}
+  aria-disabled={disabled}
   rel={target === "_blank" ? "noopener noreferrer" : rel}
   {...getAttrs(builders)}
   use:builderActions={{ builders }}

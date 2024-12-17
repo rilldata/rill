@@ -76,6 +76,11 @@ export class FileArtifact {
     ($local) => $local !== null,
   );
   readonly saveState = new AsyncSaveState();
+  readonly saveEnabled = derived(
+    [this.saveState.saving, this.hasUnsavedChanges],
+    ([saving, hasUnsavedChanges]) => !saving && hasUnsavedChanges,
+  );
+
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
   readonly folderName: string;
@@ -183,14 +188,16 @@ export class FileArtifact {
     }
   };
 
-  updateLocalContent = (newContent: string | null, alert = false) => {
+  updateLocalContent = (
+    newContent: string | null,
+    alert = false,
+    autoSave = get(this.autoSave),
+  ) => {
     const currentLocalContent = get(this.localContent);
 
     if (currentLocalContent === newContent) return;
 
     this.localContent.set(newContent);
-
-    const autoSave = get(this.autoSave);
 
     if (autoSave && newContent !== null) {
       this.debounceSave(newContent);
@@ -208,10 +215,9 @@ export class FileArtifact {
   };
 
   saveLocalContent = async () => {
-    const newContent = get(this.localContent);
-    if (newContent !== null) {
-      await this.saveContent(newContent);
-    }
+    const saveEnabled = get(this.saveEnabled);
+    if (!saveEnabled) return;
+    await this.saveContent(get(this.localContent) ?? "");
   };
 
   saveContent = async (blob: string) => {

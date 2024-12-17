@@ -178,7 +178,9 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Facebook 68 -3 -4%")).toBeVisible();
 
     // Open the time comparison
-    await page.getByLabel("Select time comparison option").click();
+    await page
+      .getByLabel("Select time comparison option")
+      .click({ force: true });
     // Assert the options available
     await Promise.all(
       [
