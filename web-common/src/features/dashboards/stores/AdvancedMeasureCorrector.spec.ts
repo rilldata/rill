@@ -3,7 +3,7 @@ import {
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
@@ -35,7 +35,7 @@ describe("AdvancedMeasureCorrector", () => {
   } as V1ExploreSpec;
 
   it("changing grain while in TDD for measure based on timestamp", () => {
-    const dashboard = getDefaultExploreState(
+    const dashboard = getFullInitExploreState(
       "AdBids",
       getInitExploreStateForTest(MetricsView, Explore),
     );
@@ -70,7 +70,7 @@ describe("AdvancedMeasureCorrector", () => {
   });
 
   it("metrics view spec changed converting a measure to an advanced measure", () => {
-    const dashboard = getDefaultExploreState(
+    const dashboard = getFullInitExploreState(
       "AdBids",
       getInitExploreStateForTest(MetricsView, Explore),
     );

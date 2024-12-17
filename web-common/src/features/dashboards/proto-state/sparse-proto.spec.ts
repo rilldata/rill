@@ -1,5 +1,5 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
@@ -95,7 +95,7 @@ describe("sparse proto", () => {
   describe("should reset dashboard store", () => {
     for (const { title, mutations } of TestCases) {
       it(`from ${title}`, () => {
-        const dashboard = getDefaultExploreState(
+        const dashboard = getFullInitExploreState(
           AD_BIDS_EXPLORE_NAME,
           getInitExploreStateForTest(
             AD_BIDS_METRICS_INIT,

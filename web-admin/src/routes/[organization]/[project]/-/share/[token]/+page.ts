@@ -1,4 +1,4 @@
-import { getExploreStores } from "@rilldata/web-common/features/explores/selectors";
+import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
 
 export const load = async ({ url, parent, params }) => {
   const { explore, metricsView, defaultExplorePreset, token } = await parent();
@@ -7,7 +7,7 @@ export const load = async ({ url, parent, params }) => {
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
 
-  return getExploreStores(
+  return getExploreStates(
     exploreName,
     `${organization}__${project}__`,
     url.searchParams,

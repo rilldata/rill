@@ -13,6 +13,7 @@ import {
   ToURLParamTimeDimensionMap,
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
+import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1ExploreComparisonMode,
@@ -22,7 +23,7 @@ import {
 
 export function convertExploreStateToPreset(
   exploreState: Partial<MetricsExplorerEntity>,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
 ) {
   const preset: V1ExplorePreset = {};
 
@@ -37,9 +38,9 @@ export function convertExploreStateToPreset(
     );
   }
 
-  Object.assign(preset, getTimeRangeFields(exploreState));
+  Object.assign(preset, getTimeRangeFields(exploreState, exploreSpec));
 
-  Object.assign(preset, getExploreFields(exploreState, explore));
+  Object.assign(preset, getExploreFields(exploreState, exploreSpec));
 
   Object.assign(preset, getTimeDimensionFields(exploreState));
 
@@ -48,7 +49,10 @@ export function convertExploreStateToPreset(
   return preset;
 }
 
-function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
+function getTimeRangeFields(
+  exploreState: Partial<MetricsExplorerEntity>,
+  exploreSpec: V1ExploreSpec,
+) {
   const preset: V1ExplorePreset = {};
 
   if (exploreState.selectedTimeRange?.name) {
@@ -59,15 +63,28 @@ function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
       ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange.interval];
   }
 
-  if (
-    exploreState.showTimeComparison &&
-    exploreState.selectedComparisonTimeRange?.name
-  ) {
-    preset.compareTimeRange = toTimeRangeParam(
-      exploreState.selectedComparisonTimeRange,
-    );
-    preset.comparisonMode =
-      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
+  if (exploreState.showTimeComparison) {
+    if (exploreState.selectedComparisonTimeRange?.name) {
+      preset.compareTimeRange = toTimeRangeParam(
+        exploreState.selectedComparisonTimeRange,
+      );
+      preset.comparisonMode =
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
+    } else if (
+      !exploreState.selectedComparisonTimeRange &&
+      exploreState.selectedTimeRange?.name
+    ) {
+      // we infer compare time range if the user has not explicitly selected one but has enabled comparison
+      const inferredCompareTimeRange = inferCompareTimeRange(
+        exploreSpec.timeRanges,
+        exploreState.selectedTimeRange.name,
+      );
+      if (inferredCompareTimeRange) {
+        preset.compareTimeRange = inferredCompareTimeRange;
+        preset.comparisonMode =
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
+      }
+    }
   }
 
   if (exploreState.selectedComparisonDimension !== undefined) {
@@ -82,7 +99,10 @@ function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
     preset.timezone = exploreState.selectedTimezone;
   }
 
-  if (exploreState.selectedScrubRange) {
+  if (
+    exploreState.selectedScrubRange &&
+    !exploreState.selectedScrubRange?.isScrubbing
+  ) {
     preset.selectTimeRange = toTimeRangeParam(exploreState.selectedScrubRange);
   }
 

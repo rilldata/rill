@@ -163,7 +163,7 @@ export async function fetchMetricsViewSchema(
   return schemaResp.schema ?? {};
 }
 
-export function getExploreStores(
+export function getExploreStates(
   exploreName: string,
   prefix: string | undefined,
   searchParams: URLSearchParams,

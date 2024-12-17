@@ -6,7 +6,7 @@
   import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
   import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-  import { getExploreStores } from "@rilldata/web-common/features/explores/selectors";
+  import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
   import type { V1ExplorePreset } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -46,7 +46,7 @@
     | undefined = undefined;
   function parseUrl(url: URL, defaultExplorePreset: V1ExplorePreset) {
     ({ partialExploreStateFromUrl, exploreStateFromSessionStorage } =
-      getExploreStores(
+      getExploreStates(
         $exploreName,
         storeKeyPrefix,
         url.searchParams,

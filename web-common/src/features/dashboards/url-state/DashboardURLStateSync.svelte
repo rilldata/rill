@@ -15,6 +15,7 @@
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
 
   export let metricsViewName: string;
   export let exploreName: string;
@@ -62,9 +63,11 @@
       return;
     }
 
+    // Pressing back button and going to empty urls state should not restore from session store
+    const backButtonUsed = type === "popstate";
     let partialExplore = partialExploreStateFromUrl;
     let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage) {
+    if (exploreStateFromSessionStorage && !backButtonUsed) {
       partialExplore = exploreStateFromSessionStorage;
       shouldUpdateUrl = true;
     }
@@ -124,6 +127,13 @@
       initState,
       $page.url.searchParams,
     );
+    // update session store to make sure updated to url or the initial state is propagated to the session store
+    updateExploreSessionStore(
+      exploreName,
+      extraKeyPrefix,
+      get(metricsExplorerStore).entities[exploreName],
+      exploreSpec!,
+    );
     prevUrl = redirectUrl.toString();
 
     if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
@@ -131,12 +141,6 @@
     }
 
     replaceState(redirectUrl, $page.state);
-    updateExploreSessionStore(
-      exploreName,
-      extraKeyPrefix,
-      $dashboardStore,
-      exploreSpec!,
-    );
   }
 
   function gotoNewState() {
@@ -153,7 +157,9 @@
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
+    // dashboard changed so we should update the url
     void goto(newUrl);
+    // also update the session store
     updateExploreSessionStore(
       exploreName,
       extraKeyPrefix,

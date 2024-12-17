@@ -1,7 +1,7 @@
 import { protoBase64, Value } from "@bufbuild/protobuf";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   createInExpression,
@@ -40,7 +40,7 @@ describe("toProto/fromProto", () => {
   });
 
   it("backwards compatibility for time controls", () => {
-    const metricsExplorer = getDefaultExploreState(
+    const metricsExplorer = getFullInitExploreState(
       AD_BIDS_NAME,
       getInitExploreStateForTest(
         AD_BIDS_METRICS_INIT_WITH_TIME,

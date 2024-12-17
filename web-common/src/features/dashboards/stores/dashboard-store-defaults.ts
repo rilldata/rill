@@ -5,9 +5,9 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 
 // TODO: Remove this in favour of just `getBasePreset`
-export function getDefaultExploreState(
+export function getFullInitExploreState(
   name: string,
-  initState: Partial<MetricsExplorerEntity>,
+  partialInitState: Partial<MetricsExplorerEntity>,
 ): MetricsExplorerEntity {
   return {
     // fields filled here are the ones that are not stored and loaded to/from URL
@@ -20,6 +20,6 @@ export function getDefaultExploreState(
 
     lastDefinedScrubRange: undefined,
 
-    ...initState,
+    ...partialInitState,
   } as MetricsExplorerEntity;
 }

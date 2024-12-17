@@ -5,7 +5,7 @@ import type {
   QueryRequests,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -128,7 +128,7 @@ export function mapQueryToDashboard(
         validSpecResp.data.explore,
         defaultExplorePreset,
       );
-      const defaultExploreState = getDefaultExploreState(
+      const defaultExploreState = getFullInitExploreState(
         metricsViewName,
         partialExploreState,
       );

@@ -174,6 +174,8 @@ function fromTimeRangesParams(
       ...fromTimeRangeUrlParam(preset.selectTimeRange),
       isScrubbing: false,
     };
+  } else {
+    partialExploreState.selectedScrubRange = undefined;
   }
 
   if (
