@@ -40,6 +40,7 @@
     metricsViewName,
     exploreName,
     dashboardStore,
+    validSpecStore,
     selectors: {
       timeRangeSelectors: { timeControlsState },
     },
@@ -56,8 +57,11 @@
     dimension = $dashboardStore.selectedDimensionName ?? "";
   }
 
-  // TODO: get metrics view spec
-  const timeRange = mapTimeRange(timeControls, {});
+  const timeRange = mapTimeRange(
+    timeControls,
+    $validSpecStore.data?.explore ?? {},
+    $dashboardStore,
+  );
   const comparisonTimeRange = mapComparisonTimeRange(
     $dashboardStore,
     timeControls,

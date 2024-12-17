@@ -57,7 +57,7 @@ export function getTDDAggregationRequest(
   )
     return undefined;
 
-  const timeRange = mapTimeRange(timeControlState, explore);
+  const timeRange = mapTimeRange(timeControlState, explore, dashboardState);
   if (!timeRange) return undefined;
 
   const comparisonTimeRange = mapComparisonTimeRange(
