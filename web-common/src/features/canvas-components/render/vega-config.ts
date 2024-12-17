@@ -51,6 +51,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   shape: { stroke: defaultMarkColor },
   symbol: { fill: defaultMarkColor },
 
+  legend: { orient: "top" },
   axisY: {
     orient: "right",
     gridColor: gridColor,

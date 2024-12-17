@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Chart } from "./charts";
   import { Image } from "./image";
   import { KPI } from "./kpi";
   import { Markdown } from "./markdown";
@@ -32,5 +33,7 @@
     <Markdown {rendererProperties} />
   {:else if renderer === "image"}
     <Image {rendererProperties} />
+  {:else}
+    <Chart {rendererProperties} {renderer} />
   {/if}
 {/if}

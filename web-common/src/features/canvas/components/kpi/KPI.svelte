@@ -182,8 +182,4 @@
 </div>
 
 <style lang="postcss">
-  .comparison-value {
-    font-size: 0.8rem;
-    @apply ui-copy-muted pl-1 pt-0.5;
-  }
 </style>

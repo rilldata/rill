@@ -64,8 +64,7 @@
 <div
   bind:contentRect
   class:bg-white={canvasDashboard}
-  class:px-4={canvasDashboard}
-  class:pb-2={canvasDashboard}
+  class:px-2={canvasDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >
   {#if error}

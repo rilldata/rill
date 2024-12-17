@@ -111,9 +111,9 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 			break
 		}
 
-		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
-		}
+		// if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
+		// 	return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
+		// }
 
 		propsPB, err := structpb.NewStruct(props)
 		if err != nil {

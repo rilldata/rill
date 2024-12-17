@@ -1,6 +1,6 @@
 export interface FieldConfig {
   field: string;
-  title?: string;
+  label?: string;
   format?: string;
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "geojson";
   timeUnit?: string; // For temporal fields
@@ -12,4 +12,8 @@ export interface ChartConfig {
   y?: FieldConfig;
   color?: FieldConfig | string;
   tooltip?: FieldConfig;
+  // Temp options
+  time_range: string;
 }
+
+export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";

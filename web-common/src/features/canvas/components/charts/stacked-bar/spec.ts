@@ -1,15 +1,15 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
 
-export function generateVLLineChartSpec(
+export function generateVLStackedBarChartSpec(
   config: ChartConfig,
 ): VisualizationSpec {
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-    mark: "line",
+    mark: "bar",
     width: "container",
-    autosize: { type: "fit" },
     data: { name: "metrics-view" },
+    autosize: { type: "fit" },
     encoding: {
       ...(config.x && {
         x: {

@@ -10,6 +10,7 @@ It is used in the ComponentsEditor component to render the input fields for the 
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { CanvasComponentType } from "../components/types";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
+  import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
   export let componentType: CanvasComponentType;
   export let paramValues: Record<string, any>;
@@ -68,12 +69,23 @@ It is used in the ComponentsEditor component to render the input fields for the 
         <textarea
           class="w-full p-2 border border-gray-300 rounded-sm"
           rows="4"
-          value={paramValues[key]}
+          bind:value={paramValues[key]}
           on:blur={async () => {
             component.updateProperty(key, paramValues[key]);
           }}
           placeholder={config.label || key}
         ></textarea>
+      {:else if metricsView && config.type === "positional"}
+        <PositionalFieldConfig
+          {key}
+          {config}
+          {metricsView}
+          value={paramValues[key] || {}}
+          onChange={(updatedConfig) => {
+            paramValues[key] = updatedConfig;
+            component.updateProperty(key, updatedConfig);
+          }}
+        />
       {/if}
     {/if}
   {/each}

@@ -54,6 +54,7 @@
 
   $: allErrorsQuery = getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
+
   $: resourceIsReconciling = resourceIsLoading(data);
 
   $: workspace = workspaces.get(filePath);
@@ -169,6 +170,12 @@
       </CanvasStateProvider>
     </StateManagersProvider>
   {/key}
+{:else if allErrors.length}
+  <ErrorPage
+    body="Please fix the errors in the code editor before previewing the dashboard."
+    header="Unable to load dashboard preview"
+    statusCode={404}
+  />
 {:else}
   <div class="grid place-items-center size-full">
     <DelayedSpinner isLoading={true} size="40px" />

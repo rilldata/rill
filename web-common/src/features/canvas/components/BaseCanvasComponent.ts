@@ -45,9 +45,9 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
     await saveContent(parsedDocument.toString());
   }
 
-  setSpec(newSpec: T): void {
+  async setSpec(newSpec: T): Promise<void> {
     if (this.isValid(newSpec)) {
-      // Update YAML
+      await this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
   }

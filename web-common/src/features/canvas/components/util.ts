@@ -1,13 +1,11 @@
-import { ImageComponent } from "@rilldata/web-common/features/canvas/components/image";
-import { KPIComponent } from "@rilldata/web-common/features/canvas/components/kpi";
-import { MarkdownCanvasComponent } from "@rilldata/web-common/features/canvas/components/markdown";
-import { TableCanvasComponent } from "@rilldata/web-common/features/canvas/components/table";
-import type {
-  CanvasComponentType,
-  ComponentCommonProperties,
-} from "@rilldata/web-common/features/canvas/components/types";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import { ChartComponent } from "./charts";
+import { ImageComponent } from "./image";
+import { KPIComponent } from "./kpi";
+import { MarkdownCanvasComponent } from "./markdown";
+import { TableCanvasComponent } from "./table";
+import type { CanvasComponentType, ComponentCommonProperties } from "./types";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -39,6 +37,6 @@ export const getComponentObj = (
     case "table":
       return new TableCanvasComponent(fileArtifact, path, params);
     default:
-      throw new Error(`Unknown component type: ${type}`);
+      return new ChartComponent(fileArtifact, path, params);
   }
 };

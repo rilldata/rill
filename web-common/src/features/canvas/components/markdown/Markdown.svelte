@@ -1,8 +1,8 @@
 <script lang="ts">
-  import DOMPurify from "dompurify";
-  import { marked } from "marked";
   import type { MarkdownProperties } from "@rilldata/web-common/features/templates/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
+  import DOMPurify from "dompurify";
+  import { marked } from "marked";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
@@ -15,7 +15,7 @@
 </script>
 
 <div
-  class="markdown size-full items-center flex justify-center"
+  class="markdown size-full items-center flex justify-center bg-white"
   style={styleString}
 >
   {#await marked(markdownProperties.content) then content}

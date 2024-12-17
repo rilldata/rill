@@ -1,6 +1,6 @@
 import type { Writable } from "svelte/store";
 import type { ComponentInputParam } from "../inspector/types";
-import type { ChartConfig } from "./charts/types";
+import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
@@ -46,7 +46,7 @@ export interface CanvasComponent<T> {
   /**
    * Set the spec store with the new values
    */
-  setSpec(spec: T): void;
+  setSpec(spec: T): Promise<void>;
 }
 
 export interface ComponentCommonProperties {
@@ -64,8 +64,6 @@ export type CanvasComponentInput =
   | KPISpec
   | ImageSpec
   | TableSpec;
-
-type ChartType = "line_chart" | "bar_chart";
 
 export type CanvasComponentType =
   | ChartType
