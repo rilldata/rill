@@ -325,19 +325,27 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 }
 
 func testInsertTableAsSelect_WithPartitionOverwrite_DatePartition(t *testing.T, olap drivers.OLAPStore) {
-	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", false, "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", map[string]any{
-		"typs":                     "TABLE",
-		"engine":                   "MergeTree",
-		"table":                    "tbl",
-		"distributed.sharding_key": "rand()",
-		"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
-		"partition_by":             "dt",
-		"order_by":                 "value",
-		"primary_key":              "value",
-	})
+	opts := &drivers.CreateTableOptions{
+		View: false,
+		TableOpts: map[string]any{
+			"engine":                   "MergeTree",
+			"table":                    "tbl",
+			"distributed.sharding_key": "rand()",
+			"incremental_strategy":     drivers.IncrementalStrategyPartitionOverwrite,
+			"partition_by":             "dt",
+			"order_by":                 "value",
+			"primary_key":              "value",
+		},
+	}
+	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
-	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", false, true, drivers.IncrementalStrategyPartitionOverwrite, nil)
+	insertOpts := &drivers.InsertTableOptions{
+		ByName:   false,
+		InPlace:  true,
+		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
+	}
+	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT date_add(hour, generate_series, toDate('2024-12-01')) AS dt, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT dt, value FROM replace_tbl ORDER BY dt"})
