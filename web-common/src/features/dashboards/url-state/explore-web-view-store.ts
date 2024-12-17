@@ -1,10 +1,6 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
-import {
-  FromActivePageMap,
-  ToURLParamViewMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -89,7 +85,7 @@ export function getKeyForSessionStore(
   prefix: string | undefined,
   view: string,
 ) {
-  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`;
+  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`.toLowerCase();
 }
 
 export function updateExploreSessionStore(
@@ -117,6 +113,7 @@ export function updateExploreSessionStore(
     delete sharedPreset[key];
   }
   for (const key of ExploreViewOtherKeys[view]) {
+    storedPreset[key] = preset[key] as any;
     delete sharedPreset[key];
   }
 
@@ -176,8 +173,8 @@ export function getExplorePresetForWebView(
   if (!sharedRawPreset) return undefined;
   const rawPreset = sessionStorage.getItem(key) ?? "{}";
   try {
-    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     const sharedPreset = JSON.parse(sharedRawPreset) as V1ExplorePreset;
+    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     return {
       view,
       ...sharedPreset,
@@ -186,21 +183,4 @@ export function getExplorePresetForWebView(
   } catch {
     return undefined;
   }
-}
-
-export function getUrlForWebView(
-  pageUrl: URL,
-  view: V1ExploreWebView,
-  defaultExplorePreset: V1ExplorePreset,
-  extraParams: Record<string, string> = {},
-) {
-  const u = new URL(pageUrl);
-  u.search = "";
-  if (view !== defaultExplorePreset.view) {
-    u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
-  }
-  for (const param in extraParams) {
-    u.searchParams.set(param, extraParams[param]);
-  }
-  return u.pathname + u.search;
 }

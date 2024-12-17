@@ -4,10 +4,11 @@
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
   import { createPlaceholder } from "./create-placeholder";
@@ -44,9 +45,14 @@
       // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
       metricsExplorerStore.remove(metricsViewName);
       // Reset local persisted dashboard state for the metrics view
-      createPersistentDashboardStore(metricsViewName).reset();
       clearExploreSessionStore(metricsViewName, undefined);
 
+      // Reset local persisted explore state derived from this metrics view
+      fileArtifacts
+        .getNamesForKind(ResourceKind.Explore)
+        .forEach((resourceName) =>
+          clearExploreSessionStore(resourceName, undefined),
+        );
       if (!content?.length) {
         setLineStatuses([], editor);
       }

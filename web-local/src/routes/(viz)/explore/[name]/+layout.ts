@@ -11,13 +11,18 @@ export const load = async ({ params, depends }) => {
   depends(exploreName, "explore");
 
   try {
-    const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(instanceId, exploreName);
+    const {
+      explore,
+      metricsView,
+      defaultExplorePreset,
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(instanceId, exploreName);
 
     return {
       explore,
       metricsView,
       defaultExplorePreset,
+      exploreStateFromYAMLConfig,
     };
   } catch (e) {
     console.error(e);

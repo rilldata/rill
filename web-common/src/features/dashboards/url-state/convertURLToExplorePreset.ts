@@ -274,6 +274,8 @@ function fromTimeRangesParams(
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
+    } else if (ctr == "") {
+      preset.compareTimeRange = "";
     } else {
       errors.push(getSingleFieldError("compare time range", ctr));
     }
@@ -312,7 +314,7 @@ function fromTimeRangesParams(
     const selectTr = searchParams.get(
       ExploreStateURLParams.HighlightedTimeRange,
     ) as string;
-    if (CustomTimeRangeRegex.test(selectTr)) {
+    if (CustomTimeRangeRegex.test(selectTr) || selectTr === "") {
       preset.selectTimeRange = selectTr;
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));

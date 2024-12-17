@@ -3,7 +3,7 @@ import type {
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { get, type Readable, type Updater } from "svelte/store";
+import { type Readable, type Updater } from "svelte/store";
 
 /**
  * Partial state of the dashboard that is stored in local storage.
@@ -54,7 +54,7 @@ export type PersistentDashboardStore = Readable<PersistentDashboardState> &
   ReturnType<typeof persistentDashboardStoreActions>;
 export function createPersistentDashboardStore(storeKey: string) {
   const { subscribe, update } = localStorageStore<PersistentDashboardState>(
-    `${storeKey}-persistentDashboardStore`,
+    `${storeKey.toLowerCase()}-persistentDashboardStore`,
     {},
   );
   return {
@@ -63,22 +63,12 @@ export function createPersistentDashboardStore(storeKey: string) {
   };
 }
 
-// TODO: once we move everything to state-managers we wont need this
-let persistentDashboardStore: PersistentDashboardStore;
-export function initPersistentDashboardStore(storeKey: string) {
-  persistentDashboardStore = createPersistentDashboardStore(storeKey);
-}
-
-export function getPersistentDashboardStore() {
-  return persistentDashboardStore;
-}
-
-export function getPersistentDashboardState(): PersistentDashboardState {
-  if (!persistentDashboardStore) return {};
-  return get(persistentDashboardStore);
-}
-
-export function hasPersistentDashboardData() {
-  if (!persistentDashboardStore) return false;
-  return Object.keys(get(persistentDashboardStore)).length > 0;
+export function getPersistentDashboardStateForKey(
+  key: string,
+): PersistentDashboardState | undefined {
+  const dataRaw = localStorage.getItem(
+    `${key.toLowerCase()}-persistentDashboardStore`,
+  );
+  if (!dataRaw) return undefined;
+  return JSON.parse(dataRaw) as PersistentDashboardState;
 }

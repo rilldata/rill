@@ -100,7 +100,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
+			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
 			if err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql, nil)
+			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, sql, &drivers.CreateTableOptions{})
 			if err != nil {
 				return err
 			}
@@ -205,7 +205,12 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 		return err
 	}
 
-	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, a.allowSchemaRelaxation, true, drivers.IncrementalStrategyAppend, nil)
+	opts := &drivers.InsertTableOptions{
+		ByName:   a.allowSchemaRelaxation,
+		InPlace:  true,
+		Strategy: drivers.IncrementalStrategyAppend,
+	}
+	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -216,7 +221,12 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to update schema %w", err)
 	}
-	return a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, true, true, drivers.IncrementalStrategyAppend, nil)
+	opts = &drivers.InsertTableOptions{
+		ByName:   true,
+		InPlace:  true,
+		Strategy: drivers.IncrementalStrategyAppend,
+	}
+	return a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, opts)
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or

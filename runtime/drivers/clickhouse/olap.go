@@ -209,9 +209,9 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
@@ -240,11 +240,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	if !inPlace {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+	if !opts.InPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
-	if strategy == drivers.IncrementalStrategyAppend {
+	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority:    1,
@@ -252,8 +252,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	if strategy == drivers.IncrementalStrategyPartitionOverwrite {
-		_, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 		if err != nil {
 			return err
 		}
@@ -301,8 +301,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}()
 		// insert into temp table
 		err = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
-			Priority: 1,
+			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 		if err != nil {
 			return err
@@ -316,7 +317,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		for _, part := range partitions {
 			// alter the main table to replace the partition
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION %s FROM %s", safeSQLName(name), onClusterClause, part, safeSQLName(tempName)),
+				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(name), onClusterClause, safeSQLName(tempName)),
+				Args:     []any{part},
 				Priority: 1,
 			})
 			if err != nil {
@@ -326,12 +328,37 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		return nil
 	}
 
-	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
+	if opts.Strategy == drivers.IncrementalStrategyMerge {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// get the engine info of the given table
+		engine, err := c.getTableEngine(ctx, name)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(engine, "ReplacingMergeTree") {
+			return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
+		}
+
+		// insert into table using the merge strategy
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string) error {
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
 	}
@@ -385,7 +412,7 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", oldName)
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
 	}
@@ -404,10 +431,14 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
 		// capture the full engine of the old distributed table
+		args := []any{c.config.Database, oldName}
+		if c.config.Database == "" {
+			args = []any{nil, oldName}
+		}
 		var engineFull string
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
-			Args:     []any{oldName},
+			Query:    "SELECT engine_full FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+			Args:     args,
 			Priority: 100,
 		})
 		if err != nil {
@@ -456,9 +487,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string) e
 
 func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster string) error {
 	// clickhouse does not support renaming views so we capture the OLD view's select statement and use it to create new view
+	args := []any{c.config.Database, oldName}
+	if c.config.Database == "" {
+		args = []any{nil, oldName}
+	}
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT as_select FROM system.tables WHERE database = currentDatabase() AND name = ?",
-		Args:     []any{oldName},
+		Query:    "SELECT as_select FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
 		Priority: 100,
 	})
 	if err != nil {
@@ -572,8 +607,12 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	}
 	// create the distributed table
 	var distributed strings.Builder
+	database := c.config.Database
+	if c.config.Database == "" {
+		database = "currentDatabase()"
+	}
 	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
-	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLName(c.config.Cluster), database, safelocalTableName(name))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
 	} else {
@@ -637,9 +676,13 @@ func (c *connection) createDictionary(ctx context.Context, name, sql string, out
 
 func (c *connection) columnClause(ctx context.Context, table string) (string, error) {
 	var columnClause strings.Builder
+	args := []any{c.config.Database, table}
+	if c.config.Database == "" {
+		args = []any{nil, table}
+	}
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
-		Args:     []any{table},
+		Query:    "SELECT name, type FROM system.columns WHERE database = coalesce(?, currentDatabase()) AND table = ?",
+		Args:     args,
 		Priority: 100,
 	})
 	if err != nil {
@@ -743,9 +786,13 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 
 func (c *connection) getTableEngine(ctx context.Context, name string) (string, error) {
 	var engine string
+	args := []any{c.config.Database, name}
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	}
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT engine FROM system.tables WHERE database = currentDatabase() AND name = ?",
-		Args:     []any{name},
+		Query:    "SELECT engine FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
 		Priority: 1,
 	})
 	if err != nil {

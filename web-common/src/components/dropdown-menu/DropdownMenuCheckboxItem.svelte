@@ -8,6 +8,7 @@
     // See: https://www.bits-ui.com/docs/components/dropdown-menu#dropdownmenucheckboxitem
     // Converts div to anchor tag
     href?: string;
+    preloadData?: boolean;
     showXForSelected?: boolean;
   };
   // type $$Events = DropdownMenuPrimitive.CheckboxItemEvents;
@@ -16,13 +17,19 @@
   export let checked: $$Props["checked"] = undefined;
   export let checkSize: $$Props["checkSize"] = "h-4 w-4";
   export let href: $$Props["href"] = undefined;
+  export let preloadData: $$Props["preloadData"] = true;
   export let showXForSelected: $$Props["showXForSelected"] = false;
   export { className as class };
 
   const iconColor = "#15141A";
 </script>
 
-<svelte:element this={href ? "a" : "div"} {href} rel="noopener noreferrer">
+<svelte:element
+  this={href ? "a" : "div"}
+  {href}
+  rel="noopener noreferrer"
+  data-sveltekit-preload-data={preloadData ? "hover" : "false"}
+>
   <DropdownMenuPrimitive.CheckboxItem
     bind:checked
     role="menuitem"

@@ -1,7 +1,7 @@
 import { protoBase64, Value } from "@bufbuild/protobuf";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   createInExpression,
@@ -17,6 +17,7 @@ import {
   AD_BIDS_SCHEMA,
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -39,17 +40,19 @@ describe("toProto/fromProto", () => {
   });
 
   it("backwards compatibility for time controls", () => {
-    const metricsExplorer = getDefaultExploreState(
+    const metricsExplorer = getFullInitExploreState(
       AD_BIDS_NAME,
-      AD_BIDS_METRICS_INIT_WITH_TIME,
-      AD_BIDS_EXPLORE_INIT,
-      {
-        timeRangeSummary: {
-          min: TestTimeConstants.LAST_DAY.toISOString(),
-          max: TestTimeConstants.NOW.toISOString(),
-          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        AD_BIDS_EXPLORE_INIT,
+        {
+          timeRangeSummary: {
+            min: TestTimeConstants.LAST_DAY.toISOString(),
+            max: TestTimeConstants.NOW.toISOString(),
+            interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+          },
         },
-      },
+      ),
     );
     metricsExplorer.selectedTimeRange = {
       name: "LAST_SIX_HOURS",
