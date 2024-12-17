@@ -29,14 +29,14 @@
     );
 </script>
 
-<div class="editor flex flex-col h-full">
-  <div class="grow flex bg-white overflow-y-auto">
-    <Editor
-      {fileArtifact}
-      extensions={FileExtensionToEditorExtension[".yaml"]}
-      bind:editor
-      forceDisableAutoSave
-      onSave={handleUpdate}
-    />
-  </div>
-</div>
+<!-- <div class=" bg-red-400 flex flex-col h-full"> -->
+<!-- <div class="grow flex overflow-y-auto bg-red-400 border-b outline w-full"> -->
+<Editor
+  {fileArtifact}
+  extensions={FileExtensionToEditorExtension[".yaml"]}
+  bind:editor
+  forceDisableAutoSave
+  onSave={handleUpdate}
+/>
+<!-- </div> -->
+<!-- </div> -->

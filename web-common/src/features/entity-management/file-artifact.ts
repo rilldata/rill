@@ -35,6 +35,7 @@ import {
 import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+import { AsyncSaveState } from "./async-save-state";
 
 const UNSUPPORTED_EXTENSIONS = [
   // Data formats
@@ -74,6 +75,7 @@ export class FileArtifact {
     this.localContent,
     ($local) => $local !== null,
   );
+  readonly saveState = new AsyncSaveState();
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
   readonly folderName: string;
@@ -142,87 +144,100 @@ export class FileArtifact {
     }
 
     this.updateRemoteContent(blob);
+    return blob;
   };
 
-  private updateRemoteContent = (blob: string) => {
-    const existingRemoteContent = get(this.remoteContent);
-    const remoteContentUpdated = existingRemoteContent !== blob;
-
+  private updateRemoteContent = (newRemoteContent: string) => {
+    const currentRemoteContent = get(this.remoteContent);
     const localContent = get(this.localContent);
+    const remoteContentHasChanged = currentRemoteContent !== newRemoteContent;
 
-    if (localContent && localContent === blob) {
-      this.updateLocalContent(null);
-      this.inConflict.set(false);
-    } else if (localContent && localContent !== blob) {
-      this.inConflict.set(true);
-    }
+    if (!remoteContentHasChanged) return;
 
-    if (remoteContentUpdated) {
-      this.remoteContent.set(blob);
+    this.remoteContent.set(newRemoteContent);
+    this.saveState.resolve();
 
-      for (const callback of this.remoteCallbacks) {
-        callback(blob);
+    if (localContent !== null) {
+      if (localContent === newRemoteContent) {
+        // This is the primary sequence that happens after saving
+        // Local content is not null, user initiates a save, we receive a FILE_WRITE event
+        // After fetching the remote content, it should match the local content
+        // So, we revert our local content store
+        this.revert();
+      } else {
+        // This is the secondary sequence wherein a file is saved in an external editor
+        // We receive a FILE_EVENT_WRITE event and the remote content is different from local content
+        // This can also happen when a file is savedmand then edited
+        // in the application before the event is received
+        // In this case, we ignore updates that happen within 2 seconds of the last save
+        // If we receive an update after 2 seconds, we can "safely" assume
+        // that the user has made conflicting changes externally
+        if (Date.now() - this.saveState.lastSaveTime > 2000) {
+          this.inConflict.set(true);
+        }
       }
     }
+
+    for (const callback of this.remoteCallbacks) {
+      callback(newRemoteContent);
+    }
   };
 
-  updateLocalContent = (content: string | null, alert = false) => {
+  updateLocalContent = (newContent: string | null, alert = false) => {
+    const currentLocalContent = get(this.localContent);
+
+    if (currentLocalContent === newContent) return;
+
+    this.localContent.set(newContent);
+
     const autoSave = get(this.autoSave);
 
-    // if (content === null || !autoSave) {
-    this.localContent.set(content);
-    // }
-
-    if (content === null) {
-      fileArtifacts.unsavedFiles.update((files) => {
-        files.delete(this.path);
-        return files;
-      });
-    } else if (!autoSave) {
-      fileArtifacts.unsavedFiles.update((files) => {
-        files.add(this.path);
-        return files;
-      });
+    if (autoSave && newContent !== null) {
+      this.debounceSave(newContent);
+    } else if (newContent === null) {
+      fileArtifacts.unsavedFiles.delete(this.path);
     } else {
-      this.debounceSave(content);
+      fileArtifacts.unsavedFiles.add(this.path);
     }
 
     if (alert) {
       for (const callback of this.localCallbacks) {
-        callback(content);
+        callback(newContent);
       }
     }
   };
 
   saveLocalContent = async () => {
-    const blob = get(this.localContent);
-    if (blob === null) return;
-
-    await this.saveContent(blob);
+    const newContent = get(this.localContent);
+    if (newContent !== null) {
+      await this.saveContent(newContent);
+    }
   };
 
   saveContent = async (blob: string) => {
     const instanceId = get(runtime).instanceId;
-    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
-      path: this.path,
-    });
 
-    queryClient.setQueryData(key, {
-      blob,
-    });
+    // Optimistically update the query
+    queryClient.setQueryData(
+      getRuntimeServiceGetFileQueryKey(instanceId, {
+        path: this.path,
+      }),
+      {
+        blob,
+      },
+    );
 
     try {
+      const fileSavePromise = this.saveState.initiateSave();
+
       await runtimeServicePutFile(instanceId, {
         path: this.path,
         blob,
-      }).catch(console.error);
+      });
 
-      this.merging.set(false);
-
-      // Optimistically update the remote content
-      // this.remoteContent.set(blob);
-    } catch (e) {
-      console.error(e);
+      await fileSavePromise;
+    } catch {
+      this.saveState.reject(new Error("Unable to save file."));
     }
   };
 
@@ -240,11 +255,11 @@ export class FileArtifact {
     return () => this.localCallbacks.delete(callback);
   };
 
-  revert = () => {
+  revert = (alert = false) => {
     this.merging.set(false);
     this.inConflict.set(false);
 
-    this.updateLocalContent(null, true);
+    this.updateLocalContent(null, alert);
   };
 
   updateResource(resource: V1Resource) {

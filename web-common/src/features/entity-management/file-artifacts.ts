@@ -11,9 +11,29 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
 
+class UnsavedFilesStore {
+  private unsavedFiles = writable(new Set<string>());
+
+  subscribe = this.unsavedFiles.subscribe;
+
+  delete = (filePath: string) => {
+    this.unsavedFiles.update((files) => {
+      files.delete(filePath);
+      return files;
+    });
+  };
+
+  add = (filePath: string) => {
+    this.unsavedFiles.update((files) => {
+      files.add(filePath);
+      return files;
+    });
+  };
+}
+
 export class FileArtifacts {
   private readonly artifacts: Map<string, FileArtifact> = new Map();
-  readonly unsavedFiles = writable(new Set<string>());
+  readonly unsavedFiles = new UnsavedFilesStore();
 
   async init(queryClient: QueryClient, instanceId: string) {
     const resources = await fetchResources(queryClient, instanceId);

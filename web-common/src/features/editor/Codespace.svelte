@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Extension } from "@codemirror/state";
   import { EditorState, Compartment } from "@codemirror/state";
-  import { EditorView } from "@codemirror/view";
+  import { EditorView, ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -17,6 +17,7 @@
   export let editorHasFocus = false;
 
   const extensionCompartment = new Compartment();
+  const editable = new Compartment();
 
   let parent: HTMLElement;
   let unsubscribers: Array<() => void> = [];
@@ -29,6 +30,7 @@
     updateLocalContent,
     onRemoteContentChange,
     onLocalContentChange,
+    saveState: { saving },
   } = fileArtifact;
 
   onMount(() => {
@@ -38,19 +40,17 @@
       mountEditor();
     }
 
-    const unsubscribeRemoteContent = onRemoteContentChange(
-      (newRemoteContent) => {
-        if (editor && !editor.hasFocus) {
-          if (editor.state.doc.toString() === newRemoteContent) return;
+    const unsubRemote = onRemoteContentChange((newRemoteContent) => {
+      if (editor && !editor.hasFocus) {
+        if (editor.state.doc.toString() === newRemoteContent) return;
 
-          if (autoSave) {
-            updateEditorContent(newRemoteContent);
-          }
+        if (autoSave || $localContent === null) {
+          updateEditorContent(newRemoteContent);
         }
-      },
-    );
+      }
+    });
 
-    const unsubscribeLocalContent = onLocalContentChange((content) => {
+    const unsubLocal = onLocalContentChange((content) => {
       if (content === null && $remoteContent !== null) {
         updateEditorContent($remoteContent);
       } else if (
@@ -63,15 +63,11 @@
       }
     });
 
-    const unsubscribeHighlighter = eventBus.on("highlightSelection", (refs) => {
+    const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
       if (editor) underlineSelection(editor, refs);
     });
 
-    unsubscribers.push(
-      unsubscribeRemoteContent,
-      unsubscribeLocalContent,
-      unsubscribeHighlighter,
-    );
+    unsubscribers.push(unsubRemote, unsubLocal, unsubHighlighter);
 
     return () => {
       editor?.destroy();
@@ -79,15 +75,15 @@
     };
   });
 
-  // $: if (editor) updateEditorExtensions(extensions);
+  $: if (editor) updateEditorExtensions(extensions);
   $: if (fileArtifact) editor?.contentDOM.blur();
 
-  // function updateEditorExtensions(newExtensions: Extension[]) {
-  //   editor?.dispatch({
-  //     effects: extensionCompartment.reconfigure(newExtensions),
-  //     scrollIntoView: true,
-  //   });
-  // }
+  function updateEditorExtensions(newExtensions: Extension[]) {
+    editor?.dispatch({
+      effects: extensionCompartment.reconfigure(newExtensions),
+      scrollIntoView: true,
+    });
+  }
 
   function updateEditorContent(newContent: string) {
     const existingSelection = editor?.state.selection.ranges[0];
@@ -115,24 +111,30 @@
   export function mountMergeView() {
     if (!$localContent || !$remoteContent) return;
 
-    const mergeExtensions = [
-      baseExtensions(),
-      ...extensions,
-      EditorView.editable.of(false),
-      EditorState.readOnly.of(true),
-    ];
-
     merging.set(true);
     editor?.destroy();
 
     mergeView = new MergeView({
       a: {
         doc: $localContent,
-        extensions: mergeExtensions,
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+          editable.of([
+            EditorView.editable.of(true),
+            EditorState.readOnly.of(false),
+          ]),
+          EditorView.updateListener.of(listener),
+        ],
       },
       b: {
         doc: $remoteContent,
-        extensions: mergeExtensions,
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+          EditorView.editable.of(false),
+          EditorState.readOnly.of(true),
+        ],
       },
       parent,
     });
@@ -148,26 +150,35 @@
         doc: initialContent,
         extensions: [
           baseExtensions(),
+          editable.of([
+            EditorView.editable.of(true),
+            EditorState.readOnly.of(false),
+          ]),
           extensionCompartment.of([extensions]),
-          EditorView.updateListener.of(
-            ({ docChanged, state: { doc }, view: { hasFocus } }) => {
-              editorHasFocus = hasFocus;
-
-              if (hasFocus && docChanged) {
-                updateLocalContent(doc.toString());
-              }
-            },
-          ),
+          EditorView.updateListener.of(listener),
         ],
       }),
       parent,
     });
   }
+
+  function listener({
+    docChanged,
+    state: { doc },
+    view: { hasFocus },
+  }: ViewUpdate) {
+    editorHasFocus = hasFocus;
+
+    if (hasFocus && docChanged) {
+      if (!autoSave && $saving) return;
+      updateLocalContent(doc.toString());
+    }
+  }
 </script>
 
 <div
   bind:this={parent}
-  class="size-full"
+  class="size-full overflow-y-auto"
   on:click={() => {
     /** give the editor focus no matter where we click */
     if (!editor?.hasFocus) editor?.focus();

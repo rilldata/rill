@@ -16,6 +16,7 @@
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
+  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -29,7 +30,6 @@
   export let onRevert: () => void = () => {};
 
   let codespace: Codespace;
-  // let merging = false;
   let editorHasFocus = false;
 
   $: ({
@@ -40,6 +40,7 @@
     localContent,
     disableAutoSave,
     inConflict,
+    saveState: { saving, error, resolve },
   } = fileArtifact);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
@@ -59,7 +60,8 @@
   }
 
   function revertContent() {
-    revert(); // Revert fileArtifact to remote content
+    revert(true); // Revert fileArtifact to remote content
+    resolve();
     onRevert(); // Call revert callback
   }
 
@@ -74,22 +76,34 @@
   {#if $merging}
     <div class="flex w-full border-b">
       <div class="w-full border-r p-1.5 pl-3 flex justify-between items-center">
-        <h1 class="text-[16px] italic font-semibold text-gray-400">
-          Unsaved Changes
+        <h1 class="text-sm italic font-semibold text-gray-400">
+          Unsaved changes
         </h1>
+
         <Button
           type="subtle"
-          on:click={() => {
-            save();
+          loading={$saving}
+          loadingCopy="Saving"
+          danger={!!$error && !$saving}
+          disabled={$saving || !$hasUnsavedChanges}
+          on:click={async () => {
+            await save();
             codespace.mountEditor();
           }}
         >
-          <Check size="14px" />
-          Save
+          {#if $error}
+            <Alert size="14px" />
+          {/if}
+
+          {#if $error}
+            {$error.message} Try again.
+          {:else}
+            Accept current
+          {/if}
         </Button>
       </div>
       <div class="w-full p-1.5 pl-3 flex justify-between items-center">
-        <h2 class="text-[16px] font-semibold">Remote Content</h2>
+        <h2 class="text-sm font-semibold">Incoming content</h2>
         <Button
           type="primary"
           on:click={() => {
@@ -97,7 +111,7 @@
             revertContent();
           }}
         >
-          Accept
+          Accept incoming
         </Button>
       </div>
     </div>
@@ -123,11 +137,22 @@
           <Tooltip distance={8} activeDelay={300}>
             <Button
               type="subtle"
-              disabled={!$hasUnsavedChanges}
+              loading={$saving}
+              danger={!!$error && !$saving}
+              loadingCopy="Saving"
+              disabled={$saving || !$hasUnsavedChanges}
               on:click={save}
             >
-              <Check size="14px" />
-              Save
+              {#if $error}
+                <Alert size="14px" />
+              {:else}
+                <Check size="14px" />
+              {/if}
+              {#if $error}
+                {$error.message} Try again.
+              {:else}
+                Save
+              {/if}
             </Button>
             <TooltipContent slot="tooltip-content">
               <TooltipShortcutContainer pad={false}>
@@ -141,7 +166,7 @@
 
           <Button
             type="text"
-            disabled={!$hasUnsavedChanges}
+            disabled={!$hasUnsavedChanges || $saving}
             on:click={revertContent}
           >
             <UndoIcon size="14px" />
@@ -167,13 +192,13 @@
   {/if}
 </section>
 
-{#if $inConflict && !$merging && !editorHasFocus}
-  <AlertDialog.Root portal="#workspace-main-container" open>
+{#if $inConflict && !$merging}
+  <AlertDialog.Root open>
     <AlertDialog.Content>
-      <AlertDialog.Title>File update received remotely</AlertDialog.Title>
+      <AlertDialog.Title>File update detected</AlertDialog.Title>
       <AlertDialog.Description>
-        This file has been updated remotely. Resolve conflicts before
-        continuing.
+        This file has been modified by another application. Please resolve
+        conflicts with your unsaved changes before proceeding.
       </AlertDialog.Description>
 
       <AlertDialog.Footer>
