@@ -247,7 +247,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) (insertErr error) {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -269,7 +269,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 
 	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
 			// Execute the pre-init SQL first
 			if opts.BeforeInsert != "" {
 				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
@@ -278,7 +278,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			defer func() {
 				if opts.AfterInsert != "" {
 					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					insertErr = errors.Join(insertErr, err)
+					mutate = errors.Join(mutate, err)
 				}
 			}()
 			// Create a temporary table with the new data
