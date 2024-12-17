@@ -15,6 +15,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
@@ -165,18 +166,22 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		// All themes
 		condition.WriteString(fmt.Sprintf("'{{.self.kind}}'='%s'", runtime.ResourceKindTheme))
 
+		var c *client.Client
+
 		for _, r := range mdl.Resources {
 			condition.WriteString(fmt.Sprintf(" OR ('{{.self.kind}}'=%s AND '{{lower .self.name}}'=%s)", duckdbsql.EscapeStringValue(r.Type), duckdbsql.EscapeStringValue(strings.ToLower(r.Name))))
 
 			// If the magic token's resource is an Explore, we also need to include its underlying metrics view
 			if r.Type == runtime.ResourceKindExplore {
-				client, err := s.admin.OpenRuntimeClient(depl)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+				if c == nil {
+					c, err = s.admin.OpenRuntimeClient(depl)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "could not open runtime client: %s", err.Error())
+					}
+					defer c.Close() // nolint:gocritic // client is created only once
 				}
-				defer client.Close()
 
-				resp, err := client.GetResource(ctx, &runtimev1.GetResourceRequest{
+				resp, err := c.GetResource(ctx, &runtimev1.GetResourceRequest{
 					InstanceId: depl.RuntimeInstanceID,
 					Name: &runtimev1.ResourceName{
 						Kind: r.Type,
