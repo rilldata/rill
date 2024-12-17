@@ -43,10 +43,13 @@ export const PreviousCompleteRangeMap: Partial<
 export function mapTimeRange(
   timeControlState: TimeControlState,
   explore: V1ExploreSpec,
+  exploreState: MetricsExplorerEntity,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
-  const timeRange: V1TimeRange = {};
+  const timeRange: V1TimeRange = {
+    timeZone: exploreState.selectedTimezone,
+  };
   switch (timeControlState.selectedTimeRange.name) {
     case TimeRangePreset.DEFAULT:
       timeRange.isoDuration = explore?.defaultPreset?.timeRange;
