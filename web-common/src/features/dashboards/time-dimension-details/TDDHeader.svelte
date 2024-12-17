@@ -73,13 +73,13 @@
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
       ({
-        name: m.name ?? "",
-        label: m.displayName ?? "",
+        name: m.name || "",
+        label: m.displayName || "",
       }),
     );
 
   $: selectedMeasureLabel =
-    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ||
     expandedMeasureName;
 
   $: excludeMode =

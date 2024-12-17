@@ -11,9 +11,9 @@
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { yamlSchema } from "codemirror-json-schema/yaml";
   import type { JSONSchema7 } from "json-schema";
-  import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { createPlaceholder } from "./create-placeholder";
   import metricsSchema from "./metrics-schema.json";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
 
   export let filePath: string;
   export let metricsViewName: string;
@@ -37,7 +37,7 @@
   $: mainError = errors?.at(0);
 </script>
 
-<MetricsEditorContainer error={mainError}>
+<WorkspaceEditorContainer error={mainError}>
   <Editor
     bind:autoSave
     bind:editor
@@ -74,4 +74,4 @@
       yamlSchema(metricsJsonSchema),
     ]}
   />
-</MetricsEditorContainer>
+</WorkspaceEditorContainer>

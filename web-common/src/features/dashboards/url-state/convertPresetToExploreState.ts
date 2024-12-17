@@ -151,17 +151,27 @@ function fromTimeRangesParams(
       preset.compareTimeRange,
     );
     partialExploreState.showTimeComparison = true;
-    // unset compare dimension
-    partialExploreState.selectedComparisonDimension = "";
+    if (
+      preset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    ) {
+      // unset compare dimension
+      partialExploreState.selectedComparisonDimension = "";
+    }
   }
 
   if (preset.comparisonDimension) {
     if (dimensions.has(preset.comparisonDimension)) {
       partialExploreState.selectedComparisonDimension =
         preset.comparisonDimension;
-      // unset compare time ranges
-      partialExploreState.selectedComparisonTimeRange = undefined;
-      partialExploreState.showTimeComparison = false;
+      if (
+        preset.comparisonMode ===
+        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+      ) {
+        // unset compare time ranges
+        partialExploreState.selectedComparisonTimeRange = undefined;
+        partialExploreState.showTimeComparison = false;
+      }
     } else {
       errors.push(
         getSingleFieldError("compare dimension", preset.comparisonDimension),

@@ -7,99 +7,47 @@ tags:
   - OLAP:DuckDB
 ---
 
-## Create the Explore dashboard
-At this point our metrics view is ready! Let's rename the metrics to `commits___model_metrics.yaml` and select `Create Explore`.
+At this point our metrics view is ready! Let's select `Create Explore Dashboard`. This will automatically populate the explore dashboard to select all the of created metrics and dimension in your metrics view. We can make changes to the view via the YAML or visual dashboard editor.
+
+![img](/img/tutorials/103/Completed-100-dashboard.png)
 
 
-This will create an explore-dashboards folder with a very simple YAML file. Let's go ahead a select preview to see what it looks like. You should see something similar to the below.
+## Making Changes
+### Visual Explore Dashboard
+
+![img](/img/tutorials/103/visual-dashboard-tutorial.png)
+
+On the right panel, you are able to select measures, dimensions, time ranges, and various other components that control the view of your dashboard. In the main area, you will see a preview of what your dashboard will look like. You can also select the code view to make any needed changes and/or set more advanced settings as found in our [explore dashboard YAML reference.](https://docs.rilldata.com/reference/project-files/explore-dashboards)
+
+### YAML
+By default, the page will contain the basics parameters as seen below. You can add more advanced settings as you require for you use case.
+```YAML
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+title: "commits___model_metrics dashboard"
+metrics_view: commits___model_metrics
+
+dimensions: '*'
+measures: '*'
+```
 
 
-![simple](/img/tutorials/103/simple-dashboard.png)
 
+### Explore Dasboard Components
 
-We can definitely do better than that!
-
---- 
-For a quick summary on the different components that we modified, and its respective parts in the dashboard UI.
+For a quick summary on the different components of an explore dashboard, and its respective parts in the dashboard UI.
 
 <img src = '/img/tutorials/103/simple-dashboard.gif' class='rounded-gif' />
 <br />
 
-
-## Adding more Functionality
-
-Let's add further dimensions and measure to the metrics layer and see the changes to the explore dashboard.
-
-### Dimensions
-
-From our dataset, we can add more dimensions to allow more filtering and exploration of the measures we will create.
-
-	Add the following dimensions, with title and description.
-		- author_name
-		- author_timezone
-		- filename
-
-### Measures	
-
-	We can definitely create better aggregations for some more meaningful data based on these commits.
-		- sum(added_lines)
-		- sum(deleted_lines)
+--- 
 
 
-You may need to reference the <a href='https://docs.rilldata.com/reference/project-files/explore-dashboards' target="_blank">metrics view YAML </a> reference guide to figure out the above. Your final output should look something like this! 
-
-![finished](/img/tutorials/103/Completed-100-dashboard.png)
 
 
-<details>
-  <summary> Working Metrics View YAML</summary>
-  ```yaml
-# Metrics View YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics_views
-
-version: 1
-type: metrics_view
-
-table: commits___model
-
-timeseries: author_date # Select an actual timestamp column (if any) from your table
-
-dimensions:
-  - column: author_name
-    name: author_name
-    label: The Author's Name
-    description: The name of the author of the commit
-
-  - column: author_timezone
-    label: "The Author's TZ"
-    description: "The Author's Timezone"
-
-  - column: filename
-    label: "The filename"
-    description: "The name of the modified filename"
-
-measures:
-  - expression: SUM(added_lines)
-    name: added_lines
-    label: Sum of Added lines
-    format_preset: humanize
-    description: The aggregate sum of added_lines column.
-    valid_percent_of_total: true
-
-  - expression: "SUM(deleted_lines)"
-    label: "Sum of deleted lines"
-    description: "The aggregate sum of deleted_lines column."
-
-```
-
-</details>
-
-
-### Completed visual metrics editor
-
-If you decide to build out the metrics view via the UI, it should look something like below!
-
-![img](/img/tutorials/103/visual-metric-editor.png)
 
 
 

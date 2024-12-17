@@ -80,8 +80,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Handle deletion
 	if self.Meta.DeletedOn != nil {
-		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
-		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName), false)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName))
 		return runtime.ReconcileResult{}
 	}
 
@@ -115,7 +115,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	if err != nil {
 		if !src.Spec.StageChanges && src.State.Table != "" {
 			// Remove previously ingested table
-			olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
+			olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
 			src.State.Connector = ""
 			src.State.Table = ""
 			src.State.SpecHash = ""
@@ -170,8 +170,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// If the SinkConnector was changed, drop data in the old connector
 	if src.State.Table != "" && src.State.Connector != src.Spec.SinkConnector {
-		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
-		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(src.State.Table), false)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(src.State.Table))
 	}
 
 	// Prepare for ingestion
@@ -183,7 +183,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Should never happen, but if somehow the staging table was corrupted into a view, drop it
 	if t, ok := olapTableInfo(ctx, r.C, connector, stagingTableName); ok && t.View {
-		olapDropTableIfExists(ctx, r.C, connector, stagingTableName, t.View)
+		olapDropTableIfExists(ctx, r.C, connector, stagingTableName)
 	}
 
 	// Execute ingestion
@@ -226,11 +226,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		src.State.RefreshedOn = timestamppb.Now()
 	} else if src.Spec.StageChanges {
 		// Failed ingestion to staging table
-		olapDropTableIfExists(cleanupCtx, r.C, connector, stagingTableName, false)
+		olapDropTableIfExists(cleanupCtx, r.C, connector, stagingTableName)
 	} else {
 		// Failed ingestion to main table
 		update = true
-		olapDropTableIfExists(cleanupCtx, r.C, connector, tableName, false)
+		olapDropTableIfExists(cleanupCtx, r.C, connector, tableName)
 		src.State.Connector = ""
 		src.State.Table = ""
 		src.State.SpecHash = ""
@@ -308,7 +308,7 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n, false)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
 	}

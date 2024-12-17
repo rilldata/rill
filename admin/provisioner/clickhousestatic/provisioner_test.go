@@ -17,11 +17,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test(t *testing.T) {
+func TestClickHouseStatic(t *testing.T) {
 	// Create a test ClickHouse cluster
 	container, err := testcontainersclickhouse.Run(
 		context.Background(),
-		"clickhouse/clickhouse-server:24.6.2.17",
+		"clickhouse/clickhouse-server:24.11.1.2557",
 		// Add a user config file that enables access management for the "default" user
 		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 			req.Files = append(req.Files, testcontainers.ContainerFile{

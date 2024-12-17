@@ -64,7 +64,7 @@
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">
-          {label}
+          {disabled ? `Add comparison values to use ${label} chart` : label}
         </svelte:fragment>
       </IconButton>
     </div>
