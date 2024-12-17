@@ -80,3 +80,4 @@ sysroot/
 latest.txt
 /web-common/coverage
 
+/e2e-cloud-state

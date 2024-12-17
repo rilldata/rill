@@ -30,8 +30,6 @@ import (
 const (
 	minGoVersion   = "1.23"
 	minNodeVersion = "18"
-	stateDirCloud  = "dev-cloud-state"
-	stateDirLocal  = "dev-project"
 	rillGithubURL  = "https://github.com/rilldata/rill"
 )
 
@@ -233,11 +231,6 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		logInfo.Printf("Reset cloud dependencies\n")
 	}
 
-	err := os.MkdirAll(stateDirCloud, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create state dir %q: %w", stateDirCloud, err)
-	}
-
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -247,7 +240,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	// Validate the .env file is well-formed.
-	err = checkDotenv()
+	err := checkDotenv()
 	if err != nil {
 		return err
 	}
@@ -257,6 +250,13 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
+
+	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	err = os.MkdirAll(stateDir, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create state dir %q: %w", stateDir, err)
+	}
+	logInfo.Printf("State dir set to %s\n", stateDir)
 
 	if services.deps {
 		g.Go(func() error { return s.runDeps(ctx, verbose) })
@@ -384,13 +384,14 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 		}
 	}()
 
-	_ = os.RemoveAll(stateDirCloud)
-	return newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
+	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	_ = os.RemoveAll(stateDir)
+	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
 }
 
 func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose -f %s up\n", composeFile)
+	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s up\n", composeFile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -398,7 +399,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up")
+	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "up")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -643,7 +644,8 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
-	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
+	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	args := []string{"run", "cli/main.go", "start", stateDir, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
 	if verbose {
 		args = append(args, "--verbose")
 	}
@@ -722,7 +724,8 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	outputFile := filepath.Join(stateDirCloud, "stripe-config.toml")
+	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	outputFile := filepath.Join(stateDir, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
 	if apiKey == "" {
