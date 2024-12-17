@@ -67,6 +67,7 @@ export function categorizeBookmarks(
     personal: [],
     shared: [],
   };
+  if (!exploreState) return bookmarks;
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,

@@ -11,6 +11,7 @@ import {
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
@@ -253,7 +254,7 @@ const TestCases: {
       "Time dimensional details with no preset and has time dimensional details in state",
     mutations: [AD_BIDS_OPEN_IMP_TDD, AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
     expectedUrl:
-      "http://localhost/?view=ttd&measure=impressions&chart_type=stacked_bar",
+      "http://localhost/?view=tdd&measure=impressions&chart_type=stacked_bar",
   },
   {
     title: "Time dimensional details with no preset, open and close TDD",
@@ -329,6 +330,7 @@ describe("Human readable URL state variations", () => {
   });
 
   beforeEach(() => {
+    sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
   });
 
@@ -342,9 +344,11 @@ describe("Human readable URL state variations", () => {
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
@@ -388,9 +392,11 @@ describe("Human readable URL state variations", () => {
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
