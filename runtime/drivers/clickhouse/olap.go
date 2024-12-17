@@ -317,7 +317,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		for _, part := range partitions {
 			// alter the main table to replace the partition
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION %s FROM %s", safeSQLName(name), onClusterClause, part, safeSQLName(tempName)),
+				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(name), onClusterClause, safeSQLName(tempName)),
+				Args:     []any{part},
 				Priority: 1,
 			})
 			if err != nil {
