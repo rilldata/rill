@@ -642,8 +642,8 @@ export interface V1RevokeCurrentAuthTokenResponse {
 }
 
 export interface V1ResourceName {
-  Type?: string;
-  Name?: string;
+  type?: string;
+  name?: string;
 }
 
 export interface V1RequestProjectAccessResponse {

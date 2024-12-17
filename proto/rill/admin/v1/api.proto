@@ -1735,8 +1735,8 @@ message IssueMagicAuthTokenRequest {
 }
 
 message ResourceName {
-  string Type = 1;
-  string Name = 2;
+  string type = 1;
+  string name = 2;
 }
 
 message IssueMagicAuthTokenResponse {

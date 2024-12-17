@@ -4906,9 +4906,9 @@ definitions:
   v1ResourceName:
     type: object
     properties:
-      Type:
+      type:
         type: string
-      Name:
+      name:
         type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object

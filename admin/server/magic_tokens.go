@@ -29,8 +29,6 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.display_name", req.DisplayName),
-		attribute.String("args.resource_type", req.ResourceType),
-		attribute.String("args.resource_name", req.ResourceName),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)

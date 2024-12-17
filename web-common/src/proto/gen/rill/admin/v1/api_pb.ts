@@ -7680,14 +7680,14 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
  */
 export class ResourceName extends Message<ResourceName> {
   /**
-   * @generated from field: string Type = 1;
+   * @generated from field: string type = 1;
    */
-  Type = "";
+  type = "";
 
   /**
-   * @generated from field: string Name = 2;
+   * @generated from field: string name = 2;
    */
-  Name = "";
+  name = "";
 
   constructor(data?: PartialMessage<ResourceName>) {
     super();
@@ -7697,8 +7697,8 @@ export class ResourceName extends Message<ResourceName> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ResourceName";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "Type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "Name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResourceName {
@@ -13076,6 +13076,8 @@ export class ReportOptions extends Message<ReportOptions> {
   webOpenState = "";
 
   /**
+   * either canvas or explore should be set
+   *
    * @generated from field: string explore = 16;
    */
   explore = "";
