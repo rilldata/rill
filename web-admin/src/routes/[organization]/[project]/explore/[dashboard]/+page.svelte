@@ -29,10 +29,11 @@
     exploreName,
   } = data);
   $: if (errors?.length) {
+    const _errs = errors;
     setTimeout(() => {
       eventBus.emit("notification", {
         type: "error",
-        message: errors[0].message,
+        message: _errs[0].message,
         options: {
           persisted: true,
         },
