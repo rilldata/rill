@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/rilldata/rill/runtime/testruntime"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -31,6 +30,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 }
@@ -56,6 +56,7 @@ func TestClickhouseCluster(t *testing.T) {
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, olap) })
 	t.Run("InsertTableAsSelect_WithAppend", func(t *testing.T) { testInsertTableAsSelect_WithAppend(t, olap) })
 	t.Run("InsertTableAsSelect_WithMerge", func(t *testing.T) { testInsertTableAsSelect_WithMerge(t, olap) })
+	t.Run("InsertTableAsSelect_WithPartitionOverwrite", func(t *testing.T) { testInsertTableAsSelect_WithPartitionOverwrite(t, olap) })
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, olap) })
 }
 
@@ -188,15 +189,16 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 	opts := &drivers.CreateTableOptions{
 		View: false,
 		TableOpts: map[string]any{
-			"engine":                   "MergeTree",
+			"typs":                     "TABLE",
+			"engine":                   "ReplacingMergeTree",
 			"table":                    "tbl",
 			"distributed.sharding_key": "rand()",
 			"incremental_strategy":     drivers.IncrementalStrategyMerge,
-			"order_by":                 "value",
-			"primary_key":              "value",
+			"order_by":                 "id",
 		},
 	}
-	err := olap.CreateTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
+
+	err := olap.CreateTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'insert' AS value FROM generate_series(0, 4)", opts)
 	require.NoError(t, err)
 
 	insertOpts := &drivers.InsertTableOptions{
@@ -205,9 +207,52 @@ func testInsertTableAsSelect_WithMerge(t *testing.T, olap drivers.OLAPStore) {
 		Strategy:  drivers.IncrementalStrategyMerge,
 		UniqueKey: []string{"id"},
 	}
-	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "not supported")
+	err = olap.InsertTableAsSelect(context.Background(), "merge_tbl", "SELECT generate_series AS id, 'merge' AS value FROM generate_series(2, 5)", insertOpts)
+	require.NoError(t, err)
+
+	var result []struct {
+		ID    int
+		Value string
+	}
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT id, value FROM merge_tbl ORDER BY id"})
+	require.NoError(t, err)
+
+	for res.Next() {
+		var r struct {
+			ID    int
+			Value string
+		}
+		require.NoError(t, res.Scan(&r.ID, &r.Value))
+		result = append(result, r)
+	}
+
+	expected := map[int]string{
+		0: "insert",
+		1: "insert",
+		2: "merge",
+		3: "merge",
+		4: "merge",
+	}
+
+	// Convert the result set to a map to represent the set
+	resultSet := make(map[int]string)
+	for _, r := range result {
+		if v, ok := resultSet[r.ID]; !ok {
+			resultSet[r.ID] = r.Value
+		} else {
+			if v == "merge" {
+				resultSet[r.ID] = v
+			}
+		}
+
+	}
+
+	// Check if the expected values are present in the result set
+	for id, expected := range expected {
+		actual, exists := resultSet[id]
+		require.True(t, exists, "Expected ID %d to be present in the result set", id)
+		require.Equal(t, expected, actual, "Expected value for ID %d to be %s, but got %s", id, expected, actual)
 	}
 }
 
@@ -228,10 +273,9 @@ func testInsertTableAsSelect_WithPartitionOverwrite(t *testing.T, olap drivers.O
 	require.NoError(t, err)
 
 	insertOpts := &drivers.InsertTableOptions{
-		ByName:    false,
-		InPlace:   true,
-		Strategy:  drivers.IncrementalStrategyPartitionOverwrite,
-		UniqueKey: []string{"id"},
+		ByName:   false,
+		InPlace:  true,
+		Strategy: drivers.IncrementalStrategyPartitionOverwrite,
 	}
 	err = olap.InsertTableAsSelect(context.Background(), "replace_tbl", "SELECT generate_series AS id, 'replace' AS value FROM generate_series(2, 5)", insertOpts)
 	require.NoError(t, err)
