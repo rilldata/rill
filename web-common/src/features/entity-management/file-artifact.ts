@@ -143,6 +143,12 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
 
+    console.log({
+      remoteContentHasChanged,
+      currentRemoteContent,
+      fetchedContent,
+    });
+
     if (remoteContentHasChanged) {
       this.remoteContent.set(fetchedContent);
 
@@ -245,7 +251,7 @@ export class FileArtifact {
   };
 
   revertChanges = () => {
-    this.updateEditorContent(get(this.remoteContent) ?? "");
+    this.updateEditorContent(get(this.remoteContent) ?? "", false, false);
     this.saveState.untouch(this.path);
     this.resetConflictState();
   };
