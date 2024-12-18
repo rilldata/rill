@@ -45,12 +45,10 @@ jobs:
       - name: Evaluate e2e tests matrix
         id: matrix
         run: |
-          echo "::set-output name=matrix::$(jq -n '{
-            include: [
-              {"name": "admin"} | select(env.FILTER_ADMIN == "true" and env.FILTER_COMMON == "true"),
-              {"name": "local"} | select(env.FILTER_LOCAL == "true" and env.FILTER_COMMON == "true")
-            ]
-          }')"
+          echo "name=$(jq -n '[
+              "admin" | select(env.FILTER_ADMIN == "true" or env.FILTER_COMMON == "true"),
+              "local" | select(env.FILTER_LOCAL == "true" or env.FILTER_COMMON == "true")
+            ]')" >> "$GITHUB_OUTPUT"
         env:
           FILTER_ADMIN: ${{ steps.filter.outputs.admin }}
           FILTER_COMMON: ${{ steps.filter.outputs.common }}
@@ -59,7 +57,8 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
+      matrix:
+        name: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
