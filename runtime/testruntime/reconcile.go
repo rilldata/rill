@@ -193,11 +193,6 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	case runtime.ResourceKindConnector:
 		state := b.GetConnector().State
 		state.SpecHash = ""
-	case runtime.ResourceKindMetricsView:
-		state := b.GetMetricsView().State
-		if state.ValidSpec != nil {
-			state.ValidSpec.Cache = nil
-		}
 	}
 
 	// Hack to only compare the Resource field (not Meta)

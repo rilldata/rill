@@ -26,6 +26,7 @@ type Executor struct {
 	rt          *runtime.Runtime
 	instanceID  string
 	metricsView *runtimev1.MetricsViewSpec
+	streaming   bool
 	security    *runtime.ResolvedSecurity
 	priority    int
 
@@ -37,7 +38,7 @@ type Executor struct {
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -52,6 +53,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 		rt:          rt,
 		instanceID:  instanceID,
 		metricsView: mv,
+		streaming:   streaming,
 		security:    sec,
 		priority:    priority,
 		olap:        olap,
@@ -65,9 +67,45 @@ func (e *Executor) Close() {
 	e.olapRelease()
 }
 
-// Cacheable returns whether the result of running the given query is cacheable.
-func (e *Executor) Cacheable(qry *Query) bool {
-	return *e.metricsView.Cache.Enabled
+// CacheKey returns a cache key based on the executor's metrics view's cache key configuration.
+// If ok is false, caching is disabled for the metrics view.
+func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	spec := e.metricsView
+	// Cache is disabled for metrics views based on external table
+	if (spec.CacheEnabled != nil && !*spec.CacheEnabled) || (spec.CacheEnabled == nil && e.streaming) {
+		return nil, false, nil
+	}
+
+	if spec.CacheKeySql == "" {
+		if !e.streaming {
+			// for metrics views on rill managed tables no cache key specific to the metrics view is required
+			return []byte(""), true, nil
+		} // watermark is the default cache key for streaming metrics views
+		watermark, err := e.loadWatermark(ctx, nil)
+		if err != nil {
+			return nil, false, err
+		}
+		return []byte(watermark.Format(time.RFC3339)), true, nil
+	}
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:    spec.CacheKeySql,
+		Priority: e.priority,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	defer res.Close()
+	var key string
+	for res.Next() {
+		if err := res.Scan(&key); err != nil {
+			return nil, false, err
+		}
+	}
+	if res.Err() != nil {
+		return nil, false, err
+	}
+	return []byte(key), true, nil
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.

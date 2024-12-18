@@ -94,8 +94,11 @@ func (r *sqlResolver) Cacheable() bool {
 	return false
 }
 
-func (r *sqlResolver) Key() string {
-	return r.sql
+func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		return []byte(r.sql), len(r.refs) != 0, nil
+	}
+	return nil, false, nil
 }
 
 func (r *sqlResolver) Refs() []*runtimev1.ResourceName {

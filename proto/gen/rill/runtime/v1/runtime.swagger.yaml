@@ -2912,17 +2912,6 @@ definitions:
           $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
         description: Available comparison offsets for this time range.
     description: 'Deprecated: Now defined in the Explore resource.'
-  MetricsViewSpecCache:
-    type: object
-    properties:
-      enabled:
-        type: boolean
-      keySql:
-        type: string
-      keyTtlSeconds:
-        type: string
-        format: int64
-    description: Cache controls for the metrics view.
   MetricsViewSpecComparisonMode:
     type: string
     enum:
@@ -5165,8 +5154,14 @@ definitions:
         description: |-
           Available time zones list preferred time zones using IANA location identifiers.
           Deprecated: Now defined in the Explore resource.
-      cache:
-        $ref: '#/definitions/MetricsViewSpecCache'
+      cacheEnabled:
+        type: boolean
+        description: Cache controls for the metrics view.
+      cacheKeySql:
+        type: string
+      cacheKeyTtlSeconds:
+        type: string
+        format: int64
   v1MetricsViewState:
     type: object
     properties:

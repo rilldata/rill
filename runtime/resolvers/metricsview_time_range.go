@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
-	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -99,16 +97,10 @@ func (r *metricsViewTimeRangeResolver) Close() error {
 	return nil
 }
 
-func (r *metricsViewTimeRangeResolver) Cacheable() bool {
-	return *r.mv.Cache.Enabled
-}
-
-func (r *metricsViewTimeRangeResolver) Key() string {
-	hash, err := hashstructure.Hash(r.mvName, hashstructure.FormatV2, nil)
-	if err != nil {
-		panic(err)
-	}
-	return strconv.FormatUint(hash, 16)
+func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	// todo : fix the implementation to use executor
+	// this resolver is only used in health check so okay to not cache for now
+	return nil, false, nil
 }
 
 func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {

@@ -70,7 +70,7 @@ type MetricsViewYAML struct {
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
 	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
-	Cache               *struct {
+	Cache               struct {
 		Enabled *bool  `yaml:"enabled"`
 		KeySQL  string `yaml:"key_sql"`
 		KeyTTL  string `yaml:"key_ttl"`
@@ -784,7 +784,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	var cacheTTLDuration time.Duration
-	if tmp.Cache != nil && tmp.Cache.KeyTTL != "" {
+	if tmp.Cache.KeyTTL != "" {
 		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
 		if err != nil {
 			return fmt.Errorf(`invalid "cache.key_ttl": %w`, err)
@@ -833,16 +833,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Measures = measures
 
 	spec.SecurityRules = securityRules
-
-	if tmp.Cache != nil {
-		spec.Cache = &runtimev1.MetricsViewSpec_Cache{
-			Enabled: tmp.Cache.Enabled,
-			KeySql:  tmp.Cache.KeySQL,
-		}
-		if cacheTTLDuration != 0 {
-			spec.Cache.KeyTtlSeconds = int64(cacheTTLDuration.Seconds())
-		}
-	}
+	spec.CacheEnabled = tmp.Cache.Enabled
+	spec.CacheKeySql = tmp.Cache.KeySQL
+	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 
 	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
 	if node.Version > 0 {

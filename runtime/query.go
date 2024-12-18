@@ -80,13 +80,11 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
 		if mv := res.GetMetricsView(); mv != nil {
-			if !*mv.State.ValidSpec.Cache.Enabled {
-				// can't cache if the metrics view is not cacheable
-				return query.Resolve(ctx, r, instanceID, priority)
-			}
 			cacheKey, err := r.metricsViewCacheKey(ctx, instanceID, res.Meta.Name.Name, priority)
 			if err != nil {
-				return err
+				// skip caching
+				// the cache_key_resolver should ideally only return an error if caching is disabled or context is cancelled
+				return query.Resolve(ctx, r, instanceID, priority)
 			}
 			key = key + ":" + string(cacheKey)
 		}

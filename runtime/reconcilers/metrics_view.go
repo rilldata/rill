@@ -4,13 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func init() {
@@ -82,6 +79,14 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
+	// Find out if the metrics view has a ref to a source or model in the same project.
+	hasInternalRef := false
+	for _, ref := range self.Meta.Refs {
+		if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
+			hasInternalRef = true
+		}
+	}
+
 	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
 	// We don't do that here because none of the operations below are particularly expensive.
 	// So it doesn't really matter if they run a bit more often than necessary ¯\_(ツ)_/¯.
@@ -89,7 +94,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	e, err := metricsview.NewExecutor(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, runtime.ResolvedSecurityOpen, 0)
+	e, err := metricsview.NewExecutor(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, !hasInternalRef, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
@@ -110,29 +115,8 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// Set the "streaming" state (see docstring in the proto for details).
 	mv.State.Streaming = false
 	if validateErr == nil {
-		// Find out if the metrics view has a ref to a source or model in the same project.
-		hasInternalRef := false
-		for _, ref := range self.Meta.Refs {
-			if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
-				hasInternalRef = true
-			}
-		}
-
-		// If not, we assume the metrics view is based on an externally managed table and set the streaming state to true.
+		// If no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 		mv.State.Streaming = !hasInternalRef
-	}
-
-	// set cache controls
-	olap, release, err := r.C.AcquireOLAP(ctx, mv.Spec.Connector)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to get OLAP: %w", err)}
-	}
-	defer release()
-
-	validSpec := mv.State.ValidSpec
-	if validSpec != nil && validSpec.Cache != nil && validSpec.Cache.Enabled != nil && *validSpec.Cache.Enabled &&
-		mv.State.Streaming && validSpec.Cache.KeySql == "" && watermarkForMetricsView(validSpec) == "" {
-		return runtime.ReconcileResult{Err: fmt.Errorf("cache enabled for streaming metrics view %q but no `watermark` or `key_sql` provided", self.Meta.Name)}
 	}
 
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
@@ -140,51 +124,6 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	// Override the cache control with our calculated cache control
-	if validSpec != nil {
-		validSpec.Cache = metricsViewCacheControl(validSpec, mv.State.Streaming, self.Meta.StateUpdatedOn, olap.Dialect())
-	}
 
 	return runtime.ReconcileResult{Err: validateErr}
-}
-
-func metricsViewCacheControl(spec *runtimev1.MetricsViewSpec, streaming bool, updatedOn *timestamppb.Timestamp, dialect drivers.Dialect) *runtimev1.MetricsViewSpec_Cache {
-	var enabled *bool
-	if spec.Cache != nil && spec.Cache.Enabled != nil {
-		enabled = spec.Cache.Enabled
-	} else {
-		enabled = boolPtr(!streaming)
-	}
-	cache := &runtimev1.MetricsViewSpec_Cache{
-		Enabled: enabled,
-	}
-	if spec.Cache != nil && spec.Cache.KeyTtlSeconds != 0 {
-		cache.KeyTtlSeconds = spec.Cache.KeyTtlSeconds
-	} else if streaming {
-		cache.KeyTtlSeconds = 60
-	}
-
-	if spec.Cache != nil && spec.Cache.KeySql != "" {
-		cache.KeySql = spec.Cache.KeySql
-	} else {
-		if streaming {
-			cache.KeySql = fmt.Sprintf("SELECT %s FROM %s", watermarkForMetricsView(spec), dialect.EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
-		} else {
-			cache.KeySql = "SELECT " + fmt.Sprintf("'%d:%d'", updatedOn.GetSeconds(), updatedOn.GetNanos()/int32(time.Millisecond))
-		}
-	}
-	return cache
-}
-
-func watermarkForMetricsView(spec *runtimev1.MetricsViewSpec) string {
-	if spec.WatermarkExpression != "" {
-		return spec.WatermarkExpression
-	} else if spec.TimeDimension != "" {
-		return fmt.Sprintf("MAX(%s)", spec.TimeDimension)
-	}
-	return ""
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

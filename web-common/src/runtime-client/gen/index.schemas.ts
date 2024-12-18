@@ -864,13 +864,6 @@ If it resolves to false, the other fields are not set. */
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -897,6 +890,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1339,7 +1339,10 @@ Deprecated: Now defined in the Explore resource. */
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
   availableTimeZones?: string[];
-  cache?: MetricsViewSpecCache;
+  /** Cache controls for the metrics view. */
+  cacheEnabled?: boolean;
+  cacheKeySql?: string;
+  cacheKeyTtlSeconds?: string;
 }
 
 export interface V1MetricsViewState {
@@ -2644,15 +2647,6 @@ export const MetricsViewSpecComparisonMode = {
   COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
   COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
 } as const;
-
-/**
- * Cache controls for the metrics view.
- */
-export interface MetricsViewSpecCache {
-  enabled?: boolean;
-  keySql?: string;
-  keyTtlSeconds?: string;
-}
 
 /**
  * Deprecated: Now defined in the Explore resource.
