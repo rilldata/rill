@@ -26,13 +26,13 @@ export const test = base.extend<MyFixtures>({
     await cliLogout();
   },
 
-  organization: async ({ cli }, use) => {
+  organization: async ({ cli: _ }, use) => {
     await orgCreate();
     await use();
     await orgDelete();
   },
 
-  project: async ({ organization, page }, use) => {
+  project: async ({ organization: _, page }, use) => {
     await projectDeploy(page);
     await use();
     await projectDelete();
