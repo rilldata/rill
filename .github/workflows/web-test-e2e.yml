@@ -47,8 +47,8 @@ jobs:
         run: |
           echo "::set-output name=matrix::$(jq -n '{
             include: [
-              {"name": "admin"} | select(env.FILTER_ADMIN == "true" && env.FILTER_COMMON == "true"),
-              {"name": "local"} | select(env.FILTER_LOCAL == "true" && env.FILTER_COMMON == "true")
+              {"name": "admin"} | select(env.FILTER_ADMIN == "true" and env.FILTER_COMMON == "true"),
+              {"name": "local"} | select(env.FILTER_LOCAL == "true" and env.FILTER_COMMON == "true")
             ]
           }')"
         env:
