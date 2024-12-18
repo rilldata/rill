@@ -70,6 +70,9 @@ jobs:
       - name: Build and embed static UI
         run: PLAYWRIGHT_TEST=true make cli
 
+      - name: Add CLI binary to PATH
+        run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+
       - name: Install browser for UI tests
         run: npx playwright install
 
