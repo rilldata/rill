@@ -85,7 +85,11 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
-	// A list of mock users to test against dashboard security policies
+	// Paths to ignore when watching for changes.
+	// This is ignored in this parser because it's consumed directly by the repo driver.
+	IgnorePaths []string `yaml:"ignore_paths"`
+	// A list of mock users to test against dashboard security policies.
+	// This is ignored in this parser because it's consumed directly by the local application.
 	MockUsers []struct {
 		Email  string   `yaml:"email"`
 		Name   string   `yaml:"name"`
