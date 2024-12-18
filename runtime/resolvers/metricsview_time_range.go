@@ -98,9 +98,7 @@ func (r *metricsViewTimeRangeResolver) Close() error {
 }
 
 func (r *metricsViewTimeRangeResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	// todo : fix the implementation to use executor
-	// this resolver is only used in health check so okay to not cache for now
-	return nil, false, nil
+	return cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.mvName, r.args.Priority)
 }
 
 func (r *metricsViewTimeRangeResolver) Refs() []*runtimev1.ResourceName {
