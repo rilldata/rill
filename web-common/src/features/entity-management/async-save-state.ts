@@ -1,4 +1,5 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
+import { fileArtifacts } from "./file-artifacts";
 
 // This class creates a store that manages the state
 // of an async, multi-step save operation.
@@ -21,7 +22,25 @@ export class AsyncSaveState {
   private asyncSavingStore = writable(false);
   private errorStore = writable<null | Error>(null);
   private promise: ReturnType<typeof this.createDeferred> | undefined;
-  private timeoutId: ReturnType<typeof setTimeout> | undefined;
+  private touchedStore = writable(false);
+
+  touched = {
+    subscribe: this.touchedStore.subscribe,
+  };
+
+  touch = (path: string) => {
+    const touched = get(this.touched);
+    if (touched) return;
+    this.touchedStore.set(true);
+    fileArtifacts.unsavedFiles.add(path);
+  };
+
+  untouch = (path: string) => {
+    const touched = get(this.touched);
+    if (!touched) return;
+    this.touchedStore.set(false);
+    fileArtifacts.unsavedFiles.delete(path);
+  };
 
   saving = {
     subscribe: this.asyncSavingStore.subscribe,
@@ -43,7 +62,6 @@ export class AsyncSaveState {
 
   resolve = () => {
     this.promise?.resolve();
-    clearTimeout(this.timeoutId);
 
     setTimeout(
       () => {
@@ -52,12 +70,16 @@ export class AsyncSaveState {
       },
       Math.max(0, MIN_SAVE_TIME - (Date.now() - this.lastSaveTime)),
     );
+
+    this.promise = undefined;
   };
 
   reject = (e: Error) => {
     this.errorStore.set(e);
     this.asyncSavingStore.set(false);
     this.promise?.reject(e);
+
+    this.promise = undefined;
   };
 
   private createDeferred<T>(): {
@@ -76,6 +98,12 @@ export class AsyncSaveState {
     const timeoutId = setTimeout(() => {
       reject(new Error("File save timed out."));
     }, REJECTION_TIMEOUT);
+
+    const originalReject = reject;
+    reject = (reason?: Error) => {
+      clearTimeout(timeoutId);
+      originalReject(reason);
+    };
 
     const originalResolve = resolve;
     resolve = (value?: T | PromiseLike<T>) => {

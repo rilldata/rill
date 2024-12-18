@@ -22,7 +22,6 @@
   export let extensions: Extension[] = [];
   export let autoSave = true;
   export let editor: EditorView;
-  export let forceLocalUpdates = false;
   export let forceDisableAutoSave = false;
   export let showSaveBar = true;
   export let refetchOnWindowFocus = true;
@@ -34,9 +33,9 @@
 
   $: ({
     saveLocalContent,
-    revert,
+    revertChanges,
     merging,
-    localContent,
+    editorContent,
     disableAutoSave,
     inConflict,
     saveState: { saving, error, resolve },
@@ -56,14 +55,14 @@
   }
 
   async function save() {
-    const local = $localContent;
+    const local = $editorContent;
     if (local === null) return;
     onSave(local);
     await saveLocalContent();
   }
 
   function revertContent() {
-    revert(true); // Revert fileArtifact to remote content
+    revertChanges(); // Revert fileArtifact to remote content
     resolve();
     onRevert(); // Call revert callback
   }
@@ -123,7 +122,6 @@
     {#key fileArtifact}
       <Codespace
         {extensions}
-        {forceLocalUpdates}
         {fileArtifact}
         autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor

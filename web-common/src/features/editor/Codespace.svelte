@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Extension } from "@codemirror/state";
   import { EditorState, Compartment } from "@codemirror/state";
-  import { EditorView, ViewUpdate } from "@codemirror/view";
+  import { EditorView, type ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
@@ -11,27 +11,27 @@
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
-  export let autoSave: boolean = true;
-  export let forceLocalUpdates: boolean = false;
   export let editor: EditorView | null = null;
   export let editorHasFocus = false;
+  export let autoSave = true;
 
   const extensionCompartment = new Compartment();
   const editable = new Compartment();
+
+  const {
+    editorContent,
+    remoteContent,
+    merging,
+    updateEditorContent,
+    onEditorContentChange,
+  } = fileArtifact;
 
   let parent: HTMLElement;
   let unsubscribers: Array<() => void> = [];
   let mergeView: MergeView | null = null;
 
-  const {
-    remoteContent,
-    localContent,
-    merging,
-    updateLocalContent,
-    onRemoteContentChange,
-    onLocalContentChange,
-    saveState: { saving },
-  } = fileArtifact;
+  $: if (editor) updateEditorExtensions(extensions);
+  $: if (fileArtifact) editor?.contentDOM.blur();
 
   onMount(() => {
     if ($merging) {
@@ -40,34 +40,13 @@
       mountEditor();
     }
 
-    const unsubRemote = onRemoteContentChange((newRemoteContent) => {
-      if (editor && !editor.hasFocus) {
-        if (editor.state.doc.toString() === newRemoteContent) return;
-
-        if (autoSave || $localContent === null) {
-          updateEditorContent(newRemoteContent);
-        }
-      }
-    });
-
-    const unsubLocal = onLocalContentChange((content) => {
-      if (content === null && $remoteContent !== null) {
-        updateEditorContent($remoteContent);
-      } else if (
-        forceLocalUpdates &&
-        content !== null &&
-        editor &&
-        !editor.hasFocus
-      ) {
-        updateEditorContent(content);
-      }
-    });
+    const unsubLocal = onEditorContentChange(dispatchEditorChange);
 
     const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
       if (editor) underlineSelection(editor, refs);
     });
 
-    unsubscribers.push(unsubRemote, unsubLocal, unsubHighlighter);
+    unsubscribers.push(unsubLocal, unsubHighlighter);
 
     return () => {
       editor?.destroy();
@@ -75,8 +54,52 @@
     };
   });
 
-  $: if (editor) updateEditorExtensions(extensions);
-  $: if (fileArtifact) editor?.contentDOM.blur();
+  export function mountMergeView() {
+    merging.set(true);
+    editor?.destroy();
+
+    mergeView = new MergeView({
+      a: {
+        doc: $editorContent ?? "",
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+
+          EditorView.updateListener.of(listener),
+        ],
+      },
+      b: {
+        doc: $remoteContent ?? "",
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+          EditorView.editable.of(false),
+          EditorState.readOnly.of(true),
+        ],
+      },
+      parent,
+    });
+  }
+
+  export function mountEditor() {
+    mergeView?.destroy();
+
+    editor = new EditorView({
+      state: EditorState.create({
+        doc: $editorContent ?? "",
+        extensions: [
+          baseExtensions(),
+          editable.of([
+            EditorView.editable.of(true),
+            EditorState.readOnly.of(false),
+          ]),
+          extensionCompartment.of([extensions]),
+          EditorView.updateListener.of(listener),
+        ],
+      }),
+      parent,
+    });
+  }
 
   function updateEditorExtensions(newExtensions: Extension[]) {
     editor?.dispatch({
@@ -85,7 +108,7 @@
     });
   }
 
-  function updateEditorContent(newContent: string) {
+  function dispatchEditorChange(newContent: string) {
     const existingSelection = editor?.state.selection.ranges[0];
 
     editor?.dispatch({
@@ -108,60 +131,6 @@
     });
   }
 
-  export function mountMergeView() {
-    if (!$localContent || !$remoteContent) return;
-
-    merging.set(true);
-    editor?.destroy();
-
-    mergeView = new MergeView({
-      a: {
-        doc: $localContent,
-        extensions: [
-          baseExtensions(),
-          ...extensions,
-          editable.of([
-            EditorView.editable.of(true),
-            EditorState.readOnly.of(false),
-          ]),
-          EditorView.updateListener.of(listener),
-        ],
-      },
-      b: {
-        doc: $remoteContent,
-        extensions: [
-          baseExtensions(),
-          ...extensions,
-          EditorView.editable.of(false),
-          EditorState.readOnly.of(true),
-        ],
-      },
-      parent,
-    });
-  }
-
-  export function mountEditor() {
-    mergeView?.destroy();
-
-    const initialContent = $localContent ?? $remoteContent ?? "";
-
-    editor = new EditorView({
-      state: EditorState.create({
-        doc: initialContent,
-        extensions: [
-          baseExtensions(),
-          editable.of([
-            EditorView.editable.of(true),
-            EditorState.readOnly.of(false),
-          ]),
-          extensionCompartment.of([extensions]),
-          EditorView.updateListener.of(listener),
-        ],
-      }),
-      parent,
-    });
-  }
-
   function listener({
     docChanged,
     state: { doc },
@@ -170,8 +139,7 @@
     editorHasFocus = hasFocus;
 
     if (hasFocus && docChanged) {
-      if (!autoSave && $saving) return;
-      updateLocalContent(doc.toString());
+      updateEditorContent(doc.toString(), true, autoSave);
     }
   }
 </script>
@@ -198,6 +166,10 @@
 
   :global(.cm-editor) {
     padding-top: 2px;
+  }
+
+  :global(.cm-mergeViewEditor) {
+    @apply overflow-y-auto;
   }
   :global(.cm-mergeViewEditors) {
     @apply h-full;

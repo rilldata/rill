@@ -17,10 +17,12 @@ class UnsavedFilesStore {
   subscribe = this.unsavedFiles.subscribe;
 
   delete = (filePath: string) => {
+    let deleted = false;
     this.unsavedFiles.update((files) => {
-      files.delete(filePath);
+      deleted = files.delete(filePath);
       return files;
     });
+    return deleted;
   };
 
   add = (filePath: string) => {

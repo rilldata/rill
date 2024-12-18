@@ -32,7 +32,7 @@ import {
   FILE_SAVE_DEBOUNCE_TIME,
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
-import { fileArtifacts } from "./file-artifacts";
+// import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
@@ -60,6 +60,8 @@ const UNSUPPORTED_EXTENSIONS = [
   ".pptx",
 ];
 
+const EVENT_IGNORE_BUFFER = 1500;
+
 export class FileArtifact {
   readonly path: string;
   readonly resourceName = writable<V1ResourceName | undefined>(undefined);
@@ -68,19 +70,15 @@ export class FileArtifact {
   );
   readonly reconciling = writable(false);
   readonly merging = writable(false);
-  readonly localContent: Writable<string | null> = writable(null);
+  readonly editorContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
   readonly inConflict = writable(false);
-  readonly hasUnsavedChanges = derived(
-    this.localContent,
-    ($local) => $local !== null,
-  );
   readonly saveState = new AsyncSaveState();
+  readonly hasUnsavedChanges = this.saveState.touched;
   readonly saveEnabled = derived(
     [this.saveState.saving, this.hasUnsavedChanges],
-    ([saving, hasUnsavedChanges]) => !saving && hasUnsavedChanges,
+    ([saving, touched]) => !saving && touched,
   );
-
   readonly fileExtension: string;
   readonly fileTypeUnsupported: boolean;
   readonly folderName: string;
@@ -88,8 +86,7 @@ export class FileArtifact {
   readonly disableAutoSave: boolean;
   readonly autoSave: Writable<boolean>;
 
-  private remoteCallbacks = new Set<(content: string) => void>();
-  private localCallbacks = new Set<(content: string | null) => void>();
+  private editorCallback: (content: string) => void = () => {};
 
   // Last time the state of the resource `kind/name` was updated.
   // This is updated in watch-resources and is used there to avoid
@@ -117,12 +114,6 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
-
-    this.onRemoteContentChange((content) => {
-      const inferred = inferResourceKind(filePath, content);
-
-      if (inferred) this.inferredResourceKind.set(inferred);
-    });
   }
 
   fetchContent = async (invalidate = false) => {
@@ -138,86 +129,81 @@ export class FileArtifact {
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
     > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
 
-    const { blob } = await queryClient.fetchQuery({
+    const { blob: fetchedContent } = await queryClient.fetchQuery({
       queryKey,
       queryFn,
       staleTime: Infinity,
     });
 
-    if (blob === undefined) {
+    if (fetchedContent === undefined) {
       throw new Error("Content undefined");
     }
 
-    this.updateRemoteContent(blob);
-    return blob;
-  };
-
-  private updateRemoteContent = (newRemoteContent: string) => {
     const currentRemoteContent = get(this.remoteContent);
-    const localContent = get(this.localContent);
-    const remoteContentHasChanged = currentRemoteContent !== newRemoteContent;
+    const editorContent = get(this.editorContent);
 
-    if (!remoteContentHasChanged) return;
+    const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
 
-    this.remoteContent.set(newRemoteContent);
-    this.saveState.resolve();
+    if (remoteContentHasChanged) {
+      this.remoteContent.set(fetchedContent);
 
-    if (localContent !== null) {
-      if (localContent === newRemoteContent) {
+      const inferred = inferResourceKind(this.path, fetchedContent);
+
+      if (inferred) this.inferredResourceKind.set(inferred);
+
+      this.saveState.resolve();
+
+      if (editorContent === fetchedContent) {
         // This is the primary sequence that happens after saving
         // Local content is not null, user initiates a save, we receive a FILE_WRITE event
         // After fetching the remote content, it should match the local content
         // So, we revert our local content store
-        this.revert();
-      } else {
+        this.resetConflictState();
+        this.saveState.untouch(this.path);
+      } else if (editorContent !== null) {
         // This is the secondary sequence wherein a file is saved in an external editor
         // We receive a FILE_EVENT_WRITE event and the remote content is different from local content
         // This can also happen when a file is savedmand then edited
         // in the application before the event is received
         // In this case, we ignore updates that happen within 2 seconds of the last save
-        // If we receive an update after 2 seconds, we can "safely" assume
+        // If we receive an update after 1.5 seconds, we can "safely" assume
         // that the user has made conflicting changes externally
-        if (Date.now() - this.saveState.lastSaveTime > 2000) {
+        if (Date.now() - this.saveState.lastSaveTime > EVENT_IGNORE_BUFFER) {
           this.inConflict.set(true);
         }
+      } else {
+        this.updateEditorContent(fetchedContent, false, false, true);
       }
     }
 
-    for (const callback of this.remoteCallbacks) {
-      callback(newRemoteContent);
-    }
+    return fetchedContent;
   };
 
-  updateLocalContent = (
-    newContent: string | null,
-    alert = false,
+  updateEditorContent = (
+    newContent: string,
+    fromEditor = false,
     autoSave = get(this.autoSave),
+    firstLoad = false,
   ) => {
-    const currentLocalContent = get(this.localContent);
+    this.editorContent.set(newContent);
 
-    if (currentLocalContent === newContent) return;
+    if (!firstLoad) {
+      this.saveState.touch(this.path);
+    }
 
-    this.localContent.set(newContent);
-
-    if (autoSave && newContent !== null) {
+    if (autoSave) {
       this.debounceSave(newContent);
-    } else if (newContent === null) {
-      fileArtifacts.unsavedFiles.delete(this.path);
-    } else {
-      fileArtifacts.unsavedFiles.add(this.path);
     }
 
-    if (alert) {
-      for (const callback of this.localCallbacks) {
-        callback(newContent);
-      }
-    }
+    if (fromEditor) return;
+
+    this.editorCallback(newContent);
   };
 
   saveLocalContent = async () => {
     const saveEnabled = get(this.saveEnabled);
     if (!saveEnabled) return;
-    await this.saveContent(get(this.localContent) ?? "");
+    await this.saveContent(get(this.editorContent) ?? "");
   };
 
   saveContent = async (blob: string) => {
@@ -249,23 +235,19 @@ export class FileArtifact {
 
   debounceSave = debounce(this.saveContent, FILE_SAVE_DEBOUNCE_TIME);
 
-  onRemoteContentChange = (
-    callback: (content: string, force?: true) => void,
-  ) => {
-    this.remoteCallbacks.add(callback);
-    return () => this.remoteCallbacks.delete(callback);
+  onEditorContentChange = (callback: (content: string | null) => void) => {
+    this.editorCallback = callback;
+    return () => (this.editorCallback = () => {});
   };
 
-  onLocalContentChange = (callback: (content: string | null) => void) => {
-    this.localCallbacks.add(callback);
-    return () => this.localCallbacks.delete(callback);
-  };
-
-  revert = (alert = false) => {
+  resetConflictState = () => {
     this.merging.set(false);
     this.inConflict.set(false);
+  };
 
-    this.updateLocalContent(null, alert);
+  revertChanges = () => {
+    this.updateEditorContent(get(this.remoteContent) ?? "");
+    this.saveState.untouch(this.path);
   };
 
   updateResource(resource: V1Resource) {
