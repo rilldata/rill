@@ -582,12 +582,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -615,6 +609,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -853,14 +853,10 @@ export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
-export type V1ResolveComponentResponseDataItem = { [key: string]: any };
-
 export interface V1ResolveComponentResponse {
   /** Show property with templating resolved for the provided args.
 If it resolves to false, the other fields are not set. */
   show?: boolean;
-  schema?: V1StructType;
-  data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
@@ -1351,10 +1347,6 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -2077,13 +2069,9 @@ export interface V1ComponentVariable {
 
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
-export type V1ComponentSpecResolverProperties = { [key: string]: any };
-
 export interface V1ComponentSpec {
   displayName?: string;
   description?: string;
-  resolver?: string;
-  resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
@@ -2279,8 +2267,9 @@ export interface V1CanvasItem {
 
 export interface V1CanvasSpec {
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  maxWidth?: number;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
   securityRules?: V1SecurityRule[];
@@ -2665,6 +2654,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

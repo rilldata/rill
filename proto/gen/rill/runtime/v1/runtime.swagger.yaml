@@ -1133,7 +1133,7 @@ paths:
             properties:
               args:
                 type: object
-                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
+                title: Optional args for resolving templating in the renderer properties
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
@@ -3471,12 +3471,13 @@ definitions:
     properties:
       displayName:
         type: string
-      columns:
+      maxWidth:
         type: integer
         format: int64
-      gap:
-        type: integer
-        format: int64
+      theme:
+        type: string
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
       variables:
         type: array
         items:
@@ -3826,10 +3827,6 @@ definitions:
         type: string
       description:
         type: string
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
       renderer:
         type: string
       rendererProperties:
@@ -5878,14 +5875,6 @@ definitions:
         description: |-
           Show property with templating resolved for the provided args.
           If it resolves to false, the other fields are not set.
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of the resolved component data
-      data:
-        type: array
-        items:
-          type: object
-        title: Resolved component data
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args

@@ -342,6 +342,20 @@
         {
           "additionalProperties": false,
           "properties": {
+            "vega_lite": {
+              "spec": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "vega_lite"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
             "stacked_bar_chart": {
               "$ref": "#/definitions/ChartProperties"
             }
