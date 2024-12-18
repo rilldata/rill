@@ -156,6 +156,7 @@ export function convertBookmarkToUrlSearchParams(
       ...exploreStateFromBookmark,
     } as MetricsExplorerEntity,
     exploreSpec,
+    undefined, // TODO
     defaultExplorePreset,
   );
 }

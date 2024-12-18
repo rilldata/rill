@@ -1,4 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { FromURLParamViewMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
@@ -13,6 +14,7 @@ import type {
  */
 export function getUpdatedUrlForExploreState(
   exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState | undefined,
   defaultExplorePreset: V1ExplorePreset,
   partialExploreState: Partial<MetricsExplorerEntity>,
   curSearchParams: URLSearchParams,
@@ -21,6 +23,7 @@ export function getUpdatedUrlForExploreState(
     convertExploreStateToURLSearchParams(
       partialExploreState as MetricsExplorerEntity,
       exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
     ),
   );

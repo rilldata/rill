@@ -5,6 +5,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
@@ -39,8 +40,15 @@
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-  $: ({ error } = $timeRangeSummaryStore);
+  $: ({ error, data: timeRangeSummaryResp } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
+
+  $: timeControlsState = getTimeControlState(
+    metricsSpec ?? {},
+    exploreSpec ?? {},
+    timeRangeSummaryResp?.timeRangeSummary,
+    $dashboardStore,
+  );
 
   afterNavigate(({ from, to, type }) => {
     if (
@@ -80,6 +88,7 @@
     );
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
       partialExplore,
       $page.url.searchParams,
@@ -95,6 +104,8 @@
 
   let prevUrl = "";
   function handleExploreInit(isManualUrlChange: boolean) {
+    if (!exploreSpec || !metricsSpec) return;
+
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
     if (exploreStateFromSessionStorage && !isManualUrlChange) {
@@ -122,7 +133,8 @@
     metricsExplorerStore.init(exploreName, initState);
     const redirectUrl = new URL($page.url);
     redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec!,
+      exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
       initState,
       $page.url.searchParams,
@@ -132,7 +144,8 @@
       exploreName,
       extraKeyPrefix,
       get(metricsExplorerStore).entities[exploreName],
-      exploreSpec!,
+      exploreSpec,
+      timeControlsState,
     );
     prevUrl = redirectUrl.toString();
 
@@ -152,6 +165,7 @@
     u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
     );
     const newUrl = u.toString();
@@ -165,6 +179,7 @@
       extraKeyPrefix,
       $dashboardStore,
       exploreSpec,
+      timeControlsState,
     );
   }
 
