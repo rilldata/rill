@@ -40,3 +40,28 @@ export const getComponentObj = (
       return new ChartComponent(fileArtifact, path, params);
   }
 };
+
+// TODO: Apply DRY
+export function isCanvasComponentType(
+  value: string | undefined,
+): value is CanvasComponentType {
+  if (!value) return false;
+  return [
+    "line_chart",
+    "bar_chart",
+    "stacked_bar",
+    "markdown",
+    "kpi",
+    "image",
+    "table",
+  ].includes(value as CanvasComponentType);
+}
+
+export function isChartComponentType(
+  value: string | undefined,
+): value is CanvasComponentType {
+  if (!value) return false;
+  return ["line_chart", "bar_chart", "stacked_bar"].includes(
+    value as CanvasComponentType,
+  );
+}

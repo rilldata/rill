@@ -1,7 +1,5 @@
 import { ChartType } from "@rilldata/web-common/components/vega/types";
-import type { ChartProperties } from "@rilldata/web-common/features/templates/types";
 import type { VisualizationSpec } from "svelte-vega";
-import { buildVegaLiteSpec } from "./build-template";
 
 export function singleLayerBaseSpec() {
   const baseSpec: VisualizationSpec = {
@@ -45,21 +43,3 @@ export const templateNameToChartEnumMap = {
   area_chart: ChartType.AREA,
   stacked_area_chart: ChartType.STACKED_AREA,
 };
-
-export function getSpecFromTemplateProperties(
-  renderer: string,
-  properties: ChartProperties,
-) {
-  if (!properties.x || !properties.y) {
-    return undefined;
-  }
-  const chartType = templateNameToChartEnumMap[renderer];
-
-  if (!chartType) return undefined;
-
-  const timeFields = [{ name: properties.x, label: properties.x }];
-  const quantitativeFields = [{ name: properties.y, label: properties.y }];
-
-  const spec = buildVegaLiteSpec(chartType, timeFields, quantitativeFields, []);
-  return spec;
-}

@@ -1,6 +1,5 @@
 <!-- @component
-This component maps the input params for a component to a form input.
-It is used in the ComponentsEditor component to render the input fields for the selected component. 
+Maps the input params for a component to a form input.
 -->
 
 <script lang="ts">
@@ -8,12 +7,13 @@ It is used in the ComponentsEditor component to render the input fields for the 
   import { getComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import type { CanvasComponentType } from "../components/types";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
   import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
   export let componentType: CanvasComponentType;
-  export let paramValues: Record<string, any>;
+  export let paramValues: V1ComponentSpecRendererProperties;
 
   const { fileArtifact, canvasStore } = getCanvasStateManagers();
 

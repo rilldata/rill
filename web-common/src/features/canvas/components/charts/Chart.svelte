@@ -11,8 +11,6 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
 
-  $: console.log(renderer, rendererProperties);
-
   let stateManagers = getCanvasStateManagers();
 
   const instanceId = $runtime.instanceId;
@@ -23,8 +21,6 @@
 
   $: data = getChartData(stateManagers, instanceId, chartConfig);
   $: spec = generateSpec(chartType, chartConfig);
-
-  $: console.log($data, spec);
 </script>
 
 {#if chartConfig?.x}

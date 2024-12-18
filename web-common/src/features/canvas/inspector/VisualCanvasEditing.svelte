@@ -6,12 +6,18 @@
   import { Inspector } from "@rilldata/web-common/layout/workspace";
   import { parseDocument } from "yaml";
 
-  const { canvasStore, fileArtifact } = getCanvasStateManagers();
+  const { validSpecStore, canvasStore, fileArtifact } =
+    getCanvasStateManagers();
 
   $: ({ localContent, remoteContent, saveContent, path } = $fileArtifact);
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
   $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
+
+  $: selectedComponentName =
+    selectedComponentIndex !== null
+      ? $validSpecStore?.items?.[selectedComponentIndex]?.component
+      : null;
 
   async function updateProperties(
     newRecord: Record<string, unknown>,
@@ -50,8 +56,8 @@
 </script>
 
 <Inspector filePath={path}>
-  {#if selectedComponentIndex !== null}
-    <ComponentsEditor />
+  {#if selectedComponentName}
+    <ComponentsEditor {selectedComponentName} />
   {:else}
     <PageEditor {updateProperties} />
   {/if}

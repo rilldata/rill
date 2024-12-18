@@ -1,4 +1,3 @@
-import type { CanvasDashState } from "@rilldata/web-common/features/dashboards/canvas/types";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -147,8 +146,6 @@ export interface MetricsExplorerEntity {
   tdd: TDDState;
 
   pivot: PivotState;
-
-  canvas: CanvasDashState;
 
   proto?: string;
 }

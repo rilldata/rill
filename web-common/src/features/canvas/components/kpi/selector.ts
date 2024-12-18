@@ -14,7 +14,6 @@ export function useKPITotals(
   metricsViewName: string,
   measure: string,
   timeRange: string,
-  whereSql: string | undefined,
 ) {
   return createQueryServiceMetricsViewAggregation(
     instanceId,
@@ -22,7 +21,6 @@ export function useKPITotals(
     {
       measures: [{ name: measure }],
       timeRange: { isoDuration: timeRange },
-      whereSql,
     },
     {
       query: {

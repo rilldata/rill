@@ -6,20 +6,22 @@
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    isCanvasComponentType,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import ComponentInputs from "@rilldata/web-common/features/canvas/inspector/ComponentInputs.svelte";
-  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { ArrowUp01, List, Table, Text } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
 
-  const dispatch = createEventDispatcher();
+  export let selectedComponentName: string;
 
-  const { canvasStore, validSpecStore } = getCanvasStateManagers();
+  const dispatch = createEventDispatcher();
 
   const chartTypes = [
     { id: "bar", title: "Bar", icon: BarChart },
@@ -27,21 +29,19 @@
     { id: "line", title: "Line", icon: LineChart },
   ];
 
-  const coreComponents = [
-    { id: "kpi", title: "KPI", icon: ArrowUp01 },
-    { id: "table", title: "Table", icon: Table },
-    { id: "text", title: "Text", icon: Text },
-    { id: "leaderboard", title: "Leaderboard", icon: List },
-  ];
+  // const coreComponents = [
+  //   { id: "kpi", title: "KPI", icon: ArrowUp01 },
+  //   { id: "table", title: "Table", icon: Table },
+  //   { id: "text", title: "Text", icon: Text },
+  //   { id: "leaderboard", title: "Leaderboard", icon: List },
+  // ];
 
-  // TODO: fix accessor
-  $: selectedComponent =
-    $validSpecStore?.items?.[$canvasStore.selectedComponentIndex || 0];
   let selectedChartType;
 
+  // TODO: Avoid resource query if possible
   $: resourceQuery = useResource(
     $runtime.instanceId,
-    selectedComponent?.component,
+    selectedComponentName,
     ResourceKind.Component,
   );
 
@@ -58,7 +58,7 @@
 
 <SidebarWrapper title="Edit {renderer || 'component'} ">
   <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
-  {#if !renderer}
+  {#if isChartComponentType(renderer)}
     <div class="section">
       <InputLabel
         label="Charts"
@@ -84,36 +84,17 @@
         {/each}
       </div>
     </div>
+  {/if}
 
-    <div class="section">
-      <InputLabel
-        label="Core components"
-        id="core-components"
-        hint="Chose a core component to add to your canvas"
-      />
-      <div class="core-icons">
-        {#each coreComponents as component}
-          <Tooltip distance={8} location="right">
-            <Button
-              square
-              small
-              type="secondary"
-              on:click={() => selectChartType(component)}
-            >
-              <svelte:component this={component.icon} size="20px" />
-            </Button>
-            <TooltipContent slot="tooltip-content">
-              {component.title}
-            </TooltipContent>
-          </Tooltip>
-        {/each}
-      </div>
-    </div>
-  {:else}
+  {#if isCanvasComponentType(renderer) && rendererProperties}
     <ComponentInputs
       componentType={renderer}
       paramValues={rendererProperties}
     />
+  {:else}
+    <div>
+      Unknown Component {renderer}
+    </div>
   {/if}
 </SidebarWrapper>
 
@@ -122,8 +103,7 @@
     @apply flex flex-col gap-y-2;
   }
 
-  .chart-icons,
-  .core-icons {
+  .chart-icons {
     @apply flex gap-x-2;
   }
 </style>

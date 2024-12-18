@@ -258,24 +258,6 @@ const metricsViewReducers = {
     });
   },
 
-  setCanvasMode(name: string, mode: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.canvas = { ...metricsExplorer.canvas, active: mode };
-
-      // TODO fix these
-      // if (mode) {
-      //   metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
-      // } else if (metricsExplorer.selectedDimensionName) {
-      //   metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-      // } else if (metricsExplorer.tdd.expandedMeasureName) {
-      //   metricsExplorer.activePage =
-      //     DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
-      // } else {
-      //   metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
-      // }
-    });
-  },
-
   setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
