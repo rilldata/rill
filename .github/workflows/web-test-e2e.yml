@@ -23,21 +23,21 @@ jobs:
         with:
           filters: |
             admin:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "admin/**"
               - "cli/**"
               - "runtime/**"
               - "web-admin/**"
             auth:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "web-auth/**"
             local:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
               - "runtime/**"
               - "web-local/**"
             common:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
               - "runtime/**"
               - "web-common/**"
