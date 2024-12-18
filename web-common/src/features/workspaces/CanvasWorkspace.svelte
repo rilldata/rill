@@ -174,6 +174,7 @@
   <ErrorPage
     body="Please fix the errors in the code editor before previewing the dashboard."
     header="Unable to load dashboard preview"
+    detail={allErrors.map((error) => error.message).join("\n")}
     statusCode={404}
   />
 {:else}

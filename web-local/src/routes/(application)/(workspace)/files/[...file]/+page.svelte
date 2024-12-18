@@ -7,8 +7,8 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
   import CanvasWorkspace from "@rilldata/web-common/features/workspaces/CanvasWorkspace.svelte";
-  import ComponentWorkspace from "@rilldata/web-common/features/workspaces/ComponentWorkspace.svelte";
   import ExploreWorkspace from "@rilldata/web-common/features/workspaces/ExploreWorkspace.svelte";
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
@@ -16,17 +16,15 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
-  import { onMount } from "svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount } from "svelte";
   import type { PageData } from "./$types";
-  import { mapParseErrorsToLines } from "@rilldata/web-common/features/metrics-views/errors";
 
   const workspaces = new Map([
     [ResourceKind.Source, SourceWorkspace],
     [ResourceKind.Model, ModelWorkspace],
     [ResourceKind.MetricsView, MetricsWorkspace],
     [ResourceKind.Explore, ExploreWorkspace],
-    [ResourceKind.Component, ComponentWorkspace],
     [ResourceKind.Canvas, CanvasWorkspace],
     [null, null],
     [undefined, null],

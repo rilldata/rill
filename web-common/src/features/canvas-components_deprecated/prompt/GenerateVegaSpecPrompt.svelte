@@ -2,9 +2,9 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import ChartPromptHistoryDisplay from "@rilldata/web-common/features/canvas-components/prompt/ChartPromptHistoryDisplay.svelte";
-  import { createChartGenerator } from "@rilldata/web-common/features/canvas-components/prompt/generateChart";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ChartPromptHistoryDisplay from "./ChartPromptHistoryDisplay.svelte";
+  import { createChartGenerator } from "./generateChart";
 
   export let open: boolean;
   export let chart: string;

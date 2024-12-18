@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
-  import GenerateVegaSpecPrompt from "@rilldata/web-common/features/canvas-components/prompt/GenerateVegaSpecPrompt.svelte";
   import {
     extractFileName,
     splitFolderAndFileName,
@@ -11,6 +10,7 @@
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { WorkspaceHeader } from "@rilldata/web-common/layout/workspace";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import GenerateVegaSpecPrompt from "./prompt/GenerateVegaSpecPrompt.svelte";
 
   export let filePath: string;
   export let hasUnsavedChanges: boolean;

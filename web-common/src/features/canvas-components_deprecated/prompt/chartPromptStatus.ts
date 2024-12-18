@@ -1,5 +1,5 @@
-import type { ChartPromptStatus } from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
 import { type Readable, type Updater, writable } from "svelte/store";
+import type { ChartPromptStatus } from "./chartPrompt";
 
 export type ChartPromptState = {
   charts: Record<string, ChartPromptStatus>;

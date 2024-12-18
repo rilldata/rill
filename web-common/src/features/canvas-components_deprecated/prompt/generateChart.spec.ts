@@ -1,5 +1,5 @@
-import { getChartYaml } from "@rilldata/web-common/features/canvas-components/chartYaml";
 import { describe, expect, it } from "vitest";
+import { getChartYaml } from "../chartYaml";
 
 const VegaLiteSpec = `{
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",

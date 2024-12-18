@@ -10,11 +10,15 @@
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
   let showGrid = true;
+
+  // TODO: Remove later when we move to new tiling system
+  const columns = 24;
+  const gap = 1;
+
   let spec: V1CanvasSpec = {
-    columns: 20,
-    gap: 4,
     items: [],
   };
+
   $: ({
     saveLocalContent: updateComponentFile,
     autoSave,
@@ -25,7 +29,7 @@
 
   $: spec = structuredClone($validSpecStore ?? spec);
 
-  $: ({ items = [], columns = 20, gap = 4, variables = [] } = spec);
+  $: ({ items = [], variables = [] } = spec);
 
   async function handleDeleteEvent(
     e: CustomEvent<{

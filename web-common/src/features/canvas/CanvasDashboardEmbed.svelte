@@ -1,21 +1,16 @@
 <script lang="ts">
-  import {
-    type V1CanvasItem,
-    type V1ComponentVariable,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setContext } from "svelte";
   import Component from "./Component.svelte";
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
-  import { canvasVariablesStore } from "./variables-store";
 
   export let canvasName: string;
   export let columns = 20;
   export let items: V1CanvasItem[];
   export let gap = 4;
   export let chartView = false;
-  export let variables: V1ComponentVariable[] = [];
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   setContext("rill::canvas:name", canvasName);
@@ -36,10 +31,6 @@
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
-
-  $: if (variables.length && canvasName) {
-    canvasVariablesStore.init(canvasName, variables);
-  }
 </script>
 
 <DashboardWrapper

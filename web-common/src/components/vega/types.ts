@@ -1,5 +1,6 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
+// TODO: Consolidate with Canvas components types
 /**
  * Type definitions for common chart types supported by Vega
  */

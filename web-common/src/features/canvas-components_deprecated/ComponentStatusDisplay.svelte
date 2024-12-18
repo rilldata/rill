@@ -1,11 +1,8 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
-  import {
-    chartPromptsStore,
-    ChartPromptStatus,
-  } from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { chartPromptsStore, ChartPromptStatus } from "./prompt/chartPrompt";
 
   export let componentName: string;
   export let isFetching: boolean;

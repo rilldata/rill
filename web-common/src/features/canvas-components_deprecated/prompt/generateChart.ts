@@ -1,13 +1,4 @@
 import { goto } from "$app/navigation";
-import {
-  getChartYaml,
-  parseChartYaml,
-} from "@rilldata/web-common/features/canvas-components/chartYaml";
-import {
-  ChartPromptStatus,
-  chartPromptsStore,
-} from "@rilldata/web-common/features/canvas-components/prompt/chartPrompt";
-import { useComponent } from "@rilldata/web-common/features/canvas-components/selectors";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
@@ -18,6 +9,9 @@ import {
   runtimeServicePutFile,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
+import { getChartYaml, parseChartYaml } from "../chartYaml";
+import { useComponent } from "../selectors";
+import { ChartPromptStatus, chartPromptsStore } from "./chartPrompt";
 
 export function createChartGenerator(
   instanceId: string,
