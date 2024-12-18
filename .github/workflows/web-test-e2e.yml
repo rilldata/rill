@@ -73,7 +73,7 @@ jobs:
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Test web local
+      - name: Test `web-local`
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: npm run test -w web-local
 
@@ -84,7 +84,8 @@ jobs:
           path: web-local/playwright-report/
           retention-days: 30
 
-      - name: Build web admin
+      - name: Build and test `web-admin`
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-admin
+          npm run test -w web-admin
