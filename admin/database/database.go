@@ -293,7 +293,7 @@ type DB interface {
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 
 	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
-	FindProvisionerResourceByName(ctx context.Context, deploymentID, typ, name string) (*ProvisionerResource, error)
+	FindProvisionerResourceByTypeAndName(ctx context.Context, deploymentID, typ, name string) (*ProvisionerResource, error)
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error

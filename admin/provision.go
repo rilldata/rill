@@ -22,7 +22,7 @@ type ProvisionOptions struct {
 
 func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*database.ProvisionerResource, error) {
 	// Attempt to find an existing provisioned resource
-	pr, err := s.DB.FindProvisionerResourceByName(ctx, opts.DeploymentID, string(opts.Type), opts.Name)
+	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, opts.DeploymentID, string(opts.Type), opts.Name)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*datab
 			}
 
 			// The resource must have been created concurrently by another process, so we try to find it again.
-			pr, err = s.DB.FindProvisionerResourceByName(ctx, opts.DeploymentID, string(opts.Type), opts.Name)
+			pr, err = s.DB.FindProvisionerResourceByTypeAndName(ctx, opts.DeploymentID, string(opts.Type), opts.Name)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find expected provisioner resource: %w", err)
 			}

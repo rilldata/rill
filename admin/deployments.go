@@ -505,7 +505,7 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 }
 
 func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
-	pr, err := s.DB.FindProvisionerResourceByName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
+	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, false, nil

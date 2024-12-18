@@ -49,7 +49,7 @@ func (s *Server) Provision(ctx context.Context, req *adminv1.ProvisionRequest) (
 	}
 
 	// If the resource is OK, return it immediately.
-	res, err := s.admin.DB.FindProvisionerResourceByName(ctx, depl.ID, req.Type, req.Name)
+	res, err := s.admin.DB.FindProvisionerResourceByTypeAndName(ctx, depl.ID, req.Type, req.Name)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
