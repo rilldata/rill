@@ -2,7 +2,7 @@ name: End-to-end tests of web+runtime
 on:
   pull_request:
     paths:
-      - ".github/workflows/web-test.yml"
+      - ".github/workflows/web-test-e2e.yml"
       - "admin/**"
       - "cli/**"
       - "runtime/**"
