@@ -293,6 +293,7 @@ type DB interface {
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 
 	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
+	FindProvisionerResourceByTypeAndName(ctx context.Context, deploymentID, typ, name string) (*ProvisionerResource, error)
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
@@ -783,26 +784,28 @@ type OrganizationRole struct {
 
 // ProjectRole represents roles for projects.
 type ProjectRole struct {
-	ID                    string
-	Name                  string
-	ReadProject           bool `db:"read_project"`
-	ManageProject         bool `db:"manage_project"`
-	ReadProd              bool `db:"read_prod"`
-	ReadProdStatus        bool `db:"read_prod_status"`
-	ManageProd            bool `db:"manage_prod"`
-	ReadDev               bool `db:"read_dev"`
-	ReadDevStatus         bool `db:"read_dev_status"`
-	ManageDev             bool `db:"manage_dev"`
-	ReadProjectMembers    bool `db:"read_project_members"`
-	ManageProjectMembers  bool `db:"manage_project_members"`
-	CreateMagicAuthTokens bool `db:"create_magic_auth_tokens"`
-	ManageMagicAuthTokens bool `db:"manage_magic_auth_tokens"`
-	CreateReports         bool `db:"create_reports"`
-	ManageReports         bool `db:"manage_reports"`
-	CreateAlerts          bool `db:"create_alerts"`
-	ManageAlerts          bool `db:"manage_alerts"`
-	CreateBookmarks       bool `db:"create_bookmarks"`
-	ManageBookmarks       bool `db:"manage_bookmarks"`
+	ID                         string
+	Name                       string
+	ReadProject                bool `db:"read_project"`
+	ManageProject              bool `db:"manage_project"`
+	ReadProd                   bool `db:"read_prod"`
+	ReadProdStatus             bool `db:"read_prod_status"`
+	ManageProd                 bool `db:"manage_prod"`
+	ReadDev                    bool `db:"read_dev"`
+	ReadDevStatus              bool `db:"read_dev_status"`
+	ManageDev                  bool `db:"manage_dev"`
+	ReadProvisionerResources   bool `db:"read_provisioner_resources"`
+	ManageProvisionerResources bool `db:"manage_provisioner_resources"`
+	ReadProjectMembers         bool `db:"read_project_members"`
+	ManageProjectMembers       bool `db:"manage_project_members"`
+	CreateMagicAuthTokens      bool `db:"create_magic_auth_tokens"`
+	ManageMagicAuthTokens      bool `db:"manage_magic_auth_tokens"`
+	CreateReports              bool `db:"create_reports"`
+	ManageReports              bool `db:"manage_reports"`
+	CreateAlerts               bool `db:"create_alerts"`
+	ManageAlerts               bool `db:"manage_alerts"`
+	CreateBookmarks            bool `db:"create_bookmarks"`
+	ManageBookmarks            bool `db:"manage_bookmarks"`
 }
 
 // MemberUser is a convenience type used for display-friendly representation of an org or project member.

@@ -47,10 +47,12 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 		return nil, nil, ctx.Err()
 	}
 	return r.getConnection(ctx, cachedConnectionConfig{
-		instanceID: instanceID,
-		name:       connector,
-		driver:     cfg.Driver,
-		config:     cfg.Resolve(),
+		instanceID:    instanceID,
+		name:          connector,
+		driver:        cfg.Driver,
+		config:        cfg.Resolve(),
+		provision:     cfg.Provision,
+		provisionArgs: cfg.ProvisionArgs,
 	})
 }
 
@@ -206,6 +208,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		if c.Name == name {
 			res.Driver = c.Type
 			res.Preset = maps.Clone(c.Config) // Cloning because Preset may be mutated later, but the inst object is shared.
+			if c.Provision {
+				res.Provision = c.Provision
+				res.ProvisionArgs = c.ProvisionArgs.AsMap()
+			}
 			break
 		}
 	}
@@ -220,6 +226,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
 		if err != nil {
 			return nil, err
+		}
+		if c.Provision {
+			res.Provision = c.Provision
+			res.ProvisionArgs = c.ProvisionArgs.AsMap()
 		}
 
 		break
@@ -339,6 +349,10 @@ type ConnectorConfig struct {
 	Preset  map[string]string
 	Project map[string]string
 	Env     map[string]string
+	// Provision will cause it to request the admin service to provision the connector.
+	Provision bool
+	// ProvisionArgs provide provisioning args for when ProvisionName is set.
+	ProvisionArgs map[string]any
 }
 
 // Resolve returns the final resolved connector configuration.

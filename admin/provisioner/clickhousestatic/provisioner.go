@@ -60,16 +60,15 @@ func (p *Provisioner) Type() string {
 	return "clickhouse-static"
 }
 
+func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
+	return rt == provisioner.ResourceTypeClickHouse
+}
+
 func (p *Provisioner) Close() error {
 	return p.ch.Close()
 }
 
 func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Can only provision clickhouse resources
-	if r.Type != provisioner.ResourceTypeClickHouse {
-		return nil, provisioner.ErrResourceTypeNotSupported
-	}
-
 	// Parse the resource's config (in case it's an update/check)
 	cfg, err := provisioner.NewClickhouseConfig(r.Config)
 	if err != nil {
@@ -232,7 +231,7 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 
 	_, err = db.ExecContext(ctx, "SELECT 1")
 	if err != nil {
-		return fmt.Errorf("failed to execute query on tenant: %w", err)
+		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil

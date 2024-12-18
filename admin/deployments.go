@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
@@ -478,14 +477,9 @@ type provisionRuntimeOptions struct {
 }
 
 func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOptions) (*database.ProvisionerResource, error) {
-	// Get provisioner from the set.
 	// Use default if no provisioner is specified.
 	if opts.Provisioner == "" {
 		opts.Provisioner = s.opts.DefaultProvisioner
-	}
-	p, ok := s.ProvisionerSet[opts.Provisioner]
-	if !ok {
-		return nil, fmt.Errorf("provisioner: %q is not in the provisioner set", opts.Provisioner)
 	}
 
 	// Create provisioner args
@@ -494,73 +488,15 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 		Version: opts.Version,
 	}
 
-	// Attempt to find an existing provisioned runtime for the deployment
-	pr, ok, err := s.findProvisionedRuntimeResource(ctx, opts.DeploymentID)
-	if err != nil {
-		return nil, err
-	}
-	if ok && pr.Provisioner != opts.Provisioner {
-		return nil, fmt.Errorf("provisioner: cannot change provisioner from %q to %q for deployment %q", pr.Provisioner, opts.Provisioner, opts.DeploymentID)
-	}
-
-	// If we didn't find an existing DB entry, create one
-	if !ok {
-		pr, err = s.DB.InsertProvisionerResource(ctx, &database.InsertProvisionerResourceOptions{
-			ID:            uuid.New().String(),
-			DeploymentID:  opts.DeploymentID,
-			Type:          string(provisioner.ResourceTypeRuntime),
-			Name:          "", // Not giving runtime resources a name since there should only be one per deployment.
-			Status:        database.ProvisionerResourceStatusPending,
-			StatusMessage: "Provisioning...",
-			Provisioner:   opts.Provisioner,
-			Args:          args.AsMap(),
-			State:         nil, // Will be populated after provisioning
-			Config:        nil, // Will be populated after provisioning
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Provision the runtime
-	r := &provisioner.Resource{
-		ID:     pr.ID,
-		Type:   provisioner.ResourceTypeRuntime,
-		State:  pr.State,  // Empty if inserting
-		Config: pr.Config, // Empty if inserting
-	}
-	r, err = p.Provision(ctx, r, &provisioner.ResourceOptions{
-		Args:        args.AsMap(),
-		Annotations: opts.Annotations,
-		RillVersion: s.resolveRillVersion(),
+	// Call into the generic provision function
+	pr, err := s.Provision(ctx, &ProvisionOptions{
+		DeploymentID: opts.DeploymentID,
+		Type:         provisioner.ResourceTypeRuntime,
+		Name:         "", // Not giving runtime resources a name since there should only be one per deployment.
+		Provisioner:  opts.Provisioner,
+		Args:         args.AsMap(),
+		Annotations:  opts.Annotations,
 	})
-	if err != nil {
-		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		defer cancel()
-		_, _ = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
-			Status:        database.ProvisionerResourceStatusError,
-			StatusMessage: fmt.Sprintf("Failed provisioning runtime: %v", err),
-			Args:          pr.Args,
-			State:         pr.State,
-			Config:        pr.Config,
-		})
-		return nil, err
-	}
-
-	// Update the provisioner resource
-	pr, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
-		Status:        database.ProvisionerResourceStatusOK,
-		StatusMessage: "",
-		Args:          args.AsMap(),
-		State:         r.State,
-		Config:        r.Config,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Await the runtime to be ready
-	err = p.AwaitReady(ctx, r)
 	if err != nil {
 		return nil, err
 	}
@@ -569,16 +505,14 @@ func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOp
 }
 
 func (s *Service) findProvisionedRuntimeResource(ctx context.Context, deploymentID string) (*database.ProvisionerResource, bool, error) {
-	prs, err := s.DB.FindProvisionerResourcesForDeployment(ctx, deploymentID)
+	pr, err := s.DB.FindProvisionerResourceByTypeAndName(ctx, deploymentID, string(provisioner.ResourceTypeRuntime), "")
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, false, nil
+		}
 		return nil, false, err
 	}
-	for _, val := range prs {
-		if provisioner.ResourceType(val.Type) == provisioner.ResourceTypeRuntime {
-			return val, true, nil
-		}
-	}
-	return nil, false, nil
+	return pr, true, nil
 }
 
 func (s *Service) resolveRillVersion() string {

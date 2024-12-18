@@ -64,6 +64,11 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	if olap.Dialect() == drivers.DialectClickHouse {
+		// Returning early with empty results because this query tends to hang on ClickHouse.
+		return nil
+	}
+
 	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
