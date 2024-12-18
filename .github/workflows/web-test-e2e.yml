@@ -70,10 +70,13 @@ jobs:
       - name: Build and embed static UI
         run: PLAYWRIGHT_TEST=true make cli
 
+      - name: Add CLI binary to PATH
+        run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Test web local
+      - name: Test `web-local`
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: npm run test -w web-local
 
@@ -84,7 +87,8 @@ jobs:
           path: web-local/playwright-report/
           retention-days: 30
 
-      - name: Build web admin
+      - name: Build and test `web-admin`
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-admin
+          npm run test -w web-admin
