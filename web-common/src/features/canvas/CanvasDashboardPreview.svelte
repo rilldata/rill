@@ -176,9 +176,7 @@
 
 <DashboardWrapper
   bind:contentRect
-  {scale}
   height={maxBottom * gridCell * scale}
-  width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
   on:scroll={handleScroll}
 >
