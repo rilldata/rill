@@ -6,7 +6,6 @@
   import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import ChartOptions from "@rilldata/web-common/features/canvas/inspector/chart/ChartOptions.svelte";
   import ComponentInputs from "@rilldata/web-common/features/canvas/inspector/ComponentInputs.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
@@ -84,9 +83,6 @@
           </Tooltip>
         {/each}
       </div>
-      {#if selectedChartType}
-        <ChartOptions chartType={selectedChartType} />
-      {/if}
     </div>
 
     <div class="section">
