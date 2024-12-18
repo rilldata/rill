@@ -168,8 +168,6 @@ function syncDimensions(
 const metricsViewReducers = {
   init(name: string, initState: Partial<MetricsExplorerEntity> = {}) {
     update((state) => {
-      if (state.entities[name]) return state;
-
       state.entities[name] = getFullInitExploreState(name, initState);
 
       updateMetricsExplorerProto(state.entities[name]);

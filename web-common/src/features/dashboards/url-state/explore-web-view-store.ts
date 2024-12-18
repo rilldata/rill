@@ -190,3 +190,15 @@ export function getExplorePresetForWebView(
     return undefined;
   }
 }
+
+export function hasSessionStorageData(
+  exploreName: string,
+  prefix: string | undefined,
+) {
+  const sharedKey = getKeyForSessionStore(
+    exploreName,
+    prefix,
+    SharedStateStoreKey,
+  );
+  return !!sessionStorage.getItem(sharedKey);
+}

@@ -12,6 +12,7 @@
   import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
     clearExploreSessionStore,
+    hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
@@ -110,7 +111,7 @@
       return;
     }
 
-    // using `replaceState` directly messes up the navigation entries.
+    // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     void goto(redirectUrl, {
       replaceState: true,
@@ -130,7 +131,8 @@
       return;
     }
 
-    const isInit = !$dashboardStore;
+    const isInit =
+      !$dashboardStore || !hasSessionStorageData(exploreName, extraKeyPrefix);
     if (isInit) {
       // When a user changes url manually and clears the params the `type` will be "enter"
       // This signal is used in handleExploreInit to make sure we do not use sessionStorage
