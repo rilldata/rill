@@ -143,11 +143,16 @@ export class FileArtifact {
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
 
-    console.log({
-      remoteContentHasChanged,
-      currentRemoteContent,
-      fetchedContent,
-    });
+    this.saveState.resolve();
+
+    if (editorContent === fetchedContent) {
+      // This is the primary sequence that happens after saving
+      // Local content is not null, user initiates a save, we receive a FILE_WRITE event
+      // After fetching the remote content, it should match the local content
+      // So, we revert our local content store
+      this.resetConflictState();
+      this.saveState.untouch(this.path);
+    }
 
     if (remoteContentHasChanged) {
       this.remoteContent.set(fetchedContent);
@@ -156,16 +161,7 @@ export class FileArtifact {
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      this.saveState.resolve();
-
-      if (editorContent === fetchedContent) {
-        // This is the primary sequence that happens after saving
-        // Local content is not null, user initiates a save, we receive a FILE_WRITE event
-        // After fetching the remote content, it should match the local content
-        // So, we revert our local content store
-        this.resetConflictState();
-        this.saveState.untouch(this.path);
-      } else if (editorContent !== null) {
+      if (editorContent !== null) {
         // This is the secondary sequence wherein a file is saved in an external editor
         // We receive a FILE_EVENT_WRITE event and the remote content is different from local content
         // This can also happen when a file is savedmand then edited
