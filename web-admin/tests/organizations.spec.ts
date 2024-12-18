@@ -6,7 +6,7 @@ import { test } from "./setup/base";
 const execAsync = promisify(exec);
 
 test.describe("Organizations", () => {
-  test("should create an organization", async ({ cli, page }) => {
+  test("should create an organization", async ({ cli: _, page }) => {
     // Create an organization
     const { stdout: orgCreateStdout } = await execAsync("rill org create e2e");
     expect(orgCreateStdout).toContain("Created organization");

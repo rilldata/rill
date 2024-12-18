@@ -6,7 +6,7 @@ import { test } from "./setup/base";
 const execAsync = promisify(exec);
 
 test.describe("Projects", () => {
-  test("should deploy a project", async ({ page, organization }) => {
+  test("should deploy a project", async ({ page, organization: _ }) => {
     // Execute the deploy command
     const { stdout: deployStdout } = await execAsync(
       "rill deploy --path tests/setup/git/repos/rill-examples --subpath rill-openrtb-prog-ads --project openrtb --github true",
