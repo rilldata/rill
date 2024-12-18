@@ -32,7 +32,6 @@ import {
   FILE_SAVE_DEBOUNCE_TIME,
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
-// import { fileArtifacts } from "./file-artifacts";
 import { inferResourceKind } from "./infer-resource-kind";
 import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 import { AsyncSaveState } from "./async-save-state";
@@ -248,6 +247,7 @@ export class FileArtifact {
   revertChanges = () => {
     this.updateEditorContent(get(this.remoteContent) ?? "");
     this.saveState.untouch(this.path);
+    this.resetConflictState();
   };
 
   updateResource(resource: V1Resource) {

@@ -17,6 +17,7 @@
   import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
+  import DiffBar from "./DiffBar.svelte";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -27,9 +28,6 @@
   export let refetchOnWindowFocus = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
-
-  let codespace: Codespace;
-  let editorHasFocus = false;
 
   $: ({
     saveLocalContent,
@@ -76,48 +74,14 @@
 
 <section>
   {#if $merging}
-    <div class="flex w-full border-b">
-      <div class="w-full border-r p-1.5 pl-3 flex justify-between items-center">
-        <h1 class="text-sm italic font-semibold text-gray-400">
-          Unsaved changes
-        </h1>
-
-        <Button
-          type="subtle"
-          loading={$saving}
-          loadingCopy="Saving"
-          danger={!!$error && !$saving}
-          {disabled}
-          on:click={async () => {
-            await save();
-            codespace.mountEditor();
-          }}
-        >
-          {#if $error}
-            <Alert size="14px" />
-          {/if}
-
-          {#if $error}
-            {$error?.message} Try again.
-          {:else}
-            Accept current
-          {/if}
-        </Button>
-      </div>
-      <div class="w-full p-1.5 pl-3 flex justify-between items-center">
-        <h2 class="text-sm font-semibold">Incoming content</h2>
-        <Button
-          type="primary"
-          on:click={() => {
-            codespace.mountEditor();
-            revertContent();
-          }}
-        >
-          Accept incoming
-        </Button>
-      </div>
-    </div>
+    <DiffBar
+      saving={$saving}
+      errorMessage={$error?.message}
+      onAcceptCurrent={save}
+      onAcceptIncoming={revertContent}
+    />
   {/if}
+
   <div class="editor-container">
     {#key fileArtifact}
       <Codespace
@@ -125,8 +89,6 @@
         {fileArtifact}
         autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor
-        bind:editorHasFocus
-        bind:this={codespace}
       />
     {/key}
   </div>
@@ -205,7 +167,9 @@
             builders={[builder]}
             type="primary"
             large
-            on:click={codespace.mountMergeView}
+            on:click={() => {
+              merging.set(true);
+            }}
           >
             Resolve conflicts
           </Button>

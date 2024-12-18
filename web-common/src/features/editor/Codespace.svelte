@@ -1,3 +1,6 @@
+<script lang="ts" context="module">
+</script>
+
 <script lang="ts">
   import type { Extension } from "@codemirror/state";
   import { EditorState, Compartment } from "@codemirror/state";
@@ -12,11 +15,9 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let editor: EditorView | null = null;
-  export let editorHasFocus = false;
   export let autoSave = true;
 
   const extensionCompartment = new Compartment();
-  const editable = new Compartment();
 
   const {
     editorContent,
@@ -33,13 +34,15 @@
   $: if (editor) updateEditorExtensions(extensions);
   $: if (fileArtifact) editor?.contentDOM.blur();
 
-  onMount(() => {
+  $: if (parent) {
     if ($merging) {
       mountMergeView();
     } else {
       mountEditor();
     }
+  }
 
+  onMount(() => {
     const unsubLocal = onEditorContentChange(dispatchEditorChange);
 
     const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
@@ -54,8 +57,7 @@
     };
   });
 
-  export function mountMergeView() {
-    merging.set(true);
+  function mountMergeView() {
     editor?.destroy();
 
     mergeView = new MergeView({
@@ -64,8 +66,8 @@
         extensions: [
           baseExtensions(),
           ...extensions,
-
-          EditorView.updateListener.of(listener),
+          EditorView.editable.of(false),
+          EditorState.readOnly.of(true),
         ],
       },
       b: {
@@ -73,6 +75,7 @@
         extensions: [
           baseExtensions(),
           ...extensions,
+
           EditorView.editable.of(false),
           EditorState.readOnly.of(true),
         ],
@@ -81,7 +84,7 @@
     });
   }
 
-  export function mountEditor() {
+  function mountEditor() {
     mergeView?.destroy();
 
     editor = new EditorView({
@@ -89,10 +92,7 @@
         doc: $editorContent ?? "",
         extensions: [
           baseExtensions(),
-          editable.of([
-            EditorView.editable.of(true),
-            EditorState.readOnly.of(false),
-          ]),
+
           extensionCompartment.of([extensions]),
           EditorView.updateListener.of(listener),
         ],
@@ -136,8 +136,6 @@
     state: { doc },
     view: { hasFocus },
   }: ViewUpdate) {
-    editorHasFocus = hasFocus;
-
     if (hasFocus && docChanged) {
       updateEditorContent(doc.toString(), true, autoSave);
     }
