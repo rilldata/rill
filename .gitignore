@@ -25,6 +25,7 @@ tsc-tmp/
 !/runtime/drivers/duckdb/extensions/embed/**/.gitkeep
 /dev-project*
 /dev-cloud-state*
+/e2e-cloud-state*
 /playwright-report
 
 # data files
@@ -80,4 +81,3 @@ sysroot/
 latest.txt
 /web-common/coverage
 
-/e2e-cloud-state

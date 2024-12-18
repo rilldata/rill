@@ -251,7 +251,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	stateDir := lookupDotenv("RILL_STATE_DIRECTORY")
 	err = os.MkdirAll(stateDir, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create state dir %q: %w", stateDir, err)
@@ -384,7 +384,7 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 		}
 	}()
 
-	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	stateDir := lookupDotenv("RILL_STATE_DIRECTORY")
 	_ = os.RemoveAll(stateDir)
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
 }
@@ -644,7 +644,7 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
-	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	stateDir := lookupDotenv("RILL_STATE_DIRECTORY")
 	args := []string{"run", "cli/main.go", "start", stateDir, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
 	if verbose {
 		args = append(args, "--verbose")
@@ -724,7 +724,7 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	stateDir := lookupDotenv("RILL_LOCAL_STATE_DIR")
+	stateDir := lookupDotenv("RILL_STATE_DIRECTORY")
 	outputFile := filepath.Join(stateDir, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
