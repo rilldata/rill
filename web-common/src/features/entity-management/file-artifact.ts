@@ -170,8 +170,8 @@ export class FileArtifact {
         // We receive a FILE_EVENT_WRITE event and the remote content is different from local content
         // This can also happen when a file is savedmand then edited
         // in the application before the event is received
-        // In this case, we ignore updates that happen within 2 seconds of the last save
-        // If we receive an update after 1.5 seconds, we can "safely" assume
+        // In this case, we ignore updates that happen within 1.5 seconds of the last save
+        // If we receive an update after that period we can "safely" assume
         // that the user has made conflicting changes externally
         if (Date.now() - this.saveState.lastSaveTime > EVENT_IGNORE_BUFFER) {
           this.inConflict.set(true);
