@@ -28,8 +28,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       measure: "",
       time_range: "",
       // show_sparkline: false,
-      title: "",
-      description: "",
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
