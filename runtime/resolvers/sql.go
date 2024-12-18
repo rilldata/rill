@@ -95,7 +95,7 @@ func (r *sqlResolver) Cacheable() bool {
 }
 
 func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	if r.olap.Dialect() == drivers.DialectDuckDB {
+	if r.olap.Dialect() == drivers.DialectDuckDB || r.olap.Dialect() == drivers.DialectClickHouse {
 		return []byte(r.sql), len(r.refs) != 0, nil
 	}
 	return nil, false, nil

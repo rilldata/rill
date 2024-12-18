@@ -139,7 +139,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 		return nil, err
 	}
 	hash := md5.New()
-	if _, err := hash.Write([]byte(cacheKey)); err != nil {
+	if _, err := hash.Write(cacheKey); err != nil {
 		return nil, err
 	}
 	if opts.Claims.UserAttributes != nil {

@@ -80,7 +80,8 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		if !e.streaming {
 			// for metrics views on rill managed tables no cache key specific to the metrics view is required
 			return []byte(""), true, nil
-		} // watermark is the default cache key for streaming metrics views
+		}
+		// watermark is the default cache key for streaming metrics views
 		watermark, err := e.loadWatermark(ctx, nil)
 		if err != nil {
 			return nil, false, err
