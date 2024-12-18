@@ -24,3 +24,12 @@ export function getFullUrlForPath(
   }
   return newUrl.pathname;
 }
+
+export function mergeSearchParams(
+  fromSearchParams: URLSearchParams,
+  toSearchParams: URLSearchParams,
+) {
+  fromSearchParams.forEach((value, key) => {
+    toSearchParams.set(key, value);
+  });
+}

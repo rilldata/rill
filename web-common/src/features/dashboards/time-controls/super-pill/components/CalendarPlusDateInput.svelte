@@ -8,19 +8,21 @@
 </script>
 
 <script lang="ts">
-  export let interval: Interval<true>;
+  export let interval: Interval<true> | undefined;
   export let zone: string;
   export let firstVisibleMonth: DateTime<true>;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let applyRange: (range: Interval<true>) => void;
   export let closeMenu: () => void;
 
   let selectingStart = true;
-  let displayError = false;
 
-  $: calendarInterval = interval.set({
-    start: interval.start.startOf("day"),
-    end: interval.end.minus({ millisecond: 1 }).startOf("day"),
-  });
+  $: calendarInterval =
+    interval?.set({
+      start: interval.start.startOf("day"),
+      end: interval.end.minus({ millisecond: 1 }).startOf("day"),
+    }) ?? Interval.invalid("Invalid interval");
 
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
@@ -59,46 +61,38 @@
   }}
 />
 
-{#if calendarInterval.isValid}
-  <Calendar
-    selection={calendarInterval}
-    {selectingStart}
-    {firstVisibleMonth}
-    onSelectDay={onValidDateInput}
-  />
-{/if}
+<Calendar
+  {maxDate}
+  {minDate}
+  selection={calendarInterval}
+  {selectingStart}
+  {firstVisibleMonth}
+  onSelectDay={onValidDateInput}
+/>
 
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
-  <label for="start-date" class:error={selectingStart && displayError}>
-    Start Date
-  </label>
-  <div class="flex gap-x-1">
-    <DateInput
-      bind:selectingStart
-      bind:displayError
-      date={calendarInterval.start ?? DateTime.now()}
-      {zone}
-      boundary="start"
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
-  </div>
-  <label for="start-date" class:error={!selectingStart && displayError}>
-    End Date
-  </label>
+  <DateInput
+    bind:selectingStart
+    date={calendarInterval?.start ?? DateTime.now()}
+    {zone}
+    boundary="start"
+    {minDate}
+    {maxDate}
+    currentYear={firstVisibleMonth.year}
+    {onValidDateInput}
+  />
 
-  <div class="flex gap-x-1 w-full">
-    <DateInput
-      bind:selectingStart
-      bind:displayError
-      date={calendarInterval.end ?? DateTime.now()}
-      {zone}
-      boundary="end"
-      currentYear={firstVisibleMonth.year}
-      {onValidDateInput}
-    />
-  </div>
+  <DateInput
+    bind:selectingStart
+    date={calendarInterval?.end ?? DateTime.now()}
+    {zone}
+    boundary="end"
+    {minDate}
+    {maxDate}
+    currentYear={firstVisibleMonth.year}
+    {onValidDateInput}
+  />
 </div>
 <div class="flex justify-end w-full py-1 px-2">
   <Button
@@ -106,11 +100,11 @@
     compact
     type="primary"
     on:click={() => {
-      const mapped = calendarInterval.set({
+      const mapped = calendarInterval?.set({
         end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
       });
 
-      if (mapped.isValid) {
+      if (mapped?.isValid) {
         applyRange(mapped);
       }
 
@@ -120,9 +114,3 @@
     <span class="px-2 w-fit">Apply</span>
   </Button>
 </div>
-
-<style lang="postcss">
-  label {
-    @apply font-semibold flex gap-x-1;
-  }
-</style>

@@ -1,35 +1,17 @@
-import {
-  adminServiceGetMagicAuthToken,
-  getAdminServiceGetMagicAuthTokenQueryKey,
-} from "@rilldata/web-admin/features/public-urls/get-magic-auth-token";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { error } from "@sveltejs/kit";
-import { type QueryFunction } from "@tanstack/svelte-query";
+import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
 
-export const load = async ({ params: { token }, url: { searchParams } }) => {
-  const queryKey = getAdminServiceGetMagicAuthTokenQueryKey(token);
-  const queryFunction: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetMagicAuthToken>>
-  > = ({ signal }) => adminServiceGetMagicAuthToken(token, signal);
+export const load = async ({ url, parent }) => {
+  const { explore, metricsView, defaultExplorePreset, token } = await parent();
+  const exploreName = token?.resourceName;
+  const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
+  const exploreSpec = explore.explore?.state?.validSpec;
 
-  try {
-    const tokenData = await queryClient.fetchQuery({
-      queryKey,
-      queryFn: queryFunction,
-    });
-
-    const state = searchParams.get("state");
-
-    // Add the token's `state` to the URL (only if there's no existing URL `state`)
-    if (tokenData?.token?.state && !state) {
-      searchParams.set("state", tokenData.token.state);
-    }
-
-    return {
-      token: tokenData?.token,
-    };
-  } catch (e) {
-    console.error(e);
-    throw error(404, "Unable to find token");
-  }
+  return getExploreStates(
+    exploreName,
+    `${token.id}__`,
+    url.searchParams,
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+  );
 };

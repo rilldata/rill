@@ -2,11 +2,12 @@
   import { page } from "$app/stores";
   import { redirectToLogout } from "@rilldata/web-admin/client/redirect-utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { createAdminServiceGetCurrentUser } from "../../client";
   import {
     initPylonChat,
     type UserLike,
   } from "@rilldata/web-common/features/help/initPylonChat";
+  import { posthogIdentify } from "@rilldata/web-common/lib/analytics/posthog";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
@@ -14,7 +15,14 @@
 
   let subMenuOpen = false;
 
-  $: if ($user.data?.user) initPylonChat($user.data.user as UserLike);
+  $: if ($user.data?.user) {
+    // Actions to take when the user is known
+    posthogIdentify($user.data.user.id, {
+      email: $user.data.user.email,
+    });
+    initPylonChat($user.data.user as UserLike);
+  }
+
   $: ({ params } = $page);
 
   function handlePylon() {

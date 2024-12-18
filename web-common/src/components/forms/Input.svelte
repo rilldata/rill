@@ -2,9 +2,9 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import Select from "./Select.svelte";
-  import InputLabel from "./InputLabel.svelte";
   import FieldSwitcher from "./FieldSwitcher.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import Select from "./Select.svelte";
 
   const voidFunction = () => {};
 
@@ -53,8 +53,13 @@
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
-  export let onEnter: () => void = voidFunction;
+  export let onEnter: (
+    e: KeyboardEvent & {
+      currentTarget: EventTarget & HTMLDivElement;
+    },
+  ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
   let showPassword = false;
@@ -93,7 +98,7 @@
     if (e.key === "Enter") {
       hitEnter = true;
       inputElement?.blur();
-      onEnter();
+      onEnter(e);
     } else if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
@@ -120,7 +125,7 @@
   {/if}
 
   {#if fields && fields?.length > 1}
-    <FieldSwitcher {fields} {selected} />
+    <FieldSwitcher {fields} {selected} onClick={onFieldSwitch} />
   {/if}
 
   {#if !options}
@@ -265,7 +270,7 @@
 
   .multiline-input {
     @apply py-1;
-    line-height: 1.6;
+    line-height: 1.58;
   }
 
   .multiline-input {

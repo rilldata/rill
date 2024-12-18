@@ -109,8 +109,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &Connection{
-		config: cfg,
-		logger: logger,
+		config:  cfg,
+		storage: st,
+		logger:  logger,
 	}
 	return conn, nil
 }
@@ -244,11 +245,6 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

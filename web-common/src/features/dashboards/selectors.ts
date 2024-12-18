@@ -8,6 +8,7 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type {
   RpcStatus,
   V1Expression,
@@ -124,6 +125,7 @@ export function useMetricsViewTimeRange(
           query: {
             ...queryOptions,
             enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
+            queryClient,
           },
         },
       ).subscribe(set),

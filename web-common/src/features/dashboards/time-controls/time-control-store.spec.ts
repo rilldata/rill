@@ -14,10 +14,7 @@ import {
   type TimeControlStore,
   createTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   TimeComparisonOption,
   TimeRangePreset,
@@ -28,7 +25,9 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { render } from "@testing-library/svelte";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.stubEnv("TZ", "UTC");
 
 describe("time-control-store", () => {
   runtime.set({
@@ -43,7 +42,6 @@ describe("time-control-store", () => {
 
   beforeEach(() => {
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    getLocalUserPreferences().updateTimeZone("UTC");
   });
 
   it("Switching from no timestamp column to having one", async () => {
@@ -365,7 +363,6 @@ describe("time-control-store", () => {
       "2022-04-01T00:00:00.000Z",
     );
 
-    console.log("refetch");
     dashboardFetchMocks.mockMetricsExplore(
       AD_BIDS_EXPLORE_NAME,
       AD_BIDS_METRICS_INIT_WITH_TIME,

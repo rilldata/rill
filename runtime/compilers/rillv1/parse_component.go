@@ -59,6 +59,9 @@ func (p *Parser) parseComponent(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ComponentSpec = spec
+	if r.ComponentSpec.DisplayName == "" {
+		r.ComponentSpec.DisplayName = ToDisplayName(node.Name)
+	}
 
 	return nil
 }

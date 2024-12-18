@@ -23,7 +23,10 @@
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
   export let zone: string;
+  export let disabled: boolean;
   export let grain: string;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let onSelectComparisonRange: (
     name: string,
     start: Date,
@@ -95,6 +98,7 @@
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button
+      {disabled}
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
@@ -160,8 +164,10 @@
       </div>
       {#if showSelector}
         <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
-          {#if interval?.isValid}
+          {#if !interval || interval?.isValid}
             <CalendarPlusDateInput
+              {maxDate}
+              {minDate}
               {firstVisibleMonth}
               {interval}
               {zone}

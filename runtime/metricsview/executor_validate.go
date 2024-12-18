@@ -1,4 +1,4 @@
-package runtime
+package metricsview
 
 import (
 	"context"
@@ -10,12 +10,14 @@ import (
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
 )
 
 const validateConcurrencyLimit = 10
 
+// ValidateMetricsViewResult contains the results of validating a metrics view.
 type ValidateMetricsViewResult struct {
 	TimeDimensionErr error
 	DimensionErrs    []IndexErr
@@ -23,11 +25,13 @@ type ValidateMetricsViewResult struct {
 	OtherErrs        []error
 }
 
+// IndexErr contains an error and the index of the dimension or measure that caused the error.
 type IndexErr struct {
 	Idx int
 	Err error
 }
 
+// IsZero returns true if the result contains no errors.
 func (r *ValidateMetricsViewResult) IsZero() bool {
 	return r.TimeDimensionErr == nil && len(r.DimensionErrs) == 0 && len(r.MeasureErrs) == 0 && len(r.OtherErrs) == 0
 }
@@ -49,25 +53,14 @@ func (r *ValidateMetricsViewResult) Error() error {
 	return errors.Join(errs...)
 }
 
-// ValidateMetricsView validates a metrics view spec.
-// NOTE: If we need validation for more resources, we should consider moving it to the queries (or a dedicated validation package).
-func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv *runtimev1.MetricsViewSpec) (*ValidateMetricsViewResult, error) {
-	ctrl, err := r.Controller(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	olap, release, err := ctrl.AcquireOLAP(ctx, mv.Connector)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
+// ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
+func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsViewResult, error) {
 	// Create the result
 	res := &ValidateMetricsViewResult{}
 
 	// Check underlying table exists
-	t, err := olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
+	mv := e.metricsView
+	t, err := e.olap.InformationSchema().Lookup(ctx, mv.Database, mv.DatabaseSchema, mv.Table)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
@@ -112,7 +105,7 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 
 	// ClickHouse specifically does not support using a column name as a dimension or measure name if the dimension or measure has an expression.
 	// This is due to ClickHouse's aggressive substitution of aliases: https://github.com/ClickHouse/ClickHouse/issues/9715.
-	if olap.Dialect() == drivers.DialectClickHouse {
+	if e.olap.Dialect() == drivers.DialectClickHouse {
 		for _, d := range mv.Dimensions {
 			if d.Expression == "" && !d.Unnest {
 				continue
@@ -133,25 +126,39 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 	}
 
 	// For performance, attempt to validate all dimensions and measures at once
-	err = validateAllDimensionsAndMeasures(ctx, olap, t, mv)
+	err = e.validateAllDimensionsAndMeasures(ctx, t, mv)
 	if err != nil {
 		// One or more dimension/measure expressions failed to validate. We need to check each one individually to provide useful errors.
-		validateIndividualDimensionsAndMeasures(ctx, olap, t, mv, cols, res)
+		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
 	}
 
 	// Pinot does have any native support for time shift using time grain specifiers
-	if olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+	if e.olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
 		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
 	}
 
 	// Check the default theme exists
 	if mv.DefaultTheme != "" {
-		_, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindTheme, Name: mv.DefaultTheme}, false)
+		ctrl, err := e.rt.Controller(ctx, e.instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("could not get controller: %w", err)
+		}
+
+		_, err = ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrNotFound) {
 				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("theme %q does not exist", mv.DefaultTheme))
+			} else {
+				return nil, fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
 			}
-			return nil, fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
+		}
+	}
+
+	// Validate the metrics view schema.
+	if res.IsZero() { // All dimensions and measures need to be valid to compute the schema.
+		err = e.validateSchema(ctx, res)
+		if err != nil {
+			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to validate metrics view schema: %w", err))
 		}
 	}
 
@@ -159,8 +166,8 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 }
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
-func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec) error {
-	dialect := olap.Dialect()
+func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *drivers.Table, mv *runtimev1.MetricsViewSpec) error {
+	dialect := e.olap.Dialect()
 	var dimExprs []string
 	var unnestClauses []string
 	var groupIndexes []string
@@ -186,13 +193,13 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 	}
 	if len(dimExprs) == 0 {
 		// Only metrics
-		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
+		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
 	} else if len(metricExprs) == 0 {
 		// No metrics
 		query = fmt.Sprintf(
 			"SELECT %s FROM %s %s GROUP BY %s",
 			strings.Join(dimExprs, ","),
-			olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
+			e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
 			strings.Join(unnestClauses, ""),
 			strings.Join(groupIndexes, ","),
 		)
@@ -201,12 +208,12 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 			"SELECT %s, %s FROM %s %s GROUP BY %s",
 			strings.Join(dimExprs, ","),
 			strings.Join(metricExprs, ","),
-			olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
+			e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
 			strings.Join(unnestClauses, ""),
 			strings.Join(groupIndexes, ","),
 		)
 	}
-	err := olap.Exec(ctx, &drivers.Statement{
+	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:  query,
 		DryRun: true,
 	})
@@ -218,7 +225,7 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 
 // validateIndividualDimensionsAndMeasures validates each dimension and measure individually.
 // It adds validation errors to the provided res.
-func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec, cols map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
+func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, t *drivers.Table, mv *runtimev1.MetricsViewSpec, cols map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	// Validate dimensions and measures concurrently with a limit of 10 concurrent validations
 	var mu sync.Mutex
 	var grp errgroup.Group
@@ -229,7 +236,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 		idx := idx
 		d := d
 		grp.Go(func() error {
-			err := validateDimension(ctx, olap, t, d, cols)
+			err := e.validateDimension(ctx, t, d, cols)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -252,7 +259,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 		idx := idx
 		m := m
 		grp.Go(func() error {
-			err := validateMeasure(ctx, olap, t, m)
+			err := e.validateMeasure(ctx, t, m)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -275,7 +282,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 }
 
 // validateDimension validates a metrics view dimension.
-func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+func (e *Executor) validateDimension(ctx context.Context, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
 	// Validate with a simple check if it's a column
 	if d.Column != "" {
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
@@ -287,11 +294,11 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 		}
 	}
 
-	dialect := olap.Dialect()
+	dialect := e.olap.Dialect()
 	expr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
 
 	// Validate with a query if it's an expression
-	err := olap.Exec(ctx, &drivers.Statement{
+	err := e.olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
 		DryRun: true,
 	})
@@ -302,10 +309,42 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 }
 
 // validateMeasure validates a metrics view measure.
-func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
-	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+func (e *Executor) validateMeasure(ctx context.Context, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	err := e.olap.Exec(ctx, &drivers.Statement{
+		Query:  fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun: true,
 	})
 	return err
+}
+
+// validateSchema validates that the metrics view's measures are numeric.
+func (e *Executor) validateSchema(ctx context.Context, res *ValidateMetricsViewResult) error {
+	// Resolve the schema of the metrics view's dimensions and measures
+	schema, err := e.Schema(ctx)
+	if err != nil {
+		return err
+	}
+	types := make(map[string]*runtimev1.Type, len(schema.Fields))
+	for _, f := range schema.Fields {
+		types[f.Name] = f.Type
+	}
+
+	// Check that the measures are not strings
+	for i, m := range e.metricsView.Measures {
+		typ, ok := types[m.Name]
+		if !ok {
+			// Don't error: schemas are not always reliable
+			continue
+		}
+
+		switch typ.Code {
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+				Idx: i,
+				Err: fmt.Errorf("measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
+			})
+		}
+	}
+
+	return nil
 }

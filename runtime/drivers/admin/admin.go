@@ -80,11 +80,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	h := &Handle{
-		config: cfg,
-		logger: logger,
-		admin:  admin,
-		repoMu: ctxsync.NewRWMutex(),
-		repoSF: &singleflight.Group{},
+		config:  cfg,
+		logger:  logger,
+		storage: st,
+		admin:   admin,
+		repoMu:  ctxsync.NewRWMutex(),
+		repoSF:  &singleflight.Group{},
 	}
 
 	return h, nil
@@ -233,11 +234,6 @@ func (h *Handle) AsModelManager(instanceID string) (drivers.ModelManager, bool) 
 
 // AsTransporter implements drivers.Handle.
 func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Handle.
-func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

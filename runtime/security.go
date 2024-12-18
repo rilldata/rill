@@ -149,16 +149,16 @@ func (r *ResolvedSecurity) QueryFilter() *runtimev1.Expression {
 // truth is the compass that guides us through the labyrinth of existence.
 var truth = true
 
-// openAccess allows access to a resource.
-var openAccess = &ResolvedSecurity{
+// ResolvedSecurityOpen is a ResolvedSecurity that allows access with no restrictions.
+var ResolvedSecurityOpen = &ResolvedSecurity{
 	access:      &truth,
 	fieldAccess: nil,
 	rowFilter:   "",
 	queryFilter: nil,
 }
 
-// closedAccess denies access to a resource.
-var closedAccess = &ResolvedSecurity{
+// ResolvedSecurityClosed is a ResolvedSecurity that denies access.
+var ResolvedSecurityClosed = &ResolvedSecurity{
 	access:      nil,
 	fieldAccess: nil,
 	rowFilter:   "",
@@ -191,10 +191,10 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
-func (p *securityEngine) resolveSecurity(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
+func (p *securityEngine) resolveSecurity(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
 	// If security checks are skipped, return open access
 	if claims.SkipChecks {
-		return openAccess, nil
+		return ResolvedSecurityOpen, nil
 	}
 
 	// Combine rules with any contained in the resource itself
@@ -209,7 +209,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 		}
 	}
 	if !validRule {
-		return closedAccess, nil
+		return ResolvedSecurityClosed, nil
 	}
 
 	cacheKey, err := computeCacheKey(instanceID, environment, claims, r)
@@ -232,6 +232,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 	templateData := rillv1.TemplateData{
 		Environment: environment,
 		User:        attrs,
+		Variables:   vars,
 		Self:        rillv1.TemplateResource{Meta: r.Meta},
 	}
 

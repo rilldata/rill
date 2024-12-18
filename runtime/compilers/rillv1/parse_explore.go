@@ -228,14 +228,22 @@ func (p *Parser) parseExplore(node *Node) error {
 			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
 
+		var tr *string
+		if tmp.Defaults.TimeRange != "" {
+			tr = &tmp.Defaults.TimeRange
+		}
+		var compareDim *string
+		if tmp.Defaults.ComparisonDimension != "" {
+			compareDim = &tmp.Defaults.ComparisonDimension
+		}
 		defaultPreset = &runtimev1.ExplorePreset{
 			Dimensions:          presetDimensions,
 			DimensionsSelector:  presetDimensionsSelector,
 			Measures:            presetMeasures,
 			MeasuresSelector:    presetMeasuresSelector,
-			TimeRange:           tmp.Defaults.TimeRange,
+			TimeRange:           tr,
 			ComparisonMode:      mode,
-			ComparisonDimension: tmp.Defaults.ComparisonDimension,
+			ComparisonDimension: compareDim,
 		}
 	}
 
@@ -258,6 +266,9 @@ func (p *Parser) parseExplore(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ExploreSpec.DisplayName = tmp.DisplayName
+	if r.ExploreSpec.DisplayName == "" {
+		r.ExploreSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
 	r.ExploreSpec.Dimensions = dimensions

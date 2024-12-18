@@ -134,7 +134,9 @@ export function getDashboardStateFromProto(
       dashboard.compareTimeRange,
     );
     // backwards compatibility
-    correctComparisonTimeRange(entity.selectedComparisonTimeRange);
+    entity.selectedComparisonTimeRange.name = correctComparisonTimeRange(
+      entity.selectedComparisonTimeRange.name as string,
+    ) as TimeComparisonOption;
   }
   if (dashboard.showTimeComparison !== undefined) {
     entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
@@ -166,7 +168,7 @@ export function getDashboardStateFromProto(
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
   } else {
-    entity.selectedComparisonDimension = undefined;
+    entity.selectedComparisonDimension = "";
   }
   if (dashboard.expandedMeasure) {
     entity.tdd = {
@@ -212,7 +214,9 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
-  entity.pivot = fromPivotProto(dashboard, metricsView);
+  if (dashboard.pivotIsActive !== undefined) {
+    entity.pivot = fromPivotProto(dashboard, metricsView);
+  }
 
   Object.assign(entity, fromActivePageProto(dashboard));
 
@@ -223,7 +227,9 @@ export function base64ToProto(message: string) {
   return protoBase64.dec(message);
 }
 
-function fromExpressionProto(expression: Expression): V1Expression | undefined {
+export function fromExpressionProto(
+  expression: Expression,
+): V1Expression | undefined {
   switch (expression.expression.case) {
     case "ident":
       return {
@@ -422,29 +428,22 @@ function fromPivotProto(
   };
 }
 
-function correctComparisonTimeRange(
-  comparisonTimeRange: DashboardTimeControls,
-) {
-  switch (comparisonTimeRange.name as string) {
+export function correctComparisonTimeRange(name: string) {
+  switch (name) {
     case "CONTIGUOUS":
-      comparisonTimeRange.name = TimeComparisonOption.CONTIGUOUS;
-      break;
+      return TimeComparisonOption.CONTIGUOUS;
     case "P1D":
-      comparisonTimeRange.name = TimeComparisonOption.DAY;
-      break;
+      return TimeComparisonOption.DAY;
     case "P1W":
-      comparisonTimeRange.name = TimeComparisonOption.WEEK;
-      break;
+      return TimeComparisonOption.WEEK;
     case "P1M":
-      comparisonTimeRange.name = TimeComparisonOption.MONTH;
-      break;
+      return TimeComparisonOption.MONTH;
     case "P3M":
-      comparisonTimeRange.name = TimeComparisonOption.QUARTER;
-      break;
+      return TimeComparisonOption.QUARTER;
     case "P1Y":
-      comparisonTimeRange.name = TimeComparisonOption.YEAR;
-      break;
+      return TimeComparisonOption.YEAR;
   }
+  return name;
 }
 
 function chartTypeMap(chartType: string | undefined): TDDChart {
@@ -474,7 +473,7 @@ function fromActivePageProto(
       } else if (dashboard.expandedMeasure) {
         return {
           activePage: DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
-          selectedDimensionName: undefined,
+          selectedDimensionName: "",
         };
       }
       // return empty so that nothing is overridden
@@ -486,7 +485,7 @@ function fromActivePageProto(
     case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
       return {
         activePage: dashboard.activePage,
-        selectedDimensionName: undefined,
+        selectedDimensionName: "",
       };
 
     case DashboardState_ActivePage.DIMENSION_TABLE:

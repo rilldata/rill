@@ -76,6 +76,88 @@ proto3.util.setEnumType(ExploreComparisonMode, "rill.runtime.v1.ExploreCompariso
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.ExploreWebView
+ */
+export enum ExploreWebView {
+  /**
+   * @generated from enum value: EXPLORE_WEB_VIEW_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EXPLORE_WEB_VIEW_EXPLORE = 1;
+   */
+  EXPLORE = 1,
+
+  /**
+   * @generated from enum value: EXPLORE_WEB_VIEW_TIME_DIMENSION = 2;
+   */
+  TIME_DIMENSION = 2,
+
+  /**
+   * @generated from enum value: EXPLORE_WEB_VIEW_PIVOT = 3;
+   */
+  PIVOT = 3,
+
+  /**
+   * @generated from enum value: EXPLORE_WEB_VIEW_CANVAS = 4;
+   */
+  CANVAS = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExploreWebView)
+proto3.util.setEnumType(ExploreWebView, "rill.runtime.v1.ExploreWebView", [
+  { no: 0, name: "EXPLORE_WEB_VIEW_UNSPECIFIED" },
+  { no: 1, name: "EXPLORE_WEB_VIEW_EXPLORE" },
+  { no: 2, name: "EXPLORE_WEB_VIEW_TIME_DIMENSION" },
+  { no: 3, name: "EXPLORE_WEB_VIEW_PIVOT" },
+  { no: 4, name: "EXPLORE_WEB_VIEW_CANVAS" },
+]);
+
+/**
+ * @generated from enum rill.runtime.v1.ExploreSortType
+ */
+export enum ExploreSortType {
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_VALUE = 1;
+   */
+  VALUE = 1,
+
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_PERCENT = 2;
+   */
+  PERCENT = 2,
+
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_DELTA_PERCENT = 3;
+   */
+  DELTA_PERCENT = 3,
+
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_DELTA_ABSOLUTE = 4;
+   */
+  DELTA_ABSOLUTE = 4,
+
+  /**
+   * @generated from enum value: EXPLORE_SORT_TYPE_DIMENSION = 5;
+   */
+  DIMENSION = 5,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExploreSortType)
+proto3.util.setEnumType(ExploreSortType, "rill.runtime.v1.ExploreSortType", [
+  { no: 0, name: "EXPLORE_SORT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "EXPLORE_SORT_TYPE_VALUE" },
+  { no: 2, name: "EXPLORE_SORT_TYPE_PERCENT" },
+  { no: 3, name: "EXPLORE_SORT_TYPE_DELTA_PERCENT" },
+  { no: 4, name: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE" },
+  { no: 5, name: "EXPLORE_SORT_TYPE_DIMENSION" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.AssertionStatus
  */
 export enum AssertionStatus {
@@ -2369,13 +2451,33 @@ export class ExplorePreset extends Message<ExplorePreset> {
   measuresSelector?: FieldSelector;
 
   /**
+   * @generated from field: optional rill.runtime.v1.Expression where = 11;
+   */
+  where?: Expression;
+
+  /**
    * Time range for the explore.
    * It corresponds to the `range` property of the explore's `time_ranges`.
    * If not found in `time_ranges`, it should be added to the list.
    *
-   * @generated from field: string time_range = 6;
+   * @generated from field: optional string time_range = 6;
    */
-  timeRange = "";
+  timeRange?: string;
+
+  /**
+   * @generated from field: optional string timezone = 12;
+   */
+  timezone?: string;
+
+  /**
+   * @generated from field: optional string time_grain = 13;
+   */
+  timeGrain?: string;
+
+  /**
+   * @generated from field: optional string select_time_range = 14;
+   */
+  selectTimeRange?: string;
 
   /**
    * Comparison mode.
@@ -2385,11 +2487,76 @@ export class ExplorePreset extends Message<ExplorePreset> {
   comparisonMode = ExploreComparisonMode.UNSPECIFIED;
 
   /**
+   * @generated from field: optional string compare_time_range = 15;
+   */
+  compareTimeRange?: string;
+
+  /**
    * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
    *
-   * @generated from field: string comparison_dimension = 8;
+   * @generated from field: optional string comparison_dimension = 8;
    */
-  comparisonDimension = "";
+  comparisonDimension?: string;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ExploreWebView view = 16;
+   */
+  view?: ExploreWebView;
+
+  /**
+   * @generated from field: optional string explore_sort_by = 17;
+   */
+  exploreSortBy?: string;
+
+  /**
+   * @generated from field: optional bool explore_sort_asc = 18;
+   */
+  exploreSortAsc?: boolean;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ExploreSortType explore_sort_type = 19;
+   */
+  exploreSortType?: ExploreSortType;
+
+  /**
+   * @generated from field: optional string explore_expanded_dimension = 20;
+   */
+  exploreExpandedDimension?: string;
+
+  /**
+   * @generated from field: optional string time_dimension_measure = 21;
+   */
+  timeDimensionMeasure?: string;
+
+  /**
+   * @generated from field: optional string time_dimension_chart_type = 22;
+   */
+  timeDimensionChartType?: string;
+
+  /**
+   * @generated from field: optional bool time_dimension_pin = 23;
+   */
+  timeDimensionPin?: boolean;
+
+  /**
+   * @generated from field: repeated string pivot_rows = 24;
+   */
+  pivotRows: string[] = [];
+
+  /**
+   * @generated from field: repeated string pivot_cols = 25;
+   */
+  pivotCols: string[] = [];
+
+  /**
+   * @generated from field: optional string pivot_sort_by = 26;
+   */
+  pivotSortBy?: string;
+
+  /**
+   * @generated from field: optional bool pivot_sort_asc = 27;
+   */
+  pivotSortAsc?: boolean;
 
   constructor(data?: PartialMessage<ExplorePreset>) {
     super();
@@ -2403,9 +2570,26 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 9, name: "dimensions_selector", kind: "message", T: FieldSelector },
     { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "measures_selector", kind: "message", T: FieldSelector },
-    { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "where", kind: "message", T: Expression, opt: true },
+    { no: 6, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 13, name: "time_grain", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "select_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
-    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "compare_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 16, name: "view", kind: "enum", T: proto3.getEnumType(ExploreWebView), opt: true },
+    { no: 17, name: "explore_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "explore_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 19, name: "explore_sort_type", kind: "enum", T: proto3.getEnumType(ExploreSortType), opt: true },
+    { no: 20, name: "explore_expanded_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 21, name: "time_dimension_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 22, name: "time_dimension_chart_type", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 23, name: "time_dimension_pin", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 24, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "pivot_cols", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 26, name: "pivot_sort_by", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 27, name: "pivot_sort_asc", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExplorePreset {

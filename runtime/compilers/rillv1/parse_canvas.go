@@ -118,7 +118,9 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.CanvasSpec.DisplayName = tmp.DisplayName
+	if r.CanvasSpec.DisplayName == "" {
+		r.CanvasSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	r.CanvasSpec.MaxWidth = tmp.MaxWidth
 	r.CanvasSpec.Theme = themeName
 	r.CanvasSpec.EmbeddedTheme = themeSpec

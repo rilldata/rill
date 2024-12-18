@@ -3099,6 +3099,7 @@ definitions:
       - CODE_FLOAT32
       - CODE_FLOAT64
       - CODE_TIMESTAMP
+      - CODE_INTERVAL
       - CODE_DATE
       - CODE_TIME
       - CODE_STRING
@@ -4089,18 +4090,66 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      where:
+        $ref: '#/definitions/v1Expression'
       timeRange:
         type: string
         description: |-
           Time range for the explore.
           It corresponds to the `range` property of the explore's `time_ranges`.
           If not found in `time_ranges`, it should be added to the list.
+      timezone:
+        type: string
+      timeGrain:
+        type: string
+      selectTimeRange:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
+      compareTimeRange:
+        type: string
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      view:
+        $ref: '#/definitions/v1ExploreWebView'
+      exploreSortBy:
+        type: string
+      exploreSortAsc:
+        type: boolean
+      exploreSortType:
+        $ref: '#/definitions/v1ExploreSortType'
+      exploreExpandedDimension:
+        type: string
+      timeDimensionMeasure:
+        type: string
+      timeDimensionChartType:
+        type: string
+      timeDimensionPin:
+        type: boolean
+      pivotRows:
+        type: array
+        items:
+          type: string
+      pivotCols:
+        type: array
+        items:
+          type: string
+      pivotSortBy:
+        type: string
+      pivotSortAsc:
+        type: boolean
+  v1ExploreSortType:
+    type: string
+    enum:
+      - EXPLORE_SORT_TYPE_UNSPECIFIED
+      - EXPLORE_SORT_TYPE_VALUE
+      - EXPLORE_SORT_TYPE_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_ABSOLUTE
+      - EXPLORE_SORT_TYPE_DIMENSION
+    default: EXPLORE_SORT_TYPE_UNSPECIFIED
   v1ExploreSpec:
     type: object
     properties:
@@ -4181,6 +4230,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1ExploreComparisonTimeRange'
         title: Comparison time ranges available for this time range
+  v1ExploreWebView:
+    type: string
+    enum:
+      - EXPLORE_WEB_VIEW_UNSPECIFIED
+      - EXPLORE_WEB_VIEW_EXPLORE
+      - EXPLORE_WEB_VIEW_TIME_DIMENSION
+      - EXPLORE_WEB_VIEW_PIVOT
+      - EXPLORE_WEB_VIEW_CANVAS
+    default: EXPLORE_WEB_VIEW_UNSPECIFIED
   v1ExportFormat:
     type: string
     enum:

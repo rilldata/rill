@@ -530,6 +530,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			dim.DisplayName = dim.Label
 		}
 
+		if dim.DisplayName == "" {
+			dim.DisplayName = ToDisplayName(dim.Name)
+		}
+
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -561,6 +565,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Backwards compatibility
 		if measure.Label != "" && measure.DisplayName == "" {
 			measure.DisplayName = measure.Label
+		}
+
+		if measure.DisplayName == "" {
+			measure.DisplayName = ToDisplayName(measure.Name)
 		}
 
 		lower := strings.ToLower(measure.Name)
@@ -783,6 +791,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
 	spec.DisplayName = tmp.DisplayName
+	if spec.DisplayName == "" {
+		spec.DisplayName = ToDisplayName(node.Name)
+	}
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
@@ -899,14 +910,22 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if len(spec.DefaultMeasures) == 0 {
 		presetMeasuresSelector = &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}}
 	}
+	var tr *string
+	if spec.DefaultTimeRange != "" {
+		tr = &spec.DefaultTimeRange
+	}
+	var compareDim *string
+	if spec.DefaultComparisonDimension != "" {
+		compareDim = &spec.DefaultComparisonDimension
+	}
 	e.ExploreSpec.DefaultPreset = &runtimev1.ExplorePreset{
 		Dimensions:          spec.DefaultDimensions,
 		DimensionsSelector:  presetDimensionsSelector,
 		Measures:            spec.DefaultMeasures,
 		MeasuresSelector:    presetMeasuresSelector,
-		TimeRange:           spec.DefaultTimeRange,
+		TimeRange:           tr,
 		ComparisonMode:      exploreComparisonMode,
-		ComparisonDimension: spec.DefaultComparisonDimension,
+		ComparisonDimension: compareDim,
 	}
 
 	return nil

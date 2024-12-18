@@ -3,17 +3,18 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    type DashboardTimeControls,
     TimeComparisonOption,
+    TimeRangePreset,
+    type DashboardTimeControls,
     type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
   import { DateTime, Interval } from "luxon";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import * as Elements from "../super-pill/components";
   import { SortType } from "../../proto-state/derived-types";
+  import * as Elements from "../super-pill/components";
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
@@ -33,9 +34,9 @@
     validSpecStore,
   } = ctx;
 
-  $: exploreStore = useExploreStore($exploreName);
+  $: exploreState = useExploreState($exploreName);
 
-  $: activeTimeZone = $exploreStore?.selectedTimezone;
+  $: activeTimeZone = $exploreState?.selectedTimezone;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -69,10 +70,17 @@
       metricsViewSpec,
     );
   }
+
+  $: disabled =
+    selectedTimeRange?.name === TimeRangePreset.ALL_TIME || undefined;
 </script>
 
-<div class="wrapper">
+<div
+  class="wrapper"
+  title={disabled && "Comparison not available when viewing all time range"}
+>
   <button
+    {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
       metricsExplorerStore.displayTimeComparison(
@@ -91,15 +99,22 @@
     }}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
-      <Switch checked={showTimeComparison} id="comparing" small />
+      <Switch
+        checked={showTimeComparison}
+        id="comparing"
+        small
+        disabled={disabled ?? false}
+      />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span>Comparing</span>
+        <span class:opacity-50={disabled}>Comparing</span>
       </Label>
     </div>
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
@@ -107,6 +122,7 @@
       grain={activeTimeGrain}
       zone={activeTimeZone}
       {onSelectComparisonRange}
+      disabled={disabled ?? false}
     />
   {/if}
 </div>
@@ -115,7 +131,7 @@
   .wrapper {
     @apply flex w-fit;
     @apply h-7 rounded-full;
-    @apply overflow-hidden;
+    @apply overflow-hidden select-none;
   }
 
   :global(.wrapper > button) {

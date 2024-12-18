@@ -3,7 +3,15 @@ import {
   MeasureFilterType,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import {
+  V1TimeGrain,
+  type V1ExploreSpec,
+  type V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
+import { describe, expect, it } from "vitest";
 import {
   AD_BIDS_ADVANCED_MEASURES,
   AD_BIDS_EXPLORE_INIT,
@@ -15,13 +23,6 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "./test-data/data";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import {
-  type V1MetricsViewSpec,
-  V1TimeGrain,
-  type V1ExploreSpec,
-} from "@rilldata/web-common/runtime-client";
-import { describe, expect, it } from "vitest";
 
 describe("AdvancedMeasureCorrector", () => {
   const MetricsView = {
@@ -34,11 +35,9 @@ describe("AdvancedMeasureCorrector", () => {
   } as V1ExploreSpec;
 
   it("changing grain while in TDD for measure based on timestamp", () => {
-    const dashboard = getDefaultMetricsExplorerEntity(
+    const dashboard = getFullInitExploreState(
       "AdBids",
-      MetricsView,
-      Explore,
-      undefined,
+      getInitExploreStateForTest(MetricsView, Explore),
     );
     dashboard.tdd.expandedMeasureName = AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN;
 
@@ -71,11 +70,9 @@ describe("AdvancedMeasureCorrector", () => {
   });
 
   it("metrics view spec changed converting a measure to an advanced measure", () => {
-    const dashboard = getDefaultMetricsExplorerEntity(
+    const dashboard = getFullInitExploreState(
       "AdBids",
-      MetricsView,
-      Explore,
-      undefined,
+      getInitExploreStateForTest(MetricsView, Explore),
     );
     dashboard.leaderboardMeasureName = AD_BIDS_IMPRESSIONS_MEASURE;
     dashboard.dimensionThresholdFilters = [

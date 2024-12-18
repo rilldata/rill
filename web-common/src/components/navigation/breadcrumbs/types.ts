@@ -4,6 +4,7 @@ export type PathOption = {
   label: string;
   depth?: number;
   href?: string;
+  preloadData?: boolean;
   section?: string;
   pill?: string;
 };

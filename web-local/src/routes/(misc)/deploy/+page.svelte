@@ -15,9 +15,8 @@
   import type { PageData } from "./$types";
 
   export let data: PageData;
-  $: ({ orgParam } = data);
 
-  const deployer = new ProjectDeployer(orgParam);
+  const deployer = new ProjectDeployer(data.orgParam);
   const metadata = deployer.metadata;
   const user = deployer.user;
   const project = deployer.project;

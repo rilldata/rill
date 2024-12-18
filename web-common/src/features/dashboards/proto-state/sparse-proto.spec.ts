@@ -1,6 +1,7 @@
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { getFullInitExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
@@ -9,32 +10,32 @@ import {
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
-  AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
-  AD_BIDS_APPLY_IMP_MEASURE_FILTER,
-  AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
-  AD_BIDS_OPEN_PUB_IMP_PIVOT,
-  AD_BIDS_OPEN_IMP_TDD,
-  AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
-  applyMutationsToDashboard,
-  type TestDashboardMutation,
-  AD_BIDS_APPLY_DOM_DIMENSION_FILTER,
-  AD_BIDS_APPLY_BP_MEASURE_FILTER,
-  AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
-  AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
-  AD_BIDS_OPEN_BP_TDD,
-  AD_BIDS_OPEN_DOM_BP_PIVOT,
-  AD_BIDS_REMOVE_PUB_DIMENSION_FILTER,
-  AD_BIDS_REMOVE_IMP_MEASURE_FILTER,
-} from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
+  getInitExploreStateForTest,
   getPartialDashboard,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import {
+  AD_BIDS_APPLY_BP_MEASURE_FILTER,
+  AD_BIDS_APPLY_DOM_DIMENSION_FILTER,
+  AD_BIDS_APPLY_IMP_MEASURE_FILTER,
+  AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
+  AD_BIDS_OPEN_BP_TDD,
+  AD_BIDS_OPEN_DOM_BP_PIVOT,
+  AD_BIDS_OPEN_DOM_DIMENSION_TABLE,
+  AD_BIDS_OPEN_IMP_TDD,
+  AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+  AD_BIDS_OPEN_PUB_IMP_PIVOT,
+  AD_BIDS_REMOVE_IMP_MEASURE_FILTER,
+  AD_BIDS_REMOVE_PUB_DIMENSION_FILTER,
+  AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+  AD_BIDS_SET_P7D_TIME_RANGE_FILTER,
+  applyMutationsToDashboard,
+  type TestDashboardMutation,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, it, describe, beforeEach, expect } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const TestCases: {
   title: string;
@@ -94,11 +95,13 @@ describe("sparse proto", () => {
   describe("should reset dashboard store", () => {
     for (const { title, mutations } of TestCases) {
       it(`from ${title}`, () => {
-        const dashboard = getDefaultMetricsExplorerEntity(
+        const dashboard = getFullInitExploreState(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_INIT,
-          AD_BIDS_EXPLORE_INIT,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_INIT,
+            AD_BIDS_EXPLORE_INIT,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const defaultProto = getProtoFromDashboardState(dashboard);
 

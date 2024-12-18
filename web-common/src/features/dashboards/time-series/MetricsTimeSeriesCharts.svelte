@@ -13,7 +13,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
-    useExploreStore,
+    useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
@@ -49,6 +49,8 @@
 
   export let exploreName: string;
   export let workspaceWidth: number;
+  export let timeSeriesWidth: number;
+  export let hideStartPivotButton = false;
 
   const {
     selectors: {
@@ -79,23 +81,23 @@
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
 
-  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
+  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
 
-  $: comparisonDimension = $exploreStore?.selectedComparisonDimension;
+  $: comparisonDimension = $exploreState?.selectedComparisonDimension;
   $: showComparison = Boolean($timeControlsStore.showTimeComparison);
-  $: tddChartType = $exploreStore?.tdd?.chartType;
+  $: tddChartType = $exploreState?.tdd?.chartType;
 
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
-  $: isScrubbing = $exploreStore?.selectedScrubRange?.isScrubbing;
+  $: isScrubbing = $exploreState?.selectedScrubRange?.isScrubbing;
   $: isAllTime =
     $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
   $: isPercOfTotalAsContextColumn =
-    $exploreStore?.leaderboardContextColumn ===
+    $exploreState?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension = $includedDimensionValues(
     comparisonDimension as string,
@@ -137,13 +139,13 @@
   $: if ($timeControlsStore.ready && interval) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
-      $exploreStore?.selectedScrubRange?.start,
-      $exploreStore?.selectedTimezone,
+      $exploreState?.selectedScrubRange?.start,
+      $exploreState?.selectedTimezone,
       timeGrainToDuration(interval),
     );
     scrubEnd = adjustOffsetForZone(
-      $exploreStore?.selectedScrubRange?.end,
-      $exploreStore?.selectedTimezone,
+      $exploreState?.selectedScrubRange?.end,
+      $exploreState?.selectedTimezone,
       timeGrainToDuration(interval),
     );
 
@@ -192,11 +194,11 @@
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
-      $exploreStore?.selectedTimezone,
+      $exploreState?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
       $validSpecStore.data?.explore?.defaultPreset?.timeRange,
-      $exploreStore?.tdd.chartType,
+      $exploreState?.tdd.chartType,
     );
 
     if (adjustedChartValue?.start) {
@@ -239,7 +241,7 @@
 
   let showReplacePivotModal = false;
   function startPivotForTimeseries() {
-    const pivot = $exploreStore?.pivot;
+    const pivot = $exploreState?.pivot;
 
     if (
       pivot.rows.dimension.length ||
@@ -289,10 +291,11 @@
   end={endValue}
   start={startValue}
   {workspaceWidth}
+  {timeSeriesWidth}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
-      <BackToExplore {exploreName} />
+      <BackToExplore />
       <ChartTypeSelector
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
@@ -306,8 +309,8 @@
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
         selectableItems={$allMeasures.map(({ name, displayName }) => ({
-          name: name ?? "",
-          label: displayName ?? name ?? "",
+          name: name || "",
+          label: displayName || name || "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {
@@ -315,14 +318,16 @@
         }}
       />
 
-      <button
-        class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
-        on:click={() => {
-          startPivotForTimeseries();
-        }}
-      >
-        Start Pivot
-      </button>
+      {#if !hideStartPivotButton}
+        <button
+          class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700 ml-auto"
+          on:click={() => {
+            startPivotForTimeseries();
+          }}
+        >
+          Start Pivot
+        </button>
+      {/if}
     {/if}
   </div>
 
@@ -331,7 +336,7 @@
       <ChartInteractions {exploreName} {showComparison} timeGrain={interval} />
       {#if tddChartType === TDDChart.DEFAULT}
         <div class="translate-x-5">
-          {#if $exploreStore?.selectedTimeRange && startValue && endValue}
+          {#if $exploreState?.selectedTimeRange && startValue && endValue}
             <SimpleDataGraphic
               height={26}
               overflowHidden={false}
@@ -379,12 +384,6 @@
               : $timeSeriesDataStore?.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
-            on:expand-measure={() => {
-              metricsExplorerStore.setExpandedMeasureName(
-                exploreName,
-                measure.name,
-              );
-            }}
           />
 
           {#if hasTimeseriesError}
@@ -424,7 +423,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore?.selectedTimezone,
+                  $exploreState?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -437,7 +436,7 @@
                 const { interval } = e.detail;
                 const { start, end } = adjustTimeInterval(
                   interval,
-                  $exploreStore?.selectedTimezone,
+                  $exploreState?.selectedTimezone,
                 );
 
                 metricsExplorerStore.setSelectedScrubRange(exploreName, {
@@ -467,7 +466,7 @@
               {exploreName}
               data={formattedData}
               {dimensionData}
-              zone={$exploreStore?.selectedTimezone}
+              zone={$exploreState?.selectedTimezone}
               xAccessor="ts_position"
               labelAccessor="ts"
               timeGrain={interval}

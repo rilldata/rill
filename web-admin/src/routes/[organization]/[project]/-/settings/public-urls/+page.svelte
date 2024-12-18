@@ -26,7 +26,7 @@
 
   function useValidDashboardTitle(dashboard: DashboardResource) {
     return (
-      dashboard?.resource.explore?.spec?.displayName ??
+      dashboard?.resource.explore?.spec?.displayName ||
       dashboard?.resource.meta.name.name
     );
   }

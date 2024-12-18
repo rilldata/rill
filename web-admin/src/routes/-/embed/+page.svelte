@@ -7,7 +7,12 @@
   import TopNavigationBarEmbed from "@rilldata/web-admin/features/embeds/TopNavigationBarEmbed.svelte";
   import UnsupportedKind from "@rilldata/web-admin/features/embeds/UnsupportedKind.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
+
+  // Embedded dashboards communicate directly with the project runtime and do not communicate with the admin server.
+  // One by-product of this is that they have no access to control plane features like alerts, bookmarks, and scheduled reports.
+  featureFlags.set(false, "adminServer");
 
   const instanceId = $page.url.searchParams.get("instance_id");
   const initialResourceName = $page.url.searchParams.get("resource");
