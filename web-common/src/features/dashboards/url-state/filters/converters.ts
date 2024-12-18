@@ -114,9 +114,17 @@ function escapeColumnName(columnName: string) {
   // if name doesnt have any special chars do not surround it by quotes.
   // this makes the url more readable
   if (NonStandardName.test(columnName)) return columnName;
-  return `"${columnName.replace(/"/g, '\\"')}"`;
+  const escapedColumnName = columnName
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"');
+  return `"${escapedColumnName}"`;
 }
 
 function escapeValue(value: string) {
-  return `'${value.replace(/'/g, "\\'").replace(/\n/g, "\\n")}'`;
+  const escapedValue = value
+    // TODO: this was a CodeQL suggestion. could this cause conflicts in values?
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, "\\n");
+  return `'${escapedValue}'`;
 }
