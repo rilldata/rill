@@ -1,6 +1,8 @@
 connectors:
   - clickhouse
 project_files:
+  rill.yaml:
+    olap_connector: clickhouse
   ad_bids_mini.yaml:
     type: model
     connector: clickhouse
