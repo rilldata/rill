@@ -7,7 +7,7 @@ import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
-const skipGlobalSetup = process.env.E2E_SKIP_GLOBAL_SETUP === "true";
+const skipGlobalSetup = Boolean(process.env.E2E_SKIP_GLOBAL_SETUP);
 const timeout = 120_000;
 
 export default async function globalSetup() {
