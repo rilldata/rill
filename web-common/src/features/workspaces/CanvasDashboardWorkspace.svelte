@@ -38,7 +38,6 @@
   let canvasDashboardName: string;
   let selectedComponentFileArtifact: FileArtifact | undefined;
   let selectedView: "split" | "code" | "viz";
-  let showGrid = true;
   let showComponentEditor = false;
   let containerWidth: number;
   let containerHeight: number;
@@ -356,34 +355,16 @@
           {gap}
           {items}
           {columns}
-          {showGrid}
           {variables}
           bind:selectedComponentName
           bind:selectedIndex
           on:update={handlePreviewUpdate}
           on:delete={handlePreviewDelete}
         />
-
-        <div class="floating-grid-wrapper">
-          <Switch small id="grid" bind:checked={showGrid} />
-          <Label for="grid" class="font-medium text-xs text-gray-600">
-            Grid
-          </Label>
-        </div>
       </section>
     {/if}
   </div>
 </WorkspaceContainer>
 
 <style lang="postcss">
-  .floating-grid-wrapper {
-    @apply transition-all;
-    @apply opacity-50 shadow-lg border border-slate-200 bg-slate-100;
-    @apply flex gap-x-1 flex-none py-1 px-2 items-center h-fit rounded-full;
-    @apply absolute bottom-2 right-2;
-  }
-
-  .floating-grid-wrapper:hover {
-    @apply opacity-100;
-  }
 </style>
