@@ -24,6 +24,8 @@
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
 
+  const DEFAULT_TIMESERIES_WIDTH = 580;
+  const MIN_TIMESERIES_WIDTH = 440;
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -84,8 +86,7 @@
 
   $: metricsView = $validSpecStore.data?.metricsView ?? {};
 
-  let metricsWidth = 580; // Default width for metrics section
-  const MIN_METRICS_WIDTH = 440;
+  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 </script>
 
@@ -159,8 +160,9 @@
         <div class="relative flex-none bg-gray-200 w-[1px]">
           <Resizer
             dimension={metricsWidth}
-            min={MIN_METRICS_WIDTH}
+            min={MIN_TIMESERIES_WIDTH}
             max={exploreContainerWidth - 500}
+            basis={DEFAULT_TIMESERIES_WIDTH}
             bind:resizing
             side="right"
             onUpdate={(width) => {
