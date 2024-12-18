@@ -2,6 +2,7 @@
   import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -58,7 +59,7 @@
         {@const selected = tab === currentTab}
         <Tab
           {selected}
-          href="?view={tab}"
+          href="?{ExploreStateURLParams.WebView}={tab}"
           on:click={() => handleTabChange(tab)}
         >
           <Icon />

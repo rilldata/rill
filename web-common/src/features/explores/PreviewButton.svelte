@@ -3,6 +3,7 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -17,6 +18,11 @@
 
   const viewDashboard = () => {
     if (!href) return;
+    // temporary fix. we should do a proper fix by removing this on rill-dev when navigated to preview
+    const [, entityType, entityName] = href.split("/");
+    if (entityType === "explore") {
+      clearExploreSessionStore(entityName, undefined);
+    }
     behaviourEvent
       ?.fireNavigationEvent(
         href,
