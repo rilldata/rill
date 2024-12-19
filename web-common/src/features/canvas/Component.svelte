@@ -88,14 +88,14 @@
     {/if}
 
     <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
+      class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
       {#if title || description}
-        <div class="w-full h-fit flex flex-col pb-2 border-b">
+        <div class="w-full h-fit flex flex-col border-b bg-white p-2">
           {#if title}
-            <h1 class="text-slate-900">{title}</h1>
+            <h1 class="text-slate-700">{title}</h1>
           {/if}
           {#if description}
             <h2 class="text-slate-600 leading-none">{description}</h2>
@@ -115,12 +115,12 @@
   }
 
   h1 {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 500;
   }
 
   h2 {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
   }
 </style>

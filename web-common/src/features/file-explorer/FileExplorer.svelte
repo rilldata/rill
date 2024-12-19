@@ -112,19 +112,6 @@
     }
   }
 
-  // TODO: Remove this from navigation
-  function onGenerateChart({
-    table,
-    connector,
-    metricsView,
-  }: {
-    table?: string;
-    connector?: string;
-    metricsView?: string;
-  }) {
-    console.log("No op");
-  }
-
   const { dragData, position } = navEntryDragDropStore;
 
   async function handleDropSuccess(fromPath: string, toDir: string) {
@@ -180,7 +167,6 @@
       {onRename}
       {onDuplicate}
       {onDelete}
-      {onGenerateChart}
       onMouseDown={(e, dragData) =>
         navEntryDragDropStore.onMouseDown(e, dragData)}
     />

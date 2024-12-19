@@ -35,7 +35,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
 
   inputParams(): Record<keyof ChartSpec, ComponentInputParam> {
     return {
-      metrics_view: { type: "metrics", label: "Metric view" },
+      metrics_view: { type: "metrics", label: "Metrics view" },
       time_range: { type: "rill_time", label: "Time Range" },
       x: { type: "positional", label: "X" },
       y: { type: "positional", label: "Y" },

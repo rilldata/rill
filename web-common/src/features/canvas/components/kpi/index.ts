@@ -40,7 +40,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   inputParams(): Record<keyof KPISpec, ComponentInputParam> {
     return {
-      metrics_view: { type: "metrics", label: "Metric view" },
+      metrics_view: { type: "metrics", label: "Metrics view" },
       measure: { type: "measure", label: "Measure" },
       time_range: { type: "rill_time", label: "Time Range" },
       comparison_range: { type: "rill_time", label: "Comparison Range" },

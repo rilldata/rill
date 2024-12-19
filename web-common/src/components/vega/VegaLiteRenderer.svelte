@@ -27,7 +27,7 @@
   let jwt = get(runtime).jwt;
 
   $: width = contentRect.width;
-  $: height = contentRect.height * 0.95 - 80;
+  $: height = contentRect.height - 10;
 
   $: if (viewVL && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
