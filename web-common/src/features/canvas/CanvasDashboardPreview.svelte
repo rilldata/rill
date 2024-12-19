@@ -9,7 +9,8 @@
   import type { Vector } from "./types";
   import { vector } from "./util";
   import SvelteGridStack from "./SvelteGridStack.svelte";
-  import type { GridItemHTMLElement } from "gridstack";
+  import type { GridItemHTMLElement, GridStackNode } from "gridstack";
+  import { createEventDispatcher } from "svelte";
 
   const zeroVector = [0, 0] as [0, 0];
 
@@ -19,6 +20,7 @@
   export let selectedIndex: number | null = null;
 
   const { canvasName } = getCanvasStateManagers();
+  const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -38,17 +40,11 @@
   $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
-  $: gridVector = [gridCell, gridCell] as Vector;
 
   $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
     scale,
     scale,
   ]);
-
-  // $: dragPosition = vector.add(
-  //   vector.multiply(mouseDelta, positionChange),
-  //   initialElementPosition,
-  // );
 
   $: resizeDimenions = vector.add(
     vector.multiply(mouseDelta, dimensionChange),
@@ -174,13 +170,15 @@
     float: true,
   };
 
-  // TODO: fix this
+  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
   function handleResizeStop({
     detail,
   }: {
     detail: { event: Event; el: GridItemHTMLElement };
   }) {
-    console.log("handleResizeStop", detail);
+    console.log("RESIZE STOP detail", detail);
+
+    // TODO: dispatch update event to update document
   }
 </script>
 

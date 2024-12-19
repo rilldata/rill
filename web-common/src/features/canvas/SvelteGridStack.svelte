@@ -1,5 +1,7 @@
+<!-- See: https://github.com/SafetZahirovic/SvelteGridStack -->
 <script lang="ts">
   import type {
+    GridItemHTMLElement,
     GridStack,
     GridStackNode,
     GridStackOptions,
@@ -17,6 +19,7 @@
   export let items: Array<GridStackWidget>;
   export let opts: GridStackOptions;
 
+  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
     "added",
     "change",
@@ -27,10 +30,9 @@
     "dropped",
     "enable",
     "removed",
-    "resize",
     "resizestart",
+    "resize",
     "resizestop",
-    "resizecontent",
   ] as const;
 
   const dispatch = createEventDispatcher<GridstackDispatchEvents>();
@@ -57,9 +59,9 @@
       });
     });
 
-    gridStackEvents.forEach((ev) => {
-      grid.on(ev, (args: GridstackCallbackParams) => {
-        dispatch(ev, args);
+    gridStackEvents.forEach((event) => {
+      grid.on(event, (args: GridstackCallbackParams) => {
+        dispatch(event, args);
       });
     });
 
