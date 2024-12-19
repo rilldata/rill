@@ -55,7 +55,7 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
-  class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
+  class="component hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
@@ -90,10 +90,6 @@
 </div>
 
 <style lang="postcss">
-  .wrapper {
-    @apply absolute;
-  }
-
   h1 {
     font-size: 16px;
     font-weight: 500;

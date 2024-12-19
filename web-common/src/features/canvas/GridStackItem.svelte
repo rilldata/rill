@@ -4,7 +4,6 @@
   export let height: number | undefined;
   export let x: number | undefined;
   export let y: number | undefined;
-  export let content: string | undefined;
 </script>
 
 <div
@@ -16,7 +15,7 @@
   data-index={index}
 >
   <div class="grid-stack-item-content">
-    {content}
+    <slot />
   </div>
 </div>
 

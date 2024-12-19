@@ -47,10 +47,10 @@
     scale,
   ]);
 
-  $: dragPosition = vector.add(
-    vector.multiply(mouseDelta, positionChange),
-    initialElementPosition,
-  );
+  // $: dragPosition = vector.add(
+  //   vector.multiply(mouseDelta, positionChange),
+  //   initialElementPosition,
+  // );
 
   $: resizeDimenions = vector.add(
     vector.multiply(mouseDelta, dimensionChange),
@@ -182,39 +182,32 @@
   on:click={deselect}
   on:scroll={handleScroll}
 >
-  {#each items as component, i (i)}
-    <!-- TODO: make this work with Component -->
+  {#each items as component, idx (idx)}
+    {@const selected = idx === selectedIndex}
+    {@const interacting = selected && changing}
     <GridStackItem
-      index={i}
+      index={idx}
       width={component.width}
       height={component.height}
       x={component.x}
       y={component.y}
-      content={component.component}
-    />
+    >
+      <PreviewElement
+        {instanceId}
+        i={idx}
+        {scale}
+        {component}
+        {radius}
+        {selected}
+        {interacting}
+        {gapSize}
+        width={Number(component.width) * gridCell}
+        height={Number(component.height) * gridCell}
+        top={Number(component.y) * gridCell}
+        left={Number(component.x) * gridCell}
+        on:change={handleChange}
+        on:delete={handleDelete}
+      />
+    </GridStackItem>
   {/each}
-  <!-- {#each items as component, i (i)}
-    {@const selected = i === selectedIndex}
-    {@const interacting = selected && changing}
-    <PreviewElement
-      {instanceId}
-      {i}
-      {scale}
-      {component}
-      {radius}
-      {selected}
-      {interacting}
-      {gapSize}
-      width={interacting
-        ? finalResize[0]
-        : Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-      height={interacting
-        ? finalResize[1]
-        : Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
-      top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
-      left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
-      on:change={handleChange}
-      on:delete={handleDelete}
-    />
-  {/each} -->
 </CanvasDashboardWrapper>
