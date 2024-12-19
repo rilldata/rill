@@ -155,7 +155,7 @@
           hasUnsavedChanges={$hasUnsavedChanges}
           hasErrors={$hasErrors}
           {isLocalFileConnector}
-          on:save-source={fileArtifact.saveLocalContent}
+          on:save-source={() => fileArtifact.saveLocalContent()}
           on:refresh-source={refresh}
           on:replace-source={replaceSource}
           on:create-model={handleCreateModelFromSource}

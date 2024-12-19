@@ -104,7 +104,7 @@
               danger={!!$error && !$saving}
               loadingCopy="Saving"
               {disabled}
-              on:click={save}
+              on:click={() => save()}
             >
               {#if $error}
                 <Alert size="14px" />
