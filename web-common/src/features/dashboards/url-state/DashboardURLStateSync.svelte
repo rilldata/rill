@@ -9,13 +9,15 @@
     getTimeControlState,
     type TimeControlState,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import {
+    convertExploreStateToURLSearchParams,
+    getUpdatedUrlForExploreState,
+  } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
   import {
     clearExploreSessionStore,
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
-  import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -61,63 +63,27 @@
   }
 
   let prevUrl = "";
-  function handleExploreInit(isManualUrlChange: boolean) {
-    if (!exploreSpec || !metricsSpec) return;
 
-    let initState: Partial<MetricsExplorerEntity> | undefined;
-    let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage && !isManualUrlChange) {
-      // if there is state in session storage then merge state from config yaml with the state from session storage
-      initState = {
-        ...exploreStateFromYAMLConfig,
-        ...exploreStateFromSessionStorage,
-      };
-      shouldUpdateUrl = true;
-    } else if ($page.url.searchParams.size === 0) {
-      // when there are no params set, state will be state from config yaml and any additional initial state like bookmark
-      initState = {
-        ...exploreStateFromYAMLConfig,
-        ...(initExploreState ?? {}),
-      };
-      shouldUpdateUrl = !!initExploreState;
-    } else {
-      // else merge with explore from url
-      initState = {
-        ...exploreStateFromYAMLConfig,
-        ...partialExploreStateFromUrl,
-      };
-    }
+  onMount(() => {
+    // in some cases afterNavigate is not always triggered
+    // so this is the escape hatch to make sure dashboard store gets initialised
+    setTimeout(() => {
+      if (!$dashboardStore) {
+        handleExploreInit(true);
+      }
+    });
+  });
 
-    metricsExplorerStore.init(exploreName, initState);
-    const redirectUrl = new URL($page.url);
-    redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-      initState,
-      $page.url.searchParams,
-    );
-    // update session store to make sure updated to url or the initial state is propagated to the session store
-    updateExploreSessionStore(
-      exploreName,
-      extraKeyPrefix,
-      get(metricsExplorerStore).entities[exploreName],
-      exploreSpec,
-      timeControlsState,
-    );
-    prevUrl = redirectUrl.toString();
-
-    if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
+  beforeNavigate(({ from, to }) => {
+    if (!from || !to || from.url.pathname === to.url.pathname) {
+      // routing to the same path but probably different url params
       return;
     }
 
-    // using `replaceState` directly messes up the navigation entries,
-    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    void goto(redirectUrl, {
-      replaceState: true,
-      state: $page.state,
-    });
-  }
+    // session store is only used to save state for different views and not keep other params url
+    // so, we clear the store when we navigate away
+    clearExploreSessionStore(exploreName, extraKeyPrefix);
+  });
 
   afterNavigate(({ from, to, type }) => {
     if (
@@ -194,6 +160,64 @@
     });
   });
 
+  function handleExploreInit(isManualUrlChange: boolean) {
+    if (!exploreSpec || !metricsSpec) return;
+
+    let initState: Partial<MetricsExplorerEntity> | undefined;
+    let shouldUpdateUrl = false;
+    if (exploreStateFromSessionStorage && !isManualUrlChange) {
+      // if there is state in session storage then merge state from config yaml with the state from session storage
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...exploreStateFromSessionStorage,
+      };
+      shouldUpdateUrl = true;
+    } else if ($page.url.searchParams.size === 0) {
+      // when there are no params set, state will be state from config yaml and any additional initial state like bookmark
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...(initExploreState ?? {}),
+      };
+      shouldUpdateUrl = !!initExploreState;
+    } else {
+      // else merge with explore from url
+      initState = {
+        ...exploreStateFromYAMLConfig,
+        ...partialExploreStateFromUrl,
+      };
+    }
+
+    metricsExplorerStore.init(exploreName, initState);
+    const redirectUrl = new URL($page.url);
+    redirectUrl.search = getUpdatedUrlForExploreState(
+      exploreSpec,
+      timeControlsState,
+      defaultExplorePreset,
+      initState,
+      $page.url.searchParams,
+    );
+    // update session store to make sure updated to url or the initial state is propagated to the session store
+    updateExploreSessionStore(
+      exploreName,
+      extraKeyPrefix,
+      get(metricsExplorerStore).entities[exploreName],
+      exploreSpec,
+      timeControlsState,
+    );
+    prevUrl = redirectUrl.toString();
+
+    if (!shouldUpdateUrl || redirectUrl.search === $page.url.search) {
+      return;
+    }
+
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
+  }
+
   function gotoNewState() {
     if (!exploreSpec) return;
 
@@ -221,30 +245,11 @@
     );
   }
 
-  beforeNavigate(({ from, to }) => {
-    if (!from || !to || from.url.pathname === to.url.pathname) {
-      // routing to the same path but probably different url params
-      return;
-    }
-
-    // session store is only used to save state for different views and not keep other params url
-    // so, we clear the store when we navigate away
-    clearExploreSessionStore(exploreName, extraKeyPrefix);
-  });
-
   // reactive to only dashboardStore
   // but gotoNewState checks other fields
   $: if ($dashboardStore) {
     gotoNewState();
   }
-
-  onMount(() => {
-    setTimeout(() => {
-      if (!$dashboardStore) {
-        handleExploreInit(true);
-      }
-    });
-  });
 </script>
 
 {#if schemaError}
