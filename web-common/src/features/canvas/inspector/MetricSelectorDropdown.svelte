@@ -1,6 +1,6 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
-  import { type CanvasComponent } from "@rilldata/web-common/features/canvas/components/types";
+  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
   import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
   import { isString } from "@rilldata/web-common/features/canvas/util";
   import {
@@ -9,7 +9,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let component: CanvasComponent<any>;
+  export let component: CanvasComponentObj;
   export let key: string;
   export let inputParam: ComponentInputParam;
 

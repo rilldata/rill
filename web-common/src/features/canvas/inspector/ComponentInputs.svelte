@@ -15,7 +15,6 @@ Maps the input params for a component to a form input.
   export let componentType: CanvasComponentType;
   export let paramValues: V1ComponentSpecRendererProperties;
 
-  $: console.log("paramValues", paramValues);
   const { fileArtifact, canvasStore } = getCanvasStateManagers();
 
   $: selectedComponentIndex = $canvasStore?.selectedComponentIndex || 0;

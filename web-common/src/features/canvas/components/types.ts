@@ -6,6 +6,14 @@ import type { KPISpec } from "./kpi";
 import type { MarkdownSpec } from "./markdown";
 import type { TableSpec } from "./table";
 
+// First, let's create a union type for all possible specs
+export type ComponentSpec =
+  | ChartConfig
+  | TableSpec
+  | ImageSpec
+  | KPISpec
+  | MarkdownSpec;
+
 // The CanvasComponent interface is generic over the spec type.
 export interface CanvasComponent<T> {
   /**
@@ -17,21 +25,25 @@ export interface CanvasComponent<T> {
    * Path in the YAML where the component is stored
    */
   pathInYAML: (string | number)[];
+
   /**
-   * Minimum allowed size for the the component
+   * Minimum allowed size for the component
    * container on the canvas
    */
   minSize: ComponentSize;
+
   /**
    * The default size of the container when the component
    * is added to the canvas
    */
   defaultSize: ComponentSize;
+
   /**
    * The minimum condition needed for the spec to be valid
    * for the given component and to be rendered on the canvas
    */
   isValid(spec: T): boolean;
+
   /**
    * A map of input params which will be used in the visual
    * UI builder
@@ -41,7 +53,7 @@ export interface CanvasComponent<T> {
   /**
    * Update the spec store with the new values
    */
-  updateProperty(key: keyof T, value: T[keyof T]): Promise<void>;
+  updateProperty(key: string, value: unknown): Promise<void>;
 
   /**
    * Set the spec store with the new values
@@ -58,12 +70,6 @@ export interface ComponentSize {
   width: number;
   height: number;
 }
-
-export type CanvasComponentInput =
-  | MarkdownSpec
-  | KPISpec
-  | ImageSpec
-  | TableSpec;
 
 export type CanvasComponentType =
   | ChartType

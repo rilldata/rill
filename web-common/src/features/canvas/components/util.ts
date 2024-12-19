@@ -41,6 +41,8 @@ export const getComponentObj = (
   }
 };
 
+export type CanvasComponentObj = ReturnType<typeof getComponentObj>;
+
 // TODO: Apply DRY
 export function isCanvasComponentType(
   value: string | undefined,

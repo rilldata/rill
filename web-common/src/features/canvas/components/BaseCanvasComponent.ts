@@ -52,7 +52,8 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
     this.specStore.set(newSpec);
   }
 
-  async updateProperty(key: keyof T, value: T[keyof T]): Promise<void> {
+  // TODO: Add stricter type definition for keys and value deriving from spec
+  async updateProperty(key: string, value: unknown): Promise<void> {
     const currentSpec = get(this.specStore);
     const newSpec = { ...currentSpec, [key]: value };
     if (this.isValid(newSpec)) {
