@@ -36,6 +36,8 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import Alert from "@rilldata/web-common/components/icons/Alert.svelte";
+  import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -58,7 +60,9 @@
     hasUnsavedChanges,
     saveLocalContent,
     inferredResourceKind,
+    saveState: { saving, error },
   } = fileArtifact);
+
   $: resourceKind = ($resourceName?.kind ??
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
@@ -92,7 +96,7 @@
   aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
   class:bg-slate-100={isCurrentFile}
-  class:opacity-50={$hasUnsavedChanges}
+  class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
@@ -101,21 +105,27 @@
       : 'text-gray-900 hover:text-gray-900'}"
     href={`/files${filePath}`}
     {id}
-    class:italic={$hasUnsavedChanges}
+    class:italic={$hasUnsavedChanges || $saving}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
     style:padding-left="{padding}px"
   >
     <div class="flex-none">
-      <svelte:component
-        this={resourceKind
-          ? resourceIconMapping[resourceKind]
-          : filePath === "/.env" || filePath === "/rill.yaml"
-            ? Settings
-            : File}
-        size="14px"
-        color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
-      />
+      {#if $saving}
+        <LoadingSpinner size="14px" />
+      {:else if $error}
+        <Alert size="14px" color="red" />
+      {:else}
+        <svelte:component
+          this={resourceKind
+            ? resourceIconMapping[resourceKind]
+            : filePath === "/.env" || filePath === "/rill.yaml"
+              ? Settings
+              : File}
+          size="14px"
+          color={resourceKind ? resourceColorMapping[resourceKind] : "#9CA3AF"}
+        />
+      {/if}
     </div>
     <span class="truncate w-full" class:text-red-600={$hasErrors}>
       {fileName}

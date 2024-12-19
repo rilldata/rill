@@ -28,6 +28,7 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
@@ -326,10 +327,17 @@ function getUrlForWebView(
     explorePresetFromSessionStorage,
   );
 
+  const exploreState = partialExploreState as MetricsExplorerEntity;
   newUrl.search =
     convertExploreStateToURLSearchParams(
-      partialExploreState as MetricsExplorerEntity,
+      exploreState,
       AD_BIDS_EXPLORE_INIT,
+      getTimeControlState(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+        exploreState,
+      ),
       defaultExplorePreset,
     ) + (additionalParams ?? "");
   return newUrl;

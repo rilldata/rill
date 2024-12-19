@@ -158,6 +158,11 @@ function fromTimeRangesParams(
       // unset compare dimension
       partialExploreState.selectedComparisonDimension = "";
     }
+  } else if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    partialExploreState.showTimeComparison = true;
   }
 
   if (preset.comparisonDimension) {

@@ -203,7 +203,7 @@
     ({ type }) => type && NUMERICS.has(type),
   );
 
-  $: ({ remoteContent, localContent, saveContent } = fileArtifact);
+  $: ({ editorContent, updateEditorContent } = fileArtifact);
 
   $: requiredPropertiesUnfilled = properties[type]
     .filter(({ optional, fields, selected }) => {
@@ -217,7 +217,7 @@
   );
 
   async function saveChanges() {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument($editorContent ?? "");
     let sequence = parsedDocument.get(type);
 
     if (!(sequence instanceof YAMLSeq) || sequence.items.length === 0) {
@@ -244,7 +244,7 @@
       items.push(newItem);
     }
 
-    await saveContent(parsedDocument.toString());
+    await updateEditorContent(parsedDocument.toString(), false, true);
 
     resetEditing();
 

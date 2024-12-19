@@ -1,4 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
 import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
@@ -93,6 +94,7 @@ export function updateExploreSessionStore(
   prefix: string | undefined,
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState | undefined,
 ) {
   const view = FromActivePageMap[exploreState.activePage];
   const key = getKeyForSessionStore(exploreName, prefix, view);
@@ -102,7 +104,11 @@ export function updateExploreSessionStore(
     SharedStateStoreKey,
   );
 
-  const preset = convertExploreStateToPreset(exploreState, exploreSpec);
+  const preset = convertExploreStateToPreset(
+    exploreState,
+    exploreSpec,
+    timeControlsState,
+  );
   const storedPreset: V1ExplorePreset = {};
   const sharedPreset: V1ExplorePreset = {
     ...preset,
@@ -183,4 +189,16 @@ export function getExplorePresetForWebView(
   } catch {
     return undefined;
   }
+}
+
+export function hasSessionStorageData(
+  exploreName: string,
+  prefix: string | undefined,
+) {
+  const sharedKey = getKeyForSessionStore(
+    exploreName,
+    prefix,
+    SharedStateStoreKey,
+  );
+  return !!sessionStorage.getItem(sharedKey);
 }

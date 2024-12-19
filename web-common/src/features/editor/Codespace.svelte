@@ -1,101 +1,55 @@
+<script lang="ts" context="module">
+</script>
+
 <script lang="ts">
   import type { Extension } from "@codemirror/state";
   import { EditorState, Compartment } from "@codemirror/state";
-  import { EditorView } from "@codemirror/view";
+  import { EditorView, type ViewUpdate } from "@codemirror/view";
   import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
-  import { get } from "svelte/store";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as AlertDialog from "@rilldata/web-common/components/alert-dialog/";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { underlineSelection } from "./highlight-field";
+  import { MergeView } from "@codemirror/merge";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
-  export let autoSave: boolean = true;
-  export let forceLocalUpdates: boolean = false;
   export let editor: EditorView | null = null;
-  export let debounceSave: () => void;
+  export let autoSave = true;
 
   const extensionCompartment = new Compartment();
 
-  let parent: HTMLElement;
-  let showWarning = false;
-  let saving = false;
-  let unsubscribers: Array<() => void> = [];
-
   const {
-    updateLocalContent,
-    localContent,
-    saveLocalContent,
+    editorContent,
     remoteContent,
-    revert,
-    onRemoteContentChange,
-    onLocalContentChange,
+    merging,
+    updateEditorContent,
+    onEditorContentChange,
   } = fileArtifact;
 
+  let parent: HTMLElement;
+  let unsubscribers: Array<() => void> = [];
+  let mergeView: MergeView | null = null;
+
+  $: if (editor) updateEditorExtensions(extensions);
+  $: if (fileArtifact) editor?.contentDOM.blur();
+
+  $: if (parent) {
+    if ($merging) {
+      mountMergeView();
+    } else {
+      mountEditor();
+    }
+  }
+
   onMount(() => {
-    // Check if the file artifact has a local content
-    // If it does, we want to use that as the initial content
-    // Otherwise, we'll use the remote content
-    editor = new EditorView({
-      state: EditorState.create({
-        doc: $localContent ?? $remoteContent ?? undefined,
-        extensions: [
-          baseExtensions(),
-          extensionCompartment.of([]),
-          EditorView.updateListener.of(
-            ({ docChanged, state: { doc }, view: { hasFocus } }) => {
-              if (hasFocus && docChanged) {
-                updateLocalContent(doc.toString());
+    const unsubLocal = onEditorContentChange(dispatchEditorChange);
 
-                if (autoSave) debounceSave();
-              }
-            },
-          ),
-        ],
-      }),
-      parent,
-    });
-
-    const unsubscribeRemoteContent = onRemoteContentChange(
-      (newRemoteContent, force) => {
-        if (editor && newRemoteContent !== null) {
-          if (editor.hasFocus && !force) return;
-          const local = get(localContent);
-          if (editor.state.doc.toString() === newRemoteContent) return;
-
-          if (local === null) {
-            updateEditorContent(newRemoteContent);
-          } else if (local !== newRemoteContent) {
-            showWarning = true;
-          }
-        }
-      },
-    );
-
-    const unsubscribeLocalContent = onLocalContentChange((content) => {
-      if (content === null && $remoteContent !== null) {
-        updateEditorContent($remoteContent);
-      } else if (
-        forceLocalUpdates &&
-        content !== null &&
-        editor &&
-        !editor.hasFocus
-      )
-        updateEditorContent(content);
-    });
-
-    const unsubscribeHighlighter = eventBus.on("highlightSelection", (refs) => {
+    const unsubHighlighter = eventBus.on("highlightSelection", (refs) => {
       if (editor) underlineSelection(editor, refs);
     });
 
-    unsubscribers.push(
-      unsubscribeRemoteContent,
-      unsubscribeLocalContent,
-      unsubscribeHighlighter,
-    );
+    unsubscribers.push(unsubLocal, unsubHighlighter);
 
     return () => {
       editor?.destroy();
@@ -103,8 +57,49 @@
     };
   });
 
-  $: if (editor) updateEditorExtensions(extensions);
-  $: if (fileArtifact) editor?.contentDOM.blur();
+  function mountMergeView() {
+    editor?.destroy();
+
+    mergeView = new MergeView({
+      a: {
+        doc: $editorContent ?? "",
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+          EditorView.editable.of(false),
+          EditorState.readOnly.of(true),
+        ],
+      },
+      b: {
+        doc: $remoteContent ?? "",
+        extensions: [
+          baseExtensions(),
+          ...extensions,
+
+          EditorView.editable.of(false),
+          EditorState.readOnly.of(true),
+        ],
+      },
+      parent,
+    });
+  }
+
+  function mountEditor() {
+    mergeView?.destroy();
+
+    editor = new EditorView({
+      state: EditorState.create({
+        doc: $editorContent ?? "",
+        extensions: [
+          baseExtensions(),
+
+          extensionCompartment.of([extensions]),
+          EditorView.updateListener.of(listener),
+        ],
+      }),
+      parent,
+    });
+  }
 
   function updateEditorExtensions(newExtensions: Extension[]) {
     editor?.dispatch({
@@ -113,7 +108,7 @@
     });
   }
 
-  function updateEditorContent(newContent: string) {
+  function dispatchEditorChange(newContent: string) {
     const existingSelection = editor?.state.selection.ranges[0];
 
     editor?.dispatch({
@@ -135,11 +130,21 @@
       },
     });
   }
+
+  function listener({
+    docChanged,
+    state: { doc },
+    view: { hasFocus },
+  }: ViewUpdate) {
+    if (hasFocus && docChanged) {
+      updateEditorContent(doc.toString(), true, autoSave);
+    }
+  }
 </script>
 
 <div
   bind:this={parent}
-  class="size-full"
+  class="size-full overflow-y-auto"
   on:click={() => {
     /** give the editor focus no matter where we click */
     if (!editor?.hasFocus) editor?.focus();
@@ -152,46 +157,23 @@
   tabindex="0"
 />
 
-<AlertDialog.Root bind:open={showWarning}>
-  <AlertDialog.Content>
-    <AlertDialog.Title>File update received remotely</AlertDialog.Title>
-    <AlertDialog.Description>
-      You have unsaved changes. Do you want to save them before accepting the
-      remote changes?
-    </AlertDialog.Description>
+<style lang="postcss">
+  :global(.cm-mergeView) {
+    @apply h-full;
+  }
 
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="secondary"
-          loading={saving}
-          large
-          on:click={async () => {
-            saving = true;
-            await saveLocalContent();
-            saving = false;
-            showWarning = false;
-          }}
-        >
-          Save local changes
-        </Button>
-      </AlertDialog.Cancel>
+  :global(.cm-editor) {
+    padding-top: 2px;
+  }
 
-      <AlertDialog.Action asChild let:builder>
-        <Button
-          builders={[builder]}
-          type="primary"
-          large
-          on:click={() => {
-            showWarning = false;
-            revert();
-            if ($remoteContent !== null) updateEditorContent($remoteContent);
-          }}
-        >
-          Accept remote changes
-        </Button>
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+  :global(.cm-mergeViewEditor) {
+    @apply overflow-y-auto;
+  }
+  :global(.cm-mergeViewEditors) {
+    @apply h-full;
+  }
+
+  :global(.cm-mergeViewEditor:first-of-type) {
+    @apply border-r;
+  }
+</style>

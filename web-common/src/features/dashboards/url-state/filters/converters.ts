@@ -13,6 +13,7 @@ export function convertFilterParamToExpression(filter: string) {
   return parser.results[0] as V1Expression;
 }
 
+const NonStandardName = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 export function convertExpressionToFilterParam(
   expr: V1Expression,
   depth = 0,
@@ -21,12 +22,12 @@ export function convertExpressionToFilterParam(
 
   if ("val" in expr) {
     if (typeof expr.val === "string") {
-      return `'${expr.val}'`;
+      return escapeValue(expr.val);
     }
     return expr.val + "";
   }
 
-  if (expr.ident) return expr.ident;
+  if (expr.ident) return escapeColumnName(expr.ident);
 
   switch (expr.cond?.op) {
     case V1Operation.OPERATION_AND:
@@ -73,6 +74,7 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
 
   const column = expr.cond.exprs[0]?.ident;
   if (!column) return "";
+  const safeColumn = escapeColumnName(column);
 
   if (expr.cond.exprs[1]?.subquery?.having) {
     // TODO: support `NIN <subquery>`
@@ -80,14 +82,14 @@ function convertInExpressionToFilterParam(expr: V1Expression, depth: number) {
       expr.cond.exprs[1]?.subquery?.having,
       0,
     );
-    if (having) return `${column} having (${having})`;
+    if (having) return `${safeColumn} having (${having})`;
   }
 
   if (expr.cond.exprs.length > 1) {
     const vals = expr.cond.exprs
       .slice(1)
       .map((e) => convertExpressionToFilterParam(e, depth + 1));
-    return `${column} ${joiner} (${vals.join(",")})`;
+    return `${safeColumn} ${joiner} (${vals.join(",")})`;
   }
 
   return "";
@@ -106,4 +108,23 @@ function convertBinaryExpressionToFilterParam(
   if (!left || !right) return "";
 
   return `${left} ${op} ${right}`;
+}
+
+function escapeColumnName(columnName: string) {
+  // if name doesnt have any special chars do not surround it by quotes.
+  // this makes the url more readable
+  if (NonStandardName.test(columnName)) return columnName;
+  const escapedColumnName = columnName
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"');
+  return `"${escapedColumnName}"`;
+}
+
+function escapeValue(value: string) {
+  const escapedValue = value
+    // TODO: this was a CodeQL suggestion. could this cause conflicts in values?
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, "\\n");
+  return `'${escapedValue}'`;
 }

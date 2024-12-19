@@ -5,10 +5,12 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
   FromActivePageMap,
+  FromURLParamViewMap,
   ToURLParamSortTypeMap,
   ToURLParamTDDChartMap,
   ToURLParamTimeDimensionMap,
@@ -20,7 +22,6 @@ import {
   arrayOrderedEquals,
   arrayUnorderedEquals,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import {
   TimeComparisonOption,
   type TimeRange,
@@ -33,9 +34,46 @@ import {
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
 
+/**
+ * Sometimes data is loaded from sources other than the url.
+ * In that case update the URL to make sure the state matches the current url.
+ */
+export function getUpdatedUrlForExploreState(
+  exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState | undefined,
+  defaultExplorePreset: V1ExplorePreset,
+  partialExploreState: Partial<MetricsExplorerEntity>,
+  curSearchParams: URLSearchParams,
+) {
+  const newUrlSearchParams = new URLSearchParams(
+    convertExploreStateToURLSearchParams(
+      partialExploreState as MetricsExplorerEntity,
+      exploreSpec,
+      timeControlsState,
+      defaultExplorePreset,
+    ),
+  );
+  curSearchParams.forEach((value, key) => {
+    if (
+      key === ExploreStateURLParams.WebView &&
+      FromURLParamViewMap[value] === defaultExplorePreset.view
+    ) {
+      // ignore default view.
+      // since we do not add params equal to default this will append to the end of the URL breaking the param order.
+      return;
+    }
+    newUrlSearchParams.set(key, value);
+  });
+  return newUrlSearchParams.toString();
+}
+
 export function convertExploreStateToURLSearchParams(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
+  // We have quite a bit of logic in TimeControlState to validate selections and update them
+  // Eg: if a selected grain is not applicable for the current grain then we change it
+  // But it is only available in TimeControlState and not MetricsExplorerEntity
+  timeControlsState: TimeControlState | undefined,
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
@@ -50,10 +88,13 @@ export function convertExploreStateToURLSearchParams(
     );
   }
 
-  mergeSearchParams(
-    toTimeRangesUrl(exploreState, exploreSpec, preset),
-    searchParams,
-  );
+  // timeControlsState will be undefined for dashboards without timeseries
+  if (timeControlsState) {
+    mergeSearchParams(
+      toTimeRangesUrl(exploreState, exploreSpec, timeControlsState, preset),
+      searchParams,
+    );
+  }
 
   const expr = mergeMeasureFilters(exploreState);
   if (expr && expr?.cond?.exprs?.length) {
@@ -91,14 +132,17 @@ export function convertExploreStateToURLSearchParams(
 function toTimeRangesUrl(
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState,
   preset: V1ExplorePreset,
 ) {
   const searchParams = new URLSearchParams();
 
-  if (shouldSetParam(preset.timeRange, exploreState.selectedTimeRange?.name)) {
+  if (
+    shouldSetParam(preset.timeRange, timeControlsState.selectedTimeRange?.name)
+  ) {
     searchParams.set(
       ExploreStateURLParams.TimeRange,
-      toTimeRangeParam(exploreState.selectedTimeRange),
+      toTimeRangeParam(timeControlsState.selectedTimeRange),
     );
   }
 
@@ -112,38 +156,24 @@ function toTimeRangesUrl(
     );
   }
 
-  if (exploreState.showTimeComparison) {
-    if (
-      (preset.compareTimeRange !== undefined &&
-        exploreState.selectedComparisonTimeRange !== undefined &&
-        exploreState.selectedComparisonTimeRange.name !==
-          preset.compareTimeRange) ||
-      preset.compareTimeRange === undefined
-    ) {
-      searchParams.set(
-        ExploreStateURLParams.ComparisonTimeRange,
-        toTimeRangeParam(exploreState.selectedComparisonTimeRange),
-      );
-    } else if (
-      !exploreState.selectedComparisonTimeRange?.name &&
-      exploreState.selectedTimeRange?.name
-    ) {
-      // we infer compare time range if the user has not explicitly selected one but has enabled comparison
-      const inferredCompareTimeRange = inferCompareTimeRange(
-        exploreSpec.timeRanges,
-        exploreState.selectedTimeRange.name,
-      );
-      if (inferredCompareTimeRange)
-        searchParams.set(
-          ExploreStateURLParams.ComparisonTimeRange,
-          inferredCompareTimeRange,
-        );
-    }
+  if (
+    exploreState.showTimeComparison &&
+    ((preset.compareTimeRange !== undefined &&
+      timeControlsState.selectedComparisonTimeRange !== undefined &&
+      timeControlsState.selectedComparisonTimeRange.name !==
+        preset.compareTimeRange) ||
+      preset.compareTimeRange === undefined)
+  ) {
+    searchParams.set(
+      ExploreStateURLParams.ComparisonTimeRange,
+      toTimeRangeParam(timeControlsState.selectedComparisonTimeRange),
+    );
   }
 
   const mappedTimeGrain =
-    ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange?.interval ?? ""] ??
-    "";
+    ToURLParamTimeGrainMapMap[
+      timeControlsState.selectedTimeRange?.interval ?? ""
+    ] ?? "";
   if (mappedTimeGrain && shouldSetParam(preset.timeGrain, mappedTimeGrain)) {
     searchParams.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
   }

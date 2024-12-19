@@ -109,7 +109,6 @@
         {exploreName}
         {fileArtifact}
         {lineBasedRuntimeErrors}
-        forceLocalUpdates
       />
     {:else if selectedView === "viz"}
       {#if mainError}
