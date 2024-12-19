@@ -42,6 +42,7 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -363,6 +364,12 @@ describe("Human readable URL state variations", () => {
         url.search = convertExploreStateToURLSearchParams(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
+          getTimeControlState(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+            get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+          ),
           defaultExplorePreset,
         );
         expect(url.toString()).to.eq(expectedUrl);

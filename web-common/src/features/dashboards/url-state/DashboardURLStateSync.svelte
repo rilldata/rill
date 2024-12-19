@@ -1,13 +1,23 @@
 <script lang="ts">
-  import { afterNavigate, goto, replaceState } from "$app/navigation";
+  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-  import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
-  import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
-  import { getUpdatedUrlForExploreState } from "@rilldata/web-common/features/dashboards/url-state/getUpdatedUrlForExploreState";
+  import {
+    getTimeControlState,
+    type TimeControlState,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import {
+    convertExploreStateToURLSearchParams,
+    getUpdatedUrlForExploreState,
+  } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
+  import {
+    clearExploreSessionStore,
+    hasSessionStorageData,
+    updateExploreSessionStore,
+  } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -39,8 +49,41 @@
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-  $: ({ error } = $timeRangeSummaryStore);
+  $: ({ error, data: timeRangeSummaryResp } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
+
+  let timeControlsState: TimeControlState | undefined = undefined;
+  $: if (metricsSpec && exploreSpec && $dashboardStore) {
+    timeControlsState = getTimeControlState(
+      metricsSpec,
+      exploreSpec,
+      timeRangeSummaryResp?.timeRangeSummary,
+      $dashboardStore,
+    );
+  }
+
+  let prevUrl = "";
+
+  onMount(() => {
+    // in some cases afterNavigate is not always triggered
+    // so this is the escape hatch to make sure dashboard store gets initialised
+    setTimeout(() => {
+      if (!$dashboardStore) {
+        handleExploreInit(true);
+      }
+    });
+  });
+
+  beforeNavigate(({ from, to }) => {
+    if (!from || !to || from.url.pathname === to.url.pathname) {
+      // routing to the same path but probably different url params
+      return;
+    }
+
+    // session store is only used to save state for different views and not keep other params url
+    // so, we clear the store when we navigate away
+    clearExploreSessionStore(exploreName, extraKeyPrefix);
+  });
 
   afterNavigate(({ from, to, type }) => {
     if (
@@ -54,7 +97,8 @@
       return;
     }
 
-    const isInit = !$dashboardStore;
+    const isInit =
+      !$dashboardStore || !hasSessionStorageData(exploreName, extraKeyPrefix);
     if (isInit) {
       // When a user changes url manually and clears the params the `type` will be "enter"
       // This signal is used in handleExploreInit to make sure we do not use sessionStorage
@@ -63,11 +107,14 @@
       return;
     }
 
-    // Pressing back button and going to empty urls state should not restore from session store
+    // Pressing back button and going back to empty url state should not restore from session store
     const backButtonUsed = type === "popstate";
+    const skipSessionStorage =
+      backButtonUsed && $page.url.searchParams.size === 0;
+
     let partialExplore = partialExploreStateFromUrl;
     let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage && !backButtonUsed) {
+    if (exploreStateFromSessionStorage && !skipSessionStorage) {
       partialExplore = exploreStateFromSessionStorage;
       shouldUpdateUrl = true;
     }
@@ -80,21 +127,42 @@
     );
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
       partialExplore,
       $page.url.searchParams,
     );
-    prevUrl = redirectUrl.toString();
+    // update session store when back button was pressed.
+    if (backButtonUsed) {
+      updateExploreSessionStore(
+        exploreName,
+        extraKeyPrefix,
+        $dashboardStore,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
 
-    if (!shouldUpdateUrl || redirectUrl.search === to.url.toString()) {
+    if (
+      !shouldUpdateUrl ||
+      redirectUrl.search === to.url.toString() ||
+      // redirect loop breaker
+      (prevUrl && prevUrl === redirectUrl.toString())
+    ) {
+      prevUrl = redirectUrl.toString();
       return;
     }
 
-    replaceState(redirectUrl, $page.state);
+    prevUrl = redirectUrl.toString();
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
   });
 
-  let prevUrl = "";
   function handleExploreInit(isManualUrlChange: boolean) {
+    if (!exploreSpec || !metricsSpec) return;
+
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
     if (exploreStateFromSessionStorage && !isManualUrlChange) {
@@ -122,7 +190,8 @@
     metricsExplorerStore.init(exploreName, initState);
     const redirectUrl = new URL($page.url);
     redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec!,
+      exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
       initState,
       $page.url.searchParams,
@@ -132,7 +201,8 @@
       exploreName,
       extraKeyPrefix,
       get(metricsExplorerStore).entities[exploreName],
-      exploreSpec!,
+      exploreSpec,
+      timeControlsState,
     );
     prevUrl = redirectUrl.toString();
 
@@ -140,7 +210,12 @@
       return;
     }
 
-    replaceState(redirectUrl, $page.state);
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
   }
 
   function gotoNewState() {
@@ -152,6 +227,7 @@
     u.search = convertExploreStateToURLSearchParams(
       $dashboardStore,
       exploreSpec,
+      timeControlsState,
       defaultExplorePreset,
     );
     const newUrl = u.toString();
@@ -165,6 +241,7 @@
       extraKeyPrefix,
       $dashboardStore,
       exploreSpec,
+      timeControlsState,
     );
   }
 
@@ -173,14 +250,6 @@
   $: if ($dashboardStore) {
     gotoNewState();
   }
-
-  onMount(() => {
-    setTimeout(() => {
-      if (!$dashboardStore) {
-        handleExploreInit(true);
-      }
-    });
-  });
 </script>
 
 {#if schemaError}
