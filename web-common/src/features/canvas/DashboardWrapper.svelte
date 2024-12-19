@@ -13,15 +13,16 @@
   const options: GridStackOptions = {
     column: 12,
     // See: https://www.npmjs.com/package/gridstack#override-resizabledraggable-options
-    // resizable: {
-    //   handles: "e,se,s,sw,w",
-    // },
-    // TODO: staticGrid for previewMode
-    // if url is /custom/{canvasName} then staticGrid
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
     staticGrid: readonly,
   };
 
   onMount(() => {
+    // TODO: move gridstack initialization to canvas store
+    // TODO: grid.setStatic()
     grid = GridStack.init(options);
   });
 </script>
