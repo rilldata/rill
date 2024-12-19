@@ -180,6 +180,16 @@
 
     // TODO: dispatch update event to update document
   }
+
+  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
+  //   this.instance.on(
+  //   "resizestop",
+  //   (event: Event, el: GridItemHTMLElement) => {
+  //     console.log("Resize stopped:", el);
+  //     const { w, h, x, y } = el.gridstackNode || {};
+  //     console.log("Final dimensions:", { x, y, w, h });
+  //   },
+  // );
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
