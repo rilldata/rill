@@ -83,7 +83,6 @@
   {gap}
   {items}
   {columns}
-  {showGrid}
   bind:selectedIndex
   on:update={handlePreviewUpdate}
   on:delete={handleDeleteEvent}
