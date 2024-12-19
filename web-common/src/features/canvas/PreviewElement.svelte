@@ -6,7 +6,7 @@
   import { writable } from "svelte/store";
   import Component from "./Component.svelte";
 
-  const zIndex = writable(0);
+  // const zIndex = writable(0);
 </script>
 
 <script lang="ts">
@@ -25,7 +25,7 @@
   export let scale: number;
   export let instanceId: string;
 
-  let localZIndex = 0;
+  // let localZIndex = 0;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
@@ -36,15 +36,15 @@
   $: finalHeight = Math.abs(height);
   $: padding = gapSize;
 
-  onMount(() => {
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
-  });
+  // onMount(() => {
+  //   localZIndex = $zIndex;
+  //   zIndex.set(++localZIndex);
+  // });
 
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
+    // localZIndex = $zIndex;
+    // zIndex.set(++localZIndex);
     dispatch("change", {
       e,
       dimensions: [width, height],
@@ -61,7 +61,6 @@
       <Component
         {instanceId}
         {i}
-        {localZIndex}
         {interacting}
         {componentName}
         {padding}
@@ -98,7 +97,6 @@
       <Component
         {instanceId}
         {i}
-        {localZIndex}
         {interacting}
         {componentName}
         {padding}
