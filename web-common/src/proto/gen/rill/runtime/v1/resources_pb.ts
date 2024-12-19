@@ -1331,6 +1331,23 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeZones: string[] = [];
 
+  /**
+   * Cache controls for the metrics view.
+   *
+   * @generated from field: optional bool cache_enabled = 25;
+   */
+  cacheEnabled?: boolean;
+
+  /**
+   * @generated from field: string cache_key_sql = 26;
+   */
+  cacheKeySql = "";
+
+  /**
+   * @generated from field: int64 cache_key_ttl_seconds = 27;
+   */
+  cacheKeyTtlSeconds = protoInt64.zero;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1362,6 +1379,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

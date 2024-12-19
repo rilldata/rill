@@ -162,6 +162,12 @@ func (e *Executor) ValidateMetricsView(ctx context.Context) (*ValidateMetricsVie
 		}
 	}
 
+	// Validate the cache key can be resolved
+	_, _, err = e.CacheKey(ctx)
+	if err != nil {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("failed to get cache key: %w", err))
+	}
+
 	return res, nil
 }
 

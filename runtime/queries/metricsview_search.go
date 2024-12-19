@@ -62,7 +62,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)
+	exec, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
 	if err != nil {
 		return err
 	}
