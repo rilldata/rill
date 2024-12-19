@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      name: ${{ steps.matrix.outputs.name }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
 
     steps:
       - name: Checkout code
@@ -48,7 +48,7 @@ jobs:
       - name: Evaluate e2e tests matrix
         id: matrix
         run: |
-          echo "name=$(jq -n '[
+          echo "matrix=$(jq -n '[
               "admin" | select(env.FILTER_ADMIN == "true" or env.FILTER_COMMON == "true"),
               "local" | select(env.FILTER_LOCAL == "true" or env.FILTER_COMMON == "true")
             ]' | jq -c)" >> "$GITHUB_OUTPUT"
@@ -57,6 +57,9 @@ jobs:
           FILTER_COMMON: ${{ steps.filter.outputs.common }}
           FILTER_LOCAL: ${{ steps.filter.outputs.local }}
 
+      - name: print
+        run: |-
+          echo ${{ steps.matrix.outputs.matrix }}
   e2e:
     runs-on: ubuntu-latest
     strategy:
@@ -65,7 +68,8 @@ jobs:
     steps:
       - name: print
         run: |-
-          echo "name: ${{ needs.build.outputs.name }}"
+          echo "name: ${{ needs.build.outputs }}"
+          echo "name: ${{ needs.build.outputs.matrix }}"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
