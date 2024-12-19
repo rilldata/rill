@@ -19,7 +19,7 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore to make the most out of these tutorials! Please reach out to ask any question or provide feedback on our Community Slack or Discord!
 
-- **5 steps to Rill Cloud:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
+- **6 steps to Rill Cloud:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
 - **Rill Cloud Features Explained:** Dive deeper into Rill Cloud and how the development cycles works!
 - **Rill's Advanced features:** Master advanced features and become an expert in Rill.
 - **Rill's Administrative features:** Deep dive into Rill as an administrator, tasks you will need to perform and how to do so.
