@@ -1,10 +1,6 @@
-export type Vector = [number, number];
+import type { GridItemHTMLElement, GridStackNode } from "gridstack";
 
-import type {
-  GridItemHTMLElement,
-  GridStackNode,
-  GridStackNodesHandler,
-} from "gridstack";
+export type Vector = [number, number];
 
 export type GridstackDispatchEvents = {
   added: { event: Event; nodes: GridStackNode[] };
