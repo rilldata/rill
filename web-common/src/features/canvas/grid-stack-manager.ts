@@ -6,6 +6,7 @@ export class GridStackManager {
 
   constructor(readonly: boolean) {
     this.options = {
+      // TODO: set this to 1 in smaller screens
       column: 12,
       resizable: {
         handles: "e,se,s,sw,w",
