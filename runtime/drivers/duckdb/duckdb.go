@@ -390,6 +390,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if opts.InputHandle.Driver() == "mysql" || opts.InputHandle.Driver() == "postgres" {
 			return &sqlStoreToSelfExecutor{c}, true
 		}
+		if _, ok := opts.InputHandle.AsObjectStore(); ok {
+			return &objectStoreToSelfExecutor{c}, true
+		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
