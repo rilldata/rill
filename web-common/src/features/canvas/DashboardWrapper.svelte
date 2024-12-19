@@ -5,7 +5,7 @@
 
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-slate-200";
+  export let color = "bg-transparent";
   export let readonly = false;
 
   let grid;
@@ -27,7 +27,7 @@
 </script>
 
 <div
-  class="size-full bg-gray-100 flex justify-center overflow-y-auto"
+  class="dashboard-wrapper size-full flex justify-center overflow-y-auto"
   on:scroll
 >
   <div
