@@ -66,16 +66,16 @@ jobs:
     steps:
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v2
-        if: matrix.name == "web-admin"
+        if: matrix.name == 'web-admin'
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
       - name: Set up GCloud SDK
-        if: matrix.name == "web-admin"
+        if: matrix.name == 'web-admin'
         uses: google-github-actions/setup-gcloud@v2
 
       - name: gTest ${{ matrix.name }}
-        if: matrix.name == "web-admin"
+        if: matrix.name == 'web-admin'
         run: |-
           gsutil ls gs://rill-devtool/dotenv/
 
