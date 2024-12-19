@@ -10,11 +10,13 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
+  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isReconciling = false;
+  let isRefreshConfirmDialogOpen = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -75,7 +77,9 @@
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={refreshAllSourcesAndModels}
+      on:click={() => {
+        isRefreshConfirmDialogOpen = true;
+      }}
       disabled={isReconciling}
     >
       {#if isReconciling}
@@ -95,3 +99,8 @@
     <ProjectResourcesTable data={$resources.data} />
   {/if}
 </section>
+
+<RefreshConfirmDialog
+  bind:open={isRefreshConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>
