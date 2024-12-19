@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { GridStack, type GridStackOptions } from "gridstack";
+  import { onDestroy, onMount } from "svelte";
+  import { GridStackManager } from "./grid-stack-manager";
   import "gridstack/dist/gridstack.min.css";
 
   export let height: number;
@@ -8,22 +8,17 @@
   export let color = "bg-transparent";
   export let readonly = false;
 
-  let grid;
-
-  const options: GridStackOptions = {
-    column: 12,
-    // See: https://www.npmjs.com/package/gridstack#override-resizabledraggable-options
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: true,
-    staticGrid: readonly,
-  };
+  let gridStackElement: HTMLElement;
+  const gridStackManager = new GridStackManager(readonly);
 
   onMount(() => {
-    // TODO: move gridstack initialization to canvas store
-    // TODO: grid.setStatic()
-    grid = GridStack.init(options);
+    if (gridStackElement) {
+      gridStackManager.initialize();
+    }
+  });
+
+  onDestroy(() => {
+    gridStackManager.destroy();
   });
 </script>
 
@@ -36,7 +31,7 @@
     class="canvas {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
-    <div class="grid-stack">
+    <div bind:this={gridStackElement} class="grid-stack">
       <slot />
     </div>
   </div>
