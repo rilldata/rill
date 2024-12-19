@@ -184,7 +184,9 @@
   on:scroll={handleScroll}
 >
   {#each items as component, i (i)}
+    <!-- TODO: make this work with Component -->
     <GridStackItem
+      index={i}
       width={component.width}
       height={component.height}
       x={component.x}

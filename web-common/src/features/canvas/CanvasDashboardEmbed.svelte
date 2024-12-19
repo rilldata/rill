@@ -9,6 +9,7 @@
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import { canvasVariablesStore } from "./variables-store";
+  import GridStackItem from "./GridStackItem.svelte";
 
   export let canvasName: string;
   export let columns = 20;
@@ -42,11 +43,10 @@
   }
 </script>
 
-<DashboardWrapper
+<!-- <DashboardWrapper
   bind:contentRect
-  {scale}
   height={maxBottom * gridCell * scale}
-  width={dashboardWidth}
+  readonly={true}
 >
   {#each items as component, i (i)}
     {@const componentName = component.component}
@@ -67,5 +67,22 @@
         top={Number(component.y) * gridCell}
       />
     {/if}
+  {/each}
+</DashboardWrapper> -->
+
+<DashboardWrapper
+  bind:contentRect
+  height={maxBottom * gridCell * scale}
+  readonly={true}
+>
+  {#each items as component, i (i)}
+    <GridStackItem
+      index={i}
+      width={component.width}
+      height={component.height}
+      x={component.x}
+      y={component.y}
+      content={component.component}
+    />
   {/each}
 </DashboardWrapper>

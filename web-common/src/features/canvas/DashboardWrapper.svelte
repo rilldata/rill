@@ -6,13 +6,19 @@
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let color = "bg-slate-200";
+  export let readonly = false;
 
   let grid;
 
   const options: GridStackOptions = {
     column: 12,
+    // See: https://www.npmjs.com/package/gridstack#override-resizabledraggable-options
+    // resizable: {
+    //   handles: "e,se,s,sw,w",
+    // },
     // TODO: staticGrid for previewMode
     // if url is /custom/{canvasName} then staticGrid
+    staticGrid: readonly,
   };
 
   onMount(() => {
