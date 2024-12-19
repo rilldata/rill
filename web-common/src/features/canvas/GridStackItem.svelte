@@ -1,5 +1,4 @@
 <script lang="ts">
-  export let index: number;
   export let width: number | undefined;
   export let height: number | undefined;
   export let x: number | undefined;
@@ -12,7 +11,6 @@
   data-gs-h={height}
   data-gs-x={x}
   data-gs-y={y}
-  data-index={index}
 >
   <div class="grid-stack-item-content">
     <slot />
