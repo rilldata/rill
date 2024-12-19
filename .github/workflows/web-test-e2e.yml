@@ -65,7 +65,7 @@ jobs:
     steps:
       - name: print
         run: |-
-          echo "name: ${{ fromJson(needs.build.outputs.name) }}"
+          echo "name: ${{ needs.build.outputs.name }}"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
