@@ -80,6 +80,7 @@
     $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
+    $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 
