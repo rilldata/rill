@@ -103,7 +103,7 @@ func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
 
 	opts := &drivers.ModelExecutorOptions{
 		InputHandle:     inputHandle,
-		InputConnector:  "mysql",
+		InputConnector:  "postgres",
 		OutputHandle:    duckDB,
 		OutputConnector: "duckdb",
 		Env: &drivers.ModelEnv{

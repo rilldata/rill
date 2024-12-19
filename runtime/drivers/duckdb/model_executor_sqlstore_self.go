@@ -57,7 +57,7 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 	// Build the model executor options with updated input and output properties
 	clone := *opts
 
-	newInputProps, err := e.modelInputProperties(opts.InputHandle.Driver(), inputProps, outputProps)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputHandle.Driver(), inputProps)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +76,9 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *sqlStoreToSelfExecutor) modelInputProperties(inputDriver string, inputProps *sqlStoreToSelfInputProps, outputProps *ModelOutputProperties) (map[string]any, error) {
+func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputDriver string, inputProps *sqlStoreToSelfInputProps) (map[string]any, error) {
 	m := &ModelInputProperties{}
-	dbName := outputProps.Table + "_external_db_"
+	dbName := modelName + "_external_db_"
 	safeDBName := safeName(dbName)
 	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
 	switch inputDriver {
