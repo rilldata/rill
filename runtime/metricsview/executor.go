@@ -71,12 +71,6 @@ func (e *Executor) Cacheable(qry *Query) bool {
 	return e.olap.Dialect() == drivers.DialectDuckDB
 }
 
-// ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
-func (e *Executor) ValidateMetricsView(ctx context.Context) error {
-	// TODO: Implement it
-	panic("not implemented")
-}
-
 // ValidateQuery validates the provided query against the executor's metrics view.
 func (e *Executor) ValidateQuery(qry *Query) error {
 	// TODO: Implement it

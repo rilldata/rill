@@ -67,6 +67,7 @@ export function categorizeBookmarks(
     personal: [],
     shared: [],
   };
+  if (!exploreState) return bookmarks;
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
@@ -155,6 +156,7 @@ export function convertBookmarkToUrlSearchParams(
       ...exploreStateFromBookmark,
     } as MetricsExplorerEntity,
     exploreSpec,
+    undefined, // TODO
     defaultExplorePreset,
   );
 }

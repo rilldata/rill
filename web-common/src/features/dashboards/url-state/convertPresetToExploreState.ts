@@ -46,19 +46,19 @@ import type { SortingState } from "@tanstack/svelte-table";
 export function convertURLToExploreState(
   searchParams: URLSearchParams,
   metricsView: V1MetricsViewSpec,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
   defaultExplorePreset: V1ExplorePreset,
 ) {
   const errors: Error[] = [];
   const { preset, errors: errorsFromPreset } = convertURLToExplorePreset(
     searchParams,
     metricsView,
-    explore,
+    exploreSpec,
     defaultExplorePreset,
   );
   errors.push(...errorsFromPreset);
   const { partialExploreState, errors: errorsFromEntity } =
-    convertPresetToExploreState(metricsView, explore, preset);
+    convertPresetToExploreState(metricsView, exploreSpec, preset);
   errors.push(...errorsFromEntity);
   return { partialExploreState, errors };
 }
@@ -158,6 +158,11 @@ function fromTimeRangesParams(
       // unset compare dimension
       partialExploreState.selectedComparisonDimension = "";
     }
+  } else if (
+    preset.comparisonMode ===
+    V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+  ) {
+    partialExploreState.showTimeComparison = true;
   }
 
   if (preset.comparisonDimension) {
@@ -184,6 +189,8 @@ function fromTimeRangesParams(
       ...fromTimeRangeUrlParam(preset.selectTimeRange),
       isScrubbing: false,
     };
+  } else {
+    partialExploreState.selectedScrubRange = undefined;
   }
 
   if (
@@ -318,9 +325,15 @@ function fromTimeDimensionUrlParams(
   partialExploreState: Partial<MetricsExplorerEntity>;
   errors: Error[];
 } {
-  if (preset.timeDimensionMeasure === undefined) {
+  if (!preset.timeDimensionMeasure) {
     return {
-      partialExploreState: {},
+      partialExploreState: {
+        tdd: {
+          expandedMeasureName: "",
+          chartType: TDDChart.DEFAULT,
+          pinIndex: -1,
+        },
+      },
       errors: [],
     };
   }
@@ -331,20 +344,6 @@ function fromTimeDimensionUrlParams(
   if (expandedMeasureName && !measures.has(expandedMeasureName)) {
     expandedMeasureName = "";
     errors.push(getSingleFieldError("expanded measure", expandedMeasureName));
-  }
-
-  // unset
-  if (expandedMeasureName === "") {
-    return {
-      partialExploreState: {
-        tdd: {
-          expandedMeasureName: "",
-          chartType: TDDChart.DEFAULT,
-          pinIndex: -1,
-        },
-      },
-      errors,
-    };
   }
 
   const partialExploreState: Partial<MetricsExplorerEntity> = {
@@ -433,9 +432,29 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
-  if (!hasSomePivotFields) {
+  const pivotIsActive = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
+
+  if (!hasSomePivotFields && !pivotIsActive) {
     return {
-      partialExploreState: {},
+      partialExploreState: {
+        pivot: {
+          active: false,
+          rows: {
+            dimension: [],
+          },
+          columns: {
+            measure: [],
+            dimension: [],
+          },
+          sorting: [],
+          expanded: {},
+          columnPage: 1,
+          rowPage: 1,
+          enableComparison: true,
+          activeCell: null,
+          rowJoinType: "nest",
+        },
+      },
       errors,
     };
   }
@@ -455,7 +474,7 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        active: preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT,
+        active: pivotIsActive,
         rows: {
           dimension: rowDimensions,
         },

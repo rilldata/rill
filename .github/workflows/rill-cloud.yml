@@ -13,6 +13,7 @@ on:
 
 env:
   RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  DEPLOY_CLOUD: 1
 
 jobs:
   release:
@@ -39,10 +40,15 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
+          if [ "$RELEASE" == "true" ] || [ "$GITHUB_REF_NAME" == "main" ]; then
+            echo "DEPLOY_CLOUD=1" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_CLOUD=$(git branch -r | grep release-0 | sort | tail -1 | grep -c $GITHUB_REF_NAME)" >> $GITHUB_ENV
+          fi
+          
           if [ ${RELEASE} == "false" ]; then
             echo "Fetch tags to get the last tagged version"
-            git fetch --all --tags;            
-            echo "LATEST_BRANCH=$(git branch -r | grep release-0 | sort | tail -1 | grep -c ${GITHUB_REF_NAME})" >> $GITHUB_ENV
+            git fetch --all --tags;
           fi
 
           # Embed DuckDB extensions in the Rill binary
@@ -64,7 +70,7 @@ jobs:
           fi
 
       - name: Trigger Rill Cloud deployment
-        if: env.LATEST_BRANCH == '1'
+        if: env.DEPLOY_CLOUD == '1'
         run: |-
           set -e
           curl -X POST https://api.github.com/repos/rilldata/rill-helm-charts/dispatches \

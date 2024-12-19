@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { getUrlForWebView } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -14,10 +11,7 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import {
-    V1ExploreWebView,
-    type MetricsViewSpecMeasureV2,
-  } from "@rilldata/web-common/runtime-client";
+  import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import {
     crossfade,
     fly,
@@ -35,8 +29,6 @@
   export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
-
-  const { defaultExploreState } = getStateManagers();
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -88,14 +80,7 @@
   $: copyValue = measureValueFormatterUnabridged(value) ?? "no data";
   $: tooltipValue = measureValueFormatterTooltip(value) ?? "no data";
 
-  $: tddHref = getUrlForWebView(
-    $page.url,
-    V1ExploreWebView.EXPLORE_WEB_VIEW_TIME_DIMENSION,
-    $defaultExploreState,
-    {
-      [ExploreStateURLParams.ExpandedMeasure]: measure.name,
-    } as Record<string, string>,
-  );
+  $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
@@ -110,28 +95,27 @@
       isMeasureExpanded = true;
     }
   };
+  $: useDiv = isMeasureExpanded || !withTimeseries;
 </script>
 
 <Tooltip
-  suppress={suppressTooltip}
+  alignment="start"
   distance={8}
   location="right"
-  alignment="start"
+  suppress={suppressTooltip}
 >
   <BigNumberTooltipContent
-    slot="tooltip-content"
+    isMeasureExpanded={useDiv}
     {measure}
-    {isMeasureExpanded}
+    slot="tooltip-content"
     value={tooltipValue}
   />
 
   <svelte:element
-    this={isMeasureExpanded ? "div" : "a"}
-    role={isMeasureExpanded ? "presentation" : "button"}
-    tabindex={isMeasureExpanded ? -1 : 0}
     class="group big-number"
-    class:shadow-grad={!isMeasureExpanded}
-    class:cursor-pointer={!isMeasureExpanded}
+    class:cursor-pointer={!useDiv}
+    class:shadow-grad={!useDiv}
+    href={tddHref}
     on:click={modified({
       shift: () => shiftClickHandler(copyValue),
       click: () => {
@@ -142,7 +126,9 @@
         }, 1000);
       },
     })}
-    href={tddHref}
+    role={useDiv ? "presentation" : "button"}
+    tabindex={useDiv ? -1 : 0}
+    this={useDiv ? "div" : "a"}
   >
     <h2
       class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"

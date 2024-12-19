@@ -1,6 +1,5 @@
 model: ad_bids_mini
 display_name: Ad bids
-display_name: ""
 
 timeseries: timestamp
 

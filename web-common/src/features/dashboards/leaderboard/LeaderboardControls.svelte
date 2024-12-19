@@ -68,8 +68,8 @@
         tooltipText="Choose dimensions to display"
         onSelect={(name) => toggleDimensionVisibility(allDimensionNames, name)}
         selectableItems={$allDimensions.map(({ name, displayName }) => ({
-          name: name ?? "",
-          label: displayName ?? name ?? "",
+          name: name || "",
+          label: displayName || name || "",
         }))}
         selectedItems={visibleDimensionsNames}
         onToggleSelectAll={() => {

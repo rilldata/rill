@@ -59,6 +59,7 @@
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
   let showPassword = false;
@@ -124,7 +125,7 @@
   {/if}
 
   {#if fields && fields?.length > 1}
-    <FieldSwitcher {fields} {selected} />
+    <FieldSwitcher {fields} {selected} onClick={onFieldSwitch} />
   {/if}
 
   {#if !options}
@@ -269,7 +270,7 @@
 
   .multiline-input {
     @apply py-1;
-    line-height: 1.6;
+    line-height: 1.58;
   }
 
   .multiline-input {

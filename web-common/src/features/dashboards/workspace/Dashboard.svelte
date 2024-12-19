@@ -32,7 +32,9 @@
       measures: { visibleMeasures },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
+      pivot: { showPivot },
     },
+
     dashboardStore,
     validSpecStore,
   } = StateManagers;
@@ -53,7 +55,6 @@
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreState?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricsViewName,
@@ -106,7 +107,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar {hidePivot} />
+            <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
         </section>
       {/key}
@@ -120,7 +121,7 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
-  {:else if showPivot}
+  {:else if $showPivot}
     <PivotDisplay />
   {:else}
     <div

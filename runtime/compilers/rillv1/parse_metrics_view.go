@@ -530,6 +530,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			dim.DisplayName = dim.Label
 		}
 
+		if dim.DisplayName == "" {
+			dim.DisplayName = ToDisplayName(dim.Name)
+		}
+
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -561,6 +565,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Backwards compatibility
 		if measure.Label != "" && measure.DisplayName == "" {
 			measure.DisplayName = measure.Label
+		}
+
+		if measure.DisplayName == "" {
+			measure.DisplayName = ToDisplayName(measure.Name)
 		}
 
 		lower := strings.ToLower(measure.Name)
@@ -783,6 +791,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
 	spec.DisplayName = tmp.DisplayName
+	if spec.DisplayName == "" {
+		spec.DisplayName = ToDisplayName(node.Name)
+	}
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
