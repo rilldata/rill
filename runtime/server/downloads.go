@@ -181,7 +181,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Sort:               r.Sort,
 			Limit:              limitPtr,
 			TimeZone:           r.TimeZone,
-			MetricsView:        mv,
+			MetricsView:        mv.ValidSpec,
 			ResolvedMVSecurity: security,
 		}
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
