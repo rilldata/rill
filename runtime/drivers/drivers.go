@@ -107,6 +107,10 @@ type Handle interface {
 	// An AI service enables an instance to request prompt-based text inference.
 	AsAI(instanceID string) (AIService, bool)
 
+	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
+	// A SQL store represents a service that can execute SQL statements and return the resulting rows.
+	AsSQLStore() (SQLStore, bool)
+
 	// AsOLAP returns an OLAPStore if the driver can serve as such, otherwise returns false.
 	// An OLAP store is used to serve interactive, low-latency, analytical queries.
 	// NOTE: We should consider merging the OLAPStore and SQLStore interfaces.

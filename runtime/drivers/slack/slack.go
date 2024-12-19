@@ -115,6 +115,10 @@ func (h *handle) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false
 }
 
+func (h *handle) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 func (h *handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }

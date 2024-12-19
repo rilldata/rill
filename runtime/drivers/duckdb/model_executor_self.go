@@ -64,12 +64,14 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		if opts.Env.StageChanges {
 			stagingTableName = stagingTableNameFor(tableName)
 		}
-		_ = olap.DropTable(ctx, stagingTableName)
+		if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
+			_ = olap.DropTable(ctx, stagingTableName, t.View)
+		}
 
 		// Create the table
 		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, nil)
 		if err != nil {
-			_ = olap.DropTable(ctx, stagingTableName)
+			_ = olap.DropTable(ctx, stagingTableName, asView)
 			return nil, fmt.Errorf("failed to create model: %w", err)
 		}
 

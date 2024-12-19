@@ -6,7 +6,7 @@ timeseries: timestamp
 smallest_time_grain: ""
 
 dimensions:
-  - name: publisher_dim
+  - name: publisher
     display_name: Publisher
     expression: upper(publisher)
     description: ""

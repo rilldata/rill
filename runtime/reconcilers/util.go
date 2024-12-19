@@ -117,7 +117,7 @@ func olapTableInfo(ctx context.Context, c *runtime.Controller, connector, table 
 }
 
 // olapDropTableIfExists drops a table from an OLAP connector.
-func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector, table string) {
+func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector, table string, view bool) {
 	if table == "" {
 		return
 	}
@@ -128,7 +128,7 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 	}
 	defer release()
 
-	_ = olap.DropTable(ctx, table)
+	_ = olap.DropTable(ctx, table, view)
 }
 
 // olapForceRenameTable renames a table or view from fromName to toName in the OLAP connector.
@@ -159,7 +159,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 	if strings.EqualFold(fromName, toName) {
 		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-		err = olap.RenameTable(ctx, fromName, tmpName)
+		err = olap.RenameTable(ctx, fromName, tmpName, fromIsView)
 		if err != nil {
 			return err
 		}
@@ -167,7 +167,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	}
 
 	// Do the rename
-	return olap.RenameTable(ctx, fromName, toName)
+	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
 func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self compilerv1.TemplateResource, props map[string]any) (map[string]any, error) {

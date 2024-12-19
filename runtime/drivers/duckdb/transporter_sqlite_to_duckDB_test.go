@@ -35,7 +35,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	olap, _ := to.AsOLAP("")
 
 	tr := &duckDBToDuckDB{
-		to:     to.(*connection),
+		to:     olap,
 		logger: zap.NewNop(),
 	}
 	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)

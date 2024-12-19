@@ -21,14 +21,8 @@ import (
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
 func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
-	if !d.localDirty || d.remote == nil {
+	if !d.localDirty {
 		// optimisation to skip sync if write was already synced
-		if !updateCatalog {
-			// cleanup of older versions of table
-			_ = d.iterateLocalTables(true, func(name string, meta *tableMeta) error {
-				return nil
-			})
-		}
 		return nil
 	}
 	d.logger.Debug("syncing from remote")
@@ -97,7 +91,7 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 		// check if table is locally present
 		meta, _ := d.tableMeta(table)
 		if meta != nil && meta.Version == remoteMeta.Version {
-			d.logger.Debug("SyncWithObjectStorage: local table is in sync with remote", slog.String("table", table))
+			d.logger.Debug("SyncWithObjectStorage: local table is not present in catalog", slog.String("table", table))
 			continue
 		}
 		if err := d.initLocalTable(table, remoteMeta.Version); err != nil {
@@ -197,9 +191,6 @@ func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
 // pushToRemote syncs the remote location with the local path for given table.
 // If oldVersion is specified, it is deleted after successful sync.
 func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tableMeta) error {
-	if d.remote == nil {
-		return nil
-	}
 	if meta.Type == "TABLE" {
 		localPath := d.localTableDir(table, meta.Version)
 		entries, err := os.ReadDir(localPath)
@@ -258,13 +249,9 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 // If table is specified, only that table is deleted.
 // If table and version is specified, only that version of the table is deleted.
 func (d *db) deleteRemote(ctx context.Context, table, version string) error {
-	if d.remote == nil {
-		return nil
-	}
 	if table == "" && version != "" {
 		return fmt.Errorf("table must be specified if version is specified")
 	}
-	d.logger.Debug("deleting remote", slog.String("table", table), slog.String("version", version))
 	var prefix string
 	if table != "" {
 		if version != "" {

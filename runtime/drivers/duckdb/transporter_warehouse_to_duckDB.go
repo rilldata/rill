@@ -19,7 +19,7 @@ type warehouseToDuckDB struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Transporter = &warehouseToDuckDB{}
+var _ drivers.Transporter = &sqlStoreToDuckDB{}
 
 func NewWarehouseToDuckDB(from drivers.Warehouse, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &warehouseToDuckDB{

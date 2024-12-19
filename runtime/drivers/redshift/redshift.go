@@ -233,6 +233,11 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
 }
 
+// AsSQLStore implements drivers.Connection.
+func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // AsAI implements drivers.Handle.
 func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
 	return nil, false

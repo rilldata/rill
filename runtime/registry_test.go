@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/c2h5oh/datasize"
-	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -497,9 +496,9 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check we can't open it anymore
-	conn, err := duckdb.NewConnector(dbpath, nil)
+	_, _, err = rt.OLAP(ctx, inst.ID, "")
 	require.Error(t, err)
-	require.Nil(t, conn)
+	require.FileExists(t, dbpath)
 
 	// Delete instance and check it still drops the .db file for DuckDB
 	err = rt.DeleteInstance(ctx, inst.ID)

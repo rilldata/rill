@@ -237,6 +237,11 @@ func (h *Handle) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bo
 	return nil, false
 }
 
+// AsSQLStore implements drivers.Handle.
+func (h *Handle) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (h *Handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier

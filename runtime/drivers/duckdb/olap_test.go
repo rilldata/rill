@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -212,16 +213,30 @@ func TestClose(t *testing.T) {
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
-	err = olap.CreateTableAsSelect(context.Background(), "foo", false, "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", nil)
+	err = olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE TABLE foo(bar VARCHAR, baz INTEGER)",
+	})
 	require.NoError(t, err)
 
-	err = olap.CreateTableAsSelect(context.Background(), "bar", false, "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)) AS t(bar, baz)", nil)
+	err = olap.Exec(context.Background(), &drivers.Statement{
+		Query: "INSERT INTO foo VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
+	})
+	require.NoError(t, err)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE TABLE bar(bar VARCHAR, baz INTEGER)",
+	})
+	require.NoError(t, err)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{
+		Query: "INSERT INTO bar VALUES ('a', 1), ('a', 2), ('b', 3), ('c', 4)",
+	})
 	require.NoError(t, err)
 
 	return conn
@@ -233,8 +248,20 @@ func Test_safeSQLString(t *testing.T) {
 	err := os.Mkdir(path, fs.ModePerm)
 	require.NoError(t, err)
 
-	conn, err := Driver{}.Open("default", map[string]any{"data_dir": path}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	dbFile := filepath.Join(path, "st@g3's.db")
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	require.NotNil(t, conn)
 	require.NoError(t, conn.Close())
+
+	conn, err = Driver{}.Open("default", map[string]any{"external_table_storage": false}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	olap, ok := conn.AsOLAP("")
+	require.True(t, ok)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", dbFile)})
+	require.Error(t, err)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("ATTACH %s", safeSQLString(dbFile))})
+	require.NoError(t, err)
 }

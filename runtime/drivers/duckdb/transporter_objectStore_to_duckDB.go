@@ -112,7 +112,8 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	}
 	// convert to enum
 	if len(srcCfg.CastToENUM) > 0 {
-		return fmt.Errorf("`cast_to_enum` is not implemented")
+		conn, _ := t.to.(*connection)
+		return conn.convertToEnum(ctx, sinkCfg.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }
@@ -174,7 +175,8 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 	}
 	// convert to enum
 	if len(srcCfg.CastToENUM) > 0 {
-		return fmt.Errorf("`cast_to_enum` is not implemented")
+		conn, _ := t.to.(*connection)
+		return conn.convertToEnum(ctx, dbSink.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }

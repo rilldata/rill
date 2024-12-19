@@ -146,7 +146,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 	}
 	defer release()
 	var path string
-	err = olap.WithConnection(ctx, e.priority, false, func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
+	err = olap.WithConnection(ctx, e.priority, false, false, func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
 		// Stage the underlying data in a temporary table
 		alias, err := randomString("t", 8)
 		if err != nil {
