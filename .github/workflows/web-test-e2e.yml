@@ -48,7 +48,7 @@ jobs:
           echo "name=$(jq -n '[
               "admin" | select(env.FILTER_ADMIN == "true" or env.FILTER_COMMON == "true"),
               "local" | select(env.FILTER_LOCAL == "true" or env.FILTER_COMMON == "true")
-            ]')" >> "$GITHUB_OUTPUT"
+            ]' | jq -c)" >> "$GITHUB_OUTPUT"
         env:
           FILTER_ADMIN: ${{ steps.filter.outputs.admin }}
           FILTER_COMMON: ${{ steps.filter.outputs.common }}
