@@ -112,6 +112,11 @@ jobs:
         if: ${{ matrix.name }} == "web-admin"
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: gTest ${{ matrix.name }}
+        if: ${{ matrix.name }} == "web-admin"
+        run: |-
+          gsutil ls gs://rill-devtool/dotenv/
+
       - name: Test ${{ matrix.name }}
         run: |-
           npm run build -w ${{ matrix.name }}
