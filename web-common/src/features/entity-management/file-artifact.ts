@@ -201,9 +201,10 @@ export class FileArtifact {
     this.editorCallback(newContent);
   };
 
-  saveLocalContent = async () => {
+  saveLocalContent = async (force = false) => {
     const saveEnabled = get(this.saveEnabled);
-    if (!saveEnabled) return;
+
+    if (!saveEnabled && !force) return;
     await this.saveContent(get(this.editorContent) ?? "");
   };
 

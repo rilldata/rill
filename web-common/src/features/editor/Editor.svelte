@@ -52,11 +52,11 @@
     }
   }
 
-  async function save() {
+  async function save(force = false) {
     const local = $editorContent;
     if (local === null) return;
     onSave(local);
-    await saveLocalContent();
+    await saveLocalContent(force);
   }
 
   function revertContent() {
@@ -77,7 +77,7 @@
     <DiffBar
       saving={$saving}
       errorMessage={$error?.message}
-      onAcceptCurrent={save}
+      onAcceptCurrent={() => save(true)}
       onAcceptIncoming={revertContent}
     />
   {/if}
