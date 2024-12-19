@@ -96,10 +96,10 @@
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
-  $: ({ remoteContent, localContent, saveContent, getResource } = fileArtifact);
+  $: ({ editorContent, saveContent, getResource } = fileArtifact);
 
   // YAML Parsing
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? "");
 
   $: raw = {
     measures: parsedDocument.get("measures"),
