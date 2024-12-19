@@ -5,7 +5,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
@@ -176,7 +176,7 @@
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
 
-<DashboardWrapper
+<CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
   on:click={deselect}
@@ -217,4 +217,4 @@
       on:delete={handleDelete}
     />
   {/each} -->
-</DashboardWrapper>
+</CanvasDashboardWrapper>

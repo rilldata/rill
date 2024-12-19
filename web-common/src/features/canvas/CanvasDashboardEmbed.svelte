@@ -7,7 +7,7 @@
   import { setContext } from "svelte";
   import Component from "./Component.svelte";
   import * as defaults from "./constants";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { canvasVariablesStore } from "./variables-store";
   import GridStackItem from "./GridStackItem.svelte";
 
@@ -43,7 +43,7 @@
   }
 </script>
 
-<!-- <DashboardWrapper
+<!-- <CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
   readonly={true}
@@ -68,9 +68,9 @@
       />
     {/if}
   {/each}
-</DashboardWrapper> -->
+</CanvasDashboardWrapper> -->
 
-<DashboardWrapper
+<CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
   readonly={true}
@@ -85,4 +85,4 @@
       content={component.component}
     />
   {/each}
-</DashboardWrapper>
+</CanvasDashboardWrapper>
