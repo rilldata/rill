@@ -102,6 +102,16 @@ jobs:
       - name: Install browser for UI tests
         run: npx playwright install
 
+      - name: Authenticate GCloud
+        uses: google-github-actions/auth@v2
+        if: ${{ matrix.name }} == "web-admin"
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        if: ${{ matrix.name }} == "web-admin"
+        uses: google-github-actions/setup-gcloud@v2
+
       - name: Test ${{ matrix.name }}
         run: |-
           npm run build -w ${{ matrix.name }}
