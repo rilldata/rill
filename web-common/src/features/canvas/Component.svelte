@@ -48,8 +48,6 @@
   //     gridStackManager.setStatic(true);
   //   }
   // });
-
-  $: console.log("Component", componentName);
 </script>
 
 <div

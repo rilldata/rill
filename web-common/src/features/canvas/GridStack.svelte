@@ -10,7 +10,7 @@
 
   onMount(() => {
     if (gridStackElement) {
-      gridStackManager.initialize();
+      gridStackManager.initialize(gridStackElement);
     }
   });
 
