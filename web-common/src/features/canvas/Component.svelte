@@ -27,7 +27,7 @@
   export let height: number;
   export let localZIndex = 0;
   export let chartView = false;
-  export let componentName: string;
+  export let componentName: string | undefined;
   export let instanceId: string;
 
   $: resourceQuery = useResource(
@@ -50,6 +50,7 @@
   // });
 </script>
 
+<!-- style:height={chartView ? undefined : `${height}px`} -->
 <div
   {...getAttrs(builders)}
   use:builderActions={{ builders }}

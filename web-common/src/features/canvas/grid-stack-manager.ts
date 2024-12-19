@@ -25,20 +25,20 @@ export class GridStackManager {
     if (!this.instance) {
       this.instance = GridStack.init(this.options, container);
 
-      // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestartevent-el
-      this.instance.on(
-        "resizestart",
-        (event: Event, el: GridItemHTMLElement) => {
-          console.log("Resize started:", el);
-        },
-      );
+      // // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestartevent-el
+      // this.instance.on(
+      //   "resizestart",
+      //   (event: Event, el: GridItemHTMLElement) => {
+      //     console.log("Resize started:", el);
+      //   },
+      // );
 
-      // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizeevent-el
-      this.instance.on("resize", (event: Event, el: GridItemHTMLElement) => {
-        console.log("Resizing:", el);
-        const { w, h } = el.gridstackNode || {};
-        console.log("Current size:", { w, h });
-      });
+      // // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizeevent-el
+      // this.instance.on("resize", (event: Event, el: GridItemHTMLElement) => {
+      //   console.log("Resizing:", el);
+      //   const { w, h } = el.gridstackNode || {};
+      //   console.log("Current size:", { w, h });
+      // });
 
       // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
       this.instance.on(
