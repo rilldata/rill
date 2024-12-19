@@ -129,13 +129,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			insertOpts := &drivers.InsertTableOptions{
-				ByName:    false,
-				InPlace:   true,
-				Strategy:  outputProps.IncrementalStrategy,
-				UniqueKey: outputProps.UniqueKey,
-			}
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
@@ -143,19 +137,14 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		}
 
 		if !create {
-			insertOpts := &drivers.InsertTableOptions{
-				ByName:   false,
-				InPlace:  true,
-				Strategy: drivers.IncrementalStrategyAppend,
-			}
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, drivers.IncrementalStrategyAppend, nil)
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
 			continue
 		}
 
-		err = olap.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
+		err = olap.CreateTableAsSelect(ctx, outputTable, false, qry, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}

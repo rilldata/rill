@@ -10,10 +10,8 @@ import (
 )
 
 type ModelInputProperties struct {
-	SQL      string `mapstructure:"sql"`
-	Args     []any  `mapstructure:"args"`
-	PreExec  string `mapstructure:"pre_exec"`
-	PostExec string `mapstructure:"post_exec"`
+	SQL  string `mapstructure:"sql"`
+	Args []any  `mapstructure:"args"`
 }
 
 func (p *ModelInputProperties) Validate() error {

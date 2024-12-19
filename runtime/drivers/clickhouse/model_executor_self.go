@@ -68,11 +68,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		_ = e.c.DropTable(ctx, stagingTableName)
 
 		// Create the table
-		opts := &drivers.CreateTableOptions{
-			View:      asView,
-			TableOpts: mustToMap(outputProps),
-		}
-		err := e.c.CreateTableAsSelect(ctx, stagingTableName, inputProps.SQL, opts)
+		err := e.c.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, mustToMap(outputProps))
 		if err != nil {
 			_ = e.c.DropTable(ctx, stagingTableName)
 			return nil, fmt.Errorf("failed to create model: %w", err)
@@ -87,13 +83,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	} else {
 		// Insert into the table
-		opts := &drivers.InsertTableOptions{
-			ByName:    false,
-			InPlace:   true,
-			Strategy:  outputProps.IncrementalStrategy,
-			UniqueKey: outputProps.UniqueKey,
-		}
-		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, opts)
+		err := e.c.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}

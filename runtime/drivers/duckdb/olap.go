@@ -221,7 +221,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -229,25 +229,12 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 	defer func() {
 		_ = release()
 	}()
-	var beforeCreateFn, afterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
-	if opts.BeforeCreate != "" {
-		beforeCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.BeforeCreate)
-			return err
-		}
-	}
-	if opts.AfterCreate != "" {
-		afterCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
-			_, err := conn.ExecContext(ctx, opts.AfterCreate)
-			return err
-		}
-	}
-	err = db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
+	err = db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: view})
 	return c.checkErr(err)
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
@@ -256,11 +243,11 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		_ = release()
 	}()
 	var byNameClause string
-	if opts.ByName {
+	if byName {
 		byNameClause = "BY NAME"
 	}
 
-	if opts.Strategy == drivers.IncrementalStrategyAppend {
+	if strategy == drivers.IncrementalStrategyAppend {
 		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
 			return err
@@ -268,19 +255,8 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		return c.checkErr(err)
 	}
 
-	if opts.Strategy == drivers.IncrementalStrategyMerge {
-		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
-			// Execute the pre-init SQL first
-			if opts.BeforeInsert != "" {
-				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
-				return err
-			}
-			defer func() {
-				if opts.AfterInsert != "" {
-					_, err := conn.ExecContext(ctx, opts.AfterInsert)
-					mutate = errors.Join(mutate, err)
-				}
-			}()
+	if strategy == drivers.IncrementalStrategyMerge {
+		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
 			// Create a temporary table with the new data
 			tmp := uuid.New().String()
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
@@ -302,7 +278,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 
 			// Drop the rows from the target table where the unique key is present in the temporary table
 			where := ""
-			for i, key := range opts.UniqueKey {
+			for i, key := range uniqueKey {
 				key = safeSQLName(key)
 				if i != 0 {
 					where += " AND "
@@ -321,7 +297,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		return c.checkErr(err)
 	}
 
-	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 // DropTable implements drivers.OLAPStore.

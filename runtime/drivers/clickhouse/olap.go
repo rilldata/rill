@@ -209,9 +209,9 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
@@ -240,11 +240,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
-	if !opts.InPlace {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	if !inPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
-	if opts.Strategy == drivers.IncrementalStrategyAppend {
+	if strategy == drivers.IncrementalStrategyAppend {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority:    1,
@@ -252,7 +252,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
+	if strategy == drivers.IncrementalStrategyPartitionOverwrite {
 		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 		if err != nil {
 			return err
@@ -328,7 +328,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		return nil
 	}
 
-	if opts.Strategy == drivers.IncrementalStrategyMerge {
+	if strategy == drivers.IncrementalStrategyMerge {
 		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 		if err != nil {
 			return err
@@ -353,7 +353,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			LongRunning: true,
 		})
 	}
-	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
