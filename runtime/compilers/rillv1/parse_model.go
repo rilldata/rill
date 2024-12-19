@@ -141,7 +141,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Build output details
 	outputConnector := tmp.Output.Connector
 	if outputConnector == "" {
-		outputConnector = inputConnector
+		outputConnector = p.defaultOLAPConnector()
 	}
 	outputProps := tmp.Output.Properties
 

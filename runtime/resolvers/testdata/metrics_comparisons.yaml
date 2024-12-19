@@ -11,6 +11,8 @@ project_files:
       select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'US' as country, 3 as val union all
       select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country, 4 as val union all
       select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country, 5 as val
+    output:
+      connector: clickhouse
   clickhouse_metrics.yaml:
     type: metrics_view
     model: clickhouse_data

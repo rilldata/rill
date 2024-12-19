@@ -467,7 +467,7 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		connectorNames = append(connectorNames, connector.Name)
 	}
 
-	a.ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
+	a.ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.ResolveOLAPConnector()))
 
 	return nil
 }
