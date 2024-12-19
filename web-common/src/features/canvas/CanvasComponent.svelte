@@ -5,11 +5,6 @@
     useResource,
   } from "../entity-management/resource-selectors";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
-
-  const options = [0, 0.5, 1];
-  const allSides = options
-    .flatMap((y) => options.map((x) => [x, y] as [number, number]))
-    .filter(([x, y]) => !(x === 0.5 && y === 0.5));
 </script>
 
 <script lang="ts">

@@ -9,7 +9,7 @@
   import * as defaults from "./constants";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { canvasVariablesStore } from "./variables-store";
-  import GridStackItem from "./GridStackItem.svelte";
+  import SvelteGridStack from "./SvelteGridStack.svelte";
 
   export let canvasName: string;
   export let columns = 20;
@@ -41,9 +41,25 @@
   $: if (variables.length && canvasName) {
     canvasVariablesStore.init(canvasName, variables);
   }
+
+  $: items = items.map((item) => ({
+    ...item,
+    component: item.component ?? "",
+    w: Number(item.width),
+    h: Number(item.height),
+    x: Number(item.x),
+    y: Number(item.y),
+  }));
+
+  $: console.log("items: ", items);
+
+  const opts = {
+    column: 12,
+    staticGrid: true,
+  };
 </script>
 
-<CanvasDashboardWrapper
+<!-- <CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
   readonly={true}
@@ -73,4 +89,26 @@
       /></GridStackItem
     >
   {/each}
+</CanvasDashboardWrapper> -->
+
+<CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
+  <SvelteGridStack {opts} {items} let:index let:item>
+    {@const componentName = item.component}
+    {#if componentName}
+      <CanvasComponent
+        embed
+        i={index}
+        {instanceId}
+        {componentName}
+        {chartView}
+        {scale}
+        {radius}
+        padding={gapSize}
+        width={Number(item.w ?? defaults.COMPONENT_WIDTH) * gridCell}
+        height={Number(item.h ?? defaults.COMPONENT_HEIGHT) * gridCell}
+        left={Number(item.x) * gridCell}
+        top={Number(item.y) * gridCell}
+      />
+    {/if}
+  </SvelteGridStack>
 </CanvasDashboardWrapper>
