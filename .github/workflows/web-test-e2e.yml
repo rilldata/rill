@@ -59,9 +59,9 @@ jobs:
 
       - name: print
         run: |-
-          echo ${{ needs.build.outputs.name }}
-          echo ${{ fromJson(needs.build.outputs.name) }}
-          echo ${{ fromJson(needs.build.outputs.name) }} | jq          
+          echo ${{ steps.matrix.outputs.name }}
+          echo ${{ fromJson(steps.matrix.outputs.name) }}
+          echo ${{ fromJson(steps.matrix.outputs.name) }} | jq          
 
   e2e:
     runs-on: ubuntu-latest
