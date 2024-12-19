@@ -3,15 +3,14 @@
   import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
-  import GridStackItem from "./GridStackItem.svelte";
+  import SvelteGridStack from "./SvelteGridStack.svelte";
+  import type { GridItemHTMLElement } from "gridstack";
 
-  const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
   export let columns: number | undefined;
@@ -158,7 +157,26 @@
     return Math.max(max, bottom);
   }, 0);
 
-  $: console.log("items: ", items);
+  $: items = items.map((item) => ({
+    ...item,
+    w: Number(item.width),
+    h: Number(item.height),
+    x: Number(item.x),
+    y: Number(item.y),
+  }));
+
+  const opts = {
+    column: 12,
+  };
+
+  // TODO: fix this
+  const handleResizeStop = ({
+    detail,
+  }: {
+    detail: { event: Event; el: GridItemHTMLElement };
+  }) => {
+    console.log("handleResizeStop", detail);
+  };
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -169,31 +187,30 @@
   on:click={deselect}
   on:scroll={handleScroll}
 >
-  {#each items as component, idx (idx)}
-    {@const selected = idx === selectedIndex}
+  <SvelteGridStack
+    {opts}
+    {items}
+    on:resizestop={handleResizeStop}
+    let:index
+    let:item
+  >
+    {@const selected = index === selectedIndex}
     {@const interacting = selected && changing}
-    <GridStackItem
-      width={component.width}
-      height={component.height}
-      x={component.x}
-      y={component.y}
-    >
-      <PreviewElement
-        {instanceId}
-        i={idx}
-        {scale}
-        {component}
-        {radius}
-        {selected}
-        {interacting}
-        {gapSize}
-        width={Number(component.width) * gridCell}
-        height={Number(component.height) * gridCell}
-        top={Number(component.y) * gridCell}
-        left={Number(component.x) * gridCell}
-        on:change={handleChange}
-        on:delete={handleDelete}
-      />
-    </GridStackItem>
-  {/each}
+    <PreviewElement
+      {instanceId}
+      i={index}
+      {scale}
+      component={item}
+      {radius}
+      {selected}
+      {interacting}
+      {gapSize}
+      width={Number(item.w) * gridCell}
+      height={Number(item.h) * gridCell}
+      top={Number(item.y) * gridCell}
+      left={Number(item.x) * gridCell}
+      on:change={handleChange}
+      on:delete={handleDelete}
+    />
+  </SvelteGridStack>
 </CanvasDashboardWrapper>
