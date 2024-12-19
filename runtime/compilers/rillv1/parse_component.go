@@ -88,7 +88,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	var resolverProps *structpb.Struct
 	if tmp.Data != nil {
 		var err error
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, "")
 		if err != nil {
 			return nil, nil, err
 		}
