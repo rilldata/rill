@@ -149,14 +149,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 		}
 		opts.Addr = []string{host}
+		opts.Protocol = clickhouse.Native
 		if conf.SSL {
-			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
-				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: false,
+				MinVersion: tls.VersionTLS12,
 			}
-		} else {
-			opts.Protocol = clickhouse.Native
 		}
 
 		// username password
