@@ -57,12 +57,6 @@ jobs:
           FILTER_COMMON: ${{ steps.filter.outputs.common }}
           FILTER_LOCAL: ${{ steps.filter.outputs.local }}
 
-      - name: print
-        run: |-
-          echo ${{ steps.matrix.outputs.name }}
-          echo ${{ fromJson(steps.matrix.outputs.name) }}
-          echo ${{ fromJson(steps.matrix.outputs.name) }} | jq          
-
   e2e:
     runs-on: ubuntu-latest
     strategy:
