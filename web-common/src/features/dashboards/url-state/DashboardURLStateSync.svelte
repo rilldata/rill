@@ -18,6 +18,7 @@
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -49,7 +50,11 @@
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-  $: ({ error, data: timeRangeSummaryResp } = $timeRangeSummaryStore);
+  $: ({
+    error,
+    data: timeRangeSummaryResp,
+    isLoading: timeRangeSummaryIsLoading,
+  } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
 
   let timeControlsState: TimeControlState | undefined = undefined;
@@ -63,13 +68,14 @@
   }
 
   let prevUrl = "";
+  let initializing = false;
 
   onMount(() => {
     // in some cases afterNavigate is not always triggered
     // so this is the escape hatch to make sure dashboard store gets initialised
     setTimeout(() => {
       if (!$dashboardStore) {
-        handleExploreInit(true);
+        void handleExploreInit(true);
       }
     });
   });
@@ -103,7 +109,7 @@
       // When a user changes url manually and clears the params the `type` will be "enter"
       // This signal is used in handleExploreInit to make sure we do not use sessionStorage
       const isManualUrlChange = type === "enter";
-      handleExploreInit(isManualUrlChange);
+      void handleExploreInit(isManualUrlChange);
       return;
     }
 
@@ -160,8 +166,9 @@
     });
   });
 
-  function handleExploreInit(isManualUrlChange: boolean) {
-    if (!exploreSpec || !metricsSpec) return;
+  async function handleExploreInit(isManualUrlChange: boolean) {
+    if (!exploreSpec || !metricsSpec || initializing) return;
+    initializing = true;
 
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
@@ -187,7 +194,14 @@
       };
     }
 
+    await waitUntil(() => !timeRangeSummaryIsLoading);
     metricsExplorerStore.init(exploreName, initState);
+    timeControlsState ??= getTimeControlState(
+      metricsSpec,
+      exploreSpec,
+      timeRangeSummaryResp?.timeRangeSummary,
+      get(metricsExplorerStore).entities[exploreName],
+    );
     const redirectUrl = new URL($page.url);
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
