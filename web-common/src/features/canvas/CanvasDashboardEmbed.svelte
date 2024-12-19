@@ -48,41 +48,14 @@
 
   const opts = {
     column: 12,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
+    float: true,
     staticGrid: true,
   };
 </script>
-
-<!-- <CanvasDashboardWrapper
-  bind:contentRect
-  height={maxBottom * gridCell * scale}
-  readonly={true}
->
-  {#each items as component, i (i)}
-    {@const componentName = component.component ?? ""}
-    <GridStackItem
-      width={component.width}
-      height={component.height}
-      x={component.x}
-      y={component.y}
-    >
-      <CanvasComponent
-        embed
-        {i}
-        {instanceId}
-        {componentName}
-        {chartView}
-        {scale}
-        {radius}
-        padding={gapSize}
-        width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-        height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
-          gridCell}
-        left={Number(component.x) * gridCell}
-        top={Number(component.y) * gridCell}
-      /></GridStackItem
-    >
-  {/each}
-</CanvasDashboardWrapper> -->
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
   <SvelteGridStack {opts} {items} let:index let:item>

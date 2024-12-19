@@ -1,10 +1,7 @@
 <script lang="ts">
-  import GridStack from "./GridStack.svelte";
-
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let color = "bg-transparent";
-  export let readonly = false;
 </script>
 
 <div
@@ -16,9 +13,7 @@
     class="canvas {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
-    <GridStack {readonly}>
-      <slot />
-    </GridStack>
+    <slot />
   </div>
 </div>
 
