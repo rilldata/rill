@@ -71,7 +71,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Parse the resolver and its properties from the DataYAML
-	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML)
+	resolver, resolverProps, resolverRefs, err := p.parseDataYAML(&tmp.DataYAML, node.Connector)
 	if err != nil {
 		return err
 	}
@@ -105,8 +105,9 @@ type DataYAML struct {
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
+// The contextualConnector argument is optional; if provided and the resolver supports a connector, it becomes the default connector for the resolver.
 // It returns the resolver name, its properties, and refs found in the resolver props.
-func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []ResourceName, error) {
+func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (string, *structpb.Struct, []ResourceName, error) {
 	// Parse the resolver and its properties
 	var count int
 	var resolver string
@@ -120,6 +121,8 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 		resolverProps["sql"] = raw.SQL
 		if raw.Connector != "" {
 			resolverProps["connector"] = raw.Connector
+		} else if contextualConnector != "" {
+			resolverProps["connector"] = contextualConnector
 		}
 	}
 

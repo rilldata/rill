@@ -381,7 +381,7 @@ notify:
 					IntervalsIsoDuration:   "P1D",
 					IntervalsCheckUnclosed: true,
 					Resolver:               "sql",
-					ResolverProperties:     must(structpb.NewStruct(map[string]any{"sql": "select * from bar where country <> 'Denmark'"})),
+					ResolverProperties:     must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from bar where country <> 'Denmark'"})),
 					NotifyOnRecover:        false,
 					NotifyOnFail:           true,
 					NotifyOnError:          false,
