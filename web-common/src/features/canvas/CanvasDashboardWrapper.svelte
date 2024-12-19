@@ -1,25 +1,10 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import { GridStackManager } from "./grid-stack-manager";
-  import "gridstack/dist/gridstack.min.css";
+  import GridStack from "./GridStack.svelte";
 
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let color = "bg-transparent";
   export let readonly = false;
-
-  let gridStackElement: HTMLElement;
-  const gridStackManager = new GridStackManager(readonly);
-
-  onMount(() => {
-    if (gridStackElement) {
-      gridStackManager.initialize();
-    }
-  });
-
-  onDestroy(() => {
-    gridStackManager.destroy();
-  });
 </script>
 
 <div
@@ -31,9 +16,9 @@
     class="canvas {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
-    <div bind:this={gridStackElement} class="grid-stack">
+    <GridStack {readonly}>
       <slot />
-    </div>
+    </GridStack>
   </div>
 </div>
 
