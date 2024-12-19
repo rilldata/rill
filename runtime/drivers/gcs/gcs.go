@@ -71,7 +71,10 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	SecretJSON      string `mapstructure:"google_application_credentials"`
+	SecretJSON string `mapstructure:"google_application_credentials"`
+	// When working in s3 compatible mode
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
