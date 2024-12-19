@@ -78,6 +78,7 @@ jobs:
         if: matrix.name == 'web-admin'
         run: |-
           gsutil ls gs://rill-devtool/dotenv/
+          gsutil cp gs://rill-devtool/dotenv/cloud-e2e.env .
 
       - name: Set up NodeJS
         uses: actions/setup-node@v4
