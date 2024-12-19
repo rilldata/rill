@@ -167,16 +167,21 @@
 
   const opts = {
     column: 12,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
+    float: true,
   };
 
   // TODO: fix this
-  const handleResizeStop = ({
+  function handleResizeStop({
     detail,
   }: {
     detail: { event: Event; el: GridItemHTMLElement };
-  }) => {
+  }) {
     console.log("handleResizeStop", detail);
-  };
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
