@@ -1467,6 +1467,11 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              email:
+                type: string
+              slackUser:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/request-access:
@@ -1565,7 +1570,7 @@ paths:
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
               resourceType:
                 type: string
-                description: Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+                description: Type of resource to grant access to.
               resourceName:
                 type: string
                 description: Name of the resource to grant access to.
@@ -1587,6 +1592,12 @@ paths:
               displayName:
                 type: string
                 description: Optional display name to store with the token.
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
+                description: list of resources to grant access to.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/upload-assets:
@@ -2990,6 +3001,13 @@ paths:
                 type: array
                 items:
                   type: string
+              anonRecipients:
+                type: boolean
+              resources:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ResourceName'
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3580,7 +3598,7 @@ definitions:
         type: string
       exportUrl:
         type: string
-      editUrl:
+      unsubscribeUrl:
         type: string
   ListGithubUserReposResponseRepo:
     type: object
@@ -4259,8 +4277,6 @@ definitions:
   v1GetReportMetaResponse:
     type: object
     properties:
-      baseUrls:
-        $ref: '#/definitions/GetReportMetaResponseURLs'
       recipientUrls:
         type: object
         additionalProperties:
@@ -4525,6 +4541,11 @@ definitions:
         type: string
       displayName:
         type: string
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1MemberUser:
     type: object
     properties:
@@ -4875,8 +4896,20 @@ definitions:
       webOpenState:
         type: string
         description: Annotation for the base64-encoded UI state to open for the report.
+      explore:
+        type: string
+        title: either canvas or explore should be set
+      canvas:
+        type: string
   v1RequestProjectAccessResponse:
     type: object
+  v1ResourceName:
+    type: object
+    properties:
+      type:
+        type: string
+      name:
+        type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

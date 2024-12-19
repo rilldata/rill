@@ -39,6 +39,8 @@ export type AdminServiceGetReportMetaBody = {
   ownerId?: string;
   executionTime?: string;
   emailRecipients?: string[];
+  anonRecipients?: boolean;
+  resources?: V1ResourceName[];
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -165,7 +167,7 @@ export type AdminServiceSearchProjectUsersParams = {
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
-  /** Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore". */
+  /** Type of resource to grant access to. */
   resourceType?: string;
   /** Name of the resource to grant access to. */
   resourceName?: string;
@@ -177,11 +179,18 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   state?: string;
   /** Optional display name to store with the token. */
   displayName?: string;
+  /** list of resources to grant access to. */
+  resources?: V1ResourceName[];
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceUnsubscribeReportBody = {
+  email?: string;
+  slackUser?: string;
 };
 
 export type AdminServiceAddProjectMemberUserBody = {
@@ -418,6 +427,16 @@ export interface V1UpdateBookmarkRequest {
   shared?: boolean;
 }
 
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -548,16 +567,6 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
 
-export interface V1Subscription {
-  id?: string;
-  plan?: V1BillingPlan;
-  startDate?: string;
-  endDate?: string;
-  currentBillingCycleStartDate?: string;
-  currentBillingCycleEndDate?: string;
-  trialEndDate?: string;
-}
-
 export interface V1Subquery {
   dimension?: string;
   measures?: string[];
@@ -632,6 +641,11 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1ResourceName {
+  type?: string;
+  name?: string;
+}
+
 export interface V1RequestProjectAccessResponse {
   [key: string]: any;
 }
@@ -653,6 +667,8 @@ export interface V1ReportOptions {
   webOpenPath?: string;
   /** Annotation for the base64-encoded UI state to open for the report. */
   webOpenState?: string;
+  explore?: string;
+  canvas?: string;
 }
 
 export interface V1RenewBillingSubscriptionResponse {
@@ -885,6 +901,7 @@ export interface V1MagicAuthToken {
   fields?: string[];
   state?: string;
   displayName?: string;
+  resources?: V1ResourceName[];
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -1023,7 +1040,6 @@ export type V1GetReportMetaResponseRecipientUrls = {
 };
 
 export interface V1GetReportMetaResponse {
-  baseUrls?: GetReportMetaResponseURLs;
   recipientUrls?: V1GetReportMetaResponseRecipientUrls;
 }
 
@@ -1551,5 +1567,5 @@ export interface ListGithubUserReposResponseRepo {
 export interface GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
-  editUrl?: string;
+  unsubscribeUrl?: string;
 }
