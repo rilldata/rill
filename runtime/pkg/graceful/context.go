@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 // WithCancelOnTerminate derives a context that is cancelled on SIGINT and SIGTERM signals.
@@ -23,4 +24,29 @@ func WithCancelOnTerminate(ctx context.Context) context.Context {
 	}()
 
 	return ctx
+}
+
+// WithMinimumDuration derives a context that delays the parent's cancellation until the provided minimum duration has elapsed.
+// When done with the derived context, call the returned cancel function to clean up associated resources.
+func WithMinimumDuration(parentCtx context.Context, d time.Duration) (context.Context, context.CancelFunc) {
+	newCtx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		// Wait until the minimum duration has elapsed.
+		select {
+		case <-newCtx.Done():
+			return
+		case <-time.After(d):
+		}
+
+		// Wait until the parent context is done.
+		select {
+		case <-newCtx.Done():
+			return
+		case <-parentCtx.Done():
+			cancel()
+		}
+	}()
+
+	return newCtx, cancel
 }
