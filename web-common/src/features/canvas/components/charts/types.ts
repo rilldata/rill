@@ -1,3 +1,5 @@
+import type { ComponentType, SvelteComponent } from "svelte";
+
 export interface FieldConfig {
   field: string;
   label?: string;
@@ -17,3 +19,9 @@ export interface ChartConfig {
 }
 
 export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";
+
+export interface ChartMetadata {
+  id: ChartType;
+  icon: ComponentType<SvelteComponent>;
+  title: string;
+}

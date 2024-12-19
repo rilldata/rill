@@ -1,4 +1,3 @@
-import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import {
   type V1Canvas,
   type V1CanvasSpec,
@@ -23,7 +22,6 @@ export type StateManagers = {
   runtime: Writable<Runtime>;
   canvasName: Writable<string>;
   canvasStore: Readable<CanvasEntity>;
-  fileArtifact: Readable<FileArtifact>;
   validSpecStore: Readable<V1CanvasSpec>;
   updateCanvas: CanvasCallbackExecutor;
   queryClient: QueryClient;
@@ -39,16 +37,13 @@ export function createStateManagers({
   queryClient,
   canvasName,
   canvasResource,
-  fileArtifact,
 }: {
   queryClient: QueryClient;
   canvasName: string;
   canvasResource: V1Canvas;
-  fileArtifact: FileArtifact;
 }): StateManagers {
   const canvasNameStore = writable(canvasName);
 
-  const fileArtifactStore = readable(fileArtifact);
   const canvasStore: Readable<CanvasEntity> = derived(
     [canvasNameStore],
     ([name], set) => {
@@ -67,7 +62,6 @@ export function createStateManagers({
   return {
     runtime: runtime,
     canvasName: canvasNameStore,
-    fileArtifact: fileArtifactStore,
     canvasStore,
     validSpecStore,
     queryClient,

@@ -3,6 +3,7 @@
   import { DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     ResourceKind,
     useFilteredResources,
@@ -16,11 +17,13 @@
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
   ) => Promise<void>;
-  const { fileArtifact, validSpecStore } = getCanvasStateManagers();
+  export let fileArtifact: FileArtifact;
+
+  const { validSpecStore } = getCanvasStateManagers();
 
   $: ({ instanceId } = $runtime);
 
-  $: parsedDocument = getParsedDocument($fileArtifact);
+  $: parsedDocument = getParsedDocument(fileArtifact);
 
   $: rawTitle = $parsedDocument.get("title");
   $: rawDisplayName = $parsedDocument.get("display_name");

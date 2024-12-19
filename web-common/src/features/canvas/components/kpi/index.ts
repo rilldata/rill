@@ -10,7 +10,7 @@ export interface KPISpec extends ComponentCommonProperties {
   metrics_view: string;
   measure: string;
   time_range: string;
-  show_sparkline?: boolean;
+  sparkline?: boolean;
   comparison_range?: string;
 }
 
@@ -27,7 +27,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       metrics_view: "",
       measure: "",
       time_range: "",
-      // show_sparkline: false,
+      sparkline: true,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -42,9 +42,9 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     return {
       metrics_view: { type: "metrics", label: "Metrics view" },
       measure: { type: "measure", label: "Measure" },
+      sparkline: { type: "boolean", required: false, label: "Sparkline" },
       time_range: { type: "rill_time", label: "Time Range" },
       comparison_range: { type: "rill_time", label: "Comparison Range" },
-      show_sparkline: { type: "boolean", required: false, label: "Sparkline" },
       ...commonOptions,
     };
   }

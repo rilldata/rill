@@ -3,13 +3,15 @@
   import ComponentsEditor from "@rilldata/web-common/features/canvas/inspector/ComponentsEditor.svelte";
   import PageEditor from "@rilldata/web-common/features/canvas/inspector/PageEditor.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { Inspector } from "@rilldata/web-common/layout/workspace";
   import { parseDocument } from "yaml";
 
-  const { validSpecStore, canvasStore, fileArtifact } =
-    getCanvasStateManagers();
+  export let fileArtifact: FileArtifact;
 
-  $: ({ localContent, remoteContent, saveContent, path } = $fileArtifact);
+  const { validSpecStore, canvasStore } = getCanvasStateManagers();
+
+  $: ({ localContent, remoteContent, saveContent, path } = fileArtifact);
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
   $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
@@ -57,8 +59,8 @@
 
 <Inspector filePath={path}>
   {#if selectedComponentName}
-    <ComponentsEditor {selectedComponentName} />
+    <ComponentsEditor {fileArtifact} {selectedComponentName} />
   {:else}
-    <PageEditor {updateProperties} />
+    <PageEditor {fileArtifact} {updateProperties} />
   {/if}
 </Inspector>

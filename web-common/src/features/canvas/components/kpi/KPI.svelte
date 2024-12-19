@@ -38,6 +38,7 @@
     metrics_view: metricsViewName,
     measure: measureName,
     time_range: timeRange,
+    sparkline: showSparkline,
     comparison_range: comparisonTimeRange,
   } = kpiProperties);
 
@@ -160,7 +161,7 @@
       {/if}
     </div>
 
-    {#if sparkData.length}
+    {#if showSparkline && sparkData.length}
       <SimpleDataGraphic
         height={containerHeight - 90}
         width={containerWidth - 16}

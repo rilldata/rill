@@ -9,8 +9,8 @@
   export let canvasName: string;
 
   // TODO: Remove later
-  let columns = 12;
-  let gap = 4;
+  let columns = 20;
+  let gap = 1;
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
   $: canvas = $canvasQuery.data?.canvas.spec;

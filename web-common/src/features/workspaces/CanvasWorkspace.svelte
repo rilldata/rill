@@ -111,7 +111,7 @@
 
 {#if canvasResource && fileArtifact}
   {#key canvasName}
-    <StateManagersProvider {canvasName} {canvasResource} {fileArtifact}>
+    <StateManagersProvider {canvasName} {canvasResource}>
       <CanvasStateProvider>
         <CanvasThemeProvider>
           <WorkspaceContainer>
@@ -125,7 +125,7 @@
             >
               <div class="flex gap-x-2" slot="cta">
                 <PreviewButton
-                  href="/custom/{canvasName}"
+                  href="/canvas/{canvasName}"
                   disabled={allErrors.length > 0 || resourceIsReconciling}
                   reconciling={resourceIsReconciling}
                 />
@@ -159,12 +159,12 @@
                     statusCode={404}
                   />
                 {:else if canvasResource}
-                  <Canvas />
+                  <Canvas {fileArtifact} />
                 {/if}
               {/if}
             </WorkspaceEditorContainer>
 
-            <VisualCanvasEditing slot="inspector" />
+            <VisualCanvasEditing {fileArtifact} slot="inspector" />
           </WorkspaceContainer>
         </CanvasThemeProvider>
       </CanvasStateProvider>

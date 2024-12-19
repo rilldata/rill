@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import type { FieldConfig } from "../components/charts/types";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
@@ -30,26 +29,6 @@
     selectedItem={value?.field || ""}
     onSelect={async (field) => {
       updateFieldConfig("field", field);
-    }}
-  />
-  <Input
-    inputType="text"
-    capitalizeLabel={false}
-    textClass="text-sm"
-    label={`${config.label || key} Label`}
-    bind:value={value.label}
-    onBlur={async () => {
-      updateFieldConfig("label", value.label);
-    }}
-  />
-  <Input
-    inputType="text"
-    capitalizeLabel={false}
-    textClass="text-sm"
-    label={`${config.label || key} Format`}
-    bind:value={value.format}
-    onBlur={async () => {
-      updateFieldConfig("format", value.format);
     }}
   />
 </div>

@@ -2,11 +2,23 @@
 Maps the input params for a component to a form input.
 -->
 
+<!-- 
+TODOs
+
+Do not overide params to bind values
+Align switch
+Handle optional fields and defaults properly
+-->
+
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import type { CanvasComponentType } from "../components/types";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
@@ -14,15 +26,16 @@ Maps the input params for a component to a form input.
 
   export let componentType: CanvasComponentType;
   export let paramValues: V1ComponentSpecRendererProperties;
+  export let fileArtifact: FileArtifact;
 
-  const { fileArtifact, canvasStore } = getCanvasStateManagers();
+  const { canvasStore } = getCanvasStateManagers();
 
   $: selectedComponentIndex = $canvasStore?.selectedComponentIndex || 0;
 
   $: path = ["items", selectedComponentIndex, "component", componentType];
 
   $: component = getComponentObj(
-    $fileArtifact,
+    fileArtifact,
     path,
     componentType,
     paramValues,
@@ -34,6 +47,7 @@ Maps the input params for a component to a form input.
   $: metricsView = "metrics_view" in $spec ? $spec.metrics_view : null;
 </script>
 
+<ChartTypeSelector {component} {componentType} />
 <div>
   {#each Object.entries(inputParams) as [key, config]}
     {#if config.showInUI !== false}
@@ -66,6 +80,21 @@ Maps the input params for a component to a form input.
             component.updateProperty(key, field);
           }}
         />
+      {:else if config.type === "boolean"}
+        <div class="flex py-2 justify-between">
+          <InputLabel
+            label={config?.label || key}
+            optional={config.required === false}
+            id={key}
+          />
+          <Switch
+            bind:checked={paramValues[key]}
+            on:click={async () => {
+              component.updateProperty(key, paramValues[key]);
+            }}
+            small
+          ></Switch>
+        </div>
       {:else if config.type === "textArea"}
         <textarea
           class="w-full p-2 border border-gray-300 rounded-sm"

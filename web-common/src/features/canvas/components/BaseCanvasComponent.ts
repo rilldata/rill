@@ -1,3 +1,4 @@
+import type { ChartType } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type {
   CanvasComponent,
   ComponentSize,
@@ -60,5 +61,21 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
       await this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  async updateChartType(key: ChartType) {
+    const currentSpec = get(this.specStore);
+    const parentSpec = { [key]: currentSpec };
+    const parentPath = this.pathInYAML.slice(0, -1);
+
+    const parseDocumentStore = getParsedDocument(this.fileArtifact);
+    const parsedDocument = get(parseDocumentStore);
+
+    const { saveContent } = this.fileArtifact;
+
+    parsedDocument.setIn(parentPath, parentSpec);
+
+    // Save the updated document
+    await saveContent(parsedDocument.toString());
   }
 }

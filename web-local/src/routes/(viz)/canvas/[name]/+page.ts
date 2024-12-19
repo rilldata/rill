@@ -44,9 +44,7 @@ export const load = async ({ params, depends }) => {
 
     return {
       dashboardName,
-      dashboard: {
-        ...dashboard.spec,
-      },
+      dashboard,
     };
   } catch (e) {
     console.error(e);
