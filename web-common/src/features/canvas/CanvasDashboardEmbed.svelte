@@ -32,14 +32,19 @@
   }, 0);
 </script>
 
-<!-- <CanvasDashboardWrapper
+<CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
   readonly={true}
 >
   {#each items as component, i (i)}
     {@const componentName = component.component}
-    {#if componentName}
+    <GridStackItem
+      width={component.width}
+      height={component.height}
+      x={component.x}
+      y={component.y}
+    >
       <Component
         embed
         {i}
@@ -54,24 +59,7 @@
           gridCell}
         left={Number(component.x) * gridCell}
         top={Number(component.y) * gridCell}
-      />
-    {/if}
-  {/each}
-</CanvasDashboardWrapper> -->
-
-<CanvasDashboardWrapper
-  bind:contentRect
-  height={maxBottom * gridCell * scale}
-  readonly={true}
->
-  {#each items as component, i (i)}
-    <GridStackItem
-      index={i}
-      width={component.width}
-      height={component.height}
-      x={component.x}
-      y={component.y}
-      content={component.component}
-    />
+      /></GridStackItem
+    >
   {/each}
 </CanvasDashboardWrapper>

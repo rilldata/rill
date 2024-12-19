@@ -186,7 +186,6 @@
     {@const selected = idx === selectedIndex}
     {@const interacting = selected && changing}
     <GridStackItem
-      index={idx}
       width={component.width}
       height={component.height}
       x={component.x}
