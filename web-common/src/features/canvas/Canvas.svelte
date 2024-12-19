@@ -9,7 +9,6 @@
     getCanvasStateManagers();
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
-  let showGrid = true;
   let spec: V1CanvasSpec = {
     columns: 20,
     gap: 4,
@@ -73,7 +72,6 @@
   {gap}
   {items}
   {columns}
-  {showGrid}
   bind:selectedIndex
   on:update={handlePreviewUpdate}
   on:delete={handleDeleteEvent}

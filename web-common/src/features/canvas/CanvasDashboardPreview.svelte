@@ -17,8 +17,7 @@
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  // TODO(@lovincyrus): remove before shipping
-  export let snap = false;
+  // export let snap = false;
   export let selectedIndex: number | null = null;
 
   const { canvasName } = getCanvasStateManagers();
@@ -58,36 +57,36 @@
     initialElementDimensions,
   );
 
-  $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
+  // $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
-  $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
+  // $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
 
-  function handleMouseUp() {
-    if (selectedIndex === null || !changing) return;
+  // function handleMouseUp() {
+  //   if (selectedIndex === null || !changing) return;
 
-    const cellPosition = getCell(dragPosition, true);
-    const dimensions = getCell(resizeDimenions, true);
+  //   const cellPosition = getCell(dragPosition, true);
+  //   const dimensions = getCell(resizeDimenions, true);
 
-    items[selectedIndex].x = Math.max(
-      0,
-      dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0],
-    );
-    items[selectedIndex].y = Math.max(
-      0,
-      dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1],
-    );
+  //   items[selectedIndex].x = Math.max(
+  //     0,
+  //     dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0],
+  //   );
+  //   items[selectedIndex].y = Math.max(
+  //     0,
+  //     dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1],
+  //   );
 
-    items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
-    items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
+  //   items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
+  //   items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
-    dispatch("update", {
-      index: selectedIndex,
-      position: [items[selectedIndex].x, items[selectedIndex].y],
-      dimensions: [items[selectedIndex].width, items[selectedIndex].height],
-    });
+  //   dispatch("update", {
+  //     index: selectedIndex,
+  //     position: [items[selectedIndex].x, items[selectedIndex].y],
+  //     dimensions: [items[selectedIndex].width, items[selectedIndex].height],
+  //   });
 
-    reset();
-  }
+  //   reset();
+  // }
 
   function reset() {
     changing = false;
@@ -137,14 +136,14 @@
     items.splice(e.detail.index, 1);
   }
 
-  function handleMouseMove(e: MouseEvent) {
-    if (selectedIndex === null || !changing) return;
+  // function handleMouseMove(e: MouseEvent) {
+  //   if (selectedIndex === null || !changing) return;
 
-    mousePosition = [
-      e.clientX - contentRect.left,
-      e.clientY - contentRect.top - scrollOffset,
-    ];
-  }
+  //   mousePosition = [
+  //     e.clientX - contentRect.left,
+  //     e.clientY - contentRect.top - scrollOffset,
+  //   ];
+  // }
 
   function handleScroll(
     e: UIEvent & {
@@ -175,7 +174,7 @@
   $: console.log("items: ", items);
 </script>
 
-<svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
+<!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
 
 <DashboardWrapper
   bind:contentRect

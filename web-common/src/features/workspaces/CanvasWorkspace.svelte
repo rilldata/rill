@@ -85,6 +85,7 @@
     if (newRoute) await goto(newRoute);
   }
 
+  // TODO: grid.addWidget()
   async function addComponent(componentName: string) {
     const newComponent = {
       component: componentName,
