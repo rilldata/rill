@@ -5,7 +5,7 @@
 
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-slate-200";
+  export let color = "bg-transparent";
   export let readonly = false;
 
   let grid;
