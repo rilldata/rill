@@ -17,7 +17,6 @@
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  // export let snap = false;
   export let selectedIndex: number | null = null;
 
   const { canvasName } = getCanvasStateManagers();
@@ -56,10 +55,6 @@
     vector.multiply(mouseDelta, dimensionChange),
     initialElementDimensions,
   );
-
-  // $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
-
-  // $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
 
   // function handleMouseUp() {
   //   if (selectedIndex === null || !changing) return;
@@ -151,14 +146,6 @@
     },
   ) {
     scrollOffset = e.currentTarget.scrollTop;
-  }
-
-  function getCell(rawVector: Vector, snap: boolean): Vector {
-    const raw = vector.divide(rawVector, gridVector);
-
-    if (!snap) return raw;
-
-    return [Math.round(raw[0]), Math.round(raw[1])];
   }
 
   function deselect() {
