@@ -1,11 +1,9 @@
 <script lang="ts">
   import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import Component from "./Component.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
   import * as defaults from "./constants";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import { canvasVariablesStore } from "./variables-store";
   import GridStackItem from "./GridStackItem.svelte";
 
   export let columns = 20;
@@ -38,14 +36,14 @@
   readonly={true}
 >
   {#each items as component, i (i)}
-    {@const componentName = component.component}
+    {@const componentName = component.component ?? ""}
     <GridStackItem
       width={component.width}
       height={component.height}
       x={component.x}
       y={component.y}
     >
-      <Component
+      <CanvasComponent
         embed
         {i}
         {instanceId}

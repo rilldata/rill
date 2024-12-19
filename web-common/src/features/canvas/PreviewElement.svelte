@@ -2,9 +2,8 @@
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { writable } from "svelte/store";
-  import Component from "./Component.svelte";
+  import { createEventDispatcher } from "svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
 </script>
 
 <script lang="ts">
@@ -47,7 +46,7 @@
 {#if componentName && !inlineComponent}
   <ContextMenu.Root>
     <ContextMenu.Trigger asChild let:builder>
-      <Component
+      <CanvasComponent
         {instanceId}
         {i}
         {interacting}
@@ -83,7 +82,7 @@
 {:else if componentName}
   <ContextMenu.Root>
     <ContextMenu.Trigger asChild let:builder>
-      <Component
+      <CanvasComponent
         {instanceId}
         {i}
         {interacting}

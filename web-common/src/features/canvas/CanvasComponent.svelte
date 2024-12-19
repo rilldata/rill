@@ -27,7 +27,7 @@
   export let height: number;
   export let localZIndex = 0;
   export let chartView = false;
-  export let componentName: string | undefined;
+  export let componentName: string;
   export let instanceId: string;
 
   $: resourceQuery = useResource(
@@ -48,6 +48,8 @@
   //     gridStackManager.setStatic(true);
   //   }
   // });
+
+  // $: console.log("interacting: ", interacting);
 </script>
 
 <!-- style:height={chartView ? undefined : `${height}px`} -->
@@ -56,7 +58,7 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
-  class="component hover:cursor-pointer active:cursor-grab pointer-events-auto"
+  class="canvas-component hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="1rem"
@@ -69,8 +71,12 @@
 >
   <div class="size-full relative">
     <div
+<<<<<<< HEAD:web-common/src/features/canvas/Component.svelte
       class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
+=======
+      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
+>>>>>>> 41c638800 (rename, clean up):web-common/src/features/canvas/CanvasComponent.svelte
       style:border-radius="{radius}px"
     >
       {#if title || description}
