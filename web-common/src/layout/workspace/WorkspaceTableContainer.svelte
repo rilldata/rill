@@ -15,6 +15,7 @@
   class="w-full relative flex flex-none flex-col"
   style:height="{$tableHeight}px"
   style:max-height="75%"
+  aria-label="Results Preview Table"
 >
   <Resizer
     absolute={false}
