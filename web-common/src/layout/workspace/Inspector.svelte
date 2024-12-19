@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Resizer from "../Resizer.svelte";
   import { workspaces } from "./workspace-stores";
-  import { slide } from "svelte/transition";
 
   export let filePath: string;
   export let resizable = true;

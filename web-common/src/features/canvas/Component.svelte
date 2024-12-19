@@ -1,5 +1,4 @@
 <script lang="ts" context="module">
-  import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import type { ComponentType } from "svelte";
   import { onMount } from "svelte";
@@ -7,8 +6,8 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import Chart from "./Chart.svelte";
   import type ResizeHandle from "./ResizeHandle.svelte";
+  import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -41,15 +40,11 @@
   );
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({
-    renderer,
-    rendererProperties,
-    resolverProperties,
-    input,
-    output,
-    displayName,
-    description,
-  } = componentResource?.component?.spec ?? {});
+  $: ({ renderer, rendererProperties } =
+    componentResource?.component?.spec ?? {});
+
+  $: title = rendererProperties?.title;
+  $: description = rendererProperties?.description;
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -97,27 +92,18 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
-      {#if displayName || description}
-        <div class="w-full h-fit flex flex-col pb-2">
-          {#if displayName}
-            <h1 class="text-slate-900">{displayName}</h1>
+      {#if title || description}
+        <div class="w-full h-fit flex flex-col pb-2 border-b">
+          {#if title}
+            <h1 class="text-slate-900">{title}</h1>
           {/if}
           {#if description}
             <h2 class="text-slate-600 leading-none">{description}</h2>
           {/if}
         </div>
       {/if}
-      {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
-        <Chart {componentName} {chartView} {input} />
-      {:else if renderer && rendererProperties}
-        <TemplateRenderer
-          {chartView}
-          {renderer}
-          {input}
-          {output}
-          {resolverProperties}
-          {componentName}
-        />
+      {#if renderer && rendererProperties}
+        <ComponentRenderer {renderer} {componentName} />
       {/if}
     </div>
   </div>

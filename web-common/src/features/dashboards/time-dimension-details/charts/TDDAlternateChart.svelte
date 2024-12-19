@@ -1,11 +1,11 @@
 <script lang="ts">
-  import VegaLiteRenderer from "@rilldata/web-common/features/canvas-components/render/VegaLiteRenderer.svelte";
-  import VegaRenderer from "@rilldata/web-common/features/canvas-components/render/VegaRenderer.svelte";
   import {
     resolveSignalField,
     resolveSignalIntervalField,
     resolveSignalTimeField,
-  } from "@rilldata/web-common/features/canvas-components/render/vega-signals";
+  } from "@rilldata/web-common/components/vega/vega-signals";
+  import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
+  import VegaRenderer from "@rilldata/web-common/components/vega/VegaRenderer.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
