@@ -9,6 +9,7 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
+  import GridStackItem from "./GridStackItem.svelte";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
@@ -170,6 +171,8 @@
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
+
+  $: console.log("items: ", items);
 </script>
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
@@ -181,6 +184,15 @@
   on:scroll={handleScroll}
 >
   {#each items as component, i (i)}
+    <GridStackItem
+      width={component.width}
+      height={component.height}
+      x={component.x}
+      y={component.y}
+      content={component.component}
+    />
+  {/each}
+  <!-- {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
     <PreviewElement
@@ -203,5 +215,5 @@
       on:change={handleChange}
       on:delete={handleDelete}
     />
-  {/each}
+  {/each} -->
 </DashboardWrapper>
