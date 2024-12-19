@@ -73,6 +73,9 @@ type commonYAML struct {
 	Kind *string `yaml:"kind"`
 	// Name is usually inferred from the filename, but can be specified manually.
 	Name string `yaml:"name"`
+	// Namespace is an optional value to group resources by.
+	// It currently just gets pre-pended to the resource name in the format `<namespace>/<name>`.
+	Namespace string `yaml:"namespace"`
 	// Refs are a list of other resources that this resource depends on. They are usually inferred from other fields, but can also be specified manually.
 	Refs []yaml.Node `yaml:"refs"`
 	// ParserConfig enables setting file-level parser config.
@@ -281,6 +284,11 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		} else if sqlPath != "" {
 			res.Name = filepath.Base(pathStem(sqlPath))
 		}
+	}
+
+	// If a namespace was provided in YAML, prepend it to the name.
+	if cfg != nil && cfg.Namespace != "" {
+		res.Name = cfg.Namespace + ":" + res.Name
 	}
 
 	// If resource kind is not set in YAML or SQL, try to infer it from the context
