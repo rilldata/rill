@@ -13,7 +13,7 @@
   import ComponentInputs from "@rilldata/web-common/features/canvas/inspector/ComponentInputs.svelte";
   import {
     ResourceKind,
-    useResource,
+    useResourceV2,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -39,7 +39,7 @@
   let selectedChartType;
 
   // TODO: Avoid resource query if possible
-  $: resourceQuery = useResource(
+  $: resourceQuery = useResourceV2(
     $runtime.instanceId,
     selectedComponentName,
     ResourceKind.Component,

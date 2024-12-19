@@ -114,7 +114,7 @@
     class="flex flex-col h-full w-full bg-white p-4"
   >
     <div class="flex justify-between items-center mb-2">
-      <span class="font-semibold text-lg"
+      <span class="font-semibold text-lg truncate pr-2"
         >{measure?.displayName || measureName}</span
       >
       {#if comparisonTimeRange && $comparisonValue.data}

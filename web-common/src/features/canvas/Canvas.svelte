@@ -29,7 +29,7 @@
 
   $: spec = structuredClone($validSpecStore ?? spec);
 
-  $: ({ items = [], variables = [] } = spec);
+  $: ({ items = [] } = spec);
 
   async function handleDeleteEvent(
     e: CustomEvent<{

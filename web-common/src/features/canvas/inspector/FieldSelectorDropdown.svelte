@@ -20,6 +20,8 @@
   export let type: "measure" | "dimension";
   export let searchableItems: string[] | undefined = undefined;
   export let onSelect: (item: string) => void;
+  export let multi = false;
+  export let selectedItems: Set<string> | undefined = undefined;
 
   $: allDimensions = useAllDimensionFromMetric($runtime.instanceId, metricName);
 
@@ -51,13 +53,13 @@
 
   let open = false;
   let searchValue = "";
-  let selectedProxy = selectedItem ? new Set([selectedItem]) : new Set();
+  let selectedProxy = new Set(multi ? selectedItems : selectedItem);
 
   $: filteredItems = (
     searchableItems && searchValue ? searchableItems : items
   ).filter((item) => {
     return (
-      (!selectedItem || item !== selectedItem) &&
+      (!selectedItem || (multi ? false : item !== selectedItem)) &&
       (displayMap[item]?.toLowerCase().includes(searchValue.toLowerCase()) ||
         item.toLowerCase().includes(searchValue.toLowerCase()))
     );
@@ -73,10 +75,10 @@
   <DropdownMenu.Root
     bind:open
     typeahead={false}
-    closeOnItemClick={false}
+    closeOnItemClick={multi}
     onOpenChange={() => {
       if (!open) {
-        selectedProxy = selectedItem ? new Set([selectedItem]) : new Set();
+        selectedProxy = new Set(multi ? selectedItems : selectedItem);
       }
     }}
   >
@@ -87,7 +89,9 @@
         class:open
         class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
       >
-        {#if selectedItem}
+        {#if multi && selectedProxy?.size}
+          {selectedProxy.size} selected
+        {:else if selectedItem}
           {displayMap[selectedItem] || selectedItem}
         {:else}
           Select a {type} field
@@ -109,8 +113,17 @@
           <DropdownMenu.Item
             class="pl-8 mx-1"
             on:click={() => {
+              if (multi) {
+                const deleted = selectedProxy.delete(item);
+                if (!deleted) {
+                  selectedProxy.add(item);
+                }
+                selectedProxy = selectedProxy;
+              }
               onSelect(item);
-              open = false;
+              if (!multi) {
+                open = false;
+              }
             }}
           >
             <slot {item}>

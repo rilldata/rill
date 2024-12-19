@@ -112,11 +112,7 @@
     }
   }
 
-  let showGenerateChartModal = false;
-  let generateChartTable: string;
-  let generateChartConnector: string;
-  let generateChartMetricsView: string;
-
+  // TODO: Remove this from navigation
   function onGenerateChart({
     table,
     connector,
@@ -126,10 +122,7 @@
     connector?: string;
     metricsView?: string;
   }) {
-    showGenerateChartModal = true;
-    generateChartTable = table ?? "";
-    generateChartConnector = connector ?? "";
-    generateChartMetricsView = metricsView ?? "";
+    console.log("No op");
   }
 
   const { dragData, position } = navEntryDragDropStore;
