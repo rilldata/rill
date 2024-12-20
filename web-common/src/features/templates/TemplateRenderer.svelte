@@ -26,9 +26,11 @@
 
   const canvasName = getContext("rill::canvas:name") as string;
 
+  $: ({ instanceId } = $runtime);
+
   $: inputVariableParams = useVariableInputParams(canvasName, input);
   $: componentQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
+    instanceId,
     componentName,
     { args: $inputVariableParams },
   );

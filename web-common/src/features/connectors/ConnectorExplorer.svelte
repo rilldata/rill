@@ -8,7 +8,9 @@
 
   export let store: ConnectorExplorerStore;
 
-  $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
+  $: ({ instanceId } = $runtime);
+
+  $: connectors = createRuntimeServiceAnalyzeConnectors(instanceId, {
     query: {
       // sort alphabetically
       select: (data) => {

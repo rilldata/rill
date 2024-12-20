@@ -34,12 +34,14 @@
   export let project: string;
   export let alert: string;
 
-  $: alertQuery = useAlert($runtime.instanceId, alert);
-  $: isAlertCreatedByCode = useIsAlertCreatedByCode($runtime.instanceId, alert);
+  $: ({ instanceId } = $runtime);
+
+  $: alertQuery = useAlert(instanceId, alert);
+  $: isAlertCreatedByCode = useIsAlertCreatedByCode(instanceId, alert);
 
   // Get dashboard
-  $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
-  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
+  $: dashboardName = useAlertDashboardName(instanceId, alert);
+  $: dashboard = useExploreValidSpec(instanceId, $dashboardName.data);
   $: metricsViewName = $dashboard.data?.explore?.metricsView;
   $: dashboardTitle =
     $dashboard.data?.explore?.displayName || $dashboardName.data;
@@ -69,7 +71,7 @@
       name: $alertQuery.data.resource.meta.name.name,
     });
     await queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+      getRuntimeServiceListResourcesQueryKey(instanceId),
     );
     // goto only after invalidate is complete
     goto(`/${organization}/${project}/-/alerts`);

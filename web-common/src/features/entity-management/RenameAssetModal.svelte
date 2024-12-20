@@ -112,15 +112,9 @@
     },
   });
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: existingDirectories = useDirectoryNamesInDirectory(
-    runtimeInstanceId,
-    folderName,
-  );
-  $: fileNamesInDirectory = useFileNamesInDirectory(
-    runtimeInstanceId,
-    folderName,
-  );
+  $: ({ instanceId } = $runtime);
+  $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
+  $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
 </script>
 
 <Dialog.Root

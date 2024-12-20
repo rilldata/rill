@@ -52,7 +52,7 @@
     isReconciling = true;
 
     void $createTrigger.mutateAsync({
-      instanceId: $runtime.instanceId,
+      instanceId,
       data: {
         allSourcesModels: true,
       },
@@ -60,7 +60,7 @@
 
     void queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
+        instanceId,
         // All resource "kinds"
         undefined,
       ),

@@ -20,11 +20,13 @@
   export let enhance;
   export let exploreName: string;
 
+  $: ({ instanceId } = $runtime);
+
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: exploreSpec = useExploreValidSpec(instanceId, exploreName);
   $: availableTimeZones = $exploreSpec.data?.explore?.timeZones;
   $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
-  $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
+  $: hasSlackNotifier = getHasSlackConnection(instanceId);
 </script>
 
 <form

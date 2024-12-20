@@ -45,8 +45,10 @@
   $: exploreSpec = $validSpecStore.data?.explore;
   $: metricsSpec = $validSpecStore.data?.metricsView;
 
+  $: ({ instanceId } = $runtime);
+
   const metricsViewSchema = createQueryServiceMetricsViewSchema(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);

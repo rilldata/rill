@@ -14,6 +14,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
+  $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
@@ -36,7 +37,7 @@
       (page) => page.tokens ?? [],
     ) ?? [];
 
-  $: dashboards = useDashboardsV2($runtime.instanceId);
+  $: dashboards = useDashboardsV2(instanceId);
 
   $: allRowsWithDashboardTitle = allRows.map((token) => {
     const dashboard = $dashboards.data?.find(
