@@ -75,6 +75,7 @@
     showTimeComparison,
     comparisonTimeStart,
     comparisonTimeEnd,
+    ready: timeControlsReady = false,
   } = $timeControlsStore);
 
   $: timeRange = {
@@ -185,7 +186,7 @@
               {timeRange}
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
               {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
@@ -201,7 +202,7 @@
               {timeRange}
               {comparisonTimeRange}
               {metricsView}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
             />
           {/if}
         </div>
