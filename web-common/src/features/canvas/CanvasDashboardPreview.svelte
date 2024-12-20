@@ -34,12 +34,12 @@
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
-  function handleChange(
+  function handleMousedown(
     e: CustomEvent<{
       e: MouseEvent & { currentTarget: HTMLButtonElement };
     }>,
   ) {
-    console.log("CanvasDashboardPreview handleChange");
+    console.log("CanvasDashboardPreview handleMousedown");
     e.preventDefault();
     const index = Number(e.detail.e.currentTarget.dataset.index);
     selectedIndex = index;
@@ -48,6 +48,7 @@
   }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
+    console.log("CanvasDashboardPreview handleDelete");
     items.splice(e.detail.index, 1);
   }
 
@@ -162,7 +163,7 @@
       left={Number(item.x) * gridCell}
       on:pointerover={handlePointerOver}
       on:pointerout={handlePointerOut}
-      on:change={handleChange}
+      on:mousedown={handleMousedown}
       on:delete={handleDelete}
     />
   </SvelteGridStack>

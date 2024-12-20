@@ -38,7 +38,7 @@
 
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
-    dispatch("change", {
+    dispatch("mousedown", {
       e,
     });
   }

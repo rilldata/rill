@@ -33,16 +33,19 @@
 
   $: ({ items = [] } = spec);
 
-  async function handleDeleteEvent(
+  async function handleComponentDelete(
     e: CustomEvent<{
       index: number;
     }>,
   ) {
+    console.log("Canvas handleComponentDelete");
     if (!e.detail.index) return;
     await deleteComponent(e.detail.index);
   }
 
   async function deleteComponent(index: number) {
+    console.log("Canvas deleteComponent");
+
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
@@ -51,10 +54,12 @@
     if (!items) return;
     items.delete(index);
     updateEditorContent(parsedDocument.toString(), true);
+    // updateLocalContent(parsedDocument.toString(), true);
+    // FIXME: need to rerender gridstack after node removal
     if ($autoSave) await updateComponentFile();
   }
 
-  async function handlePreviewUpdate(
+  async function handleComponentUpdate(
     e: CustomEvent<{
       index: number;
       x: number;
@@ -91,8 +96,8 @@
   {items}
   {columns}
   bind:selectedIndex
-  on:update={handlePreviewUpdate}
-  on:delete={handleDeleteEvent}
+  on:update={handleComponentUpdate}
+  on:delete={handleComponentDelete}
 />
 
 <svelte:window
