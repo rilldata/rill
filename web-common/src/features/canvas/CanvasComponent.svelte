@@ -10,14 +10,14 @@
 <script lang="ts">
   export let i: number;
   export let builders: Builder[] = [];
-  export let left: number;
-  export let top: number;
   export let embed = false;
   export let radius: number;
   export let selected = false;
   export let interacting = false;
   export let width: number;
   export let height: number;
+  export let top: number;
+  export let left: number;
   export let localZIndex = 0;
   export let componentName: string;
   export let instanceId: string;
@@ -51,11 +51,6 @@
   class="canvas-component hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
-  style:padding="1rem"
-  style:left="{left}px"
-  style:top="{top}px"
-  style:width="{width}px"
-  style:height="{height}px"
   on:contextmenu
   on:mousedown|capture
   on:pointerover

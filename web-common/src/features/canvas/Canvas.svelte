@@ -70,6 +70,8 @@
     );
     const items = parsedDocument.get("items") as any;
 
+    if (!e.detail.index) return;
+
     const node = items.get(e.detail.index);
 
     // NOTE: V1CanvasItem uses width, height, x, y

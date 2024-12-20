@@ -58,6 +58,9 @@
         }
         child.appendChild(element);
         element.style.display = "block";
+
+        // FOR TESTING
+        element.style.border = "1px solid red";
       });
     });
 
