@@ -76,7 +76,6 @@ Handle optional fields and defaults properly
           type={config.type}
           selectedItem={paramValues[key]}
           onSelect={async (field) => {
-            console.log(field);
             component.updateProperty(key, field);
           }}
         />

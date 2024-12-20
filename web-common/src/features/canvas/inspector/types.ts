@@ -20,4 +20,5 @@ export interface ComponentInputParam {
   showInUI?: boolean; // If not specified, can assume true
   required?: boolean; // If not specified, can assume true
   description?: string; // Tooltip description for the input
+  meta?: Record<string, string>; // Any additional metadata
 }

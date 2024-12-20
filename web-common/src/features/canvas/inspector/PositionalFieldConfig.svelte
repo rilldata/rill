@@ -25,7 +25,7 @@
     label={`${config.label || key} Field`}
     metricName={metricsView}
     id={`${key}-field`}
-    type="measure"
+    type={key === "x" ? "dimension" : "measure"}
     selectedItem={value?.field || ""}
     onSelect={async (field) => {
       updateFieldConfig("field", field);
