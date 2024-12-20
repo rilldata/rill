@@ -90,11 +90,10 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 			break
 		}
 
-
-		// TODO: Activate validation later when in prod
-		// if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
-		// 	return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
-		// }
+		// nolint // TODO: Activate validation later when in production
+		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
+			// return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
+		}
 
 		propsPB, err := structpb.NewStruct(props)
 		if err != nil {
