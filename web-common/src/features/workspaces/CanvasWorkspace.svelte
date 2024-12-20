@@ -87,6 +87,8 @@
 
   // TODO: grid.addWidget()
   async function addComponent(componentName: string) {
+    console.log("CanvasWorkspace addComponent");
+
     const newComponent = {
       component: componentName,
       height: 4,
