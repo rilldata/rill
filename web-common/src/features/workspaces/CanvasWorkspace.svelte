@@ -10,6 +10,7 @@
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import CanvasStateProvider from "@rilldata/web-common/features/canvas/stores/CanvasStateProvider.svelte";
+  import { useDefaultMetrics } from "@rilldata/web-common/features/dashboards/selectors";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -65,8 +66,9 @@
   $: selectedView = $selectedViewStore ?? "code";
 
   $: canvasResource = data?.canvas;
-
   $: canvasName = getNameFromFile(filePath);
+
+  $: metricsViewQuery = useDefaultMetrics(instanceId);
 
   $: ({ instanceId } = $runtime);
 
@@ -88,10 +90,13 @@
   }
 
   async function addComponent(componentName: CanvasComponentType) {
+    const defaultMetrics = $metricsViewQuery?.data;
+    if (!defaultMetrics) return;
+
     const newSpec = componentRegistry[componentName].newComponentSpec(
-      "bids",
-      "total_bids",
-      "device_os",
+      defaultMetrics.metricsView,
+      defaultMetrics.measure,
+      defaultMetrics.dimension,
     );
 
     const { width, height } = componentRegistry[componentName].defaultSize;
