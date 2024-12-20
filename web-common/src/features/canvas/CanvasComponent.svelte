@@ -38,16 +38,14 @@
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
 
+  // FIXME: already setting staticGrid in CanvasDashboardEmbed
   // onMount(async () => {
   //   if (!embed) {
   //     gridStackManager.setStatic(true);
   //   }
   // });
-
-  // $: console.log("interacting: ", interacting);
 </script>
 
-<!-- style:height={chartView ? undefined : `${height}px`} -->
 <div
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
@@ -63,6 +61,8 @@
   style:height="100%"
   on:contextmenu
   on:mousedown|capture
+  on:pointerover
+  on:pointerout
 >
   <div class="size-full relative">
     <div

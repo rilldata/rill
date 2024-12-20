@@ -52,6 +52,8 @@
       dimensions: Vector;
     }>,
   ) {
+    console.log("handlePreviewUpdate: ", e.detail);
+
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const items = parsedDocument.get("items") as any;
 
