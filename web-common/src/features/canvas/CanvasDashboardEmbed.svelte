@@ -44,12 +44,10 @@
     x: Number(item.x),
     y: Number(item.y),
   }));
-
-  $: console.log("items: ", items);
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
-  <SvelteGridStack opts={EMBED_GRIDSTACK_OPTIONS} {items} let:index let:item>
+  <SvelteGridStack options={EMBED_GRIDSTACK_OPTIONS} {items} let:index let:item>
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent

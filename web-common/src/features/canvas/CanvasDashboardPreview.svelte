@@ -141,14 +141,15 @@
   on:scroll={handleScroll}
 >
   <SvelteGridStack
-    opts={PREVIEW_GRIDSTACK_OPTIONS}
+    options={PREVIEW_GRIDSTACK_OPTIONS}
     {items}
     let:index
     let:item
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
-    {@const selected = index === selectedIndex}
+    Test {index}
+    <!-- {@const selected = index === selectedIndex}
     {@const interacting = selected && changing}
     <PreviewElement
       {instanceId}
@@ -165,6 +166,6 @@
       on:pointerout={handlePointerOut}
       on:mousedown={handleMousedown}
       on:delete={handleDelete}
-    />
+    /> -->
   </SvelteGridStack>
 </CanvasDashboardWrapper>

@@ -89,7 +89,11 @@
     if (newRoute) await goto(newRoute);
   }
 
+  // TODO: grid.addWidget()
+  // TODO: use `autoPosition` to add component to the first available position
   async function addComponent(componentName: CanvasComponentType) {
+    console.log("CanvasWorkspace addComponent");
+
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
