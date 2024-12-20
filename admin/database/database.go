@@ -651,13 +651,17 @@ type MagicAuthToken struct {
 	UsedOn                time.Time      `db:"used_on"`
 	CreatedByUserID       *string        `db:"created_by_user_id"`
 	Attributes            map[string]any `db:"attributes"`
-	ResourceType          string         `db:"resource_type"`
-	ResourceName          string         `db:"resource_name"`
 	FilterJSON            string         `db:"filter_json"`
 	Fields                []string       `db:"fields"`
 	State                 string         `db:"state"`
 	DisplayName           string         `db:"display_name"`
 	Internal              bool           `db:"internal"`
+	Resources             []ResourceName `db:"resources"`
+}
+
+type ResourceName struct {
+	Type string
+	Name string
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -675,13 +679,12 @@ type InsertMagicAuthTokenOptions struct {
 	ExpiresOn       *time.Time
 	CreatedByUserID *string
 	Attributes      map[string]any
-	ResourceType    string `validate:"required"`
-	ResourceName    string `validate:"required"`
 	FilterJSON      string
 	Fields          []string
 	State           string
 	DisplayName     string
 	Internal        bool
+	Resources       []ResourceName
 }
 
 type ReportToken struct {
