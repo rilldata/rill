@@ -98,7 +98,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	}
 	defer res.Close()
 	var key string
-	for res.Next() {
+	if res.Next() {
 		if err := res.Scan(&key); err != nil {
 			return nil, false, err
 		}
