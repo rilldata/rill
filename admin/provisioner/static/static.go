@@ -62,16 +62,15 @@ func (p *StaticProvisioner) Type() string {
 	return "static"
 }
 
+func (p *StaticProvisioner) Supports(rt provisioner.ResourceType) bool {
+	return rt == provisioner.ResourceTypeRuntime
+}
+
 func (p *StaticProvisioner) Close() error {
 	return nil
 }
 
 func (p *StaticProvisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Can only provision runtime resources
-	if r.Type != provisioner.ResourceTypeRuntime {
-		return nil, provisioner.ErrResourceTypeNotSupported
-	}
-
 	// Parse args
 	args, err := provisioner.NewRuntimeArgs(opts.Args)
 	if err != nil {
