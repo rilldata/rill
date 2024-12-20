@@ -11,7 +11,6 @@
   export let i: number;
   export let builders: Builder[] = [];
   export let embed = false;
-  export let radius: number;
   export let selected = false;
   export let interacting = false;
   export let width: number;
@@ -58,14 +57,10 @@
 >
   <div class="size-full relative">
     <div
-<<<<<<< HEAD:web-common/src/features/canvas/Component.svelte
       class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
-=======
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
->>>>>>> 41c638800 (rename, clean up):web-common/src/features/canvas/CanvasComponent.svelte
-      style:border-radius="{radius}px"
     >
+    <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
       {#if title || description}
         <div class="w-full h-fit flex flex-col border-b bg-white p-2">
           {#if title}

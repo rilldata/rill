@@ -55,7 +55,6 @@
         i={index}
         {instanceId}
         {componentName}
-        {radius}
         width={Number(item.w ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(item.h ?? defaults.COMPONENT_HEIGHT) * gridCell}
         left={Number(item.x) * gridCell}

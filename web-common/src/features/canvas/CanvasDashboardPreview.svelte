@@ -8,7 +8,11 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import SvelteGridStack from "./SvelteGridStack.svelte";
-  import type { GridItemHTMLElement, GridStackNode } from "gridstack";
+  import type {
+    GridItemHTMLElement,
+    GridStack,
+    GridStackNode,
+  } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import { PREVIEW_GRIDSTACK_OPTIONS } from "./constants";
 
@@ -33,6 +37,8 @@
   $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
+
+  let grid: GridStack;
 
   function handleMousedown(
     e: CustomEvent<{
@@ -141,6 +147,7 @@
   on:scroll={handleScroll}
 >
   <SvelteGridStack
+    bind:grid
     options={PREVIEW_GRIDSTACK_OPTIONS}
     {items}
     let:index
@@ -148,8 +155,7 @@
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
-    Test {index}
-    <!-- {@const selected = index === selectedIndex}
+    {@const selected = index === selectedIndex}
     {@const interacting = selected && changing}
     <PreviewElement
       {instanceId}
@@ -166,6 +172,6 @@
       on:pointerout={handlePointerOut}
       on:mousedown={handleMousedown}
       on:delete={handleDelete}
-    /> -->
+    />
   </SvelteGridStack>
 </CanvasDashboardWrapper>
