@@ -1,4 +1,5 @@
-<!-- See: https://github.com/SafetZahirovic/SvelteGridStack -->
+<!-- Source: https://github.com/SafetZahirovic/SvelteGridStack -->
+<!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc#events -->
 <script lang="ts">
   import type {
     GridItemHTMLElement,
@@ -24,8 +25,8 @@
     "added",
     "change",
     "disable",
-    "drag",
     "dragstart",
+    "drag",
     "dragstop",
     "dropped",
     "enable",
@@ -41,8 +42,9 @@
   let grid: GridStack;
 
   onMount(async () => {
-    const { GridStack } = await import("GridStack");
+    const { GridStack } = await import("gridstack");
     grid = GridStack.init(opts);
+
     grid.on("added", (_: Event, items: Array<GridStackNode>) => {
       items.forEach((item, index) => {
         const element = gridEl.querySelector(
