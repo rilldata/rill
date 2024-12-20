@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -212,11 +213,16 @@ func (c *Controller) Run(ctx context.Context) error {
 			resetTimelineTimer()
 			c.mu.Unlock()
 		case <-flushTicker.C: // It's time to flush the catalog to persistent storage
+			// Add a minimum duration to the ctx to reduce the chance of an interrupted flush.
+			ctx, cancel := graceful.WithMinimumDuration(ctx, 10*time.Second)
 			c.mu.RLock()
 			err := c.catalog.flush(ctx)
+			cancel()
 			c.mu.RUnlock()
 			if err != nil {
-				loopErr = err
+				if !errors.Is(err, ctx.Err()) {
+					loopErr = err
+				}
 				stop = true
 			}
 		case <-hangingTicker.C: // It's time to check for hanging canceled reconciles
