@@ -7,12 +7,9 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
-  import { vector } from "./util";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type { GridItemHTMLElement, GridStackNode } from "gridstack";
   import { createEventDispatcher } from "svelte";
-
-  const zeroVector = [0, 0] as [0, 0];
 
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
@@ -25,12 +22,6 @@
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
   let changing = false;
-  let startMouse: Vector = [0, 0];
-  let mousePosition: Vector = [0, 0];
-  let initialElementDimensions: Vector = [0, 0];
-  let initialElementPosition: Vector = [0, 0];
-  let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
-  let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
   $: instanceId = $runtime.instanceId;
 
@@ -40,16 +31,6 @@
   $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
-
-  $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
-    scale,
-    scale,
-  ]);
-
-  $: resizeDimenions = vector.add(
-    vector.multiply(mouseDelta, dimensionChange),
-    initialElementDimensions,
-  );
 
   // function handleMouseUp() {
   //   if (selectedIndex === null || !changing) return;
@@ -75,21 +56,7 @@
   //     dimensions: [items[selectedIndex].width, items[selectedIndex].height],
   //   });
 
-  //   reset();
   // }
-
-  function reset() {
-    changing = false;
-    mousePosition =
-      startMouse =
-      startMouse =
-      initialElementPosition =
-      initialElementDimensions =
-      dimensionChange =
-      positionChange =
-      resizeDimenions =
-        zeroVector;
-  }
 
   function handleChange(
     e: CustomEvent<{
@@ -102,37 +69,43 @@
   ) {
     e.preventDefault();
 
-    dimensionChange = e.detail.changeDimensions;
-    positionChange = e.detail.changePosition;
+    // console.log("handleChange", e);
 
-    const index = Number(e.detail.e.currentTarget.dataset.index);
+    // dimensionChange = e.detail.changeDimensions;
+    // positionChange = e.detail.changePosition;
 
-    initialElementDimensions = e.detail.dimensions;
-    initialElementPosition = e.detail.position;
+    // const index = Number(e.detail.e.currentTarget.dataset.index);
 
-    startMouse = [
-      e.detail.e.clientX - contentRect.left,
-      e.detail.e.clientY - contentRect.top - scrollOffset,
-    ];
+    // initialElementDimensions = e.detail.dimensions;
+    // initialElementPosition = e.detail.position;
 
-    mousePosition = startMouse;
+    // startMouse = [
+    //   e.detail.e.clientX - contentRect.left,
+    //   e.detail.e.clientY - contentRect.top - scrollOffset,
+    // ];
 
-    selectedIndex = index;
+    // mousePosition = startMouse;
+
+    // selectedIndex = index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-    changing = true;
+    // changing = true;
   }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
     items.splice(e.detail.index, 1);
   }
 
-  // function handleMouseMove(e: MouseEvent) {
-  //   if (selectedIndex === null || !changing) return;
+  function handleMouseMove(e: MouseEvent) {
+    // console.log("handleMouseMove", e);
+    // if (selectedIndex === null || !changing) return;
+    //   mousePosition = [
+    //     e.clientX - contentRect.left,
+    //     e.clientY - contentRect.top - scrollOffset,
+    //   ];
+  }
 
-  //   mousePosition = [
-  //     e.clientX - contentRect.left,
-  //     e.clientY - contentRect.top - scrollOffset,
-  //   ];
+  // function handleMouseUp(e: MouseEvent) {
+  //   // console.log("handleMouseUp", e);
   // }
 
   function handleScroll(
@@ -170,26 +143,50 @@
     float: true,
   };
 
-  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
-  function handleResizeStop({
-    detail,
-  }: {
-    detail: { event: Event; el: GridItemHTMLElement };
-  }) {
-    console.log("RESIZE STOP detail", detail);
+  // function handleResize(
+  //   e: CustomEvent<{ event: Event; el: GridItemHTMLElement }>,
+  // ) {
+  //   console.log("handleResize", e);
+  // }
 
-    // TODO: dispatch update event to update document
+  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
+  function handleResizeStop(
+    e: CustomEvent<{
+      event: Event;
+      el: GridItemHTMLElement;
+      target: GridItemHTMLElement;
+    }>,
+  ) {
+    const { w, h, x, y } =
+      (e.detail.target?.gridstackNode as GridStackNode) || {};
+
+    dispatch("update", {
+      // FIXME
+      // index: selectedIndex,
+      index: 0,
+      position: [x, y],
+      dimensions: [w, h],
+    });
   }
 
-  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
-  //   this.instance.on(
-  //   "resizestop",
-  //   (event: Event, el: GridItemHTMLElement) => {
-  //     console.log("Resize stopped:", el);
-  //     const { w, h, x, y } = el.gridstackNode || {};
-  //     console.log("Final dimensions:", { x, y, w, h });
-  //   },
-  // );
+  function handleDragStop(
+    e: CustomEvent<{
+      event: Event;
+      el: GridItemHTMLElement;
+      target: GridItemHTMLElement;
+    }>,
+  ) {
+    const { w, h, x, y } =
+      (e.detail.target?.gridstackNode as GridStackNode) || {};
+
+    dispatch("update", {
+      // FIXME
+      // index: selectedIndex,
+      index: 0,
+      position: [x, y],
+      dimensions: [w, h],
+    });
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -203,9 +200,10 @@
   <SvelteGridStack
     {opts}
     {items}
-    on:resizestop={handleResizeStop}
     let:index
     let:item
+    on:resizestop={handleResizeStop}
+    on:dragstop={handleDragStop}
   >
     {@const selected = index === selectedIndex}
     {@const interacting = selected && changing}
