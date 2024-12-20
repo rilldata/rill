@@ -1771,7 +1771,7 @@ metrics_sql: select * from m1
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 			},
 		},
 		{
@@ -1838,7 +1838,7 @@ select 3
 			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select 1"})),
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
 			},
 		},
 		// m1
