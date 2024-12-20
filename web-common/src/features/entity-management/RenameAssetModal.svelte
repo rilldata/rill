@@ -26,6 +26,8 @@
   export let filePath: string;
   export let isDir: boolean;
 
+  $: ({ instanceId } = $runtime);
+
   let error: string;
 
   const [folderName, fileName] = splitFolderAndFileName(filePath);
@@ -85,7 +87,7 @@
       }
       try {
         const newPath = (folderName ? `${folderName}/` : "") + values.newName;
-        await renameFileArtifact(runtimeInstanceId, filePath, newPath);
+        await renameFileArtifact(instanceId, filePath, newPath);
         if (isDir) {
           if (
             $page.url.pathname.startsWith(
@@ -112,7 +114,6 @@
     },
   });
 
-  $: ({ instanceId } = $runtime);
   $: existingDirectories = useDirectoryNamesInDirectory(instanceId, folderName);
   $: fileNamesInDirectory = useFileNamesInDirectory(instanceId, folderName);
 </script>
