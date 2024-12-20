@@ -11,11 +11,11 @@ export type ChartSpec = ComponentCommonProperties & ChartConfig;
 
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
-  defaultSize = { width: 6, height: 6 };
+  defaultSize = { width: 12, height: 8 };
 
   constructor(
     fileArtifact: FileArtifact,
-    path: (string | number)[],
+    path: (string | number)[] = [],
     initialSpec: Partial<ChartSpec> = {},
   ) {
     const defaultSpec: ChartSpec = {
@@ -42,6 +42,25 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
       color: { type: "mark", label: "Color" },
       tooltip: { type: "tooltip", label: "Tooltip" },
       ...commonOptions,
+    };
+  }
+
+  newComponentSpec(
+    metrics_view: string,
+    measure: string,
+    dimension: string,
+  ): ChartSpec {
+    return {
+      metrics_view,
+      x: {
+        type: "nominal",
+        field: dimension,
+      },
+      y: {
+        type: "quantitative",
+        field: measure,
+      },
+      time_range: "PT24H",
     };
   }
 }

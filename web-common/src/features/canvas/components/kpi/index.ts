@@ -20,13 +20,13 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   constructor(
     fileArtifact: FileArtifact,
-    path: (string | number)[],
+    path: (string | number)[] = [],
     initialSpec: Partial<KPISpec> = {},
   ) {
     const defaultSpec: KPISpec = {
       metrics_view: "",
       measure: "",
-      time_range: "",
+      time_range: "PT24H",
       sparkline: true,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
@@ -46,6 +46,15 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       time_range: { type: "rill_time", label: "Time Range" },
       comparison_range: { type: "rill_time", label: "Comparison Range" },
       ...commonOptions,
+    };
+  }
+
+  newComponentSpec(metrics_view: string, measure: string): KPISpec {
+    return {
+      metrics_view,
+      measure,
+      time_range: "PT24H",
+      sparkline: true,
     };
   }
 }

@@ -19,6 +19,11 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
   abstract defaultSize: ComponentSize;
   abstract isValid(spec: T): boolean;
   abstract inputParams(): Record<keyof T, ComponentInputParam>;
+  abstract newComponentSpec(
+    metrics_view: string,
+    measure: string,
+    dimension: string,
+  ): T;
 
   constructor(
     fileArtifact: FileArtifact,

@@ -21,12 +21,10 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
   constructor(
     fileArtifact: FileArtifact,
-    path: (string | number)[],
+    path: (string | number)[] = [],
     initialSpec: Partial<TableSpec> = {},
   ) {
     const defaultSpec: TableSpec = {
-      title: "",
-      description: "",
       metrics_view: "",
       measures: [],
       time_range: "",
@@ -56,6 +54,19 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
       col_dimensions: { type: "multi_dimensions" },
       row_dimensions: { type: "multi_dimensions" },
       ...commonOptions,
+    };
+  }
+
+  newComponentSpec(
+    metrics_view: string,
+    measure: string,
+    dimension: string,
+  ): TableSpec {
+    return {
+      metrics_view,
+      measures: [measure],
+      row_dimensions: [dimension],
+      time_range: "PT24H",
     };
   }
 }

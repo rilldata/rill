@@ -1,26 +1,23 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { ChevronDown, Plus } from "lucide-svelte";
-  import { getNameFromFile } from "../../entity-management/entity-mappers";
-  import { createResourceFile } from "../../file-explorer/new-files";
 
-  export let addComponent: (componentName: string) => void;
+  export let addComponent: (componentName: CanvasComponentType) => void;
 
   let open = false;
 
-  async function handleAddComponent() {
-    const newFilePath = await createResourceFile(ResourceKind.Component);
-
-    if (!newFilePath) return;
-
-    const componentName = getNameFromFile(newFilePath);
-
-    if (componentName) {
-      addComponent(componentName);
-    }
-  }
+  const menuItems: {
+    id: CanvasComponentType;
+    label: string;
+  }[] = [
+    { id: "markdown", label: "Text" },
+    { id: "kpi", label: "KPI" },
+    { id: "image", label: "Image" },
+    { id: "bar_chart", label: "Chart" },
+    { id: "table", label: "Table" },
+  ];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
@@ -35,9 +32,11 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
-      <DropdownMenu.Item on:click={handleAddComponent}>
-        Create new component
-      </DropdownMenu.Item>
+      {#each menuItems as item}
+        <DropdownMenu.Item on:click={() => addComponent(item.id)}>
+          {item.label}
+        </DropdownMenu.Item>
+      {/each}
     </DropdownMenu.Group>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

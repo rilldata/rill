@@ -53,7 +53,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
 
   legend: { orient: "top" },
   axisY: {
-    orient: "right",
+    orient: "left",
     gridColor: gridColor,
     gridDash: [2],
     tickColor: gridColor,

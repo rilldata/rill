@@ -5,6 +5,8 @@
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
   import AddComponentMenu from "@rilldata/web-common/features/canvas/components/AddComponentMenu.svelte";
+  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
+  import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import CanvasStateProvider from "@rilldata/web-common/features/canvas/stores/CanvasStateProvider.svelte";
@@ -33,6 +35,8 @@
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
+
+  const componentRegistry = getComponentRegistry(fileArtifact);
 
   $: ({
     saveLocalContent: updateComponentFile,
@@ -83,11 +87,18 @@
     if (newRoute) await goto(newRoute);
   }
 
-  async function addComponent(componentName: string) {
+  async function addComponent(componentName: CanvasComponentType) {
+    const newSpec = componentRegistry[componentName].newComponentSpec(
+      "bids",
+      "total_bids",
+      "device_os",
+    );
+
+    const { width, height } = componentRegistry[componentName].defaultSize;
     const newComponent = {
-      component: componentName,
-      height: 4,
-      width: 4,
+      component: { [componentName]: newSpec },
+      height,
+      width,
       x: 0,
       y: 0,
     };

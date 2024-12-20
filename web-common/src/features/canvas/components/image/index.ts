@@ -16,13 +16,11 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
 
   constructor(
     fileArtifact: FileArtifact,
-    path: (string | number)[],
+    path: (string | number)[] = [],
     initialSpec: Partial<ImageSpec> = {},
   ) {
     const defaultSpec: ImageSpec = {
       url: "",
-      title: "",
-      description: "",
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -35,6 +33,12 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
     return {
       url: { type: "text", label: "URL" },
       ...commonOptions,
+    };
+  }
+
+  newComponentSpec(): ImageSpec {
+    return {
+      url: "https://cdn.prod.website-files.com/659ddac460dbacbdc813b204/660b0f85094eb576187342cf_rill_logo_sq_gradient.svg",
     };
   }
 }

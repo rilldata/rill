@@ -16,7 +16,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
 
   constructor(
     fileArtifact: FileArtifact,
-    path: (string | number)[],
+    path: (string | number)[] = [],
     initialSpec: Partial<MarkdownSpec> = {},
   ) {
     const defaultSpec: MarkdownSpec = {
@@ -35,6 +35,12 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return {
       content: { type: "textArea", required: true },
       ...commonOptions,
+    };
+  }
+
+  newComponentSpec(): MarkdownSpec {
+    return {
+      content: "Markdown Text",
     };
   }
 }

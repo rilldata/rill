@@ -67,3 +67,17 @@ export function isChartComponentType(
     value as CanvasComponentType,
   );
 }
+
+export function getComponentRegistry(
+  fileArtifact: FileArtifact,
+): Record<CanvasComponentType, CanvasComponentObj> {
+  return {
+    kpi: new KPIComponent(fileArtifact),
+    markdown: new MarkdownCanvasComponent(fileArtifact),
+    table: new TableCanvasComponent(fileArtifact),
+    image: new ImageComponent(fileArtifact),
+    bar_chart: new ChartComponent(fileArtifact),
+    line_chart: new ChartComponent(fileArtifact),
+    stacked_bar: new ChartComponent(fileArtifact),
+  };
+}

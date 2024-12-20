@@ -426,8 +426,8 @@
 
   .table-wrapper {
     @apply overflow-auto h-fit max-h-full w-fit max-w-full;
-    @apply border z-40;
-    width: calc(100% - 5px);
+    @apply bg-white border z-40;
+    width: 100%;
   }
 
   /* Pin header */
@@ -443,11 +443,6 @@
   th {
     @apply p-0 m-0 text-xs;
     @apply border-r border-b relative;
-  }
-
-  th:last-of-type,
-  td:last-of-type {
-    @apply border-r-0;
   }
 
   th,

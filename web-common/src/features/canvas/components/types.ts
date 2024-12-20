@@ -51,6 +51,11 @@ export interface CanvasComponent<T> {
   inputParams(): Record<keyof T, ComponentInputParam>;
 
   /**
+   * Get the spec when the component is added to the canvas
+   */
+  newComponentSpec(metrics_view: string, measure: string, dimension: string): T;
+
+  /**
    * Update the spec store with the new values
    */
   updateProperty(key: string, value: unknown): Promise<void>;
