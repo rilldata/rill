@@ -1,15 +1,15 @@
+import { useCanvasValidSpec } from "@rilldata/web-common/features/canvas/selector";
 import {
-  type V1Canvas,
+  type RpcStatus,
   type V1CanvasSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {
   derived,
   get,
-  readable,
   writable,
   type Readable,
   type Writable,
@@ -22,7 +22,9 @@ export type StateManagers = {
   runtime: Writable<Runtime>;
   canvasName: Writable<string>;
   canvasStore: Readable<CanvasEntity>;
-  validSpecStore: Readable<V1CanvasSpec>;
+  validSpecStore: Readable<
+    QueryObserverResult<V1CanvasSpec | undefined, RpcStatus>
+  >;
   updateCanvas: CanvasCallbackExecutor;
   queryClient: QueryClient;
 };
@@ -36,11 +38,9 @@ export function getCanvasStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   canvasName,
-  canvasResource,
 }: {
   queryClient: QueryClient;
   canvasName: string;
-  canvasResource: V1Canvas;
 }): StateManagers {
   const canvasNameStore = writable(canvasName);
 
@@ -52,7 +52,13 @@ export function createStateManagers({
     },
   );
 
-  const validSpecStore = readable(canvasResource?.state?.validSpec);
+  const validSpecStore: Readable<
+    QueryObserverResult<V1CanvasSpec | undefined, RpcStatus>
+  > = derived([runtime, canvasNameStore], ([r, canvasName], set) =>
+    useCanvasValidSpec(r.instanceId, canvasName, { queryClient }).subscribe(
+      set,
+    ),
+  );
 
   const updateCanvas = (callback: (canvasEntity: CanvasEntity) => void) => {
     const name = get(canvasStore).name;

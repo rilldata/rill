@@ -43,7 +43,7 @@
     : typeof rawTheme === "string"
       ? rawTheme
       : rawTheme instanceof YAMLMap
-        ? $validSpecStore?.embeddedTheme
+        ? $validSpecStore?.data?.embeddedTheme
         : undefined;
 
   function stringGuard(value: unknown | undefined): string {

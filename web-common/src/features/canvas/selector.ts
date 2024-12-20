@@ -1,7 +1,16 @@
+import type { CreateQueryOptions } from "@rilldata/svelte-query";
 import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import {
+  createRuntimeServiceGetResource,
+  type RpcStatus,
+  type V1CanvasSpec,
+  type V1GetResourceResponse,
+} from "@rilldata/web-common/runtime-client";
+import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
 export function useDefaultMetrics(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) => {
@@ -27,4 +36,37 @@ export function useDefaultMetrics(instanceId: string) {
 
     return null;
   });
+}
+
+export function useCanvasValidSpec(
+  instanceId: string,
+  canvasName: string,
+  queryOptions?: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1CanvasSpec | undefined
+  >,
+) {
+  const defaultQueryOptions: CreateQueryOptions<
+    V1GetResourceResponse,
+    ErrorType<RpcStatus>,
+    V1CanvasSpec | undefined
+  > = {
+    select: (data) => data?.resource?.canvas?.state?.validSpec,
+    queryClient,
+    enabled: !!canvasName,
+  };
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.kind": ResourceKind.Canvas,
+      "name.name": canvasName,
+    },
+    {
+      query: {
+        ...defaultQueryOptions,
+        ...queryOptions,
+      },
+    },
+  );
 }

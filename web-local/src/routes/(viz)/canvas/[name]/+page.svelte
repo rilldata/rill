@@ -12,7 +12,7 @@
   $: canvasName = data.dashboardName;
 </script>
 
-<StateManagersProvider {canvasName} canvasResource={data.dashboard}>
+<StateManagersProvider {canvasName}>
   <CanvasStateProvider>
     <CanvasThemeProvider>
       <CanvasDashboardEmbed

@@ -10,14 +10,16 @@
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
-  $: themeName = themeFromUrl ?? $validSpecStore?.theme;
+  $: themeName = themeFromUrl ?? $validSpecStore?.data?.theme;
   $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
 
-  $: setTheme($theme?.data?.theme?.spec ?? $validSpecStore?.embeddedTheme);
+  $: setTheme(
+    $theme?.data?.theme?.spec ?? $validSpecStore?.data?.embeddedTheme,
+  );
 
   onMount(() => {
     // Handle the case where we have data in cache but the dashboard is not mounted yet
-    setTheme($theme?.data?.theme?.spec ?? $validSpecStore?.embeddedTheme);
+    setTheme($theme?.data?.theme?.spec ?? $validSpecStore?.data?.embeddedTheme);
   });
 </script>
 

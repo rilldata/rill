@@ -120,14 +120,13 @@
     }
 
     updateEditorContent(parsedDocument.toString(), true);
-
-    if ($autoSave) await updateComponentFile();
+    await updateComponentFile();
   }
 </script>
 
 {#if canvasResource && fileArtifact}
   {#key canvasName}
-    <StateManagersProvider {canvasName} {canvasResource}>
+    <StateManagersProvider {canvasName}>
       <CanvasStateProvider>
         <CanvasThemeProvider>
           <WorkspaceContainer>
