@@ -8,7 +8,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ../../../../${RILL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
+      - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/postgres:/var/lib/postgresql/data
   e2e-postgres:
     image: postgres:17
     restart: always
@@ -63,4 +63,4 @@ services:
     image: stripe/stripe-cli:v1.21.11
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
-      - ../../../../${RILL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
+      - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
