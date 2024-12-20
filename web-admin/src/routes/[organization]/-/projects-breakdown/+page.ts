@@ -22,10 +22,10 @@ export const load = async ({ params, parent }) => {
       queryFn: () => adminServiceGetBillingProjectCredentials({ organization }),
     });
     const runtime: Runtime = {
-      host: fixLocalhostRuntimePort(billingProjectCredsResp.runtimeHost),
-      instanceId: billingProjectCredsResp.instanceId,
+      host: fixLocalhostRuntimePort(billingProjectCredsResp.runtimeHost ?? ""),
+      instanceId: billingProjectCredsResp.instanceId ?? "",
       jwt: {
-        token: billingProjectCredsResp.accessToken,
+        token: billingProjectCredsResp.accessToken ?? "",
         authContext: "embed",
         receivedAt: Date.now(),
       },
