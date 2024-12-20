@@ -31,6 +31,14 @@
   $: finalHeight = Math.abs(height);
   $: padding = gapSize;
 
+  function handlePointerOver(e: PointerEvent) {
+    dispatch("pointerover", { index: i });
+  }
+
+  function handlePointerOut(e: PointerEvent) {
+    dispatch("pointerout", { index: null });
+  }
+
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
     dispatch("change", {
@@ -63,6 +71,8 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
+        on:pointerover={handlePointerOver}
+        on:pointerout={handlePointerOut}
       />
     </ContextMenu.Trigger>
 
@@ -99,6 +109,8 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
+        on:pointerover={handlePointerOver}
+        on:pointerout={handlePointerOut}
       />
     </ContextMenu.Trigger>
 

@@ -16,7 +16,8 @@
   export let gap: number | undefined;
   export let selectedIndex: number | null = null;
 
-  const { canvasName } = getCanvasStateManagers();
+  const { canvasName, canvasStore: canvasStoreStore } =
+    getCanvasStateManagers();
   const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -32,31 +33,23 @@
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
-  // function handleMouseUp() {
-  //   if (selectedIndex === null || !changing) return;
+  function handlePointerOver(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    selectedIndex = e.detail.index;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  }
 
-  //   const cellPosition = getCell(dragPosition, true);
-  //   const dimensions = getCell(resizeDimenions, true);
-
-  //   items[selectedIndex].x = Math.max(
-  //     0,
-  //     dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0],
-  //   );
-  //   items[selectedIndex].y = Math.max(
-  //     0,
-  //     dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1],
-  //   );
-
-  //   items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
-  //   items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
-
-  //   dispatch("update", {
-  //     index: selectedIndex,
-  //     position: [items[selectedIndex].x, items[selectedIndex].y],
-  //     dimensions: [items[selectedIndex].width, items[selectedIndex].height],
-  //   });
-
-  // }
+  function handlePointerOut(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    selectedIndex = null;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  }
 
   function handleChange(
     e: CustomEvent<{
@@ -69,44 +62,17 @@
   ) {
     e.preventDefault();
 
-    // console.log("handleChange", e);
+    console.log("handleChange", e);
 
-    // dimensionChange = e.detail.changeDimensions;
-    // positionChange = e.detail.changePosition;
-
-    // const index = Number(e.detail.e.currentTarget.dataset.index);
-
-    // initialElementDimensions = e.detail.dimensions;
-    // initialElementPosition = e.detail.position;
-
-    // startMouse = [
-    //   e.detail.e.clientX - contentRect.left,
-    //   e.detail.e.clientY - contentRect.top - scrollOffset,
-    // ];
-
-    // mousePosition = startMouse;
-
-    // selectedIndex = index;
+    const index = Number(e.detail.e.currentTarget.dataset.index);
+    selectedIndex = index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-    // changing = true;
+    changing = true;
   }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
     items.splice(e.detail.index, 1);
   }
-
-  function handleMouseMove(e: MouseEvent) {
-    // console.log("handleMouseMove", e);
-    // if (selectedIndex === null || !changing) return;
-    //   mousePosition = [
-    //     e.clientX - contentRect.left,
-    //     e.clientY - contentRect.top - scrollOffset,
-    //   ];
-  }
-
-  // function handleMouseUp(e: MouseEvent) {
-  //   // console.log("handleMouseUp", e);
-  // }
 
   function handleScroll(
     e: UIEvent & {
@@ -117,6 +83,7 @@
   }
 
   function deselect() {
+    console.log("deselect");
     selectedIndex = null;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
@@ -126,13 +93,14 @@
     return Math.max(max, bottom);
   }, 0);
 
-  $: items = items.map((item) => ({
-    ...item,
-    w: Number(item.width),
-    h: Number(item.height),
-    x: Number(item.x),
-    y: Number(item.y),
-  }));
+  $: items = items.map((item) => {
+    const { ...rest } = item;
+    return {
+      ...rest,
+      w: Number(item.width),
+      h: Number(item.height),
+    };
+  });
 
   const opts = {
     column: 12,
@@ -143,13 +111,6 @@
     float: true,
   };
 
-  // function handleResize(
-  //   e: CustomEvent<{ event: Event; el: GridItemHTMLElement }>,
-  // ) {
-  //   console.log("handleResize", e);
-  // }
-
-  // See: https://github.com/gridstack/gridstack.js/tree/master/doc#resizestopevent-el
   function handleResizeStop(
     e: CustomEvent<{
       event: Event;
@@ -157,13 +118,12 @@
       target: GridItemHTMLElement;
     }>,
   ) {
+    console.log("handleResizeStop", e);
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
-      // FIXME
-      // index: selectedIndex,
-      index: 0,
+      index: selectedIndex,
       position: [x, y],
       dimensions: [w, h],
     });
@@ -176,20 +136,18 @@
       target: GridItemHTMLElement;
     }>,
   ) {
+    console.log("handleDragStop", e);
+
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
-      // FIXME
-      // index: selectedIndex,
-      index: 0,
+      index: selectedIndex,
       position: [x, y],
       dimensions: [w, h],
     });
   }
 </script>
-
-<!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
 
 <CanvasDashboardWrapper
   bind:contentRect
@@ -220,6 +178,8 @@
       height={Number(item.h) * gridCell}
       top={Number(item.y) * gridCell}
       left={Number(item.x) * gridCell}
+      on:pointerover={handlePointerOver}
+      on:pointerout={handlePointerOut}
       on:change={handleChange}
       on:delete={handleDelete}
     />

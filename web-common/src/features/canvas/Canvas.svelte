@@ -61,6 +61,8 @@
       dimensions: Vector;
     }>,
   ) {
+    console.log("handlePreviewUpdate: ", e.detail);
+
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
