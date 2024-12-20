@@ -41,7 +41,7 @@
   <DropdownMenu.Trigger asChild let:builder>
     {#if workspace}
       <Tooltip distance={8} suppress={open}>
-        <Button {disabled} type="secondary" builders={[builder]} square>
+        <Button label={label} {disabled} type="secondary" builders={[builder]} square>
           <Export size="15px" />
         </Button>
         <TooltipContent slot="tooltip-content">Export model</TooltipContent>
