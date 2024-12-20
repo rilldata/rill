@@ -2022,6 +2022,79 @@ refresh:
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
 }
 
+func TestConnector(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+`})
+	r := &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver: "clickhouse",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed: true
+`})
+	r = &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver:    "clickhouse",
+			Provision: true,
+		},
+	}
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed:
+  hello: world
+time_zone: America/Los_Angeles
+`})
+	r = &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver:        "clickhouse",
+			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
+			Provision:     true,
+			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
+		},
+	}
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed: 10
+`})
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
+		{Message: "failed to decode 'managed'", FilePath: "/connectors/clickhouse.yaml"},
+	})
+}
+
 func TestNamespace(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
