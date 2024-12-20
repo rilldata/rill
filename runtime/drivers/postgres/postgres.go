@@ -56,6 +56,10 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type ConfigProperties struct {
+	DatabaseURL string `mapstructure:"database_url"`
+}
+
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")

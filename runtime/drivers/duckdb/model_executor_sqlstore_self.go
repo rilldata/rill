@@ -7,22 +7,9 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/mysql"
+	"github.com/rilldata/rill/runtime/drivers/postgres"
 )
-
-type sqlStoreToSelfInputProps struct {
-	SQL string `mapstructure:"sql"`
-	DSN string `mapstructure:"dsn"`
-}
-
-func (p *sqlStoreToSelfInputProps) Validate() error {
-	if p.SQL == "" {
-		return fmt.Errorf("missing property 'sql'")
-	}
-	if p.DSN == "" {
-		return fmt.Errorf("missing property `dsn`")
-	}
-	return nil
-}
 
 type sqlStoreToSelfExecutor struct {
 	c *connection
@@ -38,7 +25,7 @@ func (e *sqlStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	inputProps := &sqlStoreToSelfInputProps{}
+	inputProps := &ModelInputProperties{}
 	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
@@ -46,29 +33,13 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
-	if err := outputProps.Validate(opts); err != nil {
-		return nil, fmt.Errorf("invalid output properties: %w", err)
-	}
-
-	// Build the model executor options with updated input and output properties
+	// Build the model executor options with updated input properties
 	clone := *opts
-
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputHandle.Driver(), inputProps)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, inputProps)
 	if err != nil {
 		return nil, err
 	}
 	clone.InputProperties = newInputProps
-
-	newOutputProps := make(map[string]any)
-	err = mapstructure.WeakDecode(outputProps, &newOutputProps)
-	if err != nil {
-		return nil, err
-	}
-	clone.OutputProperties = newOutputProps
 	newOpts := &clone
 
 	// execute
@@ -76,21 +47,29 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputDriver string, inputProps *sqlStoreToSelfInputProps) (map[string]any, error) {
+func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *ModelInputProperties) (map[string]any, error) {
 	m := &ModelInputProperties{}
-	dbName := modelName + "_external_db_"
+	dbName := fmt.Sprintf("%s__%s", modelName, inputConnector)
 	safeDBName := safeName(dbName)
 	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
-	switch inputDriver {
+	switch inputHandle.Driver() {
 	case "mysql":
-		dsn := rewriteMySQLDSN(inputProps.DSN)
+		var config *mysql.ConfigProperties
+		if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
+			return nil, err
+		}
+		dsn := rewriteMySQLDSN(config.DSN)
 		m.PreExec = fmt.Sprintf("INSTALL 'MYSQL'; LOAD 'MYSQL'; ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM mysql_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	case "postgres":
-		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(inputProps.DSN), safeDBName)
+		var config *postgres.ConfigProperties
+		if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
+			return nil, err
+		}
+		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(config.DatabaseURL), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM postgres_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	default:
-		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputDriver)
+		return nil, fmt.Errorf("internal error: unsupported external database: %s", inputHandle.Driver())
 	}
 	m.PostExec = fmt.Sprintf("DETACH %s", safeDBName)
 	propsMap := make(map[string]any)
