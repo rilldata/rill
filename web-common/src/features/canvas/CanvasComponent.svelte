@@ -12,8 +12,6 @@
   export let builders: Builder[] = [];
   export let left: number;
   export let top: number;
-  export let padding: number;
-  export let scale: number;
   export let embed = false;
   export let radius: number;
   export let selected = false;
@@ -21,7 +19,6 @@
   export let width: number;
   export let height: number;
   export let localZIndex = 0;
-  export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
 
@@ -57,8 +54,8 @@
   style:padding="1rem"
   style:left="{left}px"
   style:top="{top}px"
-  style:width="100%"
-  style:height="100%"
+  style:width="{width}px"
+  style:height="{height}px"
   on:contextmenu
   on:mousedown|capture
   on:pointerover

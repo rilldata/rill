@@ -48,8 +48,10 @@
   async function handlePreviewUpdate(
     e: CustomEvent<{
       index: number;
-      position: Vector;
-      dimensions: Vector;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
     }>,
   ) {
     console.log("handlePreviewUpdate: ", e.detail);
@@ -59,10 +61,11 @@
 
     const node = items.get(e.detail.index);
 
-    node.set("width", e.detail.dimensions[0]);
-    node.set("height", e.detail.dimensions[1]);
-    node.set("x", e.detail.position[0]);
-    node.set("y", e.detail.position[1]);
+    // NOTE: V1CanvasItem uses width, height, x, y
+    node.set("width", e.detail.w);
+    node.set("height", e.detail.h);
+    node.set("x", e.detail.x);
+    node.set("y", e.detail.y);
 
     updateLocalContent(parsedDocument.toString(), true);
 

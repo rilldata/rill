@@ -10,6 +10,7 @@
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type { GridItemHTMLElement, GridStackNode } from "gridstack";
   import { createEventDispatcher } from "svelte";
+  import { PREVIEW_GRIDSTACK_OPTIONS } from "./constants";
 
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
@@ -33,6 +34,7 @@
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
+  // FIXME
   function handlePointerOver(
     e: CustomEvent<{
       index: number;
@@ -42,6 +44,7 @@
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 
+  // FIXME
   function handlePointerOut(
     e: CustomEvent<{
       index: number;
@@ -61,9 +64,6 @@
     }>,
   ) {
     e.preventDefault();
-
-    console.log("handleChange", e);
-
     const index = Number(e.detail.e.currentTarget.dataset.index);
     selectedIndex = index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
@@ -82,12 +82,6 @@
     scrollOffset = e.currentTarget.scrollTop;
   }
 
-  function deselect() {
-    console.log("deselect");
-    selectedIndex = null;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  }
-
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
@@ -102,15 +96,6 @@
     };
   });
 
-  const opts = {
-    column: 12,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: true,
-    float: true,
-  };
-
   function handleResizeStop(
     e: CustomEvent<{
       event: Event;
@@ -118,14 +103,15 @@
       target: GridItemHTMLElement;
     }>,
   ) {
-    console.log("handleResizeStop", e);
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
       index: selectedIndex,
-      position: [x, y],
-      dimensions: [w, h],
+      x: Number(x),
+      y: Number(y),
+      w: Number(w),
+      h: Number(h),
     });
   }
 
@@ -136,15 +122,15 @@
       target: GridItemHTMLElement;
     }>,
   ) {
-    console.log("handleDragStop", e);
-
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
       index: selectedIndex,
-      position: [x, y],
-      dimensions: [w, h],
+      x: Number(x),
+      y: Number(y),
+      w: Number(w),
+      h: Number(h),
     });
   }
 </script>
@@ -152,11 +138,10 @@
 <CanvasDashboardWrapper
   bind:contentRect
   height={maxBottom * gridCell * scale}
-  on:click={deselect}
   on:scroll={handleScroll}
 >
   <SvelteGridStack
-    {opts}
+    opts={PREVIEW_GRIDSTACK_OPTIONS}
     {items}
     let:index
     let:item
@@ -168,12 +153,10 @@
     <PreviewElement
       {instanceId}
       i={index}
-      {scale}
       component={item}
       {radius}
       {selected}
       {interacting}
-      {gapSize}
       width={Number(item.w) * gridCell}
       height={Number(item.h) * gridCell}
       top={Number(item.y) * gridCell}

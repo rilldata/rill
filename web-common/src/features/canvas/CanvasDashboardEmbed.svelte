@@ -10,6 +10,7 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { canvasVariablesStore } from "./variables-store";
   import SvelteGridStack from "./SvelteGridStack.svelte";
+  import { EMBED_GRIDSTACK_OPTIONS } from "./constants";
 
   export let canvasName: string;
   export let columns = 20;
@@ -52,20 +53,10 @@
   }));
 
   $: console.log("items: ", items);
-
-  const opts = {
-    column: 12,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: true,
-    float: true,
-    staticGrid: true,
-  };
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
-  <SvelteGridStack {opts} {items} let:index let:item>
+  <SvelteGridStack opts={EMBED_GRIDSTACK_OPTIONS} {items} let:index let:item>
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent
@@ -73,10 +64,7 @@
         i={index}
         {instanceId}
         {componentName}
-        {chartView}
-        {scale}
         {radius}
-        padding={gapSize}
         width={Number(item.w ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(item.h ?? defaults.COMPONENT_HEIGHT) * gridCell}
         left={Number(item.x) * gridCell}

@@ -10,7 +10,7 @@
   const dispatch = createEventDispatcher();
 
   export let i: number;
-  export let gapSize: number;
+  // export let gapSize: number;
   export let component: V1CanvasItem;
   export let selected: boolean;
   export let interacting: boolean;
@@ -19,7 +19,7 @@
   export let top: number;
   export let left: number;
   export let radius: number;
-  export let scale: number;
+  // export let scale: number;
   export let instanceId: string;
 
   $: componentName = component?.component;
@@ -29,7 +29,7 @@
   $: finalTop = height < 0 ? top + height : top;
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
-  $: padding = gapSize;
+  // $: padding = gapSize;
 
   function handlePointerOver(e: PointerEvent) {
     dispatch("pointerover", { index: i });
@@ -59,9 +59,7 @@
         {i}
         {interacting}
         {componentName}
-        {padding}
         {radius}
-        {scale}
         {selected}
         builders={[builder]}
         height={finalHeight}
@@ -97,9 +95,7 @@
         {i}
         {interacting}
         {componentName}
-        {padding}
         {radius}
-        {scale}
         {selected}
         builders={[builder]}
         height={finalHeight}
