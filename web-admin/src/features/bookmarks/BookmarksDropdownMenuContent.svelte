@@ -27,6 +27,7 @@
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
@@ -51,6 +52,10 @@
     exploreSpec,
     $metricsViewTimeRange.data,
   );
+  $: schemaResp = createQueryServiceMetricsViewSchema(
+    $runtime.instanceId,
+    metricsViewName,
+  );
 
   $: projectIdResp = useProjectId(organization, project);
   const userResp = createAdminServiceGetCurrentUser();
@@ -72,9 +77,10 @@
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    {},
+    $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
+    $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 

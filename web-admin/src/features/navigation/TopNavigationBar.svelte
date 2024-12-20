@@ -110,7 +110,8 @@
   );
 
   $: projectPaths = projects.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name }) =>
+      map.set(name.toLowerCase(), { label: name, preloadData: false }),
     new Map<string, PathOption>(),
   );
 

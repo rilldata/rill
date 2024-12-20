@@ -1,10 +1,7 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToPreset } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToPreset";
-import {
-  FromActivePageMap,
-  ToURLParamViewMap,
-} from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { FromActivePageMap } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
   type V1ExplorePreset,
   type V1ExploreSpec,
@@ -89,7 +86,7 @@ export function getKeyForSessionStore(
   prefix: string | undefined,
   view: string,
 ) {
-  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`;
+  return `rill:app:explore:${prefix ?? ""}${exploreName}:${view}`.toLowerCase();
 }
 
 export function updateExploreSessionStore(
@@ -97,6 +94,7 @@ export function updateExploreSessionStore(
   prefix: string | undefined,
   exploreState: MetricsExplorerEntity,
   exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState | undefined,
 ) {
   const view = FromActivePageMap[exploreState.activePage];
   const key = getKeyForSessionStore(exploreName, prefix, view);
@@ -106,7 +104,11 @@ export function updateExploreSessionStore(
     SharedStateStoreKey,
   );
 
-  const preset = convertExploreStateToPreset(exploreState, exploreSpec);
+  const preset = convertExploreStateToPreset(
+    exploreState,
+    exploreSpec,
+    timeControlsState,
+  );
   const storedPreset: V1ExplorePreset = {};
   const sharedPreset: V1ExplorePreset = {
     ...preset,
@@ -117,6 +119,7 @@ export function updateExploreSessionStore(
     delete sharedPreset[key];
   }
   for (const key of ExploreViewOtherKeys[view]) {
+    storedPreset[key] = preset[key] as any;
     delete sharedPreset[key];
   }
 
@@ -176,8 +179,8 @@ export function getExplorePresetForWebView(
   if (!sharedRawPreset) return undefined;
   const rawPreset = sessionStorage.getItem(key) ?? "{}";
   try {
-    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     const sharedPreset = JSON.parse(sharedRawPreset) as V1ExplorePreset;
+    const parsedPreset = JSON.parse(rawPreset) as V1ExplorePreset;
     return {
       view,
       ...sharedPreset,
@@ -188,19 +191,14 @@ export function getExplorePresetForWebView(
   }
 }
 
-export function getUrlForWebView(
-  pageUrl: URL,
-  view: V1ExploreWebView,
-  defaultExplorePreset: V1ExplorePreset,
-  extraParams: Record<string, string> = {},
+export function hasSessionStorageData(
+  exploreName: string,
+  prefix: string | undefined,
 ) {
-  const u = new URL(pageUrl);
-  u.search = "";
-  if (view !== defaultExplorePreset.view) {
-    u.searchParams.set(ExploreStateURLParams.WebView, ToURLParamViewMap[view]!);
-  }
-  for (const param in extraParams) {
-    u.searchParams.set(param, extraParams[param]);
-  }
-  return u.pathname + u.search;
+  const sharedKey = getKeyForSessionStore(
+    exploreName,
+    prefix,
+    SharedStateStoreKey,
+  );
+  return !!sessionStorage.getItem(sharedKey);
 }

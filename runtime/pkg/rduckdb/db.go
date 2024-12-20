@@ -202,6 +202,7 @@ type CreateTableOptions struct {
 	// If BeforeCreateFn is set, it will be executed before the create query is executed.
 	BeforeCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 	// If AfterCreateFn is set, it will be executed after the create query is executed.
+	// This will execute even if the create query fails.
 	AfterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
 }
 
@@ -266,7 +267,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		opts.Logger,
 	)
 
-	db.dbHandle, err = db.openDBAndAttach(ctx, "", "", true)
+	db.dbHandle, err = db.openDBAndAttach(ctx, filepath.Join(db.localPath, "main.db"), "", true)
 	if err != nil {
 		if strings.Contains(err.Error(), "Symbol not found") {
 			fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
@@ -274,6 +275,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 		return nil, err
 	}
+
 	go db.localDBMonitor()
 	return db, nil
 }
@@ -397,16 +399,24 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 			return fmt.Errorf("create: BeforeCreateFn returned error: %w", err)
 		}
 	}
-	// ingest data
-	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
-	if err != nil {
-		return fmt.Errorf("create: create %s %q failed: %w", typ, name, err)
-	}
-	if opts.AfterCreateFn != nil {
+	execAfterCreate := func() error {
+		if opts.AfterCreateFn == nil {
+			return nil
+		}
 		err = opts.AfterCreateFn(ctx, conn)
 		if err != nil {
 			return fmt.Errorf("create: AfterCreateFn returned error: %w", err)
 		}
+		return nil
+	}
+	// ingest data
+	_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeName, query), nil)
+	if err != nil {
+		return errors.Join(fmt.Errorf("create: create %s %q failed: %w", typ, name, err), execAfterCreate())
+	}
+	err = execAfterCreate()
+	if err != nil {
+		return err
 	}
 
 	// close write handle before syncing local so that temp files or wal files are removed
@@ -650,6 +660,7 @@ func (d *db) localDBMonitor() {
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
+			d.localDirty = false
 			d.writeSem.Release(1)
 		}
 	}
@@ -723,11 +734,18 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range d.opts.InitQueries {
-			_, err := execer.ExecContext(context.Background(), qry, nil)
+			_, err := execer.ExecContext(ctx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
+			if err != nil {
+				return err
+			}
+		}
+		if !read {
+			// disable any more configuration changes on the write handle via init queries
+			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
 			if err != nil {
 				return err
 			}
@@ -954,7 +972,7 @@ func (d *db) removeTableVersion(ctx context.Context, name, version string) error
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+dbName(name, version))
+	_, err = d.dbHandle.ExecContext(ctx, "DETACH DATABASE IF EXISTS "+safeSQLName(dbName(name, version)))
 	if err != nil {
 		return err
 	}
@@ -966,7 +984,7 @@ func (d *db) deleteLocalTableFiles(name, version string) error {
 	return os.RemoveAll(d.localTableDir(name, version))
 }
 
-func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, meta *tableMeta) error) error {
+func (d *db) iterateLocalTables(cleanup bool, fn func(name string, meta *tableMeta) error) error {
 	entries, err := os.ReadDir(d.localPath)
 	if err != nil {
 		return err
@@ -977,14 +995,35 @@ func (d *db) iterateLocalTables(removeInvalidTable bool, fn func(name string, me
 		}
 		meta, err := d.tableMeta(entry.Name())
 		if err != nil {
-			if !removeInvalidTable {
+			if !cleanup {
 				continue
 			}
+			d.logger.Debug("cleanup: remove table", slog.String("table", entry.Name()))
 			err = d.deleteLocalTableFiles(entry.Name(), "")
 			if err != nil {
 				return err
 			}
 			continue
+		}
+		// also remove older versions
+		if cleanup {
+			versions, err := os.ReadDir(d.localTableDir(entry.Name(), ""))
+			if err != nil {
+				return err
+			}
+			for _, version := range versions {
+				if !version.IsDir() {
+					continue
+				}
+				if version.Name() == meta.Version {
+					continue
+				}
+				d.logger.Debug("cleanup: remove old version", slog.String("table", entry.Name()), slog.String("version", version.Name()))
+				err = d.deleteLocalTableFiles(entry.Name(), version.Name())
+				if err != nil {
+					return err
+				}
+			}
 		}
 		err = fn(entry.Name(), meta)
 		if err != nil {
@@ -1031,7 +1070,7 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 

@@ -15,7 +15,7 @@
   export let dimensionName: string;
   export let label: string | undefined;
   export let filter: MeasureFilterEntry | undefined;
-  export let labelMaxWidth = "160px";
+  export let labelMaxWidth = "320px";
   export let comparisonLabel = "";
 
   let typeLabel: string | undefined;

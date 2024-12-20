@@ -66,9 +66,8 @@
     autoSave,
     path: filePath,
     fileName,
-    updateLocalContent,
-    localContent,
-    remoteContent,
+    updateEditorContent,
+    editorContent,
     hasUnsavedChanges,
   } = fileArtifact);
 
@@ -113,7 +112,7 @@
       dimensions: Vector;
     }>,
   ) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
 
     const node = items.get(e.detail.index);
@@ -123,7 +122,7 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString());
 
     if ($autoSave) await updateComponentFile();
   }
@@ -136,7 +135,7 @@
       x: 0,
       y: 0,
     };
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument($editorContent ?? "");
 
     const items = parsedDocument.get("items") as any;
 
@@ -146,7 +145,7 @@
       items.add(newComponent);
     }
 
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateComponentFile();
   }
@@ -161,7 +160,7 @@
   }
 
   async function deleteComponent(index: number) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument($editorContent ?? "");
 
     const items = parsedDocument.get("items") as any;
 
@@ -169,7 +168,7 @@
 
     items.delete(index);
 
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateComponentFile();
   }
@@ -225,7 +224,6 @@
                 extensions={FileExtensionToEditorExtension[".yaml"]}
                 autoSave
                 showSaveBar={false}
-                forceLocalUpdates
                 onRevert={() => {
                   spec = structuredClone(spec);
                 }}

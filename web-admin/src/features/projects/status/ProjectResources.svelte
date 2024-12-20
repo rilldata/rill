@@ -16,8 +16,10 @@
 
   let isReconciling = false;
 
+  $: ({ instanceId } = $runtime);
+
   $: resources = createRuntimeServiceListResources(
-    $runtime.instanceId,
+    instanceId,
     // All resource "kinds"
     undefined,
     {
@@ -30,6 +32,7 @@
           );
         },
         refetchOnMount: true,
+        refetchOnWindowFocus: true,
         refetchInterval: isReconciling ? 500 : false,
       },
     },

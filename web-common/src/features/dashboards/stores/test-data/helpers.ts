@@ -1,6 +1,5 @@
 import { QueryClient } from "@rilldata/svelte-query";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { getDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -15,12 +14,15 @@ import {
   AD_BIDS_SCHEMA,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { convertPresetToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import type { ExploreValidSpecResponse } from "@rilldata/web-common/features/explores/selectors";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExploreSpec,
   type V1Expression,
   type V1MetricsViewSpec,
+  type V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
@@ -36,32 +38,40 @@ export function resetDashboardStore() {
 export function initAdBidsInStore() {
   metricsExplorerStore.init(
     AD_BIDS_EXPLORE_NAME,
-    AD_BIDS_METRICS_INIT,
-    AD_BIDS_EXPLORE_INIT,
-    AD_BIDS_TIME_RANGE_SUMMARY,
+    getInitExploreStateForTest(
+      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    ),
   );
 }
 
 export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
     AD_BIDS_MIRROR_NAME,
-    AD_BIDS_METRICS_INIT,
-    AD_BIDS_EXPLORE_INIT,
-    AD_BIDS_TIME_RANGE_SUMMARY,
+    getInitExploreStateForTest(
+      AD_BIDS_METRICS_INIT,
+      AD_BIDS_EXPLORE_INIT,
+      AD_BIDS_TIME_RANGE_SUMMARY,
+    ),
   );
 }
 
-export function createDashboardState(
-  name: string,
-  metrics: V1MetricsViewSpec,
-  explore: V1ExploreSpec,
-  whereFilter: V1Expression = createAndExpression([]),
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
-): MetricsExplorerEntity {
-  const explorer = getDefaultExploreState(name, metrics, explore, undefined);
-  explorer.whereFilter = whereFilter;
-  explorer.selectedTimeRange = timeRange;
-  return explorer;
+export function getInitExploreStateForTest(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1MetricsViewTimeRangeResponse | undefined = undefined,
+) {
+  const defaultExplorePreset = getDefaultExplorePreset(
+    exploreSpec,
+    timeRangeSummary,
+  );
+  const { partialExploreState } = convertPresetToExploreState(
+    metricsViewSpec,
+    exploreSpec,
+    defaultExplorePreset,
+  );
+  return partialExploreState;
 }
 
 export function createAdBidsMirrorInStore({

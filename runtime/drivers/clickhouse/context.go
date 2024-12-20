@@ -31,7 +31,12 @@ func connFromContext(ctx context.Context) *sqlx.Conn {
 // This is used to use certain session aware features like temporary tables.
 func (c *connection) sessionAwareContext(ctx context.Context) context.Context {
 	if c.opts.Protocol == clickhouse.HTTP {
-		settings := maps.Clone(c.opts.Settings)
+		var settings map[string]any
+		if len(c.opts.Settings) == 0 {
+			settings = make(map[string]any)
+		} else {
+			settings = maps.Clone(c.opts.Settings)
+		}
 		settings["session_id"] = uuid.New().String()
 		return clickhouse.Context(ctx, clickhouse.WithSettings(settings))
 	}
