@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
-	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/formatter"
@@ -84,16 +82,8 @@ func (r *legacyMetricsResolver) Close() error {
 	return nil
 }
 
-func (r *legacyMetricsResolver) Cacheable() bool {
-	return false
-}
-
-func (r *legacyMetricsResolver) Key() string {
-	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
-	if err != nil {
-		panic(err)
-	}
-	return strconv.FormatUint(hash, 16)
+func (r *legacyMetricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	return nil, false, nil
 }
 
 func (r *legacyMetricsResolver) Refs() []*runtimev1.ResourceName {

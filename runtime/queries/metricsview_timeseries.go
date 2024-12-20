@@ -78,16 +78,16 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	if mv.TimeDimension == "" {
+	if mv.ValidSpec.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	qry, err := q.rewriteToMetricsViewQuery(mv.TimeDimension)
+	qry, err := q.rewriteToMetricsViewQuery(mv.ValidSpec.TimeDimension)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer res.Close()
 
-	return q.populateResult(res, mv.TimeDimension, mv)
+	return q.populateResult(res, mv.ValidSpec.TimeDimension, mv.ValidSpec)
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
