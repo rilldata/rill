@@ -26,7 +26,6 @@
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { setContext } from "svelte";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
 
@@ -40,8 +39,8 @@
     autoSave,
     path: filePath,
     fileName,
-    updateLocalContent,
-    localContent,
+    updateEditorContent,
+    editorContent,
     getResource,
     getAllErrors,
     remoteContent,
@@ -64,7 +63,6 @@
   $: canvasResource = data?.canvas;
 
   $: canvasName = getNameFromFile(filePath);
-  $: setContext("rill::canvas:name", canvasName);
 
   $: ({ instanceId } = $runtime);
 
@@ -93,7 +91,9 @@
       x: 0,
       y: 0,
     };
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
 
     const items = parsedDocument.get("items") as any;
 
@@ -103,7 +103,7 @@
       items.add(newComponent);
     }
 
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateComponentFile();
   }

@@ -11,9 +11,9 @@
 
   const { validSpecStore, canvasStore } = getCanvasStateManagers();
 
-  $: ({ localContent, remoteContent, saveContent, path } = fileArtifact);
+  $: ({ editorContent, remoteContent, saveContent, path } = fileArtifact);
 
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
   $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
 
   $: selectedComponentName =

@@ -24,8 +24,8 @@
   $: ({
     saveLocalContent: updateComponentFile,
     autoSave,
-    updateLocalContent,
-    localContent,
+    updateEditorContent,
+    editorContent,
     remoteContent,
   } = fileArtifact);
 
@@ -43,12 +43,14 @@
   }
 
   async function deleteComponent(index: number) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
 
     const items = parsedDocument.get("items") as any;
     if (!items) return;
     items.delete(index);
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), true);
     if ($autoSave) await updateComponentFile();
   }
 
@@ -59,7 +61,9 @@
       dimensions: Vector;
     }>,
   ) {
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
     const items = parsedDocument.get("items") as any;
 
     const node = items.get(e.detail.index);
@@ -69,7 +73,7 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    updateLocalContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateComponentFile();
   }

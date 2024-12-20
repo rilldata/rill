@@ -27,9 +27,9 @@ export const useAllSimpleMeasureFromMetric = (
   );
 
 export function getParsedDocument(fileArtifact: FileArtifact) {
-  const { localContent, remoteContent } = fileArtifact;
+  const { editorContent, remoteContent } = fileArtifact;
   return derived(
-    [localContent, remoteContent],
+    [editorContent, remoteContent],
     ([$localContent, $remoteContent]) => {
       return parseDocument($localContent ?? $remoteContent ?? "");
     },
