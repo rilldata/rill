@@ -19,6 +19,7 @@
 
   export let items: Array<GridStackWidget>;
   export let options: GridStackOptions;
+  export let grid: GridStack;
 
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
@@ -39,7 +40,6 @@
   const dispatch = createEventDispatcher<GridstackDispatchEvents>();
 
   let gridEl: HTMLDivElement;
-  let grid: GridStack;
 
   onMount(async () => {
     const { GridStack } = await import("gridstack");
@@ -54,7 +54,7 @@
         const child = item.el?.firstElementChild;
 
         if (!child || !element) {
-          console.error("Cannot append append element to GridStack");
+          console.error("Cannot append element to GridStack");
           return;
         }
         child.appendChild(element);

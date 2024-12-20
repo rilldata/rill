@@ -11,7 +11,6 @@
   export let i: number;
   export let builders: Builder[] = [];
   export let embed = false;
-  export let radius: number;
   export let selected = false;
   export let interacting = false;
   export let width: number;
@@ -57,10 +56,7 @@
   on:pointerout
 >
   <div class="size-full relative">
-    <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
-      style:border-radius="{radius}px"
-    >
+    <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
       {#if title || description}
         <div class="w-full h-fit flex flex-col pb-2 border-b">
           {#if title}

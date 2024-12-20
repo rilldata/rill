@@ -52,7 +52,6 @@
         {i}
         {interacting}
         {componentName}
-        {radius}
         {selected}
         builders={[builder]}
         height={finalHeight}
@@ -88,7 +87,6 @@
         {i}
         {interacting}
         {componentName}
-        {radius}
         {selected}
         builders={[builder]}
         height={finalHeight}
