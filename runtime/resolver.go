@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
+
+var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
 
 // Resolver represents logic, such as a SQL query, that produces output data.
 // Resolvers are used to evaluate API requests, alerts, reports, etc.

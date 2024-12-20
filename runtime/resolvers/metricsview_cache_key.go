@@ -5,18 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
-
-var errCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
 
 func init() {
 	runtime.RegisterResolverInitializer("metrics_cache_key", newMetricsViewCacheKeyResolver)
@@ -36,12 +31,12 @@ type metricsViewCacheKeyResolverArgs struct {
 	Priority int `mapstructure:"priority"`
 }
 
-type metricsViewCacheKey struct {
+type metricsViewCacheKeyProps struct {
 	MetricsView string `mapstructure:"metrics_view"`
 }
 
 func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	tr := &metricsViewCacheKey{}
+	tr := &metricsViewCacheKeyProps{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, tr); err != nil {
 		return nil, err
 	}
@@ -95,36 +90,22 @@ func (r *metricsViewCacheKeyResolver) Close() error {
 	return nil
 }
 
-func (r *metricsViewCacheKeyResolver) Cacheable() bool {
-	return true
-}
-
 func (r *metricsViewCacheKeyResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
-	var sb strings.Builder
-	sb.WriteString(runtime.ResourceKindMetricsView)
-	sb.WriteString(":")
-	sb.WriteString(r.mvName)
-	sb.WriteString(":")
-	sb.WriteString("cahe_key")
-	ttlSeconds := r.mv.CacheKeyTtlSeconds
-	if ttlSeconds == 0 && r.streaming {
+	var key string
+	ttl := time.Duration(r.mv.CacheKeyTtlSeconds) * time.Second
+	if ttl == 0 && r.streaming {
 		// If streaming, we need to cache the key for 60 seconds
-		// For non streaming metrics view we don't need to expire the key as data itself will be invalidated basis the ref's state version
-		ttlSeconds = 60
+		// For non streaming metrics view we don't need to expire the key as it will be invalidated basis the ref's state version
+		ttl = time.Minute
 	}
-	if ttlSeconds != 0 {
-		sb.WriteString(":")
-		sb.WriteString(truncateTime(time.Now(), ttlSeconds).Format(time.RFC3339))
+	if ttl != 0 {
+		key = time.Now().Truncate(ttl).Format(time.RFC3339)
 	}
-	hash, err := hashstructure.Hash(sb.String(), hashstructure.FormatV2, nil)
-	if err != nil {
-		return nil, false, err
-	}
-	return []byte(strconv.FormatUint(hash, 16)), true, nil
+	return []byte(key), true, nil
 }
 
 func (r *metricsViewCacheKeyResolver) Refs() []*runtimev1.ResourceName {
-	return []*runtimev1.ResourceName{}
+	return []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.mvName}}
 }
 
 func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
@@ -137,7 +118,7 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 		return nil, err
 	}
 	if !ok {
-		return nil, errCachingDisabled
+		return nil, runtime.ErrMetricsViewCachingDisabled
 	}
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
@@ -149,11 +130,4 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 
 func (r *metricsViewCacheKeyResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func truncateTime(t time.Time, seconds int64) time.Time {
-	// Convert x seconds to a duration
-	duration := time.Duration(seconds) * time.Second
-	// Truncate the time to the nearest x seconds
-	return t.Truncate(duration)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
+	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 const (
@@ -97,16 +98,26 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, err
 	}
 	defer res.Close()
-	var key string
+	var key any
 	if res.Next() {
 		if err := res.Scan(&key); err != nil {
+			return nil, false, err
+		}
+
+		key, err = jsonval.ToValue(key, res.Schema.Fields[0].Type)
+		if err != nil {
 			return nil, false, err
 		}
 	}
 	if res.Err() != nil {
 		return nil, false, err
 	}
-	return []byte(key), true, nil
+
+	keyBytes, err := json.Marshal(key)
+	if err != nil {
+		return nil, false, err
+	}
+	return keyBytes, true, nil
 }
 
 // ValidateQuery validates the provided query against the executor's metrics view.

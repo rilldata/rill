@@ -87,13 +87,6 @@ func (r *sqlResolver) Close() error {
 	return nil
 }
 
-func (r *sqlResolver) Cacheable() bool {
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		return len(r.refs) != 0
-	}
-	return false
-}
-
 func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 	if r.olap.Dialect() == drivers.DialectDuckDB || r.olap.Dialect() == drivers.DialectClickHouse {
 		return []byte(r.sql), len(r.refs) != 0, nil

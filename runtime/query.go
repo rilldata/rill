@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -80,10 +81,12 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
 		if mv := res.GetMetricsView(); mv != nil {
-			cacheKey, err := r.metricsViewCacheKey(ctx, instanceID, res.Meta.Name.Name, priority)
+			cacheKey, ok, err := r.metricsViewCacheKey(ctx, instanceID, res.Meta.Name.Name, priority)
 			if err != nil {
+				return err
+			}
+			if !ok {
 				// skip caching
-				// the cache_key_resolver should ideally only return an error if caching is disabled or context is cancelled
 				return query.Resolve(ctx, r, instanceID, priority)
 			}
 			key = key + ":" + string(cacheKey)
@@ -141,7 +144,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	return nil
 }
 
-func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, error) {
+func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, bool, error) {
 	cacheKeyResolver, err := r.Resolve(ctx, &ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           "metrics_cache_key",
@@ -150,13 +153,16 @@ func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name stri
 		Claims:             &SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ErrMetricsViewCachingDisabled) {
+			return nil, false, nil
+		}
+		return nil, false, err
 	}
 	cacheKey, err := cacheKeyResolver.MarshalJSON()
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return cacheKey, nil
+	return cacheKey, true, nil
 }
 
 type queryCacheKey struct {

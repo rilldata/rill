@@ -3,6 +3,8 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"slices"
 	"strings"
 
@@ -36,14 +38,24 @@ func cacheKeyForMetricsView(ctx context.Context, r *runtime.Runtime, instanceID,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
-		if errors.Is(err, errCachingDisabled) {
+		if errors.Is(err, runtime.ErrMetricsViewCachingDisabled) {
 			return nil, false, nil
 		}
 		return nil, false, err
 	}
-	cacheKey, err := cacheKeyResolver.MarshalJSON()
+	defer cacheKeyResolver.Close()
+
+	row, err := cacheKeyResolver.Next()
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil, false, fmt.Errorf("`metrics_cache_key` resolver returned no rows")
+		}
 		return nil, false, err
 	}
-	return cacheKey, true, nil
+	res, ok := row["key"].(string)
+	if !ok {
+		// should never happen but just in case
+		return nil, false, errors.New("`metrics_cache_key`: expected a column key of type string in result")
+	}
+	return []byte(res), true, nil
 }
