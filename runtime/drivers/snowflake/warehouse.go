@@ -32,7 +32,7 @@ const rowGroupBufferSize = int64(datasize.MB) * 512
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (iter drivers.FileIterator, resErr error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -56,14 +56,23 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if resErr != nil {
+			db.Close()
+		}
+	}()
 
 	ctx = sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator)
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
+	defer func() {
+		if resErr != nil {
+			conn.Close()
+		}
+	}()
 
 	var rows sqld.Rows
 	err = rawConn(conn, func(x sqld.Conn) error {
@@ -71,10 +80,13 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		return err
 	})
 	if err != nil {
-		conn.Close()
-		db.Close()
 		return nil, err
 	}
+	defer func() {
+		if resErr != nil {
+			rows.Close()
+		}
+	}()
 
 	batches, err := rows.(sf.SnowflakeRows).GetArrowBatches()
 	if err != nil {
@@ -119,6 +131,11 @@ type fileIterator struct {
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
+	if f.rows != nil {
+		f.rows.Close()
+		f.conn.Close()
+		f.db.Close()
+	}
 	return os.RemoveAll(f.tempDir)
 }
 
@@ -134,6 +151,8 @@ func (f *fileIterator) Next() ([]string, error) {
 		f.rows.Close()
 		f.conn.Close()
 		f.db.Close()
+		// mark rows as nil to prevent double close
+		f.rows = nil
 	}()
 
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
