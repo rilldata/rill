@@ -142,15 +142,15 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function convertBookmarkToUrlSearchParams(
+function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
   schema: V1StructType,
-  exploreState: MetricsExplorerEntity | undefined,
+  exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
   timeRangeSummary: V1TimeRangeSummary | undefined,
-) {
+): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
     metricsViewSpec,
@@ -161,7 +161,9 @@ export function convertBookmarkToUrlSearchParams(
     ...(exploreState ?? {}),
     ...exploreStateFromBookmark,
   } as MetricsExplorerEntity;
-  return convertExploreStateToURLSearchParams(
+
+  const url = new URL(get(page).url);
+  url.search = convertExploreStateToURLSearchParams(
     finalExploreState,
     exploreSpec,
     getTimeControlState(
@@ -172,32 +174,12 @@ export function convertBookmarkToUrlSearchParams(
     ),
     defaultExplorePreset,
   );
-}
-
-function parseBookmark(
-  bookmarkResource: V1Bookmark,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  schema: V1StructType,
-  exploreState: MetricsExplorerEntity,
-  defaultExplorePreset: V1ExplorePreset,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
-): BookmarkEntry {
-  const url = new URL(get(page).url);
-  url.search = convertBookmarkToUrlSearchParams(
-    bookmarkResource,
-    metricsViewSpec,
-    exploreSpec,
-    schema,
-    exploreState,
-    defaultExplorePreset,
-    timeRangeSummary,
-  );
   return {
     resource: bookmarkResource,
     absoluteTimeRange:
-      exploreState.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
-    filtersOnly: !exploreState.pivot,
+      exploreStateFromBookmark.selectedTimeRange?.name ===
+      TimeRangePreset.CUSTOM,
+    filtersOnly: !exploreStateFromBookmark.pivot,
     url: url.toString(),
   };
 }
