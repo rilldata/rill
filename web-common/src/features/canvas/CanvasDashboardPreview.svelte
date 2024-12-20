@@ -34,35 +34,12 @@
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
-  // FIXME
-  function handlePointerOver(
-    e: CustomEvent<{
-      index: number;
-    }>,
-  ) {
-    selectedIndex = e.detail.index;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  }
-
-  // FIXME
-  function handlePointerOut(
-    e: CustomEvent<{
-      index: number;
-    }>,
-  ) {
-    selectedIndex = null;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  }
-
   function handleChange(
     e: CustomEvent<{
       e: MouseEvent & { currentTarget: HTMLButtonElement };
-      dimensions: Vector;
-      position: Vector;
-      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
-      changePosition: [0 | 1, 0 | 1];
     }>,
   ) {
+    console.log("CanvasDashboardPreview handleChange");
     e.preventDefault();
     const index = Number(e.detail.e.currentTarget.dataset.index);
     selectedIndex = index;
@@ -132,6 +109,28 @@
       w: Number(w),
       h: Number(h),
     });
+  }
+
+  // FIXME
+  function handlePointerOver(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    // console.log("handlePointerOver: ", e.detail.index);
+    selectedIndex = e.detail.index;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  }
+
+  // FIXME
+  function handlePointerOut(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    // console.log("handlePointerOut: ", e.detail.index);
+    selectedIndex = null;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 </script>
 

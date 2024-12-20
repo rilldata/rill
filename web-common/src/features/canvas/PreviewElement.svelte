@@ -7,10 +7,7 @@
 </script>
 
 <script lang="ts">
-  const dispatch = createEventDispatcher();
-
   export let i: number;
-  // export let gapSize: number;
   export let component: V1CanvasItem;
   export let selected: boolean;
   export let interacting: boolean;
@@ -19,17 +16,17 @@
   export let top: number;
   export let left: number;
   export let radius: number;
-  // export let scale: number;
   export let instanceId: string;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
 
+  const dispatch = createEventDispatcher();
+
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
-  // $: padding = gapSize;
 
   function handlePointerOver(e: PointerEvent) {
     dispatch("pointerover", { index: i });
@@ -43,10 +40,6 @@
     if (e.button !== 0) return;
     dispatch("change", {
       e,
-      dimensions: [width, height],
-      position: [finalLeft, finalTop],
-      changeDimensions: [0, 0],
-      changePosition: [1, 1],
     });
   }
 </script>
