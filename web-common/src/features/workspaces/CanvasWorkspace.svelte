@@ -8,9 +8,9 @@
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
+  import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import CanvasStateProvider from "@rilldata/web-common/features/canvas/stores/CanvasStateProvider.svelte";
-  import { useDefaultMetrics } from "@rilldata/web-common/features/dashboards/selectors";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
