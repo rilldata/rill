@@ -36,7 +36,6 @@
     },
 
     dashboardStore,
-    validSpecStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -44,6 +43,8 @@
   const { cloudDataViewer, readOnly } = featureFlags;
 
   let exploreContainerWidth: number;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
 
@@ -55,37 +56,40 @@
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricsViewName,
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricsViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: explore = useExploreValidSpec(instanceId, exploreName);
 
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
 
   $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
 
-  $: timeControls = $timeControlsStore;
+  $: ({
+    timeStart: start,
+    timeEnd: end,
+    showTimeComparison,
+    comparisonTimeStart,
+    comparisonTimeEnd,
+  } = $timeControlsStore);
 
   $: timeRange = {
-    start: timeControls.timeStart,
-    end: timeControls.timeEnd,
+    start,
+    end,
   };
 
-  $: comparisonTimeRange = timeControls.showTimeComparison
+  $: comparisonTimeRange = showTimeComparison
     ? {
-        start: timeControls.comparisonTimeStart,
-        end: timeControls.comparisonTimeEnd,
+        start: comparisonTimeStart,
+        end: comparisonTimeEnd,
       }
     : undefined;
 
-  $: metricsView = $validSpecStore.data?.metricsView ?? {};
+  $: metricsView = $explore.data?.metricsView ?? {};
 
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
