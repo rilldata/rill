@@ -4,6 +4,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     TimeComparisonOption,
+    TimeRangePreset,
     type DashboardTimeControls,
     type TimeRange,
   } from "@rilldata/web-common/lib/time/types";
@@ -69,10 +70,17 @@
       metricsViewSpec,
     );
   }
+
+  $: disabled =
+    selectedTimeRange?.name === TimeRangePreset.ALL_TIME || undefined;
 </script>
 
-<div class="wrapper">
+<div
+  class="wrapper"
+  title={disabled && "Comparison not available when viewing all time range"}
+>
   <button
+    {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
       metricsExplorerStore.displayTimeComparison(
@@ -91,15 +99,22 @@
     }}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">
-      <Switch checked={showTimeComparison} id="comparing" small />
+      <Switch
+        checked={showTimeComparison}
+        id="comparing"
+        small
+        disabled={disabled ?? false}
+      />
 
       <Label class="font-normal text-xs cursor-pointer" for="comparing">
-        <span>Comparing</span>
+        <span class:opacity-50={disabled}>Comparing</span>
       </Label>
     </div>
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison
+      maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      minDate={DateTime.fromJSDate(allTimeRange.start)}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
@@ -107,6 +122,7 @@
       grain={activeTimeGrain}
       zone={activeTimeZone}
       {onSelectComparisonRange}
+      disabled={disabled ?? false}
     />
   {/if}
 </div>
@@ -115,7 +131,7 @@
   .wrapper {
     @apply flex w-fit;
     @apply h-7 rounded-full;
-    @apply overflow-hidden;
+    @apply overflow-hidden select-none;
   }
 
   :global(.wrapper > button) {

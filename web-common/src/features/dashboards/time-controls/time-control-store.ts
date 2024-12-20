@@ -30,6 +30,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
@@ -68,6 +69,12 @@ export type TimeControlState = {
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
 
+/**
+ * Returns a TimeControlState. Calls getTimeControlState internally.
+ *
+ * Consumers of this will have a QueryObserverResult for time range summary.
+ * They will need `isFetching` to wait for this response.
+ */
 export const timeControlStateSelector = ([
   metricsView,
   explore,
@@ -80,15 +87,13 @@ export const timeControlStateSelector = ([
   MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView?.timeDimension);
-  const timeDimension = metricsView?.timeDimension;
   if (
     !metricsView ||
     !explore ||
     !metricsExplorer ||
     !timeRangeResponse ||
     !timeRangeResponse.isSuccess ||
-    !timeRangeResponse.data.timeRangeSummary?.min ||
-    !timeRangeResponse.data.timeRangeSummary?.max
+    !hasTimeSeries
   ) {
     return {
       isFetching: timeRangeResponse.isRefetching,
@@ -96,54 +101,85 @@ export const timeControlStateSelector = ([
     } as TimeControlState;
   }
 
-  const allTimeRange = {
-    name: TimeRangePreset.ALL_TIME,
-    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
-    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
-  };
-  const minTimeGrain =
-    (metricsView.smallestTimeGrain as V1TimeGrain) ||
-    V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-  const defaultTimeRange = isoDurationToFullTimeRange(
-    explore?.defaultPreset?.timeRange,
-    allTimeRange.start,
-    allTimeRange.end,
-    metricsExplorer.selectedTimezone,
-  );
-
-  const timeRangeState = calculateTimeRangePartial(
+  const state = getTimeControlState(
+    metricsView,
+    explore,
+    timeRangeResponse.data?.timeRangeSummary,
     metricsExplorer,
-    allTimeRange,
-    defaultTimeRange,
-    minTimeGrain,
   );
-  if (!timeRangeState) {
+  if (!state) {
     return {
       ready: false,
       isFetching: false,
     };
   }
 
+  return {
+    ...state,
+    isFetching: false,
+    ready: true,
+  } as TimeControlState;
+};
+
+/**
+ * Generates TimeControlState
+ *
+ * Consumers of this will already have a V1TimeRangeSummary.
+ */
+export function getTimeControlState(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
+  exploreState: MetricsExplorerEntity,
+) {
+  const hasTimeSeries = Boolean(metricsViewSpec.timeDimension);
+  const timeDimension = metricsViewSpec.timeDimension;
+  if (!hasTimeSeries || !timeRangeSummary?.max || !timeRangeSummary?.min)
+    return undefined;
+
+  const allTimeRange = {
+    name: TimeRangePreset.ALL_TIME,
+    start: new Date(timeRangeSummary.min),
+    end: new Date(timeRangeSummary.max),
+  };
+  const minTimeGrain =
+    (metricsViewSpec.smallestTimeGrain as V1TimeGrain) ||
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  const defaultTimeRange = isoDurationToFullTimeRange(
+    exploreSpec.defaultPreset?.timeRange,
+    allTimeRange.start,
+    allTimeRange.end,
+    exploreState.selectedTimezone,
+  );
+
+  const timeRangeState = calculateTimeRangePartial(
+    exploreState,
+    allTimeRange,
+    defaultTimeRange,
+    minTimeGrain,
+  );
+  if (!timeRangeState) {
+    return undefined;
+  }
+
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-    explore,
-    metricsExplorer,
+    exploreSpec,
+    exploreState,
     allTimeRange,
     timeRangeState,
   );
 
   return {
-    isFetching: false,
     minTimeGrain,
     allTimeRange,
     defaultTimeRange,
     timeDimension,
-    ready: true,
 
     ...timeRangeState,
 
     ...comparisonTimeRangeState,
   } as TimeControlState;
-};
+}
 
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(

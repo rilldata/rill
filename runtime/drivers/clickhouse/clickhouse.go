@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
@@ -151,14 +152,11 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 		}
 		opts.Addr = []string{host}
+		opts.Protocol = clickhouse.Native
 		if conf.SSL {
-			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
-				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: false,
+				MinVersion: tls.VersionTLS12,
 			}
-		} else {
-			opts.Protocol = clickhouse.Native
 		}
 
 		// username password
@@ -194,6 +192,24 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
+	err = db.Ping()
+	if err != nil {
+		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
+			return nil, err
+		}
+		if conf.DSN != "" {
+			return nil, err
+		}
+		// may be the port is http, also try with http protocol if DSN is not provided
+		opts.Protocol = clickhouse.HTTP
+		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
+		err := db.Ping()
+		if err != nil {
+			return nil, err
+		}
+		// connection with http protocol is successful
+		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
+	}
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
@@ -201,11 +217,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("connection: %w", err)
 	}
 
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
@@ -380,12 +391,6 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Connection.
-// Use OLAPStore instead.
-func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

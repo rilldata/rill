@@ -2095,6 +2095,50 @@ managed: 10
 	})
 }
 
+func TestNamespace(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.yaml`: `
+type: model
+sql: SELECT 1
+`,
+		`explores/e1.yaml`: `
+type: explore
+namespace: foo
+metrics_view: missing
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "foo:e1"},
+			Paths: []string{"/explores/e1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "Foo: E1",
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
