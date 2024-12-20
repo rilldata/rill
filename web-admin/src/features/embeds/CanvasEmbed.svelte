@@ -18,4 +18,4 @@
   $: ({ items = [] } = canvas || { items: [], columns: 24, gap: 2 });
 </script>
 
-<CanvasDashboardEmbed {canvasName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {columns} {items} {gap} />

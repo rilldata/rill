@@ -15,9 +15,9 @@
   $: canvas = $canvasQuery.data?.canvas.spec;
 
   // TODO: Remove later
-  let columns = 12;
-  let gap = 4;
+  let columns = 20;
+  let gap = 1;
   $: ({ items = [] } = canvas || { items: [], columns: 24, gap: 2 });
 </script>
 
-<CanvasDashboardEmbed {canvasName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {columns} {items} {gap} />
