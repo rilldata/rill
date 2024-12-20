@@ -11,7 +11,13 @@
 
   const { validSpecStore, canvasStore } = getCanvasStateManagers();
 
-  $: ({ editorContent, remoteContent, saveContent, path } = fileArtifact);
+  $: ({
+    editorContent,
+    remoteContent,
+    updateEditorContent,
+    saveLocalContent,
+    path,
+  } = fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
   $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
@@ -48,8 +54,8 @@
     }
 
     killState();
-
-    await saveContent(parsedDocument.toString());
+    updateEditorContent(parsedDocument.toString(), true);
+    await saveLocalContent();
   }
 
   function killState() {
