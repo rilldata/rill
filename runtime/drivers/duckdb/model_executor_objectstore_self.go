@@ -10,20 +10,17 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/azure"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"go.uber.org/zap"
 )
 
 type s3InputProps struct {
-	Path     string             `mapstructure:"path"`
-	Format   drivers.FileFormat `mapstructure:"format"`
-	Endpoint string             `mapstructure:"endpoint"`
-	Region   string             `mapstructure:"region"`
-	DuckDB   map[string]any     `mapstructure:"duckdb"`
+	Path   string             `mapstructure:"path"`
+	Format drivers.FileFormat `mapstructure:"format"`
+	DuckDB map[string]any     `mapstructure:"duckdb"`
 }
 
 func (p *s3InputProps) Validate() error {
 	if p.Path == "" {
-		return fmt.Errorf("path is mandatory for s3 input connector")
+		return fmt.Errorf("missing property `path`")
 	}
 	return nil
 }
@@ -50,29 +47,13 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
-	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse output properties: %w", err)
-	}
-	if err := outputProps.Validate(opts); err != nil {
-		return nil, fmt.Errorf("invalid output properties: %w", err)
-	}
-
 	// Build the model executor options with updated input and output properties
 	clone := *opts
-
 	newInputProps, err := e.modelInputProperties(opts.InputHandle, inputProps, opts.ModelName)
 	if err != nil {
 		return nil, err
 	}
 	clone.InputProperties = newInputProps
-
-	newOutputProps := make(map[string]any)
-	err = mapstructure.WeakDecode(outputProps, &newOutputProps)
-	if err != nil {
-		return nil, err
-	}
-	clone.OutputProperties = newOutputProps
 	newOpts := &clone
 
 	// execute
@@ -108,13 +89,13 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Han
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s, SESSION_TOKEN %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey), safeSQLString(s3Config.SessionToken))
 		}
-		if inputProps.Endpoint != "" {
+		if s3Config.Endpoint != "" {
 			sb.WriteString(", ENDPOINT ")
-			sb.WriteString(safeSQLString(inputProps.Endpoint))
+			sb.WriteString(safeSQLString(s3Config.Endpoint))
 		}
-		if inputProps.Region != "" {
+		if s3Config.Region != "" {
 			sb.WriteString(", REGION ")
-			sb.WriteString(safeSQLString(inputProps.Region))
+			sb.WriteString(safeSQLString(s3Config.Region))
 		}
 		sb.WriteRune(')')
 		m.PreExec = sb.String()
@@ -170,7 +151,6 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Han
 		return nil, err
 	}
 	m.SQL = "SELECT * FROM " + from
-	e.c.logger.Debug("objectStoreToSelfExecutor: generated model input properties", zap.String("sql", m.SQL), zap.String("pre_exec", m.PreExec), zap.String("table", model))
 
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
