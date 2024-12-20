@@ -724,7 +724,7 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	stateDir := lookupDotenv("RILL_STATE_DIRECTORY")
+	stateDir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
 	outputFile := filepath.Join(stateDir, "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
