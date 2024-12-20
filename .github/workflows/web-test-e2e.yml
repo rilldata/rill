@@ -113,14 +113,8 @@ jobs:
         if: matrix.name == 'web-admin'
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        env:
-          GA: "${{ secrets.RILL_BINARY_SA }}"
-
       - name: Test ${{ matrix.name }}
         run: |-
-          rill devtool start e2e --reset --except ui
           npm run build -w ${{ matrix.name }}
           npm run test -w ${{ matrix.name }}
 
