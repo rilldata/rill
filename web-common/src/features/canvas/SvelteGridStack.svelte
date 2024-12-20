@@ -18,7 +18,7 @@
   } from "./types.ts";
 
   export let items: Array<GridStackWidget>;
-  export let opts: GridStackOptions;
+  export let options: GridStackOptions;
 
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
@@ -43,7 +43,8 @@
 
   onMount(async () => {
     const { GridStack } = await import("gridstack");
-    grid = GridStack.init(opts);
+
+    grid = GridStack.init(options);
 
     grid.on("added", (_: Event, items: Array<GridStackNode>) => {
       items.forEach((item, index) => {
@@ -64,6 +65,24 @@
       });
     });
 
+    gridEl.addEventListener("pointerover", (event) => {
+      const target = event.target as HTMLElement;
+
+      const contentEl = target.closest(".grid-stack-item-content");
+      if (contentEl) {
+        contentEl.setAttribute("data-highlight", "true");
+      }
+    });
+
+    gridEl.addEventListener("pointerout", (event) => {
+      const target = event.target as HTMLElement;
+
+      const contentEl = target.closest(".grid-stack-item-content");
+      if (contentEl) {
+        contentEl.removeAttribute("data-highlight");
+      }
+    });
+
     gridStackEvents.forEach((event) => {
       grid.on(event, (args: GridstackCallbackParams) => {
         dispatch(event, args);
@@ -80,7 +99,7 @@
 
 <div bind:this={gridEl} class="grid-stack">
   {#each items as item, index}
-    <div style="display:none" id={`grid-id-${index}`}>
+    <div style="display:none" id={`grid-id-${index}`} data-index={index}>
       <slot {index} {item} />
     </div>
   {/each}
@@ -90,8 +109,18 @@
   .grid-stack {
     @apply bg-white;
   }
+
+  :global(.grid-stack-item-content) {
+    @apply rounded-sm bg-white;
+  }
+
   :global(.grid-stack-item-content) {
     @apply flex flex-col items-center justify-center;
     @apply bg-white border border-gray-200 rounded-md shadow-sm;
+  }
+
+  :global(.grid-stack-item-content[data-highlight="true"]),
+  :global(.ui-draggable-dragging) {
+    @apply border-2 border-primary-300 rounded-sm;
   }
 </style>

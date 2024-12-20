@@ -86,6 +86,7 @@
   }
 
   // TODO: grid.addWidget()
+  // TODO: use `autoPosition` to add component to the first available position
   async function addComponent(componentName: string) {
     console.log("CanvasWorkspace addComponent");
 
