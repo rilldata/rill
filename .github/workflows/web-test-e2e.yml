@@ -2,7 +2,7 @@ name: End-to-end tests of web+runtime
 on:
   pull_request:
     paths:
-      - ".github/workflows/web-test.yml"
+      - ".github/workflows/web-test-e2e.yml"
       - "admin/**"
       - "cli/**"
       - "runtime/**"
@@ -13,6 +13,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,25 +26,45 @@ jobs:
         with:
           filters: |
             admin:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "admin/**"
               - "cli/**"
               - "runtime/**"
               - "web-admin/**"
             auth:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "web-auth/**"
             local:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
               - "runtime/**"
               - "web-local/**"
             common:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-e2e.yml"
               - "cli/**"
               - "runtime/**"
               - "web-common/**"
 
+      - name: Evaluate e2e tests matrix
+        id: matrix
+        run: |
+          echo "matrix=$(jq -n '[
+              "web-admin" | select(env.FILTER_ADMIN == "true" or env.FILTER_COMMON == "true"),
+              "web-local" | select(env.FILTER_LOCAL == "true" or env.FILTER_COMMON == "true")
+            ]' | jq -c)" >> "$GITHUB_OUTPUT"
+        env:
+          FILTER_ADMIN: ${{ steps.filter.outputs.admin }}
+          FILTER_COMMON: ${{ steps.filter.outputs.common }}
+          FILTER_LOCAL: ${{ steps.filter.outputs.local }}
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        name: ${{ fromJson(needs.build.outputs.matrix) }}
+    steps:
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
@@ -51,6 +74,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: go build cache
         uses: actions/cache@v4
         with:
@@ -76,19 +103,24 @@ jobs:
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Test `web-local`
-        if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
-        run: npm run test -w web-local
+      - name: Authenticate GCloud
+        uses: google-github-actions/auth@v2
+        if: matrix.name == 'web-admin'
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        if: matrix.name == 'web-admin'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Test ${{ matrix.name }}
+        run: |-
+          npm run build -w ${{ matrix.name }}
+          npm run test -w ${{ matrix.name }}
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
-          path: web-local/playwright-report/
+          path: ${{ matrix.name }}/playwright-report/
           retention-days: 30
-
-      - name: Build and test `web-admin`
-        if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
-        run: |-
-          npm run build -w web-admin
-          npm run test -w web-admin
