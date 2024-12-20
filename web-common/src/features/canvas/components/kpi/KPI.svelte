@@ -161,7 +161,7 @@
       {/if}
     </div>
 
-    {#if showSparkline && sparkData.length}
+    {#if containerHeight && containerWidth && showSparkline && sparkData.length}
       <SimpleDataGraphic
         height={containerHeight - 90}
         width={containerWidth - 16}
