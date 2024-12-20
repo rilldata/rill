@@ -114,7 +114,7 @@ func (r *metricsViewCacheKeyResolver) CacheKey(ctx context.Context) ([]byte, boo
 	}
 	if ttlSeconds != 0 {
 		sb.WriteString(":")
-		sb.WriteString(truncateTime(time.Now(), r.mv.CacheKeyTtlSeconds).Format(time.RFC3339))
+		sb.WriteString(truncateTime(time.Now(), ttlSeconds).Format(time.RFC3339))
 	}
 	hash, err := hashstructure.Hash(sb.String(), hashstructure.FormatV2, nil)
 	if err != nil {
