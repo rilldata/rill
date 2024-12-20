@@ -6,8 +6,10 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
 
+  $: ({ instanceId } = $runtime);
+
   let steps: OnboardingStep[];
-  $: instance = createRuntimeServiceGetInstance($runtime.instanceId, {
+  $: instance = createRuntimeServiceGetInstance(instanceId, {
     sensitive: true,
   });
   $: olapConnector = $instance.data?.instance?.olapConnector;

@@ -25,6 +25,8 @@
 
   const dispatch = createEventDispatcher();
 
+  $: ({ instanceId } = $runtime);
+
   const formId = isEditForm ? "edit-alert-form" : "create-alert-form";
   const dialogTitle = isEditForm ? "Edit Alert" : "Create Alert";
 
@@ -44,10 +46,7 @@
   let currentTabIndex = 0;
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(
-    $runtime.instanceId,
-    metricsViewName,
-  );
+  $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);
 
   function handleCancel() {
     if (getTouched($touched)) {

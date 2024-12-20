@@ -13,6 +13,8 @@
 
   export let data: PageData;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({
     defaultExplorePreset,
     tokenExploreState,
@@ -36,7 +38,7 @@
   }
 
   // Call `GetExplore` to get the Explore's metrics view
-  $: exploreQuery = createRuntimeServiceGetExplore($runtime.instanceId, {
+  $: exploreQuery = createRuntimeServiceGetExplore(instanceId, {
     name: resourceName,
   });
   $: ({ data: explore } = $exploreQuery);

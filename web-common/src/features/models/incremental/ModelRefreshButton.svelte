@@ -16,13 +16,14 @@
 
   const triggerMutation = createRuntimeServiceCreateTrigger();
 
+  $: ({ instanceId } = $runtime);
   $: isIncrementalModel = resource?.model?.spec?.incremental;
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   function refreshModel(full: boolean) {
     void $triggerMutation.mutateAsync({
-      instanceId: $runtime.instanceId,
+      instanceId,
       data: {
         models: [{ model: resource?.meta?.name?.name, full: full }],
       },

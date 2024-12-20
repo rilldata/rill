@@ -15,16 +15,18 @@
   export let filePath: string;
   export let view: EditorView | undefined = undefined;
 
+  $: ({ instanceId } = $runtime);
+
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
-  $: models = useModels($runtime.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
+  $: models = useModels(instanceId);
 
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
   async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
-      $runtime.instanceId,
+      instanceId,
       modelRes?.model?.state?.resultTable ?? "",
       filePath,
     );
@@ -34,7 +36,7 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile($runtime.instanceId, {
+    await runtimeServicePutFile(instanceId, {
       path: filePath,
       blob: yaml,
       create: true,

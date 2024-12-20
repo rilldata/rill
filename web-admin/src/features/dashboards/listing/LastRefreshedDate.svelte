@@ -7,7 +7,9 @@
 
   export let dashboard: string;
 
-  $: dashboardQuery = useDashboardV2($runtime?.instanceId, dashboard);
+  $: ({ instanceId } = $runtime);
+
+  $: dashboardQuery = useDashboardV2(instanceId, dashboard);
   $: lastRefreshedDate =
     $dashboardQuery?.data?.refreshedOn &&
     new Date($dashboardQuery.data.refreshedOn);

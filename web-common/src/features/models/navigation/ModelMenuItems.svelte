@@ -17,13 +17,12 @@
 
   export let filePath: string;
 
+  $: ({ instanceId } = $runtime);
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: modelHasError = fileArtifact.getHasErrors(
-    queryClient,
-    $runtime.instanceId,
-  );
-  $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
+  $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
   $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
@@ -32,7 +31,7 @@
   $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector as string,
     "",
     "",
@@ -43,7 +42,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector as string,
     "",
     "",

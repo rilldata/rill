@@ -37,15 +37,17 @@
 
   const dispatch = createEventDispatcher();
 
+  $: ({ instanceId } = $runtime);
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   $: exploreState = useExploreState(exploreName);
-  $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
@@ -53,7 +55,7 @@
     $metricsViewTimeRange.data,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
 

@@ -18,6 +18,8 @@
   export let referencedThings: [V1Resource, Reference][];
   export let modelHasError: boolean;
 
+  $: ({ instanceId } = $runtime);
+
   let showSourceTables = true;
 
   /** classes for elements that trigger the highlight in a model query */
@@ -31,7 +33,7 @@
           writable(resource),
           writable(ref),
           createQueryServiceTableCardinality(
-            $runtime?.instanceId,
+            instanceId,
             resource?.meta?.name?.name ?? "",
           ),
         ],

@@ -30,7 +30,7 @@
   const queryClient = useQueryClient();
   const { customDashboards, ai } = featureFlags;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data;
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
