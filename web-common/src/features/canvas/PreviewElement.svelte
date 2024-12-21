@@ -26,13 +26,6 @@
   $: finalTop = height < 0 ? top + height : top;
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
-
-  function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
-    dispatch("mousedown", {
-      e,
-    });
-  }
 </script>
 
 {#if componentName && !inlineComponent}
@@ -51,7 +44,6 @@
         width={finalWidth}
         on:change
         on:contextmenu
-        on:mousedown={handleMouseDown}
       />
     </ContextMenu.Trigger>
 
@@ -84,7 +76,6 @@
         width={finalWidth}
         on:change
         on:contextmenu
-        on:mousedown={handleMouseDown}
       />
     </ContextMenu.Trigger>
 
