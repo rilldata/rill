@@ -34,9 +34,7 @@
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
-  $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
-  $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   let grid: GridStack;
 
@@ -118,24 +116,20 @@
     });
   }
 
-  // FIXME
-  function handlePointerOver(
+  function handlePointerEnter(
     e: CustomEvent<{
       index: number;
     }>,
   ) {
-    // console.log("handlePointerOver: ", e.detail.index);
     selectedIndex = e.detail.index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 
-  // FIXME
-  function handlePointerOut(
+  function handlePointerLeave(
     e: CustomEvent<{
       index: number;
     }>,
   ) {
-    // console.log("handlePointerOut: ", e.detail.index);
     selectedIndex = null;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
@@ -161,15 +155,14 @@
       {instanceId}
       i={index}
       component={item}
-      {radius}
       {selected}
       {interacting}
       width={Number(item.w) * gridCell}
       height={Number(item.h) * gridCell}
       top={Number(item.y) * gridCell}
       left={Number(item.x) * gridCell}
-      on:pointerover={handlePointerOver}
-      on:pointerout={handlePointerOut}
+      on:pointerenter={handlePointerEnter}
+      on:pointerleave={handlePointerLeave}
       on:mousedown={handleMousedown}
       on:delete={handleDelete}
     />

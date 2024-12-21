@@ -11,6 +11,7 @@
   import { canvasVariablesStore } from "./variables-store";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import { EMBED_GRIDSTACK_OPTIONS } from "./constants";
+  import type { GridStack } from "gridstack";
 
   export let canvasName: string;
   export let columns = 20;
@@ -20,6 +21,7 @@
   export let variables: V1ComponentVariable[] = [];
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
+  let grid: GridStack;
   setContext("rill::canvas:name", canvasName);
 
   $: instanceId = $runtime.instanceId;
@@ -54,7 +56,13 @@
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
-  <SvelteGridStack options={EMBED_GRIDSTACK_OPTIONS} {items} let:index let:item>
+  <SvelteGridStack
+    bind:grid
+    options={EMBED_GRIDSTACK_OPTIONS}
+    {items}
+    let:index
+    let:item
+  >
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent
