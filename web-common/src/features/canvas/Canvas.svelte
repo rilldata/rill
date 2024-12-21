@@ -95,7 +95,6 @@
 
 <CanvasDashboardPreview
   {items}
-  {columns}
   bind:selectedIndex
   on:update={handleComponentUpdate}
   on:delete={handleComponentDelete}
