@@ -10,7 +10,6 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { canvasVariablesStore } from "./variables-store";
   import SvelteGridStack from "./SvelteGridStack.svelte";
-  import { EMBED_GRIDSTACK_OPTIONS } from "./constants";
   import type { GridStack } from "gridstack";
 
   export let canvasName: string;
@@ -22,9 +21,19 @@
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let grid: GridStack;
+
   setContext("rill::canvas:name", canvasName);
 
   $: instanceId = $runtime.instanceId;
+  $: options = {
+    column: 12,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
+    float: true,
+    staticGrid: true,
+  };
 
   const dashboardWidth = chartView
     ? defaults.DASHBOARD_WIDTH / 2
@@ -56,13 +65,7 @@
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
-  <SvelteGridStack
-    bind:grid
-    options={EMBED_GRIDSTACK_OPTIONS}
-    {items}
-    let:index
-    let:item
-  >
+  <SvelteGridStack bind:grid {options} {items} let:index let:item>
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent
