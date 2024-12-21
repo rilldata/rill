@@ -27,16 +27,6 @@
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
 
-  function handlePointerEnter(e: PointerEvent) {
-    console.log("PreviewElement handlePointerEnter");
-    dispatch("pointerenter", { index: i });
-  }
-
-  function handlePointerLeave(e: PointerEvent) {
-    console.log("PreviewElement handlePointerLeave");
-    dispatch("pointerleave", { index: null });
-  }
-
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
     dispatch("mousedown", {
@@ -62,8 +52,6 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
-        on:pointerenter={handlePointerEnter}
-        on:pointerleave={handlePointerLeave}
       />
     </ContextMenu.Trigger>
 
@@ -97,8 +85,6 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
-        on:pointerenter={handlePointerEnter}
-        on:pointerleave={handlePointerLeave}
       />
     </ContextMenu.Trigger>
 
