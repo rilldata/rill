@@ -9,8 +9,6 @@
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
   let spec: V1CanvasSpec = {
-    columns: 20, // TODO: to be removed
-    gap: 4, // TODO: to be removed
     items: [],
   };
   $: ({

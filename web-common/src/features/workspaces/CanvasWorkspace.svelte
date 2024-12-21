@@ -96,12 +96,6 @@
   async function addComponent(componentName: string) {
     console.log("CanvasWorkspace addComponent");
 
-    const grid = $canvasEntity?.gridstack;
-    if (!grid) {
-      console.warn("GridStack not initialized");
-      return;
-    }
-
     // Create the new component config
     const newComponent = {
       component: componentName,
@@ -111,24 +105,7 @@
       y: 0,
     };
 
-    // FIXME
-    console.log("TODO: Add widget to gridstack with autoPosition", grid);
-    // // Add widget to gridstack with autoPosition
-    // const widget = grid.addWidget({
-    //   w: newComponent.width,
-    //   h: newComponent.height,
-    //   autoPosition: true,
-    //   content: `<div class="grid-stack-item-content" data-component="${componentName}"></div>`,
-    // });
-
-    // // Get the actual position from gridstack after autoPosition
-    // const node = widget?.gridstackNode;
-    // if (node) {
-    //   newComponent.x = node.x;
-    //   newComponent.y = node.y;
-    // }
-
-    // Update the YAML document with the actual position
+    // Update the YAML document
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const items = parsedDocument.get("items") as any;
 
@@ -138,6 +115,7 @@
       items.add(newComponent);
     }
 
+    // Update content which will trigger grid update through reactivity
     updateLocalContent(parsedDocument.toString(), true);
     if ($autoSave) await updateComponentFile();
   }
