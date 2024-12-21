@@ -13,7 +13,6 @@
     GridStackNode,
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
-  import { PREVIEW_GRIDSTACK_OPTIONS } from "./constants";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -32,6 +31,15 @@
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
   $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
+
+  $: options = {
+    column: 12,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
+    float: true,
+  };
 
   let grid: GridStack;
 
@@ -141,7 +149,7 @@
 >
   <SvelteGridStack
     bind:grid
-    options={PREVIEW_GRIDSTACK_OPTIONS}
+    {options}
     {items}
     let:index
     let:item
