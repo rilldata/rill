@@ -37,11 +37,15 @@
     resizable: {
       handles: "e,se,s,sw,w",
     },
-    animate: true,
+    animate: false,
     float: true,
   };
 
   let grid: GridStack;
+
+  $: if (grid) {
+    canvasStore.setGridstack($canvasName, grid);
+  }
 
   function handleMousedown(
     e: CustomEvent<{

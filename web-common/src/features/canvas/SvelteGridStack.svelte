@@ -41,11 +41,48 @@
 
   let gridEl: HTMLDivElement;
 
+  // Only update grid when it exists
+  $: if (grid) {
+    console.log("Updating grid");
+    grid.batchUpdate();
+
+    const currentItems = grid.getGridItems();
+    const currentCount = currentItems.length;
+    const newCount = items.length;
+
+    // Update existing items
+    items.forEach((item, i) => {
+      if (i < currentCount) {
+        grid.update(currentItems[i], {
+          x: item.x,
+          y: item.y,
+          w: item.w,
+          h: item.h,
+        });
+      } else {
+        grid.addWidget({
+          ...item,
+          content: `<div class="grid-stack-item-content"></div>`,
+        });
+      }
+    });
+
+    // Remove extra widgets if we have fewer items now
+    if (currentCount > newCount) {
+      currentItems.slice(newCount).forEach((el) => {
+        grid.removeWidget(el, true);
+      });
+    }
+
+    grid.commit();
+  }
+
   onMount(async () => {
     const { GridStack } = await import("gridstack");
 
     grid = GridStack.init(options);
 
+    // Set up event handlers first
     grid.on("added", (_: Event, items: Array<GridStackNode>) => {
       items.forEach((item, index) => {
         const element = gridEl.querySelector(
@@ -54,7 +91,11 @@
         const child = item.el?.firstElementChild;
 
         if (!child || !element) {
-          console.error("Cannot append element to GridStack");
+          console.error("Cannot append element to GridStack", {
+            index,
+            element,
+            child,
+          });
           return;
         }
         child.appendChild(element);
@@ -90,11 +131,19 @@
       });
     });
 
+    // Initial load
     grid.load(items);
   });
 
   onDestroy(() => {
+    // Clean up event listeners
     gridStackEvents.forEach((event) => grid?.off(event));
+
+    if (grid) {
+      // Let GridStack handle widget and DOM cleanup
+      grid.removeAll(true);
+      grid.destroy(true);
+    }
   });
 </script>
 

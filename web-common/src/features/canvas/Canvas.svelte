@@ -1,7 +1,6 @@
 <script lang="ts">
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";

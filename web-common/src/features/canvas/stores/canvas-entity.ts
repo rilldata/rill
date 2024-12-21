@@ -1,3 +1,4 @@
+import type { GridStack } from "gridstack";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 
 export interface CanvasEntity {
@@ -19,4 +20,6 @@ export interface CanvasEntity {
   selectedTimezone: string;
 
   proto?: string;
+
+  gridstack?: GridStack | null;
 }

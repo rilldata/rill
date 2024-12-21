@@ -1,6 +1,7 @@
 import { getDefaultCanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-defaults";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { GridStack } from "gridstack";
 import { derived, type Readable, writable } from "svelte/store";
 
 export interface CanvasStoreType {
@@ -60,6 +61,13 @@ const canvasVariableReducers = {
   setTimezone(name: string, timezone: string) {
     updateCanvasByName(name, (canvas) => {
       canvas.selectedTimezone = timezone;
+    });
+  },
+
+  setGridstack(name: string, grid: GridStack | null) {
+    updateCanvasByName(name, (canvas) => {
+      console.log("setting gridstack", name, grid);
+      canvas.gridstack = grid;
     });
   },
 };
