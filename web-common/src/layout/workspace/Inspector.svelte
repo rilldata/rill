@@ -6,6 +6,7 @@
   export let filePath: string;
   export let resizable = true;
   export let fixedWidth: number | undefined = undefined;
+  export let minWidth = 320;
 
   let resizing = false;
 
@@ -27,7 +28,7 @@
       absolute={false}
       direction="EW"
       side="left"
-      min={fixedWidth ?? 320}
+      min={fixedWidth ?? minWidth}
       max={fixedWidth ?? 420}
       dimension={fixedWidth ?? width}
       onUpdate={(newWidth) => {

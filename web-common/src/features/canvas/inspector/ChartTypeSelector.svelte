@@ -7,10 +7,7 @@
   import type { ChartMetadata } from "@rilldata/web-common/features/canvas/components/charts/types";
   import { chartMetadata } from "@rilldata/web-common/features/canvas/components/charts/util";
   import { type CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
-  import {
-    isChartComponentType,
-    type CanvasComponentObj,
-  } from "@rilldata/web-common/features/canvas/components/util";
+  import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
 
   export let componentType: CanvasComponentType;
   export let component: CanvasComponentObj;
@@ -20,33 +17,32 @@
   }
 </script>
 
-{#if isChartComponentType(componentType)}
-  <div class="section">
-    <InputLabel label="Chart type" id="chart-components" />
-    <div class="chart-icons">
-      {#each chartMetadata as chart}
-        <Tooltip distance={8} location="right">
-          <Button
-            square
-            small
-            type="secondary"
-            selected={componentType === chart.id}
-            on:click={() => selectChartType(chart)}
-          >
-            <svelte:component this={chart.icon} size="20px" />
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            {chart.title}
-          </TooltipContent>
-        </Tooltip>
-      {/each}
-    </div>
+<div class="section">
+  <InputLabel small label="Chart type" id="chart-components" />
+  <div class="chart-icons">
+    {#each chartMetadata as chart}
+      <Tooltip distance={8} location="right">
+        <Button
+          square
+          small
+          type="secondary"
+          selected={componentType === chart.id}
+          on:click={() => selectChartType(chart)}
+        >
+          <svelte:component this={chart.icon} size="20px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          {chart.title}
+        </TooltipContent>
+      </Tooltip>
+    {/each}
   </div>
-{/if}
+</div>
 
 <style lang="postcss">
   .section {
-    @apply px-5 flex flex-col gap-y-2;
+    @apply px-5 flex flex-col gap-y-2 pt-2;
+    @apply border-t border-gray-200;
   }
 
   .chart-icons {

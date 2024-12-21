@@ -51,57 +51,69 @@
   }
 </script>
 
-<SidebarWrapper title="Edit page">
-  <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
-
-  <Input
-    hint="Shown in global header and when deployed to Rill Cloud"
-    capitalizeLabel={false}
-    textClass="text-sm"
-    label="Display name"
-    bind:value={title}
-    onBlur={async () => {
-      await updateProperties({ display_name: title }, ["title"]);
-    }}
-    onEnter={async () => {
-      await updateProperties({ display_name: title });
-    }}
-  />
-
-  <Input
-    hint="Max width for the canvas"
-    capitalizeLabel={false}
-    textClass="text-sm"
-    label="Max width"
-    inputType="number"
-    bind:value={maxWidth}
-    onBlur={async () => {
-      await updateProperties({ display_name: title }, ["title"]);
-    }}
-    onEnter={async () => {
-      await updateProperties({ display_name: title });
-    }}
-  />
-
-  <ThemeInput
-    {theme}
-    {themeNames}
-    onThemeChange={async (value) => {
-      if (!value) {
-        await updateProperties({}, ["theme"]);
-      } else {
-        await updateProperties({ theme: value });
-      }
-    }}
-    onColorChange={async (primary, secondary) => {
-      await updateProperties({
-        theme: {
-          colors: {
-            primary,
-            secondary,
+<SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
+  <div class="page-param">
+    <Input
+      hint="Shown in global header and when deployed to Rill Cloud"
+      capitalizeLabel={false}
+      size="sm"
+      labelGap={2}
+      label="Display name"
+      bind:value={title}
+      onBlur={async () => {
+        await updateProperties({ display_name: title }, ["title"]);
+      }}
+      onEnter={async () => {
+        await updateProperties({ display_name: title });
+      }}
+    />
+  </div>
+  <div class="page-param">
+    <Input
+      hint="Max width for the canvas"
+      capitalizeLabel={false}
+      size="sm"
+      labelGap={2}
+      label="Max width"
+      inputType="number"
+      bind:value={maxWidth}
+      onBlur={async () => {
+        await updateProperties({ display_name: title }, ["title"]);
+      }}
+      onEnter={async () => {
+        await updateProperties({ display_name: title });
+      }}
+    />
+  </div>
+  <div class="page-param">
+    <ThemeInput
+      small
+      {theme}
+      {themeNames}
+      onThemeChange={async (value) => {
+        if (!value) {
+          await updateProperties({}, ["theme"]);
+        } else {
+          await updateProperties({ theme: value });
+        }
+      }}
+      onColorChange={async (primary, secondary) => {
+        await updateProperties({
+          theme: {
+            colors: {
+              primary,
+              secondary,
+            },
           },
-        },
-      });
-    }}
-  />
+        });
+      }}
+    />
+  </div>
 </SidebarWrapper>
+
+<style lang="postcss">
+  .page-param {
+    @apply py-3 px-5;
+    @apply border-t border-gray-200;
+  }
+</style>

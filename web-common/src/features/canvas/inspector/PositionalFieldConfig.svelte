@@ -22,7 +22,7 @@
 
 <div class="space-y-2">
   <FieldSelectorDropdown
-    label={`${config.label || key} Field`}
+    label={config.label || key}
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}

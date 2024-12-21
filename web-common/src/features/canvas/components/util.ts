@@ -81,3 +81,22 @@ export function getComponentRegistry(
     stacked_bar: new ChartComponent(fileArtifact),
   };
 }
+
+// TODO: Move to config
+const displayMap: Record<CanvasComponentType, string> = {
+  kpi: "KPI",
+  markdown: "Markdown",
+  table: "Table",
+  image: "Image",
+  bar_chart: "Chart",
+  line_chart: "Chart",
+  stacked_bar: "Chart",
+};
+
+export function getHeaderForComponent(componentType: string | undefined) {
+  if (!componentType) return "Component";
+  if (!displayMap[componentType as CanvasComponentType]) {
+    return "Component";
+  }
+  return displayMap[componentType as CanvasComponentType];
+}

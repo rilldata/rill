@@ -7,7 +7,10 @@
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
   import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
-  import { getComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import {
+    getComponentObj,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -48,7 +51,9 @@
   $: metricsView = "metrics_view" in $spec ? $spec.metrics_view : null;
 </script>
 
-<ChartTypeSelector {component} {componentType} />
+{#if isChartComponentType(componentType)}
+  <ChartTypeSelector {component} {componentType} />
+{/if}
 
 {#key selectedComponentIndex}
   <div>
@@ -102,8 +107,8 @@
               />
               <Switch
                 bind:checked={localParamValues[key]}
-                on:click={async () => {
-                  component.updateProperty(key, localParamValues[key]);
+                on:click={async (e) => {
+                  component.updateProperty(key, !paramValues[key]);
                 }}
                 small
               />

@@ -39,10 +39,10 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
     return {
       metrics_view: { type: "metrics", label: "Metrics view" },
       time_range: { type: "rill_time", label: "Time Range" },
-      x: { type: "positional", label: "X" },
-      y: { type: "positional", label: "Y" },
-      color: { type: "mark", label: "Color" },
-      tooltip: { type: "tooltip", label: "Tooltip" },
+      x: { type: "positional", label: "X Field" },
+      y: { type: "positional", label: "Y Field" },
+      color: { type: "mark", label: "Color", showInUI: false },
+      tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
       ...commonOptions,
     };
   }

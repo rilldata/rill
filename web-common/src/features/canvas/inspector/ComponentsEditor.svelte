@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { isCanvasComponentType } from "@rilldata/web-common/features/canvas/components/util";
+  import {
+    getHeaderForComponent,
+    isCanvasComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import ParamMapper from "@rilldata/web-common/features/canvas/inspector/ParamMapper.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -26,10 +29,10 @@
 </script>
 
 <SidebarWrapper
+  type="secondary"
   disableHorizontalPadding
-  title="Edit {renderer || 'component'} "
+  title={getHeaderForComponent(renderer)}
 >
-  <p class="text-slate-500 text-sm px-5">Changes below will be auto-saved.</p>
   {#if isCanvasComponentType(renderer) && rendererProperties}
     <ParamMapper
       {fileArtifact}
