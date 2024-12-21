@@ -11,7 +11,7 @@
   $: ({ localContent, remoteContent, saveContent, path } = $fileArtifact);
 
   $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-  $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
+  $: selectedComponentIndex = $canvasStore?.selectedComponentIndex;
 
   async function updateProperties(
     newRecord: Record<string, unknown>,

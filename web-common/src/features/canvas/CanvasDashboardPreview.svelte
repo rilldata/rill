@@ -15,7 +15,6 @@
   import { createEventDispatcher } from "svelte";
   import { PREVIEW_GRIDSTACK_OPTIONS } from "./constants";
 
-  export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
 
@@ -32,7 +31,7 @@
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
-  $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
+  $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
 
   let grid: GridStack;
 

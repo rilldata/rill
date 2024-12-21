@@ -10,8 +10,8 @@
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
   let spec: V1CanvasSpec = {
-    columns: 20,
-    gap: 4,
+    columns: 20, // TODO: to be removed
+    gap: 4, // TODO: to be removed
     items: [],
   };
   $: ({
@@ -24,7 +24,7 @@
 
   $: spec = structuredClone($validSpecStore ?? spec);
 
-  $: ({ items = [], columns = 20, gap = 4, variables = [] } = spec);
+  $: ({ items = [] } = spec);
 
   async function handleComponentDelete(
     e: CustomEvent<{
@@ -82,7 +82,6 @@
 
 <CanvasDashboardPreview
   {items}
-  {columns}
   bind:selectedIndex
   on:update={handleComponentUpdate}
   on:delete={handleComponentDelete}
