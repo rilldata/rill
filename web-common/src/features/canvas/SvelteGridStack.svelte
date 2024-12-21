@@ -37,13 +37,30 @@
     "resizestop",
   ] as const;
 
-  const dispatch = createEventDispatcher<GridstackDispatchEvents>();
+  const dispatchGridstackEvent =
+    createEventDispatcher<GridstackDispatchEvents>();
+  const dispatchEvent = createEventDispatcher();
 
   let gridEl: HTMLDivElement;
 
-  // Only update grid when it exists
+  function handleClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    const contentEl = target.closest(".grid-stack-item-content");
+    const itemEl = contentEl?.querySelector(".grid-stack-item-content-item");
+    // console.log("itemEl", itemEl);
+
+    if (itemEl) {
+      const index = itemEl.getAttribute("data-index");
+      if (index !== null) {
+        dispatchEvent("click", { index: parseInt(index, 10) });
+      }
+    }
+  }
+
+  // Only update grid after initial load
   $: if (grid) {
     console.log("Updating grid");
+
     grid.batchUpdate();
 
     const currentItems = grid.getGridItems();
@@ -82,7 +99,6 @@
 
     grid = GridStack.init(options);
 
-    // Set up event handlers first
     grid.on("added", (_: Event, items: Array<GridStackNode>) => {
       items.forEach((item, index) => {
         const element = gridEl.querySelector(
@@ -127,20 +143,21 @@
 
     gridStackEvents.forEach((event) => {
       grid.on(event, (args: GridstackCallbackParams) => {
-        dispatch(event, args);
+        dispatchGridstackEvent(event, args);
       });
     });
+
+    gridEl.addEventListener("click", handleClick);
 
     // Initial load
     grid.load(items);
   });
 
   onDestroy(() => {
-    // Clean up event listeners
     gridStackEvents.forEach((event) => grid?.off(event));
+    gridEl?.removeEventListener("click", handleClick);
 
     if (grid) {
-      // Let GridStack handle widget and DOM cleanup
       grid.removeAll(true);
       grid.destroy(true);
     }
@@ -149,7 +166,12 @@
 
 <div bind:this={gridEl} class="grid-stack">
   {#each items as item, index}
-    <div style="display:none" id={`grid-id-${index}`} data-index={index}>
+    <div
+      style="display:none"
+      id={`grid-id-${index}`}
+      data-index={index}
+      class="grid-stack-item-content-item"
+    >
       <slot {index} {item} />
     </div>
   {/each}

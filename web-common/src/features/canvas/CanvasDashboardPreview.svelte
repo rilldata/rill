@@ -17,8 +17,7 @@
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
 
-  const { canvasName, canvasStore: canvasStoreStore } =
-    getCanvasStateManagers();
+  const { canvasName } = getCanvasStateManagers();
   const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -125,25 +124,12 @@
     });
   }
 
-  // function handlePointerEnter(
-  //   e: CustomEvent<{
-  //     index: number;
-  //   }>,
-  // ) {
-  //   selectedIndex = e.detail.index;
-  //   canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  // }
+  function handleClick(e: CustomEvent<{ index: number }>) {
+    console.log("CanvasDashboardPreview handleClick", e.detail.index);
 
-  // function handlePointerLeave(
-  //   e: CustomEvent<{
-  //     index: number;
-  //   }>,
-  // ) {
-  //   selectedIndex = null;
-  //   canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  // }
-
-  // TODO: add pointer events to .grid-stack-item-content
+    selectedIndex = e.detail.index;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  }
 </script>
 
 <CanvasDashboardWrapper
@@ -157,6 +143,7 @@
     {items}
     let:index
     let:item
+    on:click={handleClick}
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
@@ -172,7 +159,6 @@
       height={Number(item.h) * gridCell}
       top={Number(item.y) * gridCell}
       left={Number(item.x) * gridCell}
-      on:mousedown={handleMousedown}
       on:delete={handleDelete}
     />
   </SvelteGridStack>
