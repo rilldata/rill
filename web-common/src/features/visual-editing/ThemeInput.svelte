@@ -73,7 +73,8 @@
   <div class="gap-y-2 flex flex-col">
     {#if typeof theme === "string" || theme === undefined}
       <Select
-        fontSize={14}
+        size={small ? "sm" : "lg"}
+        fontSize={small ? 12 : 14}
         sameWidth
         onChange={(value) => {
           if (value === "Default") {
@@ -94,6 +95,7 @@
     {/if}
 
     <ColorInput
+      {small}
       stringColor={currentTheme.primaryColorRaw}
       label="Primary"
       disabled={presetMode}
@@ -103,6 +105,7 @@
       }}
     />
     <ColorInput
+      {small}
       stringColor={currentTheme.secondaryColorRaw}
       label="Secondary"
       disabled={presetMode}
