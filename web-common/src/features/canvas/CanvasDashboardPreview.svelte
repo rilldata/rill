@@ -6,7 +6,6 @@
   import * as defaults from "./constants";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
-  import type { Vector } from "./types";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type {
     GridItemHTMLElement,
@@ -18,7 +17,6 @@
 
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
-  export let gap: number | undefined;
   export let selectedIndex: number | null = null;
 
   const { canvasName, canvasStore: canvasStoreStore } =
@@ -116,23 +114,25 @@
     });
   }
 
-  function handlePointerEnter(
-    e: CustomEvent<{
-      index: number;
-    }>,
-  ) {
-    selectedIndex = e.detail.index;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  }
+  // function handlePointerEnter(
+  //   e: CustomEvent<{
+  //     index: number;
+  //   }>,
+  // ) {
+  //   selectedIndex = e.detail.index;
+  //   canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  // }
 
-  function handlePointerLeave(
-    e: CustomEvent<{
-      index: number;
-    }>,
-  ) {
-    selectedIndex = null;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-  }
+  // function handlePointerLeave(
+  //   e: CustomEvent<{
+  //     index: number;
+  //   }>,
+  // ) {
+  //   selectedIndex = null;
+  //   canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+  // }
+
+  // TODO: add pointer events to .grid-stack-item-content
 </script>
 
 <CanvasDashboardWrapper
@@ -161,8 +161,6 @@
       height={Number(item.h) * gridCell}
       top={Number(item.y) * gridCell}
       left={Number(item.x) * gridCell}
-      on:pointerenter={handlePointerEnter}
-      on:pointerleave={handlePointerLeave}
       on:mousedown={handleMousedown}
       on:delete={handleDelete}
     />
