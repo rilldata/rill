@@ -51,7 +51,6 @@
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   on:contextmenu
-  on:mousedown|capture
   on:pointerenter
   on:pointerleave
 >
