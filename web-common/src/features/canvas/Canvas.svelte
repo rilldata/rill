@@ -40,7 +40,6 @@
     console.log("Canvas deleteComponent");
 
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-
     const items = parsedDocument.get("items") as any;
     if (!items) return;
     items.delete(index);
@@ -63,7 +62,9 @@
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const items = parsedDocument.get("items") as any;
 
-    if (!e.detail.index) return;
+    // if (!e.detail.index) {
+    //   console.log("No index provided");
+    // }
 
     const node = items.get(e.detail.index);
 
@@ -80,7 +81,6 @@
 </script>
 
 <CanvasDashboardPreview
-  {gap}
   {items}
   {columns}
   bind:selectedIndex
