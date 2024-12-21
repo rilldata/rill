@@ -29,6 +29,9 @@
   import { setContext } from "svelte";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import type { GridStack } from "gridstack";
+  import { getContext } from "svelte";
+  import { useCanvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
 
   export let fileArtifact: FileArtifact;
 
@@ -75,6 +78,9 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
+  // Get canvas store
+  $: canvasEntity = useCanvasStore(canvasName);
+
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       $runtime.instanceId,
@@ -90,6 +96,13 @@
   async function addComponent(componentName: string) {
     console.log("CanvasWorkspace addComponent");
 
+    const grid = $canvasEntity?.gridstack;
+    if (!grid) {
+      console.warn("GridStack not initialized");
+      return;
+    }
+
+    // Create the new component config
     const newComponent = {
       component: componentName,
       height: 4,
@@ -97,8 +110,26 @@
       x: 0,
       y: 0,
     };
-    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
+    // FIXME
+    console.log("TODO: Add widget to gridstack with autoPosition", grid);
+    // // Add widget to gridstack with autoPosition
+    // const widget = grid.addWidget({
+    //   w: newComponent.width,
+    //   h: newComponent.height,
+    //   autoPosition: true,
+    //   content: `<div class="grid-stack-item-content" data-component="${componentName}"></div>`,
+    // });
+
+    // // Get the actual position from gridstack after autoPosition
+    // const node = widget?.gridstackNode;
+    // if (node) {
+    //   newComponent.x = node.x;
+    //   newComponent.y = node.y;
+    // }
+
+    // Update the YAML document with the actual position
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const items = parsedDocument.get("items") as any;
 
     if (!items) {
@@ -108,7 +139,6 @@
     }
 
     updateLocalContent(parsedDocument.toString(), true);
-
     if ($autoSave) await updateComponentFile();
   }
 </script>
