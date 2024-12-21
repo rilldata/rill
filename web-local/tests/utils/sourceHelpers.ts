@@ -130,11 +130,10 @@ export async function waitForTable(
 ) {
   const [, fileName] = splitFolderAndFileName(filePath);
   const name = extractFileName(fileName);
-  console.log(name);
-  // add checks later, need to figure out how this works
+
   await Promise.all([
-    //   page.getByText("View this source").click(),    Once v52 released, need to select View this Source
-    waitForFileNavEntry(page, filePath, true),
+    page.getByText("View this source").click(),
+    waitForFileNavEntry(page, filePath, false),
     waitForProfiling(page, name, columns), //this one is imported bc failed sources will still navigate
   ]);
 }
