@@ -66,16 +66,17 @@
     });
 
     gridEl.addEventListener("pointerover", (event) => {
-      const target = event.target as HTMLElement;
+      const target = event?.target as HTMLElement;
 
       const contentEl = target.closest(".grid-stack-item-content");
       if (contentEl) {
+        // FIXME: disable data-highlight in preview mode
         contentEl.setAttribute("data-highlight", "true");
       }
     });
 
     gridEl.addEventListener("pointerout", (event) => {
-      const target = event.target as HTMLElement;
+      const target = event?.target as HTMLElement;
 
       const contentEl = target.closest(".grid-stack-item-content");
       if (contentEl) {
