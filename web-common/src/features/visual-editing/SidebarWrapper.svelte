@@ -1,5 +1,6 @@
 <script lang="ts">
   export let title: string;
+  export let disableHorizontalPadding = false;
 </script>
 
 <div
@@ -8,7 +9,9 @@
   <h1>{title}</h1>
 
   <div
-    class="px-5 flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
+    class="{disableHorizontalPadding
+      ? ''
+      : 'px-5'} flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
   >
     <slot />
   </div>

@@ -25,8 +25,11 @@
     componentResource?.component?.spec ?? {});
 </script>
 
-<SidebarWrapper title="Edit {renderer || 'component'} ">
-  <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
+<SidebarWrapper
+  disableHorizontalPadding
+  title="Edit {renderer || 'component'} "
+>
+  <p class="text-slate-500 text-sm px-5">Changes below will be auto-saved.</p>
   {#if isCanvasComponentType(renderer) && rendererProperties}
     <ParamMapper
       {fileArtifact}

@@ -68,6 +68,7 @@
 
 <div class="flex flex-col gap-y-2 pt-1">
   <InputLabel
+    small
     {label}
     {id}
     hint="Selection of a {type} from the underlying metrics view for inclusion on the dashboard"
@@ -87,7 +88,7 @@
         use:builder.action
         {...builder}
         class:open
-        class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
+        class="flex px-3 gap-x-2 h-6 max-w-full items-center text-xs border-gray-300 border rounded-[2px] break-all overflow-hidden"
       >
         {#if multi && selectedProxy?.size}
           {selectedProxy.size} selected

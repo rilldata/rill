@@ -38,6 +38,8 @@
   capitalizeLabel={false}
   bind:value={metricsView}
   sameWidth
+  size="sm"
+  labelGap={2}
   options={metricsViewNames.map((name) => ({
     label: name,
     value: name,

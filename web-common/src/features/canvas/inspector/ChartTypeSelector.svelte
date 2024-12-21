@@ -46,7 +46,7 @@
 
 <style lang="postcss">
   .section {
-    @apply flex flex-col gap-y-2;
+    @apply px-5 flex flex-col gap-y-2;
   }
 
   .chart-icons {

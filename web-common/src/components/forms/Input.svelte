@@ -23,6 +23,7 @@
   export let truncate = false;
   export let width: string = "100%";
   export let size: "sm" | "md" | "lg" = "lg";
+  export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
@@ -108,7 +109,7 @@
 </script>
 
 <div
-  class="component-wrapper {additionalClass}"
+  class="component-wrapper gap-y-{labelGap} {additionalClass}"
   class:w-full={full}
   style:width
 >
@@ -119,6 +120,7 @@
       {id}
       {hint}
       {link}
+      small={size === "sm"}
       capitalize={capitalizeLabel}
     >
       <slot name="mode-switch" slot="mode-switch" />
@@ -208,7 +210,8 @@
       bind:value
       {options}
       {onChange}
-      fontSize={14}
+      {size}
+      fontSize={size === "sm" ? 12 : 14}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
@@ -235,11 +238,12 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col gap-y-1 h-fit justify-center;
+    @apply flex  flex-col h-fit justify-center;
   }
 
   .sm {
     height: 24px;
+    font-size: 12px;
   }
 
   .md {

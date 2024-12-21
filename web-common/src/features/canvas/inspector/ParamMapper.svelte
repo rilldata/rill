@@ -54,88 +54,101 @@
   <div>
     {#each Object.entries(inputParams) as [key, config]}
       {#if config.showInUI !== false}
-        <!-- TEXT, NUMBER, RILL_TIME -->
-        {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
-          <Input
-            inputType={config.type === "number" ? "number" : "text"}
-            capitalizeLabel={false}
-            textClass="text-sm"
-            optional={!config.required}
-            label={config.label ?? key}
-            bind:value={localParamValues[key]}
-            onBlur={async () => {
-              component.updateProperty(key, localParamValues[key]);
-            }}
-            onEnter={async () => {
-              component.updateProperty(key, localParamValues[key]);
-            }}
-          />
+        <div class="component-param">
+          <!-- TEXT, NUMBER, RILL_TIME -->
+          {#if config.type === "text" || config.type === "number" || config.type === "rill_time"}
+            <Input
+              inputType={config.type === "number" ? "number" : "text"}
+              capitalizeLabel={false}
+              textClass="text-sm"
+              size="sm"
+              labelGap={2}
+              optional={!config.required}
+              label={config.label ?? key}
+              bind:value={localParamValues[key]}
+              onBlur={async () => {
+                component.updateProperty(key, localParamValues[key]);
+              }}
+              onEnter={async () => {
+                component.updateProperty(key, localParamValues[key]);
+              }}
+            />
 
-          <!-- METRICS SELECTOR -->
-        {:else if config.type === "metrics"}
-          <MetricSelectorDropdown {component} {key} inputParam={config} />
+            <!-- METRICS SELECTOR -->
+          {:else if config.type === "metrics"}
+            <MetricSelectorDropdown {component} {key} inputParam={config} />
 
-          <!-- MEASURE / DIMENSION with metricsView -->
-        {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
-          <FieldSelectorDropdown
-            label={config.label ?? key}
-            metricName={metricsView}
-            id={key}
-            type={config.type}
-            selectedItem={localParamValues[key]}
-            onSelect={async (field) => {
-              component.updateProperty(key, field);
-            }}
-          />
+            <!-- MEASURE / DIMENSION with metricsView -->
+          {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
+            <FieldSelectorDropdown
+              label={config.label ?? key}
+              metricName={metricsView}
+              id={key}
+              type={config.type}
+              selectedItem={localParamValues[key]}
+              onSelect={async (field) => {
+                component.updateProperty(key, field);
+              }}
+            />
 
-          <!-- BOOLEAN SWITCH -->
-        {:else if config.type === "boolean"}
-          <div class="flex items-center justify-between py-2">
+            <!-- BOOLEAN SWITCH -->
+          {:else if config.type === "boolean"}
+            <div class="flex items-center justify-between py-2">
+              <InputLabel
+                small
+                label={config.label ?? key}
+                optional={!config.required}
+                id={key}
+              />
+              <Switch
+                bind:checked={localParamValues[key]}
+                on:click={async () => {
+                  component.updateProperty(key, localParamValues[key]);
+                }}
+                small
+              />
+            </div>
+
+            <!-- TEXT AREA -->
+          {:else if config.type === "textArea"}
             <InputLabel
+              small
               label={config.label ?? key}
               optional={!config.required}
               id={key}
             />
-            <Switch
-              bind:checked={localParamValues[key]}
-              on:click={async () => {
+            <textarea
+              class="w-full p-2 border border-gray-300 rounded-sm"
+              rows="4"
+              bind:value={localParamValues[key]}
+              on:blur={async () => {
                 component.updateProperty(key, localParamValues[key]);
               }}
-              small
+              placeholder={config.label ?? key}
             />
-          </div>
 
-          <!-- TEXT AREA -->
-        {:else if config.type === "textArea"}
-          <InputLabel
-            label={config.label ?? key}
-            optional={!config.required}
-            id={key}
-          />
-          <textarea
-            class="w-full p-2 border border-gray-300 rounded-sm"
-            rows="4"
-            bind:value={localParamValues[key]}
-            on:blur={async () => {
-              component.updateProperty(key, localParamValues[key]);
-            }}
-            placeholder={config.label ?? key}
-          />
-
-          <!-- POSITIONAL CONFIG -->
-        {:else if metricsView && config.type === "positional"}
-          <PositionalFieldConfig
-            {key}
-            {config}
-            {metricsView}
-            value={localParamValues[key] || {}}
-            onChange={(updatedConfig) => {
-              localParamValues[key] = updatedConfig;
-              component.updateProperty(key, updatedConfig);
-            }}
-          />
-        {/if}
+            <!-- POSITIONAL CONFIG -->
+          {:else if metricsView && config.type === "positional"}
+            <PositionalFieldConfig
+              {key}
+              {config}
+              {metricsView}
+              value={localParamValues[key] || {}}
+              onChange={(updatedConfig) => {
+                localParamValues[key] = updatedConfig;
+                component.updateProperty(key, updatedConfig);
+              }}
+            />
+          {/if}
+        </div>
       {/if}
     {/each}
   </div>
 {/key}
+
+<style lang="postcss">
+  .component-param {
+    @apply py-3 px-5;
+    @apply border-t border-gray-200;
+  }
+</style>
