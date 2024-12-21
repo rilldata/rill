@@ -166,9 +166,9 @@ export async function actionUsingMenu(
 
 export async function checkExistInConnector(
   page: Page,
-  connector: String,
-  db: String,
-  fileName: String,
+  connector: string,
+  db: string,
+  fileName: string,
 ) {
   await page.locator(`li[aria-label="${connector}"]`).click();
   await page.locator(`li[aria-label="${db}"]`).click();
