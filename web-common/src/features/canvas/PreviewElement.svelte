@@ -15,7 +15,6 @@
   export let height: number;
   export let top: number;
   export let left: number;
-  export let radius: number;
   export let instanceId: string;
 
   $: componentName = component?.component;
@@ -28,12 +27,14 @@
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
 
-  function handlePointerOver(e: PointerEvent) {
-    dispatch("pointerover", { index: i });
+  function handlePointerEnter(e: PointerEvent) {
+    console.log("PreviewElement handlePointerEnter");
+    dispatch("pointerenter", { index: i });
   }
 
-  function handlePointerOut(e: PointerEvent) {
-    dispatch("pointerout", { index: null });
+  function handlePointerLeave(e: PointerEvent) {
+    console.log("PreviewElement handlePointerLeave");
+    dispatch("pointerleave", { index: null });
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -61,8 +62,8 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
-        on:pointerover={handlePointerOver}
-        on:pointerout={handlePointerOut}
+        on:pointerenter={handlePointerEnter}
+        on:pointerleave={handlePointerLeave}
       />
     </ContextMenu.Trigger>
 
@@ -96,8 +97,8 @@
         on:change
         on:contextmenu
         on:mousedown={handleMouseDown}
-        on:pointerover={handlePointerOver}
-        on:pointerout={handlePointerOut}
+        on:pointerenter={handlePointerEnter}
+        on:pointerleave={handlePointerLeave}
       />
     </ContextMenu.Trigger>
 

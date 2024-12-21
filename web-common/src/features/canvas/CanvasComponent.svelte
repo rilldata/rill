@@ -52,8 +52,8 @@
   style:z-index={renderer === "select" ? 100 : localZIndex}
   on:contextmenu
   on:mousedown|capture
-  on:pointerover
-  on:pointerout
+  on:pointerenter
+  on:pointerleave
 >
   <div class="size-full relative">
     <div
