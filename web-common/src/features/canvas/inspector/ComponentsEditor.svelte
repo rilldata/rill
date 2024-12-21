@@ -1,6 +1,6 @@
 <script lang="ts">
   import { isCanvasComponentType } from "@rilldata/web-common/features/canvas/components/util";
-  import ComponentInputs from "@rilldata/web-common/features/canvas/inspector/ComponentInputs.svelte";
+  import ParamMapper from "@rilldata/web-common/features/canvas/inspector/ParamMapper.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     ResourceKind,
@@ -28,7 +28,7 @@
 <SidebarWrapper title="Edit {renderer || 'component'} ">
   <p class="text-slate-500 text-sm">Changes below will be auto-saved.</p>
   {#if isCanvasComponentType(renderer) && rendererProperties}
-    <ComponentInputs
+    <ParamMapper
       {fileArtifact}
       componentType={renderer}
       paramValues={rendererProperties}

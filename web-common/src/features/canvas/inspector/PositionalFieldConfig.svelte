@@ -8,14 +8,14 @@
   export let value: FieldConfig;
   export let onChange: (updatedConfig: FieldConfig) => void;
 
-  function updateFieldConfig(property: keyof FieldConfig, field: string) {
+  $: isDimension = key === "x";
+
+  function updateFieldConfig(field: string) {
     const updatedConfig: FieldConfig = {
       ...value,
-      [property]: field,
+      field,
+      type: isDimension ? "nominal" : "quantitative",
     };
-    if (!updatedConfig.type) {
-      updatedConfig.type = "quantitative"; // Default type for measures
-    }
     onChange(updatedConfig);
   }
 </script>
@@ -25,10 +25,10 @@
     label={`${config.label || key} Field`}
     metricName={metricsView}
     id={`${key}-field`}
-    type={key === "x" ? "dimension" : "measure"}
+    type={isDimension ? "dimension" : "measure"}
     selectedItem={value?.field || ""}
     onSelect={async (field) => {
-      updateFieldConfig("field", field);
+      updateFieldConfig(field);
     }}
   />
 </div>
