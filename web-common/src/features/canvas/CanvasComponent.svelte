@@ -59,20 +59,21 @@
       class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
     >
-    <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
-      {#if title || description}
-        <div class="w-full h-fit flex flex-col border-b bg-white p-2">
-          {#if title}
-            <h1 class="text-slate-700">{title}</h1>
-          {/if}
-          {#if description}
-            <h2 class="text-slate-600 leading-none">{description}</h2>
-          {/if}
-        </div>
-      {/if}
-      {#if renderer && rendererProperties}
-        <ComponentRenderer {renderer} {componentName} />
-      {/if}
+      <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
+        {#if title || description}
+          <div class="w-full h-fit flex flex-col border-b bg-white p-2">
+            {#if title}
+              <h1 class="text-slate-700">{title}</h1>
+            {/if}
+            {#if description}
+              <h2 class="text-slate-600 leading-none">{description}</h2>
+            {/if}
+          </div>
+        {/if}
+        {#if renderer && rendererProperties}
+          <ComponentRenderer {renderer} {componentName} />
+        {/if}
+      </div>
     </div>
   </div>
 </div>
