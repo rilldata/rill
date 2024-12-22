@@ -42,16 +42,15 @@
 
   let gridEl: HTMLDivElement;
 
-  function handleClick(event: MouseEvent) {
+  function handlePointerDown(event: PointerEvent) {
     const target = event.target as HTMLElement;
     const contentEl = target.closest(".grid-stack-item-content");
     const itemEl = contentEl?.querySelector(".grid-stack-item-content-item");
-    // console.log("itemEl", itemEl);
 
     if (itemEl) {
       const index = itemEl.getAttribute("data-index");
       if (index !== null) {
-        dispatchEvent("click", { index: parseInt(index, 10) });
+        dispatchEvent("select", { index: parseInt(index, 10) });
       }
     }
   }
@@ -146,7 +145,7 @@
       });
     });
 
-    gridEl.addEventListener("click", handleClick);
+    gridEl.addEventListener("pointerdown", handlePointerDown);
 
     // Initial load
     grid.load(items);
@@ -154,7 +153,7 @@
 
   onDestroy(() => {
     gridStackEvents.forEach((event) => grid?.off(event));
-    gridEl?.removeEventListener("click", handleClick);
+    gridEl?.removeEventListener("pointerdown", handlePointerDown);
 
     if (grid) {
       grid.removeAll(true);

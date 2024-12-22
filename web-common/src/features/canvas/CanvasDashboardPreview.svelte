@@ -121,8 +121,8 @@
     });
   }
 
-  function handleClick(e: CustomEvent<{ index: number }>) {
-    console.log("CanvasDashboardPreview handleClick", e.detail.index);
+  function handleSelect(e: CustomEvent<{ index: number }>) {
+    console.log("CanvasDashboardPreview handleSelect", e.detail.index);
 
     selectedIndex = e.detail.index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
@@ -136,7 +136,7 @@
     {items}
     let:index
     let:item
-    on:click={handleClick}
+    on:select={handleSelect}
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
