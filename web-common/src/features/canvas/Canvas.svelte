@@ -10,12 +10,6 @@
   const { canvasStore, validSpecStore } = getCanvasStateManagers();
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
-  let showGrid = true;
-
-  // TODO: Remove later when we move to new tiling system
-  const columns = 24;
-  const gap = 1;
-
   let spec: V1CanvasSpec = {
     items: [],
   };

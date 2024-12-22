@@ -9,12 +9,12 @@
 <script lang="ts">
   export let i: number;
   export let component: V1CanvasItem;
-  export let selected: boolean;
+  // export let selected: boolean;
   export let interacting: boolean;
-  export let width: number;
-  export let height: number;
-  export let top: number;
-  export let left: number;
+  // export let width: number;
+  // export let height: number;
+  // export let top: number;
+  // export let left: number;
   export let instanceId: string;
 
   $: componentName = component?.component;
@@ -22,10 +22,10 @@
 
   const dispatch = createEventDispatcher();
 
-  $: finalLeft = width < 0 ? left + width : left;
-  $: finalTop = height < 0 ? top + height : top;
-  $: finalWidth = Math.abs(width);
-  $: finalHeight = Math.abs(height);
+  // $: finalLeft = width < 0 ? left + width : left;
+  // $: finalTop = height < 0 ? top + height : top;
+  // $: finalWidth = Math.abs(width);
+  // $: finalHeight = Math.abs(height);
 </script>
 
 {#if componentName && !inlineComponent}
@@ -36,12 +36,7 @@
         {i}
         {interacting}
         {componentName}
-        {selected}
         builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
         on:change
         on:contextmenu
       />
@@ -68,12 +63,7 @@
         {i}
         {interacting}
         {componentName}
-        {selected}
         builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
         on:change
         on:contextmenu
       />

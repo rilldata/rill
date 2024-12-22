@@ -2,7 +2,6 @@
 <!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc#events -->
 <script lang="ts">
   import type {
-    GridItemHTMLElement,
     GridStack,
     GridStackNode,
     GridStackOptions,

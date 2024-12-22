@@ -21,7 +21,7 @@
   const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  let scrollOffset = 0;
+  // let scrollOffset = 0;
   let changing = false;
 
   $: instanceId = $runtime.instanceId;
@@ -46,31 +46,28 @@
     canvasStore.setGridstack($canvasName, grid);
   }
 
-  function handleMousedown(
-    e: CustomEvent<{
-      e: MouseEvent & { currentTarget: HTMLButtonElement };
-    }>,
-  ) {
-    console.log("CanvasDashboardPreview handleMousedown");
-    e.preventDefault();
-    const index = Number(e.detail.e.currentTarget.dataset.index);
-    selectedIndex = index;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-    changing = true;
-  }
+  // function handleMousedown(
+  //   e: CustomEvent<{
+  //     e: MouseEvent & { currentTarget: HTMLButtonElement };
+  //   }>,
+  // ) {
+  //   console.log("CanvasDashboardPreview handleMousedown");
+  //   e.preventDefault();
+  //   changing = true;
+  // }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
     console.log("CanvasDashboardPreview handleDelete");
     items.splice(e.detail.index, 1);
   }
 
-  function handleScroll(
-    e: UIEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
-    },
-  ) {
-    scrollOffset = e.currentTarget.scrollTop;
-  }
+  // function handleScroll(
+  //   e: UIEvent & {
+  //     currentTarget: EventTarget & HTMLDivElement;
+  //   },
+  // ) {
+  //   scrollOffset = e.currentTarget.scrollTop;
+  // }
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
@@ -132,11 +129,7 @@
   }
 </script>
 
-<CanvasDashboardWrapper
-  bind:contentRect
-  height={maxBottom * gridCell * scale}
-  on:scroll={handleScroll}
->
+<CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
   <SvelteGridStack
     bind:grid
     {options}
@@ -153,12 +146,7 @@
       {instanceId}
       i={index}
       component={item}
-      {selected}
       {interacting}
-      width={Number(item.w) * gridCell}
-      height={Number(item.h) * gridCell}
-      top={Number(item.y) * gridCell}
-      left={Number(item.x) * gridCell}
       on:delete={handleDelete}
     />
   </SvelteGridStack>

@@ -11,12 +11,12 @@
   export let i: number;
   export let builders: Builder[] = [];
   export let embed = false;
-  export let selected = false;
+  // export let selected = false;
   export let interacting = false;
-  export let width: number;
-  export let height: number;
-  export let top: number;
-  export let left: number;
+  // export let width: number;
+  // export let height: number;
+  // export let top: number;
+  // export let left: number;
   export let localZIndex = 0;
   export let componentName: string;
   export let instanceId: string;

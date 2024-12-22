@@ -11,7 +11,6 @@
 
   export let columns = 20;
   export let items: V1CanvasItem[];
-  export let gap = 1;
   export let chartView = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -34,9 +33,7 @@
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / dashboardWidth;
-  $: gapSize = dashboardWidth * (gap / 1000);
   $: gridCell = dashboardWidth / columns;
-  $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
@@ -61,16 +58,7 @@
   <SvelteGridStack bind:grid {options} {items} let:index let:item>
     {@const componentName = item.component}
     {#if componentName}
-      <CanvasComponent
-        embed
-        i={index}
-        {instanceId}
-        {componentName}
-        width={Number(item.w ?? defaults.COMPONENT_WIDTH) * gridCell}
-        height={Number(item.h ?? defaults.COMPONENT_HEIGHT) * gridCell}
-        left={Number(item.x) * gridCell}
-        top={Number(item.y) * gridCell}
-      />
+      <CanvasComponent embed i={index} {instanceId} {componentName} />
     {/if}
   </SvelteGridStack>
 </CanvasDashboardWrapper>
