@@ -31,8 +31,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import type { GridStack } from "gridstack";
-  import { getContext } from "svelte";
   import { useCanvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
 
   export let fileArtifact: FileArtifact;
