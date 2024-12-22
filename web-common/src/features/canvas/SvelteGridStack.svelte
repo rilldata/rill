@@ -12,6 +12,7 @@
   export let items: Array<V1CanvasItem>;
   export let options: GridStackOptions;
   export let grid: GridStack;
+  export let embed = false;
 
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
@@ -114,21 +115,22 @@
     });
 
     gridEl.addEventListener("pointerover", (event) => {
-      const target = event?.target as HTMLElement;
-
-      const contentEl = target.closest(".grid-stack-item-content");
-      if (contentEl) {
-        // FIXME: disable data-highlight in preview mode
-        contentEl.setAttribute("data-highlight", "true");
+      if (!embed) {
+        const target = event?.target as HTMLElement;
+        const contentEl = target.closest(".grid-stack-item-content");
+        if (contentEl) {
+          contentEl.setAttribute("data-highlight", "true");
+        }
       }
     });
 
     gridEl.addEventListener("pointerout", (event) => {
-      const target = event?.target as HTMLElement;
-
-      const contentEl = target.closest(".grid-stack-item-content");
-      if (contentEl) {
-        contentEl.removeAttribute("data-highlight");
+      if (!embed) {
+        const target = event?.target as HTMLElement;
+        const contentEl = target.closest(".grid-stack-item-content");
+        if (contentEl) {
+          contentEl.removeAttribute("data-highlight");
+        }
       }
     });
 

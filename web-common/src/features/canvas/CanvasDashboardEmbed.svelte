@@ -43,7 +43,7 @@
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
-  <SvelteGridStack bind:grid {options} {items} let:index let:item>
+  <SvelteGridStack bind:grid {options} {items} let:index let:item embed>
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent embed i={index} {instanceId} {componentName} />
