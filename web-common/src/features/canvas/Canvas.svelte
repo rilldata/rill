@@ -26,7 +26,7 @@
 
   $: ({ items = [] } = spec);
 
-  async function handleComponentDelete(
+  async function handleDelete(
     e: CustomEvent<{
       index: number;
     }>,
@@ -52,7 +52,7 @@
     if ($autoSave) await updateComponentFile();
   }
 
-  async function handleComponentUpdate(
+  async function handleUpdate(
     e: CustomEvent<{
       index: number;
       x: number;
@@ -67,10 +67,6 @@
       $editorContent ?? $remoteContent ?? "",
     );
     const items = parsedDocument.get("items") as any;
-
-    // if (!e.detail.index) {
-    //   console.log("No index provided");
-    // }
 
     const node = items.get(e.detail.index);
 
@@ -89,8 +85,8 @@
 <CanvasDashboardPreview
   {items}
   bind:selectedIndex
-  on:update={handleComponentUpdate}
-  on:delete={handleComponentDelete}
+  on:update={handleUpdate}
+  on:delete={handleDelete}
 />
 
 <svelte:window

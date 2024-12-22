@@ -1,5 +1,5 @@
 <!-- Source: https://github.com/SafetZahirovic/SvelteGridStack -->
-<!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc#events -->
+<!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc -->
 <script lang="ts">
   import type { GridStack, GridStackNode, GridStackOptions } from "gridstack";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
@@ -60,9 +60,9 @@
 
   // Only update grid after initial load
   $: if (grid) {
-    console.log("Updating grid");
+    console.log("[SvelteGridStack] Updating grid");
 
-    grid.batchUpdate();
+    // grid.batchUpdate();
 
     const currentItems = grid.getGridItems();
     const currentCount = currentItems.length;
@@ -80,7 +80,7 @@
       } else {
         grid.addWidget({
           ...item,
-          content: `<div class="grid-stack-item-content"></div>`,
+          autoPosition: true,
         });
       }
     });
@@ -119,7 +119,7 @@
         element.style.display = "block";
 
         // FOR TESTING
-        element.style.border = "1px solid red";
+        // element.style.border = "1px solid red";
       });
     });
 
@@ -151,7 +151,6 @@
 
     gridEl.addEventListener("mousedown", handleMouseDown);
 
-    // Initial load
     grid.load(items);
   });
 
@@ -189,7 +188,7 @@
   }
 
   :global(.grid-stack-item-content) {
-    @apply flex flex-col items-center justify-center;
+    /* @apply flex flex-col items-center justify-center; */
     @apply bg-white border border-gray-200 rounded-md shadow-sm;
   }
 

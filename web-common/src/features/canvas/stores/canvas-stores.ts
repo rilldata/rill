@@ -66,7 +66,7 @@ const canvasVariableReducers = {
 
   setGridstack(name: string, grid: GridStack | null) {
     updateCanvasByName(name, (canvas) => {
-      console.log("Setting gridstack: ", name, grid);
+      console.log("[CanvasStore] Setting gridstack: ", name, grid);
       canvas.gridstack = grid;
     });
   },

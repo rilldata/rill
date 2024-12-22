@@ -93,10 +93,8 @@
     if (newRoute) await goto(newRoute);
   }
 
-  // TODO: grid.addWidget()
-  // TODO: use `autoPosition` to add component to the first available position
   async function addComponent(componentName: CanvasComponentType) {
-    console.log("CanvasWorkspace addComponent");
+    console.log("[CanvasWorkspace] Adding component", componentName);
 
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
@@ -109,13 +107,6 @@
 
     const { width, height } = componentRegistry[componentName].defaultSize;
 
-    const grid = $canvasEntity?.gridstack;
-    if (!grid) {
-      console.warn("GridStack not initialized");
-      return;
-    }
-
-    // Create the new component config
     const newComponent = {
       component: { [componentName]: newSpec },
       height,
@@ -124,24 +115,11 @@
       y: 0,
     };
 
-    // FIXME
-    console.log("TODO: Add widget to gridstack with autoPosition", grid);
-    // // Add widget to gridstack with autoPosition
-    // const widget = grid.addWidget({
-    //   w: newComponent.width,
-    //   h: newComponent.height,
-    //   autoPosition: true,
-    //   content: `<div class="grid-stack-item-content" data-component="${componentName}"></div>`,
-    // });
+    console.log(
+      "[CanvasWorkspace] Component to be added to editorContent",
+      newComponent,
+    );
 
-    // // Get the actual position from gridstack after autoPosition
-    // const node = widget?.gridstackNode;
-    // if (node) {
-    //   newComponent.x = node.x;
-    //   newComponent.y = node.y;
-    // }
-
-    // Update the YAML document with the actual position
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
