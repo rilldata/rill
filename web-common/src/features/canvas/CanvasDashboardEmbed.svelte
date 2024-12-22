@@ -2,7 +2,6 @@
   import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasComponent from "./CanvasComponent.svelte";
-  import * as defaults from "./constants";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type { GridStack } from "gridstack";
