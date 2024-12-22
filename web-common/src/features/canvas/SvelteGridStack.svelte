@@ -6,11 +6,8 @@
 
   import "gridstack/dist/gridstack-extra.min.css";
   import "gridstack/dist/gridstack.min.css";
-  import type {
-    GridstackCallbackParams,
-    GridstackDispatchEvents,
-  } from "./types.ts";
-  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client/index.js";
+  import type { GridstackDispatchEvents } from "./types.ts";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
   export let items: Array<V1CanvasItem>;
   export let options: GridStackOptions;
@@ -67,8 +64,8 @@
         grid.update(currentItems[i], {
           x: item.x,
           y: item.y,
-          w: item.w,
-          h: item.h,
+          w: item.width,
+          h: item.height,
         });
       } else {
         grid.addWidget({
@@ -136,7 +133,7 @@
     });
 
     gridStackEvents.forEach((event) => {
-      grid.on(event, (args: GridstackCallbackParams) => {
+      grid.on(event, (args: any) => {
         dispatchGridstackEvent(event, args);
       });
     });

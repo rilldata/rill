@@ -3,7 +3,6 @@
   import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import * as defaults from "./constants";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import SvelteGridStack from "./SvelteGridStack.svelte";
@@ -26,10 +25,9 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: gridWidth = contentRect.width;
-  $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
-
-  $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
+  // $: gridWidth = contentRect.width;
+  // $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
+  // $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
 
   $: options = {
     column: 12,
@@ -73,15 +71,6 @@
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
-
-  $: items = items.map((item) => {
-    const { ...rest } = item;
-    return {
-      ...rest,
-      w: Number(item.width),
-      h: Number(item.height),
-    };
-  });
 
   function handleResizeStop(
     e: CustomEvent<{
@@ -129,7 +118,7 @@
   }
 </script>
 
-<CanvasDashboardWrapper bind:contentRect height={maxBottom * gridCell * scale}>
+<CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <SvelteGridStack
     bind:grid
     {options}
