@@ -1,12 +1,7 @@
 <!-- Source: https://github.com/SafetZahirovic/SvelteGridStack -->
 <!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc#events -->
 <script lang="ts">
-  import type {
-    GridStack,
-    GridStackNode,
-    GridStackOptions,
-    GridStackWidget,
-  } from "gridstack";
+  import type { GridStack, GridStackNode, GridStackOptions } from "gridstack";
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
 
   import "gridstack/dist/gridstack-extra.min.css";
@@ -15,8 +10,9 @@
     GridstackCallbackParams,
     GridstackDispatchEvents,
   } from "./types.ts";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client/index.js";
 
-  export let items: Array<GridStackWidget>;
+  export let items: Array<V1CanvasItem>;
   export let options: GridStackOptions;
   export let grid: GridStack;
 
@@ -42,7 +38,7 @@
 
   let gridEl: HTMLDivElement;
 
-  function handlePointerDown(event: PointerEvent) {
+  function handleMouseDown(event: MouseEvent) {
     const target = event.target as HTMLElement;
     const contentEl = target.closest(".grid-stack-item-content");
     const itemEl = contentEl?.querySelector(".grid-stack-item-content-item");
@@ -145,7 +141,7 @@
       });
     });
 
-    gridEl.addEventListener("pointerdown", handlePointerDown);
+    gridEl.addEventListener("mousedown", handleMouseDown);
 
     // Initial load
     grid.load(items);
@@ -153,7 +149,7 @@
 
   onDestroy(() => {
     gridStackEvents.forEach((event) => grid?.off(event));
-    gridEl?.removeEventListener("pointerdown", handlePointerDown);
+    gridEl?.removeEventListener("mousedown", handleMouseDown);
 
     if (grid) {
       grid.removeAll(true);
