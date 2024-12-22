@@ -29,15 +29,6 @@
   // $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
   // $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
 
-  $: options = {
-    column: 12,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: false,
-    float: true,
-  };
-
   let grid: GridStack;
 
   $: if (grid) {
@@ -121,7 +112,6 @@
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <SvelteGridStack
     bind:grid
-    {options}
     {items}
     let:index
     let:item

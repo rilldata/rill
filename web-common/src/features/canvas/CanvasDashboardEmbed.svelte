@@ -13,15 +13,6 @@
   let grid: GridStack;
 
   $: instanceId = $runtime.instanceId;
-  $: options = {
-    column: 12,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: true,
-    float: true,
-    staticGrid: true,
-  };
 
   // const dashboardWidth = chartView
   //   ? defaults.DASHBOARD_WIDTH / 2
@@ -43,7 +34,7 @@
 </script>
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
-  <SvelteGridStack bind:grid {options} {items} let:index let:item embed>
+  <SvelteGridStack bind:grid {items} let:index let:item embed>
     {@const componentName = item.component}
     {#if componentName}
       <CanvasComponent embed i={index} {instanceId} {componentName} />

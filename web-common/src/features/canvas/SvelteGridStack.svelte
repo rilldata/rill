@@ -10,7 +10,6 @@
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
   export let items: Array<V1CanvasItem>;
-  export let options: GridStackOptions;
   export let grid: GridStack;
   export let embed = false;
 
@@ -35,6 +34,16 @@
   const dispatchEvent = createEventDispatcher();
 
   let gridEl: HTMLDivElement;
+
+  $: options = {
+    column: 12,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: true,
+    float: true,
+    staticGrid: embed,
+  } as GridStackOptions;
 
   function handleMouseDown(event: MouseEvent) {
     const target = event.target as HTMLElement;
