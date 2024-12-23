@@ -45,7 +45,7 @@ type rillYAML struct {
 	// Compiler is the parser version to use. It is not consumed here because at this point a parser has already been chosen.
 	Compiler string `yaml:"compiler"`
 	// RillVersion is deprecated and not used anymore.
-	RillVersion string `yaml:"rill_version"`
+	RillVersion any `yaml:"rill_version"`
 	// Title of the project
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
