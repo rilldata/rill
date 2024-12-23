@@ -1,8 +1,10 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
+import type { ChartDataResult } from "../selector";
 
 export function generateVLLineChartSpec(
   config: ChartConfig,
+  data: ChartDataResult,
 ): VisualizationSpec {
   return {
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
@@ -14,6 +16,7 @@ export function generateVLLineChartSpec(
       ...(config.x && {
         x: {
           field: config.x.field,
+          title: data.dimension?.displayName || config.x.field,
           type: config.x.type,
           ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
         },
@@ -21,6 +24,7 @@ export function generateVLLineChartSpec(
       ...(config.y && {
         y: {
           field: config.y.field,
+          title: data.measure?.displayName || config.y.field,
           type: config.y.type,
           ...(config.y.timeUnit && { timeUnit: config.y.timeUnit }),
         },

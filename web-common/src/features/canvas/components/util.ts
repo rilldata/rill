@@ -11,10 +11,10 @@ export const commonOptions: Record<
   keyof ComponentCommonProperties,
   ComponentInputParam
 > = {
-  title: { type: "text", required: false, showInUI: true, label: "Title" },
+  title: { type: "text", optional: true, showInUI: true, label: "Title" },
   description: {
     type: "text",
-    required: false,
+    optional: true,
     showInUI: true,
     label: "Description",
   },

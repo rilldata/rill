@@ -5,18 +5,24 @@ import { generateVLBarChartSpec } from "./bar-chart/spec";
 import { generateVLLineChartSpec } from "./line-chart/spec";
 import { generateVLStackedBarChartSpec } from "./stacked-bar/spec";
 
+import type { ChartDataResult } from "./selector";
 import type { ChartConfig, ChartMetadata, ChartType } from "./types";
 
-export function generateSpec(chartType: ChartType, chartConfig: ChartConfig) {
+export function generateSpec(
+  chartType: ChartType,
+  chartConfig: ChartConfig,
+  data: ChartDataResult,
+) {
+  if (data.isFetching || data.error) return {};
   switch (chartType) {
     case "bar_chart":
-      return generateVLBarChartSpec(chartConfig);
+      return generateVLBarChartSpec(chartConfig, data);
     case "stacked_bar":
-      return generateVLStackedBarChartSpec(chartConfig);
+      return generateVLStackedBarChartSpec(chartConfig, data);
     case "line_chart":
-      return generateVLLineChartSpec(chartConfig);
+      return generateVLLineChartSpec(chartConfig, data);
     default:
-      return generateVLBarChartSpec(chartConfig);
+      return generateVLBarChartSpec(chartConfig, data);
   }
 }
 

@@ -35,6 +35,8 @@
     oldParamValuesRef = paramValues;
   }
 
+  $: console.log(localParamValues);
+
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
   });
@@ -68,7 +70,7 @@
               textClass="text-sm"
               size="sm"
               labelGap={2}
-              optional={!config.required}
+              optional={!!config.optional}
               label={config.label ?? key}
               bind:value={localParamValues[key]}
               onBlur={async () => {
@@ -102,7 +104,7 @@
               <InputLabel
                 small
                 label={config.label ?? key}
-                optional={!config.required}
+                optional={!!config.optional}
                 id={key}
               />
               <Switch
@@ -119,7 +121,7 @@
             <InputLabel
               small
               label={config.label ?? key}
-              optional={!config.required}
+              optional={!!config.optional}
               id={key}
             />
             <textarea

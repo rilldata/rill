@@ -2,7 +2,6 @@
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
-  import { useMetricsViewSpecMeasure } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
@@ -19,6 +18,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { extent } from "d3-array";
   import type { KPISpec } from ".";
+  import { useMetricsViewSpecMeasure } from "../selectors";
   import {
     useKPIComparisonTotal,
     useKPISparkline,

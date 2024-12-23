@@ -33,7 +33,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
 
   inputParams(): Record<keyof MarkdownSpec, ComponentInputParam> {
     return {
-      content: { type: "textArea", required: true },
+      content: { type: "textArea" },
       ...commonOptions,
     };
   }

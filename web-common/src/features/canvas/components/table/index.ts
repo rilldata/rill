@@ -50,7 +50,11 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
       metrics_view: { type: "metrics", label: "Metrics view" },
       measures: { type: "multi_measures", label: "Measures" },
       time_range: { type: "rill_time", label: "Time range" },
-      comparison_range: { type: "rill_time", label: "Comparison range" },
+      comparison_range: {
+        type: "rill_time",
+        label: "Comparison range",
+        optional: true,
+      },
       col_dimensions: { type: "multi_dimensions", label: "Column dimensions" },
       row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
       ...commonOptions,
