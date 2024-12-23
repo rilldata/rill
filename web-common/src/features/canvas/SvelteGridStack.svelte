@@ -117,6 +117,8 @@
         }
         child.appendChild(element);
         element.style.display = "block";
+        element.style.width = "100%";
+        element.style.height = "100%";
 
         // FOR TESTING
         // element.style.border = "1px solid red";

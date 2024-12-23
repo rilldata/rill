@@ -40,7 +40,7 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
-  class="canvas-component hover:cursor-pointer active:cursor-grab pointer-events-auto"
+  class="canvas-component hover:cursor-pointer active:cursor-grab pointer-events-auto size-full"
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   on:contextmenu
