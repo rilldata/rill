@@ -77,11 +77,12 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
     const parsedDocument = get(parseDocumentStore);
 
-    const { saveContent } = this.fileArtifact;
+    const { updateEditorContent, saveLocalContent } = this.fileArtifact;
 
     parsedDocument.setIn(parentPath, parentSpec);
 
     // Save the updated document
-    await saveContent(parsedDocument.toString());
+    updateEditorContent(parsedDocument.toString(), true);
+    await saveLocalContent();
   }
 }
