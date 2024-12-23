@@ -80,7 +80,7 @@
       } else {
         grid.addWidget({
           ...item,
-          autoPosition: true,
+          autoPosition: false,
         });
       }
     });
