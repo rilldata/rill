@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (s *Server) ListConnectorDrivers(ctx context.Context, req *runtimev1.ListConnectorDriversRequest) (*runtimev1.ListConnectorDriversResponse, error) {
@@ -64,6 +65,14 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 			continue
 		}
 
+		var provisionArgsPB *structpb.Struct
+		if len(cfg.ProvisionArgs) > 0 {
+			provisionArgsPB, err = structpb.NewStruct(cfg.ProvisionArgs)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		c := &runtimev1.AnalyzedConnector{
 			Name:               connector.Name,
 			Driver:             driverSpecToPB(connector.Driver, connector.Spec),
@@ -71,6 +80,8 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 			PresetConfig:       cfg.Preset,
 			ProjectConfig:      connector.DefaultConfig, // NOTE: Could also use cfg.Project, but connector.DefaultConfig might be slightly more up-to-date
 			EnvConfig:          cfg.Env,
+			Provision:          cfg.Provision,
+			ProvisionArgs:      provisionArgsPB,
 			HasAnonymousAccess: connector.AnonymousAccess,
 			UsedBy:             nil,
 		}

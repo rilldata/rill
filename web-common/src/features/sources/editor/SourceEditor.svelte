@@ -11,7 +11,7 @@
   export let fileArtifact: FileArtifact;
   export let onSave: () => void = () => {};
 
-  $: ({ remoteContent, localContent } = fileArtifact);
+  $: ({ editorContent } = fileArtifact);
 
   let editor: EditorView;
 
@@ -24,19 +24,15 @@
   //  Handle errors
   $: if (editor)
     setLineStatuses(
-      mapParseErrorsToLines(allErrors, $localContent ?? $remoteContent ?? ""),
+      mapParseErrorsToLines(allErrors, $editorContent ?? ""),
       editor,
     );
 </script>
 
-<div class="editor flex flex-col h-full">
-  <div class="grow flex bg-white overflow-y-auto">
-    <Editor
-      {fileArtifact}
-      extensions={FileExtensionToEditorExtension[".yaml"]}
-      bind:editor
-      forceDisableAutoSave
-      onSave={handleUpdate}
-    />
-  </div>
-</div>
+<Editor
+  {fileArtifact}
+  extensions={FileExtensionToEditorExtension[".yaml"]}
+  bind:editor
+  forceDisableAutoSave
+  onSave={handleUpdate}
+/>

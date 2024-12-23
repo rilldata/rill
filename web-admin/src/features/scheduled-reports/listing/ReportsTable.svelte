@@ -16,7 +16,9 @@
   export let organization: string;
   export let project: string;
 
-  $: reports = useReports($runtime.instanceId);
+  $: ({ instanceId } = $runtime);
+
+  $: reports = useReports(instanceId);
 
   /**
    * Table column definitions.

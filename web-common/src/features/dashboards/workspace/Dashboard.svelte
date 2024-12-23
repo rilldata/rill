@@ -24,6 +24,8 @@
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
 
+  const DEFAULT_TIMESERIES_WIDTH = 580;
+  const MIN_TIMESERIES_WIDTH = 440;
   const StateManagers = getStateManagers();
   const {
     selectors: {
@@ -34,7 +36,6 @@
     },
 
     dashboardStore,
-    validSpecStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -42,6 +43,8 @@
   const { cloudDataViewer, readOnly } = featureFlags;
 
   let exploreContainerWidth: number;
+
+  $: ({ instanceId } = $runtime);
 
   $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
 
@@ -53,40 +56,43 @@
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
   $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricsViewName,
-  );
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricsViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: explore = useExploreValidSpec(instanceId, exploreName);
 
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
 
   $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
 
-  $: timeControls = $timeControlsStore;
+  $: ({
+    timeStart: start,
+    timeEnd: end,
+    showTimeComparison,
+    comparisonTimeStart,
+    comparisonTimeEnd,
+    ready: timeControlsReady = false,
+  } = $timeControlsStore);
 
   $: timeRange = {
-    start: timeControls.timeStart,
-    end: timeControls.timeEnd,
+    start,
+    end,
   };
 
-  $: comparisonTimeRange = timeControls.showTimeComparison
+  $: comparisonTimeRange = showTimeComparison
     ? {
-        start: timeControls.comparisonTimeStart,
-        end: timeControls.comparisonTimeEnd,
+        start: comparisonTimeStart,
+        end: comparisonTimeEnd,
       }
     : undefined;
 
-  $: metricsView = $validSpecStore.data?.metricsView ?? {};
+  $: metricsView = $explore.data?.metricsView ?? {};
 
-  let metricsWidth = 580; // Default width for metrics section
-  const MIN_METRICS_WIDTH = 440;
+  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 </script>
 
@@ -129,17 +135,22 @@
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      <div class="pt-2 flex-none" style:width="{metricsWidth}px">
+      <div
+        class="pt-2 flex-none"
+        style:width={expandedMeasureName ? "auto" : `${metricsWidth}px`}
+      >
         {#key exploreName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {exploreName}
-              timeSeriesWidth={metricsWidth}
-              workspaceWidth={exploreContainerWidth}
-              hideStartPivotButton={hidePivot}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+          {#if !$metricTimeSeries.isLoading}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {exploreName}
+                timeSeriesWidth={metricsWidth}
+                workspaceWidth={exploreContainerWidth}
+                hideStartPivotButton={hidePivot}
+              />
+            {:else}
+              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+            {/if}
           {/if}
         {/key}
       </div>
@@ -155,8 +166,9 @@
         <div class="relative flex-none bg-gray-200 w-[1px]">
           <Resizer
             dimension={metricsWidth}
-            min={MIN_METRICS_WIDTH}
+            min={MIN_TIMESERIES_WIDTH}
             max={exploreContainerWidth - 500}
+            basis={DEFAULT_TIMESERIES_WIDTH}
             bind:resizing
             side="right"
             onUpdate={(width) => {
@@ -174,7 +186,7 @@
               {timeRange}
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
               {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
@@ -190,7 +202,7 @@
               {timeRange}
               {comparisonTimeRange}
               {metricsView}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
             />
           {/if}
         </div>

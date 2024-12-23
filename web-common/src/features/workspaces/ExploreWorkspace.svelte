@@ -17,12 +17,12 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
   import VisualExploreEditing from "./VisualExploreEditing.svelte";
-  import MetricsEditorContainer from "../metrics-views/editor/MetricsEditorContainer.svelte";
   import { mapParseErrorsToLines } from "../metrics-views/errors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import Spinner from "../entity-management/Spinner.svelte";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -98,7 +98,7 @@
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditorContainer
+  <WorkspaceEditorContainer
     slot="body"
     error={mainError}
     showError={!!$remoteContent && selectedView === "code"}
@@ -109,7 +109,6 @@
         {exploreName}
         {fileArtifact}
         {lineBasedRuntimeErrors}
-        forceLocalUpdates
       />
     {:else if selectedView === "viz"}
       {#if mainError}
@@ -125,7 +124,7 @@
         <Spinner status={1} size="48px" />
       {/if}
     {/if}
-  </MetricsEditorContainer>
+  </WorkspaceEditorContainer>
 
   <VisualExploreEditing
     autoSave={selectedView === "viz" || $autoSave}

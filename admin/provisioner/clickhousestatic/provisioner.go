@@ -60,16 +60,15 @@ func (p *Provisioner) Type() string {
 	return "clickhouse-static"
 }
 
+func (p *Provisioner) Supports(rt provisioner.ResourceType) bool {
+	return rt == provisioner.ResourceTypeClickHouse
+}
+
 func (p *Provisioner) Close() error {
 	return p.ch.Close()
 }
 
 func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Can only provision clickhouse resources
-	if r.Type != provisioner.ResourceTypeClickHouse {
-		return nil, provisioner.ErrResourceTypeNotSupported
-	}
-
 	// Parse the resource's config (in case it's an update/check)
 	cfg, err := provisioner.NewClickhouseConfig(r.Config)
 	if err != nil {
@@ -102,10 +101,18 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to create clickhouse database: %w", err)
 	}
 
-	// Idempotently create the user
+	// Idempotently create the user.
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS %s IDENTIFIED WITH sha256_password BY ? DEFAULT DATABASE %s GRANTEES NONE", user, dbName), password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create clickhouse user: %w", err)
+	}
+
+	// When creating the user, the password assignment is not idempotent (if there are two concurrent invocations, we don't know which password was used).
+	// By adding the password separately, we ensure all passwords will work.
+	// NOTE: Requires ClickHouse 24.9 or later.
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("ALTER USER %s ADD IDENTIFIED WITH sha256_password BY ?", user), password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add password for clickhouse user: %w", err)
 	}
 
 	// Grant privileges on the database to the user
@@ -224,7 +231,7 @@ func (p *Provisioner) pingWithResourceDSN(ctx context.Context, dsn string) error
 
 	_, err = db.ExecContext(ctx, "SELECT 1")
 	if err != nil {
-		return fmt.Errorf("failed to execute query on tenant: %w", err)
+		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	return nil

@@ -122,6 +122,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProdStatus = true
 		permissions.ReadDev = true
 		permissions.ReadDevStatus = true
+		permissions.ReadProvisionerResources = true
 		permissions.ReadProjectMembers = true
 	}
 

@@ -60,6 +60,7 @@ select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country,
 `,
 		},
 	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 
 	// Test cases of metrics view YAML partials defining dimensions and measures.
 	cases := []struct {

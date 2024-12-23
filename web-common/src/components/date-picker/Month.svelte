@@ -14,6 +14,7 @@
   export let potentialStart: DateTime | undefined;
   export let singleDaySelection = false;
   export let minDate: DateTime<true> | DateTime<false> | undefined;
+  export let maxDate: DateTime<true> | DateTime<false> | undefined;
   export let onPan: (direction: 1 | -1) => void;
   export let onSelectDay: (date: DateTime<true>) => void;
 
@@ -22,6 +23,8 @@
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
   $: inclusiveEnd = interval?.end?.minus({ millisecond: 0 });
+
+  $: forwardPanEnabled = !maxDate || startDay.plus({ month: 1 }) < maxDate;
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
@@ -54,19 +57,21 @@
       <ChevronLeft size="14px" />
     </button>
     <div
-      class="w-full text-center px-2 py-1 text-sm flex gap-x-1 justify-center"
+      class="w-full text-center px-2 py-1 text-sm flex gap-x-1 justify-center select-none"
     >
       <b>{startDay.monthLong}</b>
       <p>{startDay.year}</p>
     </div>
-    <button
-      type="button"
-      class="hover:opacity-50"
-      class:hide={visibleIndex !== visibleMonths - 1}
-      on:click={() => onPan(1)}
-    >
-      <ChevronRight size="14px" />
-    </button>
+    {#if forwardPanEnabled}
+      <button
+        type="button"
+        class="hover:opacity-50"
+        class:hide={visibleIndex !== visibleMonths - 1}
+        on:click={() => onPan(1)}
+      >
+        <ChevronRight size="14px" />
+      </button>
+    {/if}
   </div>
 
   <div
@@ -91,7 +96,9 @@
         {resetPotentialDates}
         start={interval?.start}
         outOfMonth={date.month !== startDay.month}
-        disabled={Boolean(minDate && date < minDate)}
+        disabled={Boolean(
+          (minDate && date < minDate) || (maxDate && date > maxDate),
+        )}
       />
     {/each}
   </div>
@@ -99,7 +106,7 @@
 
 <style lang="postcss">
   .weekday {
-    @apply text-center w-full aspect-[2/1] text-slate-500;
+    @apply text-center w-full aspect-[2/1] text-slate-500 select-none;
   }
 
   .hide {

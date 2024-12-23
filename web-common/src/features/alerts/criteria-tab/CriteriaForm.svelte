@@ -16,8 +16,10 @@
 
   const { form, errors, validateField } = formState;
 
+  $: ({ instanceId } = $runtime);
+
   $: metricsView = useMetricsViewValidSpec(
-    $runtime.instanceId,
+    instanceId,
     $form["metricsViewName"],
   );
 

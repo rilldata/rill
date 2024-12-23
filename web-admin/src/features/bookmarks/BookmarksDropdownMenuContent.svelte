@@ -27,6 +27,7 @@
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
@@ -36,20 +37,26 @@
 
   const dispatch = createEventDispatcher();
 
+  $: ({ instanceId } = $runtime);
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   $: exploreState = useExploreState(exploreName);
-  $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     $metricsViewTimeRange.data,
+  );
+  $: schemaResp = createQueryServiceMetricsViewSchema(
+    instanceId,
+    metricsViewName,
   );
 
   $: projectIdResp = useProjectId(organization, project);
@@ -72,9 +79,10 @@
     $bookamrksResp.data?.bookmarks ?? [],
     metricsViewSpec,
     exploreSpec,
-    {},
+    $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
+    $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 

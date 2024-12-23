@@ -38,7 +38,7 @@
   $: workspace = workspaces.get(filePath);
   $: tableVisible = workspace.table.visible;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);

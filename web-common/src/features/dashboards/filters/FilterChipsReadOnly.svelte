@@ -25,7 +25,9 @@ The main feature-set component for dashboard filters
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined = undefined;
 
-  $: validExploreSpecs = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: ({ instanceId } = $runtime);
+
+  $: validExploreSpecs = useExploreValidSpec(instanceId, exploreName);
 
   // Get dimension filters
   $: dimensions = allDimensions({

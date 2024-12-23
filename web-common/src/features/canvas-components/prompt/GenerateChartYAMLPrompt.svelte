@@ -7,19 +7,19 @@
   import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let open: boolean;
   export let table: string = "";
   export let connector: string = "";
   export let metricsView: string = "";
 
-  const queryClient = useQueryClient();
+  $: ({ instanceId } = $runtime);
 
   let prompt: string;
 
-  $: chartFileNames = useAllFileNames(queryClient, $runtime.instanceId);
-  $: generateVegaConfig = createFullChartGenerator($runtime.instanceId);
+  $: chartFileNames = useAllFileNames(queryClient, instanceId);
+  $: generateVegaConfig = createFullChartGenerator(instanceId);
 
   async function createVegaConfig() {
     open = false;

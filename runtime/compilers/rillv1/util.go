@@ -18,6 +18,9 @@ func ToDisplayName(name string) string {
 	name = strings.ReplaceAll(name, "_", " ")
 	name = strings.ReplaceAll(name, "-", " ")
 
+	// Replace colons with colon-space.
+	name = strings.ReplaceAll(name, ":", ": ")
+
 	// Capitalize the first letter.
 	name = cases.Title(language.English).String(name)
 

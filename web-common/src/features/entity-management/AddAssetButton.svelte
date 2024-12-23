@@ -23,6 +23,7 @@
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
@@ -34,7 +35,6 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import CreateExploreDialog from "./CreateExploreDialog.svelte";
 
   let active = false;
   let showExploreDialog = false;
@@ -43,7 +43,7 @@
   const createFolder = createRuntimeServiceCreateDirectory();
   const { customDashboards } = featureFlags;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
     ? currentFile.split("/").slice(0, -1).join("/")
@@ -59,7 +59,7 @@
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
 
   $: metricsViewQuery = useFilteredResources(
     instanceId,
