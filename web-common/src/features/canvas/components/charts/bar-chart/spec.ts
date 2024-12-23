@@ -47,12 +47,13 @@ export function generateVLBarChartSpec(
           color: { value: config.color },
         }),
       ...(config.color &&
+        typeof config.color === "object" &&
         config.x && {
           xOffset: {
-            field:
-              typeof config.color === "object"
-                ? config.color.field
-                : config.color,
+            field: config.color.field,
+            title:
+              data.fields[config.color.field]?.displayName ||
+              config.color.field,
           },
         }),
     },
