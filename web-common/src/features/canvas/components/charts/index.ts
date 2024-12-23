@@ -41,7 +41,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
       time_range: { type: "rill_time", label: "Time Range" },
       x: { type: "positional", label: "X-axis" },
       y: { type: "positional", label: "Y-axis" },
-      color: { type: "mark", label: "Color", showInUI: false },
+      color: { type: "mark", label: "Color", meta: { type: "color" } },
       tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
       ...commonOptions,
     };

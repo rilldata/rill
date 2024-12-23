@@ -13,6 +13,7 @@
   } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 
+  import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
@@ -139,6 +140,18 @@
             <PositionalFieldConfig
               {key}
               {config}
+              {metricsView}
+              value={localParamValues[key] || {}}
+              onChange={(updatedConfig) => {
+                localParamValues[key] = updatedConfig;
+                component.updateProperty(key, updatedConfig);
+              }}
+            />
+            <!-- COLOR CONFIG -->
+          {:else if metricsView && config.type === "mark"}
+            <MarkSelector
+              label={config.label ?? key}
+              {key}
               {metricsView}
               value={localParamValues[key] || {}}
               onChange={(updatedConfig) => {

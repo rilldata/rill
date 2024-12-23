@@ -14,7 +14,7 @@
   } from "./selectors";
 
   export let metricName: string;
-  export let label: string;
+  export let label: string | undefined = undefined;
   export let id: string;
   export let selectedItem: string | undefined;
   export let type: "measure" | "dimension";
@@ -67,12 +67,14 @@
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
-  <InputLabel
-    small
-    {label}
-    {id}
-    hint="Selection of a {type} from the underlying metrics view for inclusion on the dashboard"
-  />
+  {#if label}
+    <InputLabel
+      small
+      {label}
+      {id}
+      hint="Selection of a {type} from the underlying metrics view for inclusion on the dashboard"
+    />
+  {/if}
   <DropdownMenu.Root
     bind:open
     typeahead={false}

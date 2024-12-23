@@ -26,7 +26,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}
-    selectedItem={value?.field || ""}
+    selectedItem={value?.field}
     onSelect={async (field) => {
       updateFieldConfig(field);
     }}
