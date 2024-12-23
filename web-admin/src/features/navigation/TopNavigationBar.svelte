@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
+  import { ProjectSizeBreakdownRoute } from "@rilldata/web-admin/features/organizations/project-breakdown/constants";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -32,6 +33,7 @@
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
+    isProjectsBreakdownPage,
     isPublicURLPage,
   } from "./nav-utils";
 
@@ -59,6 +61,7 @@
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
+  $: onProjectsBreakdown = isProjectsBreakdownPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -111,9 +114,21 @@
 
   $: projectPaths = projects.reduce(
     (map, { name }) =>
-      map.set(name.toLowerCase(), { label: name, preloadData: false }),
+      map.set(name.toLowerCase(), {
+        label: name,
+        preloadData: false,
+        absolute: onProjectsBreakdown,
+      }),
     new Map<string, PathOption>(),
   );
+  $: if (manageOrganization) {
+    projectPaths.set(ProjectSizeBreakdownRoute, {
+      label: "Project size breakdown",
+      preloadData: false,
+      section: "-",
+      absolute: true,
+    });
+  }
 
   $: visualizationPaths = visualizations.reduce((map, { resource }) => {
     const name = resource.meta.name.name;
@@ -171,7 +186,12 @@
   $: publicURLDashboardTitle =
     $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
 
-  $: currentPath = [organization, project, dashboard, report || alert];
+  $: currentPath = [
+    organization,
+    onProjectsBreakdown ? ProjectSizeBreakdownRoute : project,
+    dashboard,
+    report || alert,
+  ];
 </script>
 
 <div
