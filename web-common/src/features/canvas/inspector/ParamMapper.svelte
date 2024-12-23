@@ -36,8 +36,6 @@
     oldParamValuesRef = paramValues;
   }
 
-  $: console.log(localParamValues);
-
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
   });
@@ -86,7 +84,7 @@
           {:else if config.type === "metrics"}
             <MetricSelectorDropdown {component} {key} inputParam={config} />
 
-            <!-- MEASURE / DIMENSION with metricsView -->
+            <!-- MEASURE / DIMENSION -->
           {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
             <FieldSelectorDropdown
               label={config.label ?? key}
@@ -95,6 +93,20 @@
               type={config.type}
               selectedItem={localParamValues[key]}
               onSelect={async (field) => {
+                component.updateProperty(key, field);
+              }}
+            />
+
+            <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
+          {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
+            <FieldSelectorDropdown
+              multi
+              label={config.label ?? key}
+              metricName={metricsView}
+              id={key}
+              type={config.type === "multi_measures" ? "measure" : "dimension"}
+              selectedItems={localParamValues[key]}
+              onMultiSelect={async (field) => {
                 component.updateProperty(key, field);
               }}
             />

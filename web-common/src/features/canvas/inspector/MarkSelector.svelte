@@ -46,7 +46,7 @@
     <ColorInput
       small
       stringColor={color}
-      label="Primary"
+      label=""
       onChange={(color) => {
         onChange(color);
       }}
