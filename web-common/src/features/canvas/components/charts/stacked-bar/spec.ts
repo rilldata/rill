@@ -16,7 +16,7 @@ export function generateVLStackedBarChartSpec(
       ...(config.x && {
         x: {
           field: config.x.field,
-          title: data.dimension?.displayName || config.x.field,
+          title: data.fields[config.x.field]?.displayName || config.x.field,
           type: config.x.type,
           ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
         },
@@ -24,7 +24,7 @@ export function generateVLStackedBarChartSpec(
       ...(config.y && {
         y: {
           field: config.y.field,
-          title: data.measure?.displayName || config.y.field,
+          title: data.fields[config.y.field]?.displayName || config.y.field,
           type: config.y.type,
           ...(config.y.timeUnit && { timeUnit: config.y.timeUnit }),
         },
@@ -33,6 +33,9 @@ export function generateVLStackedBarChartSpec(
         typeof config.color === "object" && {
           color: {
             field: config.color.field,
+            title:
+              data.fields[config.color.field]?.displayName ||
+              config.color.field,
             type: config.color.type,
             ...(config.color.timeUnit && {
               timeUnit: config.color.timeUnit,

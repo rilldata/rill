@@ -12,17 +12,16 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, readable, type Readable } from "svelte/store";
-import {
-  useMetricsViewSpecDimension,
-  useMetricsViewSpecMeasure,
-} from "../selectors";
+import { derived, type Readable } from "svelte/store";
+import { useMeasureDimensionSpec } from "../selectors";
 
 export type ChartDataResult = {
   data: V1MetricsViewAggregationResponseDataItem[];
-  measure?: MetricsViewSpecMeasureV2;
-  dimension?: MetricsViewSpecDimensionV2;
   isFetching: boolean;
+  fields: Record<
+    string,
+    MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
+  >;
   error?: HTTPError;
 };
 
@@ -33,48 +32,45 @@ export function getChartData(
 ): Readable<ChartDataResult> {
   const chartDataQuery = createChartDataQuery(ctx, instanceId, config);
 
-  let measureQuery:
-    | CreateQueryResult<MetricsViewSpecMeasureV2 | undefined, HTTPError>
-    | Readable<null> = readable(null);
-  let dimensionQuery:
-    | CreateQueryResult<MetricsViewSpecDimensionV2 | undefined, HTTPError>
-    | Readable<null> = readable(null);
-  if (config.y?.field) {
-    measureQuery = useMetricsViewSpecMeasure(
-      instanceId,
-      config.metrics_view,
-      config.y.field,
-    );
-  }
-  if (config.x?.field) {
-    dimensionQuery = useMetricsViewSpecDimension(
-      instanceId,
-      config.metrics_view,
-      config.x.field,
-    );
+  const fields: { name: string; type: "measure" | "dimension" }[] = [];
+  if (config.y?.field) fields.push({ name: config.y.field, type: "measure" });
+  if (config.x?.field) fields.push({ name: config.x.field, type: "dimension" });
+  if (typeof config.color === "object" && config.color?.field) {
+    fields.push({ name: config.color.field, type: "dimension" });
   }
 
+  const specQueries = useMeasureDimensionSpec(
+    instanceId,
+    config.metrics_view,
+    fields,
+  );
+
   return derived(
-    [chartDataQuery, measureQuery, dimensionQuery],
-    ([chartData, measure, dimension]) => {
+    [chartDataQuery, ...specQueries],
+    ([chartData, ...specResults]) => {
       const isFetching =
-        chartData.isFetching ||
-        measure?.isFetching ||
-        dimension?.isFetching ||
-        false;
+        specResults.some((q) => q?.isFetching) || chartData.isFetching;
       const error = chartData.isError
         ? chartData.error
-        : measure?.isError
-          ? measure.error
-          : dimension?.isError
-            ? dimension.error
-            : undefined;
+        : specResults.find((q) => q?.isError)?.error;
+
+      // For convenience, match each field to its corresponding data.
+      const resultMap = fields.reduce(
+        (acc, f, i) => {
+          acc[f.name] = specResults[i]?.data;
+          return acc;
+        },
+        {} as Record<
+          string,
+          MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
+        >,
+      );
+
       return {
         data: chartData?.data?.data || [],
-        measure: measure?.data,
-        dimension: dimension?.data,
         isFetching,
         error,
+        fields: resultMap,
       };
     },
   );

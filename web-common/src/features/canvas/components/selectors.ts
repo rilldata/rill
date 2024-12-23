@@ -20,3 +20,21 @@ export const useMetricsViewSpecDimension = (
         dimension.name === dimensionName || dimension.column === dimensionName,
     ),
   );
+
+export function useMeasureDimensionSpec(
+  instanceId: string,
+  metricsViewName: string,
+  fields: { name: string; type: "dimension" | "measure" }[],
+) {
+  return fields.map((field) => {
+    if (field.type === "measure") {
+      return useMetricsViewSpecMeasure(instanceId, metricsViewName, field.name);
+    } else {
+      return useMetricsViewSpecDimension(
+        instanceId,
+        metricsViewName,
+        field.name,
+      );
+    }
+  });
+}
