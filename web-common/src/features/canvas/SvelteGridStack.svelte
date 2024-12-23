@@ -194,6 +194,6 @@
 
   :global(.grid-stack-item-content[data-highlight="true"]),
   :global(.ui-draggable-dragging) {
-    @apply border-2 border-primary-300 rounded-sm;
+    @apply border-primary-300;
   }
 </style>
