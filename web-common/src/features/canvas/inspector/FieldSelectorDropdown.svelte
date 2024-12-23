@@ -10,6 +10,7 @@
   import PivotChip from "@rilldata/web-common/features/dashboards/pivot/PivotChip.svelte";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { MinusIcon, PlusIcon } from "lucide-svelte";
   import {
     useAllDimensionFromMetric,
     useAllSimpleMeasureFromMetric,
@@ -96,7 +97,7 @@
             <InputLabel small {label} {id} />
           {/if}
           <button use:builder.action {...builder} class="text-sm px-2 h-6">
-            +
+            <PlusIcon size="14px" />
           </button>
         </div>
       </DropdownMenu.Trigger>
@@ -196,18 +197,30 @@
   {/if}
 
   {#if multi && selectedItems && selectedItems.length > 0}
-    <div class="flex flex-wrap gap-1">
+    <div class="flex flex-col gap-1">
       {#each selectedItems as item}
-        <PivotChip
-          item={{
-            id: item,
-            title: displayMap[item] || item,
-            type:
-              type === "measure"
-                ? PivotChipType.Measure
-                : PivotChipType.Dimension,
-          }}
-        />
+        <div class="flex items-center justify-between">
+          <PivotChip
+            removable
+            item={{
+              id: item,
+              title: displayMap[item] || item,
+              type:
+                type === "measure"
+                  ? PivotChipType.Measure
+                  : PivotChipType.Dimension,
+            }}
+          />
+          <button
+            class=" px-2 py-1 text-xs"
+            on:click={() => {
+              selectedProxy.delete(item);
+              onMultiSelect(Array.from(selectedProxy));
+            }}
+          >
+            <MinusIcon size="14px" />
+          </button>
+        </div>
       {/each}
     </div>
   {/if}
