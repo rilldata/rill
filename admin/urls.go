@@ -263,7 +263,7 @@ func (u *URLs) GithubRetryAuthUI(remote, username string) string {
 
 // Asset creates a URL for downloading the user-uploaded asset with the given ID.
 func (u *URLs) Asset(assetID string) string {
-	return urlutil.MustJoinURL(u.External(), "/v1/assets", assetID)
+	return urlutil.MustJoinURL(u.External(), "/v1/assets", assetID, "download")
 }
 
 // Embed creates a URL for embedding the frontend in an iframe.
