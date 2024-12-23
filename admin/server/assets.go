@@ -118,7 +118,13 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	// Check permissions
 	claims := auth.GetClaims(r.Context())
 	if !claims.OrganizationPermissions(r.Context(), *asset.OrganizationID).ReadOrg {
-		return httputil.Errorf(http.StatusForbidden, "does not have permission to access the asset")
+		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(r.Context(), *asset.OrganizationID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return httputil.Errorf(http.StatusForbidden, "does not have permission to access the asset")
+		}
 	}
 
 	// Parse the asset's path, which has the form "gs://<bucket>/<path>"
@@ -127,8 +133,38 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
+	// Set caching headers if the asset is cacheable
+	if asset.Cacheable {
+		w.Header().Set("Cache-Control", "public, max-age=31536000")
+	} else {
+		w.Header().Set("Cache-Control", "no-store")
+	}
+
+	// Set the content type header
+	ext := path.Ext(u.Path)
+	switch ext {
+	case ".tar.gz":
+		w.Header().Set("Content-Type", "application/gzip")
+	case ".zip":
+		w.Header().Set("Content-Type", "application/zip")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+	case ".svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+	default:
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+
+	// Set the content disposition header
+	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%s", path.Base(u.Path)))
+
+	// Set the status code
+	w.WriteHeader(http.StatusOK)
+
 	// Download the asset and stream it to the client
-	data, err := s.admin.Assets.Object(u.Path).NewReader(r.Context())
+	data, err := s.admin.Assets.Object(strings.TrimPrefix(u.Path, "/")).NewReader(r.Context())
 	if err != nil {
 		if errors.Is(err, r.Context().Err()) {
 			return httputil.Error(http.StatusRequestTimeout, err)
@@ -136,14 +172,6 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 	defer data.Close()
-
-	// Set caching headers if the asset is cacheable
-	if asset.Cacheable {
-		w.Header().Set("Cache-Control", "public, max-age=31536000")
-	} else {
-		w.Header().Set("Cache-Control", "no-store")
-	}
-	w.WriteHeader(http.StatusOK)
 
 	// Copy the data reader to the response writer
 	_, err = io.Copy(w, data)

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -21,7 +22,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upload-logo [<org-name> [<path-to-image>]]",
 		Args:  cobra.MaximumNArgs(2),
-		Short: "Edit organization details",
+		Short: "Upload a custom logo",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
@@ -64,8 +65,10 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Check the file is an image
-			ext := filepath.Ext(path)
-			if ext != ".png" && ext != ".jpg" && ext != ".jpeg" {
+			ext := strings.TrimPrefix(filepath.Ext(path), ".")
+			switch ext {
+			case "png", "jpg", "jpeg":
+			default:
 				return fmt.Errorf("invalid file type %q (expected PNG or JPG)", ext)
 			}
 
