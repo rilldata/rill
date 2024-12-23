@@ -31,7 +31,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import { useCanvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
 
   export let fileArtifact: FileArtifact;
 
@@ -80,8 +79,9 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
-  // Get canvas store
-  $: canvasEntity = useCanvasStore(canvasName);
+  // TODO: to be removed
+  // $: canvasEntity = useCanvasStore(canvasName);
+  // $: console.log("[CanvasWorkspace] canvasEntity", $canvasEntity?.gridstack);
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(

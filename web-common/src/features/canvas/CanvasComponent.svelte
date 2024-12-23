@@ -33,13 +33,6 @@
 
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
-
-  // FIXME: already setting staticGrid in CanvasDashboardEmbed
-  // onMount(async () => {
-  //   if (!embed) {
-  //     gridStackManager.setStatic(true);
-  //   }
-  // });
 </script>
 
 <div
