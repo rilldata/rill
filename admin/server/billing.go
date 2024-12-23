@@ -36,19 +36,19 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	if org.BillingCustomerID == "" {
-		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
+		return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
 	}
 
 	sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
-			return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org, true)}, nil
+			return &adminv1.GetBillingSubscriptionResponse{Organization: s.organizationToDTO(org, true)}, nil
 		}
 		return nil, err
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org, true),
+		Organization:     s.organizationToDTO(org, true),
 		Subscription:     subscriptionToDTO(sub),
 		BillingPortalUrl: sub.Customer.PortalURL,
 	}, nil
@@ -135,7 +135,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 			}
 
 			return &adminv1.UpdateBillingSubscriptionResponse{
-				Organization: organizationToDTO(updatedOrg, true),
+				Organization: s.organizationToDTO(updatedOrg, true),
 				Subscription: subscriptionToDTO(sub),
 			}, nil
 		}
@@ -220,7 +220,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	return &adminv1.UpdateBillingSubscriptionResponse{
-		Organization: organizationToDTO(org, true),
+		Organization: s.organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -371,6 +371,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
@@ -419,7 +420,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 	}
 
 	return &adminv1.RenewBillingSubscriptionResponse{
-		Organization: organizationToDTO(org, true),
+		Organization: s.organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -485,6 +486,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -563,12 +565,12 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 
 	if sub == nil {
 		return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-			Organization: organizationToDTO(org, true),
+			Organization: s.organizationToDTO(org, true),
 		}, nil
 	}
 
 	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
-		Organization: organizationToDTO(org, true),
+		Organization: s.organizationToDTO(org, true),
 		Subscription: subscriptionToDTO(sub),
 	}, nil
 }
@@ -857,6 +859,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),

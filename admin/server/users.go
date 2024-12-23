@@ -240,7 +240,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		if err != nil {
 			return nil, err
 		}
-		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: organizationToDTO(org, true)}
+		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: s.organizationToDTO(org, true)}
 	case *adminv1.SudoGetResourceRequest_ProjectId:
 		proj, err := s.admin.DB.FindProject(ctx, id.ProjectId)
 		if err != nil {

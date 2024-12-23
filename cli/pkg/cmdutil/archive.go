@@ -27,7 +27,7 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
 		OrganizationName: org,
 		Type:             "deploy",
-		Name:             fmt.Sprintf("%s__%s", org, name),
+		Name:             name,
 		Extension:        "tar.gz",
 	})
 	if err != nil {
