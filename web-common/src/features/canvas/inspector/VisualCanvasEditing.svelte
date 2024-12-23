@@ -20,7 +20,7 @@
   } = fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
-  $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
+  $: selectedComponentIndex = $canvasStore?.selectedComponentIndex;
 
   $: selectedComponentName =
     selectedComponentIndex !== null

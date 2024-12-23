@@ -16,7 +16,7 @@ export interface KPISpec extends ComponentCommonProperties {
 
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   minSize = { width: 2, height: 2 };
-  defaultSize = { width: 8, height: 4 };
+  defaultSize = { width: 4, height: 4 };
 
   constructor(
     fileArtifact: FileArtifact,

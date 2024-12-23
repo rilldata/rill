@@ -2,80 +2,43 @@
   import { goto } from "$app/navigation";
   import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { writable } from "svelte/store";
-  import Component from "./Component.svelte";
-
-  const zIndex = writable(0);
+  import { createEventDispatcher } from "svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
 </script>
 
 <script lang="ts">
-  const dispatch = createEventDispatcher();
-
   export let i: number;
-  export let gapSize: number;
   export let component: V1CanvasItem;
-  export let selected: boolean;
+  // export let selected: boolean;
   export let interacting: boolean;
-  export let width: number;
-  export let height: number;
-  export let top: number;
-  export let left: number;
-  export let radius: number;
-  export let scale: number;
+  // export let width: number;
+  // export let height: number;
+  // export let top: number;
+  // export let left: number;
   export let instanceId: string;
-
-  let localZIndex = 0;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
 
-  $: finalLeft = width < 0 ? left + width : left;
-  $: finalTop = height < 0 ? top + height : top;
-  $: finalWidth = Math.abs(width);
-  $: finalHeight = Math.abs(height);
-  $: padding = gapSize;
+  const dispatch = createEventDispatcher();
 
-  onMount(() => {
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
-  });
-
-  function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
-    dispatch("change", {
-      e,
-      dimensions: [width, height],
-      position: [finalLeft, finalTop],
-      changeDimensions: [0, 0],
-      changePosition: [1, 1],
-    });
-  }
+  // $: finalLeft = width < 0 ? left + width : left;
+  // $: finalTop = height < 0 ? top + height : top;
+  // $: finalWidth = Math.abs(width);
+  // $: finalHeight = Math.abs(height);
 </script>
 
 {#if componentName && !inlineComponent}
   <ContextMenu.Root>
     <ContextMenu.Trigger asChild let:builder>
-      <Component
+      <CanvasComponent
         {instanceId}
         {i}
-        {localZIndex}
         {interacting}
         {componentName}
-        {padding}
-        {radius}
-        {scale}
-        {selected}
         builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
         on:change
         on:contextmenu
-        on:mousedown={handleMouseDown}
       />
     </ContextMenu.Trigger>
 
@@ -95,24 +58,14 @@
 {:else if componentName}
   <ContextMenu.Root>
     <ContextMenu.Trigger asChild let:builder>
-      <Component
+      <CanvasComponent
         {instanceId}
         {i}
-        {localZIndex}
         {interacting}
         {componentName}
-        {padding}
-        {radius}
-        {scale}
-        {selected}
         builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
         on:change
         on:contextmenu
-        on:mousedown={handleMouseDown}
       />
     </ContextMenu.Trigger>
 

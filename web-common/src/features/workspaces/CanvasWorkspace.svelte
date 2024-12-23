@@ -79,6 +79,10 @@
 
   $: mainError = lineBasedRuntimeErrors?.at(0);
 
+  // TODO: to be removed
+  // $: canvasEntity = useCanvasStore(canvasName);
+  // $: console.log("[CanvasWorkspace] canvasEntity", $canvasEntity?.gridstack);
+
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
       $runtime.instanceId,
@@ -90,6 +94,8 @@
   }
 
   async function addComponent(componentName: CanvasComponentType) {
+    console.log("[CanvasWorkspace] Adding component", componentName);
+
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
@@ -100,6 +106,7 @@
     );
 
     const { width, height } = componentRegistry[componentName].defaultSize;
+
     const newComponent = {
       component: { [componentName]: newSpec },
       height,
@@ -107,10 +114,15 @@
       x: 0,
       y: 0,
     };
+
+    console.log(
+      "[CanvasWorkspace] Component to be added to editorContent",
+      newComponent,
+    );
+
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
-
     const items = parsedDocument.get("items") as any;
 
     if (!items) {

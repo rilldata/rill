@@ -122,7 +122,7 @@
               />
               <Switch
                 bind:checked={localParamValues[key]}
-                on:click={async (e) => {
+                on:click={async () => {
                   component.updateProperty(key, !paramValues[key]);
                 }}
                 small

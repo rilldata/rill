@@ -1,0 +1,29 @@
+<script lang="ts">
+  export let height: number;
+  export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
+  export let color = "bg-transparent";
+</script>
+
+<div
+  class="dashboard-theme-boundary size-full bg-gray-100 flex justify-center overflow-y-auto"
+  on:scroll
+>
+  <div
+    bind:contentRect
+    class="canvas {color} max-w-[1440px] min-h-full"
+    style:height="{height}px"
+  >
+    <slot />
+  </div>
+</div>
+
+<style lang="postcss">
+  .canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    user-select: none;
+    margin: 0;
+    pointer-events: auto;
+  }
+</style>
