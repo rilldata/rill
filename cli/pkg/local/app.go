@@ -414,6 +414,13 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
 	for {
+		// Wait a bit before (re)trying.
+		//
+		// We sleep before the first health check as a slightly hacky way to protect against the situation where
+		// another Rill server is already running, which will pass the health check as a false positive.
+		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
+		time.Sleep(250 * time.Millisecond)
+
 		// Check for cancellation
 		if ctx.Err() != nil {
 			return
@@ -427,14 +434,17 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 				break
 			}
 		}
-
-		// Wait a bit and retry
-		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Health check succeeded
 	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
+		// Check for cancellation again to be safe
+		if ctx.Err() != nil {
+			return
+		}
+
+		// Open the browser
 		err := browser.Open(uri)
 		if err != nil {
 			a.Logger.Debugf("could not open browser: %v", err)
