@@ -2,6 +2,8 @@ package resolvers
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -67,11 +69,10 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, runtime.ErrForbidden
 	}
 
-	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, security, args.Priority)
+	executor, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, res.GetMetricsView().State.Streaming, security, args.Priority)
 	if err != nil {
 		return nil, err
 	}
-	defer executor.Close()
 
 	return &metricsResolver{
 		runtime:    opts.Runtime,
@@ -87,16 +88,34 @@ func (r *metricsResolver) Close() error {
 	return nil
 }
 
-func (r *metricsResolver) Cacheable() bool {
-	return r.executor.Cacheable(r.query)
-}
+func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	// get the underlying executor's cache key
+	key, ok, err := cacheKeyForMetricsView(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.args.Priority)
+	if err != nil {
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
 
-func (r *metricsResolver) Key() string {
+	hasher := md5.New()
+	_, err = hasher.Write(key)
+	if err != nil {
+		return nil, false, err
+	}
+
 	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
 	if err != nil {
-		panic(err)
+		return nil, false, err
 	}
-	return strconv.FormatUint(hash, 16)
+	_, err = hasher.Write([]byte(strconv.FormatUint(hash, 16)))
+	if err != nil {
+		return nil, false, err
+	}
+
+	res := make([]byte, hex.EncodedLen(hasher.Size()))
+	hex.Encode(res, hasher.Sum(nil))
+	return res, true, nil
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
