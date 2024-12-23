@@ -673,6 +673,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   displayName?: string;
 
   /**
+   * @generated from field: optional string logo_asset_id = 6;
+   */
+  logoAssetId?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -689,6 +694,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "logo_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -2612,6 +2618,11 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
    */
   extension = "";
 
+  /**
+   * @generated from field: bool cacheable = 5;
+   */
+  cacheable = false;
+
   constructor(data?: PartialMessage<CreateAssetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2624,6 +2635,7 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
     { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "cacheable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAssetRequest {
@@ -11700,6 +11712,11 @@ export class Organization extends Message<Organization> {
   description = "";
 
   /**
+   * @generated from field: string logo_url = 12;
+   */
+  logoUrl = "";
+
+  /**
    * @generated from field: string custom_domain = 10;
    */
   customDomain = "";
@@ -11746,6 +11763,7 @@ export class Organization extends Message<Organization> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "logo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },

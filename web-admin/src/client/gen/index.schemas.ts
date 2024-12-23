@@ -111,6 +111,7 @@ export type AdminServiceCreateAssetBody = {
   type?: string;
   name?: string;
   extension?: string;
+  cacheable?: boolean;
 };
 
 export type AdminServiceListUsergroupMemberUsersParams = {
@@ -289,6 +290,7 @@ export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
   displayName?: string;
+  logoAssetId?: string;
   billingEmail?: string;
 };
 
@@ -820,6 +822,7 @@ export interface V1Organization {
   name?: string;
   displayName?: string;
   description?: string;
+  logoUrl?: string;
   customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;

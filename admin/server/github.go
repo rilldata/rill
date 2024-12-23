@@ -334,7 +334,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			return nil, err
 		}
 
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

@@ -18,8 +18,10 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	orgCmd.AddCommand(CreateCmd(ch))
 	orgCmd.AddCommand(EditCmd(ch))
+	orgCmd.AddCommand(UploadLogoCmd(ch))
 	orgCmd.AddCommand(SwitchCmd(ch))
 	orgCmd.AddCommand(ListCmd(ch))
+	orgCmd.AddCommand(ShowCmd(ch))
 	orgCmd.AddCommand(DeleteCmd(ch))
 	orgCmd.AddCommand(RenameCmd(ch))
 

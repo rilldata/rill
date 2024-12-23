@@ -229,6 +229,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
 
+	// Add project assets endpoint
+	mux.Handle("/v1/assets/{asset_id}", observability.Middleware("assets", s.logger, s.authenticator.HTTPMiddleware(httputil.Handler(s.assetHandler))))
+
 	// Add biller webhook handler if any
 	if s.admin.Biller != nil {
 		handlerFunc := s.admin.Biller.WebhookHandlerFunc(ctx, s.admin.Jobs)

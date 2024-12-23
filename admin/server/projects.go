@@ -1066,7 +1066,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		if err != nil {
 			return nil, err
 		}
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

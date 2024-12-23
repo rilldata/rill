@@ -351,6 +351,8 @@ paths:
                 type: string
               displayName:
                 type: string
+              logoAssetId:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -2386,6 +2388,8 @@ paths:
               extension:
                 type: string
                 title: Eg. ".tar.gz"
+              cacheable:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -4587,6 +4591,8 @@ definitions:
       displayName:
         type: string
       description:
+        type: string
+      logoUrl:
         type: string
       customDomain:
         type: string

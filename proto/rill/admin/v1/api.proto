@@ -895,6 +895,7 @@ message UpdateOrganizationRequest {
   optional string description = 2;
   optional string new_name = 3;
   optional string display_name = 5;
+  optional string logo_asset_id = 6;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1170,9 +1171,10 @@ message UpdateProjectResponse {
 
 message CreateAssetRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string type = 2 [(validate.rules).string = {in: ["deploy"]}];
+  string type = 2 [(validate.rules).string = {in: ["deploy", "image"]}];
   string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
   string extension = 4; // Eg. ".tar.gz"
+  bool cacheable = 5;
 }
 
 message CreateAssetResponse {
@@ -2195,6 +2197,7 @@ message Organization {
   string name = 2; // Globally unique
   string display_name = 11;
   string description = 3;
+  string logo_url = 12;
   string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
