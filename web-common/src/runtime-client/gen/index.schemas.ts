@@ -623,6 +623,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries. */
+  rillTime?: string;
 }
 
 export interface V1ThemeState {

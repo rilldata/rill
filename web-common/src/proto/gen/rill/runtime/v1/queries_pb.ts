@@ -2032,6 +2032,14 @@ export class TimeRange extends Message<TimeRange> {
    */
   timeZone = "";
 
+  /**
+   * Optional. Rill format time range. Should only be used for alerts and reports.
+   * Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries.
+   *
+   * @generated from field: string rill_time = 7;
+   */
+  rillTime = "";
+
   constructor(data?: PartialMessage<TimeRange>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2046,6 +2054,7 @@ export class TimeRange extends Message<TimeRange> {
     { no: 4, name: "iso_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "round_to_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "rill_time", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRange {

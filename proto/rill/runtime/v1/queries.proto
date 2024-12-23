@@ -551,6 +551,9 @@ message TimeRange {
   TimeGrain round_to_grain = 5;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
+  // Optional. Rill format time range. Should only be used for alerts and reports.
+  // Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries.
+  string rill_time = 7;
 }
 
 // Present for backwards compatibility

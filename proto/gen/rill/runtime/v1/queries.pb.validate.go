@@ -6178,6 +6178,8 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for TimeZone
 
+	// no validation rules for RillTime
+
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
 	}

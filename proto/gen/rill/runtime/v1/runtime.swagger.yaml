@@ -6321,6 +6321,11 @@ definitions:
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+      rillTime:
+        type: string
+        description: |-
+          Optional. Rill format time range. Should only be used for alerts and reports.
+          Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries.
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object
