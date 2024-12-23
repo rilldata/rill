@@ -40,6 +40,7 @@
           type="secondary"
           builders={[builder]}
           disabled={!isModelIdle || hasUnsavedChanges}
+          label="Refresh Incremental Model"
         >
           <RefreshIcon size="14px" />
         </Button>
@@ -67,6 +68,7 @@
       square
       disabled={hasUnsavedChanges}
       type="secondary"
+      label="Refresh Model"
       on:click={() => refreshModel(true)}
     >
       <RefreshIcon size="14px" />
