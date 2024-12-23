@@ -17,11 +17,13 @@
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
 
+  $: ({ instanceId } = $runtime);
+
   $: canvasName = getContext("rill::canvas:name") as string;
   $: inputVariableParams = useVariableInputParams(canvasName, input);
 
   $: componentDataQuery = createQueryServiceResolveComponent(
-    $runtime.instanceId,
+    instanceId,
     componentName,
     { args: $inputVariableParams },
   );

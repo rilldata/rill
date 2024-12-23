@@ -61,43 +61,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// Parse incremental state resolver
-	var incrementalStateResolver string
-	var incrementalStateResolverProps *structpb.Struct
-	if tmp.State != nil {
-		var refs []ResourceName
-		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(tmp.State)
-		if err != nil {
-			return fmt.Errorf(`failed to parse "state": %w`, err)
-		}
-		node.Refs = append(node.Refs, refs...)
-	}
-
-	// Parse partitions resolver
-	var partitionsResolver string
-	var partitionsResolverProps *structpb.Struct
-	if tmp.Splits != nil { // Backwards compatibility: "splits" is deprecated and has been renamed to "partitions"
-		if tmp.Partitions != nil {
-			return fmt.Errorf(`"partitions" and "splits" are mutually exclusive`)
-		}
-		tmp.Partitions = tmp.Splits
-	}
-	if tmp.Partitions != nil {
-		var refs []ResourceName
-		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions)
-		if err != nil {
-			return fmt.Errorf(`failed to parse "partitions": %w`, err)
-		}
-		node.Refs = append(node.Refs, refs...)
-
-		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
-		if tmp.PartitionsWatermark == "" {
-			if partitionsResolver == "glob" {
-				tmp.PartitionsWatermark = "updated_on"
-			}
-		}
-	}
-
 	// Build input details
 	inputConnector := node.Connector
 	inputProps := tmp.InputProperties
@@ -159,6 +122,43 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		outputPropsPB, err = structpb.NewStruct(outputProps)
 		if err != nil {
 			return fmt.Errorf(`invalid property type in "output": %w`, err)
+		}
+	}
+
+	// Parse incremental state resolver
+	var incrementalStateResolver string
+	var incrementalStateResolverProps *structpb.Struct
+	if tmp.State != nil {
+		var refs []ResourceName
+		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(tmp.State, outputConnector)
+		if err != nil {
+			return fmt.Errorf(`failed to parse "state": %w`, err)
+		}
+		node.Refs = append(node.Refs, refs...)
+	}
+
+	// Parse partitions resolver
+	var partitionsResolver string
+	var partitionsResolverProps *structpb.Struct
+	if tmp.Splits != nil { // Backwards compatibility: "splits" is deprecated and has been renamed to "partitions"
+		if tmp.Partitions != nil {
+			return fmt.Errorf(`"partitions" and "splits" are mutually exclusive`)
+		}
+		tmp.Partitions = tmp.Splits
+	}
+	if tmp.Partitions != nil {
+		var refs []ResourceName
+		partitionsResolver, partitionsResolverProps, refs, err = p.parseDataYAML(tmp.Partitions, inputConnector)
+		if err != nil {
+			return fmt.Errorf(`failed to parse "partitions": %w`, err)
+		}
+		node.Refs = append(node.Refs, refs...)
+
+		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
+		if tmp.PartitionsWatermark == "" {
+			if partitionsResolver == "glob" {
+				tmp.PartitionsWatermark = "updated_on"
+			}
 		}
 	}
 

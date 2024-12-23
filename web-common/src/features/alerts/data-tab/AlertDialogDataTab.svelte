@@ -13,11 +13,10 @@
 
   const { form } = formState;
 
+  $: ({ instanceId } = $runtime);
+
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
-  $: metricsView = useMetricsViewValidSpec(
-    $runtime.instanceId,
-    metricsViewName,
-  );
+  $: metricsView = useMetricsViewValidSpec(instanceId, metricsViewName);
 
   $: measureOptions =
     $metricsView.data?.measures

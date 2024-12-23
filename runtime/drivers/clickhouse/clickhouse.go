@@ -95,6 +95,8 @@ var maxOpenConnections = 20
 type driver struct{}
 
 type configProperties struct {
+	// Provision is set on local if `managed: true` is set for the connector.
+	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
 	DSN      string `mapstructure:"dsn"`
 	Username string `mapstructure:"username"`
@@ -169,7 +171,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
 		}
-	} else {
+	} else if conf.Provision {
 		// run clickhouse locally
 		dataDir, err := st.DataDir(instanceID)
 		if err != nil {
@@ -185,6 +187,8 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")

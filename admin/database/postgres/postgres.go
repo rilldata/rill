@@ -2234,6 +2234,15 @@ func (c *connection) FindProvisionerResourcesForDeployment(ctx context.Context, 
 	return c.provisionerResourcesFromDTOs(res)
 }
 
+func (c *connection) FindProvisionerResourceByTypeAndName(ctx context.Context, deploymentID, typ, name string) (*database.ProvisionerResource, error) {
+	res := &provisionerResourceDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM provisioner_resources WHERE deployment_id = $1 AND "type" = $2 AND name = $3`, deploymentID, typ, name).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
+}
+
 func (c *connection) InsertProvisionerResource(ctx context.Context, opts *database.InsertProvisionerResourceOptions) (*database.ProvisionerResource, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

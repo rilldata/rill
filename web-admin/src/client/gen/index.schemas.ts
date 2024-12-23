@@ -305,6 +305,21 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+/**
+ * Arguments for the provisioner call.
+ */
+export type AdminServiceProvisionBodyArgs = { [key: string]: any };
+
+export type AdminServiceProvisionBody = {
+  /** Type of resource to provision. */
+  type?: string;
+  /** Name of the resource to provision.
+It forms a unique key together with deployment and type, which is used to de-duplicate provision requests. */
+  name?: string;
+  /** Arguments for the provisioner call. */
+  args?: AdminServiceProvisionBodyArgs;
+};
+
 export type AdminServiceCreateUsergroupBodyBody = {
   name?: string;
 };
@@ -726,6 +741,23 @@ export interface V1PullVirtualRepoResponse {
   nextPageToken?: string;
 }
 
+export type V1ProvisionerResourceConfig = { [key: string]: any };
+
+export type V1ProvisionerResourceArgs = { [key: string]: any };
+
+export interface V1ProvisionerResource {
+  id?: string;
+  deploymentId?: string;
+  type?: string;
+  name?: string;
+  args?: V1ProvisionerResourceArgs;
+  config?: V1ProvisionerResourceConfig;
+}
+
+export interface V1ProvisionResponse {
+  resource?: V1ProvisionerResource;
+}
+
 export interface V1ProjectVariable {
   /** Internal ID. */
   id?: string;
@@ -753,6 +785,8 @@ export interface V1ProjectPermissions {
   readDev?: boolean;
   readDevStatus?: boolean;
   manageDev?: boolean;
+  readProvisionerResources?: boolean;
+  manageProvisionerResources?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
   createMagicAuthTokens?: boolean;
@@ -1175,11 +1209,6 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
-export interface V1Condition {
-  op?: V1Operation;
-  exprs?: V1Expression[];
-}
-
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1323,6 +1352,11 @@ export interface V1CreateAlertResponse {
 
 export interface V1ConnectProjectToGithubResponse {
   [key: string]: any;
+}
+
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
 }
 
 export interface V1CompletionMessage {

@@ -9,15 +9,13 @@
   export let databaseSchema: string = ""; // The backend interprets an empty string as the default schema
   export let table: string;
 
-  $: columnsQuery = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    table,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-  );
+  $: ({ instanceId } = $runtime);
+
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+  });
   $: ({ data, error, isError } = $columnsQuery);
 
   function prettyPrintType(type: string) {

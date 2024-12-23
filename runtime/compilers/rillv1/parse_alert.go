@@ -137,7 +137,7 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	if !isLegacyQuery {
 		var refs []ResourceName
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}

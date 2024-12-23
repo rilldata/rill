@@ -153,6 +153,15 @@ service AdminService {
     };
   }
 
+  // Provision provisions a new resource for a deployment.
+  // If an existing resource matches the request, it will be returned without provisioning a new resource.
+  rpc Provision(ProvisionRequest) returns (ProvisionResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/provision",
+      body: "*"
+    };
+  }
+
   // ListOrganizationMemberUsers lists all the org members
   rpc ListOrganizationMemberUsers(ListOrganizationMemberUsersRequest) returns (ListOrganizationMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
@@ -1220,6 +1229,23 @@ message TriggerRedeployRequest {
 
 message TriggerRedeployResponse {}
 
+message ProvisionRequest {
+  // Deployment to provision a resource for.
+  // If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
+  string deployment_id = 1;
+  // Type of resource to provision.
+  string type = 2;
+  // Name of the resource to provision.
+  // It forms a unique key together with deployment and type, which is used to de-duplicate provision requests.
+  string name = 3;
+  // Arguments for the provisioner call.
+  google.protobuf.Struct args = 4;
+}
+
+message ProvisionResponse {
+  ProvisionerResource resource = 1;
+}
+
 message ListOrganizationMemberUsersRequest {
   string organization = 1;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
@@ -2275,6 +2301,15 @@ message Deployment {
   google.protobuf.Timestamp updated_on = 10;
 }
 
+message ProvisionerResource {
+  string id = 1;
+  string deployment_id = 2;
+  string type = 3;
+  string name = 4;
+  google.protobuf.Struct args = 5;
+  google.protobuf.Struct config = 6;
+}
+
 message OrganizationPermissions {
   bool read_org = 1;
   bool manage_org = 2;
@@ -2294,6 +2329,8 @@ message ProjectPermissions {
   bool read_dev = 6;
   bool read_dev_status = 7;
   bool manage_dev = 8;
+  bool read_provisioner_resources = 19;
+  bool manage_provisioner_resources = 20;
   bool read_project_members = 9;
   bool manage_project_members = 10;
   bool create_magic_auth_tokens = 15;

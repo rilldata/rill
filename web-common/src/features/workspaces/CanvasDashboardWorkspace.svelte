@@ -97,7 +97,7 @@
 
   async function onChangeCallback(newTitle: string) {
     const newRoute = await handleEntityRename(
-      $runtime.instanceId,
+      instanceId,
       newTitle,
       filePath,
       fileName,

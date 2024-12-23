@@ -18,9 +18,11 @@
   $: [, fileName] = splitFolderAndFileName(filePath);
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
+  $: ({ instanceId } = $runtime);
+
   const onChangeCallback = async (newTitle: string) => {
     const route = await handleEntityRename(
-      $runtime.instanceId,
+      instanceId,
       newTitle,
       filePath,
       fileName,
