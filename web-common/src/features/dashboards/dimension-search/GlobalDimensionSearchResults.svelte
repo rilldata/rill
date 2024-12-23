@@ -26,7 +26,7 @@
     validSpecStore,
   } = getStateManagers();
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (

@@ -11,7 +11,9 @@
 
   export let report: string;
 
-  $: reportQuery = useReport($runtime.instanceId, report);
+  $: ({ instanceId } = $runtime);
+
+  $: reportQuery = useReport(instanceId, report);
 
   /**
    * Table column definitions.

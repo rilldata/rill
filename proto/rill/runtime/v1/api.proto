@@ -313,6 +313,9 @@ message Connector {
   map<string, string> config = 3;
   // Properties in config that use templating
   repeated string templated_properties = 5;
+  // Provision settings if its a managed connector
+  bool provision = 6;
+  google.protobuf.Struct provision_args = 7;
   // DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   map<string, string> config_from_variables = 4;
 }
@@ -782,6 +785,10 @@ message AnalyzedConnector {
   map<string, string> project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
+  // Provision indicates if its a managed connector
+  bool provision = 10;
+  // Provision args for the provisioner if provision is true
+  google.protobuf.Struct provision_args = 11;
   // True if the connector can be accessed without credentials
   bool has_anonymous_access = 7;
   // List of resources that appear to use the connector

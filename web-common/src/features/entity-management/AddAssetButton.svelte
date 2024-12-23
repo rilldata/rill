@@ -43,7 +43,7 @@
   const createFolder = createRuntimeServiceCreateDirectory();
   const { customDashboards } = featureFlags;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
     ? currentFile.split("/").slice(0, -1).join("/")
@@ -59,7 +59,7 @@
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
 
   $: metricsViewQuery = useFilteredResources(
     instanceId,

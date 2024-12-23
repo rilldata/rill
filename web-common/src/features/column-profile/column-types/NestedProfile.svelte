@@ -37,8 +37,10 @@
 
   let active = false;
 
+  $: ({ instanceId } = $runtime);
+
   $: nulls = getNullPercentage(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -48,7 +50,7 @@
   );
 
   $: columnCardinality = getCountDistinct(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -58,7 +60,7 @@
   );
 
   $: topK = getTopK(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

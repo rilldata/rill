@@ -21,13 +21,15 @@
   export let fileArtifact: FileArtifact;
   export let onSave: (content: string) => void = () => {};
 
+  $: ({ instanceId } = $runtime);
+
   $: ({ remoteContent } = fileArtifact);
 
   let editor: EditorView;
   let autocompleteCompartment = new Compartment();
 
   // Autocomplete: source tables
-  $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
+  $: allSourceColumns = useAllSourceColumns(queryClient, instanceId);
   $: if ($allSourceColumns?.length) {
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
@@ -39,7 +41,7 @@
   }
 
   //Auto complete: model tables
-  $: allModelColumns = useAllModelColumns(queryClient, $runtime?.instanceId);
+  $: allModelColumns = useAllModelColumns(queryClient, instanceId);
   $: if ($allModelColumns?.length) {
     for (const modelTable of $allModelColumns) {
       const modelIdentifier = modelTable?.tableName;

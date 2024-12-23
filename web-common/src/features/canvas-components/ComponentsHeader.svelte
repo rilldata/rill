@@ -17,12 +17,12 @@
 
   let fileName: string;
   $: [, fileName] = splitFolderAndFileName(filePath);
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: componentName = extractFileName(filePath);
 
   async function handleNameChange(newTitle: string) {
     const newRoute = await handleEntityRename(
-      runtimeInstanceId,
+      instanceId,
       newTitle,
       filePath,
       componentName,

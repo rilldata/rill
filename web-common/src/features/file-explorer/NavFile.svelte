@@ -68,6 +68,8 @@
     saveState: { saving, error },
   } = fileArtifact);
 
+  $: ({ instanceId } = $runtime);
+
   $: resourceKind = ($resourceName?.kind ??
     $inferredResourceKind) as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
@@ -76,7 +78,7 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();

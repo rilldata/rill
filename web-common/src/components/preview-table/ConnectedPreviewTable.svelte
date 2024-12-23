@@ -20,22 +20,20 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: columnsQuery = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    table,
-    {
-      connector,
-      database,
-      databaseSchema,
-    },
-  );
+  $: ({ instanceId } = $runtime);
+
+  $: columnsQuery = createQueryServiceTableColumns(instanceId, table, {
+    connector,
+    database,
+    databaseSchema,
+  });
   $: ({
     data: columnsData,
     isLoading: columnsIsLoading,
     error: columnsError,
   } = $columnsQuery);
 
-  $: rowsQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
+  $: rowsQuery = createQueryServiceTableRows(instanceId, table, {
     connector,
     database,
     databaseSchema,
