@@ -1629,6 +1629,42 @@ paths:
                 format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
+    post:
+      operationId: QueryService_MetricsViewResolveTimeRanges
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewResolveTimeRangesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              rillTimes:
+                type: array
+                items:
+                  type: string
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
       summary: |-
@@ -4979,6 +5015,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
+  v1MetricsViewResolveTimeRangesResponse:
+    type: object
+    properties:
+      ranges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TimeRange'
   v1MetricsViewRowsRequest:
     type: object
     properties:

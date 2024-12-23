@@ -9576,6 +9576,265 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSearchResponseValidationError{}
 
+// Validate checks the field values on MetricsViewResolveTimeRangesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *MetricsViewResolveTimeRangesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewResolveTimeRangesRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewResolveTimeRangesRequestMultiError, or nil if none found.
+func (m *MetricsViewResolveTimeRangesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewResolveTimeRangesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewResolveTimeRangesRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return MetricsViewResolveTimeRangesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewResolveTimeRangesRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewResolveTimeRangesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewResolveTimeRangesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewResolveTimeRangesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewResolveTimeRangesRequestMultiError) AllErrors() []error { return m }
+
+// MetricsViewResolveTimeRangesRequestValidationError is the validation error
+// returned by MetricsViewResolveTimeRangesRequest.Validate if the designated
+// constraints aren't met.
+type MetricsViewResolveTimeRangesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewResolveTimeRangesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewResolveTimeRangesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewResolveTimeRangesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewResolveTimeRangesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewResolveTimeRangesRequestValidationError) ErrorName() string {
+	return "MetricsViewResolveTimeRangesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewResolveTimeRangesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewResolveTimeRangesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewResolveTimeRangesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewResolveTimeRangesRequestValidationError{}
+
+// Validate checks the field values on MetricsViewResolveTimeRangesResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewResolveTimeRangesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewResolveTimeRangesResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewResolveTimeRangesResponseMultiError, or nil if none found.
+func (m *MetricsViewResolveTimeRangesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewResolveTimeRangesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetRanges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewResolveTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("Ranges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewResolveTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("Ranges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewResolveTimeRangesResponseValidationError{
+					field:  fmt.Sprintf("Ranges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewResolveTimeRangesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewResolveTimeRangesResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewResolveTimeRangesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewResolveTimeRangesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewResolveTimeRangesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewResolveTimeRangesResponseMultiError) AllErrors() []error { return m }
+
+// MetricsViewResolveTimeRangesResponseValidationError is the validation error
+// returned by MetricsViewResolveTimeRangesResponse.Validate if the designated
+// constraints aren't met.
+type MetricsViewResolveTimeRangesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewResolveTimeRangesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewResolveTimeRangesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewResolveTimeRangesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewResolveTimeRangesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewResolveTimeRangesResponseValidationError) ErrorName() string {
+	return "MetricsViewResolveTimeRangesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewResolveTimeRangesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewResolveTimeRangesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewResolveTimeRangesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewResolveTimeRangesResponseValidationError{}
+
 // Validate checks the field values on ResolveComponentRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

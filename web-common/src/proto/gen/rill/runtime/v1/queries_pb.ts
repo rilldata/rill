@@ -3375,6 +3375,98 @@ export class MetricsViewSearchResponse_SearchResult extends Message<MetricsViewS
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewResolveTimeRangesRequest
+ */
+export class MetricsViewResolveTimeRangesRequest extends Message<MetricsViewResolveTimeRangesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: repeated string rill_times = 3;
+   */
+  rillTimes: string[] = [];
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewResolveTimeRangesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewResolveTimeRangesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "rill_times", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewResolveTimeRangesRequest {
+    return new MetricsViewResolveTimeRangesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewResolveTimeRangesRequest {
+    return new MetricsViewResolveTimeRangesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewResolveTimeRangesRequest {
+    return new MetricsViewResolveTimeRangesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewResolveTimeRangesRequest | PlainMessage<MetricsViewResolveTimeRangesRequest> | undefined, b: MetricsViewResolveTimeRangesRequest | PlainMessage<MetricsViewResolveTimeRangesRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewResolveTimeRangesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewResolveTimeRangesResponse
+ */
+export class MetricsViewResolveTimeRangesResponse extends Message<MetricsViewResolveTimeRangesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.TimeRange ranges = 1;
+   */
+  ranges: TimeRange[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewResolveTimeRangesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewResolveTimeRangesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "ranges", kind: "message", T: TimeRange, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewResolveTimeRangesResponse {
+    return new MetricsViewResolveTimeRangesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewResolveTimeRangesResponse {
+    return new MetricsViewResolveTimeRangesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewResolveTimeRangesResponse {
+    return new MetricsViewResolveTimeRangesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewResolveTimeRangesResponse | PlainMessage<MetricsViewResolveTimeRangesResponse> | undefined, b: MetricsViewResolveTimeRangesResponse | PlainMessage<MetricsViewResolveTimeRangesResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewResolveTimeRangesResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ResolveComponentRequest
  */
 export class ResolveComponentRequest extends Message<ResolveComponentRequest> {
