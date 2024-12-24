@@ -426,3 +426,7 @@ replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v
 
 // security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
+
+// Adds changes from the PR :
+// https://github.com/snowflakedb/gosnowflake/pull/1270
+replace github.com/snowflakedb/gosnowflake => github.com/rilldata/gosnowflake v0.0.0-20241224063610-caa20d34213c
