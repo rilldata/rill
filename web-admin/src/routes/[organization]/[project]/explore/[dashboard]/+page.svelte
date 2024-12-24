@@ -40,7 +40,7 @@
       });
     }, 100);
   }
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: ({ organization: orgName, project: projectName } = $page.params);
 

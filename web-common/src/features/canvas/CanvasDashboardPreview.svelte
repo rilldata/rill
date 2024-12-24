@@ -32,7 +32,7 @@
   let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;

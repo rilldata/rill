@@ -22,6 +22,7 @@
     class="inspector-wrapper"
     style:width="{width + 8}px"
     transition:slide={{ axis: "x", duration: 500 }}
+    aria-label="Inspector Panel"
   >
     <Resizer
       disabled={!resizable}

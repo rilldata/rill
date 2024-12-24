@@ -28,15 +28,14 @@
   export let project: string;
   export let report: string;
 
-  $: reportQuery = useReport($runtime.instanceId, report);
-  $: isReportCreatedByCode = useIsReportCreatedByCode(
-    $runtime.instanceId,
-    report,
-  );
+  $: ({ instanceId } = $runtime);
+
+  $: reportQuery = useReport(instanceId, report);
+  $: isReportCreatedByCode = useIsReportCreatedByCode(instanceId, report);
 
   // Get dashboard
-  $: dashboardName = useReportDashboardName($runtime.instanceId, report);
-  $: dashboard = useExploreValidSpec($runtime.instanceId, $dashboardName.data);
+  $: dashboardName = useReportDashboardName(instanceId, report);
+  $: dashboard = useExploreValidSpec(instanceId, $dashboardName.data);
   $: dashboardTitle =
     $dashboard.data?.explore?.displayName || $dashboardName.data;
 
@@ -71,7 +70,7 @@
       name: $reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+      getRuntimeServiceListResourcesQueryKey(instanceId),
     );
     goto(`/${organization}/${project}/-/reports`);
   }

@@ -26,12 +26,14 @@
   export let databaseSchema: string = "";
   export let table: string;
 
+  $: ({ instanceId } = $runtime);
+
   $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
-    $runtime.instanceId,
+    instanceId,
     connector,
   );
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -41,7 +43,7 @@
     MetricsEventSpace.LeftPanel,
   );
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

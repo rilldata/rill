@@ -20,7 +20,7 @@
   const queryClient = useQueryClient();
   const TABLE_PREFIX = "_custom-table";
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: tableProperties = rendererProperties as TableProperties;
 

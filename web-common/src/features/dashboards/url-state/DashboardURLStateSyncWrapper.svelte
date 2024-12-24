@@ -23,10 +23,11 @@
   const storeKeyPrefix =
     orgName && projectName ? `__${orgName}__${projectName}` : "";
 
+  $: ({ instanceId } = $runtime);
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
-    $runtime.instanceId,
+    instanceId,
     $metricsViewName,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(

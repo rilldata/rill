@@ -15,7 +15,9 @@
 
   export let isEmbedded = false;
 
-  $: dashboards = useDashboardsV2($runtime.instanceId);
+  $: ({ instanceId } = $runtime);
+
+  $: dashboards = useDashboardsV2(instanceId);
 
   /**
    * Table column definitions.

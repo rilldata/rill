@@ -20,14 +20,16 @@
 
   const { ai } = featureFlags;
 
-  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: ({ instanceId } = $runtime);
+
+  $: modelQuery = useModel(instanceId, modelName);
   $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   $: createMetricsViewFromModel = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector as string,
     "",
     "",

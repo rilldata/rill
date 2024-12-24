@@ -11,7 +11,7 @@
   export let chartView = false;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   const dashboardWidth = chartView
     ? defaults.DASHBOARD_WIDTH / 2

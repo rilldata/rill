@@ -16,7 +16,9 @@
   export let organization: string;
   export let project: string;
 
-  $: alerts = useAlerts($runtime.instanceId);
+  $: ({ instanceId } = $runtime);
+
+  $: alerts = useAlerts(instanceId);
 
   /**
    * Table column definitions.

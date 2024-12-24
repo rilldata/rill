@@ -11,19 +11,18 @@
   import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { BellPlusIcon } from "lucide-svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const {
     selectors: {
       timeRangeSelectors: { isCustomTimeRange },
     },
-    runtime,
     metricsViewName,
   } = getStateManagers();
 
-  $: metricsView = useMetricsViewValidSpec(
-    $runtime?.instanceId,
-    $metricsViewName,
-  );
+  $: ({ instanceId } = $runtime);
+
+  $: metricsView = useMetricsViewValidSpec(instanceId, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let open = false;

@@ -144,16 +144,15 @@ func (p *KubernetesProvisioner) Type() string {
 	return "kubernetes"
 }
 
+func (p *KubernetesProvisioner) Supports(rt provisioner.ResourceType) bool {
+	return rt == provisioner.ResourceTypeRuntime
+}
+
 func (p *KubernetesProvisioner) Close() error {
 	return nil
 }
 
 func (p *KubernetesProvisioner) Provision(ctx context.Context, r *provisioner.Resource, opts *provisioner.ResourceOptions) (*provisioner.Resource, error) {
-	// Can only provision runtime resources
-	if r.Type != provisioner.ResourceTypeRuntime {
-		return nil, provisioner.ErrResourceTypeNotSupported
-	}
-
 	// Parse args
 	args, err := provisioner.NewRuntimeArgs(opts.Args)
 	if err != nil {

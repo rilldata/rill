@@ -16,7 +16,7 @@
 
   export let resource: V1Resource | undefined;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
     instanceId,
     resource?.meta?.name?.name ?? "",

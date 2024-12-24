@@ -16,18 +16,17 @@
 
   export let exploreName: string;
 
-  $: exploreQuery = useExplore($runtime.instanceId, exploreName);
+  $: ({ instanceId } = $runtime);
+
+  $: exploreQuery = useExplore(instanceId, exploreName);
   $: exploreFilePath = $exploreQuery.data?.explore?.meta?.filePaths?.[0] ?? "";
   $: metricsViewFilePath =
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "";
   $: metricsViewName = $exploreQuery.data?.metricsView?.meta?.name?.name ?? "";
 
-  $: explorePolicyCheck = useDashboardPolicyCheck(
-    $runtime.instanceId,
-    exploreFilePath,
-  );
+  $: explorePolicyCheck = useDashboardPolicyCheck(instanceId, exploreFilePath);
   $: metricsPolicyCheck = useDashboardPolicyCheck(
-    $runtime.instanceId,
+    instanceId,
     metricsViewFilePath,
   );
 

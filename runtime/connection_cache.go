@@ -26,10 +26,12 @@ var (
 )
 
 type cachedConnectionConfig struct {
-	instanceID string // Empty if connection is shared
-	name       string
-	driver     string
-	config     map[string]any
+	instanceID    string // Empty if connection is shared
+	name          string
+	driver        string
+	config        map[string]any
+	provision     bool
+	provisionArgs map[string]any
 }
 
 // newConnectionCache returns a concurrency-safe cache for open connections.
@@ -103,6 +105,37 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		if activityClient != nil {
 			activityClient = activityClient.With(activityDims...)
 		}
+
+		if cfg.provision {
+			if cfg.name == inst.AdminConnector {
+				return nil, fmt.Errorf("cannot provision the admin connector (catch-22)")
+			}
+			if inst.AdminConnector == "" {
+				// Provisioning has been requested, but the instance does not have an admin connector.
+				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
+				cfg.config = maps.Clone(cfg.config)
+				cfg.config["provision"] = true
+				cfg.config["provision_args"] = cfg.provisionArgs
+			} else {
+				// Provision the connector using the admin connector.
+				admin, release, err := r.Admin(ctx, cfg.instanceID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get admin client: %w", err)
+				}
+				defer release()
+
+				newConfig, err := admin.ProvisionConnector(ctx, cfg.name, cfg.driver, cfg.provisionArgs)
+				if err != nil {
+					return nil, fmt.Errorf("failed to provision %q: %w", cfg.name, err)
+				}
+
+				// Merge the new provisioned config with the existing one.
+				cfg.config = maps.Clone(cfg.config)
+				for key, value := range newConfig {
+					cfg.config[key] = value
+				}
+			}
+		}
 	}
 
 	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
@@ -139,6 +172,17 @@ func generateKey(cfg cachedConnectionConfig) string {
 		sb.WriteString(":")
 		sb.WriteString(fmt.Sprint(cfg.config[key]))
 		sb.WriteString(" ")
+	}
+	if cfg.provision {
+		sb.WriteString(":provision=true:")
+		keys := maps.Keys(cfg.provisionArgs)
+		slices.Sort(keys)
+		for _, key := range keys {
+			sb.WriteString(key)
+			sb.WriteString(":")
+			sb.WriteString(fmt.Sprint(cfg.provisionArgs[key]))
+			sb.WriteString(" ")
+		}
 	}
 	return sb.String()
 }
