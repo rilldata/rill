@@ -62,6 +62,8 @@
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
 
   function handleMouseUp() {
+    console.log("[CanvasDashboardPreview] handleMouseUp ", selectedIndex);
+
     if (selectedIndex === null || !changing) return;
 
     const cellPosition = getCell(dragPosition, true);

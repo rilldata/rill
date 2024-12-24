@@ -61,7 +61,7 @@
   role="presentation"
   data-index={i}
   data-component
-  class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
+  class="component hover:cursor-pointer active:cursor-grab pointer-events-auto"
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
@@ -111,7 +111,7 @@
 </div>
 
 <style lang="postcss">
-  .wrapper {
+  .component {
     @apply absolute;
   }
 

@@ -4,7 +4,7 @@
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { ChevronDown, Plus } from "lucide-svelte";
 
-  export let addComponent: (componentName: CanvasComponentType) => void;
+  export let addComponent: (componentType: CanvasComponentType) => void;
 
   let open = false;
 
