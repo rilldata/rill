@@ -52,6 +52,7 @@
       {:else}
         <a
           href={`/${organization}/-/projects-breakdown`}
+          target="_blank"
           class="text-primary-600 text-xs"
           data-sveltekit-preload-data="off"
         >

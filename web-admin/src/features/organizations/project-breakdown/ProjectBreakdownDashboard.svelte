@@ -4,6 +4,7 @@
   import { useValidExplores } from "@rilldata/web-common/features/dashboards/selectors";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   $: instanceId = $runtime.instanceId;
   $: explores = useValidExplores(instanceId);
@@ -23,4 +24,10 @@
 
 {#if exploreName}
   <ExploreEmbed {instanceId} {exploreName} />
+{:else}
+  <ErrorPage
+    statusCode={500}
+    header="This dashboard is not available."
+    body="This dashboard is temporarily unavailable. Please try again later."
+  />
 {/if}
