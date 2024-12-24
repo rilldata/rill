@@ -8,15 +8,14 @@
   export let instanceId: string;
   export let canvasName: string;
 
+  // TODO: Remove later
+  let columns = 20;
+  let gap = 1;
   $: canvasQuery = useResource(instanceId, canvasName, ResourceKind.Canvas);
 
   $: canvas = $canvasQuery.data?.canvas.spec;
 
-  $: ({
-    items = [],
-    columns,
-    gap,
-  } = canvas || { items: [], columns: 24, gap: 2 });
+  $: ({ items = [] } = canvas || { items: [], columns: 24, gap: 2 });
 </script>
 
-<CanvasDashboardEmbed {canvasName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {columns} {items} {gap} />

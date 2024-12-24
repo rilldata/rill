@@ -1,4 +1,4 @@
-import { TDDChartMap } from "@rilldata/web-common/features/canvas-components/types";
+import { TDDChartMap } from "@rilldata/web-common/components/vega/types";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import {
   type ChartField,

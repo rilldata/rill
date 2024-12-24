@@ -4264,16 +4264,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   description = "";
 
   /**
-   * @generated from field: string resolver = 2;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 3;
-   */
-  resolverProperties?: Struct;
-
-  /**
    * @generated from field: string renderer = 4;
    */
   renderer = "";
@@ -4315,8 +4305,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
@@ -4481,14 +4469,19 @@ export class CanvasSpec extends Message<CanvasSpec> {
   displayName = "";
 
   /**
-   * @generated from field: uint32 columns = 2;
+   * @generated from field: uint32 max_width = 2;
    */
-  columns = 0;
+  maxWidth = 0;
 
   /**
-   * @generated from field: uint32 gap = 3;
+   * @generated from field: string theme = 7;
    */
-  gap = 0;
+  theme = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
+   */
+  embeddedTheme?: ThemeSpec;
 
   /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
@@ -4514,8 +4507,9 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
