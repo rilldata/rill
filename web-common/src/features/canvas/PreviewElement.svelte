@@ -56,28 +56,28 @@
 </script>
 
 {#if componentName && !inlineComponent}
-  <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder>
-      <Component
-        {instanceId}
-        {i}
-        {localZIndex}
-        {interacting}
-        {componentName}
-        {padding}
-        {radius}
-        {scale}
-        {selected}
-        builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
-        on:change
-        on:contextmenu
-        on:mousedown={handleMouseDown}
-      />
-    </ContextMenu.Trigger>
+  <!-- <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder> -->
+  <Component
+    {instanceId}
+    {i}
+    {localZIndex}
+    {interacting}
+    {componentName}
+    {padding}
+    {radius}
+    {scale}
+    {selected}
+    builders={undefined}
+    height={finalHeight}
+    left={finalLeft}
+    top={finalTop}
+    width={finalWidth}
+    on:change
+    on:contextmenu
+    on:mousedown={handleMouseDown}
+  />
+  <!-- </ContextMenu.Trigger>
 
     <ContextMenu.Content class="z-[100]">
       <ContextMenu.Item
@@ -91,35 +91,35 @@
         >Delete from dashboard</ContextMenu.Item
       >
     </ContextMenu.Content>
-  </ContextMenu.Root>
+  </ContextMenu.Root> -->
 {:else if componentName}
-  <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder>
-      <Component
-        {instanceId}
-        {i}
-        {localZIndex}
-        {interacting}
-        {componentName}
-        {padding}
-        {radius}
-        {scale}
-        {selected}
-        builders={[builder]}
-        height={finalHeight}
-        left={finalLeft}
-        top={finalTop}
-        width={finalWidth}
-        on:change
-        on:contextmenu
-        on:mousedown={handleMouseDown}
-      />
-    </ContextMenu.Trigger>
+  <!-- <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder> -->
+  <Component
+    {instanceId}
+    {i}
+    {localZIndex}
+    {interacting}
+    {componentName}
+    {padding}
+    {radius}
+    {scale}
+    {selected}
+    builders={undefined}
+    height={finalHeight}
+    left={finalLeft}
+    top={finalTop}
+    width={finalWidth}
+    on:change
+    on:contextmenu
+    on:mousedown={handleMouseDown}
+  />
+  <!-- </ContextMenu.Trigger>
 
     <ContextMenu.Content class="z-[100]">
       <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
         >Delete from dashboard</ContextMenu.Item
       >
     </ContextMenu.Content>
-  </ContextMenu.Root>
+  </ContextMenu.Root> -->
 {/if}

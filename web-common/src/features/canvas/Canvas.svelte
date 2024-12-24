@@ -61,7 +61,8 @@
     );
     const items = parsedDocument.get("items") as any;
 
-    const node = items.get(e.detail.index);
+    const node = items?.get(e.detail.index);
+    if (!node) return;
 
     node.set("width", e.detail.dimensions[0]);
     node.set("height", e.detail.dimensions[1]);

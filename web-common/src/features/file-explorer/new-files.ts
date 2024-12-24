@@ -252,9 +252,9 @@ items:
       markdown:
         content: "First Component"
     width: 4
-    height: 3
-    x: 2
-    y: 1
+    height: 2
+    x: 0
+    y: 0
 `;
     case ResourceKind.Theme:
       return `# Theme YAML
