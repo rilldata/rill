@@ -17,7 +17,6 @@
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  export let showGrid = false;
   export let snap = true;
   export let selectedIndex: number | null = null;
 
@@ -161,6 +160,7 @@
   }
 
   function deselect() {
+    console.log("deselect");
     selectedIndex = null;
     $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
@@ -189,7 +189,6 @@
   {scrollOffset}
   {radius}
   {scale}
-  {showGrid}
   height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
