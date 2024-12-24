@@ -21,7 +21,7 @@
 >
   <div
     bind:contentRect
-    class="wrapper {color} max-w-[1440px] min-h-full"
+    class="dashboard-wrapper {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
     <div role="presentation" class="size-full relative" on:click|self>
@@ -39,7 +39,7 @@
 </div>
 
 <style lang="postcss">
-  .wrapper {
+  .dashboard-wrapper {
     width: 100%;
     height: 100%;
     position: relative;

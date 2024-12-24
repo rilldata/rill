@@ -92,19 +92,19 @@
   }
 
   // FIXME: scroll new component into view
-  async function addComponent(componentName: CanvasComponentType) {
-    console.log("[CanvasWorkspace] adding component: ", componentName);
+  async function addComponent(componentType: CanvasComponentType) {
+    console.log("[CanvasWorkspace] adding component: ", componentType);
 
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
-    const newSpec = componentRegistry[componentName].newComponentSpec(
+    const newSpec = componentRegistry[componentType].newComponentSpec(
       defaultMetrics.metricsView,
       defaultMetrics.measure,
       defaultMetrics.dimension,
     );
 
-    const { width, height } = componentRegistry[componentName].defaultSize;
+    const { width, height } = componentRegistry[componentType].defaultSize;
 
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
@@ -115,7 +115,7 @@
     const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
     const newComponent = {
-      component: { [componentName]: newSpec },
+      component: { [componentType]: newSpec },
       height,
       width,
       x,
@@ -157,6 +157,7 @@
                   reconciling={resourceIsReconciling}
                 />
 
+                <!-- TODO: move to inline -->
                 <AddComponentMenu {addComponent} />
                 <ViewSelector
                   allowSplit={false}

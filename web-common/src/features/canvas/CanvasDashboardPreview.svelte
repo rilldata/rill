@@ -9,6 +9,9 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import { vector } from "./util";
+  import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
+  import type { FileArtifact } from "../entity-management/file-artifact";
+  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
@@ -16,6 +19,7 @@
   export let items: V1CanvasItem[];
   export let snap = true;
   export let selectedIndex: number | null = null;
+  export let fileArtifact: FileArtifact;
 
   const { canvasName } = getCanvasStateManagers();
 
@@ -28,6 +32,11 @@
   let initialElementPosition: Vector = [0, 0];
   let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
+
+  // FIXME: there's no way to derive
+  // Suggest that we add `type: CanvasComponentType` to V1CanvasItem
+  const componentRegistry = getComponentRegistry(fileArtifact);
+  // So we can access data-component-type on Component
 
   $: instanceId = $runtime.instanceId;
 
@@ -59,6 +68,8 @@
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
 
   function handleMouseUp() {
+    console.log("[CanvasDashboardPreview] handleMouseUp ", selectedIndex);
+
     if (selectedIndex === null || !changing) return;
 
     const cellPosition = getCell(dragPosition, true);
