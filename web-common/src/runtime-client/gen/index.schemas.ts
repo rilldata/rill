@@ -240,6 +240,11 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type QueryServiceMetricsViewResolveTimeRangesBody = {
+  rillTimes?: string[];
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
@@ -623,6 +628,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries. */
+  rillTime?: string;
 }
 
 export interface V1ThemeState {
@@ -1353,11 +1361,24 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
+}
+
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewResolveTimeRangesResponse {
+  ranges?: V1TimeRange[];
+}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -1470,11 +1491,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -2673,10 +2689,6 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

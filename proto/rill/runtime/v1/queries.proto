@@ -153,6 +153,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewResolveTimeRanges(MetricsViewResolveTimeRangesRequest) returns (MetricsViewResolveTimeRangesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveComponent resolves the data and renderer for a Component resource.
@@ -551,6 +558,9 @@ message TimeRange {
   TimeGrain round_to_grain = 5;
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
+  // Optional. Rill format time range. Should only be used for alerts and reports.
+  // Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries.
+  string rill_time = 7;
 }
 
 // Present for backwards compatibility
@@ -768,6 +778,17 @@ message MetricsViewSearchResponse {
   }
 
   repeated SearchResult results = 1;
+}
+
+message MetricsViewResolveTimeRangesRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string rill_times = 3;
+  int32 priority = 4;
+}
+
+message MetricsViewResolveTimeRangesResponse {
+  repeated TimeRange ranges = 1;
 }
 
 // **********

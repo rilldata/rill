@@ -37,6 +37,8 @@ import type {
   QueryServiceMetricsViewSearchBody,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
+  V1MetricsViewResolveTimeRangesResponse,
+  QueryServiceMetricsViewResolveTimeRangesBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -1007,6 +1009,73 @@ export const createQueryServiceMetricsViewTimeRange = <
   return query;
 };
 
+export const queryServiceMetricsViewResolveTimeRanges = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+) => {
+  return httpClient<V1MetricsViewResolveTimeRangesResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewResolveTimeRangesBody,
+  });
+};
+
+export type QueryServiceMetricsViewResolveTimeRangesMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+  >;
+export type QueryServiceMetricsViewResolveTimeRangesMutationBody =
+  QueryServiceMetricsViewResolveTimeRangesBody;
+export type QueryServiceMetricsViewResolveTimeRangesMutationError =
+  ErrorType<RpcStatus>;
+
+export const createQueryServiceMetricsViewResolveTimeRanges = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewResolveTimeRangesBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewResolveTimeRangesBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewResolveTimeRanges(
+      instanceId,
+      metricsViewName,
+      data,
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewResolveTimeRangesBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
