@@ -11,10 +11,6 @@
   const { canvasStore, validSpecStore } = getCanvasStateManagers();
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
 
-  // TODO: Remove later when we move to new tiling system
-  const columns = 12;
-  const gap = 1;
-
   let spec: V1CanvasSpec = {
     items: [],
   };
@@ -41,7 +37,7 @@
   }
 
   async function deleteComponent(index: number) {
-    console.log("deleting component: ", index);
+    console.log("[Canvas] deleting component: ", index);
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
@@ -79,7 +75,6 @@
 </script>
 
 <CanvasDashboardPreview
-  {gap}
   {items}
   {columns}
   selectedIndex={$selectedIndex}
