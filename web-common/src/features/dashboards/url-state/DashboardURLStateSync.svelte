@@ -162,6 +162,8 @@
     }
 
     prevUrl = redirectUrl.toString();
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     void goto(redirectUrl, {
       replaceState: true,
       state: $page.state,
@@ -196,7 +198,11 @@
       };
     }
 
-    await waitUntil(() => !timeRangeSummaryIsLoading);
+    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
+    if (metricsSpec.timeDimension) {
+      await waitUntil(() => !timeRangeSummaryIsLoading);
+    }
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
