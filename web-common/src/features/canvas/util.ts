@@ -1,5 +1,5 @@
 import * as defaults from "./constants";
-import type { Vector } from "./types";
+import type { PositionedItem, Vector } from "./types";
 
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
@@ -23,35 +23,44 @@ export function isString(value: unknown): value is string {
   return typeof value === "string";
 }
 
-interface PositionedItem {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+// Allowed widths for components
+const ALLOWED_WIDTHS = [3, 4, 6, 8, 9, 12];
+
+// Snap to the closest valid width
+function getValidWidth(newWidth: number): number {
+  return ALLOWED_WIDTHS.reduce((closest, width) =>
+    Math.abs(width - newWidth) < Math.abs(closest - newWidth) ? width : closest,
+  );
 }
 
-/**
- * Finds the next available position for a new component in the canvas.
- * Height is not considered in placement strategy because:
- * 1. Components in the same row can have different heights (flexible row height)
- * 2. Taller components don't block shorter components from being placed next to them
- * 3. The canvas layout system automatically handles vertical spacing
- *
- * The placement strategy prioritizes:
- * 1. Filling existing rows (from top to bottom) by:
- *    a. First checking for space at the end of each row
- *    b. Then checking for gaps within each row
- * 2. Only creating a new row if no space is found in existing rows
- */
+// Check if a position is free of collisions
+function isPositionFree(
+  existingItems: PositionedItem[],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): boolean {
+  return !existingItems.some((item) => {
+    const overlapsInX = x < item.x + item.width && x + width > item.x;
+    const overlapsInY = y < item.y + item.height && y + height > item.y;
+    return overlapsInX && overlapsInY;
+  });
+}
+
+// Row-based grouping with sequential placement with collision checks
 export function findNextAvailablePosition(
   existingItems: PositionedItem[],
   newWidth: number,
+  newHeight: number,
 ): [number, number] {
+  const validWidth = getValidWidth(newWidth);
+
   if (!existingItems?.length) {
     return [0, 0];
   }
 
-  // Group items by row (y coordinate) for efficient row-based placement
+  // Group items by row (y coordinate)
   const rowGroups = new Map<number, PositionedItem[]>();
   existingItems.forEach((item) => {
     const items = rowGroups.get(item.y) || [];
@@ -59,35 +68,48 @@ export function findNextAvailablePosition(
     rowGroups.set(item.y, items);
   });
 
-  // Process rows from top to bottom
+  // Sort rows top-to-bottom
   const rows = Array.from(rowGroups.entries()).sort(([y1], [y2]) => y1 - y2);
 
-  // First pass: look for space at the end of existing rows (simplest placement)
+  // First pass: find space at the end of rows
   for (const [y, items] of rows) {
-    const rightmostX = Math.max(...items.map((item) => item.x + item.width));
-    if (rightmostX + newWidth <= defaults.COLUMN_COUNT) {
-      return [rightmostX, y];
+    const rightmostX = Math.max(...items.map((item) => item.x + item.width), 0);
+    if (rightmostX + validWidth <= defaults.COLUMN_COUNT) {
+      if (isPositionFree(existingItems, rightmostX, y, validWidth, newHeight)) {
+        return [rightmostX, y];
+      }
     }
   }
 
-  // Second pass: look for gaps within existing rows
+  // Second pass: find gaps within rows
   for (const [y, items] of rows) {
     const sortedItems = items.sort((a, b) => a.x - b.x);
 
-    // Check each possible position from left to right
     let x = 0;
     for (const item of sortedItems) {
-      // If there's enough space before the current item, use that position
-      if (x + newWidth <= item.x) {
+      if (
+        x + validWidth <= item.x &&
+        isPositionFree(existingItems, x, y, validWidth, newHeight)
+      ) {
         return [x, y];
       }
       x = item.x + item.width;
     }
+
+    // Check after the last item in the row
+    if (
+      x + validWidth <= defaults.COLUMN_COUNT &&
+      isPositionFree(existingItems, x, y, validWidth, newHeight)
+    ) {
+      return [x, y];
+    }
   }
 
-  // Last resort: create a new row below all existing content
-  const lastRow = rows[rows.length - 1];
-  // Use the height of the last row to determine the y-coordinate for the new row
-  const newY = lastRow ? lastRow[0] + lastRow[1][0].height : 0;
+  // Final pass: add a new row
+  const lastRowY = Math.max(
+    ...existingItems.map((item) => item.y + item.height),
+    0,
+  );
+  const newY = lastRowY; // Place the new row below the tallest existing item
   return [0, newY];
 }

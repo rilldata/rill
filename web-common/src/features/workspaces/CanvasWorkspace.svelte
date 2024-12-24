@@ -32,6 +32,7 @@
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
+  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
 
   export let fileArtifact: FileArtifact;
 
@@ -90,6 +91,7 @@
     if (newRoute) await goto(newRoute);
   }
 
+  // FIXME: scroll new component into view
   async function addComponent(componentName: CanvasComponentType) {
     console.log("[CanvasWorkspace] adding component: ", componentName);
 
@@ -110,7 +112,7 @@
     const docJson = parsedDocument.toJSON();
     const existingItems = docJson?.items || [];
 
-    const [x, y] = findNextAvailablePosition(existingItems, width);
+    const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
     const newComponent = {
       component: { [componentName]: newSpec },
@@ -125,6 +127,9 @@
     } else {
       parsedDocument.set("items", [...existingItems, newComponent]);
     }
+
+    const newIndex = existingItems.length;
+    canvasStore.setSelectedComponentIndex(canvasName, newIndex);
 
     updateEditorContent(parsedDocument.toString(), true);
     await updateComponentFile();
