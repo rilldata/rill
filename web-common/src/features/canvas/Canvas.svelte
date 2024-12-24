@@ -84,6 +84,7 @@
   on:keydown={async (e) => {
     if (e.target !== document.body || $selectedIndex === null) return;
     if (e.key === "Delete" || e.key === "Backspace") {
+      console.log("[Canvas] Fired `delete` key");
       await deleteComponent($selectedIndex);
     }
   }}

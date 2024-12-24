@@ -14,7 +14,6 @@
   const zeroVector = [0, 0] as [0, 0];
 
   export let items: V1CanvasItem[];
-  export let gap: number | undefined;
   export let showGrid = false;
   export let snap = true;
   export let selectedIndex: number | null = null;
@@ -62,6 +61,8 @@
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
 
   function handleMouseUp() {
+    console.log("[CanvasDashboardPreview] handleMouseUp ", selectedIndex);
+
     if (selectedIndex === null || !changing) return;
 
     const cellPosition = getCell(dragPosition, true);

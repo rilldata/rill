@@ -30,7 +30,7 @@
 >
   <div
     bind:contentRect
-    class="wrapper {color} max-w-[1440px] min-h-full"
+    class="dashboard-wrapper {color} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
     {#if GridLinesComponent && (showGrid || changing)}
@@ -58,7 +58,7 @@
 </div>
 
 <style lang="postcss">
-  .wrapper {
+  .dashboard-wrapper {
     width: 100%;
     height: 100%;
     position: relative;
