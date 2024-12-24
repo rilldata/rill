@@ -53,6 +53,22 @@
       changePosition: [1, 1],
     });
   }
+
+  function handleDragStart(e: CustomEvent<any> | DragEvent) {
+    if ("button" in e && e.button !== 0) return;
+    console.log("[PreviewElement] handleDragStart", { i, width, height });
+
+    dispatch("dragstart", {
+      componentIndex: i,
+      width,
+      height,
+    });
+  }
+
+  function handleDragEnd() {
+    console.log("[PreviewElement] handleDragEnd");
+    dispatch("dragend");
+  }
 </script>
 
 {#if componentName && !inlineComponent}
@@ -73,9 +89,10 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    on:change
+    draggable={true}
+    on:dragstart={handleDragStart}
+    on:dragend={handleDragEnd}
     on:contextmenu
-    on:mousedown={handleMouseDown}
   />
   <!-- </ContextMenu.Trigger>
 
@@ -110,9 +127,10 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    on:change
+    draggable={true}
+    on:dragstart={handleDragStart}
+    on:dragend={handleDragEnd}
     on:contextmenu
-    on:mousedown={handleMouseDown}
   />
   <!-- </ContextMenu.Trigger>
 

@@ -32,6 +32,7 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
+  export let draggable = false;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -53,6 +54,12 @@
       ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
     }
   });
+
+  $: componentClasses = [
+    "component",
+    "pointer-events-auto",
+    draggable ? "hover:cursor-grab active:cursor-grabbing" : "",
+  ].join(" ");
 </script>
 
 <div
@@ -61,18 +68,19 @@
   role="presentation"
   data-index={i}
   data-component
-  class="component hover:cursor-pointer active:cursor-grab pointer-events-auto"
-  class:!cursor-default={embed}
+  class={componentClasses}
+  {draggable}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
   style:width="{width}px"
   style:height={chartView ? undefined : `${height}px`}
+  on:dragstart
+  on:dragend
   on:contextmenu
-  on:mousedown|capture
 >
-  <div class="size-full relative">
+  <div class="size-full relative {draggable ? 'touch-none' : ''}">
     {#if ResizeHandleComponent && !embed}
       {#each allSides as side (side)}
         <svelte:component
@@ -112,7 +120,10 @@
 
 <style lang="postcss">
   .component {
-    @apply absolute;
+    @apply absolute touch-none;
+    &[draggable="true"] {
+      @apply select-none;
+    }
   }
 
   h1 {

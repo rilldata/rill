@@ -29,6 +29,11 @@
   let initialElementPosition: Vector = [0, 0];
   let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
+  let draggedComponent: {
+    index: number;
+    width: number;
+    height: number;
+  } | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -103,45 +108,21 @@
         zeroVector;
   }
 
-  function handleChange(
-    e: CustomEvent<{
-      e: MouseEvent & { currentTarget: HTMLButtonElement };
-      dimensions: Vector;
-      position: Vector;
-      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
-      changePosition: [0 | 1, 0 | 1];
-    }>,
-  ) {
-    e.preventDefault();
+  function handleDragStart(e: CustomEvent) {
+    const { componentIndex, width, height } = e.detail;
+    draggedComponent = {
+      index: componentIndex,
+      width,
+      height,
+    };
+  }
 
-    dimensionChange = e.detail.changeDimensions;
-    positionChange = e.detail.changePosition;
-
-    const index = Number(e.detail.e.currentTarget.dataset.index);
-    console.log("[CanvasDashboardPreview] handleChange: ", index);
-
-    initialElementDimensions = e.detail.dimensions;
-    initialElementPosition = e.detail.position;
-
-    startMouse = [
-      e.detail.e.clientX - contentRect.left,
-      e.detail.e.clientY - contentRect.top - scrollOffset,
-    ];
-
-    mousePosition = startMouse;
-
-    selectedIndex = index;
-    $canvasStore.setSelectedComponentIndex(selectedIndex);
-    changing = true;
+  function handleDragEnd() {
+    draggedComponent = null;
   }
 
   function handleMouseMove(e: MouseEvent) {
-    if (selectedIndex === null || !changing) return;
-
-    mousePosition = [
-      e.clientX - contentRect.left,
-      e.clientY - contentRect.top - scrollOffset,
-    ];
+    // No-op - we'll use drag events instead
   }
 
   function handleScroll(
@@ -161,7 +142,6 @@
   }
 
   function deselect() {
-    console.log("[CanvasDashboardPreview] deselect");
     selectedIndex = null;
     $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
@@ -199,27 +179,21 @@
     class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
   ></section>
   {#each items as component, i (i)}
-    {@const selected = i === selectedIndex}
-    {@const interacting = selected && changing}
     <PreviewElement
       {instanceId}
       {i}
       {scale}
       {component}
       {radius}
-      {selected}
-      {interacting}
+      selected={draggedComponent?.index === i}
+      interacting={false}
       {gapSize}
-      width={interacting
-        ? finalResize[0]
-        : Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-      height={interacting
-        ? finalResize[1]
-        : Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
-      top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
-      left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
-      on:change={handleChange}
-      on:delete
+      width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
+      height={Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
+      top={Number(component.y) * gridCell}
+      left={Number(component.x) * gridCell}
+      on:dragstart={handleDragStart}
+      on:dragend={handleDragEnd}
     />
   {/each}
 </DashboardWrapper>
