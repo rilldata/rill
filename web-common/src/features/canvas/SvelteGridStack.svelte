@@ -40,7 +40,7 @@
     resizable: {
       handles: "e,se,s,sw,w",
     },
-    animate: true,
+    animate: false,
     float: true,
     staticGrid: embed,
   } as GridStackOptions;
