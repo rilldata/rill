@@ -47,13 +47,13 @@
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
 
-  let ResizeHandleComponent: ComponentType<ResizeHandle>;
+  // let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
-  onMount(async () => {
-    if (!embed) {
-      ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
-    }
-  });
+  // onMount(async () => {
+  //   if (!embed) {
+  //     ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
+  //   }
+  // });
 
   $: componentClasses = [
     "component",
@@ -81,7 +81,7 @@
   on:contextmenu
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
-    {#if ResizeHandleComponent && !embed}
+    <!-- {#if ResizeHandleComponent && !embed}
       {#each allSides as side (side)}
         <svelte:component
           this={ResizeHandleComponent}
@@ -94,7 +94,7 @@
           on:change
         />
       {/each}
-    {/if}
+    {/if} -->
 
     <div
       class="size-full overflow-hidden flex flex-col flex-none"
