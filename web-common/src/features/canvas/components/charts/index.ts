@@ -11,7 +11,7 @@ export type ChartSpec = ComponentCommonProperties & ChartConfig;
 
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
-  defaultSize = { width: 12, height: 8 };
+  defaultSize = { width: 12, height: 4 };
 
   constructor(
     fileArtifact: FileArtifact,

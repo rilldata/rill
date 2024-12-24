@@ -17,7 +17,7 @@ export interface TableSpec extends ComponentCommonProperties {
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
-  defaultSize = { width: 16, height: 10 };
+  defaultSize = { width: 12, height: 4 };
 
   constructor(
     fileArtifact: FileArtifact,
