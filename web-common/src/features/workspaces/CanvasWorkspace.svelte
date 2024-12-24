@@ -90,6 +90,8 @@
   }
 
   async function addComponent(componentName: CanvasComponentType) {
+    console.log("[CanvasWorkspace] adding component: ", componentName);
+
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 

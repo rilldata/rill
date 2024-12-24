@@ -54,7 +54,7 @@
     instanceId,
     metricsViewName,
     measureName,
-    timeRange.toUpperCase(),
+    timeRange?.toUpperCase(),
   );
 
   $: comparisonValue = useKPIComparisonTotal(
@@ -62,7 +62,7 @@
     metricsViewName,
     measureName,
     comparisonTimeRange?.toUpperCase(),
-    timeRange.toUpperCase(),
+    timeRange?.toUpperCase(),
     undefined,
     queryClient,
   );
@@ -71,7 +71,7 @@
     instanceId,
     metricsViewName,
     measureName,
-    timeRange.toUpperCase(),
+    timeRange?.toUpperCase(),
     undefined,
     queryClient,
   );
