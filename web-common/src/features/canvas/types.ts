@@ -8,3 +8,10 @@ export type Vector = [number, number];
 export type CanvasSpecResponseStore = Readable<
   QueryObserverResult<CanvasResponse, RpcStatus>
 >;
+
+export interface PositionedItem {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}

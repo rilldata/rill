@@ -30,6 +30,7 @@
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
+  import { getCanvasStateManagers } from "../canvas/state-managers/state-managers";
 
   export let fileArtifact: FileArtifact;
 
@@ -37,6 +38,7 @@
   let selectedView: "split" | "code" | "viz";
 
   const componentRegistry = getComponentRegistry();
+  const { canvasEntity } = getCanvasStateManagers();
 
   $: ({
     autoSave,
@@ -103,7 +105,7 @@
     const docJson = parsedDocument.toJSON();
     const existingItems = docJson?.items || [];
 
-    const [x, y] = findNextAvailablePosition(existingItems, width);
+    const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
     const newComponent = {
       component: { [componentName]: newSpec },
@@ -119,7 +121,10 @@
       parsedDocument.set("items", [...existingItems, newComponent]);
     }
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    const newIndex = existingItems.length;
+    canvasEntity.setSelectedComponentIndex(newIndex);
+
+    updateEditorContent(parsedDocument.toString(), true);
   }
 </script>
 
