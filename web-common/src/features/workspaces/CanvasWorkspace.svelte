@@ -29,6 +29,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
 
   export let fileArtifact: FileArtifact;
 
@@ -97,21 +98,25 @@
     );
 
     const { width, height } = componentRegistry[componentName].defaultSize;
+
+    const parsedDocument = parseDocument($editorContent ?? "");
+    const docJson = parsedDocument.toJSON();
+    const existingItems = docJson?.items || [];
+
+    const [x, y] = findNextAvailablePosition(existingItems, width);
+
     const newComponent = {
       component: { [componentName]: newSpec },
       height,
       width,
-      x: 0,
-      y: 0,
+      x,
+      y,
     };
-    const parsedDocument = parseDocument($editorContent ?? "");
 
-    const items = parsedDocument.get("items") as any;
-
-    if (!items) {
+    if (!docJson.items) {
       parsedDocument.set("items", [newComponent]);
     } else {
-      items.add(newComponent);
+      parsedDocument.set("items", [...existingItems, newComponent]);
     }
 
     updateEditorContent(parsedDocument.toString(), false, true);
