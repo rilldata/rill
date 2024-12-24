@@ -19,10 +19,6 @@
 
   let showGrid = true;
 
-  // TODO: Remove later when we move to new tiling system
-  const columns = 24;
-  const gap = 1;
-
   let spec: V1CanvasSpec = {
     items: [],
     filtersEnabled: true,
@@ -45,7 +41,6 @@
 
   async function deleteComponent(index: number) {
     const parsedDocument = parseDocument($editorContent ?? "");
-
     const items = parsedDocument.get("items") as any;
     if (!items) return;
     items.delete(index);
@@ -76,9 +71,7 @@
 </script>
 
 <CanvasDashboardPreview
-  {gap}
   {items}
-  {columns}
   {showGrid}
   showFilterBar={filtersEnabled}
   selectedIndex={$selectedIndex}

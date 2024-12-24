@@ -13,7 +13,6 @@
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
-  export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
   export let showGrid = false;
@@ -38,8 +37,8 @@
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
-  $: gapSize = defaults.DASHBOARD_WIDTH * ((gap ?? defaults.GAP_SIZE) / 1000);
-  $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
+  $: gapSize = defaults.DASHBOARD_WIDTH * (defaults.GAP_SIZE / 1000);
+  $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
   $: gridVector = [gridCell, gridCell] as Vector;
 
@@ -118,6 +117,7 @@
     positionChange = e.detail.changePosition;
 
     const index = Number(e.detail.e.currentTarget.dataset.index);
+    console.log("[CanvasDashboardPreview] handleChange: ", index);
 
     initialElementDimensions = e.detail.dimensions;
     initialElementPosition = e.detail.position;
@@ -160,6 +160,7 @@
   }
 
   function deselect() {
+    console.log("[CanvasDashboardPreview] deselect");
     selectedIndex = null;
     canvasEntity.setSelectedComponentIndex(selectedIndex);
   }

@@ -6,9 +6,7 @@
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
 
-  export let columns = 20;
   export let items: V1CanvasItem[];
-  export let gap = 1;
   export let chartView = false;
   export let showFilterBar = true;
 
@@ -21,8 +19,8 @@
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / dashboardWidth;
-  $: gapSize = dashboardWidth * (gap / 1000);
-  $: gridCell = dashboardWidth / columns;
+  $: gapSize = dashboardWidth * (defaults.GAP_SIZE / 1000);
+  $: gridCell = dashboardWidth / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: maxBottom = items.reduce((max, el) => {
