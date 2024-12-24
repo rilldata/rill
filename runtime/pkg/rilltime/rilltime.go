@@ -83,6 +83,7 @@ type TimeAnchor struct {
 	Now      bool    `parser:"| @Now"`
 	Latest   bool    `parser:"| @Latest"`
 	Earliest bool    `parser:"| @Earliest)"`
+	Offset   *Grain  `parser:"@@?"`
 	Trunc    *string `parser:"  ('/' @Grain)?"`
 }
 
@@ -269,37 +270,16 @@ func (t *TimeAnchor) Modify(resolverCtx ResolverContext, tm time.Time, tg timeut
 		absTm, _ := time.Parse("2006-01-02 15:04", *t.AbsTime)
 		tm = absTm.In(tz)
 	} else if t.Grain != nil {
-		n := 0
-		if t.Grain.Num != nil {
-			n = *t.Grain.Num
-		}
-
-		tm = tm.In(tz)
-		switch t.Grain.Grain {
-		case "s":
-			tm = tm.Add(time.Duration(n) * time.Second)
-		case "m":
-			tm = tm.Add(time.Duration(n) * time.Minute)
-		case "h":
-			tm = tm.Add(time.Duration(n) * time.Hour)
-		case "d":
-			tm = tm.AddDate(0, 0, n)
-		case "D":
-			tm = tm.AddDate(0, 0, n)
-		case "W":
-			tm = tm.AddDate(0, 0, n*7)
-		case "M":
-			tm = tm.AddDate(0, n, 0)
-		case "Q":
-			tm = tm.AddDate(0, n*3, 0)
-		case "Y":
-			tm = tm.AddDate(n, 0, 0)
-		}
+		tm = t.Grain.offset(tm.In(tz))
 
 		truncateGrain = grainMap[t.Grain.Grain]
 		isTruncate = true
 	} else {
 		return tm.In(tz)
+	}
+
+	if t.Offset != nil {
+		tm = t.Offset.offset(tm)
 	}
 
 	if t.Trunc != nil {
@@ -311,4 +291,34 @@ func (t *TimeAnchor) Modify(resolverCtx ResolverContext, tm time.Time, tg timeut
 		return timeutil.TruncateTime(tm, truncateGrain, tz, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 	}
 	return timeutil.CeilTime(tm, truncateGrain, tz, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+}
+
+func (g *Grain) offset(tm time.Time) time.Time {
+	n := 0
+	if g.Num != nil {
+		n = *g.Num
+	}
+
+	switch g.Grain {
+	case "s":
+		tm = tm.Add(time.Duration(n) * time.Second)
+	case "m":
+		tm = tm.Add(time.Duration(n) * time.Minute)
+	case "h":
+		tm = tm.Add(time.Duration(n) * time.Hour)
+	case "d":
+		tm = tm.AddDate(0, 0, n)
+	case "D":
+		tm = tm.AddDate(0, 0, n)
+	case "W":
+		tm = tm.AddDate(0, 0, n*7)
+	case "M":
+		tm = tm.AddDate(0, n, 0)
+	case "Q":
+		tm = tm.AddDate(0, n*3, 0)
+	case "Y":
+		tm = tm.AddDate(n, 0, 0)
+	}
+
+	return tm
 }

@@ -38,6 +38,12 @@ func Test_Resolve(t *testing.T) {
 
 		{`2024-01-01, latest : h`, "2024-01-01T00:00:00Z", "2024-08-06T07:00:00Z"},
 		{`2024-01-01 12:00, latest : h`, "2024-01-01T12:00:00Z", "2024-08-06T07:00:00Z"},
+
+		{`2024-01-01+5d, latest : h`, "2024-01-06T00:00:00Z", "2024-08-06T07:00:00Z"},
+		// TODO: should this be same as `-7W` and not get truncated by week?
+		{`-7W+5d, latest : h`, "2024-06-17T00:00:00Z", "2024-08-06T07:00:00Z"},
+		// TODO: should this be truncated by week or hour?
+		{`-7W+8d, latest : h`, "2024-06-24T00:00:00Z", "2024-08-06T07:00:00Z"},
 	}
 
 	for _, tc := range testCases {
