@@ -42,6 +42,10 @@
     index: number;
     position: "left" | "right";
   } | null = null;
+  let hoverTarget: {
+    index: number;
+    position: "left" | "right";
+  } | null = null;
 
   // FIXME: there's no way to derive
   // Suggest that we add `type: CanvasComponentType` to V1CanvasItem
@@ -250,6 +254,81 @@
     dropTarget = null;
     draggedComponent = null;
   }
+
+  function isOverGap(e: MouseEvent, targetIndex: number): boolean {
+    const targetElement = document.querySelector(
+      `[data-index="${targetIndex}"]`,
+    );
+    if (!targetElement) return false;
+
+    const rect = targetElement.getBoundingClientRect();
+    const mouseX = e.clientX;
+
+    // Define gap zones on left and right of component
+    const gapWidth = gapSize * scale;
+    const isInLeftGap = mouseX >= rect.left - gapWidth && mouseX <= rect.left;
+    const isInRightGap =
+      mouseX >= rect.right && mouseX <= rect.right + gapWidth;
+
+    return isInLeftGap || isInRightGap;
+  }
+
+  function getGapPosition(
+    e: MouseEvent,
+    targetIndex: number,
+  ): "left" | "right" | null {
+    const targetElement = document.querySelector(
+      `[data-index="${targetIndex}"]`,
+    );
+    if (!targetElement) return null;
+
+    const rect = targetElement.getBoundingClientRect();
+    const mouseX = e.clientX;
+    const gapWidth = gapSize * scale;
+
+    // Make gap detection area wider
+    const gapDetectionWidth = gapWidth * 2;
+
+    // Add logging
+    console.log("[getGapPosition]", {
+      targetIndex,
+      mouseX,
+      rectLeft: rect.left,
+      rectRight: rect.right,
+      gapWidth,
+      gapDetectionWidth,
+      leftGapRange: [rect.left - gapDetectionWidth, rect.left],
+      rightGapRange: [rect.right, rect.right + gapDetectionWidth],
+    });
+
+    if (mouseX >= rect.left - gapDetectionWidth && mouseX <= rect.left)
+      return "left";
+    if (mouseX >= rect.right && mouseX <= rect.right + gapDetectionWidth)
+      return "right";
+
+    return null;
+  }
+
+  function handleHover(e: MouseEvent, targetIndex: number) {
+    const position = getGapPosition(e, targetIndex);
+    console.log("[handleHover]", {
+      targetIndex,
+      position,
+      mouseX: e.clientX,
+      element: document.querySelector(`[data-index="${targetIndex}"]`),
+      gapWidth: gapSize * scale,
+    });
+
+    if (position) {
+      hoverTarget = { index: targetIndex, position };
+    } else {
+      hoverTarget = null;
+    }
+  }
+
+  function handleHoverEnd() {
+    hoverTarget = null;
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -266,10 +345,6 @@
   width={defaults.DASHBOARD_WIDTH}
   on:click={deselect}
   on:scroll={handleScroll}
-  on:dragover={(e) => {
-    e.preventDefault();
-  }}
-  on:drop={handleDrop}
 >
   {#each items as component, i (i)}
     <PreviewElement
@@ -278,27 +353,25 @@
       {scale}
       {component}
       {radius}
-      selected={draggedComponent?.index === i}
+      selected={selectedIndex === i}
       interacting={false}
       {gapSize}
       width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
       height={Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
       top={Number(component.y) * gridCell}
       left={Number(component.x) * gridCell}
-      onDragOver={(e) => handleDragOver(e, i)}
-      onDrop={(e) => handleDrop(e)}
-      on:dragstart={handleDragStart}
-      on:dragend={handleDragEnd}
+      onMouseOver={(e) => handleHover(e, i)}
+      onMouseLeave={handleHoverEnd}
     />
   {/each}
 
-  {#if dropTarget && draggedComponent}
-    {@const targetItem = items[dropTarget.index]}
+  {#if hoverTarget}
+    {@const targetItem = items[hoverTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <GhostLine
         height={targetItem.height * gridCell}
         top={targetItem.y * gridCell}
-        left={dropTarget.position === "right"
+        left={hoverTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
           : targetItem.x * gridCell}
         orientation="vertical"

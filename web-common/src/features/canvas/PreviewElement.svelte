@@ -24,8 +24,8 @@
   export let radius: number;
   export let scale: number;
   export let instanceId: string;
-  export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
-  export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
+  export let onMouseOver: (e: MouseEvent) => void;
+  export let onMouseLeave: () => void;
 
   let localZIndex = 0;
 
@@ -91,11 +91,8 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    draggable={true}
-    on:dragstart={handleDragStart}
-    on:dragend={handleDragEnd}
-    on:dragover={onDragOver}
-    on:drop={onDrop}
+    on:mouseover={(e) => onMouseOver(e)}
+    on:mouseleave={onMouseLeave}
     on:contextmenu
   />
   <!-- </ContextMenu.Trigger>
@@ -131,11 +128,8 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    draggable={true}
-    on:dragstart={handleDragStart}
-    on:dragend={handleDragEnd}
-    on:dragover={onDragOver}
-    on:drop={onDrop}
+    on:mouseover={(e) => onMouseOver(e)}
+    on:mouseleave={onMouseLeave}
     on:contextmenu
   />
   <!-- </ContextMenu.Trigger>

@@ -1,12 +1,9 @@
 <script lang="ts" context="module">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import type { ComponentType } from "svelte";
-  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import type ResizeHandle from "./ResizeHandle.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
 
   const options = [0, 0.5, 1];
@@ -33,6 +30,7 @@
   export let componentName: string;
   export let instanceId: string;
   export let draggable = false;
+  export let gapSize: number;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -59,6 +57,7 @@
     "component",
     "pointer-events-auto",
     draggable ? "hover:cursor-grab active:cursor-grabbing" : "",
+    "debug-hover",
   ].join(" ");
 </script>
 
@@ -69,17 +68,16 @@
   data-index={i}
   data-component
   class={componentClasses}
-  {draggable}
+  style:--gap-size={gapSize * scale}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
   style:width="{width}px"
   style:height={chartView ? undefined : `${height}px`}
-  on:dragstart
-  on:dragend
-  on:dragover
-  on:drop
+  on:mouseover
+  on:mouseleave
+  on:focus
   on:contextmenu
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
@@ -125,6 +123,30 @@
     @apply absolute touch-none;
     &[draggable="true"] {
       @apply select-none;
+    }
+
+    &.debug-hover:hover {
+      outline: 2px solid red;
+    }
+
+    /* Temporary visualization of gap areas */
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: calc(var(--gap-size) * 2px);
+      background: rgba(0, 0, 255, 0.1);
+      pointer-events: none;
+    }
+
+    &::before {
+      right: 100%;
+    }
+
+    &::after {
+      left: 100%;
     }
   }
 
