@@ -1,7 +1,6 @@
 <script lang="ts">
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
@@ -49,31 +48,6 @@
     if ($autoSave) await updateComponentFile();
   }
 
-  async function handlePreviewUpdate(
-    e: CustomEvent<{
-      index: number;
-      position: Vector;
-      dimensions: Vector;
-    }>,
-  ) {
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
-    const items = parsedDocument.get("items") as any;
-
-    const node = items?.get(e.detail.index);
-    if (!node) return;
-
-    node.set("width", e.detail.dimensions[0]);
-    node.set("height", e.detail.dimensions[1]);
-    node.set("x", e.detail.position[0]);
-    node.set("y", e.detail.position[1]);
-
-    updateEditorContent(parsedDocument.toString(), true);
-
-    if ($autoSave) await updateComponentFile();
-  }
-
   async function handleUpdate(event: CustomEvent) {
     const { index, position, dimensions, items } = event.detail;
     console.log("[Canvas] Handling update:", {
@@ -83,7 +57,6 @@
       items,
     });
 
-    // Update the YAML document
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
@@ -112,6 +85,7 @@
 
 <svelte:window
   on:keydown={async (e) => {
+    console.log("[Canvas] keydown: ", selectedIndex, e.key);
     if (e.target !== document.body || selectedIndex === null) return;
     if (e.key === "Delete" || e.key === "Backspace") {
       console.log("[Canvas] Fired `delete` key");

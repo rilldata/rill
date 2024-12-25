@@ -11,17 +11,14 @@
   import { vector } from "./util";
   import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import type { FileArtifact } from "../entity-management/file-artifact";
-  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import GhostLine from "./GhostLine.svelte";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
   export let items: V1CanvasItem[];
-  export let selectedIndex: number | null = null;
   export let fileArtifact: FileArtifact;
-
-  const { canvasName } = getCanvasStateManagers();
+  export let selectedIndex: number | null = null;
 
   let snap = true;
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
@@ -46,6 +43,8 @@
     index: number;
     position: "left" | "right";
   } | null = null;
+
+  const { canvasName } = getCanvasStateManagers();
 
   // FIXME: there's no way to derive
   // Suggest that we add `type: CanvasComponentType` to V1CanvasItem
@@ -138,10 +137,6 @@
   function handleDragEnd() {
     draggedComponent = null;
   }
-
-  // function handleMouseMove(e: MouseEvent) {
-  //   // No-op - we'll use drag events instead
-  // }
 
   function handleScroll(
     e: UIEvent & {
@@ -289,17 +284,16 @@
     // Make gap detection area wider
     const gapDetectionWidth = gapWidth * 2;
 
-    // Add logging
-    console.log("[getGapPosition]", {
-      targetIndex,
-      mouseX,
-      rectLeft: rect.left,
-      rectRight: rect.right,
-      gapWidth,
-      gapDetectionWidth,
-      leftGapRange: [rect.left - gapDetectionWidth, rect.left],
-      rightGapRange: [rect.right, rect.right + gapDetectionWidth],
-    });
+    // console.log("[getGapPosition]", {
+    //   targetIndex,
+    //   mouseX,
+    //   rectLeft: rect.left,
+    //   rectRight: rect.right,
+    //   gapWidth,
+    //   gapDetectionWidth,
+    //   leftGapRange: [rect.left - gapDetectionWidth, rect.left],
+    //   rightGapRange: [rect.right, rect.right + gapDetectionWidth],
+    // });
 
     if (mouseX >= rect.left - gapDetectionWidth && mouseX <= rect.left)
       return "left";
@@ -311,13 +305,13 @@
 
   function handleHover(e: MouseEvent, targetIndex: number) {
     const position = getGapPosition(e, targetIndex);
-    console.log("[handleHover]", {
-      targetIndex,
-      position,
-      mouseX: e.clientX,
-      element: document.querySelector(`[data-index="${targetIndex}"]`),
-      gapWidth: gapSize * scale,
-    });
+    // console.log("[handleHover]", {
+    //   targetIndex,
+    //   position,
+    //   mouseX: e.clientX,
+    //   element: document.querySelector(`[data-index="${targetIndex}"]`),
+    //   gapWidth: gapSize * scale,
+    // });
 
     if (position) {
       hoverTarget = { index: targetIndex, position };
@@ -328,6 +322,69 @@
 
   function handleHoverEnd() {
     hoverTarget = null;
+  }
+
+  // function handleChange(
+  //   e: CustomEvent<{
+  //     e: MouseEvent & { currentTarget: HTMLButtonElement };
+  //     dimensions: Vector;
+  //     position: Vector;
+  //     changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
+  //     changePosition: [0 | 1, 0 | 1];
+  //   }>,
+  // ) {
+  //   e.preventDefault();
+
+  //   // Get the index from the event target's data attribute
+  //   const index = Number(e.detail.e.currentTarget.dataset.index);
+  //   console.log("[CanvasDashboardPreview] handleChange", { index });
+
+  //   // Update selection
+  //   selectedIndex = index;
+  //   selectedComponentName = items[index].component ?? null;
+  //   canvasStore.setSelectedComponentIndex($canvasName, index);
+
+  //   // Set changing state
+  //   changing = true;
+  // }
+
+  // function handleMouseDown(e) {
+  //   // Get the index from the event target's data attribute
+  //   const index = Number(e.detail.e.currentTarget.dataset.index);
+  //   console.log("[CanvasDashboardPreview] handleChange", { index });
+  //   selectedIndex = index;
+  //   canvasStore.setSelectedComponentIndex($canvasName, index);
+  // }
+
+  function handleChange(
+    e: CustomEvent<{
+      e: MouseEvent & { currentTarget: HTMLButtonElement };
+      dimensions: Vector;
+      position: Vector;
+      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
+      changePosition: [0 | 1, 0 | 1];
+    }>,
+  ) {
+    e.preventDefault();
+
+    dimensionChange = e.detail.changeDimensions;
+    positionChange = e.detail.changePosition;
+
+    const index = Number(e.detail.e.currentTarget.dataset.index);
+
+    initialElementDimensions = e.detail.dimensions;
+    initialElementPosition = e.detail.position;
+
+    startMouse = [
+      e.detail.e.clientX - contentRect.left,
+      e.detail.e.clientY - contentRect.top - scrollOffset,
+    ];
+
+    mousePosition = startMouse;
+
+    selectedIndex = index;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    changing = true;
   }
 </script>
 
@@ -362,6 +419,7 @@
       left={Number(component.x) * gridCell}
       onMouseOver={(e) => handleHover(e, i)}
       onMouseLeave={handleHoverEnd}
+      on:change={handleChange}
     />
   {/each}
 

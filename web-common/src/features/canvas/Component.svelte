@@ -79,6 +79,7 @@
   on:mouseleave
   on:focus
   on:contextmenu
+  on:mousedown
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
     <!-- {#if ResizeHandleComponent && !embed}

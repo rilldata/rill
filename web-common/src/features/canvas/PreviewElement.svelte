@@ -56,26 +56,24 @@
     });
   }
 
-  function handleDragStart(e: CustomEvent<any> | DragEvent) {
-    if ("button" in e && e.button !== 0) return;
-    console.log("[PreviewElement] handleDragStart", { i, width, height });
+  // function handleDragStart(e: CustomEvent<any> | DragEvent) {
+  //   if ("button" in e && e.button !== 0) return;
+  //   console.log("[PreviewElement] handleDragStart", { i, width, height });
 
-    dispatch("dragstart", {
-      componentIndex: i,
-      width,
-      height,
-    });
-  }
+  //   dispatch("dragstart", {
+  //     componentIndex: i,
+  //     width,
+  //     height,
+  //   });
+  // }
 
-  function handleDragEnd() {
-    console.log("[PreviewElement] handleDragEnd");
-    dispatch("dragend");
-  }
+  // function handleDragEnd() {
+  //   console.log("[PreviewElement] handleDragEnd");
+  //   dispatch("dragend");
+  // }
 </script>
 
 {#if componentName && !inlineComponent}
-  <!-- <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder> -->
   <Component
     {instanceId}
     {i}
@@ -86,6 +84,7 @@
     {radius}
     {scale}
     {selected}
+    {gapSize}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -93,26 +92,10 @@
     width={finalWidth}
     on:mouseover={(e) => onMouseOver(e)}
     on:mouseleave={onMouseLeave}
+    on:mousedown={handleMouseDown}
     on:contextmenu
   />
-  <!-- </ContextMenu.Trigger>
-
-    <ContextMenu.Content class="z-[100]">
-      <ContextMenu.Item
-        on:click={async () => {
-          await goto(`/files/charts/${componentName}.yaml`);
-        }}
-      >
-        Go to {componentName}.yaml
-      </ContextMenu.Item>
-      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
-        >Delete from dashboard</ContextMenu.Item
-      >
-    </ContextMenu.Content>
-  </ContextMenu.Root> -->
 {:else if componentName}
-  <!-- <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder> -->
   <Component
     {instanceId}
     {i}
@@ -123,6 +106,7 @@
     {radius}
     {scale}
     {selected}
+    {gapSize}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -130,14 +114,7 @@
     width={finalWidth}
     on:mouseover={(e) => onMouseOver(e)}
     on:mouseleave={onMouseLeave}
+    on:mousedown={handleMouseDown}
     on:contextmenu
   />
-  <!-- </ContextMenu.Trigger>
-
-    <ContextMenu.Content class="z-[100]">
-      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
-        >Delete from dashboard</ContextMenu.Item
-      >
-    </ContextMenu.Content>
-  </ContextMenu.Root> -->
 {/if}
