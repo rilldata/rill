@@ -1,5 +1,6 @@
 import * as defaults from "./constants";
 import type { PositionedItem, Vector } from "./types";
+import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
@@ -112,4 +113,70 @@ export function findNextAvailablePosition(
   );
   const newY = lastRowY; // Place the new row below the tallest existing item
   return [0, newY];
+}
+
+export function moveItemToNewRow(
+  item: V1CanvasItem,
+  targetY: number,
+  targetHeight: number,
+): void {
+  if (!isValidItem(item)) return;
+  item.y = targetY + targetHeight;
+  item.x = 0;
+}
+
+export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} {
+  return (
+    item.x !== undefined &&
+    item.y !== undefined &&
+    item.width !== undefined &&
+    item.height !== undefined
+  );
+}
+
+export function recalculateRowPositions(
+  items: V1CanvasItem[],
+  targetY: number | undefined,
+): void {
+  let currentX = 0;
+
+  items.forEach((item, index) => {
+    if (!isValidItem(item)) return;
+    if (item.y !== targetY) return;
+
+    if (
+      index === 0 ||
+      !isValidItem(items[index - 1]) ||
+      items[index - 1].y !== item.y
+    ) {
+      item.x = 0;
+      currentX = item.width;
+    } else {
+      const newX = Math.round(currentX + defaults.GAP_SIZE / 1000);
+
+      if (newX + item.width > defaults.COLUMN_COUNT) {
+        moveItemToNewRow(item, targetY, item.height);
+        currentX = item.width;
+      } else {
+        item.x = Math.min(newX, defaults.COLUMN_COUNT - item.width);
+        currentX = item.x + item.width;
+      }
+    }
+  });
+}
+
+export function validateItemPositions(items: V1CanvasItem[]): void {
+  items.forEach((item) => {
+    if (item.x !== undefined && item.width !== undefined) {
+      item.x = Math.min(
+        Math.max(0, item.x),
+        defaults.COLUMN_COUNT - item.width,
+      );
+    }
+  });
 }
