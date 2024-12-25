@@ -1,6 +1,4 @@
 <script context="module" lang="ts">
-  import { goto } from "$app/navigation";
-  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { writable } from "svelte/store";
@@ -93,7 +91,6 @@
     on:mouseover={(e) => onMouseOver(e)}
     on:mouseleave={onMouseLeave}
     on:mousedown={handleMouseDown}
-    on:contextmenu
   />
 {:else if componentName}
   <Component
@@ -115,6 +112,5 @@
     on:mouseover={(e) => onMouseOver(e)}
     on:mouseleave={onMouseLeave}
     on:mousedown={handleMouseDown}
-    on:contextmenu
   />
 {/if}
