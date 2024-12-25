@@ -69,6 +69,7 @@
   role="presentation"
   data-index={i}
   data-component
+  data-selected={selected}
   class={componentClasses}
   {draggable}
   style:z-index={renderer === "select" ? 100 : localZIndex}
@@ -77,6 +78,8 @@
   style:top="{top}px"
   style:width="{width}px"
   style:height={chartView ? undefined : `${height}px`}
+  style:border={selected ? "2px solid var(--color-primary-300)" : "none"}
+  style:border-radius={selected ? "2px" : ""}
   on:dragstart
   on:dragend
   on:dragover

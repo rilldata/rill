@@ -308,7 +308,7 @@
       {scale}
       {component}
       {radius}
-      selected={draggedComponent?.index === i}
+      selected={selectedIndex === i}
       interacting={false}
       {gapSize}
       width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
