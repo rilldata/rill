@@ -73,12 +73,40 @@
 
     if ($autoSave) await updateComponentFile();
   }
+
+  async function handleUpdate(event: CustomEvent) {
+    const { index, position, dimensions, items } = event.detail;
+    console.log("[Canvas] Handling update:", {
+      index,
+      position,
+      dimensions,
+      items,
+    });
+
+    // Update the YAML document
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
+    const docItems = parsedDocument.get("items") as any;
+
+    if (!docItems) return;
+
+    const node = docItems.get(index);
+    if (!node) return;
+
+    node.set("x", position[0]);
+    node.set("y", position[1]);
+
+    updateEditorContent(parsedDocument.toString(), true);
+    if ($autoSave) await updateComponentFile();
+  }
 </script>
 
 <CanvasDashboardPreview
   {items}
   selectedIndex={$selectedIndex}
   on:update={handlePreviewUpdate}
+  on:update={handleUpdate}
   on:delete={handleDeleteEvent}
 />
 

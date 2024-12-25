@@ -78,6 +78,8 @@
   style:height={chartView ? undefined : `${height}px`}
   on:dragstart
   on:dragend
+  on:dragover
+  on:drop
   on:contextmenu
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
