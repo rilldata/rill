@@ -28,7 +28,6 @@
   export let interacting = false;
   export let width: number;
   export let height: number;
-  export let localZIndex = 0;
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
@@ -71,7 +70,7 @@
   data-selected={selected}
   class={componentClasses}
   {draggable}
-  style:z-index={renderer === "select" ? 100 : localZIndex}
+  style:z-index={renderer === "select" ? 100 : "auto"}
   style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"

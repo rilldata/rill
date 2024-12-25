@@ -1,12 +1,7 @@
 <script context="module" lang="ts">
-  import { goto } from "$app/navigation";
-  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { writable } from "svelte/store";
+  import { createEventDispatcher } from "svelte";
   import Component from "./Component.svelte";
-
-  const zIndex = writable(0);
 </script>
 
 <script lang="ts">
@@ -27,8 +22,6 @@
   export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
 
-  let localZIndex = 0;
-
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
 
@@ -38,15 +31,8 @@
   $: finalHeight = Math.abs(height);
   $: padding = gapSize;
 
-  onMount(() => {
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
-  });
-
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
-    localZIndex = $zIndex;
-    zIndex.set(++localZIndex);
     dispatch("change", {
       e,
       dimensions: [width, height],
@@ -74,12 +60,9 @@
 </script>
 
 {#if componentName && !inlineComponent}
-  <!-- <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder> -->
   <Component
     {instanceId}
     {i}
-    {localZIndex}
     {interacting}
     {componentName}
     {padding}
@@ -99,7 +82,35 @@
     on:mousedown={handleMouseDown}
     on:contextmenu
   />
-  <!-- </ContextMenu.Trigger>
+{:else if componentName}
+  <Component
+    {instanceId}
+    {i}
+    {interacting}
+    {componentName}
+    {padding}
+    {radius}
+    {scale}
+    {selected}
+    builders={undefined}
+    height={finalHeight}
+    left={finalLeft}
+    top={finalTop}
+    width={finalWidth}
+    draggable={true}
+    on:dragstart={handleDragStart}
+    on:dragend={handleDragEnd}
+    on:dragover={onDragOver}
+    on:drop={onDrop}
+    on:mousedown={handleMouseDown}
+    on:contextmenu
+  />
+{/if}
+
+<!-- <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder> -->
+
+<!-- </ContextMenu.Trigger>
 
     <ContextMenu.Content class="z-[100]">
       <ContextMenu.Item
@@ -114,33 +125,11 @@
       >
     </ContextMenu.Content>
   </ContextMenu.Root> -->
-{:else if componentName}
-  <!-- <ContextMenu.Root>
+
+<!-- <ContextMenu.Root>
     <ContextMenu.Trigger asChild let:builder> -->
-  <Component
-    {instanceId}
-    {i}
-    {localZIndex}
-    {interacting}
-    {componentName}
-    {padding}
-    {radius}
-    {scale}
-    {selected}
-    builders={undefined}
-    height={finalHeight}
-    left={finalLeft}
-    top={finalTop}
-    width={finalWidth}
-    draggable={true}
-    on:dragstart={handleDragStart}
-    on:dragend={handleDragEnd}
-    on:dragover={onDragOver}
-    on:drop={onDrop}
-    on:mousedown={handleMouseDown}
-    on:contextmenu
-  />
-  <!-- </ContextMenu.Trigger>
+
+<!-- </ContextMenu.Trigger>
 
     <ContextMenu.Content class="z-[100]">
       <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
@@ -148,4 +137,3 @@
       >
     </ContextMenu.Content>
   </ContextMenu.Root> -->
-{/if}

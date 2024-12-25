@@ -35,12 +35,12 @@
       index: number;
     }>,
   ) {
-    if (!e.detail.index) return;
+    if (e.detail.index === undefined || e.detail.index === null) return;
     await deleteComponent(e.detail.index);
   }
 
   async function deleteComponent(index: number) {
-    console.log("[Canvas] deleting component: ", index);
+    console.log("[Canvas] deleteComponent: ", index);
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
