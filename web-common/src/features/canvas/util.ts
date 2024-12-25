@@ -180,3 +180,59 @@ export function validateItemPositions(items: V1CanvasItem[]): void {
     }
   });
 }
+
+export function reorderRows(
+  items: V1CanvasItem[],
+  sourceY: number | undefined,
+  targetY: number,
+): void {
+  if (sourceY === undefined || sourceY === targetY) return;
+
+  // First, identify rows and their items
+  const rowMap = new Map<number, V1CanvasItem[]>();
+  items.forEach((item) => {
+    if (!isValidItem(item)) return;
+    const row = rowMap.get(item.y) || [];
+    row.push(item);
+    rowMap.set(item.y, row);
+  });
+
+  // Get source and target rows
+  const sourceRow = rowMap.get(sourceY) || [];
+  const targetRow = rowMap.get(targetY) || [];
+
+  // Simple row swap - update y values
+  sourceRow.forEach((item) => {
+    if (!isValidItem(item)) return;
+    item.y = targetY;
+  });
+
+  targetRow.forEach((item) => {
+    if (!isValidItem(item)) return;
+    item.y = sourceY;
+  });
+
+  // If source row has a full-width item, ensure it stays full width
+  const hasFullWidth = sourceRow.some(
+    (item) => isValidItem(item) && item.width === defaults.COLUMN_COUNT,
+  );
+  if (hasFullWidth) {
+    sourceRow.forEach((item) => {
+      if (!isValidItem(item)) return;
+      item.width = defaults.COLUMN_COUNT;
+      item.x = 0;
+    });
+  }
+
+  // Recalculate x positions for non-full-width rows
+  if (!hasFullWidth) {
+    recalculateRowPositions(items, targetY);
+  }
+  if (
+    !targetRow.some(
+      (item) => isValidItem(item) && item.width === defaults.COLUMN_COUNT,
+    )
+  ) {
+    recalculateRowPositions(items, sourceY);
+  }
+}

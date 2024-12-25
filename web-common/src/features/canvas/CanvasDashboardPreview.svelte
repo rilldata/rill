@@ -15,6 +15,7 @@
     recalculateRowPositions,
     validateItemPositions,
     isValidItem,
+    reorderRows,
   } from "./util";
 
   export let items: V1CanvasItem[];
@@ -156,43 +157,48 @@
     const { index: dragIndex } = draggedComponent;
     const { index: dropIndex, position } = dropTarget;
     const targetItem = items[dropIndex];
+    const draggedItem = items[dragIndex];
+
+    if (!isValidItem(targetItem) || !isValidItem(draggedItem)) return;
 
     // Create new array and remove dragged item
     const newItems = [...items];
-    const [draggedItem] = newItems.splice(dragIndex, 1);
+    const [removedItem] = newItems.splice(dragIndex, 1);
     let insertIndex: number;
 
     if (position === "bottom") {
-      if (!isValidItem(targetItem)) return;
-      // Insert into new row below target
-      moveItemToNewRow(draggedItem, targetItem?.y, targetItem.height);
-      draggedItem.width = Math.min(
-        draggedComponent.width / gridCell,
-        defaults.COLUMN_COUNT,
-      );
-      draggedItem.height = draggedComponent.height / gridCell;
-      insertIndex = dropIndex + 1;
-      console.log(
-        "[CanvasDashboardPreview] handleDrop: moving item to new row",
-      );
+      if (draggedItem.width === defaults.COLUMN_COUNT) {
+        // Reorder rows if dragging a full-width item
+        reorderRows(newItems, draggedItem.y, targetItem.y + targetItem.height);
+        insertIndex = dropIndex + 1;
+      } else {
+        // Insert into new row below target
+        moveItemToNewRow(removedItem, targetItem.y, targetItem.height);
+        removedItem.width = Math.min(
+          draggedComponent.width / gridCell,
+          defaults.COLUMN_COUNT,
+        );
+        removedItem.height = draggedComponent.height / gridCell;
+        insertIndex = dropIndex + 1;
+      }
     } else {
       // Insert into same row
-      draggedItem.y = targetItem.y;
+      removedItem.y = targetItem.y;
       insertIndex = dropIndex;
-      newItems.splice(insertIndex, 0, draggedItem);
+      newItems.splice(insertIndex, 0, removedItem);
       recalculateRowPositions(newItems, targetItem.y);
     }
 
-    newItems.splice(insertIndex, 0, draggedItem);
+    newItems.splice(insertIndex, 0, removedItem);
     validateItemPositions(newItems);
     items = newItems;
 
     dispatch("update", {
       index: insertIndex,
-      position: [newItems[insertIndex]?.x, newItems[insertIndex]?.y],
+      position: [newItems[insertIndex].x, newItems[insertIndex].y],
       dimensions:
         position === "bottom"
-          ? [defaults.COLUMN_COUNT, draggedItem.height]
+          ? [defaults.COLUMN_COUNT, removedItem.height]
           : [draggedComponent.width, draggedComponent.height],
       items: newItems,
     });
