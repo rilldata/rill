@@ -84,7 +84,6 @@
 <CanvasDashboardPreview
   {items}
   selectedIndex={$selectedIndex}
-  on:update={handlePreviewUpdate}
   on:update={handleUpdate}
   on:delete={handleDelete}
 />

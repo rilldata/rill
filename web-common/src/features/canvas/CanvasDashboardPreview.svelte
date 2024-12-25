@@ -12,9 +12,6 @@
   import { vector } from "./util";
   import GhostLine from "./GhostLine.svelte";
 
-  const dispatch = createEventDispatcher();
-  const zeroVector = [0, 0] as [0, 0];
-
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
 
@@ -23,13 +20,6 @@
   let snap = true;
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
-  let changing = false;
-  let startMouse: Vector = [0, 0];
-  let mousePosition: Vector = [0, 0];
-  let initialElementDimensions: Vector = [0, 0];
-  let initialElementPosition: Vector = [0, 0];
-  let dimensionChange: [0 | 1 | -1, 0 | 1 | -1] = [0, 0];
-  let positionChange: [0 | 1, 0 | 1] = [0, 0];
   let draggedComponent: {
     index: number;
     width: number;
@@ -41,6 +31,8 @@
   } | null = null;
 
   $: ({ instanceId } = $runtime);
+  const dispatch = createEventDispatcher();
+  const { canvasName } = getCanvasStateManagers();
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -50,53 +42,8 @@
   $: gapSize = defaults.DASHBOARD_WIDTH * (defaults.GAP_SIZE / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
-  $: gridVector = [gridCell, gridCell] as Vector;
-
-  $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
-    scale,
-    scale,
-  ]);
-
-  $: dragPosition = vector.add(
-    vector.multiply(mouseDelta, positionChange),
-    initialElementPosition,
-  );
-
-  $: resizeDimenions = vector.add(
-    vector.multiply(mouseDelta, dimensionChange),
-    initialElementDimensions,
-  );
 
   $: console.log("[CanvasDashboardPreview] items updated:", items);
-
-  // function handleMouseUp() {
-  //   console.log("[CanvasDashboardPreview] handleMouseUp ", selectedIndex);
-
-  //   if (selectedIndex === null || !changing) return;
-
-  //   const cellPosition = getCell(dragPosition, true);
-  //   const dimensions = getCell(resizeDimenions, true);
-
-  //   items[selectedIndex].x = Math.max(
-  //     0,
-  //     dimensions[0] < 0 ? cellPosition[0] + dimensions[0] : cellPosition[0],
-  //   );
-  //   items[selectedIndex].y = Math.max(
-  //     0,
-  //     dimensions[1] < 0 ? cellPosition[1] + dimensions[1] : cellPosition[1],
-  //   );
-
-  //   items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
-  //   items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
-
-  //   dispatch("update", {
-  //     index: selectedIndex,
-  //     position: [items[selectedIndex].x, items[selectedIndex].y],
-  //     dimensions: [items[selectedIndex].width, items[selectedIndex].height],
-  //   });
-
-  //   reset();
-  // }
 
   function handleChange(
     e: CustomEvent<{
@@ -108,32 +55,9 @@
     }>,
   ) {
     e.preventDefault();
-    dimensionChange = e.detail.changeDimensions;
-    positionChange = e.detail.changePosition;
     const index = Number(e.detail.e.currentTarget.dataset.index);
-    initialElementDimensions = e.detail.dimensions;
-    initialElementPosition = e.detail.position;
-    startMouse = [
-      e.detail.e.clientX - contentRect.left,
-      e.detail.e.clientY - contentRect.top - scrollOffset,
-    ];
-    mousePosition = startMouse;
     selectedIndex = index;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
-    changing = true;
-  }
-
-  function reset() {
-    changing = false;
-    mousePosition =
-      startMouse =
-      startMouse =
-      initialElementPosition =
-      initialElementDimensions =
-      dimensionChange =
-      positionChange =
-      resizeDimenions =
-        zeroVector;
   }
 
   function handleDragStart(e: CustomEvent) {
@@ -154,10 +78,6 @@
     draggedComponent = null;
   }
 
-  // function handleMouseMove(e: MouseEvent) {
-  //   // No-op - we'll use drag events instead
-  // }
-
   function handleScroll(
     e: UIEvent & {
       currentTarget: EventTarget & HTMLDivElement;
@@ -166,15 +86,7 @@
     scrollOffset = e.currentTarget.scrollTop;
   }
 
-  function getCell(rawVector: Vector, snap: boolean): Vector {
-    const raw = vector.divide(rawVector, gridVector);
-
-    if (!snap) return raw;
-
-    return [Math.round(raw[0]), Math.round(raw[1])];
-  }
-
-  function deselect() {
+  function handleDeselect() {
     selectedIndex = null;
     $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
@@ -257,7 +169,7 @@
     let insertIndex: number;
 
     if (position === "bottom") {
-      draggedItem.y = targetItem.y + targetItem.height;
+      draggedItem.y = targetItem?.y + targetItem?.height;
       draggedItem.x = 0;
       draggedItem.width = defaults.COLUMN_COUNT;
       insertIndex = dropIndex + 1;
@@ -332,7 +244,6 @@
 
 <DashboardWrapper
   bind:contentRect
-  {changing}
   {gapSize}
   {gridCell}
   {scrollOffset}
@@ -340,7 +251,7 @@
   {scale}
   height={maxBottom * gridCell * scale}
   width={defaults.DASHBOARD_WIDTH}
-  on:click={deselect}
+  on:click={handleDeselect}
   on:scroll={handleScroll}
   on:dragover={(e) => {
     e.preventDefault();
@@ -385,9 +296,6 @@
         height={dropTarget.position === "bottom"
           ? 2
           : targetItem.height * gridCell}
-        width={dropTarget.position === "bottom"
-          ? targetItem.width * gridCell
-          : 2}
         top={dropTarget.position === "bottom"
           ? (targetItem.y + targetItem.height) * gridCell
           : targetItem.y * gridCell}
