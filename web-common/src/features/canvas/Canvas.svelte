@@ -38,7 +38,7 @@
       index: number;
     }>,
   ) {
-    if (!e.detail.index) return;
+    if (e.detail.index === undefined || e.detail.index === null) return;
     await deleteComponent(e.detail.index);
   }
 
