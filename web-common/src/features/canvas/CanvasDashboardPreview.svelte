@@ -37,7 +37,7 @@
   } | null = null;
   let dropTarget: {
     index: number;
-    position: "left" | "right";
+    position: "left" | "right" | "bottom";
   } | null = null;
 
   $: ({ instanceId } = $runtime);
@@ -185,7 +185,7 @@
   function getDropPosition(
     e: DragEvent,
     targetIndex: number,
-  ): "left" | "right" {
+  ): "left" | "right" | "bottom" {
     const targetElement = document.querySelector(
       `[data-index="${targetIndex}"]`,
     );
@@ -193,7 +193,17 @@
 
     const rect = targetElement.getBoundingClientRect();
     const mouseX = e.clientX;
+    const mouseY = e.clientY;
 
+    // Define bottom zone as the lower 25% of the element
+    const bottomZone = rect.bottom - rect.height * 0.25;
+
+    // Check if mouse is in bottom zone first
+    if (mouseY > bottomZone) {
+      return "bottom";
+    }
+
+    // If not in bottom zone, determine left/right as before
     return mouseX > rect.left + rect.width / 2 ? "right" : "left";
   }
 
@@ -212,9 +222,19 @@
       targetIndex,
       position,
       mouseX: e.clientX,
+      mouseY: e.clientY,
     });
 
     dropTarget = { index: targetIndex, position };
+  }
+
+  function isValidItem(item: V1CanvasItem): boolean {
+    return (
+      item.x !== undefined &&
+      item.y !== undefined &&
+      item.width !== undefined &&
+      item.height !== undefined
+    );
   }
 
   function handleDrop(e: DragEvent) {
@@ -227,32 +247,58 @@
     const { index: dropIndex, position } = dropTarget;
     const targetItem = items[dropIndex];
 
-    if (targetItem.x === undefined || targetItem.width === undefined) return;
+    if (!isValidItem(targetItem)) return;
 
     // Create new array and remove dragged item
     const newItems = [...items];
     const [draggedItem] = newItems.splice(dragIndex, 1);
+    let insertIndex: number;
 
-    // Calculate insert position based on drop position
-    const insertIndex = position === "right" ? dropIndex : dropIndex;
+    if (position === "bottom") {
+      draggedItem.y = targetItem.y + targetItem.height;
+      draggedItem.x = 0;
+      draggedItem.width = defaults.COLUMN_COUNT;
+      insertIndex = dropIndex + 1;
+      newItems.splice(insertIndex, 0, draggedItem);
+    } else {
+      draggedItem.y = targetItem.y;
+      insertIndex = position === "right" ? dropIndex : dropIndex;
+      newItems.splice(insertIndex, 0, draggedItem);
 
-    // Insert dragged item at new position
-    newItems.splice(insertIndex, 0, draggedItem);
+      // Recalculate x positions for all items in the row
+      let currentX = 0;
+      newItems.forEach((item, index) => {
+        if (item.y === targetItem.y) {
+          // Only adjust items in same row
+          if (index === 0 || newItems[index - 1].y !== item.y) {
+            item.x = 0;
+            currentX = item.width;
+          } else {
+            // Check if there's enough space in the row
+            const newX = Math.round(currentX + defaults.GAP_SIZE / 1000);
 
-    // Recalculate x positions for all items
-    newItems.forEach((item, index) => {
-      if (index === 0) {
-        item.x = 0;
-      } else {
-        const prevItem = newItems[index - 1];
-        if (prevItem.x === undefined || prevItem.width === undefined) return;
-        // Round the x position to ensure integer values
-        item.x = Math.round(
-          prevItem.x + prevItem.width + defaults.GAP_SIZE / 1000,
+            // Ensure x position never exceeds grid bounds
+            if (newX + item.width > defaults.COLUMN_COUNT) {
+              item.y = targetItem.y + targetItem.height;
+              item.x = 0;
+              currentX = item.width;
+            } else {
+              item.x = Math.min(newX, defaults.COLUMN_COUNT - item.width);
+              currentX = item.x + item.width;
+            }
+          }
+        }
+      });
+    }
+
+    // Validate all x positions one final time
+    newItems.forEach((item) => {
+      if (item.x !== undefined && item.width !== undefined) {
+        item.x = Math.min(
+          Math.max(0, item.x),
+          defaults.COLUMN_COUNT - item.width,
         );
       }
-      // Keep same y position
-      item.y = targetItem.y;
     });
 
     items = newItems;
@@ -260,7 +306,10 @@
     dispatch("update", {
       index: insertIndex,
       position: [newItems[insertIndex].x, newItems[insertIndex].y],
-      dimensions: [draggedComponent.width, draggedComponent.height],
+      dimensions:
+        position === "bottom"
+          ? [defaults.COLUMN_COUNT, draggedItem.height]
+          : [draggedComponent.width, draggedComponent.height],
       items: newItems,
     });
 
@@ -311,10 +360,16 @@
       selected={selectedIndex === i}
       interacting={false}
       {gapSize}
-      width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
+      width={Math.min(
+        Number(component.width ?? defaults.COMPONENT_WIDTH),
+        defaults.COLUMN_COUNT,
+      ) * gridCell}
       height={Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
       top={Number(component.y) * gridCell}
-      left={Number(component.x) * gridCell}
+      left={Math.min(
+        Number(component.x ?? 0),
+        defaults.COLUMN_COUNT - (component.width ?? defaults.COMPONENT_WIDTH),
+      ) * gridCell}
       onDragOver={(e) => handleDragOver(e, i)}
       onDrop={(e) => handleDrop(e)}
       on:dragstart={handleDragStart}
@@ -327,12 +382,23 @@
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <GhostLine
-        height={targetItem.height * gridCell}
-        top={targetItem.y * gridCell}
+        height={dropTarget.position === "bottom"
+          ? 2
+          : targetItem.height * gridCell}
+        width={dropTarget.position === "bottom"
+          ? targetItem.width * gridCell
+          : 2}
+        top={dropTarget.position === "bottom"
+          ? (targetItem.y + targetItem.height) * gridCell
+          : targetItem.y * gridCell}
         left={dropTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
-          : targetItem.x * gridCell}
-        orientation="vertical"
+          : dropTarget.position === "bottom"
+            ? targetItem.x * gridCell
+            : targetItem.x * gridCell}
+        orientation={dropTarget.position === "bottom"
+          ? "horizontal"
+          : "vertical"}
       />
     {/if}
   {/if}

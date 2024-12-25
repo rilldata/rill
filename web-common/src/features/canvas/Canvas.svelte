@@ -3,7 +3,10 @@
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1CanvasItem,
+    V1CanvasSpec,
+  } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
 
   export let fileArtifact: FileArtifact;
@@ -30,7 +33,7 @@
 
   $: ({ items = [], filtersEnabled } = spec);
 
-  async function handleDeleteEvent(
+  async function handleDelete(
     e: CustomEvent<{
       index: number;
     }>,
@@ -48,28 +51,6 @@
     await saveLocalContent();
   }
 
-  async function handlePreviewUpdate(
-    e: CustomEvent<{
-      index: number;
-      position: Vector;
-      dimensions: Vector;
-    }>,
-  ) {
-    const parsedDocument = parseDocument($editorContent ?? "");
-    const items = parsedDocument.get("items") as any;
-
-    const node = items?.get(e.detail.index);
-    if (!node) return;
-
-    node.set("width", e.detail.dimensions[0]);
-    node.set("height", e.detail.dimensions[1]);
-    node.set("x", e.detail.position[0]);
-    node.set("y", e.detail.position[1]);
-
-    updateEditorContent(parsedDocument.toString(), false, true);
-    await saveLocalContent();
-  }
-
   async function handleUpdate(event: CustomEvent) {
     const { index, position, dimensions, items } = event.detail;
     console.log("[Canvas] Handling update:", {
@@ -79,10 +60,7 @@
       items,
     });
 
-    // Update the YAML document
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
+    const parsedDocument = parseDocument($editorContent ?? "");
     const docItems = parsedDocument.get("items") as any;
 
     if (!docItems) return;
@@ -92,9 +70,11 @@
 
     node.set("x", position[0]);
     node.set("y", position[1]);
+    node.set("width", dimensions[0]);
+    node.set("height", dimensions[1]);
 
     updateEditorContent(parsedDocument.toString(), true);
-    if ($autoSave) await updateComponentFile();
+    await saveLocalContent();
   }
 </script>
 
@@ -103,9 +83,8 @@
   {showGrid}
   showFilterBar={filtersEnabled}
   selectedIndex={$selectedIndex}
-  on:update={handlePreviewUpdate}
   on:update={handleUpdate}
-  on:delete={handleDeleteEvent}
+  on:delete={handleDelete}
 />
 
 <svelte:window
