@@ -9,7 +9,6 @@
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
-  import { vector } from "./util";
   import GhostLine from "./GhostLine.svelte";
 
   export let items: V1CanvasItem[];
@@ -17,7 +16,6 @@
 
   const { canvasStore } = getCanvasStateManagers();
 
-  let snap = true;
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
   let draggedComponent: {
@@ -31,8 +29,6 @@
   } | null = null;
 
   $: ({ instanceId } = $runtime);
-  const dispatch = createEventDispatcher();
-  const { canvasName } = getCanvasStateManagers();
 
   $: extraLeftPadding = !$navigationOpen;
 
@@ -44,6 +40,9 @@
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: console.log("[CanvasDashboardPreview] items updated:", items);
+
+  const dispatch = createEventDispatcher();
+  const { canvasName } = getCanvasStateManagers();
 
   function handleChange(
     e: CustomEvent<{
@@ -171,7 +170,11 @@
     if (position === "bottom") {
       draggedItem.y = targetItem?.y + targetItem?.height;
       draggedItem.x = 0;
-      draggedItem.width = defaults.COLUMN_COUNT;
+      draggedItem.width = Math.min(
+        draggedComponent.width / gridCell,
+        defaults.COLUMN_COUNT,
+      );
+      draggedItem.height = draggedComponent.height / gridCell;
       insertIndex = dropIndex + 1;
       newItems.splice(insertIndex, 0, draggedItem);
     } else {
