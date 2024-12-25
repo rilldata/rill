@@ -251,7 +251,7 @@ items:
   - component:
       markdown:
         content: "First Component"
-    width: 4
+    width: 12
     height: 2
     x: 0
     y: 0

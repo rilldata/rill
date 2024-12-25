@@ -9,6 +9,12 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import GhostLine from "./GhostLine.svelte";
+  import {
+    moveItemToNewRow,
+    recalculateRowPositions,
+    validateItemPositions,
+    isValidItem,
+  } from "./util";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -129,7 +135,7 @@
     }
 
     const position = getDropPosition(e, targetIndex);
-    console.log("[DragOver]", {
+    console.log("[CanvasDashboardPreview] handleDragOver", {
       targetIndex,
       position,
       mouseX: e.clientX,
@@ -137,15 +143,6 @@
     });
 
     dropTarget = { index: targetIndex, position };
-  }
-
-  function isValidItem(item: V1CanvasItem): boolean {
-    return (
-      item.x !== undefined &&
-      item.y !== undefined &&
-      item.width !== undefined &&
-      item.height !== undefined
-    );
   }
 
   function handleDrop(e: DragEvent) {
@@ -158,69 +155,39 @@
     const { index: dropIndex, position } = dropTarget;
     const targetItem = items[dropIndex];
 
-    if (!isValidItem(targetItem)) return;
-
     // Create new array and remove dragged item
     const newItems = [...items];
     const [draggedItem] = newItems.splice(dragIndex, 1);
     let insertIndex: number;
 
     if (position === "bottom") {
-      draggedItem.y = targetItem?.y + targetItem?.height;
-      draggedItem.x = 0;
+      if (!isValidItem(targetItem)) return;
+      // Insert into new row below target
+      moveItemToNewRow(draggedItem, targetItem?.y, targetItem.height);
       draggedItem.width = Math.min(
         draggedComponent.width / gridCell,
         defaults.COLUMN_COUNT,
       );
       draggedItem.height = draggedComponent.height / gridCell;
       insertIndex = dropIndex + 1;
-      newItems.splice(insertIndex, 0, draggedItem);
+      console.log(
+        "[CanvasDashboardPreview] handleDrop: moving item to new row",
+      );
     } else {
+      // Insert into same row
       draggedItem.y = targetItem.y;
-      insertIndex = position === "right" ? dropIndex : dropIndex;
+      insertIndex = dropIndex;
       newItems.splice(insertIndex, 0, draggedItem);
-
-      // Recalculate x positions for all items in the row
-      let currentX = 0;
-      newItems.forEach((item, index) => {
-        if (item.y === targetItem.y) {
-          // Only adjust items in same row
-          if (index === 0 || newItems[index - 1].y !== item.y) {
-            item.x = 0;
-            currentX = item.width;
-          } else {
-            // Check if there's enough space in the row
-            const newX = Math.round(currentX + defaults.GAP_SIZE / 1000);
-
-            // Ensure x position never exceeds grid bounds
-            if (newX + item.width > defaults.COLUMN_COUNT) {
-              item.y = targetItem.y + targetItem.height;
-              item.x = 0;
-              currentX = item.width;
-            } else {
-              item.x = Math.min(newX, defaults.COLUMN_COUNT - item.width);
-              currentX = item.x + item.width;
-            }
-          }
-        }
-      });
+      recalculateRowPositions(newItems, targetItem.y);
     }
 
-    // Validate all x positions one final time
-    newItems.forEach((item) => {
-      if (item.x !== undefined && item.width !== undefined) {
-        item.x = Math.min(
-          Math.max(0, item.x),
-          defaults.COLUMN_COUNT - item.width,
-        );
-      }
-    });
-
+    newItems.splice(insertIndex, 0, draggedItem);
+    validateItemPositions(newItems);
     items = newItems;
 
     dispatch("update", {
       index: insertIndex,
-      position: [newItems[insertIndex].x, newItems[insertIndex].y],
+      position: [newItems[insertIndex]?.x, newItems[insertIndex]?.y],
       dimensions:
         position === "bottom"
           ? [defaults.COLUMN_COUNT, draggedItem.height]
@@ -246,10 +213,6 @@
 
 <DashboardWrapper
   bind:contentRect
-  {gapSize}
-  {gridCell}
-  {scrollOffset}
-  {radius}
   {scale}
   {showGrid}
   height={maxBottom * gridCell * scale}
