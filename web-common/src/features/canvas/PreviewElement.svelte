@@ -96,6 +96,7 @@
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
     on:drop={onDrop}
+    on:mousedown={handleMouseDown}
     on:contextmenu
   />
   <!-- </ContextMenu.Trigger>
@@ -136,6 +137,7 @@
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
     on:drop={onDrop}
+    on:mousedown={handleMouseDown}
     on:contextmenu
   />
   <!-- </ContextMenu.Trigger>

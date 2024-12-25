@@ -96,6 +96,31 @@
   //   reset();
   // }
 
+  function handleChange(
+    e: CustomEvent<{
+      e: MouseEvent & { currentTarget: HTMLButtonElement };
+      dimensions: Vector;
+      position: Vector;
+      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
+      changePosition: [0 | 1, 0 | 1];
+    }>,
+  ) {
+    e.preventDefault();
+    dimensionChange = e.detail.changeDimensions;
+    positionChange = e.detail.changePosition;
+    const index = Number(e.detail.e.currentTarget.dataset.index);
+    initialElementDimensions = e.detail.dimensions;
+    initialElementPosition = e.detail.position;
+    startMouse = [
+      e.detail.e.clientX - contentRect.left,
+      e.detail.e.clientY - contentRect.top - scrollOffset,
+    ];
+    mousePosition = startMouse;
+    selectedIndex = index;
+    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    changing = true;
+  }
+
   function reset() {
     changing = false;
     mousePosition =
@@ -294,6 +319,7 @@
       onDrop={(e) => handleDrop(e)}
       on:dragstart={handleDragStart}
       on:dragend={handleDragEnd}
+      on:change={handleChange}
     />
   {/each}
 
