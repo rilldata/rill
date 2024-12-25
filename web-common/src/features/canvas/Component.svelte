@@ -57,7 +57,6 @@
     "component",
     "pointer-events-auto",
     draggable ? "hover:cursor-grab active:cursor-grabbing" : "",
-    "debug-hover",
   ].join(" ");
 </script>
 
@@ -67,6 +66,7 @@
   role="presentation"
   data-index={i}
   data-component
+  data-selected={selected}
   class={componentClasses}
   style:--gap-size={gapSize * scale}
   style:z-index={renderer === "select" ? 100 : localZIndex}
@@ -75,6 +75,8 @@
   style:top="{top}px"
   style:width="{width}px"
   style:height={chartView ? undefined : `${height}px`}
+  style:border={selected ? "2px solid var(--color-primary-300)" : "none"}
+  style:border-radius={selected ? "2px" : ""}
   on:mouseover
   on:mouseleave
   on:focus
@@ -124,10 +126,6 @@
     @apply absolute touch-none;
     &[draggable="true"] {
       @apply select-none;
-    }
-
-    &.debug-hover:hover {
-      outline: 2px solid red;
     }
 
     /* Temporary visualization of gap areas */
