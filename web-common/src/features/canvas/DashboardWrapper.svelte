@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { type ComponentType, onMount } from "svelte";
-  import type GridLines from "./GridLines.svelte";
-
   export let width: number;
   export let height: number;
   export let scale: number;

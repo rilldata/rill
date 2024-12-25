@@ -1,7 +1,5 @@
 <script lang="ts" context="module">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import type { ComponentType } from "svelte";
-  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,

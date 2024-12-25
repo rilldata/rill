@@ -5,8 +5,6 @@
 </script>
 
 <script lang="ts">
-  const dispatch = createEventDispatcher();
-
   export let i: number;
   export let gapSize: number;
   export let component: V1CanvasItem;
@@ -30,6 +28,8 @@
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
   $: padding = gapSize;
+
+  const dispatch = createEventDispatcher();
 
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
