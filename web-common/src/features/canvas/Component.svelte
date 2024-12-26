@@ -32,6 +32,7 @@
   export let instanceId: string;
   export let draggable = false;
   export let rowIndex: number;
+  export let columnIndex: number;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -61,12 +62,14 @@
   ].join(" ");
 </script>
 
+<!-- FIXME: add data-component-type, need to add type to V1CanvasItem -->
 <div
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   role="presentation"
   data-component-index={i}
   data-row-index={rowIndex}
+  data-column-index={columnIndex}
   data-selected={selected}
   class={componentClasses}
   {draggable}

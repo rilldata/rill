@@ -20,6 +20,7 @@
   export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let rowIndex: number;
+  export let columnIndex: number;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
@@ -69,6 +70,7 @@
     {radius}
     {selected}
     {rowIndex}
+    {columnIndex}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -91,6 +93,7 @@
     {radius}
     {selected}
     {rowIndex}
+    {columnIndex}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -104,34 +107,3 @@
     on:mousedown={handleMouseDown}
   />
 {/if}
-
-<!-- <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder> -->
-
-<!-- </ContextMenu.Trigger>
-
-    <ContextMenu.Content class="z-[100]">
-      <ContextMenu.Item
-        on:click={async () => {
-          await goto(`/files/charts/${componentName}.yaml`);
-        }}
-      >
-        Go to {componentName}.yaml
-      </ContextMenu.Item>
-      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
-        >Delete from dashboard</ContextMenu.Item
-      >
-    </ContextMenu.Content>
-  </ContextMenu.Root> -->
-
-<!-- <ContextMenu.Root>
-    <ContextMenu.Trigger asChild let:builder> -->
-
-<!-- </ContextMenu.Trigger>
-
-    <ContextMenu.Content class="z-[100]">
-      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
-        >Delete from dashboard</ContextMenu.Item
-      >
-    </ContextMenu.Content>
-  </ContextMenu.Root> -->
