@@ -24,9 +24,11 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
-  export let draggable = false;
+  export let showDragHandle = true;
   export let rowIndex: number;
   export let columnIndex: number;
+
+  let isDragging = false;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -41,10 +43,40 @@
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
 
+  function handleDragHandleMouseDown(e: MouseEvent) {
+    if (!showDragHandle) return;
+
+    const componentEl = (e.currentTarget as HTMLElement).closest(
+      ".component",
+    ) as HTMLElement;
+
+    console.log("[Component] handleDragHandleMouseDown: ", componentEl);
+
+    if (componentEl) {
+      isDragging = true;
+      componentEl.classList.add("select-none", "dragging");
+
+      const handleDragEnd = () => {
+        isDragging = false;
+        componentEl.classList.remove("select-none", "dragging");
+        componentEl.removeEventListener("dragend", handleDragEnd);
+      };
+      componentEl.addEventListener("dragend", handleDragEnd);
+
+      const handleMouseUp = () => {
+        isDragging = false;
+        componentEl.classList.remove("select-none", "dragging");
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+  }
+
   $: componentClasses = [
     "component",
     "pointer-events-auto",
-    draggable ? "hover:cursor-grab active:cursor-grabbing" : "",
+    isDragging ? "dragging" : "",
+    showDragHandle ? "" : "",
   ].join(" ");
 </script>
 
@@ -58,7 +90,7 @@
   data-column-index={columnIndex}
   data-selected={selected}
   class={componentClasses}
-  {draggable}
+  draggable={isDragging}
   style:z-index={renderer === "select" ? 100 : "auto"}
   style:padding="{padding}px"
   style:left="{left}px"
@@ -73,12 +105,20 @@
   on:drop
   on:mousedown
 >
-  {#if draggable}
-    <div class="drag-handle">
+  <!-- FIXME: clear the DragHandle when handleDragEnd -->
+  {#if showDragHandle}
+    <div
+      class="drag-handle"
+      role="button"
+      tabindex="0"
+      aria-label="Drag to move"
+      title="Drag to move"
+      on:mousedown={handleDragHandleMouseDown}
+    >
       <DragHandle size="20" className="text-slate-600" />
     </div>
   {/if}
-  <div class="size-full relative {draggable ? 'touch-none' : ''}">
+  <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
     <div
       class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
@@ -104,13 +144,10 @@
 <style lang="postcss">
   .component {
     @apply absolute touch-none;
-    &[draggable="true"] {
-      @apply select-none;
-    }
   }
 
   .drag-handle {
-    @apply absolute top-2 left-2.5  p-1 cursor-grab z-10 opacity-0 transition-opacity duration-200;
+    @apply absolute top-2 left-2.5 p-1 cursor-grab z-10 opacity-0 transition-opacity duration-200;
   }
 
   .component:hover .drag-handle {

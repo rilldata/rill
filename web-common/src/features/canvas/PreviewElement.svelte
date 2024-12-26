@@ -76,7 +76,6 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    draggable={true}
     on:dragstart={handleDragStart}
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
@@ -99,7 +98,6 @@
     left={finalLeft}
     top={finalTop}
     width={finalWidth}
-    draggable={true}
     on:dragstart={handleDragStart}
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
