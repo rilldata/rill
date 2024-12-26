@@ -1,3 +1,5 @@
+import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+
 export type Vector = [number, number];
 
 export interface PositionedItem {
@@ -6,3 +8,6 @@ export interface PositionedItem {
   width: number;
   height: number;
 }
+
+// Array of rows, where each row is an array of items
+export type LayoutVector = V1CanvasItem[][];

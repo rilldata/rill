@@ -62,7 +62,9 @@
 
     // Process remaining items
     const remainingItems = convertToGridItems(docItems.items);
+    console.log("[Canvas] remainingItems: ", remainingItems);
     const sortedItems = sortItemsByPosition(remainingItems);
+    console.log("[Canvas] sortedItems: ", sortedItems);
     compactGrid(sortedItems);
 
     // Save changes

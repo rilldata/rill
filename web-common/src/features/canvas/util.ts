@@ -142,6 +142,15 @@ export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
 }
 
 export function validateItemPositions(items: V1CanvasItem[]): void {
+  // First group items by row
+  const rows = groupItemsByRow(items);
+
+  // Process each row
+  rows.forEach((row) => {
+    leftAlignRow(row);
+  });
+
+  // Validate x positions are within bounds
   items.forEach((item) => {
     if (item.x !== undefined && item.width !== undefined) {
       item.x = Math.min(
@@ -194,23 +203,61 @@ export function sortItemsByPosition(items: GridItem[]): GridItem[] {
   });
 }
 
+// Add this new function to handle left alignment within rows
+function leftAlignRow(row: RowGroup) {
+  let currentX = 0;
+  row.items
+    .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
+    .forEach((item) => {
+      if (item.x !== undefined) {
+        item.x = currentX;
+        currentX += item.width ?? 0;
+      }
+    });
+}
+
 export function compactGrid(items: GridItem[]) {
   let currentY = 0;
   let lastRowHeight = 0;
   let lastY = -1;
+  let currentRowItems: GridItem[] = [];
 
-  items.forEach(({ position, size, node }) => {
-    if (position[1] !== lastY) {
-      // Starting a new row
+  // Process all items
+  items.forEach((item, index) => {
+    if (item.position[1] !== lastY) {
+      // When we hit a new row, process the previous row
+      if (currentRowItems.length > 0) {
+        // Sort by X position and compact
+        currentRowItems.sort((a, b) => a.position[0] - b.position[0]);
+        let currentX = 0;
+        currentRowItems.forEach((rowItem) => {
+          rowItem.node.set("x", currentX);
+          currentX += rowItem.size[0];
+        });
+      }
+
+      // Start new row
       currentY += lastRowHeight;
-      lastRowHeight = size[1];
-      lastY = position[1];
+      lastRowHeight = item.size[1];
+      lastY = item.position[1];
+      currentRowItems = [item];
     } else {
       // Same row - update max height if needed
-      lastRowHeight = Math.max(lastRowHeight, size[1]);
+      lastRowHeight = Math.max(lastRowHeight, item.size[1]);
+      currentRowItems.push(item);
     }
 
-    // Update item's Y position
-    node.set("y", currentY);
+    // Update Y position
+    item.node.set("y", currentY);
   });
+
+  // Process the last row
+  if (currentRowItems.length > 0) {
+    currentRowItems.sort((a, b) => a.position[0] - b.position[0]);
+    let currentX = 0;
+    currentRowItems.forEach((rowItem) => {
+      rowItem.node.set("x", currentX);
+      currentX += rowItem.size[0];
+    });
+  }
 }
