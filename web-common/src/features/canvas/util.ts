@@ -8,6 +8,12 @@ interface RowGroup {
   items: V1CanvasItem[];
 }
 
+interface GridItem {
+  position: [number, number]; // [x, y]
+  size: [number, number]; // [width, height]
+  node: any; // YAML node
+}
+
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
     return [add[0] + initial[0], add[1] + initial[1]];
@@ -168,4 +174,43 @@ export function groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
 
 export function flattenRowGroups(rows: RowGroup[]): V1CanvasItem[] {
   return rows.flatMap((row) => row.items);
+}
+
+export function convertToGridItems(yamlItems: any[]): GridItem[] {
+  return yamlItems.map((item) => ({
+    position: [item.get("x"), item.get("y")],
+    size: [item.get("width"), item.get("height")],
+    node: item,
+  }));
+}
+
+export function sortItemsByPosition(items: GridItem[]): GridItem[] {
+  return items.sort((a, b) => {
+    // Sort by Y first, then X for items in the same row
+    if (a.position[1] === b.position[1]) {
+      return a.position[0] - b.position[0];
+    }
+    return a.position[1] - b.position[1];
+  });
+}
+
+export function compactGrid(items: GridItem[]) {
+  let currentY = 0;
+  let lastRowHeight = 0;
+  let lastY = -1;
+
+  items.forEach(({ position, size, node }) => {
+    if (position[1] !== lastY) {
+      // Starting a new row
+      currentY += lastRowHeight;
+      lastRowHeight = size[1];
+      lastY = position[1];
+    } else {
+      // Same row - update max height if needed
+      lastRowHeight = Math.max(lastRowHeight, size[1]);
+    }
+
+    // Update item's Y position
+    node.set("y", currentY);
+  });
 }

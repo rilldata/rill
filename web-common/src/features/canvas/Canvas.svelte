@@ -8,6 +8,9 @@
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { groupItemsByRow } from "./util";
+  import type { Vector } from "./types";
+  import { convertToGridItems, sortItemsByPosition, compactGrid } from "./util";
 
   export let fileArtifact: FileArtifact;
 
@@ -51,9 +54,18 @@
       $editorContent ?? $remoteContent ?? "",
     );
 
-    const items = parsedDocument.get("items") as any;
-    if (!items) return;
-    items.delete(index);
+    const docItems = parsedDocument.get("items") as any;
+    if (!docItems) return;
+
+    // Remove the item
+    docItems.delete(index);
+
+    // Process remaining items
+    const remainingItems = convertToGridItems(docItems.items);
+    const sortedItems = sortItemsByPosition(remainingItems);
+    compactGrid(sortedItems);
+
+    // Save changes
     updateEditorContent(parsedDocument.toString(), true);
     if ($autoSave) await updateComponentFile();
   }
