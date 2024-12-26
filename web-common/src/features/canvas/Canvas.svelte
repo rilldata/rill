@@ -1,18 +1,24 @@
 <script lang="ts">
   import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { Vector } from "@rilldata/web-common/features/canvas/types";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type {
     V1CanvasItem,
     V1CanvasSpec,
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   export let fileArtifact: FileArtifact;
 
   const { canvasStore, validSpecStore } = getCanvasStateManagers();
   $: selectedIndex = $canvasStore?.selectedComponentIndex;
+
+  // Open inspector when a canvas item is selected
+  $: workspaceLayout = workspaces.get(fileArtifact.path);
+  $: if (selectedIndex !== null && selectedIndex !== undefined) {
+    workspaceLayout.inspector.open();
+  }
 
   let spec: V1CanvasSpec = {
     items: [],
