@@ -4,13 +4,7 @@
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import type ResizeHandle from "./ResizeHandle.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
-
-  const options = [0, 0.5, 1];
-  const allSides = options
-    .flatMap((y) => options.map((x) => [x, y] as [number, number]))
-    .filter(([x, y]) => !(x === 0.5 && y === 0.5));
 </script>
 
 <script lang="ts">
@@ -46,14 +40,6 @@
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
 
-  // let ResizeHandleComponent: ComponentType<ResizeHandle>;
-
-  // onMount(async () => {
-  //   if (!embed) {
-  //     ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
-  //   }
-  // });
-
   $: componentClasses = [
     "component",
     "pointer-events-auto",
@@ -87,21 +73,6 @@
   on:mousedown
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
-    <!-- {#if ResizeHandleComponent && !embed}
-      {#each allSides as side (side)}
-        <svelte:component
-          this={ResizeHandleComponent}
-          {i}
-          {scale}
-          {side}
-          position={[left, top]}
-          dimensions={[width, height]}
-          {selected}
-          on:change
-        />
-      {/each}
-    {/if} -->
-
     <div
       class="size-full overflow-hidden flex flex-col flex-none"
       class:shadow-lg={interacting}
