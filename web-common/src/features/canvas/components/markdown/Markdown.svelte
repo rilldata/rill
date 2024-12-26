@@ -12,14 +12,16 @@
   $: styleString = Object.entries(css)
     .map(([k, v]) => `${k}:${v}`)
     .join(";");
+
+  $: content = markdownProperties.content || "";
 </script>
 
 <div
   class="markdown size-full items-center flex justify-center bg-white"
   style={styleString}
 >
-  {#await marked(markdownProperties.content) then content}
-    {@html DOMPurify.sanitize(content)}
+  {#await marked(content) then parsedContent}
+    {@html DOMPurify.sanitize(parsedContent)}
   {/await}
 </div>
 
