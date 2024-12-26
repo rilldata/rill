@@ -14,6 +14,7 @@
     isValidItem,
     groupItemsByRow,
     leftAlignRow,
+    vector,
   } from "./util";
 
   export let items: V1CanvasItem[];
@@ -79,8 +80,31 @@
     };
   }
 
+  function handleDragOver(e: DragEvent, targetIndex: number) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Don't show ghost line if dragging over self
+    if (draggedComponent?.index === targetIndex) {
+      dropTarget = null;
+      return;
+    }
+
+    const position = getDropPosition(e, targetIndex);
+    console.log("[CanvasDashboardPreview] handleDragOver", {
+      targetIndex,
+      position,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+    });
+
+    dropTarget = { index: targetIndex, position };
+  }
+
   function handleDragEnd() {
-    draggedComponent = null;
+    if (!dropTarget) {
+      draggedComponent = null;
+    }
   }
 
   function handleScroll(
@@ -126,27 +150,6 @@
     return mouseX > rect.left + rect.width / 2 ? "right" : "left";
   }
 
-  function handleDragOver(e: DragEvent, targetIndex: number) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Don't show ghost line if dragging over self
-    if (draggedComponent?.index === targetIndex) {
-      dropTarget = null;
-      return;
-    }
-
-    const position = getDropPosition(e, targetIndex);
-    console.log("[CanvasDashboardPreview] handleDragOver", {
-      targetIndex,
-      position,
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-    });
-
-    dropTarget = { index: targetIndex, position };
-  }
-
   function handleDrop(e: DragEvent | CustomEvent<DragEvent>) {
     e.preventDefault();
     e.stopPropagation();
@@ -158,73 +161,105 @@
     const targetItem = items[dropIndex];
     const draggedItem = items[dragIndex];
 
+    console.log("[CanvasDashboardPreview] Drag and Drop:", {
+      dragged: {
+        index: dragIndex,
+        item: draggedItem,
+      },
+      target: {
+        index: dropIndex,
+        item: targetItem,
+        position,
+      },
+    });
+
     if (!isValidItem(targetItem) || !isValidItem(draggedItem)) return;
 
     // Group items by row before modification
     const rows = groupItemsByRow([...items]);
-    console.log("[CanvasDashboardPreview] rows", rows);
     const newItems = [...items];
     const [removedItem] = newItems.splice(dragIndex, 1);
-    let insertIndex: number;
+    let insertIndex = dropIndex;
 
-    if (position === "bottom") {
-      // Create new row
-      const newY = targetItem.y + targetItem.height;
-      removedItem.y = newY;
-      removedItem.x = 0;
-      removedItem.width = defaults.COLUMN_COUNT;
-      removedItem.height = draggedItem.height;
-      insertIndex = dropIndex + 1;
+    switch (position) {
+      case "bottom": {
+        // Create new row
+        const newY = targetItem.y + targetItem.height;
+        removedItem.y = newY;
+        removedItem.x = 0;
+        removedItem.width = defaults.COLUMN_COUNT;
+        removedItem.height = draggedItem.height;
+        insertIndex = dropIndex + 1;
 
-      // Create new row group
-      rows.push({
-        y: newY,
-        height: removedItem.height,
-        items: [removedItem],
-      });
-    } else {
-      // Insert into existing row
-      removedItem.y = targetItem.y;
-      removedItem.width = draggedItem.width;
-      removedItem.height = draggedItem.height;
-      insertIndex = dropIndex;
+        rows.push({
+          y: newY,
+          height: removedItem.height,
+          items: [removedItem],
+        });
+        break;
+      }
 
-      // Add to existing row
-      const targetRow = rows.find((row) => row.y === targetItem.y);
-      if (targetRow) {
-        targetRow.items.push(removedItem);
-        targetRow.height = Math.max(targetRow.height, removedItem.height);
+      case "right": {
+        const targetRow = rows.find((row) => row.y === targetItem.y);
+        if (targetRow) {
+          // Insert after target
+          removedItem.x = targetItem.x + targetItem.width;
+          removedItem.y = targetItem.y;
+          removedItem.width = removedItem.width;
+          removedItem.height = draggedItem.height;
+
+          targetRow.items.push(removedItem);
+          targetRow.height = Math.max(targetRow.height, removedItem.height);
+
+          insertIndex = dropIndex + 1;
+        }
+        break;
+      }
+
+      case "left": {
+        const targetRow = rows.find((row) => row.y === targetItem.y);
+        if (targetRow) {
+          // Insert before target
+          removedItem.x = targetItem.x;
+          removedItem.y = targetItem.y;
+          removedItem.width = removedItem.width;
+          removedItem.height = draggedItem.height;
+
+          targetRow.items.push(removedItem);
+          targetRow.height = Math.max(targetRow.height, removedItem.height);
+
+          insertIndex = dropIndex;
+        }
+        break;
+      }
+
+      default: {
+        console.warn(
+          "[CanvasDashboardPreview] Unknown drop position:",
+          position,
+        );
+        return;
       }
     }
 
+    // Reinsert the item into the array
     newItems.splice(insertIndex, 0, removedItem);
 
-    // Use row groups to recalculate positions
-    let currentY = 0;
-    rows
-      .sort((a, b) => a.y - b.y)
-      .forEach((row) => {
-        // Left align items in each row
-        leftAlignRow(row);
-
-        // Update Y positions
-        row.items.forEach((item) => {
-          item.y = currentY;
-        });
-        currentY += row.height;
-      });
-
+    // Validate item positions
     validateItemPositions(newItems);
 
+    // Update items
     items = newItems;
 
+    // Dispatch update once after position is set
     dispatch("update", {
       index: insertIndex,
-      position: [newItems[insertIndex]?.x, newItems[insertIndex]?.y],
+      position: [removedItem.x, removedItem.y],
       dimensions: [removedItem.width, removedItem.height],
       items: newItems,
     });
 
+    // Reset drop target and dragged component
     dropTarget = null;
     draggedComponent = null;
   }
