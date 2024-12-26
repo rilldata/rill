@@ -115,16 +115,6 @@ export function findNextAvailablePosition(
   return [0, newY];
 }
 
-export function moveItemToNewRow(
-  item: V1CanvasItem,
-  targetY: number,
-  targetHeight: number,
-): void {
-  if (!isValidItem(item)) return;
-  item.y = targetY + targetHeight;
-  item.x = 0;
-}
-
 export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
   x: number;
   y: number;
@@ -132,41 +122,39 @@ export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
   height: number;
 } {
   return (
-    item.x !== undefined &&
-    item.y !== undefined &&
-    item.width !== undefined &&
-    item.height !== undefined
+    item?.x !== undefined &&
+    item?.y !== undefined &&
+    item?.width !== undefined &&
+    item?.height !== undefined
   );
 }
 
 export function recalculateRowPositions(
   items: V1CanvasItem[],
-  targetY: number | undefined,
-): void {
-  let currentX = 0;
+  startingY: number,
+) {
+  const rows = groupItemsByRow(items);
+  let currentY = startingY;
 
-  items.forEach((item, index) => {
-    if (!isValidItem(item)) return;
-    if (item.y !== targetY) return;
+  rows.forEach((row) => {
+    // Sort items in row by x position
+    row.items.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
 
-    if (
-      index === 0 ||
-      !isValidItem(items[index - 1]) ||
-      items[index - 1].y !== item.y
-    ) {
-      item.x = 0;
-      currentX = item.width;
-    } else {
-      const newX = Math.round(currentX + defaults.GAP_SIZE / 1000);
+    // Adjust x positions within row
+    let currentX = 0;
+    row.items.forEach((item) => {
+      item.y = currentY;
+      item.x = currentX;
+      currentX += (item?.width ?? 0) + Math.round(defaults.GAP_SIZE / 1000);
 
-      if (newX + item.width > defaults.COLUMN_COUNT) {
-        moveItemToNewRow(item, targetY, item.height);
-        currentX = item.width;
-      } else {
-        item.x = Math.min(newX, defaults.COLUMN_COUNT - item.width);
-        currentX = item.x + item.width;
+      // Ensure item doesn't exceed grid width
+      if (currentX > defaults.COLUMN_COUNT) {
+        item.y = currentY + row.height;
+        item.x = 0;
+        currentX = (item?.width ?? 0) + Math.round(defaults.GAP_SIZE / 1000);
       }
-    }
+    });
+    currentY += row.height;
   });
 }
 
@@ -235,4 +223,34 @@ export function reorderRows(
   ) {
     recalculateRowPositions(items, sourceY);
   }
+}
+
+interface RowGroup {
+  y: number;
+  height: number;
+  items: V1CanvasItem[];
+}
+
+export function groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
+  const rows: RowGroup[] = [];
+
+  items.forEach((item) => {
+    const existingRow = rows.find((row) => row.y === item.y);
+    if (existingRow) {
+      existingRow.items.push(item);
+      existingRow.height = Math.max(existingRow.height ?? 0, item.height ?? 0);
+    } else {
+      rows.push({
+        y: item.y ?? 0,
+        height: item.height ?? 0,
+        items: [item],
+      });
+    }
+  });
+
+  return rows.sort((a, b) => a.y - b.y);
+}
+
+export function flattenRowGroups(rows: RowGroup[]): V1CanvasItem[] {
+  return rows.flatMap((row) => row.items);
 }

@@ -32,7 +32,7 @@
   const dispatch = createEventDispatcher();
 
   function handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return;
+    // if (e.button !== 0) return;
     dispatch("change", {
       e,
       dimensions: [width, height],
@@ -42,8 +42,7 @@
     });
   }
 
-  function handleDragStart(e: CustomEvent<any> | DragEvent) {
-    if ("button" in e && e.button !== 0) return;
+  function handleDragStart(e: DragEvent) {
     console.log("[PreviewElement] handleDragStart", { i, width, height });
 
     dispatch("dragstart", {

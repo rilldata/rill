@@ -10,11 +10,11 @@
   import type { Vector } from "./types";
   import GhostLine from "./GhostLine.svelte";
   import {
-    moveItemToNewRow,
     recalculateRowPositions,
     validateItemPositions,
     isValidItem,
     reorderRows,
+    groupItemsByRow,
   } from "./util";
 
   export let items: V1CanvasItem[];
@@ -146,7 +146,7 @@
     dropTarget = { index: targetIndex, position };
   }
 
-  function handleDrop(e: DragEvent) {
+  function handleDrop(e: DragEvent | CustomEvent<DragEvent>) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -159,45 +159,64 @@
 
     if (!isValidItem(targetItem) || !isValidItem(draggedItem)) return;
 
-    // Create new array and remove dragged item
+    // Group items by row before modification
+    const rows = groupItemsByRow([...items]);
+    console.log("[CanvasDashboardPreview] rows", rows);
     const newItems = [...items];
     const [removedItem] = newItems.splice(dragIndex, 1);
     let insertIndex: number;
 
     if (position === "bottom") {
-      if (draggedItem.width === defaults.COLUMN_COUNT) {
-        // Reorder rows if dragging a full-width item
-        reorderRows(newItems, draggedItem.y, targetItem.y + targetItem.height);
-        insertIndex = dropIndex + 1;
-      } else {
-        // Insert into new row below target
-        moveItemToNewRow(removedItem, targetItem.y, targetItem.height);
-        removedItem.width = Math.min(
-          draggedComponent.width / gridCell,
-          defaults.COLUMN_COUNT,
-        );
-        removedItem.height = draggedComponent.height / gridCell;
-        insertIndex = dropIndex + 1;
-      }
+      // Create new row
+      const newY = targetItem.y + targetItem.height;
+      removedItem.y = newY;
+      removedItem.x = 0;
+      removedItem.width = defaults.COLUMN_COUNT;
+      removedItem.height = draggedItem.height;
+      insertIndex = dropIndex + 1;
+
+      // Create new row group
+      rows.push({
+        y: newY,
+        height: removedItem.height,
+        items: [removedItem],
+      });
     } else {
-      // Insert into same row
+      // Insert into existing row
       removedItem.y = targetItem.y;
+      removedItem.width = draggedItem.width;
+      removedItem.height = draggedItem.height;
       insertIndex = dropIndex;
-      newItems.splice(insertIndex, 0, removedItem);
-      recalculateRowPositions(newItems, targetItem.y);
+
+      // Add to existing row
+      const targetRow = rows.find((row) => row.y === targetItem.y);
+      if (targetRow) {
+        targetRow.items.push(removedItem);
+        targetRow.height = Math.max(targetRow.height, removedItem.height);
+      }
     }
 
     newItems.splice(insertIndex, 0, removedItem);
+
+    // Use row groups to recalculate positions
+    let currentY = 0;
+    rows
+      .sort((a, b) => a.y - b.y)
+      .forEach((row) => {
+        row.items.forEach((item) => {
+          item.y = currentY;
+        });
+        currentY += row.height;
+      });
+
     validateItemPositions(newItems);
+
     items = newItems;
 
     dispatch("update", {
       index: insertIndex,
-      position: [newItems[insertIndex].x, newItems[insertIndex].y],
-      dimensions:
-        position === "bottom"
-          ? [defaults.COLUMN_COUNT, removedItem.height]
-          : [draggedComponent.width, draggedComponent.height],
+      position: [newItems[insertIndex]?.x, newItems[insertIndex]?.y],
+      dimensions: [removedItem.width, removedItem.height],
       items: newItems,
     });
 
@@ -253,8 +272,9 @@
         Number(component.x ?? 0),
         defaults.COLUMN_COUNT - (component.width ?? defaults.COMPONENT_WIDTH),
       ) * gridCell}
-      onDragOver={(e) => handleDragOver(e, i)}
-      onDrop={(e) => handleDrop(e)}
+      onDragOver={(e) =>
+        handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
+      onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
       on:dragstart={handleDragStart}
       on:dragend={handleDragEnd}
       on:change={handleChange}
