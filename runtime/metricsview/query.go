@@ -52,6 +52,7 @@ type MeasureCompute struct {
 	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 	PercentOfTotal  *MeasureComputePercentOfTotal  `mapstructure:"percent_of_total"`
 	URI             *MeasureComputeURI             `mapstructure:"uri"`
+	Constant        bool                           `mapstructure:"constant"`
 }
 
 func (m *MeasureCompute) Validate() error {

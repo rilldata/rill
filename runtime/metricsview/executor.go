@@ -169,6 +169,211 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
+	if qry.ComparisonTimeRange != nil && len(qry.Dimensions) == 1 && len(qry.Sort) == 1 {
+		// TODO  need to handle sorting by dimension ?
+		// perform two phase query - first for base time range and then for comparison time range and then merge the results
+
+		// Build a query for the base time range
+		baseQry := &Query{
+			MetricsView:         qry.MetricsView,
+			Dimensions:          qry.Dimensions,
+			Measures:            qry.Measures,
+			PivotOn:             qry.PivotOn,
+			Spine:               qry.Spine,
+			Sort:                qry.Sort,
+			TimeRange:           qry.TimeRange,
+			ComparisonTimeRange: nil,
+			Where:               qry.Where,
+			Having:              qry.Having,
+			Limit:               qry.Limit,
+			Offset:              qry.Offset,
+			TimeZone:            qry.TimeZone,
+			UseDisplayNames:     false,
+		}
+
+		for i, m := range baseQry.Measures {
+			if m.Compute != nil {
+				if m.Compute.ComparisonValue != nil || m.Compute.ComparisonDelta != nil || m.Compute.ComparisonRatio != nil {
+					baseQry.Measures[i].Compute.Constant = true
+				}
+			}
+		}
+
+		// Execute the query for the base time range
+		baseRes, err := e.Query(ctx, baseQry, executionTime)
+		if err != nil {
+			return nil, err
+		}
+		defer baseRes.Close()
+
+		// Build a query for the comparison time range, use results from the base time range to add as filter in the comparison time range query
+		compQry := &Query{
+			MetricsView:         qry.MetricsView,
+			Dimensions:          qry.Dimensions,
+			Measures:            qry.Measures,
+			PivotOn:             qry.PivotOn,
+			Spine:               qry.Spine,
+			Sort:                qry.Sort,
+			TimeRange:           qry.ComparisonTimeRange,
+			ComparisonTimeRange: nil,
+			Where:               qry.Where,
+			Having:              qry.Having,
+			Limit:               nil,
+			Offset:              nil,
+			TimeZone:            qry.TimeZone,
+			UseDisplayNames:     false,
+		}
+
+		for i, m := range compQry.Measures {
+			if m.Compute != nil {
+				if m.Compute.ComparisonValue != nil || m.Compute.ComparisonDelta != nil || m.Compute.ComparisonRatio != nil {
+					baseQry.Measures[i].Compute.Constant = true
+				}
+			}
+		}
+
+		// Extract the dimension values returned from the inner query.
+		baseAgg := make(map[any]ComparisonMeasures)
+		//var dimVals []any
+		//var measureVals []any
+		for baseRes.Next() {
+			var dim, measure, prev, delta, deltaP any
+			if err := baseRes.Scan(&dim, &measure, &prev, &delta, &deltaP); err != nil {
+				return nil, fmt.Errorf("two phase comparison: base query failed to scan value: %w", err)
+			}
+			//dimVals = append(dimVals, dim)
+			//measureVals = append(measureVals, measure)
+			if dim == nil {
+				baseAgg[nil] = ComparisonMeasures{base: measure, prev: prev, delta: delta, deltaP: deltaP}
+			} else {
+				d := dim.(string)
+				baseAgg[d] = ComparisonMeasures{base: measure, prev: prev, delta: delta, deltaP: deltaP}
+			}
+		}
+
+		// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
+		var inExpr *Expression
+		if len(baseAgg) == 0 {
+			inExpr = &Expression{
+				Value: false,
+			}
+		} else {
+			// if any dim value is nil add condition with eq operator with nil value
+			var vals []any
+			foundNil := false
+			for k := range baseAgg {
+				if k == nil {
+					foundNil = true
+				} else {
+					vals = append(vals, k)
+				}
+			}
+			inExpr = &Expression{
+				Condition: &Condition{
+					Operator: OperatorIn,
+					Expressions: []*Expression{
+						{Name: qry.Dimensions[0].Name},
+						{Value: vals},
+					},
+				},
+			}
+			if foundNil {
+				inExpr = &Expression{
+					Condition: &Condition{
+						Operator: OperatorOr,
+						Expressions: []*Expression{
+							inExpr,
+							{
+								Condition: &Condition{
+									Operator: OperatorEq,
+									Expressions: []*Expression{
+										{Name: qry.Dimensions[0].Name},
+										{Value: nil},
+									},
+								},
+							},
+						},
+					},
+				}
+			}
+		}
+
+		if compQry.Where == nil {
+			compQry.Where = inExpr
+		} else {
+			compQry.Where = &Expression{
+				Condition: &Condition{
+					Operator: OperatorAnd,
+					Expressions: []*Expression{
+						compQry.Where,
+						inExpr,
+					},
+				},
+			}
+		}
+
+		// Execute the query for the comparison time range
+		compRes, err := e.Query(ctx, compQry, executionTime)
+		if err != nil {
+			return nil, err
+		}
+		defer compRes.Close()
+
+		compAgg := make(map[any]ComparisonMeasures)
+		for compRes.Next() {
+			var dim, measure, prev, delta, deltaP any
+			if err := compRes.Scan(&dim, &measure, &prev, &delta, &deltaP); err != nil {
+				return nil, fmt.Errorf("two phase comparison: base query failed to scan value: %w", err)
+			}
+			//dimVals = append(dimVals, dim)
+			//measureVals = append(measureVals, measure)
+			if dim == nil {
+				compAgg[nil] = ComparisonMeasures{base: measure, prev: prev, delta: delta, deltaP: deltaP}
+			} else {
+				d := dim.(string)
+				compAgg[d] = ComparisonMeasures{base: measure, prev: prev, delta: delta, deltaP: deltaP}
+			}
+		}
+
+		// create select query with inlined base and comparison measures
+		finalQry := ""
+		measureName := qry.Measures[0].Name
+		for dim, baseMeasures := range baseAgg {
+			compMeasures := compAgg[dim]
+			if compMeasures.base == nil {
+				compMeasures.base = 0
+			}
+			if dim != nil {
+				finalQry += fmt.Sprintf("SELECT '%[1]s' AS %[2]s, %[3]v AS %[4]s, %[5]v AS %[4]s_prev, %[3]v-%[5]v AS %[4]s_delta, (%[3]v-%[5]v)/%[3]v AS %[4]s_perc UNION ALL ", dim, qry.Dimensions[0].Name, baseMeasures.base, measureName, compMeasures.base)
+			} else {
+				finalQry += fmt.Sprintf("SELECT NULL AS %[1]s, %[2]v AS %[3]s, %[4]v AS %[3]s_prev, %[2]v-%[4]v AS %[3]s_delta, (%[2]v-%[4]v)/%[2]v AS %[3]s_perc UNION ALL ", qry.Dimensions[0].Name, baseMeasures.base, measureName, compMeasures.base)
+			}
+		}
+
+		// remove last UNION ALL
+		finalQry = finalQry[:len(finalQry)-10]
+
+		// TODO: union all with order by - query planning failing on druid
+		// add order by clause
+		/*finalQry += fmt.Sprintf(" ORDER BY %s", qry.Sort[0].Name)
+		if qry.Sort[0].Desc {
+			finalQry += " DESC"
+		} else {
+			finalQry += " ASC"
+		}*/
+
+		// Execute the final query
+		res, err := e.olap.Execute(ctx, &drivers.Statement{
+			Query:    finalQry,
+			Priority: e.priority,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return res, nil
+	}
+
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
 	if err != nil {
 		return nil, err
@@ -325,6 +530,13 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		"sql":  sql,
 		"args": args,
 	})
+}
+
+type ComparisonMeasures struct {
+	base   any
+	prev   any
+	delta  any
+	deltaP any
 }
 
 type SearchQuery struct {

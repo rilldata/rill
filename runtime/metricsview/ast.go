@@ -41,6 +41,7 @@ type AST struct {
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
+	IsInline             bool             // Whether this node is an inline view
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
@@ -57,6 +58,8 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
+	InlineDimFields      [][]FieldNode    // Dimensions fields to select in the inline view
+	InlineMeasureFields  [][]FieldNode    // Measure fields to select in the inline view
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -372,6 +375,14 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		if err != nil {
 			return nil, err
 		}
+		if qm.Compute.Constant {
+			return &runtimev1.MetricsViewSpec_MeasureV2{
+				Name:        qm.Name,
+				Expression:  "0",
+				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+				DisplayName: fmt.Sprintf("%s (prev)", m.DisplayName),
+			}, nil
+		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
@@ -388,6 +399,15 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		if qm.Compute.Constant {
+			return &runtimev1.MetricsViewSpec_MeasureV2{
+				Name:        qm.Name,
+				Expression:  "0",
+				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+				DisplayName: fmt.Sprintf("%s (Δ)", m.DisplayName),
+			}, nil
+		}
+
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
@@ -401,6 +421,15 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		m, err := a.lookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
+		}
+
+		if qm.Compute.Constant {
+			return &runtimev1.MetricsViewSpec_MeasureV2{
+				Name:        qm.Name,
+				Expression:  "0.0",
+				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+				DisplayName: fmt.Sprintf("%s (Δ%%)", m.DisplayName),
+			}, nil
 		}
 
 		base := fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))
