@@ -129,6 +129,7 @@ export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
   );
 }
 
+// FIXME
 export function recalculateRowPositions(
   items: V1CanvasItem[],
   startingY: number,
@@ -169,6 +170,7 @@ export function validateItemPositions(items: V1CanvasItem[]): void {
   });
 }
 
+// FIXME
 export function reorderRows(
   items: V1CanvasItem[],
   sourceY: number | undefined,
