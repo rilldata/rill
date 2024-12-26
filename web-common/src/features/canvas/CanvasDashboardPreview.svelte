@@ -9,7 +9,12 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import GhostLine from "./GhostLine.svelte";
-  import { validateItemPositions, isValidItem, groupItemsByRow } from "./util";
+  import {
+    validateItemPositions,
+    isValidItem,
+    groupItemsByRow,
+    leftAlignRow,
+  } from "./util";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -199,6 +204,10 @@
     rows
       .sort((a, b) => a.y - b.y)
       .forEach((row) => {
+        // Left align items in each row
+        leftAlignRow(row);
+
+        // Update Y positions
         row.items.forEach((item) => {
           item.y = currentY;
         });
