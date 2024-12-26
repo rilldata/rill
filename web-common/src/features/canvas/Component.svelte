@@ -5,6 +5,7 @@
     useResource,
   } from "../entity-management/resource-selectors";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
+  import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
 </script>
 
 <script lang="ts">
@@ -72,6 +73,11 @@
   on:drop
   on:mousedown
 >
+  {#if draggable}
+    <div class="drag-handle">
+      <DragHandle size="20" className="text-slate-600" />
+    </div>
+  {/if}
   <div class="size-full relative {draggable ? 'touch-none' : ''}">
     <div
       class="size-full overflow-hidden flex flex-col flex-none"
@@ -101,6 +107,18 @@
     &[draggable="true"] {
       @apply select-none;
     }
+  }
+
+  .drag-handle {
+    @apply absolute top-2 left-2.5  p-1 cursor-grab z-10 opacity-0 transition-opacity duration-200;
+  }
+
+  .component:hover .drag-handle {
+    @apply opacity-100;
+  }
+
+  .drag-handle:active {
+    @apply cursor-grabbing;
   }
 
   h1 {
