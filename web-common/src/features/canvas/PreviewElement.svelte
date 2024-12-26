@@ -19,6 +19,7 @@
   export let instanceId: string;
   export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
+  export let rowIndex: number;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
@@ -66,8 +67,8 @@
     {componentName}
     {padding}
     {radius}
-    {scale}
     {selected}
+    {rowIndex}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -79,7 +80,6 @@
     on:dragover={onDragOver}
     on:drop={onDrop}
     on:mousedown={handleMouseDown}
-    on:contextmenu
   />
 {:else if componentName}
   <Component
@@ -89,8 +89,8 @@
     {componentName}
     {padding}
     {radius}
-    {scale}
     {selected}
+    {rowIndex}
     builders={undefined}
     height={finalHeight}
     left={finalLeft}
@@ -102,7 +102,6 @@
     on:dragover={onDragOver}
     on:drop={onDrop}
     on:mousedown={handleMouseDown}
-    on:contextmenu
   />
 {/if}
 
