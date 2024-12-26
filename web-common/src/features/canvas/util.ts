@@ -203,15 +203,18 @@ export function sortItemsByPosition(items: GridItem[]): GridItem[] {
   });
 }
 
-// Add this new function to handle left alignment within rows
 export function leftAlignRow(row: RowGroup) {
-  let currentX = 0;
+  const startPosition: Vector = [0, row.y];
+
   row.items
     .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
     .forEach((item) => {
       if (item.x !== undefined) {
-        item.x = currentX;
-        currentX += item.width ?? 0;
+        item.x = startPosition[0];
+        startPosition[0] = vector.add(
+          [startPosition[0], 0],
+          [item.width ?? 0, 0],
+        )[0];
       }
     });
 }
