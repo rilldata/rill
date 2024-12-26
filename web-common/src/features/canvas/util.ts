@@ -1,18 +1,6 @@
 import * as defaults from "./constants";
-import type { PositionedItem, Vector } from "./types";
+import type { PositionedItem, RowGroup, Vector, GridItem } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
-
-interface RowGroup {
-  y: number;
-  height: number;
-  items: V1CanvasItem[];
-}
-
-interface GridItem {
-  position: [number, number]; // [x, y]
-  size: [number, number]; // [width, height]
-  node: any; // YAML node
-}
 
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
