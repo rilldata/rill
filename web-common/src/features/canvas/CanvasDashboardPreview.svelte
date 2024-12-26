@@ -228,6 +228,21 @@
       row.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
     );
   }
+
+  function getColumnIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {
+    const rows = groupItemsByRow(items);
+    const row = rows.find((r) =>
+      r.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
+    );
+
+    if (!row) return 0;
+
+    // Sort items in the row by x position and find index
+    const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+    return sortedItems.findIndex(
+      (rowItem) => rowItem.x === item.x && rowItem.y === item.y,
+    );
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -266,6 +281,7 @@
       interacting={false}
       {gapSize}
       rowIndex={getRowIndex(component, items)}
+      columnIndex={getColumnIndex(component, items)}
       width={Math.min(
         Number(component.width ?? defaults.COMPONENT_WIDTH),
         defaults.COLUMN_COUNT,
