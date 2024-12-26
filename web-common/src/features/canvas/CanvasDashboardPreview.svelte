@@ -15,6 +15,8 @@
     groupItemsByRow,
     leftAlignRow,
     vector,
+    getRowIndex,
+    getColumnIndex,
   } from "./util";
 
   export let items: V1CanvasItem[];
@@ -209,6 +211,7 @@
         break;
       }
 
+      // FIXME: when dropping right, the dragged item gets placed in the last index of the row
       case "right": {
         console.log("[CanvasDashboardPreview] Dropping right");
         const targetRow = rows.find((row) => row.y === targetItem.y);
@@ -298,28 +301,6 @@
     // Reset drop target and dragged component
     dropTarget = null;
     draggedComponent = null;
-  }
-
-  function getRowIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {
-    const rows = groupItemsByRow(items);
-    return rows.findIndex((row) =>
-      row.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
-    );
-  }
-
-  function getColumnIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {
-    const rows = groupItemsByRow(items);
-    const row = rows.find((r) =>
-      r.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
-    );
-
-    if (!row) return 0;
-
-    // Sort items in the row by x position and find index
-    const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-    return sortedItems.findIndex(
-      (rowItem) => rowItem.x === item.x && rowItem.y === item.y,
-    );
   }
 </script>
 
