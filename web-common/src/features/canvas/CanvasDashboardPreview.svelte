@@ -10,13 +10,7 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import GhostLine from "./GhostLine.svelte";
-  import {
-    recalculateRowPositions,
-    validateItemPositions,
-    isValidItem,
-    reorderRows,
-    groupItemsByRow,
-  } from "./util";
+  import { validateItemPositions, isValidItem, groupItemsByRow } from "./util";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
