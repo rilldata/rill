@@ -13,6 +13,10 @@ export interface CanvasEntity {
    */
   selectedTimeRange?: DashboardTimeControls;
 
+  selectedComparisonTimeRange?: DashboardTimeControls;
+
+  showTimeComparison: boolean;
+
   /**
    * user selected timezone, should default to "UTC" if no other value is set
    */

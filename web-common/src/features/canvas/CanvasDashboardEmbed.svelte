@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Component from "./Component.svelte";
@@ -28,6 +29,13 @@
     return Math.max(max, bottom);
   }, 0);
 </script>
+
+<div
+  id="header"
+  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+>
+  <CanvasFilters />
+</div>
 
 <DashboardWrapper
   bind:contentRect

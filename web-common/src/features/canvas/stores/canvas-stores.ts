@@ -1,7 +1,12 @@
 import { getDefaultCanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-defaults";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { derived, type Readable, writable } from "svelte/store";
+import {
+  TimeRangePreset,
+  type DashboardTimeControls,
+  type TimeRange,
+} from "@rilldata/web-common/lib/time/types";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { derived, writable, type Readable } from "svelte/store";
 
 export interface CanvasStoreType {
   entities: Record<string, CanvasEntity>;
@@ -50,28 +55,60 @@ const canvasVariableReducers = {
   },
 
   // Update the selected time range
-  setTimeRange(name: string, timeRange: DashboardTimeControls | undefined) {
+
+  selectTimeRange(
+    name: string,
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    comparisonTimeRange: DashboardTimeControls | undefined,
+  ) {
     updateCanvasByName(name, (canvas) => {
-      canvas.selectedTimeRange = timeRange;
+      if (!timeRange.name) return;
+
+      if (timeRange.name === TimeRangePreset.ALL_TIME) {
+        canvas.showTimeComparison = false;
+      }
+
+      canvas.selectedTimeRange = {
+        ...timeRange,
+        interval: timeGrain,
+      };
+
+      canvas.selectedComparisonTimeRange = comparisonTimeRange;
+    });
+  },
+
+  setSelectedComparisonRange(
+    name: string,
+    comparisonTimeRange: DashboardTimeControls,
+  ) {
+    updateCanvasByName(name, (canvas) => {
+      canvas.selectedComparisonTimeRange = comparisonTimeRange;
     });
   },
 
   // Update the selected timezone
-  setTimezone(name: string, timezone: string) {
+  setTimeZone(name: string, timezone: string) {
     updateCanvasByName(name, (canvas) => {
       canvas.selectedTimezone = timezone;
     });
   },
+
+  displayTimeComparison(name: string, showTimeComparison: boolean) {
+    updateCanvasByName(name, (canvas) => {
+      canvas.showTimeComparison = showTimeComparison;
+    });
+  },
 };
 
-export const canvasStore: Readable<CanvasStoreType> &
+export const canvasEntityStore: Readable<CanvasStoreType> &
   typeof canvasVariableReducers = {
   subscribe,
   ...canvasVariableReducers,
 };
 
 export function useCanvasStore(name: string): Readable<CanvasEntity> {
-  return derived(canvasStore, ($store) => {
+  return derived(canvasEntityStore, ($store) => {
     return $store.entities[name];
   });
 }

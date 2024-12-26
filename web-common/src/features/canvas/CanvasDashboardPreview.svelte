@@ -1,6 +1,8 @@
 <script lang="ts">
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
+  import { canvasEntityStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
@@ -33,6 +35,8 @@
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
   $: ({ instanceId } = $runtime);
+
+  $: extraLeftPadding = !$navigationOpen;
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
@@ -128,7 +132,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    canvasEntityStore.setSelectedComponentIndex($canvasName, selectedIndex);
     changing = true;
   }
 
@@ -159,7 +163,7 @@
 
   function deselect() {
     selectedIndex = null;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    canvasEntityStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 
   $: maxBottom = items.reduce((max, el) => {
@@ -169,6 +173,14 @@
 </script>
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
+
+<div
+  id="header"
+  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  class:left-shift={extraLeftPadding}
+>
+  <CanvasFilters />
+</div>
 
 <DashboardWrapper
   bind:contentRect
@@ -184,6 +196,9 @@
   on:click={deselect}
   on:scroll={handleScroll}
 >
+  <section
+    class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
+  ></section>
   {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}
