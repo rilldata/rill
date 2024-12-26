@@ -19,8 +19,8 @@
   export let left: number;
   export let top: number;
   export let padding: number;
-  export let scale: number;
-  export let embed = false;
+  // export let scale: number;
+  // export let embed = false;
   export let radius: number;
   export let selected = false;
   export let interacting = false;
@@ -30,6 +30,7 @@
   export let componentName: string;
   export let instanceId: string;
   export let draggable = false;
+  export let rowIndex: number;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -63,8 +64,8 @@
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   role="presentation"
-  data-index={i}
-  data-component
+  data-component-index={i}
+  data-row-index={rowIndex}
   data-selected={selected}
   class={componentClasses}
   {draggable}
@@ -80,7 +81,6 @@
   on:dragend
   on:dragover
   on:drop
-  on:contextmenu
   on:mousedown
 >
   <div class="size-full relative {draggable ? 'touch-none' : ''}">

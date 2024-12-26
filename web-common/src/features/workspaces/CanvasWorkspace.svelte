@@ -139,7 +139,7 @@
   function scrollToComponent(index: number) {
     setTimeout(() => {
       const component = document.querySelector(
-        `[data-component][data-index="${index}"]`,
+        `[data-component-index="${index}"]`,
       );
       if (component) {
         component.scrollIntoView({ behavior: "smooth", block: "center" });

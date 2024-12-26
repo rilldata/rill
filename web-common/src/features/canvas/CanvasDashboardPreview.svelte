@@ -55,8 +55,10 @@
     }>,
   ) {
     e.preventDefault();
-    const index = Number(e.detail.e.currentTarget.dataset.index);
-    selectedIndex = index;
+    const componentIndex = Number(
+      e.detail.e.currentTarget.dataset.componentIndex,
+    );
+    selectedIndex = componentIndex;
     canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
   }
 
@@ -101,7 +103,7 @@
     targetIndex: number,
   ): "left" | "right" | "bottom" {
     const targetElement = document.querySelector(
-      `[data-index="${targetIndex}"]`,
+      `[data-component-index="${targetIndex}"]`,
     );
     if (!targetElement) return "left";
 
@@ -219,6 +221,13 @@
     dropTarget = null;
     draggedComponent = null;
   }
+
+  function getRowIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {
+    const rows = groupItemsByRow(items);
+    return rows.findIndex((row) =>
+      row.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
+    );
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -256,6 +265,7 @@
       selected={selectedIndex === i}
       interacting={false}
       {gapSize}
+      rowIndex={getRowIndex(component, items)}
       width={Math.min(
         Number(component.width ?? defaults.COMPONENT_WIDTH),
         defaults.COLUMN_COUNT,
