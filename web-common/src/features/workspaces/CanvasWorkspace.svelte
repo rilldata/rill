@@ -125,6 +125,19 @@
     canvasEntity.setSelectedComponentIndex(newIndex);
 
     updateEditorContent(parsedDocument.toString(), true);
+    // await saveLocalContent();
+    scrollToComponent(newIndex);
+  }
+
+  function scrollToComponent(index: number) {
+    setTimeout(() => {
+      const component = document.querySelector(
+        `[data-component][data-index="${index}"]`,
+      );
+      if (component) {
+        component.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
   }
 </script>
 
