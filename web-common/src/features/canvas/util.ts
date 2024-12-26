@@ -141,6 +141,7 @@ export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
   );
 }
 
+// Ensure items are within the grid and not overlapping
 export function validateItemPositions(items: V1CanvasItem[]): void {
   // First group items by row
   const rows = groupItemsByRow(items);

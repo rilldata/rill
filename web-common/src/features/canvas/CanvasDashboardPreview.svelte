@@ -178,11 +178,21 @@
     // Group items by row before modification
     const rows = groupItemsByRow([...items]);
     const newItems = [...items];
-    const [removedItem] = newItems.splice(dragIndex, 1);
+
+    // Create a deep copy of the dragged item to preserve all properties
+    const [draggedItemFull] = newItems.splice(dragIndex, 1);
+    const removedItem = {
+      ...draggedItemFull,
+      x: draggedItemFull.x,
+      y: draggedItemFull.y,
+      width: draggedItemFull.width,
+      height: draggedItemFull.height,
+    };
     let insertIndex = dropIndex;
 
     switch (position) {
       case "bottom": {
+        console.log("[CanvasDashboardPreview] Dropping bottom");
         // Create new row
         const newY = targetItem.y + targetItem.height;
         removedItem.y = newY;
@@ -200,23 +210,43 @@
       }
 
       case "right": {
+        console.log("[CanvasDashboardPreview] Dropping right");
         const targetRow = rows.find((row) => row.y === targetItem.y);
         if (targetRow) {
-          // Insert after target
-          removedItem.x = targetItem.x + targetItem.width;
-          removedItem.y = targetItem.y;
+          // Get all items in this row from the original items array
+          const rowItems = items
+            .filter((item) => item.y === targetItem.y)
+            .filter((item) => item !== draggedItem)
+            .sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+
+          // Calculate new position using vector
+          const newPosition: Vector = vector.add(
+            [targetItem.x, targetItem.y],
+            [targetItem.width, 0],
+          );
+
+          // Find insert position based on x coordinate
+          const nextItemIndex = rowItems.findIndex(
+            (item) => (item.x ?? 0) > newPosition[0],
+          );
+
+          // Calculate the actual index in the full items array
+          insertIndex = dropIndex + 1;
+
+          // Set position properties using vector
+          removedItem.x = newPosition[0];
+          removedItem.y = newPosition[1];
           removedItem.width = removedItem.width;
           removedItem.height = draggedItem.height;
 
           targetRow.items.push(removedItem);
           targetRow.height = Math.max(targetRow.height, removedItem.height);
-
-          insertIndex = dropIndex + 1;
         }
         break;
       }
 
       case "left": {
+        console.log("[CanvasDashboardPreview] Dropping left");
         const targetRow = rows.find((row) => row.y === targetItem.y);
         if (targetRow) {
           // Insert before target
@@ -258,6 +288,12 @@
       dimensions: [removedItem.width, removedItem.height],
       items: newItems,
     });
+
+    // Update selected index to follow the dropped item
+    if (selectedIndex === dragIndex) {
+      selectedIndex = insertIndex;
+      canvasStore.setSelectedComponentIndex($canvasName, insertIndex);
+    }
 
     // Reset drop target and dragged component
     dropTarget = null;

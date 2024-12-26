@@ -8,8 +8,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { groupItemsByRow } from "./util";
-  import type { Vector } from "./types";
   import { convertToGridItems, sortItemsByPosition, compactGrid } from "./util";
 
   export let fileArtifact: FileArtifact;
@@ -75,6 +73,7 @@
 
   async function handleUpdate(event: CustomEvent) {
     const { index, position, dimensions, items } = event.detail;
+
     console.log("[Canvas] Handling update:", {
       index,
       position,
