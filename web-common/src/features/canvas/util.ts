@@ -204,7 +204,7 @@ export function sortItemsByPosition(items: GridItem[]): GridItem[] {
 }
 
 // Add this new function to handle left alignment within rows
-function leftAlignRow(row: RowGroup) {
+export function leftAlignRow(row: RowGroup) {
   let currentX = 0;
   row.items
     .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
