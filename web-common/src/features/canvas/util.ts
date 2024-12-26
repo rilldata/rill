@@ -2,6 +2,12 @@ import * as defaults from "./constants";
 import type { PositionedItem, Vector } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
+interface RowGroup {
+  y: number;
+  height: number;
+  items: V1CanvasItem[];
+}
+
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
     return [add[0] + initial[0], add[1] + initial[1]];
@@ -129,36 +135,6 @@ export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
   );
 }
 
-// FIXME
-export function recalculateRowPositions(
-  items: V1CanvasItem[],
-  startingY: number,
-) {
-  const rows = groupItemsByRow(items);
-  let currentY = startingY;
-
-  rows.forEach((row) => {
-    // Sort items in row by x position
-    row.items.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-
-    // Adjust x positions within row
-    let currentX = 0;
-    row.items.forEach((item) => {
-      item.y = currentY;
-      item.x = currentX;
-      currentX += (item?.width ?? 0) + Math.round(defaults.GAP_SIZE / 1000);
-
-      // Ensure item doesn't exceed grid width
-      if (currentX > defaults.COLUMN_COUNT) {
-        item.y = currentY + row.height;
-        item.x = 0;
-        currentX = (item?.width ?? 0) + Math.round(defaults.GAP_SIZE / 1000);
-      }
-    });
-    currentY += row.height;
-  });
-}
-
 export function validateItemPositions(items: V1CanvasItem[]): void {
   items.forEach((item) => {
     if (item.x !== undefined && item.width !== undefined) {
@@ -168,69 +144,6 @@ export function validateItemPositions(items: V1CanvasItem[]): void {
       );
     }
   });
-}
-
-// FIXME
-export function reorderRows(
-  items: V1CanvasItem[],
-  sourceY: number | undefined,
-  targetY: number,
-): void {
-  if (sourceY === undefined || sourceY === targetY) return;
-
-  // First, identify rows and their items
-  const rowMap = new Map<number, V1CanvasItem[]>();
-  items.forEach((item) => {
-    if (!isValidItem(item)) return;
-    const row = rowMap.get(item.y) || [];
-    row.push(item);
-    rowMap.set(item.y, row);
-  });
-
-  // Get source and target rows
-  const sourceRow = rowMap.get(sourceY) || [];
-  const targetRow = rowMap.get(targetY) || [];
-
-  // Simple row swap - update y values
-  sourceRow.forEach((item) => {
-    if (!isValidItem(item)) return;
-    item.y = targetY;
-  });
-
-  targetRow.forEach((item) => {
-    if (!isValidItem(item)) return;
-    item.y = sourceY;
-  });
-
-  // If source row has a full-width item, ensure it stays full width
-  const hasFullWidth = sourceRow.some(
-    (item) => isValidItem(item) && item.width === defaults.COLUMN_COUNT,
-  );
-  if (hasFullWidth) {
-    sourceRow.forEach((item) => {
-      if (!isValidItem(item)) return;
-      item.width = defaults.COLUMN_COUNT;
-      item.x = 0;
-    });
-  }
-
-  // Recalculate x positions for non-full-width rows
-  if (!hasFullWidth) {
-    recalculateRowPositions(items, targetY);
-  }
-  if (
-    !targetRow.some(
-      (item) => isValidItem(item) && item.width === defaults.COLUMN_COUNT,
-    )
-  ) {
-    recalculateRowPositions(items, sourceY);
-  }
-}
-
-interface RowGroup {
-  y: number;
-  height: number;
-  items: V1CanvasItem[];
 }
 
 export function groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
