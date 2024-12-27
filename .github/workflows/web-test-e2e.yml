@@ -49,13 +49,9 @@ jobs:
         id: matrix
         run: |
           echo "matrix=$(jq -n '[
-              "web-admin" | select(env.FILTER_ADMIN == "true" or env.FILTER_COMMON == "true"),
-              "web-local" | select(env.FILTER_LOCAL == "true" or env.FILTER_COMMON == "true")
+              "web-admin" | select(${{ steps.filter.outputs.admin }} == "true" or ${{ steps.filter.outputs.common }} == "true"),
+              "web-local" | select(${{ steps.filter.outputs.local }} == "true" or ${{ steps.filter.outputs.common }} == "true")
             ]' | jq -c)" >> "$GITHUB_OUTPUT"
-        env:
-          FILTER_ADMIN: ${{ steps.filter.outputs.admin }}
-          FILTER_COMMON: ${{ steps.filter.outputs.common }}
-          FILTER_LOCAL: ${{ steps.filter.outputs.local }}
 
   e2e:
     runs-on: ubuntu-latest
