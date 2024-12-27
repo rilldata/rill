@@ -107,8 +107,8 @@
   style:top="{top}px"
   style:width="{width}px"
   style:height={chartView ? undefined : `${height}px`}
-  style:border={selected ? "2px solid var(--color-primary-300)" : "none"}
-  style:border-radius={selected ? "2px" : ""}
+  style:border="2px solid transparent"
+  style:border-color={selected ? "var(--color-primary-300)" : "transparent"}
   on:dragstart
   on:dragend
   on:dragover
