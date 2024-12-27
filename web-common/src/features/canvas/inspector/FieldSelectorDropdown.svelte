@@ -1,14 +1,12 @@
 <script lang="ts">
+  import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import {
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import PivotChip from "@rilldata/web-common/features/dashboards/pivot/PivotChip.svelte";
-  import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { MinusIcon, PlusIcon } from "lucide-svelte";
   import {
@@ -148,23 +146,15 @@
       }}
     >
       <DropdownMenu.Trigger asChild let:builder>
-        <button
-          use:builder.action
-          {...builder}
-          class:open
-          class="flex px-3 gap-x-2 h-6 max-w-full items-center text-xs
-                 border border-gray-300 rounded-[2px] break-all overflow-hidden"
-        >
-          {#if selectedItem}
-            {displayMap[selectedItem] || selectedItem}
-          {:else}
-            Select a {type} field
-          {/if}
-          <CaretDownIcon
-            size="12px"
-            className="!fill-gray-600 ml-auto flex-none"
-          />
-        </button>
+        <Chip fullWidth caret {type} builders={[builder]}>
+          <span class="font-bold truncate" slot="body">
+            {#if selectedItem}
+              {displayMap[selectedItem] || selectedItem}
+            {:else}
+              Select a {type} field
+            {/if}
+          </span>
+        </Chip>
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Content sameWidth class="p-0">
@@ -199,18 +189,14 @@
   {#if multi && selectedItems && selectedItems.length > 0}
     <div class="flex flex-col gap-1">
       {#each selectedItems as item}
-        <div class="flex items-center justify-between">
-          <PivotChip
-            removable
-            item={{
-              id: item,
-              title: displayMap[item] || item,
-              type:
-                type === "measure"
-                  ? PivotChipType.Measure
-                  : PivotChipType.Dimension,
-            }}
-          />
+        <div class="flex items-center justify-between gap-x-2">
+          <div class="flex-1">
+            <Chip fullWidth {type}>
+              <span class="font-bold truncate" slot="body">
+                {displayMap[item] || item}
+              </span>
+            </Chip>
+          </div>
           <button
             class=" px-2 py-1 text-xs"
             on:click={() => {

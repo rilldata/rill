@@ -30,13 +30,13 @@
 
   <FieldSwitcher
     small
-    fields={["static", "split_by"]}
+    fields={["value", "Split by"]}
     {selected}
     onClick={(_, field) => {
-      if (field === "static") {
+      if (field === "value") {
         selected = 0;
         onChange(color);
-      } else if (field === "split_by") {
+      } else if (field === "Split by") {
         selected = 1;
       }
     }}
