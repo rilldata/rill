@@ -99,7 +99,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				Name:               "logo",
 				Extension:          ext,
 				Cacheable:          true,
-				EstimatedSizeBytes: int64(fi.Size()),
+				EstimatedSizeBytes: fi.Size(),
 			})
 			if err != nil {
 				return err
