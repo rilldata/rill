@@ -2432,6 +2432,9 @@ paths:
                 title: Eg. ".tar.gz"
               cacheable:
                 type: boolean
+              estimatedSizeBytes:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:

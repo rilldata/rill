@@ -13,8 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const maxImageSize = 3 * 1024 * 1024 // 3 MB
-
 func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 	var path string
 	var remove bool
@@ -83,9 +81,6 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			if fi.Size() == 0 {
 				return fmt.Errorf("failed to upload %q: the file is empty", path)
 			}
-			if fi.Size() > maxImageSize {
-				return fmt.Errorf("failed to upload %q: the file size exceeds the limit of %d bytes", path, maxImageSize)
-			}
 			f, err := os.Open(path)
 			if err != nil {
 				return fmt.Errorf("failed to open %q: %w", path, err)
@@ -99,11 +94,12 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Generate the asset upload URL
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
-				OrganizationName: ch.Org,
-				Type:             "image",
-				Name:             "logo",
-				Extension:        ext,
-				Cacheable:        true,
+				OrganizationName:   ch.Org,
+				Type:               "image",
+				Name:               "logo",
+				Extension:          ext,
+				Cacheable:          true,
+				EstimatedSizeBytes: int64(fi.Size()),
 			})
 			if err != nil {
 				return err

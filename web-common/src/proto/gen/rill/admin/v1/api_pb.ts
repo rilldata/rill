@@ -2623,6 +2623,11 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
    */
   cacheable = false;
 
+  /**
+   * @generated from field: int64 estimated_size_bytes = 6;
+   */
+  estimatedSizeBytes = protoInt64.zero;
+
   constructor(data?: PartialMessage<CreateAssetRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2636,6 +2641,7 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "cacheable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "estimated_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAssetRequest {

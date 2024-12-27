@@ -112,6 +112,7 @@ export type AdminServiceCreateAssetBody = {
   name?: string;
   extension?: string;
   cacheable?: boolean;
+  estimatedSizeBytes?: string;
 };
 
 export type AdminServiceListUsergroupMemberUsersParams = {

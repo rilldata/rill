@@ -6376,6 +6376,8 @@ func (m *CreateAssetRequest) validate(all bool) error {
 
 	// no validation rules for Cacheable
 
+	// no validation rules for EstimatedSizeBytes
+
 	if len(errors) > 0 {
 		return CreateAssetRequestMultiError(errors)
 	}

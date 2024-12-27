@@ -32,14 +32,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// maxAssetSize is the maximum allowed size of a user-uploaded asset.
-const maxAssetSize = 104857600 // 100 MB
-
-// signingHeaders is a map of headers to be used when generating a signed URL for uploading an asset.
-// It is used to enforce maxAssetSize.
-var signingHeaders = map[string]string{
-	"Content-Type":                "application/octet-stream",
-	"x-goog-content-length-range": fmt.Sprintf("1,%d", maxAssetSize),
+// maxAssetSizeForType gives the maximum allowed size of a user-uploaded asset for a given type.
+var maxAssetSizeForType = map[string]int64{
+	"deploy": 100 * (2 << 19), // 100 MB
+	"image":  3 * (2 << 19),   // 3 MB
 }
 
 func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetRequest) (*adminv1.CreateAssetResponse, error) {
@@ -60,6 +56,15 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create assets")
 	}
 
+	// Check max size for the asset type
+	maxSize, ok := maxAssetSizeForType[req.Type]
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid asset type %q", req.Type)
+	}
+	if req.EstimatedSizeBytes > maxSize {
+		return nil, status.Errorf(codes.InvalidArgument, "estimated size %d exceeds maximum size %d for type %q", req.EstimatedSizeBytes, maxSize, req.Type)
+	}
+
 	// Generate an ID and path for the asset
 	assetID := uuid.New().String()
 	objectPath := path.Join(req.Type, fmt.Sprintf("%s__%s__%s.%s", org.Name, req.Name, assetID, req.Extension))
@@ -70,14 +75,15 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	}
 
 	// Generate a signed URL for uploading the asset
-	var headers []string
-	for k, v := range signingHeaders {
-		headers = append(headers, fmt.Sprintf("%s:%s", k, v))
+	signingHeadersMap := newGCSUploadHeaders(maxSize)
+	var signingHeaders []string
+	for k, v := range signingHeadersMap {
+		signingHeaders = append(signingHeaders, fmt.Sprintf("%s:%s", k, v))
 	}
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "PUT",
-		Headers: headers,
+		Headers: signingHeaders,
 		Expires: time.Now().Add(15 * time.Minute),
 	}
 	signedURL, err := s.admin.Assets.SignedURL(objectPath, opts)
@@ -95,7 +101,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	return &adminv1.CreateAssetResponse{
 		AssetId:        asset.ID,
 		SignedUrl:      signedURL,
-		SigningHeaders: signingHeaders,
+		SigningHeaders: signingHeadersMap,
 	}, nil
 }
 
@@ -185,8 +191,8 @@ func (s *Server) assetHandler(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// generateSignedURL generates a signed URL for downloading the asset.
-func (s *Server) generateSignedURL(asset *database.Asset) (string, error) {
+// generateSignedDownloadURL generates a signed URL for downloading the asset.
+func (s *Server) generateSignedDownloadURL(asset *database.Asset) (string, error) {
 	// asset.Path is of the form "gs://<bucket>/<path>"
 	u, err := url.Parse(asset.Path)
 	if err != nil {
@@ -204,6 +210,15 @@ func (s *Server) generateSignedURL(asset *database.Asset) (string, error) {
 		return "", err
 	}
 	return signedURL, nil
+}
+
+// newGCSUploadHeaders returns a map of headers to be used when generating a signed URL for uploading an asset to GCS.
+// They are used to enforce a maximum asset size for uploads.
+func newGCSUploadHeaders(maxSize int64) map[string]string {
+	return map[string]string{
+		"Content-Type":                "application/octet-stream",
+		"x-goog-content-length-range": fmt.Sprintf("1,%d", maxSize),
+	}
 }
 
 // UploadProjectAssets disconnects a project from Github by uploading the contents of a Github repository as an asset.
