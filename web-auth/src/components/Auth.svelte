@@ -9,7 +9,6 @@
   import EmailPasswordForm from "./EmailPasswordForm.svelte";
   import { getConnectionFromEmail } from "./utils";
   import OrSeparator from "./OrSeparator.svelte";
-  import SSOForm from "./SSOForm.svelte";
   import EmailSubmissionForm from "./EmailSubmissionForm.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import Spacer from "./Spacer.svelte";
@@ -31,7 +30,7 @@
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
-  $: isLegacy = false;
+  // $: isLegacy = false;
 
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
@@ -42,82 +41,98 @@
   $: domainDisabled = isDomainDisabled(email);
 
   function initConfig() {
-    const config = JSON.parse(
-      decodeURIComponent(escape(window.atob(configParams))),
-    ) as Config;
+    try {
+      if (
+        import.meta.env.DEV &&
+        (!configParams || configParams === "undefined")
+      ) {
+        console.warn(
+          "No auth config provided. In development mode - auth flows will not work.",
+        );
+        errorText = "Authentication is not configured in development mode";
+        return;
+      }
 
-    const isSignup = config?.extraParams?.screen_hint === "signup";
+      const config = JSON.parse(
+        decodeURIComponent(escape(window.atob(configParams))),
+      ) as Config;
 
-    if (isSignup) {
-      step = AuthStep.SignUp;
-    }
+      const isSignup = config?.extraParams?.screen_hint === "signup";
 
-    if (cloudClientIDsArr.includes(config?.clientID)) {
-      isLegacy = true;
-    }
+      if (isSignup) {
+        step = AuthStep.SignUp;
+      }
 
-    const authOptions: AuthOptions = Object.assign(
-      {
-        overrides: {
-          __tenant: config.auth0Tenant,
-          __token_issuer: config.authorizationServer.issuer,
+      // UNCOMMENT to use `isLegacy` for rill dash check if needed
+      // NOTE: Check for cloud client ids from auth0 to allow sign up and login
+      // NOTE: Prevent rill dash (legacy) users from signing up
+      // if (cloudClientIDsArr.includes(config?.clientID)) {
+      //   isLegacy = true;
+      // }
+
+      const authOptions: AuthOptions = Object.assign(
+        {
+          overrides: {
+            __tenant: config.auth0Tenant,
+            __token_issuer: config.authorizationServer.issuer,
+          },
+          domain: config.auth0Domain,
+          clientID: config.clientID,
+          redirectUri: config.callbackURL,
+          responseType: "code",
         },
-        domain: config.auth0Domain,
-        clientID: config.clientID,
-        redirectUri: config.callbackURL,
-        responseType: "code",
-      },
-      config.internalOptions,
-    );
+        config.internalOptions,
+      );
 
-    webAuth = new auth0.WebAuth(authOptions);
+      webAuth = new auth0.WebAuth(authOptions);
+    } catch (e) {
+      console.error("Failed to initialize auth:", e);
+      errorText = "Failed to initialize authentication in development mode";
+    }
   }
 
-  function processEmailSubmission(event) {
-    email = event.detail.email;
+  function authorizeSSO(email: string, connectionName: string) {
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
+  }
 
+  async function processEmailSubmission(event) {
+    email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     if (connectionName) {
-      step = AuthStep.SSO;
+      authorizeSSO(email, connectionName);
     } else {
-      step = AuthStep.Login;
+      step = AuthStep.SignUp;
     }
   }
 
   function getHeadingText(step: AuthStep): string {
-    if (isLegacy) {
-      return "Log in";
-    }
-
     switch (step) {
       case AuthStep.Base:
         return "Log in or sign up";
-      case AuthStep.SSO:
-        return "Log in with SSO";
       case AuthStep.Login:
         return "Log in with email";
       case AuthStep.SignUp:
-        return "Sign up with email";
+        return `Log in or sign up with <span class="font-medium">${email}</span>`;
       case AuthStep.Thanks:
         return "Thanks for signing up!";
       default:
         return "";
     }
   }
-  $: headingText = getHeadingText(step);
 
   function getSubheadingText(step: AuthStep, email: string): string {
     switch (step) {
-      case AuthStep.SSO:
-        return `SAML SSO enabled workspace is associated with <span class="font-medium">${email}</span>`;
       case AuthStep.Login:
         return `Log in using <span class="font-medium">${email}</span>`;
       default:
         return "";
     }
   }
-  $: subheadingText = getSubheadingText(step, email);
 
   function backToBaseStep() {
     step = AuthStep.Base;
@@ -126,6 +141,9 @@
   onMount(() => {
     initConfig();
   });
+
+  $: headingText = getHeadingText(step);
+  $: subheadingText = getSubheadingText(step, email);
 </script>
 
 <AuthContainer>
@@ -133,7 +151,7 @@
   <Spacer />
   <div class="flex flex-col items-center gap-y-2 text-center">
     <div class="text-xl text-slate-800">
-      {headingText}
+      {@html headingText}
     </div>
     {#if subheadingText}
       <div class="text-base text-gray-500">
@@ -167,16 +185,9 @@
       <EmailSubmissionForm on:submit={processEmailSubmission} />
     {/if}
 
-    {#if step === AuthStep.SSO}
-      <SSOForm {email} {connectionMapObj} {webAuth} on:back={backToBaseStep} />
-    {/if}
-
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
-        {step}
         {email}
-        {isLegacy}
-        showForgetPassword={step === AuthStep.Login}
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}
