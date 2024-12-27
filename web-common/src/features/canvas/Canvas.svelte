@@ -84,16 +84,16 @@
   {items}
   {columns}
   {showGrid}
-  bind:selectedIndex
+  selectedIndex={$selectedIndex}
   on:update={handlePreviewUpdate}
   on:delete={handleDeleteEvent}
 />
 
 <svelte:window
   on:keydown={async (e) => {
-    if (e.target !== document.body || selectedIndex === null) return;
+    if (e.target !== document.body || $selectedIndex === null) return;
     if (e.key === "Delete" || e.key === "Backspace") {
-      await deleteComponent(selectedIndex);
+      await deleteComponent($selectedIndex);
     }
   }}
 />

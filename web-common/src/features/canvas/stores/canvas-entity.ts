@@ -1,26 +1,25 @@
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { writable, type Writable } from "svelte/store";
+import { CanvasTimeControls } from "./canvas-time-control";
 
-export interface CanvasEntity {
+export class CanvasEntity {
   name: string;
-
+  /**
+   * Time controls for the canvas entity containing various
+   * time related writables
+   */
+  timeControls: CanvasTimeControls;
   /**
    * Index of the component higlighted or selected in the canvas
    */
-  selectedComponentIndex: number | null;
+  selectedComponentIndex: Writable<number | null>;
 
-  /**
-   * user selected time range
-   */
-  selectedTimeRange?: DashboardTimeControls;
+  constructor(name: string) {
+    this.name = name;
+    this.timeControls = new CanvasTimeControls();
+    this.selectedComponentIndex = writable(null);
+  }
 
-  selectedComparisonTimeRange?: DashboardTimeControls;
-
-  showTimeComparison: boolean;
-
-  /**
-   * user selected timezone, should default to "UTC" if no other value is set
-   */
-  selectedTimezone: string;
-
-  proto?: string;
+  setSelectedComponentIndex(index: number | null) {
+    this.selectedComponentIndex.set(index);
+  }
 }

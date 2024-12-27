@@ -9,7 +9,7 @@ export function createCanvasStateSync(ctx: StateManagers) {
     return { isFetching: false, error: false };
   } else {
     // Running for the 1st time. Initialise the canvas store.
-    canvasEntityStore.init(canvasName);
+    canvasEntityStore.addEntity(canvasName);
     return { isFetching: false, error: false };
   }
 }

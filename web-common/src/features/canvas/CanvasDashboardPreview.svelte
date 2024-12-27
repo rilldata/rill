@@ -1,7 +1,6 @@
 <script lang="ts">
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { canvasEntityStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -22,7 +21,7 @@
   export let snap = true;
   export let selectedIndex: number | null = null;
 
-  const { canvasName } = getCanvasStateManagers();
+  const { canvasStore } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -132,7 +131,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    canvasEntityStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    $canvasStore.setSelectedComponentIndex(selectedIndex);
     changing = true;
   }
 
@@ -163,7 +162,7 @@
 
   function deselect() {
     selectedIndex = null;
-    canvasEntityStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
 
   $: maxBottom = items.reduce((max, el) => {

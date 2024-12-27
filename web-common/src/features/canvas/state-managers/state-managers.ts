@@ -7,16 +7,9 @@ import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store"
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
-import {
-  derived,
-  get,
-  writable,
-  type Readable,
-  type Writable,
-} from "svelte/store";
+import { derived, writable, type Readable, type Writable } from "svelte/store";
 import type { CanvasEntity } from "../stores/canvas-entity";
-import { updateCanvasByName, useCanvasStore } from "../stores/canvas-stores";
-import type { CanvasCallbackExecutor } from "./types";
+import { useCanvasStore } from "../stores/canvas-stores";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -25,7 +18,6 @@ export type StateManagers = {
   validSpecStore: Readable<
     QueryObserverResult<V1CanvasSpec | undefined, RpcStatus>
   >;
-  updateCanvas: CanvasCallbackExecutor;
   queryClient: QueryClient;
 };
 
@@ -60,17 +52,11 @@ export function createStateManagers({
     ),
   );
 
-  const updateCanvas = (callback: (canvasEntity: CanvasEntity) => void) => {
-    const name = get(canvasStore).name;
-    updateCanvasByName(name, callback);
-  };
-
   return {
     runtime: runtime,
     canvasName: canvasNameStore,
     canvasStore,
     validSpecStore,
     queryClient,
-    updateCanvas,
   };
 }

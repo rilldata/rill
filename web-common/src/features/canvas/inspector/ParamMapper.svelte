@@ -24,7 +24,8 @@
   export let fileArtifact: FileArtifact;
 
   const { canvasStore } = getCanvasStateManagers();
-  $: selectedComponentIndex = $canvasStore?.selectedComponentIndex ?? 0;
+  $: selectedComponentIndexStore = $canvasStore?.selectedComponentIndex;
+  $: selectedComponentIndex = $selectedComponentIndexStore ?? 0;
   $: path = ["items", selectedComponentIndex, "component", componentType];
 
   $: localParamValues = localParamValues || {};

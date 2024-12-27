@@ -1,114 +1,47 @@
-import { getDefaultCanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-defaults";
-import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import {
-  TimeRangePreset,
-  type DashboardTimeControls,
-  type TimeRange,
-} from "@rilldata/web-common/lib/time/types";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+// CanvasStore.ts
 import { derived, writable, type Readable } from "svelte/store";
+import { CanvasEntity } from "./canvas-entity";
 
 export interface CanvasStoreType {
   entities: Record<string, CanvasEntity>;
 }
-const { update, subscribe } = writable({
-  entities: {},
-} as CanvasStoreType);
 
-export const updateCanvasByName = (
-  name: string,
-  callback: (canvas: CanvasEntity) => void,
-) => {
-  update((state) => {
-    if (!state.entities[name]) {
-      return state;
-    }
-
-    callback(state.entities[name]);
-    return state;
+function createCanvasStore() {
+  const { subscribe, update } = writable<CanvasStoreType>({
+    entities: {},
   });
-};
 
-const canvasVariableReducers = {
-  init(name: string) {
-    update((state) => {
-      if (state.entities[name]) return state;
-
-      state.entities[name] = getDefaultCanvasEntity(name);
-
-      return state;
-    });
-  },
-
-  remove(name: string) {
-    update((state) => {
-      delete state.entities[name];
-      return state;
-    });
-  },
-
-  // Update the selected timezone
-  setSelectedComponentIndex(name: string, index: number | null) {
-    updateCanvasByName(name, (canvas) => {
-      canvas.selectedComponentIndex = index;
-    });
-  },
-
-  // Update the selected time range
-
-  selectTimeRange(
-    name: string,
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    updateCanvasByName(name, (canvas) => {
-      if (!timeRange.name) return;
-
-      if (timeRange.name === TimeRangePreset.ALL_TIME) {
-        canvas.showTimeComparison = false;
+  // Add a new CanvasEntity to the store by name
+  function addEntity(name: string) {
+    update((store) => {
+      // Only add if it doesn’t exist yet
+      if (!store.entities[name]) {
+        store.entities[name] = new CanvasEntity(name);
       }
-
-      canvas.selectedTimeRange = {
-        ...timeRange,
-        interval: timeGrain,
-      };
-
-      canvas.selectedComparisonTimeRange = comparisonTimeRange;
+      return store;
     });
-  },
+  }
 
-  setSelectedComparisonRange(
-    name: string,
-    comparisonTimeRange: DashboardTimeControls,
-  ) {
-    updateCanvasByName(name, (canvas) => {
-      canvas.selectedComparisonTimeRange = comparisonTimeRange;
+  // Remove an existing CanvasEntity by name
+  function removeEntity(name: string) {
+    update((store) => {
+      delete store.entities[name];
+      return store;
     });
-  },
+  }
 
-  // Update the selected timezone
-  setTimeZone(name: string, timezone: string) {
-    updateCanvasByName(name, (canvas) => {
-      canvas.selectedTimezone = timezone;
-    });
-  },
+  return {
+    subscribe,
+    addEntity,
+    removeEntity,
+  };
+}
 
-  displayTimeComparison(name: string, showTimeComparison: boolean) {
-    updateCanvasByName(name, (canvas) => {
-      canvas.showTimeComparison = showTimeComparison;
-    });
-  },
-};
-
-export const canvasEntityStore: Readable<CanvasStoreType> &
-  typeof canvasVariableReducers = {
-  subscribe,
-  ...canvasVariableReducers,
-};
+// Export a singleton instance for convenience
+export const canvasEntityStore = createCanvasStore();
 
 export function useCanvasStore(name: string): Readable<CanvasEntity> {
-  return derived(canvasEntityStore, ($store) => {
-    return $store.entities[name];
+  return derived(canvasEntityStore, ($canvasStore) => {
+    return $canvasStore.entities[name];
   });
 }

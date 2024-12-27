@@ -7,8 +7,11 @@
 
   const { canvasStore } = getCanvasStateManagers();
 
-  $: selectedTimeRange = $canvasStore?.selectedTimeRange;
-  $: selectedComparisonTimeRange = $canvasStore?.selectedComparisonTimeRange;
+  $: selectedTimeRange = $canvasStore.timeControls.selectedTimeRange;
+  $: selectedComparisonTimeRange =
+    $canvasStore.timeControls?.selectedComparisonTimeRange;
+  $: activeTimeZone = $canvasStore.timeControls.selectedTimezone;
+
   const allTimeRange = {
     name: TimeRangePreset.ALL_TIME,
     start: new Date(0),
@@ -19,11 +22,15 @@
 <div class="flex flex-col gap-y-2 w-full h-20 justify-center ml-2">
   <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
     <Calendar size="16px" />
-    <CanvasSuperPill {allTimeRange} {selectedTimeRange} />
+    <CanvasSuperPill
+      {allTimeRange}
+      selectedTimeRange={$selectedTimeRange}
+      activeTimeZone={$activeTimeZone}
+    />
     <CanvasComparisonPill
       {allTimeRange}
-      {selectedTimeRange}
-      {selectedComparisonTimeRange}
+      selectedTimeRange={$selectedTimeRange}
+      selectedComparisonTimeRange={$selectedComparisonTimeRange}
     />
   </div>
 </div>

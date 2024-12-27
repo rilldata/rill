@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getTimeRangeForCanvas } from "@rilldata/web-common/features/canvas/filters/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { canvasEntityStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
   import {
     ALL_TIME_RANGE_ALIAS,
@@ -26,16 +25,16 @@
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
+  export let activeTimeZone: string;
 
   const ctx = getCanvasStateManagers();
   const { canvasName, canvasStore, validSpecStore } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
-  $: canvasSpec = $validSpecStore.data;
+  // $: canvasSpec = $validSpecStore.data;
 
-  $: selectedRange =
-    $canvasStore?.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
+  $: selectedRange = selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
   // TODO: Add default timeRange to resource
   // $: defaultTimeRange = $validSpecStore?.data?.defaultPreset?.timeRange;
@@ -47,8 +46,6 @@
         DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
-
-  $: activeTimeZone = $canvasStore?.selectedTimezone;
 
   // TODO: Add timezone key to resource
   // $: availableTimeZones = canvasSpec?.timeZones ?? [];
@@ -98,7 +95,7 @@
       });
     }
 
-    canvasEntityStore.setTimeZone($canvasName, timeZone);
+    $canvasStore.timeControls.setTimeZone(timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -154,8 +151,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    canvasEntityStore.selectTimeRange(
-      $canvasName,
+    $canvasStore.timeControls.selectTimeRange(
       timeRange,
       timeGrain,
       comparisonTimeRange,
@@ -164,8 +160,8 @@
 
   function onPan(direction: "left" | "right") {
     const getPanRange = getPanRangeForTimeRange(
-      $canvasStore.selectedTimeRange,
-      $canvasStore.selectedTimezone,
+      selectedTimeRange,
+      activeTimeZone,
     );
     const panRange = getPanRange(direction);
     if (!panRange) return;
@@ -182,8 +178,7 @@
     } as DashboardTimeControls; // FIXME wrong typecasting across application
 
     if (!activeTimeGrain) return;
-    canvasEntityStore.selectTimeRange(
-      $canvasName,
+    $canvasStore.timeControls.selectTimeRange(
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,
