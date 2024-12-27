@@ -147,7 +147,7 @@
   }
 
   .drag-handle {
-    @apply absolute top-2 left-2.5 p-1 cursor-grab z-10 opacity-0 transition-opacity duration-200;
+    @apply absolute top-5 left-5 p-1 cursor-grab z-10 opacity-0 transition-opacity duration-200;
   }
 
   .component:hover .drag-handle {
