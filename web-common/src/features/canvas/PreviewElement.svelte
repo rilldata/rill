@@ -30,7 +30,19 @@
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    change: {
+      e: MouseEvent;
+      dimensions: [number, number];
+      position: [number, number];
+      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
+      changePosition: [0 | 1, 0 | 1];
+    };
+    dragstart: { componentIndex: number; width: number; height: number };
+    dragend: void;
+    mouseenter: { index: number };
+    mouseleave: { index: number };
+  }>();
 
   function handleMouseDown(e: MouseEvent) {
     // if (e.button !== 0) return;
@@ -57,6 +69,14 @@
     console.log("[PreviewElement] handleDragEnd");
     dispatch("dragend");
   }
+
+  function handleMouseEnter() {
+    dispatch("mouseenter", { index: i });
+  }
+
+  function handleMouseLeave() {
+    dispatch("mouseleave", { index: i });
+  }
 </script>
 
 {#if componentName && !inlineComponent}
@@ -80,6 +100,8 @@
     on:dragover={onDragOver}
     on:drop={onDrop}
     on:mousedown={handleMouseDown}
+    on:mouseenter={handleMouseEnter}
+    on:mouseleave={handleMouseLeave}
   />
 {:else if componentName}
   <Component
@@ -102,5 +124,7 @@
     on:dragover={onDragOver}
     on:drop={onDrop}
     on:mousedown={handleMouseDown}
+    on:mouseenter={handleMouseEnter}
+    on:mouseleave={handleMouseLeave}
   />
 {/if}
