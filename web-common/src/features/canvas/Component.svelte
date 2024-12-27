@@ -139,8 +139,9 @@
   <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
     <div
       class="size-full overflow-hidden flex flex-col flex-none"
-      class:shadow-lg={interacting}
+      class:shadow-md={interacting || isHovered}
       style:border-radius="{radius}px"
+      class:rounded-sm={isHovered}
     >
       <ComponentTitle {title} {description} />
       {#if renderer && rendererProperties}
