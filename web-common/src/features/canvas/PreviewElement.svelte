@@ -6,7 +6,7 @@
 
 <script lang="ts">
   export let i: number;
-  export let gapSize: number;
+  export let padding: number;
   export let component: V1CanvasItem;
   export let selected: boolean;
   export let interacting: boolean;
@@ -29,7 +29,6 @@
   $: finalTop = height < 0 ? top + height : top;
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
-  $: padding = gapSize;
 
   const dispatch = createEventDispatcher();
 

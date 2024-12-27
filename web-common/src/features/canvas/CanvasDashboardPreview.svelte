@@ -340,7 +340,7 @@
       {radius}
       selected={selectedIndex === i}
       interacting={false}
-      {gapSize}
+      padding={16}
       rowIndex={getRowIndex(component, items)}
       columnIndex={getColumnIndex(component, items)}
       width={Math.min(
