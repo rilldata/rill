@@ -29,6 +29,7 @@
   export let columnIndex: number;
 
   let isDragging = false;
+  let isHovered = false;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -72,6 +73,14 @@
     }
   }
 
+  function handleMouseEnter() {
+    isHovered = true;
+  }
+
+  function handleMouseLeave() {
+    isHovered = false;
+  }
+
   $: componentClasses = [
     "component",
     "pointer-events-auto",
@@ -89,6 +98,7 @@
   data-row-index={rowIndex}
   data-column-index={columnIndex}
   data-selected={selected}
+  data-hovered={isHovered}
   class={componentClasses}
   draggable={isDragging}
   style:z-index={renderer === "select" ? 100 : "auto"}
@@ -104,6 +114,8 @@
   on:dragover
   on:drop
   on:mousedown
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
 >
   <!-- FIXME: clear the DragHandle when handleDragEnd -->
   {#if showDragHandle}

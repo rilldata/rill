@@ -36,6 +36,7 @@
     index: number;
     position: "left" | "right" | "bottom";
   } | null = null;
+  let hoveredIndex: number | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -77,6 +78,7 @@
       width,
       height,
     });
+    hoveredIndex = null;
     draggedComponent = {
       index: componentIndex,
       width,
@@ -304,6 +306,26 @@
     dropTarget = null;
     draggedComponent = null;
   }
+
+  function handleMouseEnter(e: CustomEvent<{ index: number }>) {
+    if (draggedComponent) {
+      // Don't update hover state while dragging
+      return;
+    }
+    hoveredIndex = e.detail.index;
+    console.log("[CanvasDashboardPreview] Component hovered:", hoveredIndex);
+  }
+
+  function handleMouseLeave(e: CustomEvent<{ index: number }>) {
+    if (draggedComponent) {
+      // Don't update hover state while dragging
+      return;
+    }
+    if (hoveredIndex === e.detail.index) {
+      hoveredIndex = null;
+      console.log("[CanvasDashboardPreview] Component unhovered");
+    }
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -359,6 +381,8 @@
       on:dragstart={handleDragStart}
       on:dragend={handleDragEnd}
       on:change={handleChange}
+      on:mouseenter={handleMouseEnter}
+      on:mouseleave={handleMouseLeave}
     />
   {/each}
 
