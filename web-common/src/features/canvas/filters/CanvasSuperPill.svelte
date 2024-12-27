@@ -28,7 +28,7 @@
   export let activeTimeZone: string;
 
   const ctx = getCanvasStateManagers();
-  const { canvasName, canvasStore, validSpecStore } = ctx;
+  const { canvasName, canvasStore } = ctx;
 
   $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
