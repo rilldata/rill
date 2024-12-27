@@ -9,7 +9,7 @@
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
-  import GhostLine from "./GhostLine.svelte";
+  import DropTargetLine from "./DropTargetLine.svelte";
   import {
     validateItemPositions,
     isValidItem,
@@ -365,7 +365,7 @@
   {#if dropTarget && draggedComponent}
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
-      <GhostLine
+      <DropTargetLine
         height={dropTarget.position === "bottom"
           ? 2
           : targetItem.height * gridCell}
