@@ -1,7 +1,7 @@
 ---
-title: "Increment Model based on a state from Data Warehouses"
+title: "Incremental Model based on a state from Data Warehouses"
 description:  "Getting Started with Partitions"
-sidebar_label: "Data Warehouse: Increment Models"
+sidebar_label: "Data Warehouse: Incremental Stage Models"
 sidebar_position: 12
 ---
 
