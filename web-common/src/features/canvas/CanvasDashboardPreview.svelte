@@ -9,15 +9,10 @@
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
   import DropTargetLine from "./DropTargetLine.svelte";
-  import {
-    validateItemPositions,
-    isValidItem,
-    groupItemsByRow,
-    leftAlignRow,
-    vector,
-    getRowIndex,
-    getColumnIndex,
-  } from "./util";
+  import { getRowIndex, getColumnIndex } from "./util";
+  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
+  import { Grid } from "./grid";
+  import type { DropPosition } from "./types";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -34,7 +29,7 @@
   } | null = null;
   let dropTarget: {
     index: number;
-    position: "left" | "right" | "bottom";
+    position: DropPosition;
   } | null = null;
   let hoveredIndex: number | null = null;
 
@@ -43,9 +38,13 @@
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
 
-  $: gapSize = defaults.DASHBOARD_WIDTH * (defaults.GAP_SIZE / 1000);
   $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
+
+  $: maxBottom = items.reduce((max, el) => {
+    const bottom = Number(el.height) + Number(el.y);
+    return Math.max(max, bottom);
+  }, 0);
 
   $: console.log("[CanvasDashboardPreview] items updated:", items);
 
@@ -53,6 +52,9 @@
   const { canvasName } = getCanvasStateManagers();
 
   $: itemsByRow = groupItemsByRow(items);
+
+  const grid = new Grid(items);
+  $: grid.items = items;
 
   function handleChange(
     e: CustomEvent<{
@@ -90,7 +92,7 @@
     e.preventDefault();
     e.stopPropagation();
 
-    // Don't show ghost line if dragging over self
+    // Don't show drop target line if dragging over self
     if (draggedComponent?.index === targetIndex) {
       dropTarget = null;
       return;
@@ -124,36 +126,17 @@
   function handleDeselect() {
     selectedIndex = null;
     canvasEntity.setSelectedComponentIndex(selectedIndex);
+    canvasStore.setSelectedComponentIndex(selectedIndex);
   }
 
-  $: maxBottom = items.reduce((max, el) => {
-    const bottom = Number(el.height) + Number(el.y);
-    return Math.max(max, bottom);
-  }, 0);
-
-  function getDropPosition(
-    e: DragEvent,
-    targetIndex: number,
-  ): "left" | "right" | "bottom" {
+  function getDropPosition(e: DragEvent, targetIndex: number): DropPosition {
     const targetElement = document.querySelector(
       `[data-component-index="${targetIndex}"]`,
     );
     if (!targetElement) return "left";
 
     const rect = targetElement.getBoundingClientRect();
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-
-    // Define bottom zone as the lower 25% of the element
-    const bottomZone = rect.bottom - rect.height * 0.25;
-
-    // Check if mouse is in bottom zone first
-    if (mouseY > bottomZone) {
-      return "bottom";
-    }
-
-    // If not in bottom zone, determine left/right as before
-    return mouseX > rect.left + rect.width / 2 ? "right" : "left";
+    return grid.getDropPosition(e.clientX, e.clientY, rect);
   }
 
   function handleDrop(e: DragEvent | CustomEvent<DragEvent>) {
@@ -167,150 +150,37 @@
     const targetItem = items[dropIndex];
     const draggedItem = items[dragIndex];
 
-    console.log("[CanvasDashboardPreview] Drag and Drop:", {
-      dragged: {
-        index: dragIndex,
-        item: draggedItem,
-      },
-      target: {
-        index: dropIndex,
-        item: targetItem,
-        position,
-      },
+    console.log("[CanvasDashboardPreview] handleDrop", {
+      position,
+      targetItem,
+      draggedItem,
     });
 
     if (!isValidItem(targetItem) || !isValidItem(draggedItem)) return;
 
-    // Group items by row before modification
-    const rows = groupItemsByRow([...items]);
-    const newItems = [...items];
+    const { items: newItems, insertIndex } = grid.moveItem(
+      draggedItem,
+      targetItem,
+      position,
+      dragIndex,
+    );
 
-    // Create a deep copy of the dragged item to preserve all properties
-    const [draggedItemFull] = newItems.splice(dragIndex, 1);
-    const removedItem = {
-      ...draggedItemFull,
-      x: draggedItemFull.x,
-      y: draggedItemFull.y,
-      width: draggedItemFull.width,
-      height: draggedItemFull.height,
-    };
-    let insertIndex = dropIndex;
-
-    switch (position) {
-      case "bottom": {
-        console.log("[CanvasDashboardPreview] Dropping bottom");
-        // Create new row
-        const newY = targetItem.y + targetItem.height;
-        removedItem.y = newY;
-        removedItem.x = 0;
-        removedItem.width = defaults.COLUMN_COUNT;
-        removedItem.height = draggedItem.height;
-        insertIndex = dropIndex + 1;
-
-        rows.push({
-          y: newY,
-          height: removedItem.height,
-          items: [removedItem],
-        });
-
-        console.log("[CanvasDashboardPreview] Bottom drop state:", {
-          newY,
-          removedItem,
-          allItems: newItems,
-        });
-        break;
-      }
-
-      // FIXME: when dropping right, the dragged item gets placed in the last index of the row
-      case "right": {
-        console.log("[CanvasDashboardPreview] Dropping right");
-        const targetRow = rows.find((row) => row.y === targetItem.y);
-        if (targetRow) {
-          // Get all items in this row from the original items array
-          const rowItems = items
-            .filter((item) => item.y === targetItem.y)
-            .filter((item) => item !== draggedItem)
-            .sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-
-          // Calculate new position using vector
-          const newPosition: Vector = vector.add(
-            [targetItem.x, targetItem.y],
-            [targetItem.width, 0],
-          );
-
-          // Find insert position based on x coordinate
-          const nextItemIndex = rowItems.findIndex(
-            (item) => (item.x ?? 0) > newPosition[0],
-          );
-
-          // Calculate the actual index in the full items array
-          insertIndex = dropIndex + 1;
-
-          // Set position properties using vector
-          removedItem.x = newPosition[0];
-          removedItem.y = newPosition[1];
-          removedItem.width = removedItem.width;
-          removedItem.height = draggedItem.height;
-
-          targetRow.items.push(removedItem);
-          targetRow.height = Math.max(targetRow.height, removedItem.height);
-        }
-
-        break;
-      }
-
-      case "left": {
-        console.log("[CanvasDashboardPreview] Dropping left");
-        const targetRow = rows.find((row) => row.y === targetItem.y);
-        if (targetRow) {
-          // Insert before target
-          removedItem.x = targetItem.x;
-          removedItem.y = targetItem.y;
-          removedItem.width = removedItem.width;
-          removedItem.height = draggedItem.height;
-
-          targetRow.items.push(removedItem);
-          targetRow.height = Math.max(targetRow.height, removedItem.height);
-
-          insertIndex = dropIndex;
-        }
-
-        break;
-      }
-
-      default: {
-        console.warn(
-          "[CanvasDashboardPreview] Unknown drop position:",
-          position,
-        );
-        return;
-      }
-    }
-
-    // Reinsert the item into the array
-    newItems.splice(insertIndex, 0, removedItem);
-
-    // Validate item positions
-    validateItemPositions(newItems);
-
-    // Update items
     items = newItems;
 
-    // Dispatch update once after position is set
     dispatch("update", {
       index: insertIndex,
-      position: [removedItem.x, removedItem.y],
-      dimensions: [removedItem.width, removedItem.height],
+      position: [draggedItem.x, draggedItem.y],
+      dimensions: [draggedItem.width, draggedItem.height],
       items: newItems,
     });
 
-    // Update selected index to follow the dropped item
+    // Update selected index
     if (selectedIndex === dragIndex) {
       selectedIndex = insertIndex;
       canvasStore.setSelectedComponentIndex($canvasName, insertIndex);
     }
 
-    // Reset drop target and dragged component
+    // Reset state
     dropTarget = null;
     draggedComponent = null;
   }
@@ -412,18 +282,22 @@
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <DropTargetLine
-        height={dropTarget.position === "bottom"
+        height={dropTarget.position === "bottom" ||
+        dropTarget.position === "row"
           ? 2
           : targetItem.height * gridCell}
         top={dropTarget.position === "bottom"
           ? (targetItem.y + targetItem.height) * gridCell
-          : targetItem.y * gridCell}
+          : dropTarget.position === "row"
+            ? targetItem.y * gridCell
+            : targetItem.y * gridCell}
         left={dropTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
-          : dropTarget.position === "bottom"
+          : dropTarget.position === "bottom" || dropTarget.position === "row"
             ? targetItem.x * gridCell
             : targetItem.x * gridCell}
-        orientation={dropTarget.position === "bottom"
+        orientation={dropTarget.position === "bottom" ||
+        dropTarget.position === "row"
           ? "horizontal"
           : "vertical"}
       />

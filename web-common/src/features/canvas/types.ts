@@ -31,3 +31,5 @@ export interface GridItem {
   size: [number, number]; // [width, height]
   node: any; // YAML node
 }
+
+export type DropPosition = "left" | "right" | "bottom" | "row";
