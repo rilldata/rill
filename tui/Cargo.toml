@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "gen/api/admin",
+    "gen/api/runtime",
+    "tui"
+]
+
+[workspace.dependencies]
+tokio = { version = "1.32.0", features = ["full"] }
+tokio-stream = { version = "0.1.14" }
+crossterm = { version = "0.28.1", features = ["event-stream"] }
+ratatui = { version = "0.29.0", features = ["all-widgets"] }
+anyhow = "1.0.95"
