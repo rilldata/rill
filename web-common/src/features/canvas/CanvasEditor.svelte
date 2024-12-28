@@ -23,8 +23,7 @@
   bind:editor
   onSave={(content) => {
     // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
-    canvasEntityStore.remove(canvasName);
-    // TODO
+    canvasEntityStore.removeEntity(canvasName);
 
     // Reset local persisted dashboard state for the metrics view
     if (!content?.length) {

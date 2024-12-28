@@ -22,3 +22,10 @@
     {@html DOMPurify.sanitize(content)}
   {/await}
 </div>
+
+<style lang="postcss">
+  :global(.markdown h1) {
+    font-size: 2em;
+    font-weight: 500;
+  }
+</style>
