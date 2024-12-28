@@ -54,7 +54,6 @@
   $: itemsByRow = groupItemsByRow(items);
 
   const grid = new Grid(items);
-  $: grid.items = items;
 
   function handleChange(
     e: CustomEvent<{

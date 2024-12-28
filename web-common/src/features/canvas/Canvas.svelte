@@ -91,6 +91,7 @@
 
     const node = docItems.get(index);
     if (!node) {
+      // FIXME: wrong index!
       console.log("[Canvas] No node found at index", index);
       return;
     }
