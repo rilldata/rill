@@ -1,4 +1,5 @@
 import * as defaults from "./constants";
+import { groupItemsByRow } from "./grid";
 import type { PositionedItem, RowGroup, Vector, GridItem } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
@@ -115,143 +116,8 @@ export function findNextAvailablePosition(
   return [0, newY];
 }
 
-export function isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-} {
-  return (
-    item?.x !== undefined &&
-    item?.y !== undefined &&
-    item?.width !== undefined &&
-    item?.height !== undefined
-  );
-}
-
-// Ensure items are within the grid and not overlapping
-export function validateItemPositions(items: V1CanvasItem[]): void {
-  // First group items by row
-  const rows = groupItemsByRow(items);
-
-  // Process each row
-  rows.forEach((row) => {
-    leftAlignRow(row);
-  });
-
-  // Validate x positions are within bounds
-  items.forEach((item) => {
-    if (item.x !== undefined && item.width !== undefined) {
-      item.x = Math.min(
-        Math.max(0, item.x),
-        defaults.COLUMN_COUNT - item.width,
-      );
-    }
-  });
-}
-
-export function groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
-  const rows: RowGroup[] = [];
-
-  items.forEach((item) => {
-    const existingRow = rows.find((row) => row.y === item.y);
-    if (existingRow) {
-      existingRow.items.push(item);
-      existingRow.height = Math.max(existingRow.height ?? 0, item.height ?? 0);
-    } else {
-      rows.push({
-        y: item.y ?? 0,
-        height: item.height ?? 0,
-        items: [item],
-      });
-    }
-  });
-
-  return rows.sort((a, b) => a.y - b.y);
-}
-
 export function flattenRowGroups(rows: RowGroup[]): V1CanvasItem[] {
   return rows.flatMap((row) => row.items);
-}
-
-export function convertToGridItems(yamlItems: any[]): GridItem[] {
-  return yamlItems.map((item) => ({
-    position: [item.get("x"), item.get("y")],
-    size: [item.get("width"), item.get("height")],
-    node: item,
-  }));
-}
-
-export function sortItemsByPosition(items: GridItem[]): GridItem[] {
-  return items.sort((a, b) => {
-    // Sort by Y first, then X for items in the same row
-    if (a.position[1] === b.position[1]) {
-      return a.position[0] - b.position[0];
-    }
-    return a.position[1] - b.position[1];
-  });
-}
-
-export function leftAlignRow(row: RowGroup) {
-  const startPosition: Vector = [0, row.y];
-
-  row.items
-    .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
-    .forEach((item) => {
-      if (item.x !== undefined) {
-        item.x = startPosition[0];
-        startPosition[0] = vector.add(
-          [startPosition[0], 0],
-          [item.width ?? 0, 0],
-        )[0];
-      }
-    });
-}
-
-export function compactGrid(items: GridItem[]) {
-  let currentY = 0;
-  let lastRowHeight = 0;
-  let lastY = -1;
-  let currentRowItems: GridItem[] = [];
-
-  // Process all items
-  items.forEach((item, index) => {
-    if (item.position[1] !== lastY) {
-      // When we hit a new row, process the previous row
-      if (currentRowItems.length > 0) {
-        // Sort by X position and compact
-        currentRowItems.sort((a, b) => a.position[0] - b.position[0]);
-        let currentX = 0;
-        currentRowItems.forEach((rowItem) => {
-          rowItem.node.set("x", currentX);
-          currentX += rowItem.size[0];
-        });
-      }
-
-      // Start new row
-      currentY += lastRowHeight;
-      lastRowHeight = item.size[1];
-      lastY = item.position[1];
-      currentRowItems = [item];
-    } else {
-      // Same row - update max height if needed
-      lastRowHeight = Math.max(lastRowHeight, item.size[1]);
-      currentRowItems.push(item);
-    }
-
-    // Update Y position
-    item.node.set("y", currentY);
-  });
-
-  // Process the last row
-  if (currentRowItems.length > 0) {
-    currentRowItems.sort((a, b) => a.position[0] - b.position[0]);
-    let currentX = 0;
-    currentRowItems.forEach((rowItem) => {
-      rowItem.node.set("x", currentX);
-      currentX += rowItem.size[0];
-    });
-  }
 }
 
 export function getRowIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {

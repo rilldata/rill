@@ -8,7 +8,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { convertToGridItems, sortItemsByPosition, compactGrid } from "./util";
+  import { compactGrid, convertToGridItems, sortItemsByPosition } from "./grid";
 
   export let fileArtifact: FileArtifact;
 
@@ -58,7 +58,6 @@
     // Remove the item
     docItems.delete(index);
 
-    // Process remaining items
     const remainingItems = convertToGridItems(docItems.items);
     console.log("[Canvas] remainingItems: ", remainingItems);
     const sortedItems = sortItemsByPosition(remainingItems);
