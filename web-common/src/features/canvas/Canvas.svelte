@@ -83,10 +83,16 @@
     const parsedDocument = parseDocument($editorContent ?? "");
     const docItems = parsedDocument.get("items") as any;
 
-    if (!docItems) return;
+    if (!docItems) {
+      console.log("[Canvas] No items found in document");
+      return;
+    }
 
     const node = docItems.get(index);
-    if (!node) return;
+    if (!node) {
+      console.log("[Canvas] No node found at index", index);
+      return;
+    }
 
     node.set("x", position[0]);
     node.set("y", position[1]);
