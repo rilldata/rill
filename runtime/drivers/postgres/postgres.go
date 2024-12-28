@@ -58,6 +58,14 @@ type driver struct{}
 
 type ConfigProperties struct {
 	DatabaseURL string `mapstructure:"database_url"`
+	DSN         string `mapstructure:"dsn"`
+}
+
+func (c *ConfigProperties) ResolveDSN() string {
+	if c.DSN != "" {
+		return c.DSN
+	}
+	return c.DatabaseURL
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
