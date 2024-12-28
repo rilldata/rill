@@ -12,13 +12,24 @@ import (
 )
 
 type sqlStoreToSelfInputProps struct {
-	SQL string `mapstructure:"sql"`
-	DSN string `mapstructure:"dsn"`
+	SQL         string `mapstructure:"sql"`
+	DSN         string `mapstructure:"dsn"`
+	DatabaseURL string `mapstructure:"database_url"`
+}
+
+func (p *sqlStoreToSelfInputProps) resolveDSN() string {
+	if p.DSN != "" {
+		return p.DSN
+	}
+	return p.DatabaseURL
 }
 
 func (p *sqlStoreToSelfInputProps) Validate() error {
 	if p.SQL == "" {
 		return fmt.Errorf("missing property 'sql'")
+	}
+	if p.DSN != "" && p.DatabaseURL != "" {
+		return fmt.Errorf("cannot set both 'dsn' and 'database_url'")
 	}
 	return nil
 }
@@ -66,10 +77,8 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 	userQuery, _ := strings.CutSuffix(inputProps.SQL, ";") // trim trailing semi colon
 	switch inputHandle.Driver() {
 	case "mysql":
-		var dsn string
-		if inputProps.DSN != "" {
-			dsn = inputProps.DSN
-		} else {
+		dsn := inputProps.resolveDSN()
+		if dsn == "" {
 			// may be configured via a connector
 			var config *mysql.ConfigProperties
 			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
@@ -83,10 +92,8 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 		m.PreExec = fmt.Sprintf("INSTALL 'MYSQL'; LOAD 'MYSQL'; ATTACH %s AS %s (TYPE mysql, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM mysql_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
 	case "postgres":
-		var dsn string
-		if inputProps.DSN != "" {
-			dsn = inputProps.DSN
-		} else {
+		dsn := inputProps.resolveDSN()
+		if dsn == "" {
 			// may be configured via a connector
 			var config *postgres.ConfigProperties
 			if err := mapstructure.Decode(inputHandle.Config(), &config); err != nil {
