@@ -2,15 +2,13 @@ package resolvers
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"time"
 
-	"github.com/mitchellh/hashstructure/v2"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -98,24 +96,15 @@ func (r *metricsResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
 		return nil, false, nil
 	}
 
-	hasher := md5.New()
-	_, err = hasher.Write(key)
+	queryMap := make(map[string]any)
+	err = mapstructure.Decode(r.query, &queryMap)
 	if err != nil {
 		return nil, false, err
 	}
 
-	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
-	if err != nil {
-		return nil, false, err
-	}
-	_, err = hasher.Write([]byte(strconv.FormatUint(hash, 16)))
-	if err != nil {
-		return nil, false, err
-	}
-
-	res := make([]byte, hex.EncodedLen(hasher.Size()))
-	hex.Encode(res, hasher.Sum(nil))
-	return res, true, nil
+	queryMap["mv_cache_key"] = key
+	bytes, err := json.Marshal(queryMap)
+	return bytes, true, err
 }
 
 func (r *metricsResolver) Refs() []*runtimev1.ResourceName {
