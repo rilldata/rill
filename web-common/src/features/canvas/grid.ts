@@ -3,18 +3,10 @@ import * as defaults from "./constants";
 import type { DropPosition, Vector, RowGroup, GridItem } from "./types";
 
 export class Grid {
-  private _items: V1CanvasItem[];
+  private items: V1CanvasItem[];
 
   constructor(items: V1CanvasItem[]) {
-    this._items = this.preventCollisions([...items]);
-  }
-
-  get items(): V1CanvasItem[] {
-    return this._items;
-  }
-
-  set items(newItems: V1CanvasItem[]) {
-    this._items = this.preventCollisions([...newItems]);
+    this.items = this.preventCollisions([...items]);
   }
 
   static isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
