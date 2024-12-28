@@ -113,7 +113,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Offset = a.Root.Offset
 
 		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
+		if e.olap.Dialect() == drivers.DialectPinot {
 			// ---- CTE Optimization ---- //
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
@@ -135,7 +135,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
 		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
+		if e.olap.Dialect() == drivers.DialectPinot {
 			// ---- CTE Optimization ---- //
 			// make JoinComparisonSelect a CTE
 			a.convertToCTE(n.JoinComparisonSelect)
@@ -156,7 +156,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Offset = a.Root.Offset
 
 		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() != drivers.DialectClickHouse {
+		if e.olap.Dialect() == drivers.DialectPinot {
 			// ---- CTE Optimization ---- //
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)

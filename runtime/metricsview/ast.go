@@ -25,6 +25,9 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	inlineBaseSelect    bool
+	inlineDims          map[any][]any
+	inlineMeasures      map[any][]any
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
@@ -58,7 +61,7 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
-	InlineDimFields      [][]FieldNode    // Dimensions fields to select in the inline view
+	InlineDimFields      [][]FieldNode    // Dimension fields to select in the inline view
 	InlineMeasureFields  [][]FieldNode    // Measure fields to select in the inline view
 }
 
@@ -130,10 +133,13 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 	// Init
 	ast := &AST{
-		metricsView: mv,
-		security:    sec,
-		query:       qry,
-		dialect:     dialect,
+		metricsView:      mv,
+		security:         sec,
+		query:            qry,
+		dialect:          dialect,
+		inlineBaseSelect: qry.inlineBaseSelect,
+		inlineDims:       qry.inlineDims,
+		inlineMeasures:   qry.inlineMeasures,
 	}
 
 	// Determine the minimum time grain for the time dimension in the query.
@@ -652,6 +658,58 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 
 // buildBaseSelect constructs a base SELECT node against the underlying table.
 func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error) {
+	if a.inlineBaseSelect && !comparison {
+		n := &SelectNode{
+			Alias:     alias,
+			DimFields: a.dimFields,
+			Unnests:   a.unnests,
+			Group:     true,
+			FromTable: a.underlyingTable,
+			Where:     a.underlyingWhere,
+			IsInline:  true,
+		}
+
+		// Add the dimension fields to the inline view.
+		inDims := make([][]FieldNode, 0, len(a.inlineDims))
+		for dim, values := range a.inlineDims {
+			fields := make([]FieldNode, 0, len(values))
+			for _, v := range values {
+				if v == nil {
+					v = "__null__"
+				}
+				f := FieldNode{
+					Name: dim.(string),
+					Expr: fmt.Sprintf("'%s'", v.(string)),
+				}
+				fields = append(fields, f)
+			}
+			inDims = append(inDims, fields)
+		}
+
+		// Add the measure fields to the inline view.
+		inMeasures := make([][]FieldNode, 0, len(a.inlineMeasures))
+		for measure, values := range a.inlineMeasures {
+			fields := make([]FieldNode, 0, len(values))
+			for _, v := range values {
+				f := FieldNode{
+					Name: measure.(string),
+					Expr: fmt.Sprintf("%v", v),
+				}
+				fields = append(fields, f)
+			}
+			inMeasures = append(inMeasures, fields)
+		}
+
+		// rotate the dim and measures matrix so that rows become column and columns become rows
+		inDims = rotateMatrix(inDims)
+		inMeasures = rotateMatrix(inMeasures)
+
+		n.InlineDimFields = inDims
+		n.InlineMeasureFields = inMeasures
+
+		return n, nil
+	}
+
 	n := &SelectNode{
 		Alias:     alias,
 		DimFields: a.dimFields,
@@ -668,6 +726,72 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	}
 
 	a.addTimeRange(n, tr)
+
+	if comparison && a.inlineBaseSelect {
+		// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
+		for dim, values := range a.inlineDims {
+			var inExpr *Expression
+			if len(a.inlineDims) == 0 {
+				inExpr = &Expression{
+					Value: false,
+				}
+			} else {
+				// if any dim value is nil add condition with eq operator with nil value
+				var vals []any
+				foundNil := false
+				for _, k := range values {
+					if k == nil {
+						foundNil = true
+					} else {
+						vals = append(vals, k)
+					}
+				}
+				inExpr = &Expression{
+					Condition: &Condition{
+						Operator: OperatorIn,
+						Expressions: []*Expression{
+							{Name: dim.(string)},
+							{Value: vals},
+						},
+					},
+				}
+				if foundNil {
+					inExpr = &Expression{
+						Condition: &Condition{
+							Operator: OperatorOr,
+							Expressions: []*Expression{
+								inExpr,
+								{
+									Condition: &Condition{
+										Operator: OperatorEq,
+										Expressions: []*Expression{
+											{Name: dim.(string)},
+											{Value: nil},
+										},
+									},
+								},
+							},
+						},
+					}
+				}
+			}
+
+			expr, args, err := a.sqlForExpression(inExpr, n, true, true)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile 'having': %w", err)
+			}
+			res := &ExprNode{
+				Expr: expr,
+				Args: args,
+			}
+
+			if n.Where == nil {
+				n.Where = res
+			} else {
+				n.Where = n.Where.and(res.Expr, res.Args)
+			}
+		}
+	}
 
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
@@ -690,6 +814,25 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	}
 
 	return n, nil
+}
+
+func rotateMatrix(matrix [][]FieldNode) [][]FieldNode {
+	if len(matrix) == 0 {
+		return matrix
+	}
+
+	rotatedMatrix := make([][]FieldNode, len(matrix[0]))
+	for i := range rotatedMatrix {
+		rotatedMatrix[i] = make([]FieldNode, len(matrix))
+	}
+
+	for i, row := range matrix {
+		for j, field := range row {
+			rotatedMatrix[j][i] = field
+		}
+	}
+
+	return rotatedMatrix
 }
 
 // buildSpineSelect constructs a SELECT node for the given spine of dimension values.
@@ -893,7 +1036,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	// If the node doesn't have a comparison join, we wrap it in a new SELECT that we add the comparison join to.
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
-		if a.query.ComparisonTimeRange == nil {
+		if a.query.ComparisonTimeRange == nil && !a.inlineBaseSelect {
 			return errors.New("comparison time range not provided")
 		}
 
@@ -1037,6 +1180,10 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
+
+	s.IsInline = false
+	s.InlineDimFields = nil
+	s.InlineMeasureFields = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.

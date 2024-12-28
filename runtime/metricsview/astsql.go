@@ -1,6 +1,8 @@
 package metricsview
 
 import (
+	"fmt"
+	"github.com/rilldata/rill/runtime/drivers"
 	"strconv"
 	"strings"
 )
@@ -90,6 +92,10 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
+	if n.IsInline {
+		return b.writeInlineSelect(n)
+	}
+
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -215,6 +221,82 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	}
 
 	return nil
+}
+
+func (b *sqlBuilder) writeInlineSelect(n *SelectNode) error {
+	sel := ""
+	if b.ast.dialect == drivers.DialectDruid {
+		// write select as this format - select * from (values (1, 2), (3, 4)) t(a, b)
+		selTable := "t("
+		sel += "SELECT * FROM (VALUES "
+		for i, row := range n.InlineDimFields {
+			mrow := n.InlineMeasureFields[i]
+			if i > 0 {
+				sel += ", "
+			}
+			sel += "("
+			for j, f := range row {
+				if i == 0 {
+					if j > 0 {
+						selTable += ", "
+					}
+					selTable += b.ast.dialect.EscapeIdentifier(f.Name)
+				}
+				if j > 0 {
+					sel += ", "
+				}
+				if f.Expr == "'__null__'" {
+					sel += "NULL"
+				} else {
+					sel += f.Expr
+				}
+			}
+			for _, f := range mrow {
+				if i == 0 {
+					selTable += ", "
+					selTable += b.ast.dialect.EscapeIdentifier(f.Name)
+				}
+				sel += ", "
+				if f.Expr == "'__null__'" {
+					sel += "NULL"
+				} else {
+					sel += f.Expr
+				}
+			}
+			sel += ")"
+		}
+		sel += ") " + selTable + ")"
+	} else {
+		// write select as this format - select 1 as a, 2 as b union all select 3, 4
+		for i, row := range n.InlineDimFields {
+			if i > 0 {
+				sel += " UNION ALL "
+			}
+			mrow := n.InlineMeasureFields[i]
+			sel += "SELECT "
+			for j, f := range row {
+				if j > 0 {
+					sel += ", "
+				}
+				if f.Expr == "'__null__'" {
+					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
+				} else {
+					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))
+				}
+			}
+			for _, f := range mrow {
+				sel += ", "
+				if f.Expr == "'__null__'" {
+					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
+				} else {
+					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))
+				}
+			}
+		}
+	}
+
+	_, err := b.out.WriteString(sel)
+	return err
 }
 
 func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
