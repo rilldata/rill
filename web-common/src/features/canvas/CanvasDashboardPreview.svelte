@@ -54,6 +54,8 @@
   const dispatch = createEventDispatcher();
   const { canvasName } = getCanvasStateManagers();
 
+  $: itemsByRow = groupItemsByRow(items);
+
   function handleChange(
     e: CustomEvent<{
       e: MouseEvent & { currentTarget: HTMLButtonElement };
@@ -212,6 +214,12 @@
           height: removedItem.height,
           items: [removedItem],
         });
+
+        console.log("[CanvasDashboardPreview] Bottom drop state:", {
+          newY,
+          removedItem,
+          allItems: newItems,
+        });
         break;
       }
 
@@ -249,6 +257,7 @@
           targetRow.items.push(removedItem);
           targetRow.height = Math.max(targetRow.height, removedItem.height);
         }
+
         break;
       }
 
@@ -267,6 +276,7 @@
 
           insertIndex = dropIndex;
         }
+
         break;
       }
 
@@ -353,37 +363,49 @@
   <section
     class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
   ></section>
-  {#each items as component, i (i)}
-    <PreviewElement
-      {instanceId}
-      {i}
-      {scale}
-      {component}
-      {radius}
-      selected={selectedIndex === i}
-      interacting={false}
-      padding={16}
-      rowIndex={getRowIndex(component, items)}
-      columnIndex={getColumnIndex(component, items)}
-      width={Math.min(
-        Number(component.width ?? defaults.COMPONENT_WIDTH),
-        defaults.COLUMN_COUNT,
-      ) * gridCell}
-      height={Number(component.height ?? defaults.COMPONENT_HEIGHT) * gridCell}
-      top={Number(component.y) * gridCell}
-      left={Math.min(
-        Number(component.x ?? 0),
-        defaults.COLUMN_COUNT - (component.width ?? defaults.COMPONENT_WIDTH),
-      ) * gridCell}
-      onDragOver={(e) =>
-        handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
-      onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
-      on:dragstart={handleDragStart}
-      on:dragend={handleDragEnd}
-      on:change={handleChange}
-      on:mouseenter={handleMouseEnter}
-      on:mouseleave={handleMouseLeave}
-    />
+  {#each itemsByRow as row, index (index)}
+    <div
+      class="row absolute w-full left-0"
+      data-row-index={index}
+      style="position: relative; width: 100%; height: {row.height *
+        gridCell}px; transform: translateY({row.y}px);"
+    >
+      {#each row.items as component}
+        {@const i = items.indexOf(component)}
+        <PreviewElement
+          {instanceId}
+          {i}
+          {scale}
+          {component}
+          {radius}
+          selected={selectedIndex === i}
+          interacting={false}
+          padding={16}
+          rowIndex={getRowIndex(component, items)}
+          columnIndex={getColumnIndex(component, items)}
+          width={Math.min(
+            Number(component.width ?? defaults.COMPONENT_WIDTH),
+            defaults.COLUMN_COUNT,
+          ) * gridCell}
+          height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
+            gridCell}
+          top={0}
+          left={Math.min(
+            Number(component.x ?? 0),
+            defaults.COLUMN_COUNT -
+              (component.width ?? defaults.COMPONENT_WIDTH),
+          ) * gridCell}
+          onDragOver={(e) =>
+            handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
+          onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
+          on:dragstart={handleDragStart}
+          on:dragend={handleDragEnd}
+          on:change={handleChange}
+          on:mouseenter={handleMouseEnter}
+          on:mouseleave={handleMouseLeave}
+        />
+      {/each}
+    </div>
   {/each}
 
   {#if dropTarget && draggedComponent}
