@@ -226,67 +226,67 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 func (b *sqlBuilder) writeInlineSelect(n *SelectNode) error {
 	sel := ""
 	if b.ast.dialect == drivers.DialectDruid {
-		// write select as this format - select * from (values (1, 2), (3, 4)) t(a, b)
-		selTable := "t("
-		sel += "SELECT * FROM (VALUES "
-		for i, row := range n.InlineDimFields {
-			mrow := n.InlineMeasureFields[i]
+		// format - select * from (values (1, 2), (3, 4)) t(a, b)
+		valuesPart := "SELECT * FROM (VALUES "
+		tablePart := "t("
+		for i, dimRow := range n.InlineDimFields {
+			measureRow := n.InlineMeasureFields[i]
 			if i > 0 {
-				sel += ", "
+				valuesPart += ", "
 			}
-			sel += "("
-			for j, f := range row {
+			valuesPart += "("
+			for j, f := range dimRow {
 				if i == 0 {
 					if j > 0 {
-						selTable += ", "
+						tablePart += ", "
 					}
-					selTable += b.ast.dialect.EscapeIdentifier(f.Name)
+					tablePart += b.ast.dialect.EscapeIdentifier(f.Name)
 				}
 				if j > 0 {
-					sel += ", "
+					valuesPart += ", "
 				}
-				if f.Expr == "'__null__'" {
-					sel += "NULL"
+				if f.Expr == nilExpr {
+					valuesPart += "NULL"
 				} else {
-					sel += f.Expr
+					valuesPart += f.Expr
 				}
 			}
-			for _, f := range mrow {
+			for _, f := range measureRow {
 				if i == 0 {
-					selTable += ", "
-					selTable += b.ast.dialect.EscapeIdentifier(f.Name)
+					tablePart += ", "
+					tablePart += b.ast.dialect.EscapeIdentifier(f.Name)
 				}
-				sel += ", "
-				if f.Expr == "'__null__'" {
-					sel += "NULL"
+				valuesPart += ", "
+				if f.Expr == nilExpr {
+					valuesPart += "NULL"
 				} else {
-					sel += f.Expr
+					valuesPart += f.Expr
 				}
 			}
-			sel += ")"
+			valuesPart += ")"
 		}
-		sel += ") " + selTable + ")"
+		sel = valuesPart + ") " + tablePart + ")"
 	} else {
-		// write select as this format - select 1 as a, 2 as b union all select 3, 4
-		for i, row := range n.InlineDimFields {
+		// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
+		for i, dimRow := range n.InlineDimFields {
 			if i > 0 {
 				sel += " UNION ALL "
 			}
-			mrow := n.InlineMeasureFields[i]
+			measureRow := n.InlineMeasureFields[i]
 			sel += "SELECT "
-			for j, f := range row {
+			for j, f := range dimRow {
 				if j > 0 {
 					sel += ", "
 				}
-				if f.Expr == "'__null__'" {
+				if f.Expr == nilExpr {
 					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
 				} else {
 					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))
 				}
 			}
-			for _, f := range mrow {
+			for _, f := range measureRow {
 				sel += ", "
-				if f.Expr == "'__null__'" {
+				if f.Expr == nilExpr {
 					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
 				} else {
 					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))

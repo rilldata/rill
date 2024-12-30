@@ -25,9 +25,6 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
-	inlineBaseSelect    bool
-	inlineDims          map[any][]any
-	inlineMeasures      map[any][]any
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
@@ -44,9 +41,11 @@ type AST struct {
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
-	IsInline             bool             // Whether this node is an inline view
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
+	IsInline             bool             // Whether this node is an inline view
+	InlineDimFields      [][]FieldNode    // Dimension fields to select in the inline view, row based representation of the dimensions. Each index in the outer array represents a row in the inline view.
+	InlineMeasureFields  [][]FieldNode    // Measure fields to select in the inline view, row based representation of the measures. Each index in the outer array represents a row in the inline view.
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
@@ -61,8 +60,6 @@ type SelectNode struct {
 	OrderBy              []OrderFieldNode // Fields to order by
 	Limit                *int64           // Limit for the query
 	Offset               *int64           // Offset for the query
-	InlineDimFields      [][]FieldNode    // Dimension fields to select in the inline view
-	InlineMeasureFields  [][]FieldNode    // Measure fields to select in the inline view
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -116,6 +113,8 @@ const (
 	JoinTypeRight       JoinType = "RIGHT OUTER"
 )
 
+const nilExpr = "'<nil>'"
+
 // NewAST builds a new SQL AST based on a metrics query.
 //
 // Dynamic time ranges in the qry must be resolved to static start/end timestamps before calling this function.
@@ -133,13 +132,10 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 
 	// Init
 	ast := &AST{
-		metricsView:      mv,
-		security:         sec,
-		query:            qry,
-		dialect:          dialect,
-		inlineBaseSelect: qry.inlineBaseSelect,
-		inlineDims:       qry.inlineDims,
-		inlineMeasures:   qry.inlineMeasures,
+		metricsView: mv,
+		security:    sec,
+		query:       qry,
+		dialect:     dialect,
 	}
 
 	// Determine the minimum time grain for the time dimension in the query.
@@ -381,14 +377,6 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		if err != nil {
 			return nil, err
 		}
-		if qm.Compute.Constant {
-			return &runtimev1.MetricsViewSpec_MeasureV2{
-				Name:        qm.Name,
-				Expression:  "0",
-				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-				DisplayName: fmt.Sprintf("%s (prev)", m.DisplayName),
-			}, nil
-		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
@@ -405,15 +393,6 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
-		if qm.Compute.Constant {
-			return &runtimev1.MetricsViewSpec_MeasureV2{
-				Name:        qm.Name,
-				Expression:  "0",
-				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-				DisplayName: fmt.Sprintf("%s (Δ)", m.DisplayName),
-			}, nil
-		}
-
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
@@ -427,15 +406,6 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		m, err := a.lookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
-		}
-
-		if qm.Compute.Constant {
-			return &runtimev1.MetricsViewSpec_MeasureV2{
-				Name:        qm.Name,
-				Expression:  "0.0",
-				Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-				DisplayName: fmt.Sprintf("%s (Δ%%)", m.DisplayName),
-			}, nil
 		}
 
 		base := fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))
@@ -658,28 +628,38 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 
 // buildBaseSelect constructs a base SELECT node against the underlying table.
 func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error) {
-	if a.inlineBaseSelect && !comparison {
+	if a.query.inlineBaseSelect && !comparison {
 		n := &SelectNode{
 			Alias:     alias,
 			DimFields: a.dimFields,
-			Unnests:   a.unnests,
 			Group:     true,
 			FromTable: a.underlyingTable,
-			Where:     a.underlyingWhere,
 			IsInline:  true,
-		}
+		} // keep the dims and from table so that while adding time comparison measures to the AST structure is maintained
 
 		// Add the dimension fields to the inline view.
-		inDims := make([][]FieldNode, 0, len(a.inlineDims))
-		for dim, values := range a.inlineDims {
+		inDims := make([][]FieldNode, 0, len(a.query.inlineDims))
+		for dim, values := range a.query.inlineDims {
 			fields := make([]FieldNode, 0, len(values))
 			for _, v := range values {
 				if v == nil {
-					v = "__null__"
+					v = "<nil>" // actually equivalent to go's string representation of nil
 				}
 				f := FieldNode{
 					Name: dim.(string),
-					Expr: fmt.Sprintf("'%s'", v.(string)),
+					Expr: fmt.Sprintf("'%v'", v),
+				}
+				// if v is of type time.Time, convert it to a string
+				if t, ok := v.(time.Time); ok {
+					v = t.Format(time.RFC3339)
+					if a.dialect == drivers.DialectClickHouse {
+						v = fmt.Sprintf("parseDateTimeBestEffort('%v')", v)
+					} else {
+						v = fmt.Sprintf("CAST('%v' AS TIMESTAMP)", v)
+					}
+					f.Expr = fmt.Sprintf("%v", v)
+				} else if b, ok := v.(bool); ok {
+					f.Expr = fmt.Sprintf("%v", b)
 				}
 				fields = append(fields, f)
 			}
@@ -687,8 +667,8 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		}
 
 		// Add the measure fields to the inline view.
-		inMeasures := make([][]FieldNode, 0, len(a.inlineMeasures))
-		for measure, values := range a.inlineMeasures {
+		inMeasures := make([][]FieldNode, 0, len(a.query.inlineMeasures))
+		for measure, values := range a.query.inlineMeasures {
 			fields := make([]FieldNode, 0, len(values))
 			for _, v := range values {
 				f := FieldNode{
@@ -700,7 +680,7 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 			inMeasures = append(inMeasures, fields)
 		}
 
-		// rotate the dim and measures matrix so that rows become column and columns become rows
+		// rotate the dim and measures matrix so that we store the values row by row
 		inDims = rotateMatrix(inDims)
 		inMeasures = rotateMatrix(inMeasures)
 
@@ -727,11 +707,11 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 
 	a.addTimeRange(n, tr)
 
-	if comparison && a.inlineBaseSelect {
+	if comparison && a.query.inlineBaseSelect {
 		// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
-		for dim, values := range a.inlineDims {
+		for dim, values := range a.query.inlineDims {
 			var inExpr *Expression
-			if len(a.inlineDims) == 0 {
+			if len(a.query.inlineDims) == 0 {
 				inExpr = &Expression{
 					Value: false,
 				}
@@ -814,25 +794,6 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	}
 
 	return n, nil
-}
-
-func rotateMatrix(matrix [][]FieldNode) [][]FieldNode {
-	if len(matrix) == 0 {
-		return matrix
-	}
-
-	rotatedMatrix := make([][]FieldNode, len(matrix[0]))
-	for i := range rotatedMatrix {
-		rotatedMatrix[i] = make([]FieldNode, len(matrix))
-	}
-
-	for i, row := range matrix {
-		for j, field := range row {
-			rotatedMatrix[j][i] = field
-		}
-	}
-
-	return rotatedMatrix
 }
 
 // buildSpineSelect constructs a SELECT node for the given spine of dimension values.
@@ -1036,7 +997,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	// If the node doesn't have a comparison join, we wrap it in a new SELECT that we add the comparison join to.
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
-		if a.query.ComparisonTimeRange == nil && !a.inlineBaseSelect {
+		if a.query.ComparisonTimeRange == nil {
 			return errors.New("comparison time range not provided")
 		}
 
@@ -1429,4 +1390,23 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
+}
+
+func rotateMatrix(matrix [][]FieldNode) [][]FieldNode {
+	if len(matrix) == 0 {
+		return matrix
+	}
+
+	rotatedMatrix := make([][]FieldNode, len(matrix[0]))
+	for i := range rotatedMatrix {
+		rotatedMatrix[i] = make([]FieldNode, len(matrix))
+	}
+
+	for i, row := range matrix {
+		for j, field := range row {
+			rotatedMatrix[j][i] = field
+		}
+	}
+
+	return rotatedMatrix
 }

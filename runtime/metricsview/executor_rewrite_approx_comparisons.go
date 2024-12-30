@@ -112,9 +112,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() == drivers.DialectPinot {
-			// ---- CTE Optimization ---- //
+		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
 
@@ -134,9 +133,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() == drivers.DialectPinot {
-			// ---- CTE Optimization ---- //
+		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+			// rewrite comparison query as CTE and use results from CTE in the base query
 			// make JoinComparisonSelect a CTE
 			a.convertToCTE(n.JoinComparisonSelect)
 
@@ -155,9 +153,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// don't optimize for ClickHouse as its unable to inline the CTE results causing multiple scans
-		if e.olap.Dialect() == drivers.DialectPinot {
-			// ---- CTE Optimization ---- //
+		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
 

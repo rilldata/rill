@@ -86,6 +86,10 @@ type InstanceConfig struct {
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
+	// MetricsApproximateComparisonsCTE indicates whether to rewrite metrics comparison queries to use a CTE for base query.
+	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
+	// MetricsTwoPhaseComparisons indicates whether to rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
+	MetricsTwoPhaseComparisons bool `mapstructure:"rill.metrics.two_phase_comparisons"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
@@ -136,6 +140,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		ModelDefaultMaterialize:           false,
 		ModelMaterializeDelaySeconds:      0,
 		MetricsApproximateComparisons:     true,
+		MetricsTwoPhaseComparisons:        true,
 		MetricsExactifyDruidTopN:          false,
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
 	}
