@@ -98,13 +98,14 @@
     </Button>
   </DropdownMenuTrigger>
   <BookmarksContent
-    on:create={() => (showDialog = true)}
-    on:create-home={() => createHomeBookmark()}
-    on:delete={({ detail }) => deleteBookmark(detail)}
-    on:edit={({ detail }) => {
-      showDialog = true;
-      bookmark = detail;
+    onCreate={(isHome) => {
+      isHome ? createHomeBookmark() : (showDialog = true);
     }}
+    onEdit={(editingBookmark) => {
+      showDialog = true;
+      bookmark = editingBookmark;
+    }}
+    onDelete={deleteBookmark}
     {metricsViewName}
     {exploreName}
   />
