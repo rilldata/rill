@@ -8,9 +8,10 @@ import (
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
 // which enables more efficient query execution at the cost of some accuracy.
-// ---- CTE Optimization ---- //
+// ---- CTE rewrite ---- //
 // Extracts out the base or comparison query into a CTE depending on the sort field.
-// This is done to enable more efficient query execution by adding filter in the join query to select only dimension values present in the CTE.
+// This is done to prevent running a group by query on comparison time range without a limit which can fail in some olap engines if dim cardinality is very high by adding filter in the join query to select only dimension values present in the CTE.
+// This does cause CTE to be scanned twice but at least query will not fail.
 func (e *Executor) rewriteApproxComparisons(ast *AST) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
@@ -112,7 +113,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !a.query.inlineBaseSelect {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
@@ -133,7 +134,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !a.query.inlineBaseSelect {
 			// rewrite comparison query as CTE and use results from CTE in the base query
 			// make JoinComparisonSelect a CTE
 			a.convertToCTE(n.JoinComparisonSelect)
@@ -153,7 +154,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE {
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !a.query.inlineBaseSelect {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)

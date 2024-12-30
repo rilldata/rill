@@ -17,11 +17,27 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query) e
 		return nil
 	}
 
+	// Find out what we're sorting by and also accumulate the underlying base measure
+	sortField := qry.Sort[0]
+
+	var bm []Measure
+	for _, qm := range qry.Measures {
+		if qm.Compute == nil || (qm.Compute.ComparisonValue == nil && qm.Compute.ComparisonDelta == nil && qm.Compute.ComparisonRatio == nil && qm.Compute.PercentOfTotal == nil) {
+			bm = append(bm, qm)
+			continue
+		}
+
+		if qm.Name == sortField.Name {
+			// 2 phase comparison only support sorting on base value
+			return nil
+		}
+	}
+
 	// Build a query for the base time range
 	baseQry := &Query{
 		MetricsView:         qry.MetricsView,
 		Dimensions:          qry.Dimensions,
-		Measures:            nil,
+		Measures:            bm,
 		PivotOn:             qry.PivotOn,
 		Spine:               qry.Spine,
 		Sort:                qry.Sort,
@@ -34,17 +50,6 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query) e
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
 	}
-
-	// only keep base measures and remove derived measures
-	var bm []Measure
-	for _, m := range qry.Measures {
-		if m.Compute == nil {
-			bm = append(bm, m)
-		} else if m.Compute.ComparisonValue == nil && m.Compute.ComparisonDelta == nil && m.Compute.ComparisonRatio == nil {
-			bm = append(bm, m)
-		}
-	}
-	baseQry.Measures = bm
 
 	// Execute the query for the base time range
 	baseRes, err := e.Query(ctx, baseQry, nil)

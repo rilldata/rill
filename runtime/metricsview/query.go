@@ -25,9 +25,9 @@ type Query struct {
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 
 	// internal state
-	inlineBaseSelect bool
-	inlineDims       map[any][]any // dimension -> column values
-	inlineMeasures   map[any][]any // measure -> column values
+	inlineBaseSelect bool          `mapstructure:"-"`
+	inlineDims       map[any][]any `mapstructure:"-"` // dimension -> column values
+	inlineMeasures   map[any][]any `mapstructure:"-"` // measure -> column values
 }
 
 type Dimension struct {
