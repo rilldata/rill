@@ -332,13 +332,6 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 	})
 }
 
-type ComparisonMeasures struct {
-	base   any
-	prev   any
-	delta  any
-	deltaP any
-}
-
 type SearchQuery struct {
 	MetricsView string      `mapstructure:"metrics_view"`
 	Dimensions  []string    `mapstructure:"dimensions"`
@@ -397,6 +390,9 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			UseDisplayNames:     false,
+			inlineBaseSelect:    false,
+			inlineDims:          nil,
+			inlineMeasures:      nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -476,6 +472,9 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		UseDisplayNames:     false,
+		inlineBaseSelect:    false,
+		inlineDims:          nil,
+		inlineMeasures:      nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {

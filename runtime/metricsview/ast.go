@@ -647,19 +647,19 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 				}
 				f := FieldNode{
 					Name: dim.(string),
-					Expr: fmt.Sprintf("'%v'", v),
 				}
-				// if v is of type time.Time, convert it to a string
-				if t, ok := v.(time.Time); ok {
-					v = t.Format(time.RFC3339)
+
+				switch v := v.(type) {
+				case time.Time:
 					if a.dialect == drivers.DialectClickHouse {
-						v = fmt.Sprintf("parseDateTimeBestEffort('%v')", v)
+						f.Expr = fmt.Sprintf("parseDateTimeBestEffort('%s')", v.Format(time.RFC3339))
 					} else {
-						v = fmt.Sprintf("CAST('%v' AS TIMESTAMP)", v)
+						f.Expr = fmt.Sprintf("CAST('%s' AS TIMESTAMP)", v.Format(time.RFC3339))
 					}
+				case bool:
 					f.Expr = fmt.Sprintf("%v", v)
-				} else if b, ok := v.(bool); ok {
-					f.Expr = fmt.Sprintf("%v", b)
+				default:
+					f.Expr = fmt.Sprintf("'%v'", v)
 				}
 				fields = append(fields, f)
 			}

@@ -2,9 +2,10 @@ package metricsview
 
 import (
 	"fmt"
-	"github.com/rilldata/rill/runtime/drivers"
 	"strconv"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // SQL builds a SQL query from the AST.
