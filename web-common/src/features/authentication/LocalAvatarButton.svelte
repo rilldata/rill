@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
+  import NoUserImage from "@rilldata/web-common/components/icons/NoUserImage.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import {
@@ -43,6 +44,8 @@
   function handlePylon() {
     window.Pylon("show");
   }
+
+  let photoUrlErrored = false;
 </script>
 
 {#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
@@ -52,13 +55,16 @@
 {:else if $user.data && $metadata.data}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none w-7">
-      {#if loggedIn}
+      {#if loggedIn && !photoUrlErrored}
         <img
           src={$user.data?.user?.photoUrl}
           alt="avatar"
           class="h-7 inline-flex items-center rounded-full"
           referrerpolicy="no-referrer"
+          on:error={() => (photoUrlErrored = true)}
         />
+      {:else if photoUrlErrored}
+        <NoUserImage />
       {:else}
         <NoUser />
       {/if}
