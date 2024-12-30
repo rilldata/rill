@@ -140,6 +140,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		ModelDefaultMaterialize:           false,
 		ModelMaterializeDelaySeconds:      0,
 		MetricsApproximateComparisons:     true,
+		MetricsApproximateComparisonsCTE:  false,
 		MetricsTwoPhaseComparisons:        true,
 		MetricsExactifyDruidTopN:          false,
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
