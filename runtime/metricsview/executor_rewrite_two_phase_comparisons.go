@@ -13,7 +13,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query) e
 	}
 
 	// Skip if the criteria for a two-phase comparison are not met.
-	if qry.ComparisonTimeRange == nil || len(qry.Sort) != 1 || len(qry.Dimensions) == 0 {
+	if qry.ComparisonTimeRange == nil || len(qry.Sort) != 1 || len(qry.Dimensions) == 0 || len(qry.PivotOn) > 0 {
 		return nil
 	}
 
@@ -44,7 +44,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query) e
 		TimeRange:           qry.TimeRange,
 		ComparisonTimeRange: nil,
 		Where:               qry.Where,
-		Having:              qry.Having,
+		Having:              nil,
 		Limit:               qry.Limit,
 		Offset:              qry.Offset,
 		TimeZone:            qry.TimeZone,
@@ -80,6 +80,11 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query) e
 			measures[m.Name] = append(measures[m.Name], values[i])
 			i++
 		}
+	}
+
+	if len(dims) == 0 {
+		// found no results, don't rewrite
+		return nil
 	}
 
 	qry.inlineBaseSelect = true

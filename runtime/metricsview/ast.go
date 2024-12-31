@@ -113,7 +113,7 @@ const (
 	JoinTypeRight       JoinType = "RIGHT OUTER"
 )
 
-const nilExpr = "'<nil>'"
+const nilExpr = "__<nil>__"
 
 // NewAST builds a new SQL AST based on a metrics query.
 //
@@ -642,13 +642,9 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		for dim, values := range a.query.inlineDims {
 			fields := make([]FieldNode, 0, len(values))
 			for _, v := range values {
-				if v == nil {
-					v = "<nil>" // actually equivalent to go's string representation of nil
-				}
 				f := FieldNode{
 					Name: dim.(string),
 				}
-
 				switch v := v.(type) {
 				case time.Time:
 					if a.dialect == drivers.DialectClickHouse {
@@ -661,6 +657,9 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 				default:
 					f.Expr = fmt.Sprintf("'%v'", v)
 				}
+				if v == nil {
+					f.Expr = nilExpr
+				}
 				fields = append(fields, f)
 			}
 			inDims = append(inDims, fields)
@@ -671,6 +670,9 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		for measure, values := range a.query.inlineMeasures {
 			fields := make([]FieldNode, 0, len(values))
 			for _, v := range values {
+				if v == nil {
+					v = nilExpr
+				}
 				f := FieldNode{
 					Name: measure.(string),
 					Expr: fmt.Sprintf("%v", v),

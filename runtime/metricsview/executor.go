@@ -164,12 +164,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
-	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
+	err := e.rewriteTwoPhaseComparisons(ctx, qry)
 	if err != nil {
 		return nil, err
 	}
 
-	err = e.rewriteTwoPhaseComparisons(ctx, qry)
+	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
 		return nil, err
 	}
