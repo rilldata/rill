@@ -25,8 +25,8 @@
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    V1ExportFormat,
     createQueryServiceExport,
+    V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
   import { fly } from "svelte/transition";
   import ExportMenu from "../../exports/ExportMenu.svelte";
@@ -73,13 +73,13 @@
       // Note: undefined values are filtered out above, so the
       // empty string fallback is unreachable.
       ({
-        name: m.name ?? "",
-        label: m.displayName ?? "",
+        name: m.name || "",
+        label: m.displayName || "",
       }),
     );
 
   $: selectedMeasureLabel =
-    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ??
+    $allMeasures.find((m) => m.name === expandedMeasureName)?.displayName ||
     expandedMeasureName;
 
   $: excludeMode =
@@ -207,7 +207,10 @@
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
       {#if !isRowsEmpty}
-        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
+        <SelectAllButton
+          {areAllTableRowsSelected}
+          on:toggle-all-search-items={onToggleSearchItems}
+        />
       {/if}
 
       {#if !searchToggle}

@@ -30,6 +30,7 @@
   export let wherePending: boolean;
 
   $: modelName = resource?.meta?.name?.name as string;
+  $: ({ instanceId } = $runtime);
 
   // ==========================
   // Infinite Query
@@ -43,7 +44,7 @@
     ErrorType<RpcStatus>
   >({
     queryKey: getRuntimeServiceGetModelPartitionsQueryKey(
-      $runtime.instanceId,
+      instanceId,
       modelName,
       baseParams,
     ),
@@ -57,7 +58,7 @@
           : {}),
       };
       return runtimeServiceGetModelPartitions(
-        $runtime.instanceId,
+        instanceId,
         modelName,
         getModelPartitionsParams,
       );

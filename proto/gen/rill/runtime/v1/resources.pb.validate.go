@@ -4888,11 +4888,104 @@ func (m *ExplorePreset) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for TimeRange
-
 	// no validation rules for ComparisonMode
 
-	// no validation rules for ComparisonDimension
+	if m.Where != nil {
+
+		if all {
+			switch v := interface{}(m.GetWhere()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Where",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExplorePresetValidationError{
+						field:  "Where",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExplorePresetValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.TimeRange != nil {
+		// no validation rules for TimeRange
+	}
+
+	if m.Timezone != nil {
+		// no validation rules for Timezone
+	}
+
+	if m.TimeGrain != nil {
+		// no validation rules for TimeGrain
+	}
+
+	if m.SelectTimeRange != nil {
+		// no validation rules for SelectTimeRange
+	}
+
+	if m.CompareTimeRange != nil {
+		// no validation rules for CompareTimeRange
+	}
+
+	if m.ComparisonDimension != nil {
+		// no validation rules for ComparisonDimension
+	}
+
+	if m.View != nil {
+		// no validation rules for View
+	}
+
+	if m.ExploreSortBy != nil {
+		// no validation rules for ExploreSortBy
+	}
+
+	if m.ExploreSortAsc != nil {
+		// no validation rules for ExploreSortAsc
+	}
+
+	if m.ExploreSortType != nil {
+		// no validation rules for ExploreSortType
+	}
+
+	if m.ExploreExpandedDimension != nil {
+		// no validation rules for ExploreExpandedDimension
+	}
+
+	if m.TimeDimensionMeasure != nil {
+		// no validation rules for TimeDimensionMeasure
+	}
+
+	if m.TimeDimensionChartType != nil {
+		// no validation rules for TimeDimensionChartType
+	}
+
+	if m.TimeDimensionPin != nil {
+		// no validation rules for TimeDimensionPin
+	}
+
+	if m.PivotSortBy != nil {
+		// no validation rules for PivotSortBy
+	}
+
+	if m.PivotSortAsc != nil {
+		// no validation rules for PivotSortAsc
+	}
 
 	if len(errors) > 0 {
 		return ExplorePresetMultiError(errors)
@@ -11692,6 +11785,163 @@ var _ interface {
 	ErrorName() string
 } = CharLocationValidationError{}
 
+// Validate checks the field values on ConnectorV2 with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ConnectorV2) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectorV2 with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ConnectorV2MultiError, or
+// nil if none found.
+func (m *ConnectorV2) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectorV2) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorV2ValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorV2ValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorV2ValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorV2ValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorV2ValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorV2ValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ConnectorV2MultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorV2MultiError is an error wrapping multiple validation errors
+// returned by ConnectorV2.ValidateAll() if the designated constraints aren't met.
+type ConnectorV2MultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorV2MultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorV2MultiError) AllErrors() []error { return m }
+
+// ConnectorV2ValidationError is the validation error returned by
+// ConnectorV2.Validate if the designated constraints aren't met.
+type ConnectorV2ValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorV2ValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorV2ValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorV2ValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorV2ValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorV2ValidationError) ErrorName() string { return "ConnectorV2ValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConnectorV2ValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectorV2.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorV2ValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorV2ValidationError{}
+
 // Validate checks the field values on ConnectorSpec with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -11717,6 +11967,37 @@ func (m *ConnectorSpec) validate(all bool) error {
 	// no validation rules for Driver
 
 	// no validation rules for Properties
+
+	// no validation rules for Provision
+
+	if all {
+		switch v := interface{}(m.GetProvisionArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProvisionArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorSpecValidationError{
+				field:  "ProvisionArgs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for PropertiesFromVariables
 
@@ -11899,163 +12180,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ConnectorStateValidationError{}
-
-// Validate checks the field values on ConnectorV2 with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ConnectorV2) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ConnectorV2 with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ConnectorV2MultiError, or
-// nil if none found.
-func (m *ConnectorV2) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ConnectorV2) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetSpec()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ConnectorV2ValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ConnectorV2ValidationError{
-					field:  "Spec",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ConnectorV2ValidationError{
-				field:  "Spec",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetState()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ConnectorV2ValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ConnectorV2ValidationError{
-					field:  "State",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ConnectorV2ValidationError{
-				field:  "State",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ConnectorV2MultiError(errors)
-	}
-
-	return nil
-}
-
-// ConnectorV2MultiError is an error wrapping multiple validation errors
-// returned by ConnectorV2.ValidateAll() if the designated constraints aren't met.
-type ConnectorV2MultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorV2MultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ConnectorV2MultiError) AllErrors() []error { return m }
-
-// ConnectorV2ValidationError is the validation error returned by
-// ConnectorV2.Validate if the designated constraints aren't met.
-type ConnectorV2ValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ConnectorV2ValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ConnectorV2ValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ConnectorV2ValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ConnectorV2ValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ConnectorV2ValidationError) ErrorName() string { return "ConnectorV2ValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ConnectorV2ValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sConnectorV2.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ConnectorV2ValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ConnectorV2ValidationError{}
 
 // Validate checks the field values on MetricsViewSpec_DimensionV2 with the
 // rules defined in the proto definition for this message. If any rules are

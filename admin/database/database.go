@@ -265,7 +265,7 @@ type DB interface {
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
-	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
+	InsertAsset(ctx context.Context, id string, organizationID, path, ownerID string, cacheable bool) (*Asset, error)
 	DeleteAssets(ctx context.Context, ids []string) error
 
 	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
@@ -293,6 +293,7 @@ type DB interface {
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
 
 	FindProvisionerResourcesForDeployment(ctx context.Context, deploymentID string) ([]*ProvisionerResource, error)
+	FindProvisionerResourceByTypeAndName(ctx context.Context, deploymentID, typ, name string) (*ProvisionerResource, error)
 	InsertProvisionerResource(ctx context.Context, opts *InsertProvisionerResourceOptions) (*ProvisionerResource, error)
 	UpdateProvisionerResource(ctx context.Context, id string, opts *UpdateProvisionerResourceOptions) (*ProvisionerResource, error)
 	DeleteProvisionerResource(ctx context.Context, id string) error
@@ -315,6 +316,7 @@ type Organization struct {
 	Name                                string
 	DisplayName                         string `db:"display_name"`
 	Description                         string
+	LogoAssetID                         *string   `db:"logo_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	AllUsergroupID                      *string   `db:"all_usergroup_id"`
 	CreatedOn                           time.Time `db:"created_on"`
@@ -336,6 +338,7 @@ type InsertOrganizationOptions struct {
 	Name                                string `validate:"slug"`
 	DisplayName                         string
 	Description                         string
+	LogoAssetID                         *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
@@ -354,6 +357,7 @@ type UpdateOrganizationOptions struct {
 	Name                                string `validate:"slug"`
 	DisplayName                         string
 	Description                         string
+	LogoAssetID                         *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	QuotaProjects                       int
 	QuotaDeployments                    int
@@ -786,26 +790,28 @@ type OrganizationRole struct {
 
 // ProjectRole represents roles for projects.
 type ProjectRole struct {
-	ID                    string
-	Name                  string
-	ReadProject           bool `db:"read_project"`
-	ManageProject         bool `db:"manage_project"`
-	ReadProd              bool `db:"read_prod"`
-	ReadProdStatus        bool `db:"read_prod_status"`
-	ManageProd            bool `db:"manage_prod"`
-	ReadDev               bool `db:"read_dev"`
-	ReadDevStatus         bool `db:"read_dev_status"`
-	ManageDev             bool `db:"manage_dev"`
-	ReadProjectMembers    bool `db:"read_project_members"`
-	ManageProjectMembers  bool `db:"manage_project_members"`
-	CreateMagicAuthTokens bool `db:"create_magic_auth_tokens"`
-	ManageMagicAuthTokens bool `db:"manage_magic_auth_tokens"`
-	CreateReports         bool `db:"create_reports"`
-	ManageReports         bool `db:"manage_reports"`
-	CreateAlerts          bool `db:"create_alerts"`
-	ManageAlerts          bool `db:"manage_alerts"`
-	CreateBookmarks       bool `db:"create_bookmarks"`
-	ManageBookmarks       bool `db:"manage_bookmarks"`
+	ID                         string
+	Name                       string
+	ReadProject                bool `db:"read_project"`
+	ManageProject              bool `db:"manage_project"`
+	ReadProd                   bool `db:"read_prod"`
+	ReadProdStatus             bool `db:"read_prod_status"`
+	ManageProd                 bool `db:"manage_prod"`
+	ReadDev                    bool `db:"read_dev"`
+	ReadDevStatus              bool `db:"read_dev_status"`
+	ManageDev                  bool `db:"manage_dev"`
+	ReadProvisionerResources   bool `db:"read_provisioner_resources"`
+	ManageProvisionerResources bool `db:"manage_provisioner_resources"`
+	ReadProjectMembers         bool `db:"read_project_members"`
+	ManageProjectMembers       bool `db:"manage_project_members"`
+	CreateMagicAuthTokens      bool `db:"create_magic_auth_tokens"`
+	ManageMagicAuthTokens      bool `db:"manage_magic_auth_tokens"`
+	CreateReports              bool `db:"create_reports"`
+	ManageReports              bool `db:"manage_reports"`
+	CreateAlerts               bool `db:"create_alerts"`
+	ManageAlerts               bool `db:"manage_alerts"`
+	CreateBookmarks            bool `db:"create_bookmarks"`
+	ManageBookmarks            bool `db:"manage_bookmarks"`
 }
 
 // MemberUser is a convenience type used for display-friendly representation of an org or project member.
@@ -992,14 +998,18 @@ type InsertVirtualFileOptions struct {
 	Data      []byte `validate:"max=8192"` // 8kb
 }
 
+// Asset represents a user-uploaded file asset.
+// For example, this can be an upload deploy of a project or a custom logo for an org.
 type Asset struct {
 	ID             string
 	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
+	Cacheable      bool      `db:"cacheable"`
 	CreatedOn      time.Time `db:"created_on"`
 }
 
+// ProjectVariable represents a key-value variable for a project, possible for a specific environment (e.g. production or development).
 type ProjectVariable struct {
 	ID                   string    `db:"id"`
 	ProjectID            string    `db:"project_id"`

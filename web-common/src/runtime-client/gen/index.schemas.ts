@@ -1353,10 +1353,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
-}
-
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
@@ -1825,9 +1821,61 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
+export type V1ExploreWebView =
+  (typeof V1ExploreWebView)[keyof typeof V1ExploreWebView];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreWebView = {
+  EXPLORE_WEB_VIEW_UNSPECIFIED: "EXPLORE_WEB_VIEW_UNSPECIFIED",
+  EXPLORE_WEB_VIEW_EXPLORE: "EXPLORE_WEB_VIEW_EXPLORE",
+  EXPLORE_WEB_VIEW_TIME_DIMENSION: "EXPLORE_WEB_VIEW_TIME_DIMENSION",
+  EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
+  EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
+} as const;
+
+export interface V1ExploreSpec {
+  displayName?: string;
+  description?: string;
+  metricsView?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
+  dimensions?: string[];
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
+  /** Security for the explore dashboard.
+These are not currently parsed from YAML, but will be derived from the parent metrics view. */
+  securityRules?: V1SecurityRule[];
+}
+
 export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
 }
+
+export type V1ExploreSortType =
+  (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreSortType = {
+  EXPLORE_SORT_TYPE_UNSPECIFIED: "EXPLORE_SORT_TYPE_UNSPECIFIED",
+  EXPLORE_SORT_TYPE_VALUE: "EXPLORE_SORT_TYPE_VALUE",
+  EXPLORE_SORT_TYPE_PERCENT: "EXPLORE_SORT_TYPE_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
+  EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
+} as const;
 
 export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string to use as an offset from the base time range. */
@@ -1860,40 +1908,30 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  where?: V1Expression;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
   timeRange?: string;
+  timezone?: string;
+  timeGrain?: string;
+  selectTimeRange?: string;
   comparisonMode?: V1ExploreComparisonMode;
+  compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
-}
-
-export interface V1ExploreSpec {
-  displayName?: string;
-  description?: string;
-  metricsView?: string;
-  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
-  dimensions?: string[];
-  dimensionsSelector?: V1FieldSelector;
-  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
-  measures?: string[];
-  measuresSelector?: V1FieldSelector;
-  theme?: string;
-  embeddedTheme?: V1ThemeSpec;
-  /** List of selectable time ranges with comparison time ranges.
-If the list is empty, a default list should be shown. */
-  timeRanges?: V1ExploreTimeRange[];
-  /** List of selectable time zones.
-If the list is empty, a default list should be shown.
-The values should be valid IANA location identifiers. */
-  timeZones?: string[];
-  defaultPreset?: V1ExplorePreset;
-  /** If true, the pivot tab will be hidden when the explore is embedded. */
-  embedsHidePivot?: boolean;
-  /** Security for the explore dashboard.
-These are not currently parsed from YAML, but will be derived from the parent metrics view. */
-  securityRules?: V1SecurityRule[];
+  view?: V1ExploreWebView;
+  exploreSortBy?: string;
+  exploreSortAsc?: boolean;
+  exploreSortType?: V1ExploreSortType;
+  exploreExpandedDimension?: string;
+  timeDimensionMeasure?: string;
+  timeDimensionChartType?: string;
+  timeDimensionPin?: boolean;
+  pivotRows?: string[];
+  pivotCols?: string[];
+  pivotSortBy?: string;
+  pivotSortAsc?: boolean;
 }
 
 export interface V1Explore {
@@ -1976,12 +2014,16 @@ NOTE : properties_from_variables and properties both should be used to get all p
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
+export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
+
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
   templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
   /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
@@ -2011,6 +2053,8 @@ export interface V1ConnectorDriver {
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
 
+export type V1ConnectorProvisionArgs = { [key: string]: any };
+
 export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Connector {
@@ -2019,6 +2063,8 @@ export interface V1Connector {
   name?: string;
   config?: V1ConnectorConfig;
   templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorProvisionArgs;
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
 
@@ -2321,6 +2367,8 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
+export type V1AnalyzedConnectorProvisionArgs = { [key: string]: any };
+
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
@@ -2339,6 +2387,8 @@ export interface V1AnalyzedConnector {
   presetConfig?: V1AnalyzedConnectorPresetConfig;
   projectConfig?: V1AnalyzedConnectorProjectConfig;
   envConfig?: V1AnalyzedConnectorEnvConfig;
+  provision?: boolean;
+  provisionArgs?: V1AnalyzedConnectorProvisionArgs;
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];
   errorMessage?: string;
@@ -2482,6 +2532,7 @@ export const TypeCode = {
   CODE_FLOAT32: "CODE_FLOAT32",
   CODE_FLOAT64: "CODE_FLOAT64",
   CODE_TIMESTAMP: "CODE_TIMESTAMP",
+  CODE_INTERVAL: "CODE_INTERVAL",
   CODE_DATE: "CODE_DATE",
   CODE_TIME: "CODE_TIME",
   CODE_STRING: "CODE_STRING",
@@ -2622,6 +2673,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

@@ -35,7 +35,6 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
-
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
@@ -44,8 +43,10 @@
 
   let active = false;
 
+  $: ({ instanceId } = $runtime);
+
   $: nulls = getNullPercentage(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -55,7 +56,7 @@
   );
 
   $: diagnosticHistogram = getNumericHistogram(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -68,7 +69,7 @@
   let fdHistogram;
   $: if (isFloat(type)) {
     fdHistogram = getNumericHistogram(
-      $runtime?.instanceId,
+      instanceId,
       connector,
       database,
       databaseSchema,
@@ -94,7 +95,7 @@
     : $diagnosticHistogram?.data;
 
   $: rug = createQueryServiceColumnRugHistogram(
-    $runtime?.instanceId,
+    instanceId,
     objectName,
     {
       connector,
@@ -113,7 +114,7 @@
     },
   );
   $: topK = getTopK(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -124,7 +125,7 @@
 
   $: summary = derived(
     createQueryServiceColumnDescriptiveStatistics(
-      $runtime?.instanceId,
+      instanceId,
       objectName,
       {
         connector,

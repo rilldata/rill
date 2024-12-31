@@ -4,15 +4,17 @@ description: Create dashboards using source data and models with time, dimension
 sidebar_label: Create Explore Dashboards
 sidebar_position: 00
 ---
+
+<img src = '/img/build/dashboard/explore-dashboard.gif' class='rounded-gif' />
+<br />
+
+
+In Rill, explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
 :::tip
 Starting in version 0.50, metrics views has been separated from explore dashboards. This allows for a cleaner, more accessible metrics layer and the ability to build various dashboards and components on top of a single metrics view. For more information on what a metrics view is please see: [What is a Metrics View?](/concepts/metrics-layer)
 
 For migration steps, see [Migrations](/latest-changes/v50-dashboard-changes#how-to-migrate-your-current-dashboards).
 :::
-
-In Rill, explore dashboards are used to visually understand your data with real-time filtering based on your defined dimensions and measures in your metrics view. In the explore dashboard YAML, you can define which measures and dimensions are visible as well as define the default view when a user sees your dashboard. 
-
-![img](/img/build/dashboard/explore-dashboard.png)
 
 * _**metrics_view**_ - A metrics view that powers the dashboard
 * _**measures**_ - `*` Which measures to include or exclude from the metrics view, using a wildcard will include all.
@@ -29,11 +31,8 @@ title: Title of your Explore Dashboard
 description: a description for your explore dashboard
 metrics_view: my_metricsview
 
-dimensions: '*' #can use regex
-measures: '*' #can use regex
-
-time_ranges: #was available_time_ranges, list the time of available time ranges that can be selected in your dashboard
-time_zones: #was available_time_zones, list the time zones that are selectable in the dashboard
+dimensions: '*' #can use expressions
+measures: '*' #can use expressions
 
 defaults: #define all the defaults within here, was default_* in previous dashboard YAML
     dimensions: 
@@ -42,8 +41,6 @@ defaults: #define all the defaults within here, was default_* in previous dashbo
 security:
     access: #only dashboard access can be defined here, other security policies must be set on the metrics view
 ```
-
-
 
 
 :::note Dashboard Properties

@@ -12,11 +12,13 @@
 
   let editor: EditorView;
 
+  $: ({ instanceId } = $runtime);
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   $: ({ autoSave, remoteContent } = fileArtifact);
 
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
+  $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines(
     $allErrors,

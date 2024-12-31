@@ -35,8 +35,9 @@
     whereFilter = dimensionFilters;
     havingFilter = dimensionThresholdFilters;
   }
+  $: ({ instanceId } = $runtime);
 
-  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+  $: metricsView = useMetricsView(instanceId, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
     $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,
@@ -62,7 +63,7 @@
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}
             <DimensionFilterReadOnlyChip
-              label={label ?? name}
+              label={label || name}
               values={selectedValues}
               {isInclude}
             />
@@ -73,7 +74,7 @@
         {#each currentMeasureFilters as { name, label, dimensionName, filter } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilterReadOnlyChip
-              label={label ?? name}
+              label={label || name}
               {dimensionName}
               {filter}
             />

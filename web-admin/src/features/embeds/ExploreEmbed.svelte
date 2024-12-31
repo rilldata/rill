@@ -1,9 +1,8 @@
 <script lang="ts">
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSyncWrapper from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSyncWrapper.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
   import { errorStore } from "../errors/error-store";
 
@@ -38,13 +37,11 @@
   {:else if data}
     {#key exploreName}
       <StateManagersProvider {exploreName} {metricsViewName}>
-        <DashboardStateProvider {exploreName}>
-          <DashboardURLStateProvider {metricsViewName}>
-            <DashboardThemeProvider>
-              <Dashboard {exploreName} {metricsViewName} isEmbedded />
-            </DashboardThemeProvider>
-          </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        <DashboardURLStateSyncWrapper>
+          <DashboardThemeProvider>
+            <Dashboard {exploreName} {metricsViewName} isEmbedded />
+          </DashboardThemeProvider>
+        </DashboardURLStateSyncWrapper>
       </StateManagersProvider>
     {/key}
   {/if}

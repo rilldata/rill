@@ -123,6 +123,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProdStatus = true
 		permissions.ReadDev = true
 		permissions.ReadDevStatus = true
+		permissions.ReadProvisionerResources = true
 		permissions.ReadProjectMembers = true
 	}
 
@@ -1074,7 +1075,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		if err != nil {
 			return nil, err
 		}
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

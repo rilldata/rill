@@ -21,6 +21,7 @@
   export let supressTooltip = false;
   export let label: string | undefined = undefined;
   export let removeTooltipText: string | undefined = undefined;
+  export let allowPointerEvents = false;
 
   const dispatch = createEventDispatcher();
 
@@ -43,7 +44,7 @@
     class:grab
     class:exclude
     class:compact
-    class:pointer-events-none={readOnly}
+    class:pointer-events-none={readOnly && !allowPointerEvents}
     aria-label={label}
     {...getAttrs(builders)}
     use:builderActions={{ builders }}

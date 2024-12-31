@@ -3,7 +3,6 @@ package duckdb
 import (
 	"context"
 	"database/sql"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -18,9 +17,7 @@ import (
 func TestNoFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	dsn := filepath.Join(t.TempDir(), "tmp.db")
-
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 2, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -80,9 +77,7 @@ func TestNoFatalErr(t *testing.T) {
 func TestNoFatalErrConcurrent(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	dsn := filepath.Join(t.TempDir(), "tmp.db")
-
-	handle, err := Driver{}.Open("default", map[string]any{"path": dsn, "pool_size": 3, "external_table_storage": false}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open("default", map[string]any{"pool_size": 2}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -139,7 +134,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 			LEFT JOIN d ON b.b12 = d.d1
 			WHERE d.d2 IN ('');
 		`
-		err1 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err1 = olap.WithConnection(context.Background(), 0, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(500 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -152,7 +147,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 	var err2 error
 	go func() {
 		qry := `SELECT * FROM a;`
-		err2 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err2 = olap.WithConnection(context.Background(), 0, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(1000 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -166,7 +161,7 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		qry := `SELECT * FROM a;`
-		err3 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err3 = olap.WithConnection(context.Background(), 0, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
 		wg.Done()
@@ -183,39 +178,4 @@ func TestNoFatalErrConcurrent(t *testing.T) {
 
 	err = handle.Close()
 	require.NoError(t, err)
-}
-
-func TestHumanReadableSizeToBytes(t *testing.T) {
-	tests := []struct {
-		input     string
-		expected  float64
-		shouldErr bool
-	}{
-		{"1 byte", 1, false},
-		{"2 bytes", 2, false},
-		{"1KB", 1000, false},
-		{"1.5KB", 1500, false},
-		{"1MB", 1000 * 1000, false},
-		{"2.5MB", 2.5 * 1000 * 1000, false},
-		{"1GB", 1000 * 1000 * 1000, false},
-		{"1.5GB", 1.5 * 1000 * 1000 * 1000, false},
-		{"1TB", 1000 * 1000 * 1000 * 1000, false},
-		{"1.5TB", 1.5 * 1000 * 1000 * 1000 * 1000, false},
-		{"1PB", 1000 * 1000 * 1000 * 1000 * 1000, false},
-		{"1.5PB", 1.5 * 1000 * 1000 * 1000 * 1000 * 1000, false},
-		{"invalid", 0, true},
-		{"123invalid", 0, true},
-		{"123 ZZ", 0, true},
-	}
-
-	for _, tt := range tests {
-		result, err := humanReadableSizeToBytes(tt.input)
-		if (err != nil) != tt.shouldErr {
-			t.Errorf("expected error: %v, got error: %v for input: %s", tt.shouldErr, err, tt.input)
-		}
-
-		if !tt.shouldErr && result != tt.expected {
-			t.Errorf("expected: %v, got: %v for input: %s", tt.expected, result, tt.input)
-		}
-	}
 }

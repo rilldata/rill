@@ -48,7 +48,7 @@
 
   let showColumns = true;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: source = resource?.source;
   $: model = resource?.model;
 

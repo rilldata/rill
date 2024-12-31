@@ -1,33 +1,48 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
   import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import DashboardURLStateSync from "@rilldata/web-common/features/dashboards/url-state/DashboardURLStateSync.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-
-  const user = createAdminServiceGetCurrentUser();
+  import type { PageData } from "./$types";
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
-  $: instanceId = $runtime?.instanceId;
-
+  export let data: PageData;
   $: ({
-    organization: orgName,
-    project: projectName,
-    dashboard: exploreName,
-  } = $page.params);
+    defaultExplorePreset,
+    homeBookmarkExploreState,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
+    errors,
+    exploreName,
+  } = data);
+  $: if (errors?.length) {
+    const _errs = errors;
+    setTimeout(() => {
+      eventBus.emit("notification", {
+        type: "error",
+        message: _errs[0].message,
+        options: {
+          persisted: true,
+        },
+      });
+    }, 100);
+  }
+  $: ({ instanceId } = $runtime);
+
+  $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: () => {
@@ -88,23 +103,20 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider {metricsViewName} {exploreName}>
-            <DashboardURLStateProvider {metricsViewName}>
-              <DashboardThemeProvider>
-                <Dashboard {metricsViewName} {exploreName} />
-              </DashboardThemeProvider>
-            </DashboardURLStateProvider>
-          </DashboardBookmarksStateProvider>
-        {:else}
-          <DashboardStateProvider {exploreName}>
-            <DashboardURLStateProvider {metricsViewName}>
-              <DashboardThemeProvider>
-                <Dashboard {metricsViewName} {exploreName} />
-              </DashboardThemeProvider>
-            </DashboardURLStateProvider>
-          </DashboardStateProvider>
-        {/if}
+        <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
+          extraKeyPrefix={`${orgName}__${projectName}__`}
+          {defaultExplorePreset}
+          initExploreState={homeBookmarkExploreState}
+          {exploreStateFromYAMLConfig}
+          {partialExploreStateFromUrl}
+          {exploreStateFromSessionStorage}
+        >
+          <DashboardThemeProvider>
+            <Dashboard {metricsViewName} {exploreName} />
+          </DashboardThemeProvider>
+        </DashboardURLStateSync>
       </StateManagersProvider>
     {/key}
   {/if}

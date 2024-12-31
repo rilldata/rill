@@ -18,6 +18,8 @@ import type {
   RpcStatus,
   V1GetBillingProjectCredentialsRequest,
   V1ListPublicBillingPlansResponse,
+  V1ProvisionResponse,
+  AdminServiceProvisionBody,
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
@@ -334,6 +336,57 @@ export const createAdminServiceListPublicBillingPlans = <
   return query;
 };
 
+/**
+ * @summary Provision provisions a new resource for a deployment.
+If an existing resource matches the request, it will be returned without provisioning a new resource.
+ */
+export const adminServiceProvision = (
+  deploymentId: string,
+  adminServiceProvisionBody: AdminServiceProvisionBody,
+) => {
+  return httpClient<V1ProvisionResponse>({
+    url: `/v1/deployments/${deploymentId}/provision`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceProvisionBody,
+  });
+};
+
+export type AdminServiceProvisionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceProvision>>
+>;
+export type AdminServiceProvisionMutationBody = AdminServiceProvisionBody;
+export type AdminServiceProvisionMutationError = RpcStatus;
+
+export const createAdminServiceProvision = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    TError,
+    { deploymentId: string; data: AdminServiceProvisionBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    { deploymentId: string; data: AdminServiceProvisionBody }
+  > = (props) => {
+    const { deploymentId, data } = props ?? {};
+
+    return adminServiceProvision(deploymentId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceProvision>>,
+    TError,
+    { deploymentId: string; data: AdminServiceProvisionBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary TriggerReconcile triggers reconcile for the project's prod deployment.
 DEPRECATED: Clients should call CreateTrigger directly on the deployed runtime instead.

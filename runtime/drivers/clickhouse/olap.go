@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,7 +35,7 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectClickHouse
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
 		panic("nested WithConnection")
@@ -208,9 +209,9 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
 	outputProps := &ModelOutputProperties{}
-	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
+	if err := mapstructure.WeakDecode(opts.TableOpts, outputProps); err != nil {
 		return fmt.Errorf("failed to parse output properties: %w", err)
 	}
 	var onClusterClause string
@@ -239,11 +240,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	if !inPlace {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+	if !opts.InPlace {
 		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
 	}
-	if strategy == drivers.IncrementalStrategyAppend {
+	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority:    1,
@@ -251,13 +252,113 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	// merge strategy is also not supported for clickhouse
-	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
+	if opts.Strategy == drivers.IncrementalStrategyPartitionOverwrite {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// Get the engine info of the given table
+		engine, err := c.getTableEngine(ctx, name)
+		if err != nil {
+			return err
+		}
+		// Distributed table cannot be altered directly, so we need to alter the local table
+		if engine == "Distributed" {
+			name = localTableName(name)
+		}
+		// create temp table with the same schema using a deterministic name
+		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, name),
+			Priority: 1,
+		})
+		if err != nil {
+			return err
+		}
+		// clean up the temp table
+		defer func() {
+			var cancel context.CancelFunc
+
+			// If the original context is cancelled, create a new context for cleanup
+			if ctx.Err() != nil {
+				ctx, cancel = context.WithTimeout(context.Background(), 15*time.Second)
+			} else {
+				cancel = func() {}
+			}
+			defer cancel()
+
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
+				Priority: 1,
+			})
+			if err != nil {
+				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err))
+			}
+		}()
+		// insert into temp table
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempName), sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+		// list partitions from the temp table
+		partitions, err := c.getTablePartitions(ctx, tempName)
+		if err != nil {
+			return err
+		}
+		// iterate over partitions and replace them in the main table
+		for _, part := range partitions {
+			// alter the main table to replace the partition
+			err = c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER TABLE %s %s REPLACE PARTITION ? FROM %s", safeSQLName(name), onClusterClause, safeSQLName(tempName)),
+				Args:     []any{part},
+				Priority: 1,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if opts.Strategy == drivers.IncrementalStrategyMerge {
+		_, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
+		if err != nil {
+			return err
+		}
+		onClusterClause := ""
+		if onCluster {
+			onClusterClause = "ON CLUSTER " + safeSQLName(c.config.Cluster)
+		}
+		// get the engine info of the given table
+		engine, err := c.getTableEngine(ctx, name)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(engine, "ReplacingMergeTree") {
+			return fmt.Errorf("clickhouse: merge strategy requires ReplacingMergeTree engine")
+		}
+
+		// insert into table using the merge strategy
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s %s", safeSQLName(name), onClusterClause, sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, _ bool) error {
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", name)
+func (c *connection) DropTable(ctx context.Context, name string) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, name)
 	if err != nil {
 		return err
 	}
@@ -310,8 +411,8 @@ func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
-	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, "", oldName)
+func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+	typ, onCluster, err := informationSchema{c: c}.entityType(ctx, c.config.Database, oldName)
 	if err != nil {
 		return err
 	}
@@ -330,10 +431,14 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return c.renameTable(ctx, oldName, newName, onClusterClause)
 		}
 		// capture the full engine of the old distributed table
+		args := []any{c.config.Database, oldName}
+		if c.config.Database == "" {
+			args = []any{nil, oldName}
+		}
 		var engineFull string
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    "SELECT engine_full FROM system.tables WHERE database = currentDatabase() AND name = ?",
-			Args:     []any{oldName},
+			Query:    "SELECT engine_full FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+			Args:     args,
 			Priority: 100,
 		})
 		if err != nil {
@@ -382,9 +487,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 func (c *connection) renameView(ctx context.Context, oldName, newName, onCluster string) error {
 	// clickhouse does not support renaming views so we capture the OLD view's select statement and use it to create new view
+	args := []any{c.config.Database, oldName}
+	if c.config.Database == "" {
+		args = []any{nil, oldName}
+	}
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT as_select FROM system.tables WHERE database = currentDatabase() AND name = ?",
-		Args:     []any{oldName},
+		Query:    "SELECT as_select FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
 		Priority: 100,
 	})
 	if err != nil {
@@ -440,7 +549,7 @@ func (c *connection) renameTable(ctx context.Context, oldName, newName, onCluste
 		return err
 	}
 	// drop the old table
-	return c.DropTable(context.Background(), oldName, false)
+	return c.DropTable(context.Background(), oldName)
 }
 
 func (c *connection) createTable(ctx context.Context, name, sql string, outputProps *ModelOutputProperties) error {
@@ -477,7 +586,15 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	} else {
 		fmt.Fprintf(&create, " %s ", outputProps.Columns)
 	}
-	create.WriteString(outputProps.tblConfig())
+
+	tableConfig := outputProps.tblConfig()
+	create.WriteString(tableConfig)
+
+	// validate incremental strategy
+	if outputProps.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite &&
+		!strings.Contains(strings.ToUpper(tableConfig), "PARTITION BY") {
+		return fmt.Errorf("clickhouse: incremental strategy partition_overwrite requires a partition key")
+	}
 
 	// create table
 	err := c.Exec(ctx, &drivers.Statement{Query: create.String(), Priority: 100})
@@ -490,8 +607,12 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	}
 	// create the distributed table
 	var distributed strings.Builder
+	database := c.config.Database
+	if c.config.Database == "" {
+		database = "currentDatabase()"
+	}
 	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
-	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, currentDatabase(), %s", safeSQLName(c.config.Cluster), safelocalTableName(name))
+	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLName(c.config.Cluster), database, safelocalTableName(name))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
 	} else {
@@ -555,9 +676,13 @@ func (c *connection) createDictionary(ctx context.Context, name, sql string, out
 
 func (c *connection) columnClause(ctx context.Context, table string) (string, error) {
 	var columnClause strings.Builder
+	args := []any{c.config.Database, table}
+	if c.config.Database == "" {
+		args = []any{nil, table}
+	}
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT name, type FROM system.columns WHERE database = currentDatabase() AND table = ?",
-		Args:     []any{table},
+		Query:    "SELECT name, type FROM system.columns WHERE database = coalesce(?, currentDatabase()) AND table = ?",
+		Args:     args,
 		Priority: 100,
 	})
 	if err != nil {
@@ -659,6 +784,51 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	return conn, release, nil
 }
 
+func (c *connection) getTableEngine(ctx context.Context, name string) (string, error) {
+	var engine string
+	args := []any{c.config.Database, name}
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	}
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT engine FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
+		Priority: 1,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+	if res.Next() {
+		if err := res.Scan(&engine); err != nil {
+			return "", err
+		}
+	}
+	return engine, nil
+}
+
+func (c *connection) getTablePartitions(ctx context.Context, name string) ([]string, error) {
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT DISTINCT partition FROM system.parts WHERE table = ?",
+		Args:     []any{name},
+		Priority: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	// collect partitions
+	var partitions []string
+	for res.Next() {
+		var part string
+		if err := res.Scan(&part); err != nil {
+			return nil, err
+		}
+		partitions = append(partitions, part)
+	}
+	return partitions, nil
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -755,6 +925,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATETIME64":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "INTERVALNANOSECOND", "INTERVALMICROSECOND", "INTERVALMILLISECOND", "INTERVALSECOND", "INTERVALMINUTE", "INTERVALHOUR", "INTERVALDAY", "INTERVALWEEK", "INTERVALMONTH", "INTERVALQUARTER", "INTERVALYEAR":
+		t.Code = runtimev1.Type_CODE_INTERVAL
 	case "JSON":
 		t.Code = runtimev1.Type_CODE_JSON
 	case "UUID":

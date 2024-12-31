@@ -69,6 +69,7 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 			Name:                                org.Name,
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
+			LogoAssetID:                         org.LogoAssetID,
 			CustomDomain:                        org.CustomDomain,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,

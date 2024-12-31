@@ -62,6 +62,9 @@ func (p *Parser) parseComponent(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ComponentSpec = spec
+	if r.ComponentSpec.DisplayName == "" {
+		r.ComponentSpec.DisplayName = ToDisplayName(node.Name)
+	}
 
 	return nil
 }
@@ -85,7 +88,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	var resolverProps *structpb.Struct
 	if tmp.Data != nil {
 		var err error
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, "")
 		if err != nil {
 			return nil, nil, err
 		}

@@ -3,17 +3,11 @@ package provisioner
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
 )
-
-// ErrResourceTypeNotSupported should be returned by Provision if the provisioner does not support the requested resource type.
-//
-// By checking for this error, we can iterate over the chain of provisioners until we find a provisioner capable of provisioning the requested service.
-var ErrResourceTypeNotSupported = errors.New("provisioner: resource type not supported")
 
 // ProvisionerInitializer creates a new provisioner.
 type ProvisionerInitializer func(specJSON []byte, db database.DB, logger *zap.Logger) (Provisioner, error)
@@ -35,6 +29,8 @@ type Provisioner interface {
 	Type() string
 	// Close is called when the provisioner is no longer needed.
 	Close() error
+	// Supports indicates if it can provision the resource type.
+	Supports(rt ResourceType) bool
 	// Provision provisions a new resource.
 	// It may be called multiple times for the same ID if:
 	//  - the initial provision is interrupted, or

@@ -20,7 +20,7 @@
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   setContext("rill::canvas:name", canvasName);
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   const dashboardWidth = chartView
     ? defaults.DASHBOARD_WIDTH / 2

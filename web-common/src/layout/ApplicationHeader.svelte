@@ -64,11 +64,11 @@
   async function submitTitleChange(editedTitle: string) {
     const artifact = fileArtifacts.getFileArtifact("/rill.yaml");
 
-    let content = get(artifact.localContent) ?? get(artifact.remoteContent);
+    let content = get(artifact.editorContent);
 
     if (!content) {
       await artifact.fetchContent();
-      content = get(artifact.localContent) ?? get(artifact.remoteContent);
+      content = get(artifact.remoteContent);
       if (!content) {
         return;
       }
@@ -77,7 +77,7 @@
 
     parsed.set("display_name", editedTitle);
 
-    artifact.updateLocalContent(parsed.toString(), true);
+    artifact.updateEditorContent(parsed.toString(), true);
     await artifact.saveLocalContent();
   }
 </script>

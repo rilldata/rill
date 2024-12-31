@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apache/arrow/go/v14/arrow"
-	"github.com/apache/arrow/go/v14/arrow/array"
-	"github.com/apache/arrow/go/v14/arrow/memory"
-	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/apache/arrow/go/v15/arrow"
+	"github.com/apache/arrow/go/v15/arrow/array"
+	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow/go/v15/parquet/pqarrow"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -648,7 +648,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			arrowField.Type = arrow.PrimitiveTypes.Float32
 		case runtimev1.Type_CODE_FLOAT64:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
+		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_INTERVAL:
 			arrowField.Type = arrow.BinaryTypes.String
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
@@ -707,6 +707,15 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 				}
 
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(string(bts))
+			case runtimev1.Type_CODE_INTERVAL:
+				switch v := v.GetKind().(type) {
+				case *structpb.Value_NumberValue:
+					s := fmt.Sprintf("%f", v.NumberValue)
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(s)
+				case *structpb.Value_StringValue:
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(v.StringValue)
+				default:
+				}
 			}
 		}
 	}

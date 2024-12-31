@@ -19,14 +19,13 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  const queryClient = useQueryClient();
   let containerWidth: number;
 
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
   $: kpiProperties = rendererProperties as KPIProperties;
 
   $: ({

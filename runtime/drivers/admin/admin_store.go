@@ -7,6 +7,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -89,4 +90,23 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotat
 	}
 
 	return meta, nil
+}
+
+func (h *Handle) ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error) {
+	argsPB, err := structpb.NewStruct(args)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := h.admin.Provision(ctx, &adminv1.ProvisionRequest{
+		DeploymentId: "", // Will default to the deployment ID of the current access token.
+		Type:         driver,
+		Name:         name,
+		Args:         argsPB,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Resource.Config.AsMap(), nil
 }

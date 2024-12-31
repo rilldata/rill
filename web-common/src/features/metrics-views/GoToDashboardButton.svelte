@@ -5,18 +5,18 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useGetExploresForMetricsView } from "../dashboards/selectors";
+  import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
   import { resourceColorMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import { createAndPreviewExplore } from "./create-and-preview-explore";
-  import { allowPrimary } from "../dashboards/workspace/DeployProjectCTA.svelte";
 
   export let resource: V1Resource | undefined;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: dashboardsQuery = useGetExploresForMetricsView(
     instanceId,
     resource?.meta?.name?.name ?? "",
@@ -47,7 +47,7 @@
       <DropdownMenu.Group>
         {#each dashboards as resource (resource?.meta?.name?.name)}
           {@const label =
-            resource?.explore?.state?.validSpec?.displayName ??
+            resource?.explore?.state?.validSpec?.displayName ||
             resource?.meta?.name?.name}
           {@const filePath = resource?.meta?.filePaths?.[0]}
           {#if label && filePath}

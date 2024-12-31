@@ -8,6 +8,7 @@ import (
 type AdminService interface {
 	GetReportMetadata(ctx context.Context, reportName, ownerID, explore, canvas string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)
 	GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*AlertMetadata, error)
+	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
 }
 
 type ReportMetadata struct {

@@ -101,7 +101,7 @@
       }}
       let:item
     >
-      {items.find((m) => m.name === item)?.displayName ?? item}
+      {items.find((m) => m.name === item)?.displayName || item}
     </SelectionDropdown>
   {/if}
 </div>

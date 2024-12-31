@@ -68,6 +68,48 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}/provision:
+    post:
+      summary: |-
+        Provision provisions a new resource for a deployment.
+        If an existing resource matches the request, it will be returned without provisioning a new resource.
+      operationId: AdminService_Provision
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ProvisionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          description: |-
+            Deployment to provision a resource for.
+            If it's blank and the request is made with a deployment access token, the deployment is inferred from the token.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+                description: Type of resource to provision.
+              name:
+                type: string
+                description: |-
+                  Name of the resource to provision.
+                  It forms a unique key together with deployment and type, which is used to de-duplicate provision requests.
+              args:
+                type: object
+                description: Arguments for the provisioner call.
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: |-
@@ -350,6 +392,8 @@ paths:
               newName:
                 type: string
               displayName:
+                type: string
+              logoAssetId:
                 type: string
               billingEmail:
                 type: string
@@ -2397,6 +2441,11 @@ paths:
               extension:
                 type: string
                 title: Eg. ".tar.gz"
+              cacheable:
+                type: boolean
+              estimatedSizeBytes:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -4611,6 +4660,8 @@ definitions:
         type: string
       description:
         type: string
+      logoUrl:
+        type: string
       customDomain:
         type: string
       quotas:
@@ -4747,6 +4798,10 @@ definitions:
         type: boolean
       manageDev:
         type: boolean
+      readProvisionerResources:
+        type: boolean
+      manageProvisionerResources:
+        type: boolean
       readProjectMembers:
         type: boolean
       manageProjectMembers:
@@ -4795,6 +4850,26 @@ definitions:
         type: string
         format: date-time
         description: Timestamp when the variable was last updated.
+  v1ProvisionResponse:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1ProvisionerResource'
+  v1ProvisionerResource:
+    type: object
+    properties:
+      id:
+        type: string
+      deploymentId:
+        type: string
+      type:
+        type: string
+      name:
+        type: string
+      args:
+        type: object
+      config:
+        type: object
   v1PullVirtualRepoResponse:
     type: object
     properties:

@@ -1509,6 +1509,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for DisplayName
 	}
 
+	if m.LogoAssetId != nil {
+		// no validation rules for LogoAssetId
+	}
+
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
@@ -6349,7 +6353,7 @@ func (m *CreateAssetRequest) validate(all bool) error {
 	if _, ok := _CreateAssetRequest_Type_InLookup[m.GetType()]; !ok {
 		err := CreateAssetRequestValidationError{
 			field:  "Type",
-			reason: "value must be in list [deploy]",
+			reason: "value must be in list [deploy image]",
 		}
 		if !all {
 			return err
@@ -6369,6 +6373,10 @@ func (m *CreateAssetRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Extension
+
+	// no validation rules for Cacheable
+
+	// no validation rules for EstimatedSizeBytes
 
 	if len(errors) > 0 {
 		return CreateAssetRequestMultiError(errors)
@@ -6452,6 +6460,7 @@ var _ interface {
 
 var _CreateAssetRequest_Type_InLookup = map[string]struct{}{
 	"deploy": {},
+	"image":  {},
 }
 
 // Validate checks the field values on CreateAssetResponse with the rules
@@ -7601,6 +7610,272 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TriggerRedeployResponseValidationError{}
+
+// Validate checks the field values on ProvisionRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProvisionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProvisionRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProvisionRequestMultiError, or nil if none found.
+func (m *ProvisionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProvisionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DeploymentId
+
+	// no validation rules for Type
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProvisionRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProvisionRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProvisionRequestValidationError{
+				field:  "Args",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ProvisionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProvisionRequestMultiError is an error wrapping multiple validation errors
+// returned by ProvisionRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ProvisionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProvisionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProvisionRequestMultiError) AllErrors() []error { return m }
+
+// ProvisionRequestValidationError is the validation error returned by
+// ProvisionRequest.Validate if the designated constraints aren't met.
+type ProvisionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProvisionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProvisionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProvisionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProvisionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProvisionRequestValidationError) ErrorName() string { return "ProvisionRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ProvisionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProvisionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProvisionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProvisionRequestValidationError{}
+
+// Validate checks the field values on ProvisionResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ProvisionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProvisionResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProvisionResponseMultiError, or nil if none found.
+func (m *ProvisionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProvisionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResource()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProvisionResponseValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProvisionResponseValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResource()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProvisionResponseValidationError{
+				field:  "Resource",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ProvisionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProvisionResponseMultiError is an error wrapping multiple validation errors
+// returned by ProvisionResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ProvisionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProvisionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProvisionResponseMultiError) AllErrors() []error { return m }
+
+// ProvisionResponseValidationError is the validation error returned by
+// ProvisionResponse.Validate if the designated constraints aren't met.
+type ProvisionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProvisionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProvisionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProvisionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProvisionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProvisionResponseValidationError) ErrorName() string {
+	return "ProvisionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProvisionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProvisionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProvisionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProvisionResponseValidationError{}
 
 // Validate checks the field values on ListOrganizationMemberUsersRequest with
 // the rules defined in the proto definition for this message. If any rules
@@ -32817,6 +33092,8 @@ func (m *Organization) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for LogoUrl
+
 	// no validation rules for CustomDomain
 
 	if all {
@@ -33848,6 +34125,174 @@ var _ interface {
 	ErrorName() string
 } = DeploymentValidationError{}
 
+// Validate checks the field values on ProvisionerResource with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProvisionerResource) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProvisionerResource with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProvisionerResourceMultiError, or nil if none found.
+func (m *ProvisionerResource) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProvisionerResource) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for DeploymentId
+
+	// no validation rules for Type
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProvisionerResourceValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProvisionerResourceValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProvisionerResourceValidationError{
+				field:  "Args",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ProvisionerResourceValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ProvisionerResourceValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ProvisionerResourceValidationError{
+				field:  "Config",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ProvisionerResourceMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProvisionerResourceMultiError is an error wrapping multiple validation
+// errors returned by ProvisionerResource.ValidateAll() if the designated
+// constraints aren't met.
+type ProvisionerResourceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProvisionerResourceMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProvisionerResourceMultiError) AllErrors() []error { return m }
+
+// ProvisionerResourceValidationError is the validation error returned by
+// ProvisionerResource.Validate if the designated constraints aren't met.
+type ProvisionerResourceValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProvisionerResourceValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProvisionerResourceValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProvisionerResourceValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProvisionerResourceValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProvisionerResourceValidationError) ErrorName() string {
+	return "ProvisionerResourceValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProvisionerResourceValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProvisionerResource.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProvisionerResourceValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProvisionerResourceValidationError{}
+
 // Validate checks the field values on OrganizationPermissions with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -34001,6 +34446,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 	// no validation rules for ReadDevStatus
 
 	// no validation rules for ManageDev
+
+	// no validation rules for ReadProvisionerResources
+
+	// no validation rules for ManageProvisionerResources
 
 	// no validation rules for ReadProjectMembers
 
