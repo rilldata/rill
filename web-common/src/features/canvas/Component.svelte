@@ -130,7 +130,6 @@
       role="button"
       tabindex="0"
       aria-label="Drag to move"
-      title="Drag to move"
       on:mousedown={handleDragHandleMouseDown}
     >
       <DragHandle size="20" className="text-slate-600" />
