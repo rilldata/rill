@@ -1567,5 +1567,6 @@ export interface ListGithubUserReposResponseRepo {
 export interface GetReportMetaResponseURLs {
   openUrl?: string;
   exportUrl?: string;
+  editUrl?: string;
   unsubscribeUrl?: string;
 }

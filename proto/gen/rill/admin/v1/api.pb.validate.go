@@ -37942,6 +37942,8 @@ func (m *GetReportMetaResponse_URLs) validate(all bool) error {
 
 	// no validation rules for ExportUrl
 
+	// no validation rules for EditUrl
+
 	// no validation rules for UnsubscribeUrl
 
 	if len(errors) > 0 {

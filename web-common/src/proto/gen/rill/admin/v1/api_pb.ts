@@ -9405,7 +9405,12 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
   exportUrl = "";
 
   /**
-   * @generated from field: string unsubscribe_url = 3;
+   * @generated from field: string edit_url = 3;
+   */
+  editUrl = "";
+
+  /**
+   * @generated from field: string unsubscribe_url = 4;
    */
   unsubscribeUrl = "";
 
@@ -9419,7 +9424,8 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_URLs {

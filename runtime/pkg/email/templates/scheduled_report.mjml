@@ -8,12 +8,6 @@
       <mj-all font-family="Helvetica" font-size="16px" />
       <mj-text color="#000" font-size="16px" line-height="1.25" />
     </mj-attributes>
-    <mj-style>
-      .hidden {
-          display: none !important;
-          mso-hide: none;
-      }
-    </mj-style>
   </mj-head>
   <mj-body>
     <mj-section>
@@ -32,7 +26,7 @@
 
         <mj-spacer height="20px" />
 
-        <mj-button css-class="{{ if not .OpenLink }}hidden{{ end }}" background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
+        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
           Open in browser
         </mj-button>
 
@@ -47,7 +41,7 @@
         <mj-spacer height="20px" />
         
         <mj-text align="center" font-size="12px">
-          To unsubscribe from this report, <a href="{{ .UnsubscribeLink }}">click here</a>.
+          {{ if .EditLink }} To edit this report, <a href="{{ .EditLink }}">click here</a>. {{ end }} To unsubscribe from this report, <a href="{{ .UnsubscribeLink }}">click here</a>.
         </mj-text>
 
         <mj-text align="center" font-size="12px" line-height="1.5">

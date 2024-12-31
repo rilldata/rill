@@ -66,12 +66,21 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	tokens, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
+	tokens, ownerEmail, err := s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
 	for _, recipient := range recipients {
+		if recipient == ownerEmail {
+			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
+				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
+				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
+				EditUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
+				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+			}
+			continue
+		}
 		urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
 			OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
@@ -251,6 +260,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	var userEmail string
+	var slackEmail string
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 		if err != nil {
@@ -272,7 +282,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			if req.SlackUser == nil {
 				return nil, status.Error(codes.InvalidArgument, "no slack user provided for unsubscribing")
 			}
-			userEmail = *req.SlackUser
+			slackEmail = *req.SlackUser
 		} else {
 			userEmail = reportTkn.RecipientEmail
 			if req.Email == nil {
@@ -298,7 +308,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 	for idx, email := range opts.SlackUsers {
-		if strings.EqualFold(userEmail, email) {
+		if strings.EqualFold(slackEmail, email) {
 			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break
@@ -549,7 +559,7 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -576,15 +586,16 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 	mgcOpts.Resources = res
 
+	ownerEmail := ""
 	if ownerID != "" {
 		// Get the project-level permissions for the creating user.
 		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
@@ -594,15 +605,16 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
 		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		mgcOpts.Attributes = attrs
+		ownerEmail = attrs["email"].(string)
 	}
 
 	// issue magic tokens for new external emails
 	cctx, tx, err := s.admin.DB.NewTx(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
+		return nil, "", fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
@@ -621,7 +633,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 		tkn, err := s.admin.IssueMagicAuthToken(cctx, mgcOpts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
+			return nil, "", fmt.Errorf("failed to issue magic auth token for email %s: %w", email, err)
 		}
 
 		emailTokens[email] = tkn.Token().String()
@@ -632,16 +644,16 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 			MagicAuthTokenID: tkn.Token().ID.String(),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to insert report token for email %s: %w", email, err)
+			return nil, "", fmt.Errorf("failed to insert report token for email %s: %w", email, err)
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+		return nil, "", fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	return emailTokens, nil
+	return emailTokens, ownerEmail, nil
 }
 
 var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)

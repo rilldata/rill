@@ -17,6 +17,7 @@ type ReportMetadata struct {
 type ReportURLs struct {
 	OpenURL        string
 	ExportURL      string
+	EditURL        string
 	UnsubscribeURL string
 }
 

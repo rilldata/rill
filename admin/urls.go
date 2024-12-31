@@ -322,6 +322,11 @@ func (u *URLs) ReportUnsubscribe(org, project, report, token, email string) stri
 	return urlutil.MustWithQuery(urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report, "unsubscribe"), queryParams)
 }
 
+// ReportEdit returns the URL for editing a report in the frontend.
+func (u *URLs) ReportEdit(org, project, report string) string {
+	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "reports", report)
+}
+
 // AlertOpen returns the URL for opening an alert in the frontend.
 func (u *URLs) AlertOpen(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.Frontend(), org, project, "-", "alerts", alert, "open")

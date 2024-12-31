@@ -442,6 +442,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					return false, err
 				}
 				opts.DownloadLink = u.String()
+				opts.EditLink = urls.EditURL
 				opts.UnsubscribeLink = urls.UnsubscribeURL
 				err = r.C.Runtime.Email.SendScheduledReport(opts)
 				sent = true

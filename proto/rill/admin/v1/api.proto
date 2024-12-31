@@ -1934,7 +1934,8 @@ message GetReportMetaResponse {
   message URLs {
     string open_url = 1;
     string export_url = 2;
-    string unsubscribe_url = 3;
+    string edit_url = 3;
+    string unsubscribe_url = 4;
   }
   map<string, URLs> recipient_urls = 2;
   reserved 1;

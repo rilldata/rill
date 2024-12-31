@@ -37,6 +37,7 @@ type ScheduledReport struct {
 	DownloadFormat  string
 	OpenLink        string
 	DownloadLink    string
+	EditLink        string
 	UnsubscribeLink string
 }
 
@@ -46,6 +47,7 @@ type scheduledReportData struct {
 	DownloadFormat   string
 	OpenLink         template.URL
 	DownloadLink     template.URL
+	EditLink         template.URL
 	UnsubscribeLink  template.URL
 }
 
@@ -57,6 +59,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 		DownloadFormat:   opts.DownloadFormat,
 		OpenLink:         template.URL(opts.OpenLink),
 		DownloadLink:     template.URL(opts.DownloadLink),
+		EditLink:         template.URL(opts.EditLink),
 		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
 	}
 

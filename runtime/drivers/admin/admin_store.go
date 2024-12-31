@@ -50,6 +50,7 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, exp
 		recipientURLs[k] = drivers.ReportURLs{
 			OpenURL:        v.OpenUrl,
 			ExportURL:      v.ExportUrl,
+			EditURL:        v.EditUrl,
 			UnsubscribeURL: v.UnsubscribeUrl,
 		}
 	}

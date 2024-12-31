@@ -3598,6 +3598,8 @@ definitions:
         type: string
       exportUrl:
         type: string
+      editUrl:
+        type: string
       unsubscribeUrl:
         type: string
   ListGithubUserReposResponseRepo:
