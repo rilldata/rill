@@ -250,11 +250,40 @@ title: "Canvas Dashboard"
 items:
   - component:
       markdown:
-        content: "First Component"
+        content: First Component
     width: 12
     height: 2
     x: 0
-    y: 0
+    y: 4
+  - component:
+      markdown:
+        content: Markdown Text 1
+    height: 2
+    width: 3
+    x: 0
+    y: 2
+  - component:
+      markdown:
+        content: Markdown Text 2
+    height: 2
+    width: 3
+    x: 3
+    y: 2
+  - component:
+      markdown:
+        content: Markdown Text 3
+    height: 2
+    width: 3
+    x: 6
+    y: 2
+  - component:
+      markdown:
+        content: Markdown Text 4
+    height: 2
+    width: 3
+    x: 9
+    y: 2
+
 `;
     case ResourceKind.Theme:
       return `# Theme YAML
