@@ -241,6 +241,7 @@
     >
       {#each row.items as component}
         {@const i = items.indexOf(component)}
+        <!-- FIXME: padding 16 -->
         <PreviewElement
           {instanceId}
           {i}
@@ -249,7 +250,7 @@
           {radius}
           selected={selectedIndex === i}
           interacting={false}
-          padding={16}
+          padding={0}
           rowIndex={getRowIndex(component, items)}
           columnIndex={getColumnIndex(component, items)}
           width={Math.min(

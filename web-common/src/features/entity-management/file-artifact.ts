@@ -189,6 +189,8 @@ export class FileArtifact {
   ) => {
     this.editorContent.set(newContent);
 
+    console.log("[FileArtifact] UPDATED EDITOR CONTENT");
+
     if (!firstLoad) {
       this.saveState.touch(this.path);
     }
