@@ -7,17 +7,13 @@ import {
   getTimeComparisonParametersForComponent,
   inferCompareTimeRange,
 } from "@rilldata/web-common/lib/time/comparisons";
-import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import {
   checkValidTimeGrain,
   findValidTimeGrain,
   getAllowedTimeGrains,
   getDefaultTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
-import {
-  convertTimeRangePreset,
-  getAdjustedFetchTime,
-} from "@rilldata/web-common/lib/time/ranges";
+import { getAdjustedFetchTime } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
@@ -30,6 +26,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -154,7 +151,6 @@ export function getTimeControlState(
 
   const timeRangeState = calculateTimeRangePartial(
     exploreState,
-    allTimeRange,
     defaultTimeRange,
     minTimeGrain,
   );
@@ -207,17 +203,12 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
  */
 function calculateTimeRangePartial(
   metricsExplorer: MetricsExplorerEntity,
-  allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ): TimeRangeState | undefined {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
-  const selectedTimeRange = getTimeRange(
-    metricsExplorer,
-    allTimeRange,
-    defaultTimeRange,
-  );
+  const selectedTimeRange = getTimeRange(metricsExplorer, defaultTimeRange, []);
   if (!selectedTimeRange) return undefined;
 
   selectedTimeRange.interval = getTimeGrain(
@@ -318,47 +309,23 @@ function calculateComparisonTimeRangePartial(
 
 function getTimeRange(
   metricsExplorer: MetricsExplorerEntity,
-  allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
+  timeRanges: V1TimeRange[],
 ) {
   if (!metricsExplorer.selectedTimeRange) return undefined;
-
-  let timeRange: DashboardTimeControls;
-
-  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
+  if (!metricsExplorer.selectedTimeRange?.name) {
+    return defaultTimeRange;
+  }
+  if (metricsExplorer.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
     /** set the time range to the fixed custom time range */
-    timeRange = {
+    return <DashboardTimeControls>{
       name: TimeRangePreset.CUSTOM,
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
-  } else if (metricsExplorer.selectedTimeRange?.name) {
-    if (metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
-      /** rebuild off of relative time range */
-      timeRange = convertTimeRangePreset(
-        metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
-        allTimeRange.start,
-        allTimeRange.end,
-        metricsExplorer.selectedTimezone,
-      );
-    } else {
-      timeRange = isoDurationToFullTimeRange(
-        metricsExplorer.selectedTimeRange?.name,
-        allTimeRange.start,
-        allTimeRange.end,
-        metricsExplorer.selectedTimezone,
-      );
-    }
-  } else {
-    /** set the time range to the fixed custom time range */
-    timeRange = {
-      name: defaultTimeRange.name,
-      start: defaultTimeRange.start,
-      end: defaultTimeRange.end,
-    };
   }
 
-  return timeRange;
+  return findTimeRange(metricsExplorer.selectedTimeRange?.name, timeRanges);
 }
 
 function getTimeGrain(
@@ -470,5 +437,18 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
   );
 
-  return getTimeRange(explorer, allTimeRange, defaultTimeRange);
+  return getTimeRange(explorer, defaultTimeRange, []);
+}
+
+export function findTimeRange(
+  name: string,
+  timeRanges: V1TimeRange[],
+): DashboardTimeControls | undefined {
+  const tr = timeRanges.find((tr) => tr.rillTime === name);
+  if (!tr) return undefined;
+  return {
+    name: name as TimeRangePreset,
+    start: new Date(tr.start ?? ""),
+    end: new Date(tr.end ?? ""),
+  };
 }

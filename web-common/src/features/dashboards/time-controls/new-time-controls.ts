@@ -1,5 +1,10 @@
 // WIP as of 04/19/2024
 
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
+import {
+  type RillTime,
+  RillTimeType,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { writable, type Writable, get } from "svelte/store";
 import {
@@ -10,7 +15,7 @@ import {
   Duration,
   IANAZone,
 } from "luxon";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -84,8 +89,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-export const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM";
+export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -380,53 +385,77 @@ export function getRangeLabel(range: NamedRange | ISODurationString): string {
 
 // BUCKETS FOR DISPLAYING IN DROPDOWN (yaml spec may make this unnecessary)
 
+export type RangeBucket = {
+  range: string;
+  label: string;
+  shortLabel: string;
+};
 export type RangeBuckets = {
-  latest: { label: string; range: ISODurationString }[];
-  previous: { range: RillPreviousPeriod; label: string }[];
-  periodToDate: { range: RillPeriodToDate; label: string }[];
+  latest: RangeBucket[];
+  previous: RangeBucket[];
+  periodToDate: RangeBucket[];
 };
 
 const defaultBuckets = {
   previous: RILL_PREVIOUS_PERIOD.map((range) => ({
     range,
     label: RILL_TO_LABEL[range],
+    shortLabel: RILL_TO_LABEL[range],
   })),
   latest: RILL_LATEST.map((range) => ({
     range,
     label: getDurationLabel(range),
+    shortLabel: getDurationLabel(range),
   })),
   periodToDate: RILL_PERIOD_TO_DATE.map((range) => ({
     range,
     label: RILL_TO_LABEL[range],
+    shortLabel: RILL_TO_LABEL[range],
   })),
 };
 
-export function bucketYamlRanges(
-  availableRanges: MetricsViewSpecAvailableTimeRange[],
-): RangeBuckets {
-  const showDefaults = !availableRanges.length;
-
+export function bucketTimeRanges(timeRanges: V1TimeRange[]) {
+  const showDefaults = !timeRanges.length;
   if (showDefaults) {
     return defaultBuckets;
   }
 
-  return availableRanges.reduce(
-    (record, { range }) => {
-      if (!range) return record;
+  return timeRanges.reduce(
+    (buckets, timeRange) => {
+      if (!timeRange) return buckets;
+      let rillTime: RillTime | null = null;
+      try {
+        rillTime = parseRillTime(timeRange.rillTime ?? "");
+      } catch {
+        // no-op
+      }
+      if (!rillTime) return buckets;
 
-      if (isRillPeriodToDate(range)) {
-        record.periodToDate.push({ range, label: RILL_TO_LABEL[range] });
-      } else if (isRillPreviousPeriod(range)) {
-        record.previous.push({ range, label: RILL_TO_LABEL[range] });
-      } else {
-        record.latest.push({ range, label: getDurationLabel(range) });
+      const bucket = <RangeBucket>{
+        range: timeRange.rillTime ?? "",
+        label: rillTime.getLabel(),
+        shortLabel: rillTime.getLabel(),
+      };
+
+      switch (rillTime.type) {
+        case RillTimeType.Unknown:
+        case RillTimeType.Latest:
+          buckets.latest.push(bucket);
+          break;
+        case RillTimeType.PreviousPeriod:
+          buckets.previous.push(bucket);
+          break;
+        case RillTimeType.PeriodToDate:
+          buckets.periodToDate.push(bucket);
+          break;
       }
 
-      return record;
+      return buckets;
     },
     <RangeBuckets>{
       previous: [],
       latest: [],
+      latestIncomplete: [],
       periodToDate: [],
     },
   );

@@ -8,3 +8,13 @@ export function parseRillTime(rillTime: string): RillTime {
   parser.feed(rillTime);
   return parser.results[0];
 }
+
+export function validateRillTime(rillTime: string): Error | undefined {
+  try {
+    const parser = parseRillTime(rillTime);
+    if (!parser) return new Error("Unknown error");
+  } catch (err) {
+    return err;
+  }
+  return undefined;
+}

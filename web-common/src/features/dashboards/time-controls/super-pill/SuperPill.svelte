@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { findTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
+  import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     TimeComparisonOption,
@@ -17,11 +19,10 @@
   import { initLocalUserPreferenceStore } from "../../user-preferences";
   import {
     ALL_TIME_RANGE_ALIAS,
+    bucketTimeRanges,
     CUSTOM_TIME_RANGE_ALIAS,
-    deriveInterval,
     type ISODurationString,
     type NamedRange,
-    type RangeBuckets,
   } from "../new-time-controls";
   import * as Elements from "./components";
 
@@ -32,7 +33,6 @@
   const {
     exploreName,
     selectors: {
-      timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
     validSpecStore,
@@ -60,27 +60,9 @@
 
   $: availableTimeZones = exploreSpec.timeZones ?? [];
 
-  $: ({
-    latestWindowTimeRanges,
-    periodToDateRanges,
-    previousCompleteDateRanges,
-    showDefaultItem,
-  } = $timeRangeSelectorState);
-
-  $: ranges = <RangeBuckets>{
-    latest: latestWindowTimeRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-    periodToDate: periodToDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-    previous: previousCompleteDateRanges.map((range) => ({
-      range: range.name,
-      label: range.label,
-    })),
-  };
+  $: timeRanges = getTimeRanges($exploreName);
+  let showDefaultItem = false; // TODO
+  $: ranges = bucketTimeRanges($timeRanges.data?.ranges ?? []);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -104,32 +86,12 @@
   }
 
   function onSelectRange(name: NamedRange | ISODurationString) {
-    if (!allTimeRange?.end) {
+    if (!allTimeRange?.end || !$timeRanges.data?.ranges) {
       return;
     }
-
-    if (name === ALL_TIME_RANGE_ALIAS) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        allTimeRange,
-        "TIME_GRAIN_DAY",
-        undefined,
-      );
-      return;
-    }
-
-    const interval = deriveInterval(
-      name,
-      DateTime.fromJSDate(allTimeRange.end),
-    );
-    if (!interval?.isValid) return;
-
-    const baseTimeRange: TimeRange = {
-      name: name as TimeRangePreset,
-      start: interval.start.toJSDate(),
-      end: interval.end.toJSDate(),
-    };
-
-    selectRange(baseTimeRange);
+    const tr = findTimeRange(name, $timeRanges.data?.ranges ?? []);
+    if (!tr) return;
+    selectRange(tr);
   }
 
   function selectRange(range: TimeRange) {

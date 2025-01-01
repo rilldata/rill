@@ -23,13 +23,10 @@ export class RillTime {
       this.end.truncate !== undefined;
   }
 
-  public getLabel({ completeness }: { completeness: boolean }) {
+  public getLabel() {
     const start = capitalizeFirstChar(this.start.getLabel());
     const completeSuffix = ", " + (this.isComplete ? "complete" : "incomplete");
-    if (completeness) {
-      return `${start}${completeSuffix}`;
-    }
-    return start;
+    return `${start}${completeSuffix}`;
   }
 }
 

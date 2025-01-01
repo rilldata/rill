@@ -1013,69 +1013,87 @@ export const queryServiceMetricsViewResolveTimeRanges = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewResolveTimeRangesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewResolveTimeRangesBody,
+    signal,
   });
 };
 
-export type QueryServiceMetricsViewResolveTimeRangesMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
-  >;
-export type QueryServiceMetricsViewResolveTimeRangesMutationBody =
-  QueryServiceMetricsViewResolveTimeRangesBody;
-export type QueryServiceMetricsViewResolveTimeRangesMutationError =
+export const getQueryServiceMetricsViewResolveTimeRangesQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
+  queryServiceMetricsViewResolveTimeRangesBody,
+];
+
+export type QueryServiceMetricsViewResolveTimeRangesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+>;
+export type QueryServiceMetricsViewResolveTimeRangesQueryError =
   ErrorType<RpcStatus>;
 
 export const createQueryServiceMetricsViewResolveTimeRanges = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
-
-    return queryServiceMetricsViewResolveTimeRanges(
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewResolveTimeRangesQueryKey(
       instanceId,
       metricsViewName,
-      data,
+      queryServiceMetricsViewResolveTimeRangesBody,
     );
-  };
 
-  return createMutation<
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewResolveTimeRanges(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewResolveTimeRangesBody,
+      signal,
+    );
+
+  const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
