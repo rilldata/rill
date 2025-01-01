@@ -644,8 +644,7 @@ func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
-	stateDir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
-	args := []string{"run", "cli/main.go", "start", stateDir, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
+	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug", "--allowed-origins", "http://localhost:3001"}
 	if verbose {
 		args = append(args, "--verbose")
 	}
