@@ -30,6 +30,7 @@ import (
 const (
 	minGoVersion   = "1.23"
 	minNodeVersion = "18"
+	stateDirLocal  = "dev-project"
 	rillGithubURL  = "https://github.com/rilldata/rill"
 )
 
