@@ -40,6 +40,7 @@ export function getDimensionTableExportArgs(
       const timeRange = mapTimeRange(
         timeControlState,
         validSpecStore.data.explore,
+        dashboardState,
       );
       if (!timeRange) return undefined;
 
