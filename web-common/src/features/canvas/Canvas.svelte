@@ -9,6 +9,7 @@
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { compactGrid, convertToGridItems, sortItemsByPosition } from "./grid";
+  import type { Vector } from "./types";
 
   export let fileArtifact: FileArtifact;
 
@@ -69,37 +70,34 @@
     if ($autoSave) await updateComponentFile();
   }
 
-  async function handleUpdate(event: CustomEvent) {
-    const { index, position, dimensions, items } = event.detail;
-
+  async function handleUpdate(
+    e: CustomEvent<{
+      index: number;
+      position: Vector;
+      dimensions: Vector;
+      items: V1CanvasItem[];
+    }>,
+  ) {
     console.log("[Canvas] Handling update:", {
-      index,
-      position,
-      dimensions,
-      items,
+      index: e.detail.index,
+      position: e.detail.position,
+      dimensions: e.detail.dimensions,
     });
 
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
-    const docItems = parsedDocument.get("items") as any;
+    const items = parsedDocument.get("items") as any;
 
-    if (!docItems) {
-      console.log("[Canvas] No items found in document");
-      return;
-    }
-
-    const node = docItems.get(index);
-    if (!node) {
-      // FIXME: wrong index!
-      console.log("[Canvas] No node found at index", index);
-      return;
-    }
-
-    node.set("x", position[0]);
-    node.set("y", position[1]);
-    node.set("width", dimensions[0]);
-    node.set("height", dimensions[1]);
+    e.detail.items.forEach((item, idx) => {
+      const node = items.get(idx);
+      if (node) {
+        node.set("width", item.width);
+        node.set("height", item.height);
+        node.set("x", item.x);
+        node.set("y", item.y);
+      }
+    });
 
     updateEditorContent(parsedDocument.toString(), true);
     if ($autoSave) await updateComponentFile();

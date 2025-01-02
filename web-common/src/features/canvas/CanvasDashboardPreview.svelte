@@ -166,9 +166,9 @@
     items = newItems;
 
     dispatch("update", {
-      index: insertIndex,
-      position: [draggedItem.x, draggedItem.y],
-      dimensions: [draggedItem.width, draggedItem.height],
+      index: dragIndex,
+      position: [newItems[insertIndex].x, newItems[insertIndex].y],
+      dimensions: [newItems[insertIndex].width, newItems[insertIndex].height],
       items: newItems,
     });
 
