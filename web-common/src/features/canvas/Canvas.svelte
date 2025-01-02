@@ -17,7 +17,7 @@
 
   // Open inspector when a canvas item is selected
   $: workspaceLayout = workspaces.get(fileArtifact.path);
-  $: if (selectedIndex !== null && selectedIndex !== undefined) {
+  $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
     workspaceLayout.inspector.open();
   }
 
