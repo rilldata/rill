@@ -224,14 +224,6 @@ func (s *servicesCfg) parse() error {
 type cloud struct{}
 
 func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
-	if reset {
-		err := s.resetState(ctx)
-		if err != nil {
-			return fmt.Errorf("reset cloud deps: %w", err)
-		}
-		logInfo.Printf("Reset cloud dependencies\n")
-	}
-
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -248,6 +240,14 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	_, err = godotenv.Read()
 	if err != nil {
 		return fmt.Errorf("error parsing .env: %w", err)
+	}
+
+	if reset {
+		err := s.resetState(ctx)
+		if err != nil {
+			return fmt.Errorf("reset cloud deps: %w", err)
+		}
+		logInfo.Printf("Reset cloud dependencies\n")
 	}
 
 	g, ctx := errgroup.WithContext(ctx)
