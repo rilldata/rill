@@ -48,7 +48,6 @@
     {@const componentName = component.component}
     {#if componentName}
       <Component
-        embed
         {i}
         {instanceId}
         {componentName}
