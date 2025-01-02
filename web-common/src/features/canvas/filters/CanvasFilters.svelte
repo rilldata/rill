@@ -1,5 +1,6 @@
 <script lang="ts">
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import CanvasGrainSelector from "@rilldata/web-common/features/canvas/filters/CanvasGrainSelector.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -29,6 +30,10 @@
     />
     <CanvasComparisonPill
       {allTimeRange}
+      selectedTimeRange={$selectedTimeRange}
+      selectedComparisonTimeRange={$selectedComparisonTimeRange}
+    />
+    <CanvasGrainSelector
       selectedTimeRange={$selectedTimeRange}
       selectedComparisonTimeRange={$selectedComparisonTimeRange}
     />
