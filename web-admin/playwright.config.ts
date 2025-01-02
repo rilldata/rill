@@ -1,4 +1,12 @@
 import { devices, type PlaywrightTestConfig } from "@playwright/test";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import { ADMIN_AUTH_FILE } from "./tests/setup/constants";
+
+// Load environment variables from our root `.env` file
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const config: PlaywrightTestConfig = {
   globalSetup: "./tests/setup/globalSetup.ts",
@@ -18,7 +26,7 @@ const config: PlaywrightTestConfig = {
     {
       name: "e2e",
       use: {
-        storageState: "playwright/.auth/user.json",
+        storageState: ADMIN_AUTH_FILE,
       },
       dependencies: ["auth"],
     },

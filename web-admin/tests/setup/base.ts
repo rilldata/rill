@@ -1,9 +1,12 @@
 import { test as base, type Page } from "@playwright/test";
+import { ADMIN_AUTH_FILE, VIEWER_AUTH_FILE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
 import { orgCreate, orgDelete } from "./fixtures/org";
 import { projectDelete, projectDeploy } from "./fixtures/project";
 
 type MyFixtures = {
+  adminPage: Page;
+  viewerPage: Page;
   anonPage: Page;
   cli: void;
   organization: void;
@@ -11,6 +14,24 @@ type MyFixtures = {
 };
 
 export const test = base.extend<MyFixtures>({
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: ADMIN_AUTH_FILE,
+    });
+    const adminPage = await context.newPage();
+    await use(adminPage);
+    await context.close();
+  },
+
+  viewerPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      storageState: VIEWER_AUTH_FILE,
+    });
+    const viewerPage = await context.newPage();
+    await use(viewerPage);
+    await context.close();
+  },
+
   anonPage: async ({ browser }, use) => {
     const context = await browser.newContext({
       storageState: { cookies: [], origins: [] },
