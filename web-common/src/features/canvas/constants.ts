@@ -7,3 +7,5 @@ export const COMPONENT_HEIGHT = 1;
 export const COLUMN_COUNT = 12;
 export const GAP_SIZE = 4;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
+export const MIN_ROW_HEIGHT = 50;
+export const GRID_CELL_SIZE = 50;
