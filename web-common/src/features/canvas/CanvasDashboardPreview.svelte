@@ -302,67 +302,62 @@
   }}
   on:drop={handleDrop}
 >
-  <!-- TODO: from rebase, revisit -->
-  <!-- <section
-    class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
-  ></section> -->
-  {#each itemsByRow as row, index (index)}
-    <div
-      class="row absolute w-full left-0"
-      data-row-index={index}
-      style="position: absolute; width: 100%; height: {row.height *
-        gridCell}px; top: {row.y * gridCell}px;"
-    >
-      {#each row.items as component}
-        {@const i = items.indexOf(component)}
-        <!-- FIXME: padding 16 -->
-        <PreviewElement
-          {instanceId}
-          {i}
-          {scale}
-          {component}
-          {radius}
-          selected={selectedIndex === i}
-          interacting={false}
-          padding={0}
-          rowIndex={getRowIndex(component, items)}
-          columnIndex={getColumnIndex(component, items)}
-          width={Math.min(
-            Number(component.width ?? defaults.COMPONENT_WIDTH),
-            defaults.COLUMN_COUNT,
-          ) * gridCell}
-          height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
-            gridCell}
-          top={0}
-          left={Math.min(
-            Number(component.x ?? 0),
-            defaults.COLUMN_COUNT -
-              (component.width ?? defaults.COMPONENT_WIDTH),
-          ) * gridCell}
-          onDragOver={(e) =>
-            handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
-          onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
-          on:dragstart={handleDragStart}
-          on:dragend={handleDragEnd}
-          on:change={handleChange}
-          on:mouseenter={handleMouseEnter}
-          on:mouseleave={handleMouseLeave}
-        />
-      {/each}
-    </div>
+  <div class="grid auto-rows-min w-full gap-0">
+    {#each itemsByRow as row, index (index)}
+      <div
+        class="row w-full"
+        data-row-index={index}
+        style="height: {row.height * gridCell}px;"
+      >
+        {#each row.items as component}
+          {@const i = items.indexOf(component)}
+          <!-- FIXME: padding 16 -->
+          <PreviewElement
+            {instanceId}
+            {i}
+            {scale}
+            {component}
+            {radius}
+            selected={selectedIndex === i}
+            interacting={false}
+            padding={16}
+            rowIndex={getRowIndex(component, items)}
+            columnIndex={getColumnIndex(component, items)}
+            width={Math.min(
+              Number(component.width ?? defaults.COMPONENT_WIDTH),
+              defaults.COLUMN_COUNT,
+            ) * gridCell}
+            height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
+              gridCell}
+            top={0}
+            left={Math.min(
+              Number(component.x ?? 0),
+              defaults.COLUMN_COUNT -
+                (component.width ?? defaults.COMPONENT_WIDTH),
+            ) * gridCell}
+            onDragOver={(e) =>
+              handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
+            onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
+            on:dragstart={handleDragStart}
+            on:dragend={handleDragEnd}
+            on:change={handleChange}
+            on:mouseenter={handleMouseEnter}
+            on:mouseleave={handleMouseLeave}
+          />
+        {/each}
+      </div>
 
-    <!-- FIXME: refine the height calcuation of -->
-    {#if index < itemsByRow.length - 1}
-      <button
-        type="button"
-        aria-label="Resize row"
-        class="row-resize-handle absolute w-full h-8 -mt-4 cursor-row-resize bg-transparent hover:bg-blue-200 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
-        style="top: {row.y * gridCell + row.height * gridCell}px; left: 0;"
-        on:mousedown|stopPropagation={(e) =>
-          handleRowResizeStart(e, index, row.height * gridCell)}
-      />
-    {/if}
-  {/each}
+      {#if index < itemsByRow.length - 1}
+        <button
+          type="button"
+          aria-label="Resize row"
+          class="row-resize-handle w-full h-[3px] cursor-row-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
+          on:mousedown|stopPropagation={(e) =>
+            handleRowResizeStart(e, index, row.height * gridCell)}
+        />
+      {/if}
+    {/each}
+  </div>
 
   {#if dropTarget && draggedComponent}
     {@const targetItem = items[dropTarget.index]}
@@ -405,9 +400,11 @@
 <style>
   .row {
     position: relative;
+    min-height: 0;
   }
 
   .row-resize-handle {
+    position: relative;
     transition: opacity 0.2s;
   }
 </style>
