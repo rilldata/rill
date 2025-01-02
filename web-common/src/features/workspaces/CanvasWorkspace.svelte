@@ -32,9 +32,10 @@
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
-  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
 
   export let fileArtifact: FileArtifact;
+
+  // const { canvasStore } = getCanvasStateManagers();
 
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
@@ -129,7 +130,7 @@
     }
 
     const newIndex = existingItems.length;
-    canvasStore.setSelectedComponentIndex(canvasName, newIndex);
+    // $canvasStore.setSelectedComponentIndex(newIndex);
 
     updateEditorContent(parsedDocument.toString(), true);
     await updateComponentFile();
