@@ -2,19 +2,32 @@ import { expect } from "@playwright/test";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { test } from "./setup/base";
+import { spawnAndMatch } from "./utils/spawn";
 
 const execAsync = promisify(exec);
 
 test.describe("Projects", () => {
   test("should deploy a project", async ({ page, organization: _ }) => {
-    // Execute the deploy command
-    const { stdout: deployStdout } = await execAsync(
-      "rill deploy --path tests/setup/git/repos/rill-examples --subpath rill-openrtb-prog-ads --project openrtb --github true",
+    // Execute the deploy command and capture the auth URL
+    const { match } = await spawnAndMatch(
+      "rill",
+      [
+        "deploy",
+        "--path",
+        "tests/setup/git/repos/rill-examples",
+        "--subpath",
+        "rill-openrtb-prog-ads",
+        "--project",
+        "openrtb",
+        "--github",
+        "true",
+      ],
+      /https?:\/\/[^\s]+/,
     );
 
-    // Confirm the CLI output
-    expect(deployStdout).toContain(`Created project "e2e/openrtb"`);
-    expect(deployStdout).toContain(`Opening project in browser...`);
+    // Manually navigate to the auth URL
+    const url = match[0];
+    await page.goto(url);
 
     // Expect to see the successful deployment
     await page.goto("/e2e/openrtb");
