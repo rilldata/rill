@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
@@ -69,7 +69,6 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	}
 	deps := query.Deps()
 	depKeys := make([]string, 0, len(deps))
-	olapConnector := ""
 	for _, dep := range deps {
 		// Get the dependency resource
 		res, err := ctrl.Get(ctx, dep, false)
@@ -78,38 +77,25 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 			continue
 		}
 
-		// Infer OLAP connector for common resource types used in a query
-		if mv := res.GetMetricsView(); mv != nil {
-			if mv.State.ValidSpec == nil {
-				return fmt.Errorf("metrics view spec is not valid")
-			}
-			olapConnector = mv.State.ValidSpec.Connector
-		} else if mdl := res.GetModel(); mdl != nil {
-			olapConnector = mdl.Spec.OutputConnector
-		} else if src := res.GetSource(); src != nil {
-			olapConnector = src.Spec.SinkConnector
-		}
-
 		// Add to cache key.
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
+		if mv := res.GetMetricsView(); mv != nil {
+			cacheKey, ok, err := r.metricsViewCacheKey(ctx, instanceID, res.Meta.Name.Name, priority)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				// skip caching
+				return query.Resolve(ctx, r, instanceID, priority)
+			}
+			key = key + ":" + string(cacheKey)
+		}
 		depKeys = append(depKeys, key)
 	}
 
 	// If there were no known dependencies, skip caching
 	if len(depKeys) == 0 {
-		return query.Resolve(ctx, r, instanceID, priority)
-	}
-
-	// Skip caching if the OLAP connector is not DuckDB.
-	// NOTE: This hack is removed in the new resolvers by letting the resolver itself decide whether to cache or not.
-	olap, release, err := r.OLAP(ctx, instanceID, olapConnector)
-	if err != nil {
-		return err
-	}
-	dialect := olap.Dialect()
-	release()
-	if dialect != drivers.DialectDuckDB {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 
@@ -156,6 +142,27 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.UnmarshalResult(val)
 	}
 	return nil
+}
+
+func (r *Runtime) metricsViewCacheKey(ctx context.Context, instanceID, name string, priority int) ([]byte, bool, error) {
+	cacheKeyResolver, err := r.Resolve(ctx, &ResolveOptions{
+		InstanceID:         instanceID,
+		Resolver:           "metrics_cache_key",
+		ResolverProperties: map[string]any{"metrics_view": name},
+		Args:               map[string]any{"priority": priority},
+		Claims:             &SecurityClaims{SkipChecks: true},
+	})
+	if err != nil {
+		if errors.Is(err, ErrMetricsViewCachingDisabled) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	cacheKey, err := cacheKeyResolver.MarshalJSON()
+	if err != nil {
+		return nil, false, err
+	}
+	return cacheKey, true, nil
 }
 
 type queryCacheKey struct {

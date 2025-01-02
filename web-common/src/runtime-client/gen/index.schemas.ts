@@ -1339,6 +1339,10 @@ Deprecated: Now defined in the Explore resource. */
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
   availableTimeZones?: string[];
+  /** Cache controls for the metrics view. */
+  cacheEnabled?: boolean;
+  cacheKeySql?: string;
+  cacheKeyTtlSeconds?: string;
 }
 
 export interface V1MetricsViewState {
