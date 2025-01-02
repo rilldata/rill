@@ -2,6 +2,7 @@ import { createInExpression } from "@rilldata/web-common/features/dashboards/sto
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { fetchTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -205,15 +206,15 @@ export async function getExplorePageUrl(
     });
   }
 
+  let timeRanges: V1TimeRange[] = [];
+  if (metricsView?.metricsView?.state?.validSpec?.timeDimension) {
+    timeRanges = await fetchTimeRanges(exploreSpec);
+  }
+
   url.search = convertExploreStateToURLSearchParams(
     exploreState,
     exploreSpec,
-    getTimeControlState(
-      metricsViewSpec,
-      exploreSpec,
-      fullTimeRange?.timeRangeSummary,
-      exploreState,
-    ),
+    getTimeControlState(metricsViewSpec, exploreSpec, timeRanges, exploreState),
     getDefaultExplorePreset(exploreSpec, fullTimeRange),
   );
   return url.toString();

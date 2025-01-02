@@ -25,6 +25,7 @@
   import { Search } from "@rilldata/web-common/components/search";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
   import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -52,6 +53,7 @@
     instanceId,
     metricsViewName,
   );
+  $: timeRanges = getTimeRanges(exploreName);
   $: defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     $metricsViewTimeRange.data,
@@ -84,7 +86,7 @@
     $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
-    $metricsViewTimeRange.data?.timeRangeSummary,
+    $timeRanges.data?.ranges ?? [],
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 

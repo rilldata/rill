@@ -37,6 +37,7 @@ export type TimeRangeControlsState = {
   showDefaultItem: boolean;
 };
 
+// TODO: cleanup
 export function timeRangeSelectionsSelector([
   metricsView,
   explore,

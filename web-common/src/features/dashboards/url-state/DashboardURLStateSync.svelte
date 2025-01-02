@@ -40,7 +40,7 @@
     | Partial<MetricsExplorerEntity>
     | undefined;
 
-  const { dashboardStore, validSpecStore, timeRangeSummaryStore } =
+  const { dashboardStore, validSpecStore, timeRangeSummaryStore, timeRanges } =
     getStateManagers();
   $: exploreSpec = $validSpecStore.data?.explore;
   $: metricsSpec = $validSpecStore.data?.metricsView;
@@ -52,11 +52,8 @@
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-  $: ({
-    error,
-    data: timeRangeSummaryResp,
-    isLoading: timeRangeSummaryIsLoading,
-  } = $timeRangeSummaryStore);
+  $: ({ error, isLoading: timeRangeSummaryIsLoading } = $timeRangeSummaryStore);
+  $: ({ data: timeRangesResp, isLoading: timeRangesIsLoading } = $timeRanges);
   $: timeRangeSummaryError = error as HTTPError;
 
   let timeControlsState: TimeControlState | undefined = undefined;
@@ -64,7 +61,7 @@
     timeControlsState = getTimeControlState(
       metricsSpec,
       exploreSpec,
-      timeRangeSummaryResp?.timeRangeSummary,
+      timeRangesResp?.ranges ?? [],
       $dashboardStore,
     );
   }
@@ -201,13 +198,13 @@
     // time range summary query has `enabled` based on `metricsSpec.timeDimension`
     // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
     if (metricsSpec.timeDimension) {
-      await waitUntil(() => !timeRangeSummaryIsLoading);
+      await waitUntil(() => !timeRangeSummaryIsLoading || !timeRangesIsLoading);
     }
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
       exploreSpec,
-      timeRangeSummaryResp?.timeRangeSummary,
+      timeRangesResp?.ranges ?? [],
       get(metricsExplorerStore).entities[exploreName],
     );
     const redirectUrl = new URL($page.url);
