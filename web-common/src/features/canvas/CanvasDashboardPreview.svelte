@@ -213,6 +213,7 @@
     currentHeight: number,
   ) {
     e.preventDefault();
+    document.body.classList.add("resizing-row");
     resizingRow = {
       index: rowIndex,
       startY: e.clientY,
@@ -276,6 +277,7 @@
         dimensions: [0, 0],
       });
     }
+    document.body.classList.remove("resizing-row");
     resizingRow = null;
   }
 </script>
@@ -398,6 +400,10 @@
 <svelte:window on:mousemove={handleRowResize} on:mouseup={handleRowResizeEnd} />
 
 <style>
+  :global(body.resizing-row) {
+    cursor: row-resize !important;
+  }
+
   .row {
     position: relative;
     min-height: 0;
