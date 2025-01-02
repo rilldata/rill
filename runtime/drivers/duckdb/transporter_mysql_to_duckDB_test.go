@@ -1,22 +1,23 @@
-package duckdb
+package duckdb_test
 
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
-	"fmt"
-	"time"
-
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
+
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 )
 
 var mysqlInitStmt = `
@@ -98,6 +99,10 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 	t.Run("AllDataTypes", func(t *testing.T) {
 		allMySQLDataTypesTest(t, db, dsn)
 	})
+
+	t.Run("model_executor_mysql_to_duckDB", func(t *testing.T) {
+		mysqlToDuckDB(t, fmt.Sprintf("host=%s port=%v database=mydb user=myuser password=mypassword", host, port.Int()))
+	})
 }
 
 func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
@@ -109,7 +114,11 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := newDuckDBToDuckDB(to.(*connection), "mysql", zap.NewNop())
+	inputHandle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	tr, ok := to.AsTransporter(inputHandle, to)
+	require.True(t, ok)
 	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_data_types_table;", "db": dsn}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
@@ -122,4 +131,56 @@ func allMySQLDataTypesTest(t *testing.T, db *sql.DB, dsn string) {
 	}
 	require.NoError(t, res.Close())
 	require.NoError(t, to.Close())
+}
+
+func mysqlToDuckDB(t *testing.T, dsn string) {
+	duckDB, err := drivers.Open("duckdb", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	inputHandle, err := drivers.Open("mysql", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	opts := &drivers.ModelExecutorOptions{
+		InputHandle:     inputHandle,
+		InputConnector:  "mysql",
+		OutputHandle:    duckDB,
+		OutputConnector: "duckdb",
+		Env: &drivers.ModelEnv{
+			AllowHostAccess: false,
+			StageChanges:    true,
+		},
+		PreliminaryInputProperties: map[string]any{
+			"sql": "SELECT * FROM all_data_types_table;",
+			"dsn": dsn,
+		},
+		PreliminaryOutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+
+	me, ok := duckDB.AsModelExecutor("default", opts)
+	require.True(t, ok)
+
+	execOpts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      opts.PreliminaryInputProperties,
+		OutputProperties:     opts.PreliminaryOutputProperties,
+	}
+	_, err = me.Execute(context.Background(), execOpts)
+	require.NoError(t, err)
+
+	olap, ok := duckDB.AsOLAP("default")
+	require.True(t, ok)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
+	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
+	require.NoError(t, res.Close())
+	// TODO : verify this is a table once information_schema is fixed
+	require.NoError(t, duckDB.Close())
 }
