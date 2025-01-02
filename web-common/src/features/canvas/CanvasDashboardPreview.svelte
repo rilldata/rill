@@ -10,15 +10,14 @@
   import type { Vector } from "./types";
   import DropTargetLine from "./DropTargetLine.svelte";
   import { getRowIndex, getColumnIndex } from "./util";
-  import { canvasStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
-  import { Grid } from "./grid";
+  import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
   export let showFilterBar = true;
 
-  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasStore } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -69,7 +68,7 @@
       e.detail.e.currentTarget.dataset.componentIndex,
     );
     selectedIndex = componentIndex;
-    canvasStore.setSelectedComponentIndex($canvasName, selectedIndex);
+    $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
 
   function handleDragStart(e: CustomEvent) {
@@ -123,8 +122,7 @@
 
   function handleDeselect() {
     selectedIndex = null;
-    canvasEntity.setSelectedComponentIndex(selectedIndex);
-    canvasStore.setSelectedComponentIndex(selectedIndex);
+    $canvasStore.setSelectedComponentIndex(selectedIndex);
   }
 
   function getDropPosition(e: DragEvent, targetIndex: number): DropPosition {
@@ -175,7 +173,7 @@
     // Update selected index
     if (selectedIndex === dragIndex) {
       selectedIndex = insertIndex;
-      canvasStore.setSelectedComponentIndex($canvasName, insertIndex);
+      $canvasStore.setSelectedComponentIndex(insertIndex);
     }
 
     // Reset state
@@ -228,9 +226,10 @@
   }}
   on:drop={handleDrop}
 >
-  <section
+  <!-- TODO: from rebase, revisit -->
+  <!-- <section
     class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
-  ></section>
+  ></section> -->
   {#each itemsByRow as row, index (index)}
     <div
       class="row absolute w-full left-0"
