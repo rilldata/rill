@@ -32,4 +32,9 @@ export interface GridItem {
   node: any; // YAML node
 }
 
-export type DropPosition = "left" | "right" | "bottom" | "row";
+export type DropPosition =
+  | "left"
+  | "right"
+  | "top" // New position
+  | "bottom"
+  | "row"; // For dropping at the start of a row

@@ -82,19 +82,34 @@ export class Grid {
     mouseY: number,
     targetRect: DOMRect,
   ): DropPosition {
-    // Define zones
-    const bottomZone = targetRect.bottom - targetRect.height * 0.25;
-    const topZone = targetRect.top + targetRect.height * 0.25;
+    // Define zones - make them smaller for more precise targeting
+    const bottomZone = targetRect.bottom - targetRect.height * 0.2;
+    const topZone = targetRect.top + targetRect.height * 0.2;
+    const leftZone = targetRect.left + targetRect.width * 0.2;
+    const rightZone = targetRect.right - targetRect.width * 0.2;
 
-    // Check if mouse is in top/bottom zones first
+    // Check vertical zones first
     if (mouseY > bottomZone) {
       return "bottom";
     } else if (mouseY < topZone) {
-      return "row";
+      // If near the top edge, determine if it should be "top" or "row"
+      if (mouseX < leftZone) {
+        return "row"; // Start of row when near top-left
+      }
+      return "top";
     }
 
-    // If not in top/bottom zones, determine left/right
-    return mouseX > targetRect.left + targetRect.width / 2 ? "right" : "left";
+    // If in the middle zone, determine left/right
+    if (mouseX < leftZone) {
+      return "left";
+    } else if (mouseX > rightZone) {
+      return "right";
+    }
+
+    // Default to closest edge if in center
+    const distanceToLeft = mouseX - targetRect.left;
+    const distanceToRight = targetRect.right - mouseX;
+    return distanceToLeft < distanceToRight ? "left" : "right";
   }
 
   public moveItem(
@@ -116,6 +131,12 @@ export class Grid {
     const removedItem = { ...draggedItemFull };
 
     switch (position) {
+      case "top": {
+        console.log("[Grid] Dropping top");
+        this.handleTopDrop(removedItem, targetItem, rows);
+        insertIndex = this.items.indexOf(targetItem);
+        break;
+      }
       case "bottom": {
         console.log("[Grid] Dropping bottom");
         this.handleBottomDrop(removedItem, targetItem, rows);
@@ -244,6 +265,29 @@ export class Grid {
       targetRow.items.splice(0, 0, removedItem);
       targetRow.height = Math.max(targetRow.height, removedItem.height);
     }
+  }
+
+  private handleTopDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+    rows: ReturnType<typeof Grid.groupItemsByRow>,
+  ) {
+    // Move all items in the target row and below down
+    const targetY = targetItem.y ?? 0;
+    const itemHeight = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+
+    // Shift down items at or below the target
+    this.items.forEach((item) => {
+      if ((item.y ?? 0) >= targetY) {
+        item.y = (item.y ?? 0) + itemHeight;
+      }
+    });
+
+    // Position the removed item
+    removedItem.y = targetY;
+    removedItem.x = targetItem.x ?? 0;
+    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+    removedItem.height = itemHeight;
   }
 
   private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {
