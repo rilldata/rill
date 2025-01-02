@@ -133,13 +133,16 @@
       partialExplore,
       metricsSpec,
     );
-    redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-      partialExplore,
-      $page.url.searchParams,
-    );
+    if (shouldUpdateUrl) {
+      // if we added extra url params from sessionStorage then update the url
+      redirectUrl.search = getUpdatedUrlForExploreState(
+        exploreSpec,
+        timeControlsState,
+        defaultExplorePreset,
+        partialExplore,
+        $page.url.searchParams,
+      );
+    }
     // update session store when back button was pressed.
     if (backButtonUsed) {
       updateExploreSessionStore(
@@ -162,6 +165,8 @@
     }
 
     prevUrl = redirectUrl.toString();
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     void goto(redirectUrl, {
       replaceState: true,
       state: $page.state,
@@ -185,7 +190,8 @@
       // when there are no params set, state will be state from config yaml and any additional initial state like bookmark
       initState = {
         ...exploreStateFromYAMLConfig,
-        ...(initExploreState ?? {}),
+        // if the url changed manually then do not load data from initState, which is home bookmark or shared url's state
+        ...(isManualUrlChange ? {} : (initExploreState ?? {})),
       };
       shouldUpdateUrl = !!initExploreState;
     } else {
@@ -196,7 +202,11 @@
       };
     }
 
-    await waitUntil(() => !timeRangeSummaryIsLoading);
+    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
+    if (metricsSpec.timeDimension) {
+      await waitUntil(() => !timeRangeSummaryIsLoading);
+    }
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
@@ -249,6 +259,7 @@
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
+    prevUrl = newUrl;
     // dashboard changed so we should update the url
     void goto(newUrl);
     // also update the session store

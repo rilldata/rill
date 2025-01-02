@@ -1509,6 +1509,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for DisplayName
 	}
 
+	if m.LogoAssetId != nil {
+		// no validation rules for LogoAssetId
+	}
+
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
@@ -6349,7 +6353,7 @@ func (m *CreateAssetRequest) validate(all bool) error {
 	if _, ok := _CreateAssetRequest_Type_InLookup[m.GetType()]; !ok {
 		err := CreateAssetRequestValidationError{
 			field:  "Type",
-			reason: "value must be in list [deploy]",
+			reason: "value must be in list [deploy image]",
 		}
 		if !all {
 			return err
@@ -6369,6 +6373,10 @@ func (m *CreateAssetRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Extension
+
+	// no validation rules for Cacheable
+
+	// no validation rules for EstimatedSizeBytes
 
 	if len(errors) > 0 {
 		return CreateAssetRequestMultiError(errors)
@@ -6452,6 +6460,7 @@ var _ interface {
 
 var _CreateAssetRequest_Type_InLookup = map[string]struct{}{
 	"deploy": {},
+	"image":  {},
 }
 
 // Validate checks the field values on CreateAssetResponse with the rules
@@ -32856,6 +32865,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
+
+	// no validation rules for LogoUrl
 
 	// no validation rules for CustomDomain
 
