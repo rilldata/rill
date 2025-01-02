@@ -30,6 +30,13 @@ const (
 
 var ErrCustomerIDRequired = errors.New("customer id is required")
 
+var planCache = make(map[string]planCacheEntry)
+
+type planCacheEntry struct {
+	planDisplayName string
+	lastUpdated     time.Time
+}
+
 var _ Biller = &Orb{}
 
 type Orb struct {
@@ -190,7 +197,12 @@ func (o *Orb) DeleteCustomer(ctx context.Context, customerID string) error {
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	return o.createSubscription(ctx, customerID, plan)
+	sub, err := o.createSubscription(ctx, customerID, plan)
+	if err != nil {
+		return nil, err
+	}
+	planCache[customerID] = planCacheEntry{planDisplayName: sub.Plan.DisplayName, lastUpdated: time.Now()}
+	return sub, nil
 }
 
 func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Subscription, error) {
@@ -200,12 +212,15 @@ func (o *Orb) GetActiveSubscription(ctx context.Context, customerID string) (*Su
 	}
 
 	if len(subs) == 0 {
+		planCache[customerID] = planCacheEntry{planDisplayName: "", lastUpdated: time.Now()}
 		return nil, ErrNotFound
 	}
 
 	if len(subs) > 1 {
 		return nil, fmt.Errorf("multiple active subscriptions (%d) found for customer %s", len(subs), customerID)
 	}
+
+	planCache[customerID] = planCacheEntry{planDisplayName: subs[0].Plan.DisplayName, lastUpdated: time.Now()}
 
 	return subs[0], nil
 }
@@ -218,6 +233,9 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	if err != nil {
 		return nil, err
 	}
+	// NOTE - since change option is SubscriptionSchedulePlanChangeParamsChangeOptionImmediate, the plan change should be immediate
+	// if adding any other option then don't do this rather rely on webhook to update the cache
+	planCache[s.Customer.ExternalCustomerID] = planCacheEntry{planDisplayName: plan.DisplayName, lastUpdated: time.Now()}
 	return &Subscription{
 		ID:                           s.ID,
 		Customer:                     getBillingCustomerFromOrbCustomer(&s.Customer),
@@ -281,6 +299,12 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 			cancelDate = sub.EndDate
 		}
 	}
+
+	if cancelOption == SubscriptionCancellationOptionImmediate {
+		delete(planCache, customerID)
+		// for end of subscription term rely on webhook
+	}
+
 	return cancelDate, nil
 }
 
@@ -422,6 +446,21 @@ func (o *Orb) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.H
 	}
 	ow := &orbWebhook{orb: o, jobs: jc}
 	return ow.handleWebhook
+}
+
+func (o *Orb) GetCurrentPlanDisplayName(ctx context.Context, customerID string) (string, error) {
+	if p, ok := planCache[customerID]; ok {
+		return p.planDisplayName, nil
+	}
+	sub, err := o.GetActiveSubscription(ctx, customerID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) || errors.Is(err, ErrCustomerIDRequired) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return sub.Plan.DisplayName, nil
 }
 
 func (o *Orb) createSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {

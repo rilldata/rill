@@ -111,7 +111,11 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 
 	org, sub, err := w.admin.StartTrial(ctx, org)
 	if err != nil {
-		w.logger.Error("failed to start trial for organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
+		if job.Attempt < job.MaxAttempts {
+			w.logger.Info("retrying to start trial for organization", zap.String("org_id", job.Args.OrgID), zap.String("error", err.Error()))
+		} else {
+			w.logger.Error("failed to start trial for organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
+		}
 		return err
 	}
 

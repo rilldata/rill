@@ -397,6 +397,11 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
    */
   permissions?: OrganizationPermissions;
 
+  /**
+   * @generated from field: string plan_display_name = 3;
+   */
+  planDisplayName = "";
+
   constructor(data?: PartialMessage<GetOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -407,6 +412,7 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
     { no: 2, name: "permissions", kind: "message", T: OrganizationPermissions },
+    { no: 3, name: "plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationResponse {

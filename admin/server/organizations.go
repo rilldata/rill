@@ -74,9 +74,15 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		perms.ReadProjects = true
 	}
 
+	planDisplayName, err := s.admin.Biller.GetCurrentPlanDisplayName(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &adminv1.GetOrganizationResponse{
-		Organization: s.organizationToDTO(org, perms.ManageOrg),
-		Permissions:  perms,
+		Organization:    s.organizationToDTO(org, perms.ManageOrg),
+		Permissions:     perms,
+		PlanDisplayName: planDisplayName,
 	}, nil
 }
 
