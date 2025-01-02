@@ -2,6 +2,7 @@
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import Component from "./Component.svelte";
+  import * as defaults from "./constants";
 </script>
 
 <script lang="ts">
@@ -21,6 +22,7 @@
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let rowIndex: number;
   export let columnIndex: number;
+  export let gridCell: number;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
@@ -42,6 +44,12 @@
     dragend: void;
     mouseenter: { index: number };
     mouseleave: { index: number };
+    colResizeStart: {
+      index: number;
+      startX: number;
+      initialWidth: number;
+      maxWidth: number;
+    };
   }>();
 
   function handleMouseDown(e: MouseEvent) {
@@ -80,21 +88,15 @@
 </script>
 
 {#if componentName && !inlineComponent}
-  <Component
-    {instanceId}
-    {i}
-    {interacting}
-    {componentName}
-    {padding}
-    {radius}
-    {selected}
-    {rowIndex}
-    {columnIndex}
-    builders={undefined}
-    height={finalHeight}
-    left={finalLeft}
-    top={finalTop}
-    width={finalWidth}
+  <div
+    class="component absolute"
+    role="presentation"
+    data-component-index={i}
+    style:width="{width}px"
+    style:height="{height}px"
+    style:top="{top}px"
+    style:left="{left}px"
+    style:padding="{padding}px"
     on:dragstart={handleDragStart}
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
@@ -102,7 +104,24 @@
     on:mousedown={handleMouseDown}
     on:mouseenter={handleMouseEnter}
     on:mouseleave={handleMouseLeave}
-  />
+  >
+    <Component
+      {instanceId}
+      {i}
+      {interacting}
+      {componentName}
+      {padding}
+      {radius}
+      {selected}
+      {rowIndex}
+      {columnIndex}
+      builders={undefined}
+      height={finalHeight}
+      left={finalLeft}
+      top={finalTop}
+      width={finalWidth}
+    />
+  </div>
 {:else if componentName}
   <Component
     {instanceId}
@@ -128,3 +147,13 @@
     on:mouseleave={handleMouseLeave}
   />
 {/if}
+
+<style lang="postcss">
+  .component {
+    touch-action: none;
+  }
+
+  .col-resize-handle {
+    transition: opacity 0.2s;
+  }
+</style>

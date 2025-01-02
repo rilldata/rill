@@ -37,6 +37,12 @@
     startY: number;
     initialHeight: number;
   } | null = null;
+  let resizingCol: {
+    index: number;
+    startX: number;
+    initialWidth: number;
+    maxWidth: number;
+  } | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -280,6 +286,115 @@
     document.body.classList.remove("resizing-row");
     resizingRow = null;
   }
+
+  function handleColResizeStart(e: CustomEvent) {
+    resizingCol = e.detail;
+    document.body.classList.add("resizing-col");
+  }
+
+  function handleColResize(e: MouseEvent) {
+    if (!resizingCol) return;
+
+    const deltaX = e.clientX - resizingCol.startX;
+    const currentRow = itemsByRow.find((row) =>
+      row.items.some((item) => items.indexOf(item) === resizingCol.index),
+    );
+    if (!currentRow) return;
+
+    // Sort items by x position for consistent resizing
+    const sortedRowItems = [...currentRow.items].sort(
+      (a, b) => (a.x ?? 0) - (b.x ?? 0),
+    );
+    const resizingItemIndex = sortedRowItems.findIndex(
+      (item) => items.indexOf(item) === resizingCol.index,
+    );
+
+    // Get next item to determine maximum resize width
+    const nextItem = sortedRowItems[resizingItemIndex + 1];
+    if (!nextItem) return;
+
+    const newWidth = Math.round(
+      Math.max(defaults.GRID_CELL_SIZE, resizingCol.initialWidth + deltaX),
+    );
+
+    const updatedItems = [...items];
+    const item = updatedItems[resizingCol.index];
+    if (!item) return;
+
+    // Calculate new widths ensuring they stay within bounds
+    const newItemWidth = Math.round(newWidth / defaults.GRID_CELL_SIZE);
+    const currentItemWidth = item.width ?? defaults.COMPONENT_WIDTH;
+    const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
+    const currentX = item.x ?? 0;
+    // Calculate total available width from current item to end of grid
+    const availableWidth = defaults.COLUMN_COUNT - currentX;
+
+    // Calculate maximum allowed width to prevent collision
+    const nextX = nextItem.x ?? 0;
+    const combinedWidth = currentItemWidth + nextItemWidth;
+    const maxAllowedWidth = combinedWidth - 1; // Keep at least 1 column for next item
+
+    // Ensure new width doesn't exceed available space
+    const finalWidth = Math.min(
+      Math.round(newWidth / defaults.GRID_CELL_SIZE),
+      maxAllowedWidth,
+    );
+
+    const widthDiff = finalWidth - currentItemWidth;
+
+    // Only proceed if we have space to resize
+    if (widthDiff === 0) return;
+
+    // Check if resize is possible while maintaining minimum widths
+    const canResize =
+      finalWidth >= 1 &&
+      nextItemWidth - widthDiff >= 1 &&
+      finalWidth + (nextItemWidth - widthDiff) <= combinedWidth;
+
+    if (canResize) {
+      item.width = finalWidth;
+
+      // Only adjust the next item's width
+      const nextUpdatedItem = updatedItems[items.indexOf(nextItem)];
+      if (nextUpdatedItem) {
+        nextUpdatedItem.width = nextItemWidth - widthDiff;
+      }
+    }
+
+    items = updatedItems;
+  }
+
+  function handleColResizeEnd() {
+    if (resizingCol) {
+      dispatch("update", {
+        index: resizingCol.index,
+        items,
+        position: [items[resizingCol.index].x, items[resizingCol.index].y],
+        dimensions: [
+          items[resizingCol.index].width,
+          items[resizingCol.index].height,
+        ],
+      });
+    }
+    document.body.classList.remove("resizing-col");
+    resizingCol = null;
+  }
+
+  function handleColumnResizeStart(
+    e: MouseEvent,
+    index: number,
+    initialWidth: number,
+    columnIndex: number,
+  ) {
+    e.preventDefault();
+    resizingCol = {
+      index,
+      startX: e.clientX,
+      initialWidth,
+      maxWidth: (defaults.COLUMN_COUNT - columnIndex) * gridCell,
+    };
+    document.body.classList.add("resizing-col");
+  }
 </script>
 
 <!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
@@ -311,15 +426,15 @@
         data-row-index={index}
         style="height: {row.height * gridCell}px;"
       >
-        {#each row.items as component}
+        {#each row.items as component, itemIndex}
           {@const i = items.indexOf(component)}
-          <!-- FIXME: padding 16 -->
           <PreviewElement
             {instanceId}
             {i}
             {scale}
             {component}
             {radius}
+            {gridCell}
             selected={selectedIndex === i}
             interacting={false}
             padding={16}
@@ -345,7 +460,26 @@
             on:change={handleChange}
             on:mouseenter={handleMouseEnter}
             on:mouseleave={handleMouseLeave}
+            on:colResizeStart={handleColResizeStart}
           />
+          {#if itemIndex < row.items.length - 1}
+            <button
+              type="button"
+              aria-label="Resize column"
+              class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
+              style="left: {((component.x ?? 0) +
+                (component.width ?? defaults.COMPONENT_WIDTH)) *
+                gridCell -
+                1.5}px; height: {row.height * gridCell}px;"
+              on:mousedown|stopPropagation={(e) =>
+                handleColumnResizeStart(
+                  e,
+                  i,
+                  component.width * gridCell,
+                  component.x ?? 0,
+                )}
+            />
+          {/if}
         {/each}
       </div>
 
@@ -397,9 +531,18 @@
   {/if}
 </DashboardWrapper>
 
-<svelte:window on:mousemove={handleRowResize} on:mouseup={handleRowResizeEnd} />
+<svelte:window
+  on:mousemove={(e) => {
+    handleRowResize(e);
+    handleColResize(e);
+  }}
+  on:mouseup={() => {
+    handleRowResizeEnd();
+    handleColResizeEnd();
+  }}
+/>
 
-<style>
+<style lang="postcss">
   :global(body.resizing-row) {
     cursor: row-resize !important;
   }
@@ -412,5 +555,9 @@
   .row-resize-handle {
     position: relative;
     transition: opacity 0.2s;
+  }
+
+  :global(body.resizing-col) {
+    cursor: col-resize !important;
   }
 </style>
