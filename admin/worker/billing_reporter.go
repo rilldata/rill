@@ -127,7 +127,7 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	}
 
 	if len(reportedOrgs) == 0 {
-		w.logger.Warn("skipping usage reporting: no usage data available", zap.Time("start_time", startTime), zap.Time("end_time", endTime))
+		w.logger.Named("billing").Warn("skipping usage reporting: no usage data available", zap.Time("start_time", startTime), zap.Time("end_time", endTime))
 		return nil
 	}
 
