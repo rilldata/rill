@@ -178,7 +178,6 @@ export class Grid {
     targetItem: V1CanvasItem,
     rows: ReturnType<typeof Grid.groupItemsByRow>,
   ) {
-    // Ensure values exist before using them
     const targetY = targetItem.y ?? 0;
     const targetHeight = targetItem.height ?? defaults.COMPONENT_HEIGHT;
     const newY = targetY + targetHeight;

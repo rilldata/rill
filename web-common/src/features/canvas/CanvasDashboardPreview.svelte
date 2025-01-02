@@ -13,6 +13,7 @@
   import { getRowIndex, getColumnIndex } from "./util";
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
+  import type { RowGroup } from "./types";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -31,6 +32,11 @@
     position: DropPosition;
   } | null = null;
   let hoveredIndex: number | null = null;
+  let resizingRow: {
+    index: number;
+    startY: number;
+    initialHeight: number;
+  } | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -167,18 +173,16 @@
 
     dispatch("update", {
       index: dragIndex,
-      position: [newItems[insertIndex].x, newItems[insertIndex].y],
-      dimensions: [newItems[insertIndex].width, newItems[insertIndex].height],
+      position: [newItems[insertIndex]?.x, newItems[insertIndex]?.y],
+      dimensions: [newItems[insertIndex]?.width, newItems[insertIndex]?.height],
       items: newItems,
     });
 
-    // Update selected index
     if (selectedIndex === dragIndex) {
       selectedIndex = insertIndex;
       $canvasStore.setSelectedComponentIndex(insertIndex);
     }
 
-    // Reset state
     dropTarget = null;
     draggedComponent = null;
   }
@@ -201,6 +205,78 @@
       hoveredIndex = null;
       console.log("[CanvasDashboardPreview] Component unhovered");
     }
+  }
+
+  function handleRowResizeStart(
+    e: MouseEvent,
+    rowIndex: number,
+    currentHeight: number,
+  ) {
+    e.preventDefault();
+    resizingRow = {
+      index: rowIndex,
+      startY: e.clientY,
+      initialHeight: currentHeight,
+    };
+    console.log("[CanvasDashboardPreview] Starting resize of row:", {
+      rowIndex,
+      currentHeight,
+      totalRows: itemsByRow.length,
+      affectedRows: itemsByRow.slice(rowIndex + 1), // Rows that will move
+    });
+  }
+
+  function handleRowResize(e: MouseEvent) {
+    if (!resizingRow) return;
+
+    const deltaY = e.clientY - resizingRow.startY;
+    const newHeight = Math.round(
+      Math.max(defaults.MIN_ROW_HEIGHT, resizingRow.initialHeight + deltaY),
+    );
+
+    const row = itemsByRow[resizingRow.index];
+    if (!row) return;
+
+    // Create a copy of items for DOM updates
+    const updatedItems = [...items];
+    const rowItems = updatedItems.filter((item) => item.y === row.y);
+
+    // Update height for all items in the row
+    rowItems.forEach((item) => {
+      item.height = Math.round(newHeight / defaults.GRID_CELL_SIZE);
+    });
+
+    // Update positions of all rows below
+    let currentY = 0;
+    const updatedRows = groupItemsByRow(updatedItems);
+    updatedRows.forEach((currentRow, idx) => {
+      if (!resizingRow) return;
+      currentRow.items.forEach((item) => {
+        item.y = Math.round(currentY / defaults.GRID_CELL_SIZE);
+      });
+      // Use the height from the current row being processed
+      const rowHeight =
+        idx === resizingRow.index
+          ? newHeight
+          : currentRow.height * defaults.GRID_CELL_SIZE;
+      currentY += rowHeight;
+    });
+
+    // Update the DOM immediately
+    items = updatedItems;
+  }
+
+  function handleRowResizeEnd() {
+    if (resizingRow) {
+      // Only dispatch update to save YAML when resize ends
+      dispatch("update", {
+        index: -1,
+        items,
+        position: [0, 0],
+        dimensions: [0, 0],
+      });
+    }
+    resizingRow = null;
   }
 </script>
 
@@ -234,8 +310,8 @@
     <div
       class="row absolute w-full left-0"
       data-row-index={index}
-      style="position: relative; width: 100%; height: {row.height *
-        gridCell}px; transform: translateY({row.y}px);"
+      style="position: absolute; width: 100%; height: {row.height *
+        gridCell}px; top: {row.y * gridCell}px;"
     >
       {#each row.items as component}
         {@const i = items.indexOf(component)}
@@ -274,6 +350,18 @@
         />
       {/each}
     </div>
+
+    <!-- FIXME: refine the height calcuation of -->
+    {#if index < itemsByRow.length - 1}
+      <button
+        type="button"
+        aria-label="Resize row"
+        class="row-resize-handle absolute w-full h-8 -mt-4 cursor-row-resize bg-transparent hover:bg-blue-200 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
+        style="top: {row.y * gridCell + row.height * gridCell}px; left: 0;"
+        on:mousedown|stopPropagation={(e) =>
+          handleRowResizeStart(e, index, row.height * gridCell)}
+      />
+    {/if}
   {/each}
 
   {#if dropTarget && draggedComponent}
@@ -311,3 +399,15 @@
     {/if}
   {/if}
 </DashboardWrapper>
+
+<svelte:window on:mousemove={handleRowResize} on:mouseup={handleRowResizeEnd} />
+
+<style>
+  .row {
+    position: relative;
+  }
+
+  .row-resize-handle {
+    transition: opacity 0.2s;
+  }
+</style>
