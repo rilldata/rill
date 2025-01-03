@@ -9,3 +9,4 @@ export const GAP_SIZE = 4;
 export const DEFAULT_DASHBOARD_WIDTH = 1200;
 export const MIN_ROW_HEIGHT = 50;
 export const GRID_CELL_SIZE = 50;
+export const COMPONENT_MIN_WIDTH = 2;
