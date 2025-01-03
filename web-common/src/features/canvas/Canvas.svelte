@@ -10,6 +10,7 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";
   import * as defaults from "./constants";
+  import { redistributeRowColumns } from "./util";
 
   export let fileArtifact: FileArtifact;
 
@@ -48,41 +49,6 @@
   ) {
     if (e.detail.index === undefined || e.detail.index === null) return;
     await deleteComponent(e.detail.index);
-  }
-
-  function redistributeRowColumns(row: { items: V1CanvasItem[] }) {
-    const totalItems = row.items.length;
-    if (totalItems === 0) return;
-
-    // Total available columns
-    const totalColumns = defaults.COLUMN_COUNT; // Should be 12
-
-    // Distribute columns evenly among items
-    const baseWidth = Math.floor(totalColumns / totalItems); // Minimum width per item
-    const extraColumns = totalColumns % totalItems; // Remainder columns to distribute
-
-    // Sort items by x position to maintain visual order
-    const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-
-    // Update widths and x positions
-    let currentX = 0;
-    sortedItems.forEach((item, index) => {
-      // Assign base width to each item
-      item.width = baseWidth;
-
-      // Distribute any leftover columns to the first few items
-      if (index < extraColumns) {
-        item.width += 1;
-      }
-
-      // Update the x position
-      item.x = currentX;
-
-      // Increment currentX for the next item
-      currentX += item.width;
-    });
-
-    return sortedItems;
   }
 
   async function deleteComponent(index: number) {
