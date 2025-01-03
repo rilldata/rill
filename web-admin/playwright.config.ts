@@ -28,13 +28,14 @@ const config: PlaywrightTestConfig = {
     video: "retain-on-failure",
   },
   projects: [
-    { name: "auth", testMatch: "authenticate.spec.ts" },
+    { name: "bootstrap", testMatch: "bootstrap.spec.ts" },
     {
       name: "e2e",
+      dependencies: process.env.E2E_SKIP_BOOTSTRAP ? [] : ["bootstrap"],
+      testIgnore: "/setup",
       use: {
         storageState: ADMIN_AUTH_FILE,
       },
-      dependencies: ["auth"],
     },
   ],
 };

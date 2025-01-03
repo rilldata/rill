@@ -2,10 +2,8 @@ import { expect } from "@playwright/test";
 import { test } from "./setup/base";
 
 test.describe("Explores", () => {
-  test("should have data", async ({ project: _, page }) => {
-    // Wait for reconciliation to complete
-    // (But, really, the dashboard link should be disabled until it's been reconciled)
-    await page.waitForTimeout(5000);
+  test("should have data", async ({ page }) => {
+    await page.goto("/e2e/openrtb");
 
     // Navigate to the explore
     await page
