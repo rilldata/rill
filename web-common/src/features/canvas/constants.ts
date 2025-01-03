@@ -7,3 +7,4 @@ export const COLUMN_COUNT = 12;
 export const GAP_SIZE = 4;
 export const MIN_ROW_HEIGHT = 50;
 export const GRID_CELL_SIZE = 50;
+export const COMPONENT_MIN_WIDTH = 2;

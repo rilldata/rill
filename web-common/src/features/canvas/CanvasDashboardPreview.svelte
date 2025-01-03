@@ -352,7 +352,9 @@
     if (widthDiff === 0) return;
 
     // Check if resize is possible while maintaining minimum widths
-    const canResize = finalWidth >= 1 && nextItemWidth - widthDiff >= 1; // Ensure next item stays at least 1 column wide
+    const canResize =
+      finalWidth >= defaults.COMPONENT_MIN_WIDTH && // Minimum 2 columns for current item
+      nextItemWidth - widthDiff >= defaults.COMPONENT_MIN_WIDTH; // Minimum 2 columns for next item
 
     if (canResize) {
       item.width = finalWidth;
