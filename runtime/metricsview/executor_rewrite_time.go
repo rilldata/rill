@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -40,6 +41,48 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
+
+	if tr.RillTime == "" {
+		return e.resolveTimeRangeLegacy(ctx, tr, tz, executionTime)
+	}
+
+	rt, err := rilltime.Parse(tr.RillTime)
+	if err != nil {
+		return err
+	}
+
+	t, err := e.loadWatermark(ctx, executionTime)
+	if err != nil {
+		return err
+	}
+
+	minTime, err := e.getMinTime(ctx)
+	if err != nil {
+		return err
+	}
+
+	tr.Start, tr.End, err = rt.Resolve(rilltime.ResolverContext{
+		Now:        time.Now(),
+		MinTime:    minTime,
+		MaxTime:    t,
+		FirstDay:   int(e.metricsView.FirstDayOfWeek),
+		FirstMonth: int(e.metricsView.FirstMonthOfYear),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Clear all other fields than Start and End
+	tr.RillTime = ""
+	tr.IsoDuration = ""
+	tr.IsoOffset = ""
+	tr.RoundToGrain = TimeGrainUnspecified
+
+	return nil
+}
+
+// resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
+func (e *Executor) resolveTimeRangeLegacy(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
 
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		t, err := e.loadWatermark(ctx, executionTime)
@@ -164,5 +207,34 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 	}
 
 	e.watermark = t
+	return t, nil
+}
+
+func (e *Executor) getMinTime(ctx context.Context) (time.Time, error) {
+	if e.metricsView.TimeDimension == "" {
+		// we cannot get min time without a time dimension specified. return a 0 time
+		return time.Time{}, nil
+	}
+
+	dialect := e.olap.Dialect()
+	sql := fmt.Sprintf("SELECT %s FROM %s", fmt.Sprintf("MIN(%s)", dialect.EscapeIdentifier(e.metricsView.TimeDimension)), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer res.Close()
+
+	var t time.Time
+	if res.Next() {
+		if err := res.Scan(&t); err != nil {
+			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
+		}
+	}
+
 	return t, nil
 }

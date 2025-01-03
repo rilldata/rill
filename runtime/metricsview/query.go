@@ -134,13 +134,14 @@ type Sort struct {
 type TimeRange struct {
 	Start        time.Time `mapstructure:"start"`
 	End          time.Time `mapstructure:"end"`
+	RillTime     string    `mapstructure:"rill_time"`
 	IsoDuration  string    `mapstructure:"iso_duration"`
 	IsoOffset    string    `mapstructure:"iso_offset"`
 	RoundToGrain TimeGrain `mapstructure:"round_to_grain"`
 }
 
 func (tr *TimeRange) IsZero() bool {
-	return tr.Start.IsZero() && tr.End.IsZero() && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified
+	return tr.Start.IsZero() && tr.End.IsZero() && tr.RillTime == "" && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified
 }
 
 type Expression struct {
