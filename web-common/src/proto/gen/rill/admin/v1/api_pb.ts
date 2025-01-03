@@ -7706,16 +7706,18 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   ttlMinutes = protoInt64.zero;
 
   /**
-   * Type of resource to grant access to. Currently only supports "rill.runtime.v1.Explore".
+   * Type of resource to grant access to.
    *
-   * @generated from field: string resource_type = 8;
+   * @generated from field: string resource_type = 8 [deprecated = true];
+   * @deprecated
    */
   resourceType = "";
 
   /**
    * Name of the resource to grant access to.
    *
-   * @generated from field: string resource_name = 9;
+   * @generated from field: string resource_name = 9 [deprecated = true];
+   * @deprecated
    */
   resourceName = "";
 
@@ -7749,6 +7751,13 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   displayName = "";
 
+  /**
+   * list of resources to grant access to.
+   *
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 11;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7766,6 +7775,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 6, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -7782,6 +7792,49 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
 
   static equals(a: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined, b: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined): boolean {
     return proto3.util.equals(IssueMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ResourceName
+ */
+export class ResourceName extends Message<ResourceName> {
+  /**
+   * @generated from field: string type = 1;
+   */
+  type = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<ResourceName>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ResourceName";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResourceName {
+    return new ResourceName().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResourceName {
+    return new ResourceName().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResourceName {
+    return new ResourceName().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResourceName | PlainMessage<ResourceName> | undefined, b: ResourceName | PlainMessage<ResourceName> | undefined): boolean {
+    return proto3.util.equals(ResourceName, a, b);
   }
 }
 
@@ -9375,6 +9428,16 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   emailRecipients: string[] = [];
 
+  /**
+   * @generated from field: bool anon_recipients = 8;
+   */
+  anonRecipients = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 9;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9389,6 +9452,8 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 5, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "execution_time", kind: "message", T: Timestamp },
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -9413,11 +9478,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
  */
 export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   /**
-   * @generated from field: rill.admin.v1.GetReportMetaResponse.URLs base_urls = 1;
-   */
-  baseUrls?: GetReportMetaResponse_URLs;
-
-  /**
    * @generated from field: map<string, rill.admin.v1.GetReportMetaResponse.URLs> recipient_urls = 2;
    */
   recipientUrls: { [key: string]: GetReportMetaResponse_URLs } = {};
@@ -9430,7 +9490,6 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "base_urls", kind: "message", T: GetReportMetaResponse_URLs },
     { no: 2, name: "recipient_urls", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: GetReportMetaResponse_URLs} },
   ]);
 
@@ -9470,6 +9529,11 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
    */
   editUrl = "";
 
+  /**
+   * @generated from field: string unsubscribe_url = 4;
+   */
+  unsubscribeUrl = "";
+
   constructor(data?: PartialMessage<GetReportMetaResponse_URLs>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9481,6 +9545,7 @@ export class GetReportMetaResponse_URLs extends Message<GetReportMetaResponse_UR
     { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_URLs {
@@ -9814,6 +9879,16 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
    */
   name = "";
 
+  /**
+   * @generated from field: optional string email = 4;
+   */
+  email?: string;
+
+  /**
+   * @generated from field: optional string slack_user = 5;
+   */
+  slackUser?: string;
+
   constructor(data?: PartialMessage<UnsubscribeReportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9825,6 +9900,8 @@ export class UnsubscribeReportRequest extends Message<UnsubscribeReportRequest> 
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "slack_user", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnsubscribeReportRequest {
@@ -12996,12 +13073,14 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   attributes?: Struct;
 
   /**
-   * @generated from field: string resource_type = 15;
+   * @generated from field: string resource_type = 15 [deprecated = true];
+   * @deprecated
    */
   resourceType = "";
 
   /**
-   * @generated from field: string resource_name = 9;
+   * @generated from field: string resource_name = 9 [deprecated = true];
+   * @deprecated
    */
   resourceName = "";
 
@@ -13024,6 +13103,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    * @generated from field: string display_name = 16;
    */
   displayName = "";
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 17;
+   */
+  resources: ResourceName[] = [];
 
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
@@ -13049,6 +13133,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -13201,6 +13286,18 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   webOpenState = "";
 
+  /**
+   * either canvas or explore should be set
+   *
+   * @generated from field: string explore = 16;
+   */
+  explore = "";
+
+  /**
+   * @generated from field: string canvas = 17;
+   */
+  canvas = "";
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13223,6 +13320,8 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "web_open_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
