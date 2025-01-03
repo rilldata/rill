@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -102,6 +103,9 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 
 		activityDims := instanceAnnotationsToAttribs(inst)
+		if cfg.provision {
+			activityDims = append(activityDims, attribute.Bool("managed", true))
+		}
 		if activityClient != nil {
 			activityClient = activityClient.With(activityDims...)
 		}

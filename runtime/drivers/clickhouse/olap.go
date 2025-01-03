@@ -778,7 +778,9 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		return nil, nil, err
 	}
 
+	c.used()
 	release := func() error {
+		c.used()
 		return conn.Close()
 	}
 	return conn, release, nil

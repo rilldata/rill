@@ -185,6 +185,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
 				activityClient = activity.NewClient(sink, logger)
+			case "console":
+				sink := activity.NewLoggerSink(logger, zapcore.InfoLevel)
+				activityClient = activity.NewClient(sink, logger)
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}
