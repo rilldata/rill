@@ -164,6 +164,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
+	err := e.rewriteTwoPhaseComparisons(ctx, qry)
+	if err != nil {
+		return nil, err
+	}
+
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
 		return nil, err
@@ -385,6 +390,9 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			UseDisplayNames:     false,
+			inlineBaseSelect:    false,
+			inlineDims:          nil,
+			inlineMeasures:      nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -464,6 +472,9 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		UseDisplayNames:     false,
+		inlineBaseSelect:    false,
+		inlineDims:          nil,
+		inlineMeasures:      nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
