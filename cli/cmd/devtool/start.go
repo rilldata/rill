@@ -252,12 +252,11 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	stateDir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
-	err = os.MkdirAll(stateDir, os.ModePerm)
+	err = os.MkdirAll(stateDirectory(), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to create state dir %q: %w", stateDir, err)
+		return fmt.Errorf("failed to create state dir %q: %w", stateDirectory(), err)
 	}
-	logInfo.Printf("State dir set to %s\n", stateDir)
+	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
 		g.Go(func() error { return s.runDeps(ctx, verbose) })
@@ -385,8 +384,8 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 		}
 	}()
 
-	stateDir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
-	_ = os.RemoveAll(stateDir)
+	_ = os.RemoveAll(stateDirectory())
+
 	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
 }
 
@@ -724,8 +723,7 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	stateDir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
-	outputFile := filepath.Join(stateDir, "stripe-config.toml")
+	outputFile := filepath.Join(stateDirectory(), "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
 	if apiKey == "" {
@@ -784,4 +782,14 @@ func lookupDotenv(key string) string {
 		return ""
 	}
 	return env[key]
+}
+
+// stateDirectory returns the directory where the devtool's state is stored.
+// Deleting this directory will reset the state of the local development environment.
+func stateDirectory() string {
+	dir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
+	if dir == "" {
+		dir = "dev-cloud-state"
+	}
+	return dir
 }

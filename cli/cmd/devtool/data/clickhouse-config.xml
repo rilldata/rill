@@ -1,0 +1,13 @@
+<clickhouse replace="true">
+    <logger>
+        <level>information</level>
+        <console>true</console>
+    </logger>
+    <display_name>rill devtool clickhouse</display_name>
+    <tcp_port>9000</tcp_port>
+    <http_port>8123</http_port>
+    <timezone>UTC</timezone>
+    <access_control_improvements>
+        <select_from_information_schema_requires_grant>true</select_from_information_schema_requires_grant>
+    </access_control_improvements>
+</clickhouse>
