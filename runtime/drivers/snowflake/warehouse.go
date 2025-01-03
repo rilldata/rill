@@ -261,19 +261,6 @@ func (f *fileIterator) Next() ([]string, error) {
 	return []string{fw.Name()}, nil
 }
 
-// Size implements drivers.FileIterator.
-func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
-	switch unit {
-	case drivers.ProgressUnitFile:
-		return 1, true
-	// the number of records is unknown until the end of iteration
-	case drivers.ProgressUnitRecord:
-		return f.totalRecords, true
-	default:
-		return 0, false
-	}
-}
-
 func (f *fileIterator) Format() string {
 	return ""
 }

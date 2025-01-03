@@ -160,6 +160,7 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 	if err != nil {
 		return err
 	}
+	defer res.Close()
 
 	meta := make([]*runtimev1.MetricsViewColumn, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {
