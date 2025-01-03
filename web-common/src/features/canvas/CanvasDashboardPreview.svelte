@@ -12,7 +12,6 @@
   import { getRowIndex, getColumnIndex } from "./util";
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
-  import type { RowGroup } from "./types";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -294,6 +293,10 @@
     if (!resizingCol) return;
 
     const deltaX = e.clientX - resizingCol.startX;
+    console.log("[CanvasDashboardPreview] handleColResize", {
+      deltaX,
+      resizingCol,
+    });
     const currentRow = itemsByRow.find((row) =>
       row.items.some((item) => items.indexOf(item) === resizingCol.index),
     );
@@ -320,17 +323,30 @@
     if (!item) return;
 
     // Calculate new widths ensuring they stay within bounds
-    const newItemWidth = Math.round(newWidth / defaults.GRID_CELL_SIZE);
     const currentItemWidth = item.width ?? defaults.COMPONENT_WIDTH;
-    const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
     const currentX = item.x ?? 0;
-    // Calculate total available width from current item to end of grid
-    const availableWidth = defaults.COLUMN_COUNT - currentX;
+
+    // Get next item's current width
+    const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
+    const nextItemX = nextItem.x ?? 0;
+
+    // Calculate total width used in the row
+    const rowItems = sortedRowItems.map((item) => ({
+      width: item.width ?? defaults.COMPONENT_WIDTH,
+      x: item.x ?? 0,
+    }));
+
+    // Calculate available width for resizing
+    const totalRowWidth = rowItems.reduce((sum, item) => sum + item.width, 0);
+    const remainingWidth = defaults.COLUMN_COUNT - totalRowWidth;
 
     // Calculate maximum allowed width to prevent collision
-    const nextX = nextItem.x ?? 0;
-    const combinedWidth = currentItemWidth + nextItemWidth;
-    const maxAllowedWidth = combinedWidth - 1; // Keep at least 1 column for next item
+    const maxAllowedWidth = Math.min(
+      // Don't exceed grid width
+      defaults.COLUMN_COUNT - currentX,
+      // Don't exceed available space in row
+      currentItemWidth + nextItemWidth - 1 + remainingWidth,
+    );
 
     // Ensure new width doesn't exceed available space
     const finalWidth = Math.min(
@@ -346,8 +362,9 @@
     // Check if resize is possible while maintaining minimum widths
     const canResize =
       finalWidth >= 1 &&
-      nextItemWidth - widthDiff >= 1 &&
-      finalWidth + (nextItemWidth - widthDiff) <= combinedWidth;
+      finalWidth <= maxAllowedWidth &&
+      nextItemWidth - widthDiff >= 1 && // Ensure next item stays at least 1 column wide
+      totalRowWidth + widthDiff <= defaults.COLUMN_COUNT; // Ensure we don't exceed 12 columns
 
     if (canResize) {
       item.width = finalWidth;
@@ -355,24 +372,28 @@
       // Only adjust the next item's width
       const nextUpdatedItem = updatedItems[items.indexOf(nextItem)];
       if (nextUpdatedItem) {
+        // Maintain next item's minimum width
         nextUpdatedItem.width = nextItemWidth - widthDiff;
+        // Ensure next item's x position is maintained
+        nextUpdatedItem.x = nextItemX;
       }
-    }
 
-    items = updatedItems;
+      // Update the UI immediately
+      items = updatedItems;
+    }
   }
 
   function handleColResizeEnd() {
     if (resizingCol) {
-      dispatch("update", {
-        index: resizingCol.index,
-        items,
-        position: [items[resizingCol.index].x, items[resizingCol.index].y],
-        dimensions: [
-          items[resizingCol.index].width,
-          items[resizingCol.index].height,
-        ],
-      });
+      const item = items[resizingCol.index];
+      if (item) {
+        dispatch("update", {
+          index: resizingCol.index,
+          items,
+          position: [item.x, item.y],
+          dimensions: [item.width, item.height],
+        });
+      }
     }
     document.body.classList.remove("resizing-col");
     resizingCol = null;

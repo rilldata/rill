@@ -8,8 +8,9 @@
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { compactGrid, convertToGridItems, sortItemsByPosition } from "./grid";
+  import { groupItemsByRow } from "./grid";
   import type { Vector } from "./types";
+  import * as defaults from "./constants";
 
   export let fileArtifact: FileArtifact;
 
@@ -50,26 +51,94 @@
     await deleteComponent(e.detail.index);
   }
 
-  async function deleteComponent(index: number) {
-    console.log("[Canvas] deleteComponent: ", index);
-    const parsedDocument = parseDocument($editorContent ?? "");
+  function redistributeRowColumns(row: { items: V1CanvasItem[] }) {
+    const totalItems = row.items.length;
+    if (totalItems === 0) return;
 
-    const docItems = parsedDocument.get("items") as any;
-    if (!docItems) return;
+    // Total available columns
+    const totalColumns = defaults.COLUMN_COUNT; // Should be 12
 
-    // Remove the item
-    docItems.delete(index);
+    // Distribute columns evenly among items
+    const baseWidth = Math.floor(totalColumns / totalItems); // Minimum width per item
+    const extraColumns = totalColumns % totalItems; // Remainder columns to distribute
 
-    const remainingItems = convertToGridItems(docItems.items);
-    console.log("[Canvas] remainingItems: ", remainingItems);
-    const sortedItems = sortItemsByPosition(remainingItems);
-    console.log("[Canvas] sortedItems: ", sortedItems);
-    compactGrid(sortedItems);
+    // Sort items by x position to maintain visual order
+    const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
 
-    // Save changes
-    updateEditorContent(parsedDocument.toString(), false, true);
-    await saveLocalContent();
+    // Update widths and x positions
+    let currentX = 0;
+    sortedItems.forEach((item, index) => {
+      // Assign base width to each item
+      item.width = baseWidth;
+
+      // Distribute any leftover columns to the first few items
+      if (index < extraColumns) {
+        item.width += 1;
+      }
+
+      // Update the x position
+      item.x = currentX;
+
+      // Increment currentX for the next item
+      currentX += item.width;
+    });
+
+    return sortedItems;
   }
+
+  async function deleteComponent(index: number) {
+    if (index === undefined || index === null) {
+      console.error("[Canvas] Invalid index for deletion:", index);
+      return;
+    }
+
+    let affectedRowIndex = -1;
+
+    // Remove the item and find the affected row in a single pass
+    const updatedItems = items.filter((item, i) => {
+      if (i === index) {
+        affectedRowIndex = item.y ?? 0; // Use 0 as fallback if y is undefined
+        return false; // Exclude the item being deleted
+      }
+      return true;
+    });
+
+    if (affectedRowIndex >= 0) {
+      // Group remaining items in the affected row
+      const rowItems = updatedItems.filter(
+        (item) => (item.y ?? 0) === affectedRowIndex,
+      );
+
+      if (rowItems.length > 0) {
+        // Redistribute columns for the affected row
+        redistributeRowColumns({ items: rowItems });
+      }
+    }
+
+    // Update the `items` array
+    items = updatedItems;
+
+    // Clear the selected index
+    $canvasStore.setSelectedComponentIndex(null);
+
+    console.log("[Canvas] Updated items after deletion:", updatedItems);
+  }
+
+  // async function deleteComponent(index: number) {
+  //   console.log("[Canvas] deleteComponent: ", index);
+  //   const parsedDocument = parseDocument(
+  //     $editorContent ?? $remoteContent ?? "",
+  //   );
+
+  //   const rawItems = parsedDocument.get("items") as any;
+  //   if (!rawItems) return;
+
+  //   rawItems.delete(index);
+
+  //   // Save changes
+  //   updateEditorContent(parsedDocument.toString(), true);
+  //   if ($autoSave) await updateComponentFile();
+  // }
 
   async function handleUpdate(
     e: CustomEvent<{
@@ -86,10 +155,10 @@
     });
 
     const parsedDocument = parseDocument($editorContent ?? "");
-    const items = parsedDocument.get("items") as any;
+    const rawItems = parsedDocument.get("items") as any;
 
     e.detail.items.forEach((item, idx) => {
-      const node = items.get(idx);
+      const node = rawItems.get(idx);
       if (node) {
         node.set("width", item.width);
         node.set("height", item.height);
