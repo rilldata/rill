@@ -1196,6 +1196,7 @@ message CreateAssetResponse {
 message RedeployProjectRequest {
   string organization = 1;
   string project = 2;
+  bool superuser_force_access = 3;
 }
 
 message RedeployProjectResponse {}
