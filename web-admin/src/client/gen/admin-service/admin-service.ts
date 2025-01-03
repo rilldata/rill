@@ -84,6 +84,7 @@ import type {
   V1RemoveProjectMemberUserResponse,
   V1SetProjectMemberUserRoleResponse,
   V1RedeployProjectResponse,
+  AdminServiceRedeployProjectParams,
   V1CreateReportResponse,
   AdminServiceCreateReportBodyBody,
   V1GenerateReportYAMLResponse,
@@ -2928,10 +2929,12 @@ This RPC can be used to redeploy a project that has been hibernated.
 export const adminServiceRedeployProject = (
   organization: string,
   project: string,
+  params?: AdminServiceRedeployProjectParams,
 ) => {
   return httpClient<V1RedeployProjectResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/redeploy`,
     method: "post",
+    params,
   });
 };
 
@@ -2948,7 +2951,11 @@ export const createAdminServiceRedeployProject = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
     TError,
-    { organization: string; project: string },
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    },
     TContext
   >;
 }) => {
@@ -2956,17 +2963,25 @@ export const createAdminServiceRedeployProject = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
-    { organization: string; project: string }
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    }
   > = (props) => {
-    const { organization, project } = props ?? {};
+    const { organization, project, params } = props ?? {};
 
-    return adminServiceRedeployProject(organization, project);
+    return adminServiceRedeployProject(organization, project, params);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof adminServiceRedeployProject>>,
     TError,
-    { organization: string; project: string },
+    {
+      organization: string;
+      project: string;
+      params?: AdminServiceRedeployProjectParams;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
