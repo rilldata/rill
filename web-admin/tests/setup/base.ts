@@ -10,6 +10,8 @@ type MyFixtures = {
 };
 
 export const test = base.extend<MyFixtures>({
+  // Note: the `e2e` project uses the admin auth file by default, so it's likely that
+  // this fixture won't be used often.
   adminPage: async ({ browser }, use) => {
     const context = await browser.newContext({
       storageState: ADMIN_AUTH_FILE,
