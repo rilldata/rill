@@ -13,7 +13,7 @@
   export let component: CanvasComponentObj;
 
   async function selectChartType(chartType: ChartMetadata) {
-    component.updateChartType(chartType.id);
+    component.updateChartType(chartType.type);
   }
 </script>
 
@@ -26,7 +26,7 @@
           square
           small
           type="secondary"
-          selected={componentType === chart.id}
+          selected={componentType === chart.type}
           on:click={() => selectChartType(chart)}
         >
           <svelte:component this={chart.icon} size="20px" />

@@ -21,7 +21,7 @@ export interface ChartConfig {
 export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";
 
 export interface ChartMetadata {
-  id: ChartType;
+  type: ChartType;
   icon: ComponentType<SvelteComponent>;
   title: string;
 }

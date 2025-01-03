@@ -10,7 +10,6 @@
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
-  import CanvasStateProvider from "@rilldata/web-common/features/canvas/stores/CanvasStateProvider.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -127,62 +126,60 @@
 {#if canvasResource && fileArtifact}
   {#key canvasName}
     <StateManagersProvider {canvasName}>
-      <CanvasStateProvider>
-        <CanvasThemeProvider>
-          <WorkspaceContainer>
-            <WorkspaceHeader
-              slot="header"
-              {filePath}
-              hasUnsavedChanges={$hasUnsavedChanges}
-              titleInput={fileName}
-              onTitleChange={onChangeCallback}
-              resourceKind={ResourceKind.Canvas}
-            >
-              <div class="flex gap-x-2" slot="cta">
-                <PreviewButton
-                  href="/canvas/{canvasName}"
-                  disabled={allErrors.length > 0 || resourceIsReconciling}
-                  reconciling={resourceIsReconciling}
-                />
+      <CanvasThemeProvider>
+        <WorkspaceContainer>
+          <WorkspaceHeader
+            slot="header"
+            {filePath}
+            hasUnsavedChanges={$hasUnsavedChanges}
+            titleInput={fileName}
+            onTitleChange={onChangeCallback}
+            resourceKind={ResourceKind.Canvas}
+          >
+            <div class="flex gap-x-2" slot="cta">
+              <PreviewButton
+                href="/canvas/{canvasName}"
+                disabled={allErrors.length > 0 || resourceIsReconciling}
+                reconciling={resourceIsReconciling}
+              />
 
-                <AddComponentMenu {addComponent} />
-                <ViewSelector
-                  allowSplit={false}
-                  bind:selectedView={$selectedViewStore}
-                />
-              </div>
-            </WorkspaceHeader>
+              <AddComponentMenu {addComponent} />
+              <ViewSelector
+                allowSplit={false}
+                bind:selectedView={$selectedViewStore}
+              />
+            </div>
+          </WorkspaceHeader>
 
-            <WorkspaceEditorContainer
-              slot="body"
-              error={mainError}
-              showError={!!$remoteContent && selectedView === "code"}
-            >
-              {#if selectedView === "code"}
-                <CanvasEditor
-                  bind:autoSave={$autoSave}
-                  {canvasName}
-                  {fileArtifact}
-                  {lineBasedRuntimeErrors}
+          <WorkspaceEditorContainer
+            slot="body"
+            error={mainError}
+            showError={!!$remoteContent && selectedView === "code"}
+          >
+            {#if selectedView === "code"}
+              <CanvasEditor
+                bind:autoSave={$autoSave}
+                {canvasName}
+                {fileArtifact}
+                {lineBasedRuntimeErrors}
+              />
+            {:else if selectedView === "viz"}
+              {#if mainError}
+                <ErrorPage
+                  body={mainError.message}
+                  fatal
+                  header="Unable to load dashboard preview"
+                  statusCode={404}
                 />
-              {:else if selectedView === "viz"}
-                {#if mainError}
-                  <ErrorPage
-                    body={mainError.message}
-                    fatal
-                    header="Unable to load dashboard preview"
-                    statusCode={404}
-                  />
-                {:else if canvasResource}
-                  <Canvas {fileArtifact} />
-                {/if}
+              {:else if canvasResource}
+                <Canvas {fileArtifact} />
               {/if}
-            </WorkspaceEditorContainer>
+            {/if}
+          </WorkspaceEditorContainer>
 
-            <VisualCanvasEditing {fileArtifact} slot="inspector" />
-          </WorkspaceContainer>
-        </CanvasThemeProvider>
-      </CanvasStateProvider>
+          <VisualCanvasEditing {fileArtifact} slot="inspector" />
+        </WorkspaceContainer>
+      </CanvasThemeProvider>
     </StateManagersProvider>
   {/key}
 {:else if allErrors.length}

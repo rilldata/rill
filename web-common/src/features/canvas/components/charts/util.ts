@@ -25,7 +25,7 @@ export function generateSpec(
 }
 
 export const chartMetadata: ChartMetadata[] = [
-  { id: "line_chart", title: "Line", icon: LineChart },
-  { id: "bar_chart", title: "Bar", icon: BarChart },
-  { id: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
+  { type: "line_chart", title: "Line", icon: LineChart },
+  { type: "bar_chart", title: "Bar", icon: BarChart },
+  { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
 ];
