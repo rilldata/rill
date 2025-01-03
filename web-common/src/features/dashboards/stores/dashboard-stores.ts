@@ -481,6 +481,9 @@ const metricsViewReducers = {
     metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (comparisonTimeRange) {
+        metricsExplorer.showTimeComparison = true;
+      }
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
