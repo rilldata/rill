@@ -21,8 +21,6 @@ export function generateSpec(
       return generateVLStackedBarChartSpec(chartConfig, data);
     case "line_chart":
       return generateVLLineChartSpec(chartConfig, data);
-    default:
-      return generateVLBarChartSpec(chartConfig, data);
   }
 }
 
