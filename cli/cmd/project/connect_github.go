@@ -91,13 +91,18 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
-	// If the Git path is local, we'll do some extra steps to infer the githubURL.
-	localGitPath, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
-	if err != nil {
-		if errors.Is(err, ErrInvalidProject) {
-			return nil
+	var localGitPath string
+	var localProjectPath string
+	var err error
+	if isLocalGitPath {
+		// If the Git path is local, we'll do some extra steps to infer the githubURL.
+		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+		if err != nil {
+			if errors.Is(err, ErrInvalidProject) {
+				return nil
+			}
+			return err
 		}
-		return err
 	}
 
 	if ch.Org != "" {
