@@ -35,8 +35,9 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			_, err = client.RedeployProject(cmd.Context(), &adminv1.RedeployProjectRequest{
-				Organization: org,
-				Project:      project,
+				Organization:         org,
+				Project:              project,
+				SuperuserForceAccess: true,
 			})
 			if err != nil {
 				return err

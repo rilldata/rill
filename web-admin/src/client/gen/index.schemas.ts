@@ -184,6 +184,10 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
+export type AdminServiceRedeployProjectParams = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
