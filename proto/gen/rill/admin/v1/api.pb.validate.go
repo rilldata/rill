@@ -709,6 +709,8 @@ func (m *GetOrganizationResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for PlanDisplayName
+
 	if len(errors) > 0 {
 		return GetOrganizationResponseMultiError(errors)
 	}

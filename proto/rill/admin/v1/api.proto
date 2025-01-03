@@ -874,6 +874,7 @@ message GetOrganizationRequest {
 message GetOrganizationResponse {
   Organization organization = 1;
   OrganizationPermissions permissions = 2;
+  string plan_display_name = 3;
 }
 
 message GetOrganizationNameForDomainRequest {

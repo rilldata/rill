@@ -38,6 +38,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			fmt.Println(string(data))
+			fmt.Printf("\nPlan: %s\n", res.PlanDisplayName)
 
 			return nil
 		},
