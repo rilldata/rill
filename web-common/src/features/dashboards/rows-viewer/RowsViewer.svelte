@@ -19,6 +19,8 @@
   export let filters: V1Expression | undefined;
   export let timeRange: TimeRangeString;
 
+  $: ({ instanceId } = $runtime);
+
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
 
@@ -28,7 +30,7 @@
   let limit = writable(SAMPLE_SIZE);
 
   $: tableQuery = createQueryServiceMetricsViewRows(
-    $runtime?.instanceId,
+    instanceId,
     metricsViewName,
     {
       limit: $limit,

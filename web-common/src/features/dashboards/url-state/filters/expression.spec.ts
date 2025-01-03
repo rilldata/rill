@@ -6,6 +6,7 @@ import {
   createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
+  convertExpressionToFilterParam,
   convertFilterParamToExpression,
   stripParserError,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
@@ -19,18 +20,22 @@ describe("expression", () => {
     const Cases = [
       {
         expr: "country IN ('US','IN')",
-        expected_expression: createInExpression("country", ["US", "IN"]),
+        expectedExprString: "country IN ('US','IN')",
+        expectedExprObject: createInExpression("country", ["US", "IN"]),
       },
       {
         expr: "country IN ('US','IN') and state eq 'ABC'",
-        expected_expression: createAndExpression([
+        expectedExprString: "country IN ('US','IN') AND state eq 'ABC'",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
         ]),
       },
       {
         expr: "country IN ('US','IN') and state eq 'ABC' and lat gte 12.56",
-        expected_expression: createAndExpression([
+        expectedExprString:
+          "country IN ('US','IN') AND state eq 'ABC' AND lat gte 12.56",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
           createBinaryExpression("lat", V1Operation.OPERATION_GTE, 12.56),
@@ -38,7 +43,9 @@ describe("expression", () => {
       },
       {
         expr: "country IN ('US','IN') AND state eq 'ABC' OR lat gte 12.56",
-        expected_expression: createAndExpression([
+        expectedExprString:
+          "country IN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createOrExpression([
             createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -48,7 +55,9 @@ describe("expression", () => {
       },
       {
         expr: "country not in ('US','IN') and (state eq 'ABC' or lat gte 12.56)",
-        expected_expression: createAndExpression([
+        expectedExprString:
+          "country NIN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createOrExpression([
             createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -58,7 +67,9 @@ describe("expression", () => {
       },
       {
         expr: "country NIN ('US','IN') and state having (lat gte 12.56)",
-        expected_expression: createAndExpression([
+        expectedExprString:
+          "country NIN ('US','IN') AND state having (lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createSubQueryExpression(
             "state",
@@ -67,18 +78,33 @@ describe("expression", () => {
           ),
         ]),
       },
+      {
+        expr: `"coun tr.y" IN ('U\\'S','I\\nN') and "st ate" having ("la t" gte 12.56)`,
+        expectedExprString: `"coun tr.y" IN ('U\\'S','I\\nN') AND "st ate" having ("la t" gte 12.56)`,
+        expectedExprObject: createAndExpression([
+          // values converted to V1Expression do not have escaped chars
+          createInExpression("coun tr.y", ["U'S", "I\nN"]),
+          createSubQueryExpression(
+            "st ate",
+            ["la t"],
+            createBinaryExpression("la t", V1Operation.OPERATION_GTE, 12.56),
+          ),
+        ]),
+      },
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
-    for (const { expr, expected_expression } of Cases) {
+    for (const { expr, expectedExprString, expectedExprObject } of Cases) {
       it(expr, () => {
         const parser = new nearley.Parser(compiledGrammar);
         parser.feed(expr);
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        expect(convertFilterParamToExpression(expr)).to.deep.eq(
-          expected_expression,
+        const exprObject = convertFilterParamToExpression(expr);
+        expect(exprObject).to.deep.eq(expectedExprObject);
+        expect(convertExpressionToFilterParam(exprObject)).toEqual(
+          expectedExprString,
         );
       });
     }

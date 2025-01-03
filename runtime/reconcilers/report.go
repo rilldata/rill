@@ -208,7 +208,7 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n, false)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
 	}

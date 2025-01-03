@@ -16,36 +16,35 @@ For a full list of available dashboard properties and configurations, please see
 :::
 
 
-**`time_ranges`**
+**`time_ranges:`**
 
 One of the more important configurations, available time ranges allow you to change the defaults in the time dropdown for periods to select. Updating this list allows users to quickly change between the most common analyses like day over day, recent weeks, or period to date. The range must be a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../../reference/rill-iso-extensions.md#extensions).
 
 ```yaml
-  available_time_ranges:
-  - PT15M 
-  - PT1H
-  - P7D
-  - P4W
-  - rill-TD ## Today
-  - rill-WTD ## Week-To-date
+- PT15M 
+- PT1H
+- P7D
+- P4W
+- rill-TD ## Today
+- rill-WTD ## Week-To-date
 ```
 
-**`time_zones`**
+**`time_zones:`**
 
 Rill will automatically select several time zones that should be pinned to the top of the time zone selector. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). You can add or remove from this list for the relevant time zones for your team.
 
 ```yaml
-  - America/Los_Angeles
-  - America/Chicago
-  - America/New_York
-  - Europe/London
-  - Europe/Paris
-  - Asia/Jerusalem
-  - Europe/Moscow
-  - Asia/Kolkata
-  - Asia/Shanghai
-  - Asia/Tokyo
-  - Australia/Sydney
+- America/Los_Angeles
+- America/Chicago
+- America/New_York
+- Europe/London
+- Europe/Paris
+- Asia/Jerusalem
+- Europe/Moscow
+- Asia/Kolkata
+- Asia/Shanghai
+- Asia/Tokyo
+- Australia/Sydney
 ```
 
 ### Setting Default Views for Dashboards
@@ -122,8 +121,8 @@ title: Title of your explore dashboard
 description: a description
 metrics_view: <your-metric-view-file-name>
 
-dimensions: '*' #can use regex
-measures: '*' #can use regex
+dimensions: '*' #can use expressions
+measures: '*' #can use expressions
 
 theme: #your default theme
 
@@ -132,10 +131,7 @@ time_zones: #was available_time_zones
 
 defaults: #define all the defaults within here
     dimensions:
-    measures:
-    time_range:
-    comparison_mode:
-    comparison_dimension:
+  ...
 
 security:
     access: #only access can be set on dashboard level, see metric view for detailed access policies

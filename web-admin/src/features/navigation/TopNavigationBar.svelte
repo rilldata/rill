@@ -41,7 +41,7 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
   // These can be undefined
   $: ({
@@ -110,7 +110,8 @@
   );
 
   $: projectPaths = projects.reduce(
-    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    (map, { name }) =>
+      map.set(name.toLowerCase(), { label: name, preloadData: false }),
     new Map<string, PathOption>(),
   );
 
@@ -168,7 +169,7 @@
     onPublicURLPage,
   );
   $: publicURLDashboardTitle =
-    $exploreQuery.data?.explore?.spec?.displayName ?? dashboard ?? "";
+    $exploreQuery.data?.explore?.spec?.displayName || dashboard || "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>

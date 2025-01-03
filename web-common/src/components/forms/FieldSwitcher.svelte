@@ -21,6 +21,10 @@
     @apply capitalize;
   }
 
+  button:hover:not(.selected) {
+    @apply bg-slate-50;
+  }
+
   .option-wrapper {
     @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
   }

@@ -138,9 +138,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, custom_domain, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -158,7 +158,9 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, display_name=$2, description=$3, custom_domain=$4, quota_projects=$5, quota_deployments=$6, quota_slots_total=$7, quota_slots_per_deployment=$8, quota_outstanding_invites=$9, quota_storage_limit_bytes_per_deployment=$10, billing_customer_id=$11, payment_customer_id=$12, billing_email=$13, created_by_user_id=$14, updated_on=now() WHERE id=$15 RETURNING *", opts.Name, opts.DisplayName, opts.Description, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, custom_domain=$5, quota_projects=$6, quota_deployments=$7, quota_slots_total=$8, quota_slots_per_deployment=$9, quota_outstanding_invites=$10, quota_storage_limit_bytes_per_deployment=$11, billing_customer_id=$12, payment_customer_id=$13, billing_email=$14, created_by_user_id=$15, updated_on=now() WHERE id=$16 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.CustomDomain, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1931,12 +1933,12 @@ func (c *connection) FindAsset(ctx context.Context, id string) (*database.Asset,
 	return res, nil
 }
 
-func (c *connection) InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*database.Asset, error) {
+func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, ownerID string, cacheable bool) (*database.Asset, error) {
 	res := &database.Asset{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO assets (org_id, path, owner_id)
-		VALUES ($1, $2, $3) RETURNING *`,
-		organizationID, path, ownerID,
+		INSERT INTO assets (id, org_id, path, owner_id, cacheable)
+		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+		id, organizationID, path, ownerID, cacheable,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("asset", err)
@@ -1951,8 +1953,8 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT a.* FROM assets a 
 		WHERE a.created_on < now() - INTERVAL '6 hours'
-		AND NOT EXISTS 
-		(SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
+		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
+		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
 		ORDER BY a.created_on DESC LIMIT $1
 	`, limit)
 	if err != nil {
@@ -2230,6 +2232,15 @@ func (c *connection) FindProvisionerResourcesForDeployment(ctx context.Context, 
 		return nil, parseErr("provisioner resources", err)
 	}
 	return c.provisionerResourcesFromDTOs(res)
+}
+
+func (c *connection) FindProvisionerResourceByTypeAndName(ctx context.Context, deploymentID, typ, name string) (*database.ProvisionerResource, error) {
+	res := &provisionerResourceDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM provisioner_resources WHERE deployment_id = $1 AND "type" = $2 AND name = $3`, deploymentID, typ, name).StructScan(res)
+	if err != nil {
+		return nil, parseErr("provisioner resource", err)
+	}
+	return c.provisionerResourceFromDTO(res)
 }
 
 func (c *connection) InsertProvisionerResource(ctx context.Context, opts *database.InsertProvisionerResourceOptions) (*database.ProvisionerResource, error) {

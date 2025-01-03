@@ -21,6 +21,8 @@
   export let organization: string;
   export let project: string;
 
+  $: ({ instanceId } = $runtime);
+
   $: proj = createAdminServiceGetProject(organization, project);
   $: isGithubConnected = !!$proj.data?.project?.githubUrl;
   $: repoName =
@@ -28,7 +30,7 @@
     getRepoNameFromGithubUrl($proj.data.project.githubUrl);
   $: subpath = $proj.data?.project?.subpath;
   $: githubLastSynced = useDashboardsLastUpdated(
-    $runtime.instanceId,
+    instanceId,
     organization,
     project,
   );

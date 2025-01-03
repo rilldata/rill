@@ -28,7 +28,7 @@
   let open = showUpgradeDialog;
 </script>
 
-<SettingsContainer title={plan?.displayName ?? "Team plan"}>
+<SettingsContainer title={plan?.displayName || "Team plan"}>
   <div slot="body">
     <div>
       <div class="flex flex-row items-center gap-x-1 text-sm">

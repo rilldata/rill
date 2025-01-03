@@ -1,5 +1,10 @@
 import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
-import { fetchExploreSpec } from "@rilldata/web-common/features/explores/selectors";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  fetchExploreSpec,
+  fetchMetricsViewSchema,
+} from "@rilldata/web-common/features/explores/selectors";
 import { error } from "@sveltejs/kit";
 
 export const load = async ({ params: { token }, parent }) => {
@@ -12,16 +17,38 @@ export const load = async ({ params: { token }, parent }) => {
       throw new Error("Token does not have an associated resource name");
     }
 
-    const { explore, metricsView, defaultExplorePreset } =
-      await fetchExploreSpec(
-        runtime.instanceId as string,
-        tokenData.token.resourceName,
+    const exploreName = tokenData.token?.resourceName;
+
+    const {
+      explore,
+      metricsView,
+      defaultExplorePreset,
+      exploreStateFromYAMLConfig,
+    } = await fetchExploreSpec(runtime?.instanceId, exploreName);
+    const metricsViewSpec = metricsView.metricsView?.state?.validSpec ?? {};
+    const exploreSpec = explore.explore?.state?.validSpec ?? {};
+
+    let tokenExploreState: Partial<MetricsExplorerEntity> | undefined =
+      undefined;
+    if (tokenData.token?.state) {
+      const schema = await fetchMetricsViewSchema(
+        runtime?.instanceId,
+        exploreSpec.metricsView ?? "",
       );
+      tokenExploreState = getDashboardStateFromUrl(
+        tokenData.token?.state,
+        metricsViewSpec,
+        exploreSpec,
+        schema,
+      );
+    }
 
     return {
       explore,
       metricsView,
       defaultExplorePreset,
+      exploreStateFromYAMLConfig,
+      tokenExploreState,
       token: tokenData?.token,
     };
   } catch (e) {

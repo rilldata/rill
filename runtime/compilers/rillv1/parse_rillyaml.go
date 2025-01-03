@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
@@ -40,6 +42,10 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
+	// Compiler is the parser version to use. It is not consumed here because at this point a parser has already been chosen.
+	Compiler string `yaml:"compiler"`
+	// RillVersion is deprecated and not used anymore.
+	RillVersion any `yaml:"rill_version"`
 	// Title of the project
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
@@ -82,6 +88,17 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
+	// Paths to ignore when watching for changes.
+	// This is ignored in this parser because it's consumed directly by the repo driver.
+	IgnorePaths []string `yaml:"ignore_paths"`
+	// A list of mock users to test against dashboard security policies.
+	// This is ignored in this parser because it's consumed directly by the local application.
+	MockUsers []struct {
+		Email  string   `yaml:"email"`
+		Name   string   `yaml:"name"`
+		Admin  bool     `yaml:"admin"`
+		Groups []string `yaml:"groups"`
+	} `yaml:"mock_users"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -92,7 +109,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	tmp := &rillYAML{}
+
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
+		return newYAMLError(err)
+	}
+
+	dec := yaml.NewDecoder(strings.NewReader(data))
+	dec.KnownFields(true)
+
+	err = dec.Decode(tmp)
+	if err != nil && !errors.Is(err, io.EOF) {
 		return newYAMLError(err)
 	}
 

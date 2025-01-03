@@ -122,6 +122,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProdStatus = true
 		permissions.ReadDev = true
 		permissions.ReadDevStatus = true
+		permissions.ReadProvisionerResources = true
 		permissions.ReadProjectMembers = true
 	}
 
@@ -1066,7 +1067,7 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 		if err != nil {
 			return nil, err
 		}
-		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		downloadURL, err := s.generateSignedDownloadURL(asset)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -1538,6 +1539,17 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		attribute.String("args.project", req.Project),
 	)
 
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	forceAccess := req.SuperuserForceAccess && claims.Superuser(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd && !forceAccess {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1549,22 +1561,12 @@ func (s *Server) RedeployProject(ctx context.Context, req *adminv1.RedeployProje
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var depl *database.Deployment
 	if proj.ProdDeploymentID != nil {
 		depl, err = s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
 	_, err = s.admin.RedeployProject(ctx, proj, depl)

@@ -81,7 +81,7 @@
                   style={`margin-left: ${marginLeft};`}
                   class:cursor-pointer={header.column.getCanSort()}
                   class:select-none={header.column.getCanSort()}
-                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 truncate"
+                  class="font-semibold text-gray-500 flex flex-row items-center gap-x-1 truncate text-sm"
                 >
                   <svelte:component
                     this={flexRender(

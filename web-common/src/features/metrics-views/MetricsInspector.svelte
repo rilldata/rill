@@ -16,10 +16,12 @@
   export let databaseSchema: string;
   export let table: string;
 
+  $: ({ instanceId } = $runtime);
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ remoteContent } = fileArtifact);
-  $: parseError = fileArtifact.getParseError(queryClient, $runtime.instanceId);
-  $: resource = fileArtifact.getResource(queryClient, $runtime.instanceId);
+  $: parseError = fileArtifact.getParseError(queryClient, instanceId);
+  $: resource = fileArtifact.getResource(queryClient, instanceId);
   $: ({
     isLoading: isResourceLoading,
     error: resourceError,
@@ -29,7 +31,7 @@
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
     {
-      instanceId: $runtime.instanceId,
+      instanceId,
       connector,
       database,
       databaseSchema,

@@ -19,25 +19,30 @@
   // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
-  $: ({ defaultExplorePreset, partialExploreState, errors } = data);
+  $: ({
+    defaultExplorePreset,
+    homeBookmarkExploreState,
+    exploreStateFromYAMLConfig,
+    partialExploreStateFromUrl,
+    exploreStateFromSessionStorage,
+    errors,
+    exploreName,
+  } = data);
   $: if (errors?.length) {
+    const _errs = errors;
     setTimeout(() => {
       eventBus.emit("notification", {
         type: "error",
-        message: errors[0].message,
+        message: _errs[0].message,
         options: {
           persisted: true,
         },
       });
     }, 100);
   }
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
-  $: ({
-    organization: orgName,
-    project: projectName,
-    dashboard: exploreName,
-  } = $page.params);
+  $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: () => {
@@ -98,7 +103,16 @@
   {:else if metricsViewName}
     {#key exploreName}
       <StateManagersProvider {metricsViewName} {exploreName}>
-        <DashboardURLStateSync {defaultExplorePreset} {partialExploreState}>
+        <DashboardURLStateSync
+          {metricsViewName}
+          {exploreName}
+          extraKeyPrefix={`${orgName}__${projectName}__`}
+          {defaultExplorePreset}
+          initExploreState={homeBookmarkExploreState}
+          {exploreStateFromYAMLConfig}
+          {partialExploreStateFromUrl}
+          {exploreStateFromSessionStorage}
+        >
           <DashboardThemeProvider>
             <Dashboard {metricsViewName} {exploreName} />
           </DashboardThemeProvider>

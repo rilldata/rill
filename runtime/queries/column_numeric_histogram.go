@@ -149,6 +149,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return fmt.Errorf("not available for dialect %q", olap.Dialect())
 	}
 
+	if olap.Dialect() == drivers.DialectClickHouse {
+		// Returning early with empty results because this query tends to hang on ClickHouse.
+		return nil
+	}
+
 	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
 	if err != nil {
 		return err
@@ -265,6 +270,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	if olap.Dialect() == drivers.DialectClickHouse {
+		// Returning early with empty results because this query tends to hang on ClickHouse.
+		return nil
 	}
 
 	minVal, maxVal, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)

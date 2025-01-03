@@ -11,7 +11,9 @@
 
   export let alert: string;
 
-  $: alertQuery = useAlert($runtime.instanceId, alert);
+  $: ({ instanceId } = $runtime);
+
+  $: alertQuery = useAlert(instanceId, alert);
 
   /**
    * Table column definitions.

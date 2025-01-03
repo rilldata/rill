@@ -21,6 +21,8 @@
   export let exploreName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
 
+  $: ({ instanceId } = $runtime);
+
   $: exploreState = useExploreState(exploreName);
 
   let timeRange: V1TimeRange;
@@ -32,7 +34,7 @@
 
   $: selectedTimeRange = getPrettySelectedTimeRange(
     queryClient,
-    $runtime?.instanceId,
+    instanceId,
     metricsViewName,
     exploreName,
   );

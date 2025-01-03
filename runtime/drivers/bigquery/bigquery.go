@@ -184,11 +184,6 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false

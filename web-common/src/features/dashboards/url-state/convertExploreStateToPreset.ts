@@ -5,6 +5,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { toTimeRangeParam } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { FromLegacySortTypeMap } from "@rilldata/web-common/features/dashboards/url-state/legacyMappers";
 import {
@@ -22,7 +23,8 @@ import {
 
 export function convertExploreStateToPreset(
   exploreState: Partial<MetricsExplorerEntity>,
-  explore: V1ExploreSpec,
+  exploreSpec: V1ExploreSpec,
+  timeControlsState: TimeControlState | undefined,
 ) {
   const preset: V1ExplorePreset = {};
 
@@ -37,9 +39,11 @@ export function convertExploreStateToPreset(
     );
   }
 
-  Object.assign(preset, getTimeRangeFields(exploreState));
+  if (timeControlsState) {
+    Object.assign(preset, getTimeRangeFields(exploreState, timeControlsState));
+  }
 
-  Object.assign(preset, getExploreFields(exploreState, explore));
+  Object.assign(preset, getExploreFields(exploreState, exploreSpec));
 
   Object.assign(preset, getTimeDimensionFields(exploreState));
 
@@ -48,20 +52,23 @@ export function convertExploreStateToPreset(
   return preset;
 }
 
-function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
+function getTimeRangeFields(
+  exploreState: Partial<MetricsExplorerEntity>,
+  timeControlsState: TimeControlState,
+) {
   const preset: V1ExplorePreset = {};
 
-  if (exploreState.selectedTimeRange?.name) {
+  if (timeControlsState.selectedTimeRange?.name) {
     preset.timeRange = toTimeRangeParam(exploreState.selectedTimeRange);
   }
-  if (exploreState.selectedTimeRange?.interval) {
+  if (timeControlsState.selectedTimeRange?.interval) {
     preset.timeGrain =
-      ToURLParamTimeGrainMapMap[exploreState.selectedTimeRange.interval];
+      ToURLParamTimeGrainMapMap[timeControlsState.selectedTimeRange.interval];
   }
 
   if (
     exploreState.showTimeComparison &&
-    exploreState.selectedComparisonTimeRange?.name
+    timeControlsState.selectedComparisonTimeRange?.name
   ) {
     preset.compareTimeRange = toTimeRangeParam(
       exploreState.selectedComparisonTimeRange,
@@ -82,7 +89,10 @@ function getTimeRangeFields(exploreState: Partial<MetricsExplorerEntity>) {
     preset.timezone = exploreState.selectedTimezone;
   }
 
-  if (exploreState.selectedScrubRange) {
+  if (
+    exploreState.selectedScrubRange &&
+    !exploreState.selectedScrubRange?.isScrubbing
+  ) {
     preset.selectTimeRange = toTimeRangeParam(exploreState.selectedScrubRange);
   }
 

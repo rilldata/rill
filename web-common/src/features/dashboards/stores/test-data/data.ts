@@ -193,6 +193,7 @@ export const AD_BIDS_METRICS_3_MEASURES_DIMENSIONS: V1MetricsViewSpec = {
   table: AD_BIDS_SOURCE_NAME,
   measures: AD_BIDS_THREE_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
+  timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
 
 export const AD_BIDS_EXPLORE_INIT: V1ExploreSpec = {

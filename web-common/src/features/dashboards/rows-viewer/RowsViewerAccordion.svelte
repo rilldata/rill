@@ -44,6 +44,8 @@
 
   const stateManagers = getStateManagers();
 
+  $: ({ instanceId } = $runtime);
+
   $: exploreState = useExploreState(exploreName);
   $: pivotDataStore = usePivotDataStore(stateManagers);
   $: showPivot = $exploreState.pivot.active;
@@ -73,7 +75,7 @@
   }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],
@@ -98,7 +100,7 @@
   );
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
     {
       measures: [{ name: "count", builtinMeasure: "BUILTIN_MEASURE_COUNT" }],

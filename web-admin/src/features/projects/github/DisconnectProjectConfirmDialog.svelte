@@ -26,6 +26,9 @@
   export let project: string;
 
   const deleteProjectConnection = createAdminServiceUploadProjectAssets();
+
+  $: ({ instanceId } = $runtime);
+
   $: ({ error, isLoading } = $deleteProjectConnection);
   $: parsedError = extractGithubDisconnectError(
     error as unknown as AxiosError<RpcStatus>,
@@ -39,7 +42,7 @@
     });
     open = false;
 
-    void invalidateProjectQueries($runtime.instanceId, organization, project);
+    void invalidateProjectQueries(instanceId, organization, project);
 
     eventBus.emit("notification", {
       message: `Disconnected github repo`,

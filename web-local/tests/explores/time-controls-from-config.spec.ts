@@ -13,8 +13,6 @@ test.describe("time controls settings from explore preset", () => {
 
     await page.getByLabel("code").click();
 
-    await page.waitForTimeout(2000);
-
     // Set a time range that is one of the supported presets
     await watcher.updateAndWaitForExplore(
       getDashboardYaml(`time_range: "P4W"
@@ -22,7 +20,7 @@ test.describe("time controls settings from explore preset", () => {
 `),
     );
 
-    await page.waitForTimeout(10000);
+    await page.waitForTimeout(1000);
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -42,6 +40,7 @@ test.describe("time controls settings from explore preset", () => {
   comparison_mode: time
 `),
     );
+
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
 
@@ -179,7 +178,9 @@ test.describe("time controls settings from explore preset", () => {
     await expect(page.getByText("Facebook 68 -3 -4%")).toBeVisible();
 
     // Open the time comparison
-    await page.getByLabel("Select time comparison option").click();
+    await page
+      .getByLabel("Select time comparison option")
+      .click({ force: true });
     // Assert the options available
     await Promise.all(
       [
