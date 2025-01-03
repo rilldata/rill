@@ -28,7 +28,8 @@
   export let activeTimeZone: string;
 
   const ctx = getCanvasStateManagers();
-  const { canvasName, canvasStore } = ctx;
+  const { canvasName, canvasEntity } = ctx;
+  const { timeControls } = canvasEntity;
 
   $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
@@ -95,7 +96,7 @@
       });
     }
 
-    $canvasStore.timeControls.setTimeZone(timeZone);
+    timeControls.setTimeZone(timeZone);
     localUserPreferences.set({ timeZone });
   }
 
@@ -151,11 +152,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    $canvasStore.timeControls.selectTimeRange(
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-    );
+    timeControls.selectTimeRange(timeRange, timeGrain, comparisonTimeRange);
   }
 
   function onPan(direction: "left" | "right") {
@@ -178,7 +175,7 @@
     } as DashboardTimeControls; // FIXME wrong typecasting across application
 
     if (!activeTimeGrain) return;
-    $canvasStore.timeControls.selectTimeRange(
+    timeControls.selectTimeRange(
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,

@@ -3,7 +3,7 @@
   import type { EditorView } from "@codemirror/view";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
-  import { canvasEntityStore } from "@rilldata/web-common/features/canvas/stores/canvas-stores";
+  import { canvasEntities } from "@rilldata/web-common/features/canvas/stores/canvas-entities";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 
@@ -22,8 +22,8 @@
   bind:autoSave
   bind:editor
   onSave={(content) => {
-    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
-    canvasEntityStore.removeEntity(canvasName);
+    // Remove the canvas entity so that everything is reset to defaults next time user navigates to it
+    canvasEntities.removeCanvas(canvasName);
 
     // Reset local persisted dashboard state for the metrics view
     if (!content?.length) {

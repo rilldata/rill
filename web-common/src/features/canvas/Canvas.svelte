@@ -8,8 +8,8 @@
 
   export let fileArtifact: FileArtifact;
 
-  const { canvasStore, validSpecStore } = getCanvasStateManagers();
-  $: selectedIndex = $canvasStore?.selectedComponentIndex;
+  const { canvasEntity, validSpecStore } = getCanvasStateManagers();
+  $: selectedIndex = canvasEntity?.selectedComponentIndex;
 
   let showGrid = true;
 

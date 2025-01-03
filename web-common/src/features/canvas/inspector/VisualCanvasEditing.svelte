@@ -9,7 +9,7 @@
 
   export let fileArtifact: FileArtifact;
 
-  const { validSpecStore, canvasStore } = getCanvasStateManagers();
+  const { validSpecStore, canvasEntity } = getCanvasStateManagers();
 
   $: ({
     editorContent,
@@ -20,7 +20,7 @@
   } = fileArtifact);
 
   $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
-  $: selectedComponentIndex = $canvasStore.selectedComponentIndex;
+  $: selectedComponentIndex = canvasEntity.selectedComponentIndex;
 
   $: selectedComponentName =
     $selectedComponentIndex !== null

@@ -6,12 +6,12 @@
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasSuperPill from "./CanvasSuperPill.svelte";
 
-  const { canvasStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { timeControls } = canvasEntity;
 
-  $: selectedTimeRange = $canvasStore.timeControls.selectedTimeRange;
-  $: selectedComparisonTimeRange =
-    $canvasStore.timeControls?.selectedComparisonTimeRange;
-  $: activeTimeZone = $canvasStore.timeControls.selectedTimezone;
+  $: selectedTimeRange = timeControls.selectedTimeRange;
+  $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
+  $: activeTimeZone = timeControls.selectedTimezone;
 
   const allTimeRange = {
     name: TimeRangePreset.ALL_TIME,

@@ -18,8 +18,7 @@
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
-  const ctx = getCanvasStateManagers();
-  const { canvasStore } = ctx;
+  const { canvasEntity } = getCanvasStateManagers();
 
   let timeGrainOptions: TimeGrain[];
   // TODO: Change this
@@ -82,7 +81,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    $canvasStore.timeControls.selectTimeRange(
+    canvasEntity.timeControls.selectTimeRange(
       timeRange,
       timeGrain,
       comparisonTimeRange,

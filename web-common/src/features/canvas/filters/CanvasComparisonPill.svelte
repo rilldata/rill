@@ -16,10 +16,12 @@
   export let selectedTimeRange: DashboardTimeControls | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
-  const { canvasStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
 
-  $: showTimeComparison = $canvasStore.timeControls.showTimeComparison;
-  $: activeTimeZone = $canvasStore.timeControls?.selectedTimezone;
+  const { timeControls } = canvasEntity;
+
+  $: showTimeComparison = timeControls.showTimeComparison;
+  $: activeTimeZone = timeControls?.selectedTimezone;
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -37,14 +39,14 @@
     start: Date,
     end: Date,
   ) {
-    $canvasStore.timeControls.setSelectedComparisonRange({
+    timeControls.setSelectedComparisonRange({
       name,
       start,
       end,
     });
 
     if (!$showTimeComparison) {
-      $canvasStore.timeControls.displayTimeComparison(!$showTimeComparison);
+      timeControls.displayTimeComparison(!$showTimeComparison);
     }
   }
 
@@ -60,7 +62,7 @@
     {disabled}
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
-      $canvasStore.timeControls.displayTimeComparison(!$showTimeComparison);
+      timeControls.displayTimeComparison(!$showTimeComparison);
     }}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">

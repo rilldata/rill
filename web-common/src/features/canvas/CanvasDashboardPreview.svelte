@@ -21,7 +21,7 @@
   export let snap = true;
   export let selectedIndex: number | null = null;
 
-  const { canvasStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -131,7 +131,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    $canvasStore.setSelectedComponentIndex(selectedIndex);
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
     changing = true;
   }
 
@@ -162,7 +162,7 @@
 
   function deselect() {
     selectedIndex = null;
-    $canvasStore.setSelectedComponentIndex(selectedIndex);
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
   $: maxBottom = items.reduce((max, el) => {

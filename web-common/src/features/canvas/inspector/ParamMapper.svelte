@@ -23,8 +23,8 @@
   export let paramValues: V1ComponentSpecRendererProperties;
   export let fileArtifact: FileArtifact;
 
-  const { canvasStore } = getCanvasStateManagers();
-  $: selectedComponentIndexStore = $canvasStore?.selectedComponentIndex;
+  const { canvasEntity } = getCanvasStateManagers();
+  $: selectedComponentIndexStore = canvasEntity?.selectedComponentIndex;
   $: selectedComponentIndex = $selectedComponentIndexStore ?? 0;
   $: path = ["items", selectedComponentIndex, "component", componentType];
 
