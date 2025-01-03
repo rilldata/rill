@@ -64,3 +64,12 @@ services:
     command: listen --forward-to http://host.docker.internal:8080/payment/webhook --config /etc/stripe-config.toml
     volumes:
       - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/stripe-config.toml:/etc/stripe-config.toml
+  clickhouse:
+    image: 'clickhouse/clickhouse-server:24.11.1.2557'
+    volumes:
+      - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./clickhouse-users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ../../../../${RILL_DEVTOOL_STATE_DIRECTORY}/clickhouse:/var/lib/clickhouse
+    ports:
+      - '9000:9000' # Native port
+      - '8123:8123' # HTTP port
