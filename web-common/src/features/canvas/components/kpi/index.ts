@@ -1,6 +1,9 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import {
+  commonOptions,
+  getFilterOptions,
+} from "@rilldata/web-common/features/canvas/components/util";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { type ComponentCommonProperties } from "../types";
 
@@ -38,18 +41,21 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     );
   }
 
-  inputParams(): Record<keyof KPISpec, ComponentInputParam> {
+  inputParams(): InputParams<KPISpec> {
     return {
-      metrics_view: { type: "metrics", label: "Metrics view" },
-      measure: { type: "measure", label: "Measure" },
-      sparkline: { type: "boolean", optional: true, label: "Sparkline" },
-      time_range: { type: "rill_time", label: "Time Range" },
-      comparison_range: {
-        type: "rill_time",
-        label: "Comparison Range",
-        optional: true,
+      component: {
+        metrics_view: { type: "metrics", label: "Metrics view" },
+        measure: { type: "measure", label: "Measure" },
+        sparkline: { type: "boolean", optional: true, label: "Sparkline" },
+        time_range: { type: "rill_time", label: "Time Range" },
+        comparison_range: {
+          type: "rill_time",
+          label: "Comparison Range",
+          optional: true,
+        },
+        ...commonOptions,
       },
-      ...commonOptions,
+      filter: getFilterOptions(),
     };
   }
 

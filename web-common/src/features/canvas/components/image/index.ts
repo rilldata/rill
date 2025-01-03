@@ -1,7 +1,7 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import { type ComponentCommonProperties } from "@rilldata/web-common/features/canvas/components/types";
 import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 
 export { default as Image } from "./Image.svelte";
@@ -29,10 +29,13 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
     return typeof spec.url === "string" && spec.url.trim().length > 0;
   }
 
-  inputParams(): Record<keyof ImageSpec, ComponentInputParam> {
+  inputParams(): InputParams<ImageSpec> {
     return {
-      url: { type: "text", label: "URL" },
-      ...commonOptions,
+      component: {
+        url: { type: "text", label: "URL" },
+        ...commonOptions,
+      },
+      filter: [],
     };
   }
 

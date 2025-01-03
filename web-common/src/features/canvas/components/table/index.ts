@@ -1,6 +1,9 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import {
+  commonOptions,
+  getFilterOptions,
+} from "@rilldata/web-common/features/canvas/components/util";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { type ComponentCommonProperties } from "../types";
 
@@ -45,19 +48,25 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     );
   }
 
-  inputParams(): Record<keyof TableSpec, ComponentInputParam> {
+  inputParams(): InputParams<TableSpec> {
     return {
-      metrics_view: { type: "metrics", label: "Metrics view" },
-      measures: { type: "multi_measures", label: "Measures" },
-      col_dimensions: { type: "multi_dimensions", label: "Column dimensions" },
-      row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
-      time_range: { type: "rill_time", label: "Time range" },
-      comparison_range: {
-        type: "rill_time",
-        label: "Comparison range",
-        optional: true,
+      component: {
+        metrics_view: { type: "metrics", label: "Metrics view" },
+        measures: { type: "multi_measures", label: "Measures" },
+        col_dimensions: {
+          type: "multi_dimensions",
+          label: "Column dimensions",
+        },
+        row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
+        time_range: { type: "rill_time", label: "Time range" },
+        comparison_range: {
+          type: "rill_time",
+          label: "Comparison range",
+          optional: true,
+        },
+        ...commonOptions,
       },
-      ...commonOptions,
+      filter: getFilterOptions(),
     };
   }
 

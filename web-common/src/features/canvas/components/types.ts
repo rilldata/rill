@@ -1,5 +1,5 @@
 import type { Writable } from "svelte/store";
-import type { ComponentInputParam } from "../inspector/types";
+import type { InputParams } from "../inspector/types";
 import type { ChartConfig, ChartType } from "./charts/types";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
@@ -48,7 +48,7 @@ export interface CanvasComponent<T> {
    * A map of input params which will be used in the visual
    * UI builder
    */
-  inputParams(): Record<keyof T, ComponentInputParam>;
+  inputParams(): InputParams<T>;
 
   /**
    * Get the spec when the component is added to the canvas

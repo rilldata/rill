@@ -1,6 +1,6 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { type ComponentCommonProperties } from "../types";
 
@@ -31,10 +31,13 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return typeof spec.content === "string" && spec.content.trim().length > 0;
   }
 
-  inputParams(): Record<keyof MarkdownSpec, ComponentInputParam> {
+  inputParams(): InputParams<MarkdownSpec> {
     return {
-      content: { type: "textArea" },
-      ...commonOptions,
+      component: {
+        content: { type: "textArea" },
+        ...commonOptions,
+      },
+      filter: [],
     };
   }
 

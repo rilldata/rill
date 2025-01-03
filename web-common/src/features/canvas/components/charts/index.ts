@@ -1,7 +1,10 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import {
+  commonOptions,
+  getFilterOptions,
+} from "@rilldata/web-common/features/canvas/components/util";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { type ComponentCommonProperties } from "../types";
 
@@ -35,15 +38,18 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
     );
   }
 
-  inputParams(): Record<keyof ChartSpec, ComponentInputParam> {
+  inputParams(): InputParams<ChartSpec> {
     return {
-      metrics_view: { type: "metrics", label: "Metrics view" },
-      time_range: { type: "rill_time", label: "Time Range" },
-      x: { type: "positional", label: "X-axis" },
-      y: { type: "positional", label: "Y-axis" },
-      color: { type: "mark", label: "Color", meta: { type: "color" } },
-      tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
-      ...commonOptions,
+      component: {
+        metrics_view: { type: "metrics", label: "Metrics view" },
+        time_range: { type: "rill_time", label: "Time Range" },
+        x: { type: "positional", label: "X-axis" },
+        y: { type: "positional", label: "Y-axis" },
+        color: { type: "mark", label: "Color", meta: { type: "color" } },
+        tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        ...commonOptions,
+      },
+      filter: getFilterOptions(),
     };
   }
 

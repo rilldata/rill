@@ -47,7 +47,7 @@
     componentType,
     paramValues,
   );
-  $: inputParams = component.inputParams();
+  $: inputParams = component.inputParams().component;
   $: spec = component.specStore;
 
   $: metricsView = "metrics_view" in $spec ? $spec.metrics_view : null;

@@ -1,4 +1,8 @@
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  ComponentInputParam,
+  FilterInputParam,
+  FilterInputTypes,
+} from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
@@ -20,6 +24,25 @@ export const commonOptions: Record<
   },
   // position: { type: "text", showInUI: false },
 };
+
+export function getFilterOptions(
+  includeComparisonRange = true,
+): Partial<Record<FilterInputTypes, FilterInputParam>> {
+  const options: Partial<Record<FilterInputTypes, FilterInputParam>> = {
+    time_range: { type: "time_range", label: "Time Range" },
+    dimension_filters: {
+      type: "dimension_filters",
+      label: "Dimension Filters",
+    },
+  };
+  if (includeComparisonRange) {
+    options.comparison_range = {
+      type: "comparison_range",
+      label: "Comparison Range",
+    };
+  }
+  return options;
+}
 
 export const getComponentObj = (
   fileArtifact: FileArtifact,

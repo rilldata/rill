@@ -4,7 +4,7 @@ import type {
   ComponentSize,
 } from "@rilldata/web-common/features/canvas/components/types";
 import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
-import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { get, writable, type Writable } from "svelte/store";
 
@@ -18,7 +18,7 @@ export abstract class BaseCanvasComponent<T> implements CanvasComponent<T> {
   abstract minSize: ComponentSize;
   abstract defaultSize: ComponentSize;
   abstract isValid(spec: T): boolean;
-  abstract inputParams(): Record<keyof T, ComponentInputParam>;
+  abstract inputParams(): InputParams<T>;
   abstract newComponentSpec(
     metrics_view: string,
     measure: string,

@@ -14,6 +14,12 @@ export type InputType =
   | ChartInputTypes
   | CustomInputTypes;
 
+export type FilterInputTypes =
+  | "time_range"
+  | "comparison_range"
+  | "grain"
+  | "dimension_filters";
+
 export interface ComponentInputParam {
   type: InputType;
   label?: string;
@@ -21,4 +27,14 @@ export interface ComponentInputParam {
   optional?: boolean;
   description?: string; // Tooltip description for the input
   meta?: Record<string, string>; // Any additional metadata
+}
+
+export interface FilterInputParam {
+  type: FilterInputTypes;
+  label: string;
+}
+
+export interface InputParams<T> {
+  component: Partial<Record<keyof T, ComponentInputParam>>;
+  filter: Partial<Record<FilterInputTypes, FilterInputParam>> | [];
 }
