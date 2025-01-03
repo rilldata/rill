@@ -13,9 +13,9 @@
     .setRuntime(queryClient, host, instanceId, jwt, authContext)
     .catch(console.error);
 
-  $: ({ instanceId, host } = $runtime);
+  $: ({ instanceId: _instanceId, host: _host } = $runtime);
 </script>
 
-{#if host && instanceId}
+{#if _instanceId && _host}
   <slot />
 {/if}
