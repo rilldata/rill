@@ -92,7 +92,6 @@
     if (newRoute) await goto(newRoute);
   }
 
-  // FIXME: scroll new component into view
   async function addComponent(componentType: CanvasComponentType) {
     console.log("[CanvasWorkspace] adding component: ", componentType);
 

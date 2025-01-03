@@ -84,58 +84,60 @@
   }
 
   async function deleteComponent(index: number) {
+    // Validate input
     if (index === undefined || index === null) {
       console.error("[Canvas] Invalid index for deletion:", index);
       return;
     }
 
-    let affectedRowIndex = -1;
+    // Get item to delete
+    const itemToDelete = items[index];
+    if (!itemToDelete) return;
 
-    // Remove the item and find the affected row in a single pass
-    const updatedItems = items.filter((item, i) => {
-      if (i === index) {
-        affectedRowIndex = item.y ?? 0; // Use 0 as fallback if y is undefined
-        return false; // Exclude the item being deleted
-      }
-      return true;
-    });
+    // Create updated items array and redistribute row items
+    const updatedItems = [...items.slice(0, index), ...items.slice(index + 1)];
+    const affectedRowIndex = itemToDelete.y ?? 0;
+    const rowItems = updatedItems.filter(
+      (item) => (item.y ?? 0) === affectedRowIndex,
+    );
 
-    if (affectedRowIndex >= 0) {
-      // Group remaining items in the affected row
-      const rowItems = updatedItems.filter(
-        (item) => (item.y ?? 0) === affectedRowIndex,
-      );
-
-      if (rowItems.length > 0) {
-        // Redistribute columns for the affected row
-        redistributeRowColumns({ items: rowItems });
-      }
+    if (rowItems.length > 0) {
+      redistributeRowColumns({ items: rowItems });
     }
 
-    // Update the `items` array
-    items = updatedItems;
+    // Update document
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
+    const rawItems = parsedDocument.get("items") as any;
 
-    // Clear the selected index
+    // Remove deleted item
+    rawItems.delete(index);
+
+    // Update positions and dimensions of remaining items
+    updatedItems.forEach((item, idx) => {
+      const node = rawItems.get(idx);
+      if (!node) return;
+
+      const updates = {
+        width: item.width,
+        height: item.height,
+        x: item.x,
+        y: item.y,
+      };
+
+      Object.entries(updates).forEach(([key, value]) => node.set(key, value));
+    });
+
+    // Save changes
+    updateEditorContent(parsedDocument.toString(), true);
+    items = updatedItems;
     $canvasStore.setSelectedComponentIndex(null);
 
-    console.log("[Canvas] Updated items after deletion:", updatedItems);
+    if ($autoSave) {
+      await updateComponentFile();
+    }
   }
-
-  // async function deleteComponent(index: number) {
-  //   console.log("[Canvas] deleteComponent: ", index);
-  //   const parsedDocument = parseDocument(
-  //     $editorContent ?? $remoteContent ?? "",
-  //   );
-
-  //   const rawItems = parsedDocument.get("items") as any;
-  //   if (!rawItems) return;
-
-  //   rawItems.delete(index);
-
-  //   // Save changes
-  //   updateEditorContent(parsedDocument.toString(), true);
-  //   if ($autoSave) await updateComponentFile();
-  // }
 
   async function handleUpdate(
     e: CustomEvent<{
