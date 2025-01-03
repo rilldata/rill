@@ -1,13 +1,13 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { getStateManagers } from "../state-managers/state-managers";
   import { getMeasureDisplayName } from "./getDisplayName";
-  import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   const {
     selectors: {
       dimensions: { allDimensions },

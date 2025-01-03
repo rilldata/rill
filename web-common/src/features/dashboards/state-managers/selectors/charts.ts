@@ -4,7 +4,10 @@ import {
   getOffset,
   getTimeWidth,
 } from "@rilldata/web-common/lib/time/transforms";
-import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
+import {
+  TimeOffsetType,
+  type DashboardTimeControls,
+} from "@rilldata/web-common/lib/time/types";
 import type { DashboardDataSources } from "./types";
 
 export const chartSelectors = {
@@ -27,26 +30,30 @@ export const chartSelectors = {
   },
   getNewPanRange: (dashData: DashboardDataSources) => {
     const timeControls = timeControlsState(dashData);
-
-    return (direction: "left" | "right") => {
-      const selectedTimeRange = timeControls?.selectedTimeRange;
-      if (!selectedTimeRange) return;
-
-      const timeZone = dashData?.dashboard?.selectedTimezone || "UTC";
-      const { start, end } = selectedTimeRange;
-
-      if (!start || !end) return;
-
-      const offsetType =
-        direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
-
-      const currentRangeWidth = getTimeWidth(start, end);
-      const panAmount = getDurationFromMS(currentRangeWidth);
-
-      const newStart = getOffset(start, panAmount, offsetType, timeZone);
-      const newEnd = getOffset(end, panAmount, offsetType, timeZone);
-
-      return { start: newStart, end: newEnd };
-    };
+    const timeZone = dashData.dashboard?.selectedTimezone;
+    return getPanRangeForTimeRange(timeControls.selectedTimeRange, timeZone);
   },
 };
+
+export function getPanRangeForTimeRange(
+  timeRange: DashboardTimeControls | undefined,
+  timeZone: string,
+) {
+  return (direction: "left" | "right") => {
+    if (!timeRange) return;
+    const { start, end } = timeRange;
+
+    if (!start || !end) return;
+
+    const offsetType =
+      direction === "left" ? TimeOffsetType.SUBTRACT : TimeOffsetType.ADD;
+
+    const currentRangeWidth = getTimeWidth(start, end);
+    const panAmount = getDurationFromMS(currentRangeWidth);
+
+    const newStart = getOffset(start, panAmount, offsetType, timeZone);
+    const newEnd = getOffset(end, panAmount, offsetType, timeZone);
+
+    return { start: newStart, end: newEnd };
+  };
+}

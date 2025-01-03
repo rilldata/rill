@@ -1,10 +1,10 @@
 <script lang="ts">
   import * as AlertDialog from "@rilldata/web-common/components/alert-dialog";
-  import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { ResourceKind } from "./resource-selectors";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { createResourceFile } from "../file-explorer/new-files";
+  import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { createResourceFile } from "../file-explorer/new-files";
+  import { ResourceKind } from "./resource-selectors";
 
   export let open = false;
   export let metricsViews: V1Resource[];

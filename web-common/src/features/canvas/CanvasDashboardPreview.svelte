@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { canvasVariablesStore } from "@rilldata/web-common/features/canvas/variables-store";
-  import type {
-    V1CanvasItem,
-    V1ComponentVariable,
-  } from "@rilldata/web-common/runtime-client";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
@@ -15,15 +14,14 @@
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
-  export let canvasDashboardName: string;
   export let columns: number | undefined;
   export let items: V1CanvasItem[];
   export let gap: number | undefined;
-  export let variables: V1ComponentVariable[];
   export let showGrid = false;
   export let snap = true;
-  export let selectedComponentName: string | null;
   export let selectedIndex: number | null = null;
+
+  const { canvasEntity } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -36,6 +34,8 @@
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
   $: ({ instanceId } = $runtime);
+
+  $: extraLeftPadding = !$navigationOpen;
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
@@ -63,9 +63,6 @@
   $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
-  $: if (variables.length) {
-    canvasVariablesStore.init(canvasDashboardName, variables);
-  }
 
   function handleMouseUp() {
     if (selectedIndex === null || !changing) return;
@@ -134,7 +131,7 @@
     mousePosition = startMouse;
 
     selectedIndex = index;
-    selectedComponentName = items[index].component ?? null;
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
     changing = true;
   }
 
@@ -165,7 +162,7 @@
 
   function deselect() {
     selectedIndex = null;
-    selectedComponentName = null;
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
   $: maxBottom = items.reduce((max, el) => {
@@ -175,6 +172,14 @@
 </script>
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
+
+<div
+  id="header"
+  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  class:left-shift={extraLeftPadding}
+>
+  <CanvasFilters />
+</div>
 
 <DashboardWrapper
   bind:contentRect
@@ -190,6 +195,9 @@
   on:click={deselect}
   on:scroll={handleScroll}
 >
+  <section
+    class="flex relative justify-between gap-x-4 py-4 pb-6 px-4"
+  ></section>
   {#each items as component, i (i)}
     {@const selected = i === selectedIndex}
     {@const interacting = selected && changing}

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher, getContext } from "svelte";
-  import { slideRight } from "../../../lib/transitions";
   import type { Writable } from "svelte/store";
-  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import { slideRight } from "../../../lib/transitions";
   import CancelCircle from "../../icons/CancelCircle.svelte";
-  import TooltipContent from "../../tooltip/TooltipContent.svelte";
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
+  import Tooltip from "../../tooltip/Tooltip.svelte";
+  import TooltipContent from "../../tooltip/TooltipContent.svelte";
 
   export let removable = false;
   export let active = false;
@@ -15,6 +15,7 @@
   export let exclude = false;
   export let grab = false;
   export let compact = false;
+  export let fullWidth = false;
   export let builders: Builder[] = [];
   export let caret = builders.length > 0;
   export let slideDuration = 150;
@@ -44,6 +45,7 @@
     class:grab
     class:exclude
     class:compact
+    class:fullWidth
     class:pointer-events-none={readOnly && !allowPointerEvents}
     aria-label={label}
     {...getAttrs(builders)}
@@ -78,7 +80,7 @@
         on:click
         on:mousedown
         aria-label={label}
-        class="text-inherit w-full select-none flex items-center gap-x-1 px-0.5"
+        class="text-inherit w-full select-none flex items-center justify-between gap-x-1 px-0.5"
       >
         <slot name="body" />
 
@@ -168,5 +170,9 @@
 
   .compact {
     @apply py-0;
+  }
+
+  .fullWidth {
+    @apply w-full;
   }
 </style>

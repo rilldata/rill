@@ -671,8 +671,6 @@ message Component {
 message ComponentSpec {
   string display_name = 1;
   string description = 7;
-  string resolver = 2;
-  google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
   repeated ComponentVariable input = 8;
@@ -698,8 +696,9 @@ message Canvas {
 
 message CanvasSpec {
   string display_name = 1;
-  uint32 columns = 2;
-  uint32 gap = 3;
+  uint32 max_width = 2;
+  string theme = 7;
+  ThemeSpec embedded_theme = 8;
   repeated ComponentVariable variables = 5;
   repeated CanvasItem items = 4;
   repeated SecurityRule security_rules = 6;

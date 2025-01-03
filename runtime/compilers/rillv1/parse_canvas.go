@@ -13,8 +13,8 @@ type CanvasYAML struct {
 	commonYAML  `yaml:",inline"`         // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName string                   `yaml:"display_name"`
 	Title       string                   `yaml:"title"` // Deprecated: use display_name
-	Columns     uint32                   `yaml:"columns"`
-	Gap         uint32                   `yaml:"gap"`
+	MaxWidth    uint32                   `yaml:"max_width"`
+	Theme       yaml.Node                `yaml:"theme"` // Name (string) or inline theme definition (map)
 	Variables   []*ComponentVariableYAML `yaml:"variables"`
 	Items       []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
@@ -47,6 +47,16 @@ func (p *Parser) parseCanvas(node *Node) error {
 		tmp.DisplayName = tmp.Title
 	}
 
+	// Parse theme if present.
+	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
+	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
+	if err != nil {
+		return err
+	}
+	if themeName != "" && themeSpec == nil {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
+	}
+
 	// Parse variable definitions.
 	var variables []*runtimev1.ComponentVariable
 	if len(tmp.Variables) > 0 {
@@ -61,7 +71,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 
 	// Parse items.
 	// Each item can either reference an externally defined component by name or define a component inline.
-	items := make([]*runtimev1.CanvasItem, len(tmp.Items))
+	var items []*runtimev1.CanvasItem
 	var inlineComponentDefs []*componentDef
 	for i, item := range tmp.Items {
 		if item == nil {
@@ -78,14 +88,14 @@ func (p *Parser) parseCanvas(node *Node) error {
 			inlineComponentDefs = append(inlineComponentDefs, inlineComponentDef)
 		}
 
-		items[i] = &runtimev1.CanvasItem{
+		items = append(items, &runtimev1.CanvasItem{
 			Component:       component,
 			DefinedInCanvas: inlineComponentDef != nil,
 			X:               item.X,
 			Y:               item.Y,
 			Width:           item.Width,
 			Height:          item.Height,
-		}
+		})
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
@@ -108,12 +118,12 @@ func (p *Parser) parseCanvas(node *Node) error {
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.CanvasSpec.DisplayName = tmp.DisplayName
 	if r.CanvasSpec.DisplayName == "" {
 		r.CanvasSpec.DisplayName = ToDisplayName(node.Name)
 	}
-	r.CanvasSpec.Columns = tmp.Columns
-	r.CanvasSpec.Gap = tmp.Gap
+	r.CanvasSpec.MaxWidth = tmp.MaxWidth
+	r.CanvasSpec.Theme = themeName
+	r.CanvasSpec.EmbeddedTheme = themeSpec
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Items = items
 	r.CanvasSpec.SecurityRules = rules
