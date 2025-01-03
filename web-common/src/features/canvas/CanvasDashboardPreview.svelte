@@ -332,22 +332,12 @@
     const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
     const nextItemX = nextItem.x ?? 0;
 
-    // Calculate total width used in the row
-    const rowItems = sortedRowItems.map((item) => ({
-      width: item.width ?? defaults.COMPONENT_WIDTH,
-      x: item.x ?? 0,
-    }));
-
-    // Calculate available width for resizing
-    const totalRowWidth = rowItems.reduce((sum, item) => sum + item.width, 0);
-    const remainingWidth = defaults.COLUMN_COUNT - totalRowWidth;
-
     // Calculate maximum allowed width to prevent collision
     const maxAllowedWidth = Math.min(
       // Don't exceed grid width
       defaults.COLUMN_COUNT - currentX,
-      // Don't exceed available space in row
-      currentItemWidth + nextItemWidth - 1 + remainingWidth,
+      // Allow resizing considering combined width of current and next item
+      nextItemX - currentX + nextItemWidth,
     );
 
     // Ensure new width doesn't exceed available space
@@ -362,11 +352,7 @@
     if (widthDiff === 0) return;
 
     // Check if resize is possible while maintaining minimum widths
-    const canResize =
-      finalWidth >= 1 &&
-      finalWidth <= maxAllowedWidth &&
-      nextItemWidth - widthDiff >= 1 && // Ensure next item stays at least 1 column wide
-      totalRowWidth + widthDiff <= defaults.COLUMN_COUNT; // Ensure we don't exceed 12 columns
+    const canResize = finalWidth >= 1 && nextItemWidth - widthDiff >= 1; // Ensure next item stays at least 1 column wide
 
     if (canResize) {
       item.width = finalWidth;
@@ -376,8 +362,8 @@
       if (nextUpdatedItem) {
         // Maintain next item's minimum width
         nextUpdatedItem.width = nextItemWidth - widthDiff;
-        // Ensure next item's x position is maintained
-        nextUpdatedItem.x = nextItemX;
+        // Update x position of next item to be right after current item
+        nextUpdatedItem.x = currentX + finalWidth;
       }
 
       // Update the UI immediately
