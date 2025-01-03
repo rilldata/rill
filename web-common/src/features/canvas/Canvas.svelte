@@ -8,7 +8,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { groupItemsByRow } from "./grid";
   import type { Vector } from "./types";
   import * as defaults from "./constants";
 
