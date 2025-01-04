@@ -1,6 +1,6 @@
 import * as defaults from "./constants";
 import { groupItemsByRow } from "./grid";
-import type { PositionedItem, RowGroup, Vector, GridItem } from "./types";
+import type { PositionedItem, RowGroup, Vector } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
 export const vector = {
