@@ -404,8 +404,6 @@
   }
 </script>
 
-<!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
-
 {#if showFilterBar}
   <div
     id="header"
