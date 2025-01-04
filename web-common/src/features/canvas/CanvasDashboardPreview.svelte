@@ -406,8 +406,6 @@
   }
 </script>
 
-<!-- <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} /> -->
-
 <div
   id="header"
   class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
