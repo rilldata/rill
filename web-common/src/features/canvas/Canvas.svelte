@@ -9,7 +9,6 @@
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";
-  import * as defaults from "./constants";
   import { redistributeRowColumns } from "./util";
 
   export let fileArtifact: FileArtifact;

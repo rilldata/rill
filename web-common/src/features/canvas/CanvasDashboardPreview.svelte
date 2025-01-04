@@ -8,7 +8,7 @@
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import type { Vector } from "./types";
-  import DropTargetLine from "./DropTargetLine.svelte";
+  import DropIndicator from "./DropIndicator.svelte";
   import { getRowIndex, getColumnIndex } from "./util";
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
@@ -490,22 +490,20 @@
         {/each}
       </div>
 
-      {#if index < itemsByRow.length - 1}
-        <button
-          type="button"
-          aria-label="Resize row"
-          class="row-resize-handle w-full h-[3px] cursor-row-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
-          on:mousedown|stopPropagation={(e) =>
-            handleRowResizeStart(e, index, row.height * gridCell)}
-        />
-      {/if}
+      <button
+        type="button"
+        aria-label="Resize row"
+        class="row-resize-handle w-full h-[3px] cursor-row-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
+        on:mousedown|stopPropagation={(e) =>
+          handleRowResizeStart(e, index, row.height * gridCell)}
+      />
     {/each}
   </div>
 
-  {#if dropTarget && draggedComponent}
+  <!-- {#if dropTarget && draggedComponent}
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
-      <DropTargetLine
+      <DropIndicator
         height={dropTarget.position === "bottom" ||
         dropTarget.position === "row" ||
         dropTarget.position === "top"
@@ -535,7 +533,7 @@
           : "vertical"}
       />
     {/if}
-  {/if}
+  {/if} -->
 </DashboardWrapper>
 
 <svelte:window

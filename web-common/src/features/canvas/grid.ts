@@ -1,6 +1,6 @@
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import * as defaults from "./constants";
-import type { DropPosition, Vector, RowGroup, GridItem } from "./types";
+import type { DropPosition, RowGroup } from "./types";
 
 export class Grid {
   private items: V1CanvasItem[];
