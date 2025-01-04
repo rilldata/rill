@@ -127,11 +127,11 @@
 
     const updatedItems = [...existingItems, newComponent];
 
-    const rowItems = updatedItems.filter((item) => (item.y ?? 0) === y);
-
-    if (rowItems.length > 1) {
-      redistributeRowColumns({ items: rowItems });
-    }
+    // FIXME: Move this to floating button
+    // const rowItems = updatedItems.filter((item) => (item.y ?? 0) === y);
+    // if (rowItems.length > 1) {
+    //   redistributeRowColumns({ items: rowItems });
+    // }
 
     if (!docJson.items) {
       parsedDocument.set("items", updatedItems);
