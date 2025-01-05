@@ -1,9 +1,8 @@
-import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { exec } from "child_process";
-import { spawn } from "node:child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { promisify } from "util";
+import { spawnAndMatch } from "../utils/spawn";
 
 const execAsync = promisify(exec);
 
@@ -18,34 +17,16 @@ export default async function globalSetup() {
   const repoRoot = path.resolve(currentDir, "../../../");
 
   // Start the cloud services (except for the UI, which is run by Playwright)
-  const cloudProcess = spawn(
+  // This will block until the services are ready
+  await spawnAndMatch(
     "rill",
     ["devtool", "start", "e2e", "--reset", "--except", "ui"],
+    /All services ready/,
     {
-      stdio: "pipe",
       cwd: repoRoot,
+      timeoutMs: timeout,
     },
   );
-
-  // Capture output
-  let logBuffer = "";
-  cloudProcess.stdout?.on("data", (data) => {
-    logBuffer += data.toString();
-    console.log(data.toString());
-  });
-
-  cloudProcess.stderr?.on("data", (data) => {
-    logBuffer += data.toString();
-    console.error(data.toString());
-  });
-
-  // Wait for services to be ready
-  const ready = await waitUntil(() => {
-    return logBuffer.includes("All services ready");
-  }, timeout);
-  if (!ready) {
-    throw new Error("Cloud services did not start in time");
-  }
 
   // Pull the repositories to be used for testing
   await execAsync(

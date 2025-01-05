@@ -10,6 +10,7 @@ export async function spawnAndMatch(
   args: string[],
   pattern: RegExp,
   options: {
+    cwd?: string;
     timeoutMs?: number;
   } = {},
 ): Promise<SpawnAndMatchResult> {
@@ -18,6 +19,7 @@ export async function spawnAndMatch(
   return new Promise((resolve, reject) => {
     const process = spawn(command, args, {
       stdio: ["inherit", "pipe", "inherit"],
+      cwd: options.cwd,
     });
 
     const timeout = setTimeout(() => {
