@@ -63,14 +63,14 @@
 
     // Create updated items array and redistribute row items
     const updatedItems = [...items.slice(0, index), ...items.slice(index + 1)];
-    const affectedRowIndex = itemToDelete.y ?? 0;
-    const rowItems = updatedItems.filter(
-      (item) => (item.y ?? 0) === affectedRowIndex,
-    );
+    // const affectedRowIndex = itemToDelete.y ?? 0;
+    // const rowItems = updatedItems.filter(
+    //   (item) => (item.y ?? 0) === affectedRowIndex,
+    // );
 
-    if (rowItems.length > 0) {
-      redistributeRowColumns({ items: rowItems });
-    }
+    // if (rowItems.length > 0) {
+    //   redistributeRowColumns({ items: rowItems });
+    // }
 
     // Update document
     const parsedDocument = parseDocument(
