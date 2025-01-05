@@ -21,7 +21,7 @@
   export let top: number;
   export let padding: number;
   // export let scale: number;
-  // export let embed = false;
+  export let embed = false;
   export let radius: number;
   export let selected = false;
   export let interacting = false;
@@ -80,10 +80,12 @@
   }
 
   function handleMouseEnter() {
+    if (embed) return;
     isHovered = true;
   }
 
   function handleMouseLeave() {
+    if (embed) return;
     isHovered = false;
   }
 
@@ -124,7 +126,7 @@
   on:mouseleave={handleMouseLeave}
 >
   <!-- FIXME: clear the DragHandle when handleDragEnd -->
-  {#if showDragHandle}
+  {#if !embed && showDragHandle}
     <div
       class="drag-handle"
       role="button"

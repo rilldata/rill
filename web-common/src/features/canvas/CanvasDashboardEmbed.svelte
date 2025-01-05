@@ -54,6 +54,7 @@
         {chartView}
         {scale}
         {radius}
+        embed={true}
         padding={gapSize}
         width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
