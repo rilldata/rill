@@ -1,10 +1,6 @@
-import { exec } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
-import { promisify } from "util";
-import { spawnAndMatch } from "../utils/spawn";
-
-const execAsync = promisify(exec);
+import { execAsync, spawnAndMatch } from "../utils/spawn";
 
 const skipGlobalSetup = Boolean(process.env.E2E_SKIP_GLOBAL_SETUP);
 const timeout = 120_000;

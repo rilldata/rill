@@ -1,9 +1,9 @@
 import { type Page } from "@playwright/test";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { spawnAndMatch, type SpawnAndMatchResult } from "../../utils/spawn";
-
-const execAsync = promisify(exec);
+import {
+  execAsync,
+  spawnAndMatch,
+  type SpawnAndMatchResult,
+} from "../../utils/spawn";
 
 export async function cliLogin(page: Page) {
   // Run the login command and capture the verification URL

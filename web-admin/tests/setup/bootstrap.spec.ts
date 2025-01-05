@@ -1,13 +1,9 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { spawnAndMatch } from "../utils/spawn";
+import { execAsync, spawnAndMatch } from "../utils/spawn";
 import { test } from "./base";
 import { ADMIN_AUTH_FILE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
-
-const execAsync = promisify(exec);
 
 let page: Page;
 

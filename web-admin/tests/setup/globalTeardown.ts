@@ -1,7 +1,4 @@
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { execAsync } from "../utils/spawn";
 
 const skipGlobalSetup = Boolean(process.env.E2E_SKIP_GLOBAL_SETUP);
 

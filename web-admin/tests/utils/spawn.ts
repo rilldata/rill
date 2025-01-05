@@ -1,4 +1,7 @@
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, exec, spawn } from "child_process";
+import { promisify } from "util";
+
+export const execAsync = promisify(exec);
 
 export type SpawnAndMatchResult = {
   process: ChildProcess;
