@@ -300,16 +300,16 @@
       resizingCol,
     });
     const currentRow = itemsByRow.find((row) =>
-      row.items.some((item) => items.indexOf(item) === resizingCol.index),
+      row.items.some((item) => items.indexOf(item) === resizingCol?.index),
     );
-    if (!currentRow) return;
+    if (!resizingCol || !currentRow) return;
 
     // Sort items by x position for consistent resizing
     const sortedRowItems = [...currentRow.items].sort(
       (a, b) => (a.x ?? 0) - (b.x ?? 0),
     );
     const resizingItemIndex = sortedRowItems.findIndex(
-      (item) => items.indexOf(item) === resizingCol.index,
+      (item) => items.indexOf(item) === resizingCol?.index,
     );
 
     // Get next item to determine maximum resize width
@@ -482,7 +482,7 @@
                 handleColumnResizeStart(
                   e,
                   i,
-                  component.width * gridCell,
+                  (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
                   component.x ?? 0,
                 )}
             />
