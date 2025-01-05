@@ -31,7 +31,7 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
 
   inputParams(): InputParams<ImageSpec> {
     return {
-      component: {
+      options: {
         url: { type: "text", label: "URL" },
         ...commonOptions,
       },

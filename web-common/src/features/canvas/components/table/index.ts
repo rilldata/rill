@@ -5,15 +5,18 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import { type ComponentCommonProperties } from "../types";
+import type {
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "../types";
 
 export { default as Table } from "./TableTemplate.svelte";
 
-export interface TableSpec extends ComponentCommonProperties {
+export interface TableSpec
+  extends ComponentCommonProperties,
+    ComponentFilterProperties {
   metrics_view: string;
-  time_range: string;
   measures: string[];
-  comparison_range?: string;
   row_dimensions?: string[];
   col_dimensions?: string[];
 }
@@ -50,7 +53,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
   inputParams(): InputParams<TableSpec> {
     return {
-      component: {
+      options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measures: { type: "multi_measures", label: "Measures" },
         col_dimensions: {
@@ -58,12 +61,6 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
           label: "Column dimensions",
         },
         row_dimensions: { type: "multi_dimensions", label: "Row dimensions" },
-        time_range: { type: "rill_time", label: "Time range" },
-        comparison_range: {
-          type: "rill_time",
-          label: "Comparison range",
-          optional: true,
-        },
         ...commonOptions,
       },
       filter: getFilterOptions(),

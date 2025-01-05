@@ -6,11 +6,16 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import { type ComponentCommonProperties } from "../types";
+import type {
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "../types";
 
 export { default as Chart } from "./Chart.svelte";
 
-export type ChartSpec = ComponentCommonProperties & ChartConfig;
+export type ChartSpec = ComponentFilterProperties &
+  ComponentCommonProperties &
+  ChartConfig;
 
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
@@ -40,16 +45,15 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
 
   inputParams(): InputParams<ChartSpec> {
     return {
-      component: {
+      options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
-        time_range: { type: "rill_time", label: "Time Range" },
         x: { type: "positional", label: "X-axis" },
         y: { type: "positional", label: "Y-axis" },
         color: { type: "mark", label: "Color", meta: { type: "color" } },
         tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
         ...commonOptions,
       },
-      filter: getFilterOptions(),
+      filter: getFilterOptions(false),
     };
   }
 

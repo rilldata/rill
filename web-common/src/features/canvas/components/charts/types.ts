@@ -14,8 +14,6 @@ export interface ChartConfig {
   y?: FieldConfig;
   color?: FieldConfig | string;
   tooltip?: FieldConfig;
-  // Temp options
-  time_range: string;
 }
 
 export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";

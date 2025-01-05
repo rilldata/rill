@@ -28,20 +28,21 @@ export const commonOptions: Record<
 export function getFilterOptions(
   includeComparisonRange = true,
 ): Partial<Record<FilterInputTypes, FilterInputParam>> {
-  const options: Partial<Record<FilterInputTypes, FilterInputParam>> = {
+  return {
     time_range: { type: "time_range", label: "Time Range" },
+    ...(includeComparisonRange
+      ? {
+          comparison_range: {
+            type: "comparison_range",
+            label: "Comparison Range",
+          },
+        }
+      : {}),
     dimension_filters: {
       type: "dimension_filters",
       label: "Dimension Filters",
     },
   };
-  if (includeComparisonRange) {
-    options.comparison_range = {
-      type: "comparison_range",
-      label: "Comparison Range",
-    };
-  }
-  return options;
 }
 
 export const getComponentObj = (

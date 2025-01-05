@@ -7,7 +7,10 @@
 <div
   class="size-full bg-background flex-none flex flex-col select-none rounded-[2px] w-full"
 >
-  <h1 class={type}>{title}</h1>
+  <div class={type}>
+    <h1 class:pb-2={type == "secondary" && !$$slots.header}>{title}</h1>
+    <slot name="header" />
+  </div>
 
   <div
     class="{disableHorizontalPadding
@@ -27,8 +30,9 @@
   }
 
   .secondary {
+    @apply flex flex-col gap-y-1;
     @apply text-sm font-semibold;
     @apply bg-slate-50;
-    @apply px-5 py-2;
+    @apply px-5 pt-2;
   }
 </style>

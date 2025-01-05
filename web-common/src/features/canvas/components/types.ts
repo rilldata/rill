@@ -71,6 +71,12 @@ export interface ComponentCommonProperties {
   description?: string;
 }
 
+export interface ComponentFilterProperties {
+  time_range?: string;
+  comparison_range?: string;
+  dimension_filters?: string;
+}
+
 export interface ComponentSize {
   width: number;
   height: number;

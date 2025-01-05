@@ -5,16 +5,19 @@ import {
 } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import { type ComponentCommonProperties } from "../types";
+import type {
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "../types";
 
 export { default as KPI } from "./KPI.svelte";
 
-export interface KPISpec extends ComponentCommonProperties {
+export interface KPISpec
+  extends ComponentCommonProperties,
+    ComponentFilterProperties {
   metrics_view: string;
   measure: string;
-  time_range: string;
   sparkline?: boolean;
-  comparison_range?: string;
 }
 
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
@@ -43,16 +46,10 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   inputParams(): InputParams<KPISpec> {
     return {
-      component: {
+      options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measure: { type: "measure", label: "Measure" },
         sparkline: { type: "boolean", optional: true, label: "Sparkline" },
-        time_range: { type: "rill_time", label: "Time Range" },
-        comparison_range: {
-          type: "rill_time",
-          label: "Comparison Range",
-          optional: true,
-        },
         ...commonOptions,
       },
       filter: getFilterOptions(),

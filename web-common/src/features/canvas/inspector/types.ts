@@ -35,6 +35,6 @@ export interface FilterInputParam {
 }
 
 export interface InputParams<T> {
-  component: Partial<Record<keyof T, ComponentInputParam>>;
+  options: Partial<Record<keyof T, ComponentInputParam>>;
   filter: Partial<Record<FilterInputTypes, FilterInputParam>> | [];
 }
