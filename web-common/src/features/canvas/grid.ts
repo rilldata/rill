@@ -92,11 +92,8 @@ export class Grid {
     if (mouseY > bottomZone) {
       return "bottom";
     } else if (mouseY < topZone) {
-      // If near the top edge, determine if it should be "top" or "row"
-      if (mouseX < leftZone) {
-        return "row"; // Start of row when near top-left
-      }
-      return "top";
+      // If near the top, always treat it as row start
+      return "row";
     }
 
     // If in the middle zone, determine left/right
@@ -131,16 +128,10 @@ export class Grid {
     const removedItem = { ...draggedItemFull };
 
     switch (position) {
-      case "top": {
-        console.log("[Grid] Dropping top");
-        this.handleTopDrop(removedItem, targetItem, rows);
+      case "left": {
+        console.log("[Grid] Dropping left");
+        this.handleLeftDrop(removedItem, targetItem, rows);
         insertIndex = this.items.indexOf(targetItem);
-        break;
-      }
-      case "bottom": {
-        console.log("[Grid] Dropping bottom");
-        this.handleBottomDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.indexOf(targetItem) + 1;
         break;
       }
       case "right": {
@@ -149,10 +140,10 @@ export class Grid {
         insertIndex = this.items.indexOf(targetItem) + 1;
         break;
       }
-      case "left": {
-        console.log("[Grid] Dropping left");
-        this.handleLeftDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.indexOf(targetItem);
+      case "bottom": {
+        console.log("[Grid] Dropping bottom");
+        this.handleBottomDrop(removedItem, targetItem, rows);
+        insertIndex = this.items.indexOf(targetItem) + 1;
         break;
       }
       case "row": {
@@ -264,29 +255,6 @@ export class Grid {
       targetRow.items.splice(0, 0, removedItem);
       targetRow.height = Math.max(targetRow.height, removedItem.height);
     }
-  }
-
-  private handleTopDrop(
-    removedItem: V1CanvasItem,
-    targetItem: V1CanvasItem,
-    rows: ReturnType<typeof Grid.groupItemsByRow>,
-  ) {
-    // Move all items in the target row and below down
-    const targetY = targetItem.y ?? 0;
-    const itemHeight = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-
-    // Shift down items at or below the target
-    this.items.forEach((item) => {
-      if ((item.y ?? 0) >= targetY) {
-        item.y = (item.y ?? 0) + itemHeight;
-      }
-    });
-
-    // Position the removed item
-    removedItem.y = targetY;
-    removedItem.x = targetItem.x ?? 0;
-    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
-    removedItem.height = itemHeight;
   }
 
   private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {

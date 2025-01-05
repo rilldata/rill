@@ -15,9 +15,4 @@ export interface RowGroup {
   items: V1CanvasItem[];
 }
 
-export type DropPosition =
-  | "left"
-  | "right"
-  | "top" // New position
-  | "bottom"
-  | "row"; // For dropping at the start of a row
+export type DropPosition = "left" | "right" | "bottom" | "row";

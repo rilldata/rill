@@ -500,40 +500,36 @@
     {/each}
   </div>
 
-  <!-- {#if dropTarget && draggedComponent}
+  {#if dropTarget && draggedComponent}
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <DropIndicator
         height={dropTarget.position === "bottom" ||
-        dropTarget.position === "row" ||
-        dropTarget.position === "top"
+        dropTarget.position === "row"
           ? 2
           : targetItem.height * gridCell}
         top={dropTarget.position === "bottom"
           ? (targetItem.y + targetItem.height) * gridCell
-          : dropTarget.position === "top"
+          : dropTarget.position === "row"
             ? targetItem.y * gridCell
-            : dropTarget.position === "row"
-              ? targetItem.y * gridCell
-              : targetItem.y * gridCell}
+            : targetItem.y * gridCell}
         left={dropTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
           : dropTarget.position === "bottom"
             ? 0
-            : dropTarget.position === "top" || dropTarget.position === "row"
+            : dropTarget.position === "row"
               ? targetItem.x * gridCell
               : targetItem.x * gridCell}
         width={dropTarget.position === "bottom"
           ? defaults.DASHBOARD_WIDTH
           : undefined}
         orientation={dropTarget.position === "bottom" ||
-        dropTarget.position === "top" ||
         dropTarget.position === "row"
           ? "horizontal"
           : "vertical"}
       />
     {/if}
-  {/if} -->
+  {/if}
 </DashboardWrapper>
 
 <svelte:window
