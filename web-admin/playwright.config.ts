@@ -12,8 +12,8 @@ const config: PlaywrightTestConfig = {
   ...(process.env.E2E_SKIP_GLOBAL_SETUP
     ? {}
     : {
-        globalSetup: "./tests/setup/globalSetup.ts",
-        globalTeardown: "./tests/setup/globalTeardown.ts",
+        globalSetup: "./tests/setup/global.setup.ts",
+        globalTeardown: "./tests/setup/global.teardown.ts",
       }),
   webServer: {
     command: "npm run build && npm run preview",
@@ -32,10 +32,23 @@ const config: PlaywrightTestConfig = {
     video: "retain-on-failure",
   },
   projects: [
-    { name: "bootstrap", testMatch: "bootstrap.spec.ts" },
+    {
+      name: "data-setup",
+      testMatch: "data.setup.ts",
+      ...(process.env.E2E_SKIP_DATA_TEARDOWN
+        ? {}
+        : { teardown: "data-teardown" }),
+    },
+    {
+      name: "data-teardown",
+      testMatch: "data.teardown.ts",
+      use: {
+        storageState: ADMIN_AUTH_FILE,
+      },
+    },
     {
       name: "e2e",
-      dependencies: process.env.E2E_SKIP_BOOTSTRAP ? [] : ["bootstrap"],
+      dependencies: process.env.E2E_SKIP_DATA_SETUP ? [] : ["data-setup"],
       testIgnore: "/setup",
       use: {
         storageState: ADMIN_AUTH_FILE,
