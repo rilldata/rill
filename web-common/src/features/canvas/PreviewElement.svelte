@@ -32,6 +32,8 @@
   $: finalWidth = Math.abs(width);
   $: finalHeight = Math.abs(height);
 
+  $: transform = `translate(${finalLeft}px, ${finalTop}px)`;
+
   const dispatch = createEventDispatcher<{
     change: {
       e: MouseEvent;
@@ -92,11 +94,11 @@
     class="component absolute"
     role="presentation"
     data-component-index={i}
-    style:width="{width}px"
-    style:height="{height}px"
-    style:top="{top}px"
-    style:left="{left}px"
+    style:width="{finalWidth}px"
+    style:height="{finalHeight}px"
     style:padding="{padding}px"
+    style:transform
+    style:will-change="transform"
     on:dragstart={handleDragStart}
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
@@ -117,27 +119,21 @@
       {columnIndex}
       builders={undefined}
       height={finalHeight}
-      left={finalLeft}
-      top={finalTop}
+      left={0}
+      top={0}
       width={finalWidth}
     />
   </div>
 {:else if componentName}
-  <Component
-    {instanceId}
-    {i}
-    {interacting}
-    {componentName}
-    {padding}
-    {radius}
-    {selected}
-    {rowIndex}
-    {columnIndex}
-    builders={undefined}
-    height={finalHeight}
-    left={finalLeft}
-    top={finalTop}
-    width={finalWidth}
+  <div
+    class="component absolute"
+    role="presentation"
+    data-component-index={i}
+    style:width="{finalWidth}px"
+    style:height="{finalHeight}px"
+    style:padding="{padding}px"
+    style:transform
+    style:will-change="transform"
     on:dragstart={handleDragStart}
     on:dragend={handleDragEnd}
     on:dragover={onDragOver}
@@ -145,15 +141,31 @@
     on:mousedown={handleMouseDown}
     on:mouseenter={handleMouseEnter}
     on:mouseleave={handleMouseLeave}
-  />
+  >
+    <Component
+      {instanceId}
+      {i}
+      {interacting}
+      {componentName}
+      {padding}
+      {radius}
+      {selected}
+      {rowIndex}
+      {columnIndex}
+      builders={undefined}
+      height={finalHeight}
+      left={0}
+      top={0}
+      width={finalWidth}
+    />
+  </div>
 {/if}
 
 <style lang="postcss">
   .component {
     touch-action: none;
-  }
-
-  .col-resize-handle {
-    transition: opacity 0.2s;
+    transform-origin: 0 0;
+    left: 0;
+    top: 0;
   }
 </style>
