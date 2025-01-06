@@ -9,6 +9,7 @@ export class Grid {
     this.items = this.preventCollisions([...items]);
   }
 
+  // Type Guards
   static isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
     x: number;
     y: number;
@@ -23,6 +24,7 @@ export class Grid {
     );
   }
 
+  // Row Management
   static groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
     const rows: RowGroup[] = [];
 
@@ -46,9 +48,8 @@ export class Grid {
     return rows.sort((a, b) => a.y - b.y);
   }
 
-  static leftAlignRow(row: RowGroup) {
+  static leftAlignRow(row: RowGroup): void {
     let currentX = 0;
-
     row.items
       .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
       .forEach((item) => {
@@ -57,16 +58,11 @@ export class Grid {
       });
   }
 
+  // Position Validation
   private validateItemPositions(items: V1CanvasItem[]): void {
-    // First group items by row
     const rows = Grid.groupItemsByRow(items);
+    rows.forEach((row) => Grid.leftAlignRow(row));
 
-    // Process each row
-    rows.forEach((row) => {
-      Grid.leftAlignRow(row);
-    });
-
-    // Validate x positions are within bounds
     items.forEach((item) => {
       if (item.x !== undefined && item.width !== undefined) {
         item.x = Math.min(
@@ -77,38 +73,29 @@ export class Grid {
     });
   }
 
+  // Drop Position Detection
   public getDropPosition(
     mouseX: number,
     mouseY: number,
     targetRect: DOMRect,
   ): DropPosition {
-    // Define zones - make them smaller for more precise targeting
-    const bottomZone = targetRect.bottom - targetRect.height * 0.2;
-    const topZone = targetRect.top + targetRect.height * 0.2;
-    const leftZone = targetRect.left + targetRect.width * 0.2;
-    const rightZone = targetRect.right - targetRect.width * 0.2;
+    const zoneSize = 0.2; // 20% of element size for edge detection
+    const bottomZone = targetRect.bottom - targetRect.height * zoneSize;
+    const topZone = targetRect.top + targetRect.height * zoneSize;
+    const leftZone = targetRect.left + targetRect.width * zoneSize;
+    const rightZone = targetRect.right - targetRect.width * zoneSize;
 
-    // Check vertical zones first
-    if (mouseY > bottomZone) {
-      return "bottom";
-    } else if (mouseY < topZone) {
-      // If near the top, always treat it as row start
-      return "row";
-    }
+    if (mouseY > bottomZone) return "bottom";
+    if (mouseY < topZone) return "row";
+    if (mouseX < leftZone) return "left";
+    if (mouseX > rightZone) return "right";
 
-    // If in the middle zone, determine left/right
-    if (mouseX < leftZone) {
-      return "left";
-    } else if (mouseX > rightZone) {
-      return "right";
-    }
-
-    // Default to closest edge if in center
     const distanceToLeft = mouseX - targetRect.left;
     const distanceToRight = targetRect.right - mouseX;
     return distanceToLeft < distanceToRight ? "left" : "right";
   }
 
+  // Item Movement
   public moveItem(
     draggedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
@@ -123,52 +110,83 @@ export class Grid {
     let newItems = [...this.items];
     let insertIndex = this.items.indexOf(targetItem);
 
-    // Create a deep copy of the dragged item
     const [draggedItemFull] = newItems.splice(dragIndex, 1);
     const removedItem = { ...draggedItemFull };
 
     switch (position) {
-      case "left": {
-        console.log("[Grid] Dropping left");
+      case "left":
         this.handleLeftDrop(removedItem, targetItem, rows);
         insertIndex = this.items.indexOf(targetItem);
         break;
-      }
-      case "right": {
-        console.log("[Grid] Dropping right");
+      case "right":
         this.handleRightDrop(removedItem, targetItem, rows);
         insertIndex = this.items.indexOf(targetItem) + 1;
         break;
-      }
-      case "bottom": {
-        console.log("[Grid] Dropping bottom");
+      case "bottom":
         this.handleBottomDrop(removedItem, targetItem, rows);
         insertIndex = this.items.indexOf(targetItem) + 1;
         break;
-      }
-      case "row": {
-        console.log("[Grid] Dropping row");
+      case "row":
         this.handleRowDrop(removedItem, targetItem, rows);
         insertIndex = this.items.findIndex((item) => item.y === targetItem.y);
         break;
-      }
     }
 
-    // Reinsert the item
     newItems.splice(insertIndex, 0, removedItem);
-
-    // Prevent collisions and validate
     newItems = this.preventCollisions(newItems);
     this.validateItemPositions(newItems);
 
     return { items: newItems, insertIndex };
   }
 
+  // Drop Handlers
+  private handleLeftDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+    rows: RowGroup[],
+  ): void {
+    const targetRow = rows.find((row) => row.y === targetItem.y);
+    if (!targetRow) return;
+
+    removedItem.y = targetItem.y ?? 0;
+    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+
+    const targetIndex = targetRow.items.indexOf(targetItem);
+    targetRow.items.splice(targetIndex, 0, removedItem);
+
+    let currentX = 0;
+    targetRow.items.forEach((item) => {
+      item.x = currentX;
+      currentX += item.width ?? defaults.COMPONENT_WIDTH;
+    });
+
+    targetRow.height = Math.max(targetRow.height, removedItem.height);
+  }
+
+  private handleRightDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+    rows: RowGroup[],
+  ): void {
+    const targetRow = rows.find((row) => row.y === targetItem.y);
+    if (!targetRow) return;
+
+    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+    removedItem.y = targetItem.y ?? 0;
+    removedItem.x =
+      (targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH);
+
+    const targetIndex = targetRow.items.indexOf(targetItem);
+    targetRow.items.splice(targetIndex + 1, 0, removedItem);
+    targetRow.height = Math.max(targetRow.height, removedItem.height);
+  }
+
   private handleBottomDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
-    rows: ReturnType<typeof Grid.groupItemsByRow>,
-  ) {
+    rows: RowGroup[],
+  ): void {
     const targetY = targetItem.y ?? 0;
     const targetHeight = targetItem.height ?? defaults.COMPONENT_HEIGHT;
     const newY = targetY + targetHeight;
@@ -178,97 +196,40 @@ export class Grid {
     removedItem.width = defaults.COLUMN_COUNT;
     removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
-    // Create new row and add item at index 0
-    const newRow = {
+    rows.push({
       y: newY,
       height: removedItem.height,
-      items: [],
-    };
-    newRow.items.splice(0, 0, removedItem);
-    rows.push(newRow);
-  }
-
-  private handleRightDrop(
-    removedItem: V1CanvasItem,
-    targetItem: V1CanvasItem,
-    rows: ReturnType<typeof Grid.groupItemsByRow>,
-  ) {
-    const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (targetRow) {
-      // Ensure removedItem has defined dimensions
-      removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
-      removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-
-      // Align y position and set x to immediately after targetItem
-      removedItem.y = targetItem.y ?? 0;
-      removedItem.x =
-        (targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH);
-
-      // Insert removedItem after targetItem
-      const targetIndex = targetRow.items.indexOf(targetItem);
-      targetRow.items.splice(targetIndex + 1, 0, removedItem);
-
-      // Update row height if necessary
-      targetRow.height = Math.max(targetRow.height, removedItem.height);
-    }
-  }
-
-  private handleLeftDrop(
-    removedItem: V1CanvasItem,
-    targetItem: V1CanvasItem,
-    rows: ReturnType<typeof Grid.groupItemsByRow>,
-  ) {
-    const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (targetRow) {
-      // Set the y position and height of the removed item
-      removedItem.y = targetItem.y ?? 0;
-      removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-
-      // Insert the removed item before the target item
-      const targetIndex = targetRow.items.indexOf(targetItem);
-      targetRow.items.splice(targetIndex, 0, removedItem);
-
-      // Adjust x positions to prevent overlaps
-      let currentX = 0;
-      targetRow.items.forEach((item) => {
-        item.x = currentX;
-        currentX += item.width ?? defaults.COMPONENT_WIDTH;
-      });
-
-      // Update the row's height if necessary
-      targetRow.height = Math.max(targetRow.height, removedItem.height);
-    }
+      items: [removedItem],
+    });
   }
 
   private handleRowDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
-    rows: ReturnType<typeof Grid.groupItemsByRow>,
-  ) {
+    rows: RowGroup[],
+  ): void {
     const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (targetRow) {
-      removedItem.x = 0;
-      removedItem.y = targetItem.y ?? 0;
-      removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+    if (!targetRow) return;
 
-      // Insert at beginning of row using splice
-      targetRow.items.splice(0, 0, removedItem);
-      targetRow.height = Math.max(targetRow.height, removedItem.height);
-    }
+    removedItem.x = 0;
+    removedItem.y = targetItem.y ?? 0;
+    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+
+    targetRow.items.splice(0, 0, removedItem);
+    targetRow.height = Math.max(targetRow.height, removedItem.height);
   }
 
+  // Collision Prevention
   private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {
     const rowGroups = Grid.groupItemsByRow(items);
 
     rowGroups.forEach((row) => {
       let currentX = 0;
-
       row.items.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
 
       row.items.forEach((item) => {
         item.x = currentX;
         currentX += item.width ?? defaults.COMPONENT_WIDTH;
-
         if (currentX > defaults.COLUMN_COUNT) {
           currentX = defaults.COLUMN_COUNT;
         }
