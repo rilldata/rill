@@ -24,7 +24,7 @@ const _batchSize = int64(1024)
 // downloadParquet downloads partial file as per extractOption
 func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
-	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
+	mem := memory.DefaultAllocator
 	props := parquet.NewReaderProperties(mem)
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))

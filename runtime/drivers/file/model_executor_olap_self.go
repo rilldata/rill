@@ -276,7 +276,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 		fields = append(fields, arrowField)
 	}
 	schema := arrow.NewSchema(fields, nil)
-	mem := memory.NewCheckedAllocator(memory.NewGoAllocator())
+	mem := memory.DefaultAllocator
 	recordBuilder := array.NewRecordBuilder(mem, schema)
 	defer recordBuilder.Release()
 

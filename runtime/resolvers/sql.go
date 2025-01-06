@@ -87,15 +87,11 @@ func (r *sqlResolver) Close() error {
 	return nil
 }
 
-func (r *sqlResolver) Cacheable() bool {
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		return len(r.refs) != 0
+func (r *sqlResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	if r.olap.Dialect() == drivers.DialectDuckDB || r.olap.Dialect() == drivers.DialectClickHouse {
+		return []byte(r.sql), len(r.refs) != 0, nil
 	}
-	return false
-}
-
-func (r *sqlResolver) Key() string {
-	return r.sql
+	return nil, false, nil
 }
 
 func (r *sqlResolver) Refs() []*runtimev1.ResourceName {
@@ -160,6 +156,7 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 	if err != nil {
 		return err
 	}
+	defer res.Close()
 
 	meta := make([]*runtimev1.MetricsViewColumn, len(res.Schema.Fields))
 	for i, f := range res.Schema.Fields {
