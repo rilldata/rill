@@ -41,6 +41,7 @@ tsc-tmp/
 /models
 /dashboards
 /sources
+/postgres
 
 # check in generated data files
 !/web-local/tests/data/*.parquet
