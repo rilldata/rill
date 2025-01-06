@@ -18,8 +18,9 @@
 
   $: inputParams = component.inputParams().filter;
 
-  $: metricsView =
-    "metrics_view" in paramValues ? paramValues.metrics_view : null;
+  // Enable this when adding support for dimension filters
+  // $: metricsView =
+  //   "metrics_view" in paramValues ? paramValues.metrics_view : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};

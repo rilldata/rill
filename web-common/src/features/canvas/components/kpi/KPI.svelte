@@ -16,7 +16,6 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { extent } from "d3-array";
   import type { KPISpec } from ".";
   import { useMetricsViewSpecMeasure } from "../selectors";
@@ -28,7 +27,6 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  const queryClient = useQueryClient();
   const ctx = getCanvasStateManagers();
 
   let containerWidth: number;
