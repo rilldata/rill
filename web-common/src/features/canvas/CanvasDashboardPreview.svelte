@@ -143,29 +143,7 @@
     if (!targetElement) return "left";
 
     const rect = targetElement.getBoundingClientRect();
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-
-    // Simpler horizontal zones - just split in half
-    const middleX = rect.left + rect.width / 2;
-
-    // Vertical zones - top 20%, middle 60%, bottom 20%
-    const topZone = rect.top + rect.height * 0.2;
-    const bottomZone = rect.bottom - rect.height * 0.2;
-
-    // Check vertical zones first
-    if (mouseY < topZone) {
-      return "row";
-    } else if (mouseY > bottomZone) {
-      return "bottom";
-    }
-
-    // Determine horizontal position
-    if (mouseX < middleX) {
-      return "left";
-    } else {
-      return "right";
-    }
+    return grid.getDropPosition(e.clientX, e.clientY, rect);
   }
 
   function handleDrop(e: DragEvent | CustomEvent<DragEvent>) {
@@ -526,49 +504,30 @@
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <DropIndicator
-        height={dropTarget.position === "left" ||
-        dropTarget.position === "right"
-          ? targetItem.height * gridCell
-          : 2}
-        width={dropTarget.position === "left" || dropTarget.position === "right"
+        height={dropTarget.position === "bottom" ||
+        dropTarget.position === "row"
           ? 2
-          : defaults.DASHBOARD_WIDTH}
+          : targetItem.height * gridCell}
         top={dropTarget.position === "bottom"
           ? (targetItem.y + targetItem.height) * gridCell
-          : targetItem.y * gridCell}
+          : dropTarget.position === "row"
+            ? targetItem.y * gridCell
+            : targetItem.y * gridCell}
         left={dropTarget.position === "right"
-          ? (targetItem.x + targetItem.width) * gridCell - 1
-          : dropTarget.position === "left"
-            ? targetItem.x * gridCell - 1
-            : dropTarget.position === "row" || dropTarget.position === "bottom"
-              ? 0
-              : 0}
-        orientation={dropTarget.position === "left" ||
-        dropTarget.position === "right"
-          ? "vertical"
-          : "horizontal"}
-        class={dropTarget.position === "row" || dropTarget.position === "bottom"
-          ? "drop-target-row"
-          : ""}
+          ? (targetItem.x + targetItem.width) * gridCell
+          : dropTarget.position === "bottom"
+            ? 0
+            : dropTarget.position === "row"
+              ? targetItem.x * gridCell
+              : targetItem.x * gridCell}
+        width={dropTarget.position === "bottom"
+          ? defaults.DASHBOARD_WIDTH
+          : undefined}
+        orientation={dropTarget.position === "bottom" ||
+        dropTarget.position === "row"
+          ? "horizontal"
+          : "vertical"}
       />
-
-      {#if dropTarget.position === "row"}
-        <div
-          class="drop-preview-overlay"
-          style="
-            position: absolute;
-            top: {targetItem.y * gridCell}px;
-            left: {targetItem.x * gridCell}px;
-            width: {targetItem.width * gridCell}px;
-            height: {targetItem.height * gridCell}px;
-            background: rgba(var(--color-primary-300), 0.08);
-            border: 2px solid rgb(var(--color-primary-300));
-            border-radius: {radius}px;
-            pointer-events: none;
-            z-index: 40;
-          "
-        />
-      {/if}
     {/if}
   {/if}
 </DashboardWrapper>
@@ -601,14 +560,5 @@
 
   :global(body.resizing-col) {
     cursor: col-resize !important;
-  }
-
-  :global(.drop-target-row) {
-    box-shadow: 0 0 0 2px rgb(var(--color-primary-300));
-  }
-
-  :global(.drop-preview-overlay) {
-    background: rgba(var(--color-primary-300), 0.08);
-    border: 2px solid rgb(var(--color-primary-300));
   }
 </style>
