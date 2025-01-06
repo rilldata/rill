@@ -54,12 +54,6 @@
     start: Date,
     end: Date,
   ) {
-    if (!showTimeComparison) {
-      metricsExplorerStore.displayTimeComparison(
-        $exploreName,
-        !showTimeComparison,
-      );
-    }
     metricsExplorerStore.setSelectedComparisonRange(
       $exploreName,
       {
