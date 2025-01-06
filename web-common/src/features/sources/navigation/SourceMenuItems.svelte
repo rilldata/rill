@@ -38,15 +38,15 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   const { ai } = featureFlags;
 
-  $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
+  $: sourceQuery = fileArtifact.getResource(queryClient, instanceId);
   let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: sinkConnector = $sourceQuery.data?.source?.spec?.sinkConnector;
-  $: sourceHasError = fileArtifact.getHasErrors(queryClient, runtimeInstanceId);
+  $: sourceHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -56,10 +56,10 @@
   const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = source?.state?.table as string;
 
-  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
+  $: sourceFromYaml = useSourceFromYaml(instanceId, filePath);
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     sinkConnector as string,
     database,
     databaseSchema,
@@ -70,7 +70,7 @@
   );
 
   $: createExploreFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     sinkConnector as string,
     database,
     databaseSchema,
@@ -118,21 +118,18 @@
         connector,
         filePath,
         $sourceQuery.data?.meta?.name?.name ?? "",
-        runtimeInstanceId,
+        instanceId,
       );
     } catch {
       // no-op
     }
   };
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
-    $runtime.instanceId,
-    filePath,
-  );
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
   async function onReplaceSource() {
-    await replaceSourceWithUploadedFile(runtimeInstanceId, filePath);
+    await replaceSourceWithUploadedFile(instanceId, filePath);
     overlay.set(null);
   }
 </script>

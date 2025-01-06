@@ -43,7 +43,7 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: instanceId = $runtime?.instanceId;
+  $: ({ instanceId } = $runtime);
 
   // These can be undefined
   $: ({

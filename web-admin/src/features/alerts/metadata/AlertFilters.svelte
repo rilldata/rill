@@ -35,8 +35,9 @@
     whereFilter = dimensionFilters;
     havingFilter = dimensionThresholdFilters;
   }
+  $: ({ instanceId } = $runtime);
 
-  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+  $: metricsView = useMetricsView(instanceId, metricsViewName);
   $: dimensionIdMap = getMapFromArray(
     $metricsView.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,

@@ -6,6 +6,7 @@
   } from "@rilldata/web-admin/client";
   import BookmarkItem from "@rilldata/web-admin/features/bookmarks/BookmarksDropdownMenuItem.svelte";
   import {
+    type BookmarkEntry,
     categorizeBookmarks,
     searchBookmarks,
   } from "@rilldata/web-admin/features/bookmarks/selectors";
@@ -30,22 +31,25 @@
   import { createQueryServiceMetricsViewSchema } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { BookmarkPlusIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
 
   export let metricsViewName: string;
   export let exploreName: string;
 
-  const dispatch = createEventDispatcher();
+  export let onCreate: (isHome: boolean) => void;
+  export let onEdit: (bookmark: BookmarkEntry) => void;
+  export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
+
+  $: ({ instanceId } = $runtime);
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   $: exploreState = useExploreState(exploreName);
-  $: validExploreSpec = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: validExploreSpec = useExploreValidSpec(instanceId, exploreName);
   $: metricsViewSpec = $validExploreSpec.data?.metricsView ?? {};
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewTimeRange = useMetricsViewTimeRange(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
   $: defaultExplorePreset = getDefaultExplorePreset(
@@ -53,7 +57,7 @@
     $metricsViewTimeRange.data,
   );
   $: schemaResp = createQueryServiceMetricsViewSchema(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
 
@@ -80,6 +84,7 @@
     $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
+    $metricsViewTimeRange.data?.timeRangeSummary,
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 
@@ -88,17 +93,14 @@
 </script>
 
 <DropdownMenuContent class="w-[450px]">
-  <DropdownMenuItem on:click={() => dispatch("create")}>
+  <DropdownMenuItem on:click={() => onCreate(false)}>
     <div class="flex flex-row gap-x-2 items-center">
       <BookmarkPlusIcon size="16px" strokeWidth={1.5} />
       <div class="text-xs">Bookmark current view</div>
     </div>
   </DropdownMenuItem>
   {#if manageProject}
-    <DropdownMenuItem
-      on:click={() => dispatch("create-home")}
-      slot="manage-project"
-    >
+    <DropdownMenuItem on:click={() => onCreate(true)} slot="manage-project">
       <div class="flex flex-row gap-x-2">
         <HomeBookmarkPlus size="16px" />
         <div>
@@ -129,7 +131,7 @@
       {#if filteredBookmarks.personal?.length}
         {#each filteredBookmarks.personal as bookmark}
           {#key bookmark.resource.id}
-            <BookmarkItem {bookmark} on:edit on:select on:delete />
+            <BookmarkItem {bookmark} {onEdit} {onDelete} on:select />
           {/key}
         {/each}
       {:else}
@@ -149,8 +151,8 @@
           {#key filteredBookmarks.home.resource.id}
             <BookmarkItem
               bookmark={filteredBookmarks.home}
-              on:edit
-              on:delete
+              {onEdit}
+              {onDelete}
               readOnly={!manageProject}
             />
           {/key}
@@ -159,8 +161,8 @@
           {#key bookmark.resource.id}
             <BookmarkItem
               {bookmark}
-              on:edit
-              on:delete
+              {onEdit}
+              {onDelete}
               readOnly={!manageProject}
             />
           {/key}

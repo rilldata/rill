@@ -137,5 +137,5 @@ export async function updateCodeEditor(page: Page, code: string) {
     await page.keyboard.press("Control+A");
   }
   await page.keyboard.insertText(code);
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(600);
 }

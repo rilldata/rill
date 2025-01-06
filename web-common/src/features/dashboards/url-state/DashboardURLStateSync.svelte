@@ -18,6 +18,7 @@
     hasSessionStorageData,
     updateExploreSessionStore,
   } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import {
     createQueryServiceMetricsViewSchema,
     type V1ExplorePreset,
@@ -44,12 +45,18 @@
   $: exploreSpec = $validSpecStore.data?.explore;
   $: metricsSpec = $validSpecStore.data?.metricsView;
 
+  $: ({ instanceId } = $runtime);
+
   const metricsViewSchema = createQueryServiceMetricsViewSchema(
-    $runtime.instanceId,
+    instanceId,
     metricsViewName,
   );
   $: ({ error: schemaError } = $metricsViewSchema);
-  $: ({ error, data: timeRangeSummaryResp } = $timeRangeSummaryStore);
+  $: ({
+    error,
+    data: timeRangeSummaryResp,
+    isLoading: timeRangeSummaryIsLoading,
+  } = $timeRangeSummaryStore);
   $: timeRangeSummaryError = error as HTTPError;
 
   let timeControlsState: TimeControlState | undefined = undefined;
@@ -63,13 +70,14 @@
   }
 
   let prevUrl = "";
+  let initializing = false;
 
   onMount(() => {
     // in some cases afterNavigate is not always triggered
     // so this is the escape hatch to make sure dashboard store gets initialised
     setTimeout(() => {
       if (!$dashboardStore) {
-        handleExploreInit(true);
+        void handleExploreInit(true);
       }
     });
   });
@@ -103,7 +111,7 @@
       // When a user changes url manually and clears the params the `type` will be "enter"
       // This signal is used in handleExploreInit to make sure we do not use sessionStorage
       const isManualUrlChange = type === "enter";
-      handleExploreInit(isManualUrlChange);
+      void handleExploreInit(isManualUrlChange);
       return;
     }
 
@@ -125,13 +133,16 @@
       partialExplore,
       metricsSpec,
     );
-    redirectUrl.search = getUpdatedUrlForExploreState(
-      exploreSpec,
-      timeControlsState,
-      defaultExplorePreset,
-      partialExplore,
-      $page.url.searchParams,
-    );
+    if (shouldUpdateUrl) {
+      // if we added extra url params from sessionStorage then update the url
+      redirectUrl.search = getUpdatedUrlForExploreState(
+        exploreSpec,
+        timeControlsState,
+        defaultExplorePreset,
+        partialExplore,
+        $page.url.searchParams,
+      );
+    }
     // update session store when back button was pressed.
     if (backButtonUsed) {
       updateExploreSessionStore(
@@ -154,14 +165,17 @@
     }
 
     prevUrl = redirectUrl.toString();
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     void goto(redirectUrl, {
       replaceState: true,
       state: $page.state,
     });
   });
 
-  function handleExploreInit(isManualUrlChange: boolean) {
-    if (!exploreSpec || !metricsSpec) return;
+  async function handleExploreInit(isManualUrlChange: boolean) {
+    if (!exploreSpec || !metricsSpec || initializing) return;
+    initializing = true;
 
     let initState: Partial<MetricsExplorerEntity> | undefined;
     let shouldUpdateUrl = false;
@@ -176,7 +190,8 @@
       // when there are no params set, state will be state from config yaml and any additional initial state like bookmark
       initState = {
         ...exploreStateFromYAMLConfig,
-        ...(initExploreState ?? {}),
+        // if the url changed manually then do not load data from initState, which is home bookmark or shared url's state
+        ...(isManualUrlChange ? {} : (initExploreState ?? {})),
       };
       shouldUpdateUrl = !!initExploreState;
     } else {
@@ -187,7 +202,18 @@
       };
     }
 
+    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
+    if (metricsSpec.timeDimension) {
+      await waitUntil(() => !timeRangeSummaryIsLoading);
+    }
     metricsExplorerStore.init(exploreName, initState);
+    timeControlsState ??= getTimeControlState(
+      metricsSpec,
+      exploreSpec,
+      timeRangeSummaryResp?.timeRangeSummary,
+      get(metricsExplorerStore).entities[exploreName],
+    );
     const redirectUrl = new URL($page.url);
     redirectUrl.search = getUpdatedUrlForExploreState(
       exploreSpec,
@@ -233,6 +259,7 @@
     const newUrl = u.toString();
     if (!prevUrl || prevUrl === newUrl) return;
 
+    prevUrl = newUrl;
     // dashboard changed so we should update the url
     void goto(newUrl);
     // also update the session store

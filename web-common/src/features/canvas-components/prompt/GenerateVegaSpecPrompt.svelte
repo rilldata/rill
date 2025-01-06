@@ -12,11 +12,9 @@
 
   let prompt: string;
 
-  $: generateVegaConfig = createChartGenerator(
-    $runtime.instanceId,
-    chart,
-    filePath,
-  );
+  $: ({ instanceId } = $runtime);
+
+  $: generateVegaConfig = createChartGenerator(instanceId, chart, filePath);
 
   async function createVegaConfig() {
     open = false;

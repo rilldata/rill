@@ -108,8 +108,13 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 
 	for _, conn := range opts.TestConnectors {
-		connVars := Connectors[conn](t)
-		maps.Copy(vars, connVars)
+		acquire, ok := Connectors[conn]
+		require.True(t, ok, "unknown test connector %q", conn)
+		cfg := acquire(t)
+		for k, v := range cfg {
+			k = fmt.Sprintf("connector.%s.%s", conn, k)
+			vars[k] = v
+		}
 	}
 
 	tmpDir := t.TempDir()

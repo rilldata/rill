@@ -37,6 +37,8 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
+  $: ({ instanceId } = $runtime);
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: alertName = $page.params.alert;
@@ -45,15 +47,10 @@
       alertSpec.queryArgsJson) as string,
   ) as V1MetricsViewAggregationRequest;
 
-  $: metricsViewSpec = useMetricsViewValidSpec(
-    $runtime?.instanceId,
-    metricsViewName,
-  );
-  $: timeRange = useMetricsViewTimeRange(
-    $runtime?.instanceId,
-    metricsViewName,
-    { query: { queryClient } },
-  );
+  $: metricsViewSpec = useMetricsViewValidSpec(instanceId, metricsViewName);
+  $: timeRange = useMetricsViewTimeRange(instanceId, metricsViewName, {
+    query: { queryClient },
+  });
 
   const exploreName = getExploreName(
     alertSpec.annotations?.web_open_path ?? "",
@@ -103,13 +100,13 @@
           },
         });
         void queryClient.invalidateQueries(
-          getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
+          getRuntimeServiceGetResourceQueryKey(instanceId, {
             "name.name": alertName,
             "name.kind": ResourceKind.Alert,
           }),
         );
         void queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+          getRuntimeServiceListResourcesQueryKey(instanceId),
         );
         dispatch("close");
         eventBus.emit("notification", {

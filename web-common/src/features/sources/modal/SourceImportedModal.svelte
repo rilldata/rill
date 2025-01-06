@@ -26,18 +26,18 @@
 
   $: sourceName = extractFileName(sourcePath ?? "");
 
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: if (sourcePath) {
     fileArtifact = fileArtifacts.getFileArtifact(sourcePath);
-    sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
+    sourceQuery = fileArtifact.getResource(queryClient, instanceId);
   }
   $: sinkConnector = $sourceQuery?.data?.source?.spec?.sinkConnector;
 
   $: createExploreFromTable =
     sourcePath !== null
       ? useCreateMetricsViewFromTableUIAction(
-          $runtime.instanceId,
+          instanceId,
           sinkConnector as string,
           "",
           "",

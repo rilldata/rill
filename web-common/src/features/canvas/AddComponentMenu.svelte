@@ -19,9 +19,11 @@
   let open = false;
   let value = "";
 
+  $: ({ instanceId } = $runtime);
+
   // We want to get only valid components here. Hence using ListResources API
   $: componentsQuery = useClientFilteredResources(
-    $runtime.instanceId,
+    instanceId,
     ResourceKind.Component,
   );
   $: componentFileNames =

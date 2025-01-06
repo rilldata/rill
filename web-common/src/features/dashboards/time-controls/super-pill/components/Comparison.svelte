@@ -96,9 +96,10 @@
   }}
   typeahead={!showSelector}
 >
-  <DropdownMenu.Trigger asChild let:builder>
+  <DropdownMenu.Trigger asChild let:builder {disabled}>
     <button
       {disabled}
+      aria-disabled={disabled}
       use:builder.action
       {...builder}
       aria-label="Select time comparison option"
