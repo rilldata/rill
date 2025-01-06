@@ -82,34 +82,31 @@ export class Grid {
     mouseY: number,
     targetRect: DOMRect,
   ): DropPosition {
-    // Get the resize handles
-    const rowHandle = document.querySelector(".row-resize-handle");
-    const colHandle = document.querySelector(".col-resize-handle");
+    // Define zones - make them smaller for more precise targeting
+    const bottomZone = targetRect.bottom - targetRect.height * 0.2;
+    const topZone = targetRect.top + targetRect.height * 0.2;
+    const leftZone = targetRect.left + targetRect.width * 0.2;
+    const rightZone = targetRect.right - targetRect.width * 0.2;
 
-    if (rowHandle && this.isOverElement(mouseX, mouseY, rowHandle)) {
+    // Check vertical zones first
+    if (mouseY > bottomZone) {
+      return "bottom";
+    } else if (mouseY < topZone) {
+      // If near the top, always treat it as row start
       return "row";
     }
 
-    if (colHandle && this.isOverElement(mouseX, mouseY, colHandle)) {
-      return "col";
+    // If in the middle zone, determine left/right
+    if (mouseX < leftZone) {
+      return "left";
+    } else if (mouseX > rightZone) {
+      return "right";
     }
 
-    // Default to col if not over any handle
-    return "col";
-  }
-
-  private isOverElement(
-    mouseX: number,
-    mouseY: number,
-    element: Element,
-  ): boolean {
-    const rect = element.getBoundingClientRect();
-    return (
-      mouseX >= rect.left &&
-      mouseX <= rect.right &&
-      mouseY >= rect.top &&
-      mouseY <= rect.bottom
-    );
+    // Default to closest edge if in center
+    const distanceToLeft = mouseX - targetRect.left;
+    const distanceToRight = targetRect.right - mouseX;
+    return distanceToLeft < distanceToRight ? "left" : "right";
   }
 
   public moveItem(
@@ -131,27 +128,26 @@ export class Grid {
     const removedItem = { ...draggedItemFull };
 
     switch (position) {
-      case "col": {
-        console.log("[Grid] Dropping into column");
-        this.handleColumnDrop(removedItem, targetItem, rows);
-        // Find the correct insert index based on x position
-        const targetRow = rows.find((row) => row.y === targetItem.y);
-        if (targetRow) {
-          const sortedRowItems = targetRow.items.sort(
-            (a, b) => (a.x ?? 0) - (b.x ?? 0),
-          );
-          const insertPosition = sortedRowItems.findIndex(
-            (item) => (item.x ?? 0) > (removedItem.x ?? 0),
-          );
-          insertIndex =
-            insertPosition === -1
-              ? this.items.length
-              : this.items.indexOf(sortedRowItems[insertPosition]);
-        }
+      case "left": {
+        console.log("[Grid] Dropping left");
+        this.handleLeftDrop(removedItem, targetItem, rows);
+        insertIndex = this.items.indexOf(targetItem);
+        break;
+      }
+      case "right": {
+        console.log("[Grid] Dropping right");
+        this.handleRightDrop(removedItem, targetItem, rows);
+        insertIndex = this.items.indexOf(targetItem) + 1;
+        break;
+      }
+      case "bottom": {
+        console.log("[Grid] Dropping bottom");
+        this.handleBottomDrop(removedItem, targetItem, rows);
+        insertIndex = this.items.indexOf(targetItem) + 1;
         break;
       }
       case "row": {
-        console.log("[Grid] Dropping into row");
+        console.log("[Grid] Dropping row");
         this.handleRowDrop(removedItem, targetItem, rows);
         insertIndex = this.items.findIndex((item) => item.y === targetItem.y);
         break;
@@ -168,42 +164,80 @@ export class Grid {
     return { items: newItems, insertIndex };
   }
 
-  private handleColumnDrop(
+  private handleBottomDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+    rows: ReturnType<typeof Grid.groupItemsByRow>,
+  ) {
+    const targetY = targetItem.y ?? 0;
+    const targetHeight = targetItem.height ?? defaults.COMPONENT_HEIGHT;
+    const newY = targetY + targetHeight;
+
+    removedItem.y = newY;
+    removedItem.x = 0;
+    removedItem.width = defaults.COLUMN_COUNT;
+    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+
+    // Create new row and add item at index 0
+    const newRow = {
+      y: newY,
+      height: removedItem.height,
+      items: [],
+    };
+    newRow.items.splice(0, 0, removedItem);
+    rows.push(newRow);
+  }
+
+  private handleRightDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
     rows: ReturnType<typeof Grid.groupItemsByRow>,
   ) {
     const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (!targetRow) return;
+    if (targetRow) {
+      // Ensure removedItem has defined dimensions
+      removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+      removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
-    // Sort items in the row by x position
-    const sortedRowItems = [...targetRow.items].sort(
-      (a, b) => (a.x ?? 0) - (b.x ?? 0),
-    );
+      // Align y position and set x to immediately after targetItem
+      removedItem.y = targetItem.y ?? 0;
+      removedItem.x =
+        (targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH);
 
-    // Find the target item's position in the sorted row
-    const targetIndex = sortedRowItems.indexOf(targetItem);
+      // Insert removedItem after targetItem
+      const targetIndex = targetRow.items.indexOf(targetItem);
+      targetRow.items.splice(targetIndex + 1, 0, removedItem);
 
-    // Calculate the new x position for the dropped item
-    const newX = targetItem.x ?? 0;
-
-    // Shift all items from the target position to the right
-    for (let i = targetIndex; i < sortedRowItems.length; i++) {
-      const item = sortedRowItems[i];
-      if (!item) continue;
-
-      // Move each item to the right by the width of the dropped item
-      item.x = (item.x ?? 0) + (removedItem.width ?? defaults.COMPONENT_WIDTH);
+      // Update row height if necessary
+      targetRow.height = Math.max(targetRow.height, removedItem.height);
     }
+  }
 
-    // Place the dropped item at the target position
-    removedItem.y = targetItem.y ?? 0;
-    removedItem.x = newX;
-    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+  private handleLeftDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+    rows: ReturnType<typeof Grid.groupItemsByRow>,
+  ) {
+    const targetRow = rows.find((row) => row.y === targetItem.y);
+    if (targetRow) {
+      // Set the y position and height of the removed item
+      removedItem.y = targetItem.y ?? 0;
+      removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
-    // Update the row's height if necessary
-    targetRow.height = Math.max(targetRow.height, removedItem.height);
+      // Insert the removed item before the target item
+      const targetIndex = targetRow.items.indexOf(targetItem);
+      targetRow.items.splice(targetIndex, 0, removedItem);
+
+      // Adjust x positions to prevent overlaps
+      let currentX = 0;
+      targetRow.items.forEach((item) => {
+        item.x = currentX;
+        currentX += item.width ?? defaults.COMPONENT_WIDTH;
+      });
+
+      // Update the row's height if necessary
+      targetRow.height = Math.max(targetRow.height, removedItem.height);
+    }
   }
 
   private handleRowDrop(
