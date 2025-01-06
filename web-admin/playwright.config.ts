@@ -9,8 +9,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const config: PlaywrightTestConfig = {
-  globalSetup: "./tests/setup/globalSetup.ts",
-  globalTeardown: "./tests/setup/globalTeardown.ts",
+  ...(process.env.E2E_SKIP_GLOBAL_SETUP
+    ? {}
+    : {
+        globalSetup: "./tests/setup/globalSetup.ts",
+        globalTeardown: "./tests/setup/globalTeardown.ts",
+      }),
   webServer: {
     command: "npm run build && npm run preview",
     port: 3000,

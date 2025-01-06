@@ -2,12 +2,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 
-const skipGlobalSetup = Boolean(process.env.E2E_SKIP_GLOBAL_SETUP);
 const timeout = 120_000;
 
 export default async function globalSetup() {
-  if (skipGlobalSetup) return;
-
   // Get the repository root directory, the only place from which `rill devtool` is allowed to be run
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const repoRoot = path.resolve(currentDir, "../../../");
