@@ -79,7 +79,8 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 
 	if spec.CacheKeySql == "" {
 		if !e.streaming {
-			// for metrics views on rill managed tables no cache key specific to the metrics view is required
+			// for metrics views on rill managed tables, we can cache forever
+			// (until the metrics view is refreshed/edited, which always leads to cache invalidations)
 			return []byte(""), true, nil
 		}
 		// watermark is the default cache key for streaming metrics views
