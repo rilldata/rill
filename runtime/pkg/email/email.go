@@ -400,7 +400,7 @@ func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment failed for %s. Please update your payment method", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-We couldn’t process your payment for <b>%s</b>. You have until <b>%s</b> to update your payment details before your org is <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
+We couldn’t process your payment for <b>%s</b>. You have until <b>%s</b> to update your payment details before your org is hibernated.
 `, opts.OrgName, opts.GracePeriodEndDate.Format(dateFormat))),
 		ButtonText: "Update Payment Info",
 		ButtonLink: opts.PaymentURL,

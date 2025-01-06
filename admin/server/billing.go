@@ -203,7 +203,7 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 				OrgName:          org.Name,
 				FrontendURL:      s.admin.URLs.Frontend(),
 				PlanName:         plan.DisplayName,
-				BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+				BillingStartDate: sub.CurrentBillingCycleEndDate,
 			})
 		} else {
 			err = s.admin.Email.SendPlanUpdate(&email.PlanUpdate{
@@ -404,7 +404,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 			OrgName:          org.Name,
 			FrontendURL:      s.admin.URLs.Frontend(),
 			PlanName:         sub.Plan.DisplayName,
-			BillingStartDate: sub.CurrentBillingCycleEndDate.AddDate(0, 0, 1),
+			BillingStartDate: sub.CurrentBillingCycleEndDate,
 		})
 	} else {
 		err = s.admin.Email.SendSubscriptionRenewed(&email.SubscriptionRenewed{
