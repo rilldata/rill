@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
+
+var ErrMetricsViewCachingDisabled = errors.New("metrics_cache_key: caching is disabled")
 
 // Resolver represents logic, such as a SQL query, that produces output data.
 // Resolvers are used to evaluate API requests, alerts, reports, etc.
@@ -26,12 +29,12 @@ type Resolver interface {
 	// Close is called when done with the resolver.
 	// Note that the Resolve method may not have been called when Close is called (in case of cache hits or validation failures).
 	Close() error
-	// Cacheable indicates whether the resolver's results can be cached.
-	Cacheable() bool
-	// Key that can be used for caching. It can be a large string since the value will be hashed.
+	// CacheKey returns a key that can be used for caching. It can be a large string since the value will be hashed.
 	// The key should include all the properties and args that affect the output.
 	// It does not need to include the instance ID or resolver name, as those are added separately to the cache key.
-	Key() string
+	//
+	// If the resolver result is not cacheable, ok is set to false.
+	CacheKey(ctx context.Context) (key []byte, ok bool, err error)
 	// Refs access by the resolver. The output may be approximate, i.e. some of the refs may not exist.
 	// The output should avoid duplicates and be stable between invocations.
 	Refs() []*runtimev1.ResourceName
@@ -123,17 +126,23 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 	}
 	defer resolver.Close()
 
-	// If not cacheable, just resolve and return
-	if !resolver.Cacheable() {
+	// Get the cache key
+	cacheKey, ok, err := resolver.CacheKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		// If not cacheable, just resolve and return
 		return resolver.ResolveInteractive(ctx)
 	}
+
 	// Build cache key based on the resolver's key and refs
 	ctrl, err := r.Controller(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
 	}
 	hash := md5.New()
-	if _, err := hash.Write([]byte(resolver.Key())); err != nil {
+	if _, err := hash.Write(cacheKey); err != nil {
 		return nil, err
 	}
 	if opts.Claims.UserAttributes != nil {
