@@ -151,7 +151,7 @@ func (o *orbWebhook) handleSubscriptionStarted(se subscriptionEvent) {
 		return
 	}
 	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this events in persistent job
+		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
 		return
 	}
 	planCache[se.OrbSubscription.Customer.ExternalCustomerID] = planCacheEntry{
@@ -165,7 +165,7 @@ func (o *orbWebhook) handleSubscriptionEnded(se subscriptionEvent) {
 		return
 	}
 	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this events in persistent job
+		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
 		return
 	}
 	delete(planCache, se.OrbSubscription.Customer.ExternalCustomerID)
@@ -176,7 +176,7 @@ func (o *orbWebhook) handleSubscriptionPlanChanged(se subscriptionEvent) {
 		return
 	}
 	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this events in persistent job
+		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
 		return
 	}
 	planCache[se.OrbSubscription.Customer.ExternalCustomerID] = planCacheEntry{

@@ -233,8 +233,8 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 	if err != nil {
 		return nil, err
 	}
-	// NOTE - since change option is SubscriptionSchedulePlanChangeParamsChangeOptionImmediate, the plan change should be immediate
-	// if adding any other option then don't do this rather rely on webhook to update the cache
+	// NOTE - since currently change option is always SubscriptionSchedulePlanChangeParamsChangeOptionImmediate, the plan change will be immediate
+	// if supporting any other option then don't do this rather rely on webhook to update the cache
 	planCache[s.Customer.ExternalCustomerID] = planCacheEntry{planDisplayName: plan.DisplayName, lastUpdated: time.Now()}
 	return &Subscription{
 		ID:                           s.ID,
