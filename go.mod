@@ -420,10 +420,11 @@ require (
 
 exclude modernc.org/sqlite v1.18.1
 
-// Adds changes from the two PRs :
+// Adds changes from the following PRs :
 // https://github.com/apache/arrow/pull/41638
 // https://github.com/apache/arrow/pull/42003
-replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v15 v15.0.0-20241221060748-f48dd933c1b0
+// https://github.com/apache/arrow/pull/41698
+replace github.com/apache/arrow/go/v15 v15.0.2 => github.com/rilldata/arrow/go/v15 v15.0.0-20250102090621-2b8f541ea250
 
 // security vulnerability in dgrijalva/jwt-go
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
