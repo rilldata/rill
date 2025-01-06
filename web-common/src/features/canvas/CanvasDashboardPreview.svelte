@@ -515,12 +515,10 @@
             : targetItem.y * gridCell}
         left={dropTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
-          : dropTarget.position === "bottom"
+          : dropTarget.position === "bottom" || dropTarget.position === "row"
             ? 0
-            : dropTarget.position === "row"
-              ? targetItem.x * gridCell
-              : targetItem.x * gridCell}
-        width={dropTarget.position === "bottom"
+            : targetItem.x * gridCell}
+        width={dropTarget.position === "bottom" || dropTarget.position === "row"
           ? defaults.DASHBOARD_WIDTH
           : undefined}
         orientation={dropTarget.position === "bottom" ||
