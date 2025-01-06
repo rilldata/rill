@@ -14,6 +14,7 @@ test.describe("Read DuckDB Table, then read into Rill", () => {
       execSync("duckdb --version", { stdio: "ignore" });
       console.log("DuckDB is already installed.");
     } catch (err) {
+      console.log(err);
       console.log("DuckDB not found. Installing...");
       // Install DuckDB (example for macOS/Linux using wget)
       // https://github.com/duckdb/duckdb/releases/latest/download/duckdb_cli-linux-amd64.zip
