@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -39,17 +40,9 @@ func (e *objectStoreToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	inputProps := &s3InputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	if err := inputProps.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
-	}
-
-	// Build the model executor options with updated input and output properties
+	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.InputHandle, inputProps, opts.ModelName)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -61,33 +54,48 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Handle, inputProps *s3InputProps, model string) (map[string]any, error) {
-	m := &ModelInputProperties{}
-	var format string
-	if inputProps.Format != "" {
-		format = fmt.Sprintf(".%s", inputProps.Format)
-	} else {
-		format = fileutil.FullExt(inputProps.Path)
+func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector string, inputHandle drivers.Handle, inputProps map[string]any) (map[string]any, error) {
+	parsed := &s3InputProps{}
+	if err := mapstructure.WeakDecode(inputProps, parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+	if err := parsed.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
+	m := &ModelInputProperties{}
+	var format string
+	if parsed.Format != "" {
+		format = fmt.Sprintf(".%s", parsed.Format)
+	} else {
+		format = fileutil.FullExt(parsed.Path)
+	}
+
+	config := inputHandle.Config()
+	// config properties can also be set as input properties
+	maps.Copy(config, inputProps)
+
 	// Generate secret SQL to access the service and set as pre_exec_query
+	safeSecretName := safeName(fmt.Sprintf("%s__%s__secret", model, inputConnector))
 	switch inputHandle.Driver() {
 	case "s3":
-		safeSecretName := safeName(model + "_s3_secret_")
 		s3Config := &s3.ConfigProperties{}
-		err := mapstructure.WeakDecode(inputHandle.Config(), s3Config)
+		err := mapstructure.WeakDecode(config, s3Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE S3,")
+		sb.WriteString(" (TYPE S3")
 		if s3Config.AllowHostAccess {
-			sb.WriteString(" PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		if s3Config.AccessKeyID != "" {
-			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s, SESSION_TOKEN %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey), safeSQLString(s3Config.SessionToken))
+			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
+		}
+		if s3Config.SessionToken != "" {
+			fmt.Fprintf(&sb, ", SESSION_TOKEN %s", safeSQLString(s3Config.SessionToken))
 		}
 		if s3Config.Endpoint != "" {
 			sb.WriteString(", ENDPOINT ")
@@ -100,19 +108,18 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Han
 		sb.WriteRune(')')
 		m.PreExec = sb.String()
 	case "gcs":
-		safeSecretName := safeName(model + "_gcs_secret_")
 		// GCS works via S3 compatibility mode
 		s3Config := &s3.ConfigProperties{}
-		err := mapstructure.WeakDecode(inputHandle.Config(), s3Config)
+		err := mapstructure.WeakDecode(config, s3Config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE GCS,")
+		sb.WriteString(" (TYPE GCS")
 		if s3Config.AllowHostAccess {
-			sb.WriteString(" PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		if s3Config.AccessKeyID != "" {
 			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
@@ -120,18 +127,17 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Han
 		sb.WriteRune(')')
 		m.PreExec = sb.String()
 	case "azure":
-		safeSecretName := safeName(model + "_azure_secret_")
 		azureConfig := &azure.ConfigProperties{}
-		err := mapstructure.WeakDecode(inputHandle.Config(), azureConfig)
+		err := mapstructure.WeakDecode(config, azureConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
-		sb.WriteString(" (TYPE AZURE,")
+		sb.WriteString(" (TYPE AZURE")
 		if azureConfig.AllowHostAccess {
-			sb.WriteString(" PROVIDER CREDENTIAL_CHAIN")
+			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
 		if azureConfig.ConnectionString != "" {
 			fmt.Fprintf(&sb, ", CONNECTION_STRING %s", safeSQLString(azureConfig.ConnectionString))
@@ -146,7 +152,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(inputHandle drivers.Han
 	}
 
 	// Set SQL to read from the external source
-	from, err := sourceReader([]string{inputProps.Path}, format, inputProps.DuckDB)
+	from, err := sourceReader([]string{parsed.Path}, format, parsed.DuckDB)
 	if err != nil {
 		return nil, err
 	}
