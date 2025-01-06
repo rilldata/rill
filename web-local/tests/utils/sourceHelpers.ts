@@ -155,7 +155,7 @@ export async function cloud(
 
   // input the needed details for mysql
   // Locate the  SQL text box and modify
-  console.log("opened the UI");
+  // console.log("opened the UI");
 
   const inputField = page.locator("input#path");
   // Modify the text
@@ -245,7 +245,7 @@ export async function sqlLiteDataset(
 
   // input the needed details for mysql
   // Locate the  SQL text box and modify
-  console.log("opened the UI");
+  // console.log("opened the UI");
 
   const currentDir = process.cwd(); // Returns the directory where the script is executed
   const dbPath = path.join(currentDir, "mydb.sqlite");
@@ -296,7 +296,7 @@ export async function pgDataset(
 
   // input the needed details for mysql
   // Locate the  SQL text box and modify
-  console.log("opened the UI");
+  // console.log("opened the UI");
 
   const inputField = page.locator("input#sql");
   // Modify the text
