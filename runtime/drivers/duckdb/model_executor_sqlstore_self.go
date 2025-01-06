@@ -102,7 +102,7 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 			dsn = config.ResolveDSN()
 		}
 		if dsn == "" {
-			return nil, fmt.Errorf("must set `dsn` for models that transfer data from `postgres` to `duckdb`")
+			return nil, fmt.Errorf("must set `database_url` or `dsn` for models that transfer data from `postgres` to `duckdb`")
 		}
 		m.PreExec = fmt.Sprintf("INSTALL 'POSTGRES'; LOAD 'POSTGRES'; ATTACH %s AS %s (TYPE postgres, READ_ONLY)", safeSQLString(dsn), safeDBName)
 		m.SQL = fmt.Sprintf("SELECT * FROM postgres_query(%s, %s)", safeSQLString(dbName), safeSQLString(userQuery))
