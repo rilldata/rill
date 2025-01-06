@@ -36,11 +36,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   }
 
   isValid(spec: ChartSpec): boolean {
-    return (
-      typeof spec.metrics_view === "string" &&
-      Boolean(spec.x || spec.y) &&
-      typeof spec.time_range === "string"
-    );
+    return typeof spec.metrics_view === "string" && Boolean(spec.x || spec.y);
   }
 
   inputParams(): InputParams<ChartSpec> {

@@ -1,3 +1,4 @@
+import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -5,85 +6,97 @@ import {
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
-import { type CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
+import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useKPITotals(
+  ctx: StateManagers,
   instanceId: string,
   metricsViewName: string,
   measure: string,
-  timeRange: string,
-) {
-  return createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
-    {
-      measures: [{ name: measure }],
-      timeRange: { isoDuration: timeRange },
-    },
-    {
-      query: {
-        select: (data) => {
-          return data.data?.[0]?.[measure] ?? null;
+  overrideTimeRange: string | undefined,
+): CreateQueryResult<number | null, HTTPError> {
+  const { timeControls } = ctx.canvasEntity;
+
+  return derived(
+    [timeControls.selectedTimeRange, timeControls.selectedTimezone],
+    ([selectedTimeRange, timeZone], set) => {
+      let timeRange: V1TimeRange = {
+        start: selectedTimeRange?.start?.toISOString(),
+        end: selectedTimeRange?.end?.toISOString(),
+        timeZone,
+      };
+
+      if (overrideTimeRange) {
+        timeRange = { isoDuration: overrideTimeRange, timeZone };
+      }
+      return createQueryServiceMetricsViewAggregation(
+        instanceId,
+        metricsViewName,
+        {
+          measures: [{ name: measure }],
+          timeRange,
         },
-      },
+        {
+          query: {
+            enabled: !!selectedTimeRange?.start && !!selectedTimeRange?.end,
+            select: (data) => {
+              return data.data?.[0]?.[measure] ?? null;
+            },
+            queryClient: ctx.queryClient,
+          },
+        },
+      ).subscribe(set);
     },
   );
 }
 
 export function useKPIComparisonTotal(
+  ctx: StateManagers,
   instanceId: string,
   metricsViewName: string,
   measure: string,
-  comparisonRange: string | undefined,
-  timeRange: string,
-  whereSql: string | undefined,
-  queryClient: QueryClient,
-): CreateQueryResult<number | undefined> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    { query: { queryClient } },
-  );
+  overrideComparisonRange: string | undefined,
+): CreateQueryResult<number | null, HTTPError> {
+  const { timeControls } = ctx.canvasEntity;
 
-  return derived(allTimeRangeQuery, (allTimeRange, set) => {
-    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
-    const maxTimeDate = new Date(maxTime ?? 0);
-    const { startTime } = isoDurationToTimeRange(timeRange, maxTimeDate);
+  return derived(
+    [timeControls.selectedComparisonTimeRange, timeControls.selectedTimezone],
+    ([selectedComparisonTimeRange, timeZone], set) => {
+      let timeRange: V1TimeRange = {
+        start: selectedComparisonTimeRange?.start?.toISOString(),
+        end: selectedComparisonTimeRange?.end?.toISOString(),
+        timeZone,
+      };
 
-    let comparisonStartTime: Date, comparisonEndTime: Date;
-
-    if (comparisonRange) {
-      ({ startTime: comparisonStartTime, endTime: comparisonEndTime } =
-        isoDurationToTimeRange(comparisonRange, startTime));
-    } else {
-      comparisonStartTime = new Date(0);
-      comparisonEndTime = startTime;
-    }
-
-    return createQueryServiceMetricsViewAggregation(
-      instanceId,
-      metricsViewName,
-      {
-        measures: [{ name: measure }],
-        timeRange: {
-          start: comparisonStartTime.toISOString(),
-          end: comparisonEndTime.toISOString(),
+      // TODO: Use all time range and then calculate the comparison range
+      if (overrideComparisonRange) {
+        timeRange = { isoDuration: overrideComparisonRange, timeZone };
+      }
+      return createQueryServiceMetricsViewAggregation(
+        instanceId,
+        metricsViewName,
+        {
+          measures: [{ name: measure }],
+          timeRange,
         },
-        whereSql,
-      },
-      {
-        query: {
-          queryClient,
-          select: (data) => {
-            return data.data?.[0]?.[measure] ?? undefined;
+        {
+          query: {
+            enabled:
+              !!selectedComparisonTimeRange?.start &&
+              !!selectedComparisonTimeRange?.end,
+            select: (data) => {
+              return data.data?.[0]?.[measure] ?? null;
+            },
+            queryClient: ctx.queryClient,
           },
-          enabled: !!comparisonRange,
         },
-      },
-    ).subscribe(set);
-  });
+      ).subscribe(set);
+    },
+  );
 }
 
 export function useStartEndTime(
@@ -112,50 +125,65 @@ export function useStartEndTime(
 }
 
 export function useKPISparkline(
+  ctx: StateManagers,
   instanceId: string,
   metricsViewName: string,
   measure: string,
-  timeRange: string,
+  overrideTimeRange: string | undefined,
   whereSql: string | undefined,
-  queryClient: QueryClient,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
   const allTimeRangeQuery = useMetricsViewTimeRange(
     instanceId,
     metricsViewName,
-    { query: { queryClient } },
+    { query: { queryClient: ctx.queryClient } },
   );
 
-  return derived(allTimeRangeQuery, (allTimeRange, set) => {
-    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
-    const maxTimeDate = new Date(maxTime ?? 0);
-    const { startTime, endTime } = isoDurationToTimeRange(
-      timeRange,
-      maxTimeDate,
-    );
-    const defaultGrain = getDefaultTimeGrain(startTime, endTime);
-    return createQueryServiceMetricsViewTimeSeries(
-      instanceId,
-      metricsViewName,
-      {
-        measureNames: [measure],
-        timeStart: startTime.toISOString(),
-        timeEnd: endTime.toISOString(),
-        timeGranularity: defaultGrain,
-        whereSql,
-      },
-      {
-        query: {
-          enabled: !!startTime && !!endTime && !!maxTime,
-          select: (data) =>
-            data.data?.map((d) => {
-              return {
+  const { timeControls } = ctx.canvasEntity;
+  return derived(
+    [
+      allTimeRangeQuery,
+      timeControls.selectedTimeRange,
+      timeControls.selectedTimezone,
+    ],
+    ([allTimeRange, selectedTimeRange, timeZone], set) => {
+      const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
+      const maxTimeDate = new Date(maxTime ?? 0);
+      let startTime = selectedTimeRange?.start;
+      let endTime = selectedTimeRange?.end;
+
+      if (overrideTimeRange) {
+        const { startTime: start, endTime: end } = isoDurationToTimeRange(
+          overrideTimeRange,
+          maxTimeDate,
+        );
+        startTime = start;
+        endTime = end;
+      }
+
+      const defaultGrain = getDefaultTimeGrain(startTime, endTime);
+      return createQueryServiceMetricsViewTimeSeries(
+        instanceId,
+        metricsViewName,
+        {
+          measureNames: [measure],
+          timeStart: startTime.toISOString(),
+          timeEnd: endTime.toISOString(),
+          timeGranularity: defaultGrain,
+          timeZone,
+          whereSql,
+        },
+        {
+          query: {
+            enabled: !!startTime && !!endTime && !!maxTime,
+            select: (data) =>
+              data.data?.map((d) => ({
                 ts: new Date(d.ts as string),
                 [measure]: d?.records?.[measure],
-              };
-            }) ?? [],
-          queryClient,
+              })) ?? [],
+            queryClient: ctx.queryClient,
+          },
         },
-      },
-    ).subscribe(set);
-  });
+      ).subscribe(set);
+    },
+  );
 }

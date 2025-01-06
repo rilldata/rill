@@ -35,7 +35,7 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
         url: { type: "text", label: "URL" },
         ...commonOptions,
       },
-      filter: [],
+      filter: {},
     };
   }
 

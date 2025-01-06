@@ -43,7 +43,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
 
   isValid(spec: TableSpec): boolean {
     return (
-      typeof spec.time_range === "string" &&
+      typeof spec.metrics_view === "string" &&
       ((Array.isArray(spec.measures) && spec.measures.length > 0) ||
         (Array.isArray(spec.row_dimensions) &&
           spec.row_dimensions.length > 0) ||

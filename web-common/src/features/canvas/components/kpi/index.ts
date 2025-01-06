@@ -40,7 +40,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
 
   isValid(spec: KPISpec): boolean {
     return (
-      typeof spec.measure === "string" && typeof spec.time_range === "string"
+      typeof spec.measure === "string" && typeof spec.metrics_view === "string"
     );
   }
 

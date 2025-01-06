@@ -37,7 +37,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
         content: { type: "textArea" },
         ...commonOptions,
       },
-      filter: [],
+      filter: {},
     };
   }
 

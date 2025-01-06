@@ -1,5 +1,5 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
-import { useStartEndTime } from "@rilldata/web-common/features/canvas/components/kpi/selector";
+import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -9,6 +9,7 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -30,7 +31,7 @@ export function getChartData(
   instanceId: string,
   config: ChartConfig,
 ): Readable<ChartDataResult> {
-  const chartDataQuery = createChartDataQuery(ctx, instanceId, config);
+  const chartDataQuery = createChartDataQuery(ctx, config);
 
   const fields: { name: string; type: "measure" | "dimension" }[] = [];
   if (config.y?.field) fields.push({ name: config.y.field, type: "measure" });
@@ -78,8 +79,7 @@ export function getChartData(
 
 export function createChartDataQuery(
   ctx: StateManagers,
-  instanceId: string,
-  config: ChartConfig,
+  config: ChartConfig & ComponentFilterProperties,
   limit = "500",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
@@ -97,33 +97,37 @@ export function createChartDataQuery(
     dimensions = [...dimensions, { name: config.color.field }];
   }
 
+  const { timeControls } = ctx.canvasEntity;
   return derived(
-    [
-      ctx.runtime,
-      useStartEndTime(instanceId, config.metrics_view, config.time_range),
-    ],
-    ([runtime, timeRange], set) =>
-      createQueryServiceMetricsViewAggregation(
+    [ctx.runtime, timeControls.selectedTimeRange],
+    ([runtime, selectedTimeRange], set) => {
+      let timeRange: V1TimeRange = {
+        start: selectedTimeRange?.start?.toISOString(),
+        end: selectedTimeRange?.end?.toISOString(),
+      };
+
+      if (config.time_range) {
+        timeRange = { isoDuration: config.time_range };
+      }
+      return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         config.metrics_view,
         {
           measures,
           dimensions,
           where: undefined,
-          timeRange: {
-            start: timeRange?.data?.start?.toISOString() || undefined,
-            end: timeRange?.data?.end?.toISOString() || undefined,
-          },
+          timeRange,
           limit,
           offset,
         },
         {
           query: {
-            enabled: !!timeRange.data,
+            enabled: !!selectedTimeRange?.start && !!selectedTimeRange?.end,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
         },
-      ).subscribe(set),
+      ).subscribe(set);
+    },
   );
 }

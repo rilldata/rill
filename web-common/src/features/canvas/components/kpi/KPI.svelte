@@ -2,6 +2,7 @@
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
@@ -28,6 +29,8 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const queryClient = useQueryClient();
+  const ctx = getCanvasStateManagers();
+
   let containerWidth: number;
   let containerHeight: number;
 
@@ -51,29 +54,28 @@
   $: measure = $measureQuery?.data;
 
   $: measureValue = useKPITotals(
+    ctx,
     instanceId,
     metricsViewName,
     measureName,
-    timeRange.toUpperCase(),
+    timeRange,
   );
 
   $: comparisonValue = useKPIComparisonTotal(
+    ctx,
     instanceId,
     metricsViewName,
     measureName,
-    comparisonTimeRange?.toUpperCase(),
-    timeRange.toUpperCase(),
-    undefined,
-    queryClient,
+    comparisonTimeRange,
   );
 
   $: sparkline = useKPISparkline(
+    ctx,
     instanceId,
     metricsViewName,
     measureName,
-    timeRange.toUpperCase(),
+    timeRange,
     undefined,
-    queryClient,
   );
 
   $: sparkData = $sparkline?.data || [];
@@ -90,8 +92,9 @@
     ? createMeasureValueFormatter<null>(measure, "big-number")
     : () => "no data";
 
-  $: measureValueFormatted =
-    measureValueFormatter($measureValue.data) ?? "no data";
+  $: measureValueFormatted = $measureValue.data
+    ? measureValueFormatter($measureValue.data)
+    : "no data";
 
   $: comparisonPercChange =
     $comparisonValue.data &&
@@ -103,6 +106,7 @@
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
   function getFormattedDiff(comparisonValue) {
+    if (!$measureValue.data) return "";
     const delta = $measureValue.data - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
   }
@@ -135,7 +139,7 @@
           <div
             role="complementary"
             class="w-fit max-w-full overflow-hidden text-ellipsis ui-copy-inactive"
-            class:font-semibold={$measureValue.data >= 0}
+            class:font-semibold={$measureValue.data && $measureValue.data >= 0}
           >
             {#if $comparisonValue.data != null}
               {getFormattedDiff($comparisonValue.data)}
@@ -149,7 +153,7 @@
             <div
               role="complementary"
               class="w-fit ui-copy-inactive"
-              class:text-red-500={$measureValue.data < 0}
+              class:text-red-500={$measureValue.data && $measureValue.data < 0}
             >
               <PercentageChange
                 tabularNumber={false}
