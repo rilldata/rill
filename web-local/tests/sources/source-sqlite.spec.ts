@@ -33,12 +33,13 @@ async function readCSV(filePath) {
 
 test.describe("SQLite Test, then read into Rill", () => {
   test.beforeAll(async () => {
+    test.setTimeout(60000); // Set timeout to 60 seconds
+
     // Create and initialize SQLite database
     db = await open({
       filename: "mydb.sqlite", // Use in-memory database
       driver: sqlite3.Database,
     });
-
     if (!db) {
       throw new Error("Failed to open SQLite database");
     }
@@ -116,11 +117,11 @@ test.describe("SQLite Test, then read into Rill", () => {
   test.afterAll(async () => {
     // Close the SQLite database
     await db.close();
-    // fs.unlinkSync("mydb.sqlite"); // Deletes the database file
-    // console.log("Database file deleted");
+    fs.unlinkSync("mydb.sqlite"); // Deletes the database file
+    console.log("Database file deleted");
   });
 
-  test("Load and validate data in SQLite", async ({ page }) => {
+  test("Load and validate data in SQLite", async ({}) => {
     // Validate data in the database
     const sales = await db.all("SELECT * FROM sales");
     expect(sales).toHaveLength(100000);

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { test as RillTest } from "../utils/test";
 import { cloud, waitForTable } from "../utils/sourceHelpers";
 
