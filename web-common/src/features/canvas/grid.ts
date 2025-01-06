@@ -9,7 +9,6 @@ export class Grid {
     this.items = this.preventCollisions([...items]);
   }
 
-  // Type Guards
   static isValidItem(item: V1CanvasItem): item is V1CanvasItem & {
     x: number;
     y: number;
@@ -58,7 +57,6 @@ export class Grid {
       });
   }
 
-  // Position Validation
   private validateItemPositions(items: V1CanvasItem[]): void {
     const rows = Grid.groupItemsByRow(items);
     rows.forEach((row) => Grid.leftAlignRow(row));
@@ -73,7 +71,6 @@ export class Grid {
     });
   }
 
-  // Drop Position Detection
   public getDropPosition(
     mouseX: number,
     mouseY: number,
@@ -86,7 +83,7 @@ export class Grid {
     const rightZone = targetRect.right - targetRect.width * zoneSize;
 
     if (mouseY > bottomZone) return "bottom";
-    if (mouseY < topZone) return "row";
+    if (mouseY < topZone) return "top";
     if (mouseX < leftZone) return "left";
     if (mouseX > rightZone) return "right";
 
@@ -95,7 +92,6 @@ export class Grid {
     return distanceToLeft < distanceToRight ? "left" : "right";
   }
 
-  // Item Movement
   public moveItem(
     draggedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
@@ -126,8 +122,8 @@ export class Grid {
         this.handleBottomDrop(removedItem, targetItem, rows);
         insertIndex = this.items.indexOf(targetItem) + 1;
         break;
-      case "row":
-        this.handleRowDrop(removedItem, targetItem, rows);
+      case "top":
+        this.handleTopDrop(removedItem, targetItem, rows);
         insertIndex = this.items.findIndex((item) => item.y === targetItem.y);
         break;
     }
@@ -139,7 +135,6 @@ export class Grid {
     return { items: newItems, insertIndex };
   }
 
-  // Drop Handlers
   private handleLeftDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
@@ -148,8 +143,13 @@ export class Grid {
     const targetRow = rows.find((row) => row.y === targetItem.y);
     if (!targetRow) return;
 
-    removedItem.y = targetItem.y ?? 0;
+    // Fit item to grid
+    removedItem.width = Math.min(
+      removedItem.width ?? defaults.COMPONENT_WIDTH,
+      defaults.COLUMN_COUNT - (targetItem.x ?? 0),
+    );
     removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+    removedItem.y = targetItem.y ?? 0;
 
     const targetIndex = targetRow.items.indexOf(targetItem);
     targetRow.items.splice(targetIndex, 0, removedItem);
@@ -171,7 +171,14 @@ export class Grid {
     const targetRow = rows.find((row) => row.y === targetItem.y);
     if (!targetRow) return;
 
-    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+    // Fit item to grid
+    const remainingSpace =
+      defaults.COLUMN_COUNT -
+      ((targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH));
+    removedItem.width = Math.min(
+      removedItem.width ?? defaults.COMPONENT_WIDTH,
+      remainingSpace,
+    );
     removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
     removedItem.y = targetItem.y ?? 0;
     removedItem.x =
@@ -191,6 +198,7 @@ export class Grid {
     const targetHeight = targetItem.height ?? defaults.COMPONENT_HEIGHT;
     const newY = targetY + targetHeight;
 
+    // For bottom drops, use full width
     removedItem.y = newY;
     removedItem.x = 0;
     removedItem.width = defaults.COLUMN_COUNT;
@@ -203,7 +211,7 @@ export class Grid {
     });
   }
 
-  private handleRowDrop(
+  private handleTopDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
     rows: RowGroup[],
@@ -211,15 +219,16 @@ export class Grid {
     const targetRow = rows.find((row) => row.y === targetItem.y);
     if (!targetRow) return;
 
+    // For top drops, use full width
     removedItem.x = 0;
     removedItem.y = targetItem.y ?? 0;
+    removedItem.width = defaults.COLUMN_COUNT;
     removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
     targetRow.items.splice(0, 0, removedItem);
     targetRow.height = Math.max(targetRow.height, removedItem.height);
   }
 
-  // Collision Prevention
   private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {
     const rowGroups = Grid.groupItemsByRow(items);
 

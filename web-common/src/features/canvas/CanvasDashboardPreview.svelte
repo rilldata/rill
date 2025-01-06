@@ -505,24 +505,24 @@
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <DropIndicator
         height={dropTarget.position === "bottom" ||
-        dropTarget.position === "row"
+        dropTarget.position === "top"
           ? 2
           : targetItem.height * gridCell}
         top={dropTarget.position === "bottom"
           ? (targetItem.y + targetItem.height) * gridCell
-          : dropTarget.position === "row"
+          : dropTarget.position === "top"
             ? targetItem.y * gridCell
             : targetItem.y * gridCell}
         left={dropTarget.position === "right"
           ? (targetItem.x + targetItem.width) * gridCell
-          : dropTarget.position === "bottom" || dropTarget.position === "row"
+          : dropTarget.position === "bottom" || dropTarget.position === "top"
             ? 0
             : targetItem.x * gridCell}
-        width={dropTarget.position === "bottom" || dropTarget.position === "row"
+        width={dropTarget.position === "bottom" || dropTarget.position === "top"
           ? defaults.DASHBOARD_WIDTH
           : undefined}
         orientation={dropTarget.position === "bottom" ||
-        dropTarget.position === "row"
+        dropTarget.position === "top"
           ? "horizontal"
           : "vertical"}
       />
