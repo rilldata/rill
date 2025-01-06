@@ -23,7 +23,7 @@ type metricsViewCacheKeyResolver struct {
 	mvName     string
 	mv         *runtimev1.MetricsViewSpec
 	streaming  bool
-	exectuor   *metricsview.Executor
+	executor   *metricsview.Executor
 	args       *metricsViewCacheKeyResolverArgs
 }
 
@@ -80,7 +80,7 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 		instanceID: opts.InstanceID,
 		mvName:     tr.MetricsView,
 		streaming:  res.GetMetricsView().State.Streaming,
-		exectuor:   executor,
+		executor:   executor,
 		mv:         mv,
 		args:       args,
 	}, nil
@@ -113,7 +113,7 @@ func (r *metricsViewCacheKeyResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	key, ok, err := r.exectuor.CacheKey(ctx)
+	key, ok, err := r.executor.CacheKey(ctx)
 	if err != nil {
 		return nil, err
 	}
