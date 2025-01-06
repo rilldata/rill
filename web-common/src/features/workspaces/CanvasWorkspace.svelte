@@ -123,7 +123,7 @@
   }
 </script>
 
-{#if canvasResource && fileArtifact}
+{#if fileArtifact}
   {#key canvasName}
     <StateManagersProvider {canvasName}>
       <CanvasThemeProvider>
@@ -168,7 +168,8 @@
                 <ErrorPage
                   body={mainError.message}
                   fatal
-                  header="Unable to load dashboard preview"
+                  detail={allErrors.map((error) => error.message).join("\n")}
+                  header="Unable to load canvas preview"
                   statusCode={404}
                 />
               {:else if canvasResource}
@@ -182,13 +183,6 @@
       </CanvasThemeProvider>
     </StateManagersProvider>
   {/key}
-{:else if allErrors.length}
-  <ErrorPage
-    body="Please fix the errors in the code editor before previewing the dashboard."
-    header="Unable to load dashboard preview"
-    detail={allErrors.map((error) => error.message).join("\n")}
-    statusCode={404}
-  />
 {:else}
   <div class="grid place-items-center size-full">
     <DelayedSpinner isLoading={true} size="40px" />
