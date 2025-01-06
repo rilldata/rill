@@ -659,7 +659,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	}
 	schema := arrow.NewSchema(fields, nil)
 
-	mem := memory.NewCheckedAllocator(memory.NewGoAllocator())
+	mem := memory.DefaultAllocator
 	recordBuilder := array.NewRecordBuilder(mem, schema)
 	defer recordBuilder.Release()
 	for _, s := range data {
