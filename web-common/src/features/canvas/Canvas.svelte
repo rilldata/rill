@@ -9,7 +9,6 @@
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";
-  import { redistributeRowColumns } from "./util";
 
   export let fileArtifact: FileArtifact;
 
@@ -63,14 +62,6 @@
 
     // Create updated items array and redistribute row items
     const updatedItems = [...items.slice(0, index), ...items.slice(index + 1)];
-    // const affectedRowIndex = itemToDelete.y ?? 0;
-    // const rowItems = updatedItems.filter(
-    //   (item) => (item.y ?? 0) === affectedRowIndex,
-    // );
-
-    // if (rowItems.length > 0) {
-    //   redistributeRowColumns({ items: rowItems });
-    // }
 
     // Update document
     const parsedDocument = parseDocument(

@@ -30,10 +30,7 @@
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
   import { getCanvasStateManagers } from "../canvas/state-managers/state-managers";
-  import {
-    findNextAvailablePosition,
-    redistributeRowColumns,
-  } from "@rilldata/web-common/features/canvas/util";
+  import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
 
   export let fileArtifact: FileArtifact;
 
@@ -119,12 +116,6 @@
     };
 
     const updatedItems = [...existingItems, newComponent];
-
-    // FIXME: Move this to floating button
-    // const rowItems = updatedItems.filter((item) => (item.y ?? 0) === y);
-    // if (rowItems.length > 1) {
-    //   redistributeRowColumns({ items: rowItems });
-    // }
 
     if (!docJson.items) {
       parsedDocument.set("items", updatedItems);
