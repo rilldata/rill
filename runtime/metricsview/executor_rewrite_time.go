@@ -72,6 +72,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
+	fmt.Println(tr.RillTime, tr.Start, tr.End)
+
 	// Clear all other fields than Start and End
 	tr.RillTime = ""
 	tr.IsoDuration = ""
@@ -83,7 +85,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
 func (e *Executor) resolveTimeRangeLegacy(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
-
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		t, err := e.loadWatermark(ctx, executionTime)
 		if err != nil {

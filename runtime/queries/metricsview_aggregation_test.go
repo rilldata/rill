@@ -104,6 +104,9 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_comparison_using_rill_time", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_using_rill_time(t, rt, instanceID)
+	})
 }
 
 func testClaims() *runtime.SecurityClaims {
@@ -4917,6 +4920,68 @@ func testMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T, rt *r
 	require.Equal(t, "news.yahoo.com,77.00,0.07", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
 	i++
 	require.Equal(t, "news.google.com,256.00,0.23", fieldsToString2digits(rows[i], "domain", "total_records", "total_records__pt"))
+}
+
+func testMetricsViewsAggregation_comparison_using_rill_time(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			RillTime: "2022-03-01-7d,2022-03-01",
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			RillTime: "2022-03-01-7d,2022-03-01 @-7d",
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__p", columnNames(fields))
+	i := 0
+
+	rows := q.Result.Data
+	require.Equal(t, 7, len(rows))
+
+	i = 0
+	require.Equal(t, "sports.yahoo.com,1.51,1.50", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.yahoo.com,3.81,3.85", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.google.com,1.50,1.50", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "msn.com,1.84,1.48", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "instagram.com,1.49,1.50", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "google.com,3.83,3.82", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "facebook.com,1.84,1.51", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
