@@ -38,8 +38,6 @@
 
   export let fileArtifact: FileArtifact;
 
-  // const { canvasStore } = getCanvasStateManagers();
-
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
 

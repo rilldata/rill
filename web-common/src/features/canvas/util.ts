@@ -1,7 +1,7 @@
 import * as defaults from "./constants";
 import { groupItemsByRow } from "./grid";
+import type { PositionedItem, RowGroup, Vector } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
-import type { RowGroup, Vector } from "./types";
 
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
@@ -37,7 +37,7 @@ function getValidWidth(newWidth: number): number {
 
 // Check if a position is free of collisions
 function isPositionFree(
-  existingItems: V1CanvasItem[],
+  existingItems: PositionedItem[],
   x: number,
   y: number,
   width: number,
@@ -52,7 +52,7 @@ function isPositionFree(
 
 // Row-based grouping with sequential placement with collision checks
 export function findNextAvailablePosition(
-  existingItems: V1CanvasItem[],
+  existingItems: PositionedItem[],
   newWidth: number,
   newHeight: number,
 ): [number, number] {
@@ -63,9 +63,8 @@ export function findNextAvailablePosition(
   }
 
   // Group items by row (y coordinate)
-  const rowGroups = new Map<number, V1CanvasItem[]>();
+  const rowGroups = new Map<number, PositionedItem[]>();
   existingItems.forEach((item) => {
-    if (!item.y) return;
     const items = rowGroups.get(item.y) || [];
     items.push(item);
     rowGroups.set(item.y, items);
