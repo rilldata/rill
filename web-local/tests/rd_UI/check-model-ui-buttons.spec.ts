@@ -143,24 +143,14 @@ test.describe("Check Source UI buttons.", () => {
     await page.locator('span:has-text("sales_model_metrics.yaml")').hover();
     await actionUsingMenu(page, "/sales_model_metrics.yaml", "Delete");
 
-    await renameFileUsingMenu(
-      page,
-      "/metrics/sales_model_metrics_1.yaml",
-      "random_metrics.yaml",
-    );
+    await renameFileUsingMenu(page, "/metrics/sales_model_metrics_1.yaml", "random_metrics.yaml");
 
     // Check the model and metrics are still linked
     await page.locator('span:has-text("sales_model.sql")').click();
     await page.getByRole("button", { name: "Go to metrics view" }).click();
-    await page
-      .locator('div[role="menuitem"]:has-text("Create metrics view")')
-      .waitFor();
-    await expect(
-      page.getByRole("menuitem", { name: "random_metrics", exact: true }),
-    ).toBeVisible();
-    await page
-      .getByRole("menuitem", { name: "random_metrics", exact: true })
-      .click();
+    await page.locator('div[role="menuitem"]:has-text("Create metrics view")').waitFor();
+    await expect(page.getByRole("menuitem", { name: "random_metrics", exact: true }),).toBeVisible();
+    await page.getByRole("menuitem", { name: "random_metrics", exact: true }).click();
 
     // Can add further testing like renaming files and creating metrics from button to see if number is correct.
 
