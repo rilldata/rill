@@ -112,22 +112,29 @@
     new Map<string, PathOption>(),
   );
 
-  $: projectPaths = projects.reduce(
-    (map, { name }) =>
-      map.set(name.toLowerCase(), {
-        label: name,
-        preloadData: false,
-        absolute: onProjectsBreakdown,
-      }),
-    new Map<string, PathOption>(),
-  );
-  $: if (manageOrganization) {
-    projectPaths.set(ProjectSizeBreakdownRoute, {
-      label: "Project size breakdown",
-      preloadData: false,
-      section: "-",
-      absolute: true,
-    });
+  let orgPagePaths = new Map<string, PathOption>();
+  $: if (onProjectsBreakdown) {
+    orgPagePaths = new Map([
+      [
+        ProjectSizeBreakdownRoute,
+        {
+          label: "Project size breakdown",
+          preloadData: false,
+          section: "-",
+          absolute: true,
+        },
+      ],
+    ]);
+  } else {
+    orgPagePaths = projects.reduce(
+      (map, { name }) =>
+        map.set(name.toLowerCase(), {
+          label: name,
+          preloadData: false,
+          absolute: onProjectsBreakdown,
+        }),
+      new Map<string, PathOption>(),
+    );
   }
 
   $: visualizationPaths = visualizations.reduce((map, { resource }) => {
@@ -160,7 +167,7 @@
 
   $: pathParts = [
     organizationPaths,
-    projectPaths,
+    orgPagePaths,
     visualizationPaths,
     report ? reportPaths : alert ? alertPaths : null,
   ];

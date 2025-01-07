@@ -36,6 +36,6 @@ export const load = async ({ params, parent }) => {
     };
   } catch (err) {
     const statusCode = err?.response?.status || 500;
-    throw error(statusCode, "Failed to fetch project breakdown");
+    throw error(statusCode, "Project breakdown is not available right now");
   }
 };
