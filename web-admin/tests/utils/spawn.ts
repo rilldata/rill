@@ -47,7 +47,9 @@ export async function spawnAndMatch(
     process.on("exit", (code) => {
       clearTimeout(timeout);
       reject(
-        new Error(`Process exited with code ${code} before finding match`),
+        new Error(
+          `Process "${command} ${args.join(" ")}" exited with code ${code} before finding match`,
+        ),
       );
     });
   });
