@@ -7,7 +7,6 @@
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
-  import type { Vector } from "./types";
   import DropIndicator from "./DropIndicator.svelte";
   import { getRowIndex, getColumnIndex } from "./util";
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
@@ -16,8 +15,6 @@
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
   export let showFilterBar = true;
-
-  const { canvasStore } = getCanvasStateManagers();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
@@ -56,22 +53,17 @@
     return Math.max(max, bottom);
   }, 0);
 
-  $: console.log("[CanvasDashboardPreview] items updated:", items);
+  $: itemsByRow = groupItemsByRow(items);
+
+  const { canvasStore } = getCanvasStateManagers();
 
   const dispatch = createEventDispatcher();
-  const { canvasName } = getCanvasStateManagers();
-
-  $: itemsByRow = groupItemsByRow(items);
 
   const grid = new Grid(items);
 
   function handleChange(
     e: CustomEvent<{
       e: MouseEvent & { currentTarget: HTMLButtonElement };
-      dimensions: Vector;
-      position: Vector;
-      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
-      changePosition: [0 | 1, 0 | 1];
     }>,
   ) {
     e.preventDefault();
@@ -196,7 +188,7 @@
       return;
     }
     hoveredIndex = e.detail.index;
-    console.log("[CanvasDashboardPreview] Component hovered:", hoveredIndex);
+    // console.log("[CanvasDashboardPreview] Component hovered:", hoveredIndex);
   }
 
   function handleMouseLeave(e: CustomEvent<{ index: number }>) {
@@ -206,7 +198,7 @@
     }
     if (hoveredIndex === e.detail.index) {
       hoveredIndex = null;
-      console.log("[CanvasDashboardPreview] Component unhovered");
+      // console.log("[CanvasDashboardPreview] Component unhovered");
     }
   }
 
@@ -282,11 +274,6 @@
     }
     document.body.classList.remove("resizing-row");
     resizingRow = null;
-  }
-
-  function handleColResizeStart(e: CustomEvent) {
-    resizingCol = e.detail;
-    document.body.classList.add("resizing-col");
   }
 
   function handleColResize(e: MouseEvent) {
@@ -426,7 +413,7 @@
   }}
   on:drop={handleDrop}
 >
-  <div class="grid auto-rows-min w-full gap-0">
+  <div class="grid-container w-full">
     {#each itemsByRow as row, index (index)}
       <div
         class="row w-full"
@@ -441,7 +428,6 @@
             {scale}
             {component}
             {radius}
-            {gridCell}
             selected={selectedIndex === i}
             interacting={false}
             padding={16}
@@ -467,8 +453,8 @@
             on:change={handleChange}
             on:mouseenter={handleMouseEnter}
             on:mouseleave={handleMouseLeave}
-            on:colResizeStart={handleColResizeStart}
           />
+
           {#if itemIndex < row.items.length - 1}
             <button
               type="button"
@@ -544,6 +530,11 @@
 <style lang="postcss">
   :global(body.resizing-row) {
     cursor: row-resize !important;
+  }
+
+  .grid-container {
+    position: relative;
+    width: 100%;
   }
 
   .row {

@@ -23,6 +23,41 @@ export class Grid {
     );
   }
 
+  private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {
+    const newItems = [...items];
+
+    // Sort all items by y position, then x position
+    newItems.sort((a, b) => {
+      const yDiff = (a.y ?? 0) - (b.y ?? 0);
+      return yDiff !== 0 ? yDiff : (a.x ?? 0) - (b.x ?? 0);
+    });
+
+    // Process each row
+    const rows = Grid.groupItemsByRow(newItems);
+    rows.forEach((row) => {
+      let currentX = 0;
+
+      // Sort items within row by x position
+      row.items
+        .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
+        .forEach((item) => {
+          if (!Grid.isValidItem(item)) return;
+
+          // Place item at currentX
+          item.x = currentX;
+          item.y = row.y;
+
+          // Move currentX past this item
+          currentX += item.width;
+          if (currentX > defaults.COLUMN_COUNT) {
+            currentX = defaults.COLUMN_COUNT;
+          }
+        });
+    });
+
+    return newItems;
+  }
+
   // Row Management
   static groupItemsByRow(items: V1CanvasItem[]): RowGroup[] {
     const rows: RowGroup[] = [];
@@ -102,150 +137,124 @@ export class Grid {
       throw new Error("Invalid items provided to moveItem");
     }
 
-    const rows = Grid.groupItemsByRow([...this.items]);
-    let newItems = [...this.items];
-    let insertIndex = this.items.indexOf(targetItem);
-
-    const [draggedItemFull] = newItems.splice(dragIndex, 1);
-    const removedItem = { ...draggedItemFull };
+    const newItems = [...this.items];
+    const [removedItem] = newItems.splice(dragIndex, 1);
 
     switch (position) {
       case "left":
-        this.handleLeftDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.indexOf(targetItem);
+        this.handleLeftDrop(removedItem, targetItem);
         break;
       case "right":
-        this.handleRightDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.indexOf(targetItem) + 1;
-        break;
-      case "bottom":
-        this.handleBottomDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.indexOf(targetItem) + 1;
+        this.handleRightDrop(removedItem, targetItem);
         break;
       case "top":
-        this.handleTopDrop(removedItem, targetItem, rows);
-        insertIndex = this.items.findIndex((item) => item.y === targetItem.y);
+        this.handleTopDrop(removedItem, targetItem);
+        break;
+      case "bottom":
+        this.handleBottomDrop(removedItem, targetItem);
         break;
     }
 
-    newItems.splice(insertIndex, 0, removedItem);
-    newItems = this.preventCollisions(newItems);
-    this.validateItemPositions(newItems);
-
-    return { items: newItems, insertIndex };
-  }
-
-  private handleLeftDrop(
-    removedItem: V1CanvasItem,
-    targetItem: V1CanvasItem,
-    rows: RowGroup[],
-  ): void {
-    const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (!targetRow) return;
-
-    // Fit item to grid
-    removedItem.width = Math.min(
-      removedItem.width ?? defaults.COMPONENT_WIDTH,
-      defaults.COLUMN_COUNT - (targetItem.x ?? 0),
+    // Find insert index based on new position
+    const insertIndex = newItems.findIndex(
+      (item) =>
+        (item.y ?? 0) > (removedItem.y ?? 0) ||
+        ((item.y ?? 0) === (removedItem.y ?? 0) &&
+          (item.x ?? 0) > (removedItem.x ?? 0)),
     );
-    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-    removedItem.y = targetItem.y ?? 0;
 
-    const targetIndex = targetRow.items.indexOf(targetItem);
-    targetRow.items.splice(targetIndex, 0, removedItem);
+    // Insert the item at the correct position
+    if (insertIndex === -1) {
+      newItems.push(removedItem);
+    } else {
+      newItems.splice(insertIndex, 0, removedItem);
+    }
 
-    let currentX = 0;
-    targetRow.items.forEach((item) => {
-      item.x = currentX;
-      currentX += item.width ?? defaults.COMPONENT_WIDTH;
-    });
+    // Update matrix and prevent any collisions
+    this.items = this.preventCollisions(newItems);
 
-    targetRow.height = Math.max(targetRow.height, removedItem.height);
+    return {
+      items: this.items,
+      insertIndex: insertIndex === -1 ? this.items.length - 1 : insertIndex,
+    };
   }
 
   private handleRightDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
-    rows: RowGroup[],
   ): void {
-    const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (!targetRow) return;
+    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
 
-    // Fit item to grid
-    const remainingSpace =
-      defaults.COLUMN_COUNT -
-      ((targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH));
-    removedItem.width = Math.min(
-      removedItem.width ?? defaults.COMPONENT_WIDTH,
-      remainingSpace,
-    );
-    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
-    removedItem.y = targetItem.y ?? 0;
-    removedItem.x =
-      (targetItem.x ?? 0) + (targetItem.width ?? defaults.COMPONENT_WIDTH);
+    // Initialize removedItem properties if undefined
+    removedItem.x = targetItem.x + targetItem.width;
+    removedItem.y = targetItem.y;
+    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+    // Match target row height
+    removedItem.height = targetItem.height;
 
-    const targetIndex = targetRow.items.indexOf(targetItem);
-    targetRow.items.splice(targetIndex + 1, 0, removedItem);
-    targetRow.height = Math.max(targetRow.height, removedItem.height);
+    // If would overflow column count, adjust width
+    if (removedItem.x + removedItem.width > defaults.COLUMN_COUNT) {
+      removedItem.width = defaults.COLUMN_COUNT - removedItem.x;
+    }
   }
 
-  private handleBottomDrop(
+  private handleLeftDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
-    rows: RowGroup[],
   ): void {
-    const targetY = targetItem.y ?? 0;
-    const targetHeight = targetItem.height ?? defaults.COMPONENT_HEIGHT;
-    const newY = targetY + targetHeight;
+    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
 
-    // For bottom drops, use full width
-    removedItem.y = newY;
-    removedItem.x = 0;
-    removedItem.width = defaults.COLUMN_COUNT;
-    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
+    // Initialize removedItem properties if undefined
+    removedItem.x = targetItem.x;
+    removedItem.y = targetItem.y;
+    removedItem.width = removedItem.width ?? defaults.COMPONENT_WIDTH;
+    // Match target row height
+    removedItem.height = targetItem.height;
 
-    rows.push({
-      y: newY,
-      height: removedItem.height,
-      items: [removedItem],
-    });
+    // Shift target item right
+    targetItem.x = removedItem.x + removedItem.width;
   }
 
   private handleTopDrop(
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
-    rows: RowGroup[],
   ): void {
-    const targetRow = rows.find((row) => row.y === targetItem.y);
-    if (!targetRow) return;
+    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
 
-    // For top drops, use full width
+    // Initialize removedItem properties if undefined
     removedItem.x = 0;
-    removedItem.y = targetItem.y ?? 0;
-    removedItem.width = defaults.COLUMN_COUNT;
+    removedItem.y = targetItem.y;
+    removedItem.width = defaults.COLUMN_COUNT; // Full width for new row
+    // Keep original height for new row
     removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
-    targetRow.items.splice(0, 0, removedItem);
-    targetRow.height = Math.max(targetRow.height, removedItem.height);
+    // Move all items in this row and below down
+    this.items.forEach((item) => {
+      if ((item.y ?? 0) >= targetItem.y) {
+        item.y = (item.y ?? 0) + removedItem.height;
+      }
+    });
   }
 
-  private preventCollisions(items: V1CanvasItem[]): V1CanvasItem[] {
-    const rowGroups = Grid.groupItemsByRow(items);
+  private handleBottomDrop(
+    removedItem: V1CanvasItem,
+    targetItem: V1CanvasItem,
+  ): void {
+    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
 
-    rowGroups.forEach((row) => {
-      let currentX = 0;
-      row.items.sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
+    // Initialize removedItem properties if undefined
+    removedItem.x = 0;
+    removedItem.y = targetItem.y + targetItem.height;
+    removedItem.width = defaults.COLUMN_COUNT; // Full width for new row
+    // Keep original height for new row
+    removedItem.height = removedItem.height ?? defaults.COMPONENT_HEIGHT;
 
-      row.items.forEach((item) => {
-        item.x = currentX;
-        currentX += item.width ?? defaults.COMPONENT_WIDTH;
-        if (currentX > defaults.COLUMN_COUNT) {
-          currentX = defaults.COLUMN_COUNT;
-        }
-      });
+    // Move all items below target's row down
+    this.items.forEach((item) => {
+      if ((item.y ?? 0) > targetItem.y) {
+        item.y = (item.y ?? 0) + removedItem.height;
+      }
     });
-
-    return items;
   }
 }
 

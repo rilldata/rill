@@ -22,7 +22,6 @@
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let rowIndex: number;
   export let columnIndex: number;
-  export let gridCell: number;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
@@ -46,12 +45,6 @@
     dragend: void;
     mouseenter: { index: number };
     mouseleave: { index: number };
-    colResizeStart: {
-      index: number;
-      startX: number;
-      initialWidth: number;
-      maxWidth: number;
-    };
   }>();
 
   function handleMouseDown(e: MouseEvent) {
