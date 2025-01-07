@@ -296,7 +296,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Limit:              &limit,
 		Offset:             req.Offset,
 		TimeZone:           req.TimeZone,
-		MetricsView:        mv,
+		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
 		Filter:             req.Filter,
 	}
@@ -329,7 +329,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 
 	q := &queries.MetricsViewTimeRange{
 		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv,
+		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -420,7 +420,7 @@ func (s *Server) MetricsViewResolveTimeRanges(ctx context.Context, req *runtimev
 
 	timeRangeQuery := &queries.MetricsViewTimeRange{
 		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv,
+		MetricsView:        mv.ValidSpec,
 		ResolvedMVSecurity: security,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, timeRangeQuery, int(req.Priority))
@@ -442,7 +442,7 @@ func (s *Server) MetricsViewResolveTimeRanges(ctx context.Context, req *runtimev
 	return q.Result, nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -459,7 +459,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -478,7 +478,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewSpec, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -495,5 +495,5 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
 	}
 
-	return res, spec, nil
+	return res, mv.State, nil
 }

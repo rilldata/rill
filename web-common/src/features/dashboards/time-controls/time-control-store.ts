@@ -16,8 +16,8 @@ import {
 } from "@rilldata/web-common/lib/time/grains";
 import { getAdjustedFetchTime } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
   TimeRangePreset,
@@ -394,7 +394,12 @@ function getComparisonTimeRange(
         name: comparisonOption,
       };
     }
-  } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+  } else if (
+    comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
+    // 1st step towards using a single `Custom` variable
+    // TODO: replace the usage of TimeComparisonOption.CUSTOM with TimeRangePreset.CUSTOM
+    comparisonTimeRange.name === TimeRangePreset.CUSTOM
+  ) {
     return comparisonTimeRange;
   } else {
     // variable time range of some kind.

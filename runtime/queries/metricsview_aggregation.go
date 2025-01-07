@@ -82,7 +82,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, priority)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, opts.Priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, security, opts.Priority)
 	if err != nil {
 		return err
 	}
@@ -268,6 +268,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.ComparisonTimeRange.End != nil {
 			res.End = q.ComparisonTimeRange.End.AsTime()
 		}
+		res.RillTime = q.ComparisonTimeRange.RillTime
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)

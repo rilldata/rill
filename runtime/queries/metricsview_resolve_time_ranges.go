@@ -62,7 +62,7 @@ func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, false, sec, priority)
 	if err != nil {
 		return err
 	}
@@ -87,8 +87,8 @@ func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.
 			Now:        now,
 			MinTime:    q.MinTime,
 			MaxTime:    watermark,
-			FirstDay:   int(mv.FirstDayOfWeek),
-			FirstMonth: int(mv.FirstMonthOfYear),
+			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
+			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})
 		if err != nil {
 			return err

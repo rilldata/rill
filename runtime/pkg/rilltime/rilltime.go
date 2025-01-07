@@ -15,7 +15,8 @@ import (
 var (
 	infPattern      = regexp.MustCompile("^(?i)inf$")
 	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
-	rillTimeLexer   = lexer.MustSimple([]lexer.SimpleRule{
+	// nolint:govet // This is suggested usage by the docs.
+	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
 		{"Now", "now"},
 		{"Latest", "latest"},
 		{"Earliest", "earliest"},
@@ -68,9 +69,10 @@ var (
 )
 
 type RillTime struct {
-	Start       *TimeAnchor `parser:"  @@"`
-	End         *TimeAnchor `parser:"(',' @@)?"`
-	Modifiers   *Modifiers  `parser:"(':' @@)?"`
+	Start       *TimeAnchor  `parser:"  @@"`
+	End         *TimeAnchor  `parser:"(',' @@)?"`
+	Modifiers   *Modifiers   `parser:"(':' @@)?"`
+	AtModifiers *AtModifiers `parser:"('@' @@)?"`
 	IsNewFormat bool
 	grain       timeutil.TimeGrain
 	isComplete  bool
@@ -89,9 +91,8 @@ type TimeAnchor struct {
 }
 
 type Modifiers struct {
-	Grain         *Grain       `parser:"( @@"`
-	CompleteGrain *Grain       `parser:"| '|' @@ '|')?"`
-	At            *AtModifiers `parser:"( '@' @@)?"`
+	Grain         *Grain `parser:"( @@"`
+	CompleteGrain *Grain `parser:"| '|' @@ '|')?"`
 }
 
 type Grain struct {
@@ -139,15 +140,12 @@ func Parse(from string) (*RillTime, error) {
 			// TODO: non-1 grains
 			rt.isComplete = true
 		}
-
-		if rt.Modifiers.At != nil {
-			if rt.Modifiers.At.TimeZone != nil {
-				var err error
-				rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.Modifiers.At.TimeZone, "{}"))
-				if err != nil {
-					return nil, fmt.Errorf("invalid time zone %q: %w", *rt.Modifiers.At.TimeZone, err)
-				}
-			}
+	}
+	if rt.AtModifiers != nil && rt.AtModifiers.TimeZone != nil {
+		var err error
+		rt.timeZone, err = time.LoadLocation(strings.Trim(*rt.AtModifiers.TimeZone, "{}"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid time zone %q: %w", *rt.AtModifiers.TimeZone, err)
 		}
 	}
 
@@ -227,10 +225,10 @@ func ParseISO(from string, strict bool) (*RillTime, error) {
 }
 
 func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, error) {
-	if r.Modifiers != nil && r.Modifiers.At != nil && r.Modifiers.At.Offset != nil {
-		resolverCtx.Now = r.Modifiers.At.Offset.Modify(resolverCtx, resolverCtx.Now, r.grain, r.timeZone, r.isComplete)
-		resolverCtx.MinTime = r.Modifiers.At.Offset.Modify(resolverCtx, resolverCtx.MinTime, r.grain, r.timeZone, r.isComplete)
-		resolverCtx.MaxTime = r.Modifiers.At.Offset.Modify(resolverCtx, resolverCtx.MaxTime, r.grain, r.timeZone, r.isComplete)
+	if r.AtModifiers != nil && r.AtModifiers.Offset != nil {
+		resolverCtx.Now = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.Now, false)
+		resolverCtx.MinTime = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.MinTime, false)
+		resolverCtx.MaxTime = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.MaxTime, false)
 	}
 
 	start := resolverCtx.Now
@@ -240,15 +238,64 @@ func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, e
 	}
 
 	if r.Start != nil {
-		start = r.Start.Modify(resolverCtx, start, r.grain, r.timeZone, r.isComplete)
+		start = r.Modify(resolverCtx, r.Start, start, true)
 	}
 
 	end := resolverCtx.Now
 	if r.End != nil {
-		end = r.End.Modify(resolverCtx, end, r.grain, r.timeZone, r.isComplete)
+		end = r.Modify(resolverCtx, r.End, end, true)
 	}
 
 	return start, end, nil
+}
+
+func (r *RillTime) Modify(resolverCtx ResolverContext, ta *TimeAnchor, tm time.Time, addOffset bool) time.Time {
+	isTruncate := true
+	truncateGrain := r.grain
+
+	if ta.Now {
+		tm = resolverCtx.Now.In(r.timeZone)
+		isTruncate = r.isComplete
+	} else if ta.Earliest {
+		tm = resolverCtx.MinTime.In(r.timeZone)
+		isTruncate = true
+	} else if ta.Latest {
+		tm = resolverCtx.MaxTime.In(r.timeZone)
+		isTruncate = r.isComplete
+	} else if ta.AbsDate != nil {
+		absTm, _ := time.Parse(time.DateOnly, *ta.AbsDate)
+		if addOffset && r.AtModifiers != nil && r.AtModifiers.Offset != nil {
+			absTm = r.Modify(resolverCtx, r.AtModifiers.Offset, absTm, false)
+		}
+		tm = absTm.In(r.timeZone)
+	} else if ta.AbsTime != nil {
+		absTm, _ := time.Parse("2006-01-02 15:04", *ta.AbsTime)
+		if addOffset && r.AtModifiers != nil && r.AtModifiers.Offset != nil {
+			absTm = r.Modify(resolverCtx, r.AtModifiers.Offset, absTm, false)
+		}
+		tm = absTm.In(r.timeZone)
+	} else if ta.Grain != nil {
+		tm = ta.Grain.offset(tm.In(r.timeZone))
+
+		truncateGrain = grainMap[ta.Grain.Grain]
+		isTruncate = true
+	} else {
+		return tm.In(r.timeZone)
+	}
+
+	if ta.Offset != nil {
+		tm = ta.Offset.offset(tm)
+	}
+
+	if ta.Trunc != nil {
+		truncateGrain = grainMap[*ta.Trunc]
+		isTruncate = true
+	}
+
+	if isTruncate {
+		return timeutil.TruncateTime(tm, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+	}
+	return timeutil.CeilTime(tm, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
 }
 
 func (t *TimeAnchor) Modify(resolverCtx ResolverContext, tm time.Time, tg timeutil.TimeGrain, tz *time.Location, isComplete bool) time.Time {
