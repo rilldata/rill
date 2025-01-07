@@ -4,7 +4,9 @@
 
   export let organization: string;
 
-  $: projs = createAdminServiceListProjectsForOrganization(organization);
+  $: projs = createAdminServiceListProjectsForOrganization(organization, {
+    pageSize: 1000,
+  });
 </script>
 
 <div class="flex flex-col gap-y-4">
