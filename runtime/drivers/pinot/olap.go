@@ -238,7 +238,6 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		schemaFields = append(schemaFields, &runtimev1.StructType_Field{Name: field.Name, Type: databaseTypeToPB(field.DataType, !field.NotNull, singleValueField)})
 	}
 
-	// Mapping the schemaResponse to your Table structure
 	table := &drivers.Table{
 		Database:        "",
 		DatabaseSchema:  "",
