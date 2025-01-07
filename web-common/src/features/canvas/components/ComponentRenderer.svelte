@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
   import { Chart } from "./charts";
   import { Image } from "./image";
   import { KPI } from "./kpi";
@@ -14,6 +15,13 @@
   export let renderer: string;
   export let componentName: string;
 
+  const components = new Map([
+    ["kpi", KPI],
+    ["table", Table],
+    ["markdown", Markdown],
+    ["image", Image],
+  ]);
+
   $: componentQuery = createQueryServiceResolveComponent(
     $runtime.instanceId,
     componentName,
@@ -22,18 +30,14 @@
   $: componentData = $componentQuery?.data;
   $: rendererProperties =
     componentData?.rendererProperties as V1ComponentSpecRendererProperties;
+
+  $: Component = components.get(renderer);
 </script>
 
 {#if rendererProperties}
-  {#if renderer === "kpi"}
-    <KPI {rendererProperties} />
-  {:else if renderer === "table"}
-    <Table {rendererProperties} />
-  {:else if renderer === "markdown"}
-    <Markdown {rendererProperties} />
-  {:else if renderer === "image"}
-    <Image {rendererProperties} />
-  {:else}
+  {#if isChartComponentType(renderer)}
     <Chart {rendererProperties} {renderer} />
+  {:else}
+    <svelte:component this={Component} {rendererProperties} />
   {/if}
 {/if}
