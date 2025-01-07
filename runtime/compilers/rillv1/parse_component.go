@@ -105,25 +105,27 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		n += len(tmp.Other)
 	}
 
-	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,
-	// and adding it to refs generally makes for nicer error messages, we specifically search for and link it here.
-	var refs []ResourceName
-	for k, v := range rendererProps.Fields {
-		if k == "metrics_view" {
-			name := v.GetStringValue()
-			if name != "" {
-				refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
-			}
-			break
-		}
-	}
-
 	// Check there is exactly one renderer
 	if n == 0 {
 		return nil, nil, errors.New(`missing renderer configuration`)
 	}
 	if n > 1 {
 		return nil, nil, errors.New(`multiple renderers are not allowed`)
+	}
+
+	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,
+	// and adding it to refs generally makes for nicer error messages, we specifically search for and link it here.
+	var refs []ResourceName
+	if rendererProps != nil {
+		for k, v := range rendererProps.Fields {
+			if k == "metrics_view" {
+				name := v.GetStringValue()
+				if name != "" {
+					refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+				}
+				break
+			}
+		}
 	}
 
 	// Parse input variables
