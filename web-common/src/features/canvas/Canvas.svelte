@@ -24,12 +24,11 @@
 
   let showGrid = true;
 
-  // FIXME: Uncomment before shipping
   // Open inspector when a canvas item is selected
-  // $: workspaceLayout = workspaces.get(fileArtifact.path);
-  // $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
-  //   workspaceLayout.inspector.open();
-  // }
+  $: workspaceLayout = workspaces.get(fileArtifact.path);
+  $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
+    workspaceLayout.inspector.open();
+  }
 
   let spec: V1CanvasSpec = {
     items: [],
