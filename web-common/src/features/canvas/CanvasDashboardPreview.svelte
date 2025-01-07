@@ -9,7 +9,7 @@
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
   import DropIndicator from "./DropIndicator.svelte";
-  import { getRowIndex, getColumnIndex } from "./util";
+  import { getRowIndex, getColumnIndex, redistributeRowColumns } from "./util";
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
 
@@ -39,6 +39,9 @@
     initialWidth: number;
     maxWidth: number;
   } | null = null;
+  let hideTimeout: ReturnType<typeof setTimeout>;
+  let activeResizeGroup: number | null = null;
+  let clickedResizeHandle: number | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -391,6 +394,74 @@
     };
     document.body.classList.add("resizing-col");
   }
+
+  function handleSpreadEvenly(index: number) {
+    console.log("[CanvasDashboardPreview] handleSpreadEvenly", {
+      index,
+    });
+    // Get the item at the resize handle
+    const selectedItem = items[index];
+    if (!selectedItem) return;
+
+    // Get all items in the same row
+    const rowItems = items.filter((item) => item.y === selectedItem.y);
+    if (!rowItems.length) return;
+
+    // Create a row group for redistribution
+    const row = {
+      y: selectedItem.y,
+      height: selectedItem.height,
+      items: rowItems,
+    };
+
+    // Get redistributed items
+    const redistributedItems = redistributeRowColumns(row);
+    if (!redistributedItems) return;
+
+    // Update items with new widths and positions
+    items = items.map((item) => {
+      const redistributedItem = redistributedItems.find(
+        (ri) => ri.x === item.x && ri.y === item.y,
+      );
+      return redistributedItem || item;
+    });
+
+    // Notify parent of update
+    dispatch("update", {
+      index: -1,
+      items,
+      position: [0, 0],
+      dimensions: [0, 0],
+    });
+  }
+
+  function handleResizeGroupEnter(index: number) {
+    clearTimeout(hideTimeout);
+    activeResizeGroup = index;
+  }
+
+  function handleResizeGroupLeave(index: number) {
+    hideTimeout = setTimeout(() => {
+      if (activeResizeGroup === index) {
+        activeResizeGroup = null;
+      }
+    }, 300);
+  }
+
+  function handleResizeHandleClick(index: number, e: MouseEvent) {
+    e.stopPropagation();
+    clickedResizeHandle = clickedResizeHandle === index ? null : index;
+  }
+
+  // Add click handler to document to close when clicking outside
+  function handleDocumentClick(e: MouseEvent) {
+    if (clickedResizeHandle !== null) {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".floating-buttons")) {
+        clickedResizeHandle = null;
+      }
+    }
+  }
 </script>
 
 <div
@@ -456,22 +527,68 @@
           />
 
           {#if itemIndex < row.items.length - 1}
-            <button
-              type="button"
-              aria-label="Resize column"
-              class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
-              style="left: {((component.x ?? 0) +
-                (component.width ?? defaults.COMPONENT_WIDTH)) *
-                gridCell -
-                1.5}px; height: {row.height * gridCell}px;"
-              on:mousedown|stopPropagation={(e) =>
-                handleColumnResizeStart(
-                  e,
-                  i,
-                  (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
-                  component.x ?? 0,
-                )}
-            />
+            <div
+              class="col-resize-group"
+              role="presentation"
+              class:active={activeResizeGroup === i}
+              on:mouseenter={() => handleResizeGroupEnter(i)}
+              on:mouseleave={() => handleResizeGroupLeave(i)}
+            >
+              <button
+                type="button"
+                aria-label="Resize column"
+                class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 pointer-events-auto"
+                class:bg-primary-300={clickedResizeHandle === i}
+                style="left: {((component.x ?? 0) +
+                  (component.width ?? defaults.COMPONENT_WIDTH)) *
+                  gridCell -
+                  1.5}px; height: {row.height * gridCell}px;"
+                on:mousedown|stopPropagation={(e) =>
+                  handleColumnResizeStart(
+                    e,
+                    i,
+                    (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
+                    component.x ?? 0,
+                  )}
+                on:click|stopPropagation={(e) => handleResizeHandleClick(i, e)}
+              />
+
+              <!-- Floating button group -->
+              <div
+                class="floating-buttons absolute flex flex-col gap-1 opacity-0 transition-opacity pointer-events-none"
+                class:show={clickedResizeHandle === i}
+                style="left: {((component.x ?? 0) +
+                  (component.width ?? defaults.COMPONENT_WIDTH)) *
+                  gridCell -
+                  12}px; top: {row.height * gridCell}px;"
+              >
+                <button
+                  type="button"
+                  class="p-1 rounded bg-white shadow-md hover:bg-slate-50 border border-slate-200 pointer-events-auto"
+                  title="Spread evenly"
+                  on:mousedown|stopPropagation
+                  on:click|stopPropagation={() => {
+                    handleSpreadEvenly(i);
+                    clickedResizeHandle = null;
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M11.8637 1.46968C11.5708 1.17679 11.096 1.17679 10.8031 1.46968C10.5102 1.76257 10.5102 2.23745 10.8031 2.53034L12.1894 3.91668L6.00006 3.91667C5.58584 3.91667 5.25006 4.25246 5.25005 4.66667C5.25005 5.08088 5.58584 5.41667 6.00005 5.41667L12.1894 5.41668L10.8031 6.80301C10.5102 7.09591 10.5102 7.57078 10.8031 7.86368C11.0959 8.15657 11.5708 8.15657 11.8637 7.86368L14.5302 5.19721L14.5304 5.19701C14.671 5.05636 14.7501 4.8656 14.7501 4.66668C14.7501 4.46777 14.671 4.27701 14.5304 4.13635L14.5297 4.13566C14.394 4.00034 14.2068 3.91668 14.0001 3.91668L11.8637 1.46968ZM5.19705 8.13634C5.48994 8.42924 5.48994 8.90411 5.19705 9.197L3.81071 10.5833L10 10.5833C10.4143 10.5833 10.75 10.9191 10.75 11.3333C10.75 11.7476 10.4143 12.0833 10 12.0833L3.81071 12.0833L5.19704 13.4697C5.48993 13.7626 5.48993 14.2374 5.19704 14.5303C4.90415 14.8232 4.42927 14.8232 4.13638 14.5303L1.46972 11.8637C1.39781 11.7918 1.34356 11.7089 1.30696 11.6204C1.27029 11.532 1.25005 11.435 1.25005 11.3333C1.25005 11.2316 1.27029 11.1347 1.30696 11.0462C1.34272 10.9598 1.39535 10.8787 1.46484 10.8079M1.47031 10.8024L4.13639 8.13634C4.42928 7.84345 4.90415 7.84345 5.19705 8.13634"
+                      fill="#64748B"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           {/if}
         {/each}
       </div>
@@ -525,6 +642,7 @@
     handleRowResizeEnd();
     handleColResizeEnd();
   }}
+  on:click={handleDocumentClick}
 />
 
 <style lang="postcss">
@@ -549,5 +667,21 @@
 
   :global(body.resizing-col) {
     cursor: col-resize !important;
+  }
+
+  .col-resize-group {
+    position: relative;
+  }
+
+  .col-resize-group.active .col-resize-handle {
+    opacity: 1;
+  }
+
+  .floating-buttons {
+    z-index: 51;
+  }
+
+  .floating-buttons.show {
+    opacity: 1;
   }
 </style>
