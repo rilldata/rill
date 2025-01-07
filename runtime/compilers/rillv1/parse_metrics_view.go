@@ -71,6 +71,11 @@ type MetricsViewYAML struct {
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
 	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
+	Cache               struct {
+		Enabled *bool  `yaml:"enabled"`
+		KeySQL  string `yaml:"key_sql"`
+		KeyTTL  string `yaml:"key_ttl"`
+	} `yaml:"cache"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -784,6 +789,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	var cacheTTLDuration time.Duration
+	if tmp.Cache.KeyTTL != "" {
+		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
+		if err != nil {
+			return fmt.Errorf(`invalid "cache.key_ttl": %w`, err)
+		}
+	}
+
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -826,6 +839,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Measures = measures
 
 	spec.SecurityRules = securityRules
+	spec.CacheEnabled = tmp.Cache.Enabled
+	spec.CacheKeySql = tmp.Cache.KeySQL
+	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 
 	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
 	if node.Version > 0 {

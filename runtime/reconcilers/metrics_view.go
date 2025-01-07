@@ -79,6 +79,14 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		}
 	}
 
+	// Find out if the metrics view has a ref to a source or model in the same project.
+	hasInternalRef := false
+	for _, ref := range self.Meta.Refs {
+		if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
+			hasInternalRef = true
+		}
+	}
+
 	// NOTE: In other reconcilers, state like spec_hash and refreshed_on is used to avoid redundant reconciles.
 	// We don't do that here because none of the operations below are particularly expensive.
 	// So it doesn't really matter if they run a bit more often than necessary ¯\_(ツ)_/¯.
@@ -86,7 +94,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// NOTE: Not checking refs for errors since they may still be valid even if they have errors. Instead, we just validate the metrics view against the table name.
 
 	// Validate the metrics view and update ValidSpec
-	e, err := metricsview.NewExecutor(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, runtime.ResolvedSecurityOpen, 0)
+	e, err := metricsview.NewExecutor(ctx, r.C.Runtime, r.C.InstanceID, mv.Spec, !hasInternalRef, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to create metrics view executor: %w", err)}
 	}
@@ -107,15 +115,7 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	// Set the "streaming" state (see docstring in the proto for details).
 	mv.State.Streaming = false
 	if validateErr == nil {
-		// Find out if the metrics view has a ref to a source or model in the same project.
-		hasInternalRef := false
-		for _, ref := range self.Meta.Refs {
-			if ref.Kind == runtime.ResourceKindSource || ref.Kind == runtime.ResourceKindModel {
-				hasInternalRef = true
-			}
-		}
-
-		// If not, we assume the metrics view is based on an externally managed table and set the streaming state to true.
+		// If no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 		mv.State.Streaming = !hasInternalRef
 	}
 

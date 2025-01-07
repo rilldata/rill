@@ -32,4 +32,6 @@ For individuals that prefer a more traditional email medium, you can open a supp
 
 ### In-app chat
 
-For logged-in users, Rill provides an ability to ask a question and/or report an issue to the Rill Support team from within the application directly via an embedded in-app chat widget. More details to come soon!
+For logged-in users, Rill provides an ability to ask a question and/or report an issue to the Rill Support team from within the application directly via an embedded in-app chat widget. Select your user icon in the top right corner and select "Contact Rill support" and a chat widget will appear on your screen!
+
+![rill-chat](/img/contact/rill-developer-chat.png)
