@@ -254,7 +254,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 		})
 	}
 
-	e, err := metricsview.NewExecutor(ctx, s.runtime, instanceID, spec, runtime.ResolvedSecurityOpen, 0)
+	e, err := metricsview.NewExecutor(ctx, s.runtime, instanceID, spec, !isModel, runtime.ResolvedSecurityOpen, 0)
 	if err != nil {
 		return nil, err
 	}

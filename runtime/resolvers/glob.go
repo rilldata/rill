@@ -13,11 +13,9 @@ import (
 	"path"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -144,16 +142,8 @@ func (r *globResolver) Close() error {
 	return nil
 }
 
-func (r *globResolver) Cacheable() bool {
-	return false
-}
-
-func (r *globResolver) Key() string {
-	hash, err := hashstructure.Hash(r.props, hashstructure.FormatV2, nil)
-	if err != nil {
-		panic(err)
-	}
-	return strconv.FormatUint(hash, 16)
+func (r *globResolver) CacheKey(ctx context.Context) ([]byte, bool, error) {
+	return nil, false, nil
 }
 
 func (r *globResolver) Refs() []*runtimev1.ResourceName {
