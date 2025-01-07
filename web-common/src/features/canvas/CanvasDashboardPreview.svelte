@@ -13,6 +13,7 @@
   import type { DropPosition } from "./types";
   import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
   import RowResizer from "./RowResizer.svelte";
+  import ColumnResizer from "./ColumnResizer.svelte";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -538,23 +539,22 @@
               on:mouseenter={() => handleResizeGroupEnter(i)}
               on:mouseleave={() => handleResizeGroupLeave(i)}
             >
-              <button
-                type="button"
-                aria-label="Resize column"
-                class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 pointer-events-auto"
-                class:opacity-100={clickedResizeHandle === i}
-                style="left: {((component.x ?? 0) +
+              <ColumnResizer
+                left={((component.x ?? 0) +
                   (component.width ?? defaults.COMPONENT_WIDTH)) *
                   gridCell -
-                  1.5}px; height: {row.height * gridCell}px;"
-                on:mousedown|stopPropagation={(e) =>
+                  1.5}
+                height={row.height * gridCell}
+                clicked={clickedResizeHandle === i}
+                resizing={resizingCol?.index === i}
+                on:resize={(e) =>
                   handleColumnResizeStart(
-                    e,
+                    e.detail,
                     i,
                     (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
                     component.x ?? 0,
                   )}
-                on:click|stopPropagation={(e) => handleResizeHandleClick(i, e)}
+                on:click={(e) => handleResizeHandleClick(i, e.detail)}
               />
 
               <FloatingButtonGroup
@@ -640,5 +640,9 @@
 
   :global(body.resizing-col) {
     cursor: col-resize !important;
+  }
+
+  .col-resize-group.active .col-resize-handle {
+    opacity: 1 !important;
   }
 </style>
