@@ -12,6 +12,7 @@
   import { Grid, groupItemsByRow, isValidItem } from "./grid";
   import type { DropPosition } from "./types";
   import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
+  import RowResizer from "./RowResizer.svelte";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -531,7 +532,7 @@
 
           {#if itemIndex < row.items.length - 1}
             <div
-              class="col-resize-group"
+              class="col-resize-group relative"
               role="presentation"
               class:active={activeResizeGroup === i}
               on:mouseenter={() => handleResizeGroupEnter(i)}
@@ -541,7 +542,7 @@
                 type="button"
                 aria-label="Resize column"
                 class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 pointer-events-auto"
-                class:bg-primary-300={clickedResizeHandle === i}
+                class:opacity-100={clickedResizeHandle === i}
                 style="left: {((component.x ?? 0) +
                   (component.width ?? defaults.COMPONENT_WIDTH)) *
                   gridCell -
@@ -573,12 +574,9 @@
         {/each}
       </div>
 
-      <button
-        type="button"
-        aria-label="Resize row"
-        class="row-resize-handle w-full h-[3px] cursor-row-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
-        on:mousedown|stopPropagation={(e) =>
-          handleRowResizeStart(e, index, row.height * gridCell)}
+      <RowResizer
+        on:resize={(e) =>
+          handleRowResizeStart(e.detail, index, row.height * gridCell)}
       />
     {/each}
   </div>
@@ -640,20 +638,7 @@
     min-height: 0;
   }
 
-  .row-resize-handle {
-    position: relative;
-    transition: opacity 0.2s;
-  }
-
   :global(body.resizing-col) {
     cursor: col-resize !important;
-  }
-
-  .col-resize-group {
-    position: relative;
-  }
-
-  .col-resize-group.active .col-resize-handle {
-    opacity: 1;
   }
 </style>
