@@ -8,9 +8,9 @@ import { addFolderWithCheck } from "../utils/sourceHelpers";
 test.describe("Creating a Folder... and making a source.", () => {
   RillTest("Creating Folder", async ({ page }) => {
     // create folder file
-    await Promise.all([addFolderWithCheck(page, "untitled_folder_3")]);
+    await Promise.all([addFolderWithCheck(page, "untitled_folder")]);
     await Promise.all([addFolderWithCheck(page, "untitled_folder_1")]);
-    await Promise.all([addFolderWithCheck(page, "untitled_folder_")]);
+    await Promise.all([addFolderWithCheck(page, "untitled_folder_2")]);
     // create folder in subfolder
     await page.locator('span:has-text("untitled_folder_2")').last().hover();
     await page.getByLabel("untitled_folder_2 actions menu trigger").click();
