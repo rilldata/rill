@@ -56,9 +56,22 @@ setup("should authenticate and deploy a project", async ({ page }) => {
     ],
     /https?:\/\/[^\s]+/,
   );
-  // Manually navigate to the auth URL
+  // Manually navigate to the GitHub auth URL
   const url = match[0];
   await page.goto(url);
+  // Log-in to GitHub
+  await page.getByLabel("Username or email address").click();
+  await page
+    .getByLabel("Username or email address")
+    .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
+  await page.getByLabel("Password").click();
+  await page
+    .getByLabel("Password")
+    .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL("/-/github/connect/success");
+  // Wait for the deployment to complete (TODO: replace this with a better check)
+  await page.waitForTimeout(10000);
   // Expect to see the successful deployment
   await page.goto("/e2e/openrtb");
   await expect(page.getByText("Your trial expires in 30 days")).toBeVisible(); // Billing banner
