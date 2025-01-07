@@ -9,6 +9,7 @@
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";
+  import { PlusCircleIcon } from "lucide-svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -128,12 +129,25 @@
   }
 </script>
 
-<CanvasDashboardPreview
-  {items}
-  selectedIndex={$selectedIndex}
-  on:update={handleUpdate}
-  on:delete={handleDelete}
-/>
+{#if items.length > 0}
+  <CanvasDashboardPreview
+    {items}
+    selectedIndex={$selectedIndex}
+    on:update={handleUpdate}
+    on:delete={handleDelete}
+  />
+{:else}
+  <div class="size-full p-4">
+    <button
+      type="button"
+      class="flex flex-col items-center gap-2 p-8 rounded-lg border border-slate-200 hover:border-slate-300 w-full"
+      on:click={() => console.log("clicked")}
+    >
+      <PlusCircleIcon class="w-6 h-6 text-slate-500" />
+      <span class="text-sm font-medium text-slate-500">Add a component</span>
+    </button>
+  </div>
+{/if}
 
 <svelte:window
   on:keydown={async (e) => {
