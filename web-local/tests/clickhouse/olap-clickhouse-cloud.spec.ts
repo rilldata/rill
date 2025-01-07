@@ -2,314 +2,335 @@ import { test, expect } from "@playwright/test";
 import { test as RillTest } from "../utils/test";
 
 /// ClickHouse Cloud test to add clickhouse connector, create metrics -> explore dashboard, as well as table -> dashboard.
-/// Fairly basic testing, and expects the preview to load correctly.
+/// Credentials have access only to playwright_e2e db.
 
 test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
-    RillTest("Create ClickHouse Connection...", async ({ page }) => {
-        /// Using ClickHouse Cloud, create a metrics view then explore dashboard.
-        // create blank file
-        await page.getByLabel("Add Asset").click();
-        await page.getByLabel("Add Source").click();
-        await page.locator(`button#clickhouse`).click();
+  RillTest("Create ClickHouse Connection...", async ({ page }) => {
+    // Create clickhouse.yaml
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Source").click();
+    await page.locator(`button#clickhouse`).click();
 
-        const inputField = page.locator("input#host");
-        await inputField.fill("l3e2nu99sw.us-east-1.aws.clickhouse.cloud");
+    const inputField = page.locator("input#host");
+    await inputField.fill("l3e2nu99sw.us-east-1.aws.clickhouse.cloud");
 
-        const inputField2 = page.locator("input#port");
-        await inputField2.fill("8443");
+    const inputField2 = page.locator("input#port");
+    await inputField2.fill("8443");
 
-        const inputField3 = page.locator("input#username");
-        await inputField3.fill(`playwright_user`);
+    const inputField3 = page.locator("input#username");
+    await inputField3.fill(`playwright_user`);
 
-        const inputField4 = page.locator("input#password");
-        await inputField4.fill(`R!llD@taQA2024`);
+    const inputField4 = page.locator("input#password");
+    await inputField4.fill(`R!llD@taQA2024`);
 
-        const inputField5 = page.locator("input#ssl");
-        await inputField5.check();
+    const inputField5 = page.locator("input#ssl");
+    await inputField5.check();
 
-        const inputField6 = page.locator("input#database");
-        await inputField6.fill(`playwright_E2E`);
+    const inputField6 = page.locator("input#database");
+    await inputField6.fill(`playwright_E2E`); //defined database, only has access here
 
-        await page
-            .locator('button[form="add-data-clickhouse-form"]')
-            .waitFor({ state: "visible" });
-        await page.locator('button[form="add-data-clickhouse-form"]').click();
+    await page
+      .locator('button[form="add-data-clickhouse-form"]')
+      .waitFor({ state: "visible" });
+    await page.locator('button[form="add-data-clickhouse-form"]').click();
 
-        // wait for connector to be created. Check that connectors clichouse is displayed
-        await page.waitForSelector(
-            'li[aria-label="/connectors/clickhouse.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        const section = page.locator("section.connector-section");
-        const clickhouseEntry = section.locator('li[aria-label="clickhouse"]');
-        await expect(clickhouseEntry).toHaveCount(1);
+    // wait for connector to be created. Check that connectors clichouse is displayed
+    await page.waitForSelector(
+      'li[aria-label="/connectors/clickhouse.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    const section = page.locator("section.connector-section");
+    const clickhouseEntry = section.locator('li[aria-label="clickhouse"]');
+    await expect(clickhouseEntry).toHaveCount(1);
 
-        // find table
-        const defaultButton = page.locator(
-            'li[aria-label="clickhouse"] button:has-text("playwright_E2E")',
-        );
-        const ukPricePaidItem = page.locator(
-            'a.clickable-text[href="/connector/clickhouse/clickhouse/playwright_E2E/uk_price_paid"]',
-        );
+    // find database in the UI, ensures that the database has loaded.
+    const defaultButton = page.locator(
+      'li[aria-label="clickhouse"] button:has-text("playwright_E2E")',
+    );
+    const ukPricePaidItem = page.locator(
+      'a.clickable-text[href="/connector/clickhouse/clickhouse/playwright_E2E/uk_price_paid"]',
+    );
 
-        // Check if the "ol" is visible
-        const isVisible = await ukPricePaidItem.isVisible();
+    // Check if the table uk_pricepaid is visible.
+    const isVisible = await ukPricePaidItem.isVisible();
 
-        if (!isVisible) {
-            // Click the "default" button to expand it
-            await defaultButton.click();
-        }
+    if (!isVisible) {
+      // Click the "default" button to expand the table
+      await defaultButton.click();
+    }
 
-        // Hover over the "uk_price_paid" item and create metrics
-        await ukPricePaidItem.hover();
-        await page
-            .getByLabel("clickhouse-playwright_E2E.uk_price_paid actions menu trigger")
-            .click();
-        await page
-            .locator('div[role="menuitem"]:has-text("Generate metrics with AI")')
-            .click();
+    // Hover over the "uk_price_paid" item and create metrics
+    await ukPricePaidItem.hover();
+    await page
+      .getByLabel(
+        "clickhouse-playwright_E2E.uk_price_paid actions menu trigger",
+      )
+      .click();
+    await page
+      .locator('div[role="menuitem"]:has-text("Generate metrics with AI")')
+      .click();
 
-        // Create explore dashboard
-        await page.waitForSelector(
-            'li[aria-label="/metrics/uk_price_paid_metrics.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page
-            .locator('button[role="button"]:has-text("Create Explore dashboard")')
-            .click();
+    // Create explore dashboard
+    await page.waitForSelector(
+      'li[aria-label="/metrics/uk_price_paid_metrics.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page
+      .locator('button[role="button"]:has-text("Create Explore dashboard")')
+      .click();
 
-        // Check Visual Dashboard is working
-        await page.waitForSelector(
-            'li[aria-label="/dashboards/uk_price_paid_metrics_explore.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page.getByLabel("Inspector Panel").isVisible();
+    // Check Visual Dashboard is working, if panel is not visible, something went wrong.
+    await page.waitForSelector(
+      'li[aria-label="/dashboards/uk_price_paid_metrics_explore.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page.getByLabel("Inspector Panel").isVisible();
 
-        // Checking the dashboard, 9/10 Total Transactions measure gets created but had 1 instance where it was not...
-        await page.waitForSelector(
-            'a[role="button"]:has-text("Total Transactions")',
-            { state: "visible" },
-        );
-        await expect(
-            page
-                .locator('a[role="button"]:has-text("Total Transactions")')
-                .locator("div")
-                .last(),
-        ).toHaveText("19.4M");
+    // Checking the dashboard, 9/10 Total Transactions measure gets created but had 1 instance where it was not...
+    await page.waitForSelector(
+      'a[role="button"]:has-text("Total Transactions")',
+      { state: "visible" },
+    );
+    await expect(
+      page
+        .locator('a[role="button"]:has-text("Total Transactions")')
+        .locator("div")
+        .last(),
+    ).toHaveText("19.4M"); //maybe change this to the later check that checks that the graph is not empty.
 
-        /// Create an explore dashboard with AI from table
-        await ukPricePaidItem.hover();
-        await page
-            .getByLabel("clickhouse-playwright_E2E.uk_price_paid actions menu trigger")
-            .click();
-        await page
-            .locator('div[role="menuitem"]:has-text("Generate dashboard with AI")')
-            .click();
+    /// Create an explore dashboard with AI directly from clickhouse table
+    await ukPricePaidItem.hover();
+    await page
+      .getByLabel(
+        "clickhouse-playwright_E2E.uk_price_paid actions menu trigger",
+      )
+      .click();
+    await page
+      .locator('div[role="menuitem"]:has-text("Generate dashboard with AI")')
+      .click();
 
-        // Check Visual dashboard and dashboard preview
-        await page.waitForSelector(
-            'li[aria-label="/dashboards/uk_price_paid_metrics_1_explore.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page.getByLabel("Inspector Panel").isVisible();
+    // Check Visual dashboard and dashboard preview (same as above)
+    await page.waitForSelector(
+      'li[aria-label="/dashboards/uk_price_paid_metrics_1_explore.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page.getByLabel("Inspector Panel").isVisible();
 
-        await page.waitForSelector(
-            'a[role="button"]:has-text("Total Transactions")',
-            { state: "visible" },
-        );
-        await expect(
-            page
-                .locator('a[role="button"]:has-text("Total Transactions")')
-                .locator("div")
-                .last(),
-        ).toHaveText("19.4M");
+    await page.waitForSelector(
+      'a[role="button"]:has-text("Total Transactions")',
+      { state: "visible" },
+    );
+    await expect(
+      page
+        .locator('a[role="button"]:has-text("Total Transactions")')
+        .locator("div")
+        .last(),
+    ).toHaveText("19.4M");
 
-        /// Feature Flag ClickHouse Modeling, testing a model
-        await page.locator('li[aria-label="/rill.yaml Nav Entry"]').click();
-        const projectTextbox = await page.locator(
-            'div[role="textbox"] div.cm-content',
-        );
-        await projectTextbox.click();
+    /// Feature Flag ClickHouse Modeling. Create model from uk_price_paid source.
+    /// Create a metrics view and explore dashboard
 
-        // sometimes its too fast and the typing gets messed up so adding a 2 second wait
-        await page.waitForTimeout(2000);
+    await page.locator('li[aria-label="/rill.yaml Nav Entry"]').click();
+    const projectTextbox = await page.locator(
+      'div[role="textbox"] div.cm-content',
+    );
+    await projectTextbox.click();
 
-        const projectlines = ["", "features:", "  - clickhouseModeling"];
+    // sometimes its too fast and the typing gets messed up so adding a 2 second wait
+    await page.waitForTimeout(2000);
 
-        // Type each line with a newline after
-        for (const line of projectlines) {
-            await projectTextbox.type(line); // Type the line
-            await projectTextbox.press("Enter"); // Press Enter for a new line
-        }
+    const projectlines = ["", "features:", "  - clickhouseModeling"];
 
-        await page.locator('button:has-text("Save")').click();
+    // Type each line with a newline after
+    for (const line of projectlines) {
+      await projectTextbox.type(line); // Type the line
+      await projectTextbox.press("Enter"); // Press Enter for a new line
+    }
 
-        // Start testing the UK dataset by creating model.
-        await ukPricePaidItem.hover();
-        await page
-            .getByLabel("clickhouse-playwright_E2E.uk_price_paid actions menu trigger")
-            .click();
-        await page
-            .locator('div[role="menuitem"]:has-text("Create new model")')
-            .click();
-        await page.waitForSelector(
-            'li[aria-label="/models/uk_price_paid_model.sql Nav Entry"]',
-            { state: "visible" },
-        );
+    await page.locator('button:has-text("Save")').click();
 
-        // Check the inspector panel and make sure all the panels are not empty or (Truthy)
-        await page.getByLabel("Inspector Panel").isVisible();
-        const columns = [
-            "date",
-            "price",
-            "is_new",
-            "addr1",
-            "street",
-            "postcode2",
-            "addr2",
-            "locality",
-            "district",
-            "town",
-            "county",
-            "postcode1",
-            "type",
-            "duration",
-        ];
-        const inspectorPanel = page.locator('aside[aria-label="Inspector Panel"]');
-        for (const columnName of columns) {
-            await inspectorPanel.locator(`button:has-text("${columnName}")`).click();
-            const columnPanel = inspectorPanel.locator(
-                `div:has-text("${columnName}")`,
-            );
+    // Create model from uk_price_paid dataset in ClickHouse Cloud
+    await ukPricePaidItem.hover();
+    await page
+      .getByLabel(
+        "clickhouse-playwright_E2E.uk_price_paid actions menu trigger",
+      )
+      .click();
+    await page
+      .locator('div[role="menuitem"]:has-text("Create new model")')
+      .click();
+    await page.waitForSelector(
+      'li[aria-label="/models/uk_price_paid_model.sql Nav Entry"]',
+      { state: "visible" },
+    );
 
-            const wFullDivs = columnPanel.locator("div.w-full");
+    // Check the inspector panel and make sure all the panels are not empty or (Truthy)
+    await page.getByLabel("Inspector Panel").isVisible();
+    const columns = [
+      "date",
+      "price",
+      "is_new",
+      "addr1",
+      "street",
+      "postcode2",
+      "addr2",
+      "locality",
+      "district",
+      "town",
+      "county",
+      "postcode1",
+      "type",
+      "duration",
+    ];
 
-            // Check that at least one `div.w-full` is not empty check this later
-            const isNonEmptyDivPresent = await wFullDivs.evaluateAll((divs) =>
-                divs.some((div) => div.textContent.trim() !== ""),
-            );
+    const inspectorPanel = page.locator('aside[aria-label="Inspector Panel"]');
+    for (const columnName of columns) {
+      await inspectorPanel.locator(`button:has-text("${columnName}")`).click(); //open the column graph
 
-            // Assert that at least one non-empty div is present
-            expect(isNonEmptyDivPresent).toBeTruthy();
+      const columnPanel = inspectorPanel.locator(
+        `div:has-text("${columnName}")`,
+      );
 
-            //close details
-            await inspectorPanel.locator(`button:has-text("${columnName}")`).click();
-        }
+      const wFullDivs = columnPanel.locator("div.w-full");
 
-        // Create metrics and dashboard from Model
-        await page
-            .locator('button:has-text("Generate metrics view with AI")')
-            .click();
-        await page.waitForSelector(
-            'li[aria-label="/metrics/uk_price_paid_model_metrics.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page
-            .locator('button[role="button"]:has-text("Create Explore dashboard")')
-            .click();
+      // Check that at least one `div.w-full` is not empty check this later
+      const isNonEmptyDivPresent = await wFullDivs.evaluateAll((divs) =>
+        divs.some((div) => div.textContent.trim() !== ""),
+      );
 
-        // Since the model is a sample of 100K, the values are not certain, instead check if the graph is truthy. 9/10 Total Transaction appears
-        await page.waitForSelector(
-            'li[aria-label="/dashboards/uk_price_paid_model_metrics_explore.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page.getByLabel("Inspector Panel").isVisible();
-        await page.waitForSelector(
-            'a[role="button"]:has-text("Total Transactions")',
-            { state: "visible" },
-        );
-        // await expect(page.locator('a[role="button"]:has-text("Total Transactions")').locator('div').last()).toHaveText('99,999'); // since sample its going to be random
-        const tddGraph = page.locator(
-            'a[role = "button"]:has-text("Total Transactions")',
-        );
-        expect(tddGraph.locator('svg[role="application"]')).toBeTruthy();
+      // if a div is empty, this will fail.
+      // https://github.com/rilldata/rill-private-issues/issues/1026
+      expect(isNonEmptyDivPresent).toBeTruthy();
 
-        //TO DO: Incremental Modeling
-        await page.getByLabel("Add Asset").click();
-        await page.getByLabel("Add Model").click();
+      //close details
+      await inspectorPanel.locator(`button:has-text("${columnName}")`).click();
+    }
 
-        await page.locator('li[aria-label="/models/model.sql Nav Entry"]').hover();
-        await page.getByLabel("/models/model.sql actions menu trigger").click();
-        await page.locator('div[role="menuitem"]:has-text("Rename...")').click();
+    // Create metrics and dashboard from Model
+    await page
+      .locator('button:has-text("Generate metrics view with AI")')
+      .click();
+    await page.waitForSelector(
+      'li[aria-label="/metrics/uk_price_paid_model_metrics.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page
+      .locator('button[role="button"]:has-text("Create Explore dashboard")')
+      .click();
 
-        const inputField1 = page.locator("input#file-name");
-        await inputField1.fill("AdBids_csv.yaml");
-        await page.locator('button[form="rename-asset-form"]').click();
+    // Since the model is a sample of 100K, the values are not certain, instead check if the graph is truthy. 9/10 Total Transaction appears
+    await page.waitForSelector(
+      'li[aria-label="/dashboards/uk_price_paid_model_metrics_explore.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page.getByLabel("Inspector Panel").isVisible();
+    await page.waitForSelector(
+      'a[role="button"]:has-text("Total Transactions")',
+      { state: "visible" },
+    );
+    // await expect(page.locator('a[role="button"]:has-text("Total Transactions")').locator('div').last()).toHaveText('99,999'); // since sample its going to be random
+    const tddGraph = page.locator(
+      'a[role = "button"]:has-text("Total Transactions")',
+    );
+    expect(tddGraph.locator('svg[role="application"]')).toBeTruthy();
 
-        // Mimic typing in the child contenteditable div
-        const incrementalTextBox = await page.locator(
-            'div[role="textbox"] div.cm-content',
-        );
-        await incrementalTextBox.click(); // Ensure it's focused for typing
-        await page.waitForTimeout(2000);
+    // Feature Flag Incremental Modeling, create incremental model, metrics view, and explore
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Model").click();
 
-        // Clear existing contents
-        await incrementalTextBox.press("Meta+A"); // need to check this
-        await incrementalTextBox.press("Backspace"); // Delete selected text
+    await page.locator('li[aria-label="/models/model.sql Nav Entry"]').hover();
+    await page.getByLabel("/models/model.sql actions menu trigger").click();
+    await page.locator('div[role="menuitem"]:has-text("Rename...")').click();
 
-        const incrementalLines = [
-            "type: model",
-            "materialize: true",
-            "incremental: true",
-            "sql: >",
-            "  SELECT timestamp, id, bid_price, domain, publisher",
-            "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
-            "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
-            "        )",
-            "  {{ if dev }} LIMIT 100 {{ end }}",
-            "output:",
-            "  table: AdBids_csv",
-            "  engine: MergeTree"
-        ];
+    const inputField1 = page.locator("input#file-name");
+    await inputField1.fill("AdBids_csv.yaml"); //must be the same name as output https://github.com/rilldata/rill/issues/6374
+    await page.locator('button[form="rename-asset-form"]').click();
 
-        // Type each line with a newline after
-        for (const line of incrementalLines) {
-            await incrementalTextBox.type(line); // Type the line
-            await incrementalTextBox.press("Enter"); // Press Enter for a new line
-        }
+    // Mimic typing in the child contenteditable div
+    const incrementalTextBox = await page.locator(
+      'div[role="textbox"] div.cm-content',
+    );
+    await incrementalTextBox.click(); // Ensure it's focused for typing
+    await page.waitForTimeout(2000);
 
-        await page.waitForTimeout(5000); //allows the model to load
+    // Clear existing contents
+    await incrementalTextBox.press("Meta+A"); // need to check this
+    await incrementalTextBox.press("Backspace"); // Delete selected text
 
-        await page.getByLabel('Refresh Incremental Model').click();
-        await page.locator('div[role="menuitem"]:has-text("Incremental refresh")').isVisible();
-        await page.locator('div[role="menuitem"]:has-text("Full refresh")').isVisible();
+    const incrementalLines = [
+      "type: model",
+      "materialize: true",
+      "incremental: true",
+      "sql: >",
+      "  SELECT timestamp, id, bid_price, domain, publisher",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
+      "        )",
+      "  {{ if dev }} LIMIT 100 {{ end }}",
+      "output:",
+      "  table: AdBids_csv",
+      "  engine: MergeTree",
+    ];
 
-        await page.locator('div[role="menuitem"]:has-text("Incremental refresh")').click();
-        await page.waitForTimeout(1000); //allows the model to load
+    // Type each line with a newline after
+    for (const line of incrementalLines) {
+      await incrementalTextBox.type(line); // Type the line
+      await incrementalTextBox.press("Enter"); // Press Enter for a new line
+    }
 
+    await page.waitForTimeout(5000); //allows the model to load
 
-        await page.getByLabel('Refresh Incremental Model').click();
-        await page.locator('div[role="menuitem"]:has-text("Incremental refresh")').isVisible();
-        await page.locator('div[role="menuitem"]:has-text("Full refresh")').isVisible();
+    // Test the incremental and full refresh buttons
+    // These wont actually do anything at the moment since the dataset is static, but should at least refresh the UI.
+    await page.getByLabel("Refresh Incremental Model").click();
+    await page
+      .locator('div[role="menuitem"]:has-text("Incremental refresh")')
+      .isVisible();
+    await page
+      .locator('div[role="menuitem"]:has-text("Full refresh")')
+      .isVisible();
 
-        await page.locator('div[role="menuitem"]:has-text("Full refresh")').click();
-        await page.waitForTimeout(1000); //allows the model to load
+    await page
+      .locator('div[role="menuitem"]:has-text("Incremental refresh")')
+      .click();
+    await page.waitForTimeout(1000); //allows the model to load
 
-        // Create Metrics and Explore Dashboard off the 100 limit incremental model
-        await page.getByRole('button', { name: 'Generate metrics view with AI' }).click();
+    await page.getByLabel("Refresh Incremental Model").click();
+    await page
+      .locator('div[role="menuitem"]:has-text("Incremental refresh")')
+      .isVisible();
+    await page
+      .locator('div[role="menuitem"]:has-text("Full refresh")')
+      .isVisible();
 
+    await page.locator('div[role="menuitem"]:has-text("Full refresh")').click();
+    await page.waitForTimeout(1000); //allows the model to load
 
-        await page.waitForSelector(
-            'li[aria-label="/metrics/AdBids_csv_metrics.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page
-            .locator('button[role="button"]:has-text("Create Explore dashboard")')
-            .click();
-        await page.waitForSelector(
-            'li[aria-label="/dashboards/AdBids_csv_metrics_explore.yaml Nav Entry"]',
-            { state: "visible" },
-        );
-        await page.getByLabel("Inspector Panel").isVisible();
-        await page.waitForSelector(
-            'a[role="button"]:has-text("Total Bids")',
-            { state: "visible" },
-        );
+    // Create Metrics and Explore Dashboard off the 100 limit incremental model
+    await page
+      .getByRole("button", { name: "Generate metrics view with AI" })
+      .click();
 
-        const tddGraphIncremental = page.locator(
-            'a[role = "button"]:has-text("Total Bids")',
-        );
-        expect(tddGraphIncremental.locator('svg[role="application"]')).toBeTruthy();
-
+    await page.waitForSelector(
+      'li[aria-label="/metrics/AdBids_csv_metrics.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page
+      .locator('button[role="button"]:has-text("Create Explore dashboard")')
+      .click();
+    await page.waitForSelector(
+      'li[aria-label="/dashboards/AdBids_csv_metrics_explore.yaml Nav Entry"]',
+      { state: "visible" },
+    );
+    await page.getByLabel("Inspector Panel").isVisible();
+    await page.waitForSelector('a[role="button"]:has-text("Total Bids")', {
+      state: "visible",
     });
+
+    // Check that the graph for Total Bids is not empty.
+    const tddGraphIncremental = page.locator(
+      'a[role = "button"]:has-text("Total Bids")',
+    );
+    expect(tddGraphIncremental.locator('svg[role="application"]')).toBeTruthy();
+  });
 });
