@@ -32,6 +32,7 @@ export async function spawnAndMatch(
 
     process.stdout.on("data", (data: Buffer | string) => {
       const output = data.toString();
+      console.log("[spawnAndMatch]", output);
       const match = output.match(pattern);
       if (match) {
         clearTimeout(timeout);
