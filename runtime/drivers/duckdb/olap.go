@@ -262,7 +262,17 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 
 	if opts.Strategy == drivers.IncrementalStrategyAppend {
 		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+			if opts.BeforeInsert != "" {
+				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+				if err != nil {
+					return err
+				}
+			}
 			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
+			if opts.AfterInsert != "" {
+				_, afterInsertExecErr := conn.ExecContext(ctx, opts.AfterInsert)
+				return errors.Join(err, afterInsertExecErr)
+			}
 			return err
 		})
 		return c.checkErr(err)

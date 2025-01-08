@@ -3204,6 +3204,14 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for CacheKeySql
+
+	// no validation rules for CacheKeyTtlSeconds
+
+	if m.CacheEnabled != nil {
+		// no validation rules for CacheEnabled
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}

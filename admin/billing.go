@@ -215,7 +215,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
 			if errors.Is(err, billing.ErrCustomerIDRequired) {
-				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+				return nil, nil, fmt.Errorf("org billing not initialized yet")
 			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
