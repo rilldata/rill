@@ -473,19 +473,9 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 
 // estimateSize returns the estimated combined disk size of all resources in the database in bytes.
 func (c *connection) estimateSize(ctx context.Context) (int64, error) {
-	rows, err := c.db.QueryxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
 	var size int64
-	if rows.Next() {
-		if err := rows.Scan(&size); err != nil {
-			return 0, err
-		}
-	}
-	if err := rows.Err(); err != nil {
+	err := c.db.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
+	if err != nil {
 		return 0, err
 	}
 
