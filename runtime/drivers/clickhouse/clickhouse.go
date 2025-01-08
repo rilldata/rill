@@ -97,7 +97,10 @@ var maxOpenConnections = 20
 type driver struct{}
 
 type configProperties struct {
-	// Provision is set on local if `managed: true` is set for the connector.
+	// Managed is set internally if the connector has `managed: true`.
+	Managed bool `mapstructure:"managed"`
+	// Provision is set when Managed is true and provisioning should be handled by this driver.
+	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
 	DSN      string `mapstructure:"dsn"`
@@ -463,7 +466,12 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			if err == nil {
 				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
 			} else if !errors.Is(err, c.ctx.Err()) {
-				c.logger.Error("failed to estimate clickhouse size", zap.Error(err))
+				lvl := zap.WarnLevel
+				if c.config.Managed {
+					lvl = zap.ErrorLevel
+				}
+
+				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
 			}
 		case <-c.ctx.Done():
 			return
