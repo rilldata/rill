@@ -179,11 +179,13 @@ func (p *Parser) parseExplore(node *Node) error {
 				}
 				isNewFormat = rt.IsNewFormat
 			}
-			if ctr.Offset != "" && isNewFormat {
-				return fmt.Errorf("offset cannot be provided along with rill time range")
-			}
-			if err := validateISO8601(ctr.Offset, false, false); err != nil {
-				return fmt.Errorf("invalid comparison offset %q: %w", ctr.Offset, err)
+			if ctr.Offset != "" {
+				if isNewFormat {
+					return fmt.Errorf("offset cannot be provided along with rill time range")
+				}
+				if err := validateISO8601(ctr.Offset, false, false); err != nil {
+					return fmt.Errorf("invalid comparison offset %q: %w", ctr.Offset, err)
+				}
 			}
 			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
 				Offset: ctr.Offset,

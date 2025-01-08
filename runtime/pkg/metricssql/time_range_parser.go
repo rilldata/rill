@@ -139,10 +139,13 @@ func (q *query) getMinTime(ctx context.Context, colName string) (time.Time, erro
 	defer result.Close()
 
 	var t time.Time
-	for result.Next() {
+	if result.Next() {
 		if err := result.Scan(&t); err != nil {
 			return time.Time{}, fmt.Errorf("error scanning min time: %w", err)
 		}
+	}
+	if result.Err() != nil {
+		return time.Time{}, fmt.Errorf("error scanning min time: %w", result.Err())
 	}
 	return t, nil
 }

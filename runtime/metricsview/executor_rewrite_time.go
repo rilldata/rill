@@ -72,8 +72,6 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
-	fmt.Println(tr.RillTime, tr.Start, tr.End)
-
 	// Clear all other fields than Start and End
 	tr.RillTime = ""
 	tr.IsoDuration = ""
@@ -218,7 +216,7 @@ func (e *Executor) getMinTime(ctx context.Context) (time.Time, error) {
 	}
 
 	dialect := e.olap.Dialect()
-	sql := fmt.Sprintf("SELECT %s FROM %s", fmt.Sprintf("MIN(%s)", dialect.EscapeIdentifier(e.metricsView.TimeDimension)), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
+	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", dialect.EscapeIdentifier(e.metricsView.TimeDimension), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
@@ -235,7 +233,9 @@ func (e *Executor) getMinTime(ctx context.Context) (time.Time, error) {
 		if err := res.Scan(&t); err != nil {
 			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
 		}
+		if res.Err() != nil {
+			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", res.Err())
+		}
 	}
-
 	return t, nil
 }

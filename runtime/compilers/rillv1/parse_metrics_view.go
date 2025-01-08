@@ -758,12 +758,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 					isNewFormat = rt.IsNewFormat
 				}
 
-				if o.Offset != "" && isNewFormat {
-					return fmt.Errorf("offset cannot be provided along with rill time range")
-				}
-				err := validateISO8601(o.Offset, false, false)
-				if err != nil {
-					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
+				if o.Offset != "" {
+					if isNewFormat {
+						return fmt.Errorf("offset cannot be provided along with rill time range")
+					}
+					if err := validateISO8601(o.Offset, false, false); err != nil {
+						return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
+					}
 				}
 			}
 		}
