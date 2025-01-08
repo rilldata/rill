@@ -6,31 +6,46 @@ export enum RillTimeType {
 }
 
 export class RillTime {
+  public timeRange: string;
   public readonly isComplete: boolean;
-  public readonly end: RillTimeModifier;
+  public readonly end: RillTimeAnchor;
   public readonly type: RillTimeType;
 
   public constructor(
-    public readonly start: RillTimeModifier,
-    end: RillTimeModifier,
+    public readonly start: RillTimeAnchor,
+    end: RillTimeAnchor,
+    public readonly timeRangeGrain: RillTimeRangeGrain | undefined,
     public readonly modifier: RillTimeRangeModifier | undefined,
   ) {
     this.type = start.getType();
 
-    this.end = end ?? RillTimeModifier.now();
+    this.end = end ?? RillTimeAnchor.now();
     this.isComplete =
-      this.end.type === RillTimeModifierType.Custom ||
+      this.end.type === RillTimeAnchorType.Custom ||
       this.end.truncate !== undefined;
   }
 
   public getLabel() {
+    if (this.type === RillTimeType.Unknown || !!this.modifier) {
+      return this.timeRange;
+    }
+
     const start = capitalizeFirstChar(this.start.getLabel());
-    const completeSuffix = ", " + (this.isComplete ? "complete" : "incomplete");
-    return `${start}${completeSuffix}`;
+    if (
+      this.end &&
+      this.end.type === RillTimeAnchorType.Custom &&
+      this.end.grain &&
+      this.end.grain.count < 0
+    ) {
+      return this.timeRange;
+    }
+
+    if (this.isComplete) return start;
+    return `${start}, incomplete`;
   }
 }
 
-export enum RillTimeModifierType {
+export enum RillTimeAnchorType {
   Now = "Now",
   Earliest = "Earliest",
   Latest = "Latest",
@@ -49,25 +64,25 @@ const GrainToUnit = {
   Y: "year",
 };
 export const InvalidTime = "Invalid";
-export class RillTimeModifier {
+export class RillTimeAnchor {
   public truncate: RillTimeGrain | undefined = undefined;
 
   public constructor(
-    public readonly type: RillTimeModifierType,
+    public readonly type: RillTimeAnchorType,
     public readonly grain: RillTimeGrain | undefined = undefined,
   ) {}
 
   public static now() {
-    return new RillTimeModifier(RillTimeModifierType.Now);
+    return new RillTimeAnchor(RillTimeAnchorType.Now);
   }
   public static earliest() {
-    return new RillTimeModifier(RillTimeModifierType.Earliest);
+    return new RillTimeAnchor(RillTimeAnchorType.Earliest);
   }
   public static latest() {
-    return new RillTimeModifier(RillTimeModifierType.Latest);
+    return new RillTimeAnchor(RillTimeAnchorType.Latest);
   }
   public static custom(grain: RillTimeGrain) {
-    return new RillTimeModifier(RillTimeModifierType.Custom, grain);
+    return new RillTimeAnchor(RillTimeAnchorType.Custom, grain);
   }
 
   public withTruncate(truncate: RillTimeGrain) {
@@ -78,7 +93,7 @@ export class RillTimeModifier {
   public getLabel() {
     const grain = this.grain ?? this.truncate;
     if (!grain) {
-      return RillTimeModifierType.Earliest.toString();
+      return RillTimeAnchorType.Earliest.toString();
     }
 
     const unit = GrainToUnit[grain.grain];
@@ -123,9 +138,8 @@ export type RillTimeRangeGrain = {
 };
 
 export type RillTimeRangeModifier = {
-  timeRangeGrain: RillTimeRangeGrain | undefined;
   timeZone: string | undefined;
-  at: RillTimeModifier | undefined;
+  at: RillTimeAnchor | undefined;
 };
 
 function capitalizeFirstChar(str: string): string {

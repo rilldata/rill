@@ -5,38 +5,39 @@
 
 @{%
   import {
-    RillTimeModifier,
+    RillTimeAnchor,
     RillTime,
   } from "./RillTime.ts"
 %}
 
-rill_time => time_mod _ "," _ time_mod _ ":" _ modifiers {% ([start, , , , end, , , , modifiers]) => new RillTime(start, end, modifiers) %}
-           | time_mod _ "," _ time_mod                   {% ([start, , , , end]) => new RillTime(start, end) %}
-           | time_mod _ ":" _ modifiers                  {% ([start, , , , modifiers]) => new RillTime(start, undefined, modifiers) %}
-           | time_mod                                    {% ([start]) => new RillTime(start) %}
+rill_time => time_anchor_part                     {% ([{ start, end }]) => new RillTime(start, end) %}
+           | time_anchor_part _ grain_and_at_part {% ([{ start, end }, , { grain, modifier }]) => new RillTime(start, end, grain, modifier) %}
 
-time_mod => time_mod_offset               {% id %}
-          | time_mod_offset _ "/" _ grain {% ([mod, , , , truncate]) => mod.withTruncate(truncate) %}
+time_anchor_part => time_anchor _ "," _ time_anchor {% ([start, , , , end]) => ({ start, end }) %}
+                  | time_anchor                     {% ([start]) => ({ start }) %}
 
-time_mod_offset => "now"          {% () => RillTimeModifier.now() %}
-                 | "earliest"     {% () => RillTimeModifier.earliest() %}
-                 | "latest"       {% () => RillTimeModifier.latest() %}
-                 | grain_modifier {% ([grain]) => RillTimeModifier.custom(grain) %}
+time_anchor => time_anchor_offset               {% id %}
+             | time_anchor_offset _ "/" _ grain {% ([mod, , , , truncate]) => mod.withTruncate(truncate) %}
 
-modifiers => range_grain_modifier                {% ([timeRangeGrain]) => ({ timeRangeGrain }) %}
-           | range_grain_modifier _ at_modifiers {% ([timeRangeGrain, , atModifiers]) => ({ timeRangeGrain, ...atModifiers }) %}
-           | at_modifiers                        {% id %}
+time_anchor_offset => "now"          {% () => RillTimeAnchor.now() %}
+                    | "earliest"     {% () => RillTimeAnchor.earliest() %}
+                    | "latest"       {% () => RillTimeAnchor.latest() %}
+                    | grain_modifier {% ([grain]) => RillTimeAnchor.custom(grain) %}
 
-at_modifiers => "@" _ grain_modifier                     {% ([, , grain]) => ({ grain }) %}
-              | "@" _ timezone_modifier                  {% ([, , timeZone]) => ({ timeZone }) %}
-              | "@" _ grain_modifier _ timezone_modifier {% ([, , timeZone]) => ({ timeZone }) %}
+grain_and_at_part => ":" _ range_grain_modifier _ "@" _ at_modifiers {% ([, , grain, , , , modifier]) => ({ grain, modifier }) %}
+                   | ":" _ range_grain_modifier                      {% ([, , grain]) => ({ grain }) %}
+                   | "@" _ at_modifiers                              {% ([, , modifier]) => ({ modifier }) %}
+
+range_grain_modifier => grain             {% ([grain]) => ({ grain, isComplete: false }) %}
+                      | "|" _ grain _ "|" {% ([, ,grain]) => ({ grain, isComplete: true }) %}
+
+at_modifiers => grain_modifier                     {% ([grain]) => ({ at: RillTimeAnchor.custom(grain) }) %}
+              | timezone_modifier                  {% ([timeZone]) => ({ timeZone }) %}
+              | grain_modifier _ timezone_modifier {% ([grain, , timeZone]) => ({ at: RillTimeAnchor.custom(grain), timeZone }) %}
 
 grain_modifier => grain     {% ([grain]) => ({ count: 0, grain }) %}
                 | int grain {% ([count, grain]) => ({ count, grain }) %}
 
-timezone_modifier => "{" _ [a-zA-Z]:+ _ "}" {% ([, , tz]) => tz %}
-
-range_grain_modifier => grain             {% ([grain]) => ({ grain, isComplete: false }) %}
-                      | "|" _ grain _ "|" {% ([, ,grain]) => ({ grain, isComplete: true }) %}
+timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
 
 grain => [smhdDWQMY] {% id %}

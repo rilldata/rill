@@ -5,39 +5,42 @@ import nearley from "nearley";
 
 describe("rill time", () => {
   describe("positive cases", () => {
-    const Cases = [
-      {
-        rillTime: "m : |s|",
-        label: "Minute to date, incomplete",
-      },
-      {
-        rillTime: "-5m : |m|",
-        label: "Last 5 minutes, incomplete",
-      },
-      {
-        rillTime: "-5m, 0m : |m|",
-        label: "Last 5 minutes, complete",
-      },
-      {
-        rillTime: "-7d, 0d : |h|",
-        label: "Last 7 days, complete",
-      },
-      {
-        rillTime: "-6d, now : |h|",
-        label: "Last 7 days, incomplete",
-      },
-      {
-        rillTime: "-6d, now : h",
-        label: "Last 7 days, incomplete",
-      },
-      {
-        rillTime: "d : h",
-        label: "Today, incomplete",
-      },
+    const Cases: [rillTime: string, label: string][] = [
+      ["m : |s|", "Minute to date, incomplete"],
+      ["-5m : |m|", "Last 5 minutes, incomplete"],
+      ["-5m, 0m : |m|", "Last 5 minutes"],
+      ["-7d, 0d : |h|", "Last 7 days"],
+      ["-7d, now/d : |h|", "Last 7 days"],
+      ["-6d, now : |h|", "Last 7 days, incomplete"],
+      ["-6d, now : h", "Last 7 days, incomplete"],
+      ["d : h", "Today, incomplete"],
+
+      // TODO: correct label for the below
+      ["-7d, -5d : h", "-7d, -5d : h"],
+      ["-2d, now/d : h @ -5d", "-2d, now/d : h @ -5d"],
+      ["-2d, now/d @ -5d", "-2d, now/d @ -5d"],
+
+      [
+        "-7d, now/d : h @ {Asia/Kathmandu}",
+        "-7d, now/d : h @ {Asia/Kathmandu}",
+      ],
+      [
+        "-7d, now/d : |h| @ {Asia/Kathmandu}",
+        "-7d, now/d : |h| @ {Asia/Kathmandu}",
+      ],
+      [
+        "-7d, now/d : |h| @ -5d {Asia/Kathmandu}",
+        "-7d, now/d : |h| @ -5d {Asia/Kathmandu}",
+      ],
+
+      // TODO: should these be something different when end is latest vs now?
+      ["-7d, latest/d : |h|", "Last 7 days"],
+      ["-6d, latest : |h|", "Last 6 days, incomplete"],
+      ["-6d, latest : h", "Last 6 days, incomplete"],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
-    for (const { rillTime, label } of Cases) {
+    for (const [rillTime, label] of Cases) {
       it(rillTime, () => {
         const parser = new nearley.Parser(compiledGrammar);
         parser.feed(rillTime);
@@ -45,11 +48,8 @@ describe("rill time", () => {
         expect(parser.results).length(1);
 
         const rt = parseRillTime(rillTime);
-        expect(
-          rt.getLabel({
-            completeness: true,
-          }),
-        ).toEqual(label);
+        console.log(rt);
+        expect(rt.getLabel()).toEqual(label);
       });
     }
   });
