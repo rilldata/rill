@@ -110,6 +110,7 @@ export const load = async ({ params, url, route }) => {
     );
 
     return {
+      user,
       organizationPermissions,
       projectPermissions,
       project: proj,

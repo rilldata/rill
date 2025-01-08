@@ -15,7 +15,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const load = async ({ params, depends, parent }) => {
-  const { project, runtime, user } = await parent();
+  const { user, project, runtime } = await parent();
 
   const { dashboard: exploreName } = params;
 
