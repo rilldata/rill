@@ -138,7 +138,7 @@
             {key}
             {config}
             {metricsView}
-            value={localParamValues[key] || {}}
+            fieldConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

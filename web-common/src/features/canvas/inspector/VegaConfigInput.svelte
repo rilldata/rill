@@ -23,7 +23,7 @@
     try {
       config = JSON.parse(config);
       config = JSON.stringify(config, null, 2);
-    } catch (e) {
+    } catch {
       error = "Invalid JSON";
       return;
     }

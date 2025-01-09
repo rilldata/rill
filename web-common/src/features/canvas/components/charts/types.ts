@@ -4,6 +4,7 @@ export interface FieldConfig {
   field: string;
   label?: string;
   format?: string;
+  showAxisTitle?: boolean; // Default is false
   type: "quantitative" | "ordinal" | "nominal" | "temporal" | "geojson";
   timeUnit?: string; // For temporal fields
 }

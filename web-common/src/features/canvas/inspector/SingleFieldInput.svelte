@@ -26,8 +26,6 @@
     searchableItems,
     searchValue,
   );
-
-  $: selectedProxy = new Set([selectedItem]);
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">
@@ -37,15 +35,7 @@
     {/if}
   </div>
 
-  <DropdownMenu.Root
-    bind:open
-    typeahead={false}
-    closeOnItemClick={false}
-    onOpenChange={() => {
-      // Reset selection proxy when dropdown closes
-      if (!open) selectedProxy = new Set([selectedItem]);
-    }}
-  >
+  <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
     <DropdownMenu.Trigger asChild let:builder>
       <Chip fullWidth caret {type} builders={[builder]}>
         <span class="font-bold truncate" slot="body">
