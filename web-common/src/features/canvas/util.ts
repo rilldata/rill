@@ -17,3 +17,7 @@ export const vector = {
     return [vector[0] / divisor[0], vector[1] / divisor[1]];
   },
 };
+
+export function isString(value: unknown): value is string {
+  return typeof value === "string";
+}

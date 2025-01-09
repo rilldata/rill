@@ -8,7 +8,7 @@
 
   const voidFunction = () => {};
 
-  export let value: string | undefined;
+  export let value: number | string | undefined;
   export let id = "";
   export let label = "";
   export let description = "";
@@ -23,6 +23,7 @@
   export let truncate = false;
   export let width: string = "100%";
   export let size: "sm" | "md" | "lg" = "lg";
+  export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
@@ -59,6 +60,7 @@
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let inputType: "text" | "number" = "text";
   export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
@@ -67,7 +69,7 @@
   let selectElement: HTMLButtonElement | undefined;
   let focus = false;
 
-  $: type = secret && !showPassword ? "password" : "text";
+  $: type = secret && !showPassword ? "password" : inputType;
 
   onMount(() => {
     if (claimFocusOnMount) {
@@ -107,7 +109,7 @@
 </script>
 
 <div
-  class="component-wrapper {additionalClass}"
+  class="component-wrapper gap-y-{labelGap} {additionalClass}"
   class:w-full={full}
   style:width
 >
@@ -118,6 +120,7 @@
       {id}
       {hint}
       {link}
+      small={size === "sm"}
       capitalize={capitalizeLabel}
     >
       <slot name="mode-switch" slot="mode-switch" />
@@ -140,7 +143,7 @@
         </span>
       {/if}
 
-      {#if multiline}
+      {#if multiline && typeof value !== "number"}
         <div
           {id}
           contenteditable
@@ -158,7 +161,7 @@
         />
       {:else}
         <input
-          title={value}
+          title={label}
           {id}
           {type}
           {placeholder}
@@ -194,7 +197,7 @@
         </button>
       {/if}
     </div>
-  {:else}
+  {:else if typeof value !== "number"}
     <Select
       {disabled}
       {enableSearch}
@@ -207,7 +210,8 @@
       bind:value
       {options}
       {onChange}
-      fontSize={14}
+      {size}
+      fontSize={size === "sm" ? 12 : 14}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
@@ -234,11 +238,12 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col gap-y-1 h-fit justify-center;
+    @apply flex  flex-col h-fit justify-center;
   }
 
   .sm {
     height: 24px;
+    font-size: 12px;
   }
 
   .md {

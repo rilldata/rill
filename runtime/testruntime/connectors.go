@@ -3,7 +3,6 @@ package testruntime
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
@@ -65,7 +64,6 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			log.Printf("TERMINATING")
 			err := clickHouseContainer.Terminate(ctx)
 			require.NoError(t, err)
 		})

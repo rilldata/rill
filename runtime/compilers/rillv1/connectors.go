@@ -81,8 +81,6 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) {
 		a.trackConnector(r.MigrationSpec.Connector, r, false)
 	} else if r.APISpec != nil {
 		a.analyzeResourceWithResolver(r, r.APISpec.Resolver, r.APISpec.ResolverProperties)
-	} else if r.ComponentSpec != nil {
-		a.analyzeResourceWithResolver(r, r.ComponentSpec.Resolver, r.ComponentSpec.ResolverProperties)
 	} else if r.AlertSpec != nil {
 		a.analyzeResourceNotifiers(r, r.AlertSpec.Notifiers)
 	} else if r.ReportSpec != nil {
