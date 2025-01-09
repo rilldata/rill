@@ -70,12 +70,12 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-type configProperties struct {
-	SecretJSON string `mapstructure:"google_application_credentials"`
-	// When working in s3 compatible mode
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+type ConfigProperties struct {
+	SecretJSON      string `mapstructure:"google_application_credentials"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	// When working in s3 compatible mode
+	KeyID  string `mapstructure:"key_id"`
+	Secret string `mapstructure:"secret"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -83,7 +83,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("gcs driver can't be shared")
 	}
 
-	conf := &configProperties{}
+	conf := &ConfigProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 type Connection struct {
-	config  *configProperties
+	config  *ConfigProperties
 	storage *storage.Client
 	logger  *zap.Logger
 }

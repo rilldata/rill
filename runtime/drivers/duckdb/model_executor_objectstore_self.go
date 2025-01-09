@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/azure"
+	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -109,8 +110,8 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		m.PreExec = sb.String()
 	case "gcs":
 		// GCS works via S3 compatibility mode
-		s3Config := &s3.ConfigProperties{}
-		err := mapstructure.WeakDecode(config, s3Config)
+		gcsConfig := &gcs.ConfigProperties{}
+		err := mapstructure.WeakDecode(config, gcsConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse s3 config properties: %w", err)
 		}
@@ -118,11 +119,11 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
 		sb.WriteString(safeSecretName)
 		sb.WriteString(" (TYPE GCS")
-		if s3Config.AllowHostAccess {
+		if gcsConfig.AllowHostAccess {
 			sb.WriteString(", PROVIDER CREDENTIAL_CHAIN")
 		}
-		if s3Config.AccessKeyID != "" {
-			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(s3Config.AccessKeyID), safeSQLString(s3Config.SecretAccessKey))
+		if gcsConfig.KeyID != "" {
+			fmt.Fprintf(&sb, ", KEY_ID %s, SECRET %s", safeSQLString(gcsConfig.KeyID), safeSQLString(gcsConfig.Secret))
 		}
 		sb.WriteRune(')')
 		m.PreExec = sb.String()
