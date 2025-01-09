@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -9,20 +10,19 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import ExploreEditor from "@rilldata/web-common/features/explores/ExploreEditor.svelte";
+  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import PreviewButton from "../explores/PreviewButton.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import ViewSelector from "@rilldata/web-common/features/visual-editing/ViewSelector.svelte";
-  import VisualExploreEditing from "./VisualExploreEditing.svelte";
-  import { mapParseErrorsToLines } from "../metrics-views/errors";
-  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { createRuntimeServiceGetExplore } from "@rilldata/web-common/runtime-client";
-  import Spinner from "../entity-management/Spinner.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import DashboardWithProviders from "../dashboards/workspace/DashboardWithProviders.svelte";
-  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import Spinner from "../entity-management/Spinner.svelte";
+  import PreviewButton from "../explores/PreviewButton.svelte";
+  import { mapParseErrorsToLines } from "../metrics-views/errors";
+  import VisualExploreEditing from "./VisualExploreEditing.svelte";
 
   export let fileArtifact: FileArtifact;
 

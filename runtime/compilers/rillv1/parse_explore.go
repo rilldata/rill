@@ -154,7 +154,7 @@ func (p *Parser) parseExplore(node *Node) error {
 
 	// Parse theme if present.
 	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
-	themeName, themeSpec, err := p.parseExploreTheme(&tmp.Theme)
+	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
 	if err != nil {
 		return err
 	}
@@ -275,24 +275,21 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
 	r.ExploreSpec.MeasuresSelector = measuresSelector
+	r.ExploreSpec.Theme = themeName
+	r.ExploreSpec.EmbeddedTheme = themeSpec
 	r.ExploreSpec.TimeRanges = timeRanges
 	r.ExploreSpec.TimeZones = tmp.TimeZones
 	r.ExploreSpec.DefaultPreset = defaultPreset
 	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
 
-	if themeName != "" && themeSpec == nil {
-		r.ExploreSpec.Theme = themeName
-	}
-
-	if themeSpec != nil {
-		r.ExploreSpec.EmbeddedTheme = themeSpec
-	}
-
 	return nil
 }
 
-func (p *Parser) parseExploreTheme(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
+// parseThemeRef parses a theme from a YAML node.
+// It accepts either a reference to a theme by name or an inline definition of a theme.
+// It returns either a theme name or a theme spec, not both.
+func (p *Parser) parseThemeRef(n *yaml.Node) (string, *runtimev1.ThemeSpec, error) {
 	if n == nil || n.IsZero() {
 		return "", nil, nil
 	}

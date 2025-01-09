@@ -25,7 +25,7 @@
 </script>
 
 <div
-  class="size-full bg-gray-100 flex justify-center overflow-y-auto"
+  class="dashboard-theme-boundary size-full bg-gray-100 flex justify-center overflow-y-auto"
   on:scroll
 >
   <div

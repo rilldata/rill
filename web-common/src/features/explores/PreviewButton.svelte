@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import { navigating } from "$app/stores";
+  import { Button } from "@rilldata/web-common/components/button";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
