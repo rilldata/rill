@@ -12,12 +12,16 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show [<project-name>]",
 		Short: "Show credentials and other variables",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
 				return err
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Find the cloud project name
