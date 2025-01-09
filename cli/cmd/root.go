@@ -130,29 +130,25 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Command Groups
 
 	// Project commands
-	cmdutil.AddGroup(
-		rootCmd, "Project",
+	cmdutil.AddGroup(rootCmd, "Project",
 		start.StartCmd(ch),
 		deploy.DeployCmd(ch),
 		project.ProjectCmd(ch),
 		publicurl.PublicURLCmd(ch),
-		service.ServiceCmd(ch),
-		runtime.RuntimeCmd(ch),
 		env.EnvCmd(ch),
 	)
 
 	// Organization commands
 	cmdutil.AddGroup(rootCmd, "Organization",
-		admin.AdminCmd(ch),
 		org.OrgCmd(ch),
 		user.UserCmd(ch),
 		usergroup.UsergroupCmd(ch),
+		service.ServiceCmd(ch),
 		billing.BillingCmd(ch),
 	)
 
-	// User commands
-	cmdutil.AddGroup(rootCmd,
-		"User",
+	// Auth commands
+	cmdutil.AddGroup(rootCmd, "Auth",
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
 		whoami.WhoamiCmd(ch),
@@ -163,6 +159,8 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		completionCmd,
 		docs.DocsCmd(ch, rootCmd),
 		versioncmd.VersionCmd(),
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
 		sudo.SudoCmd(ch),
 		upgrade.UpgradeCmd(ch),
 		uninstall.UninstallCmd(ch),
