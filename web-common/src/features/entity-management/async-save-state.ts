@@ -23,6 +23,7 @@ export class AsyncSaveState {
   private errorStore = writable<null | Error>(null);
   private promise: ReturnType<typeof this.createDeferred> | undefined;
   private touchedStore = writable(false);
+  readonly lastSaveTime = 0;
 
   touched = {
     subscribe: this.touchedStore.subscribe,
@@ -49,8 +50,6 @@ export class AsyncSaveState {
   error = {
     subscribe: this.errorStore.subscribe,
   };
-
-  lastSaveTime = 0;
 
   initiateSave = () => {
     this.lastSaveTime = Date.now();
