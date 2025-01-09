@@ -192,10 +192,11 @@ function fromTimeRangesParams(
   }
 
   if (preset.selectTimeRange) {
-    partialExploreState.selectedScrubRange = {
-      ...fromTimeRangeUrlParam(preset.selectTimeRange, timeRanges),
-      isScrubbing: false,
-    };
+    partialExploreState.lastDefinedScrubRange =
+      partialExploreState.selectedScrubRange = {
+        ...fromTimeRangeUrlParam(preset.selectTimeRange, timeRanges),
+        isScrubbing: false,
+      };
   } else {
     partialExploreState.selectedScrubRange = undefined;
   }

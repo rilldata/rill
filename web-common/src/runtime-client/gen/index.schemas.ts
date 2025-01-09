@@ -841,14 +841,10 @@ export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
-export type V1ResolveComponentResponseDataItem = { [key: string]: any };
-
 export interface V1ResolveComponentResponse {
   /** Show property with templating resolved for the provided args.
 If it resolves to false, the other fields are not set. */
   show?: boolean;
-  schema?: V1StructType;
-  data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
@@ -1365,10 +1361,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
-}
-
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
@@ -1853,6 +1845,11 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
 
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
+}
+
 export interface V1ExploreSpec {
   displayName?: string;
   description?: string;
@@ -1903,11 +1900,6 @@ export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string for the duration of the comparison time range.
 If not specified, it should fallback to the range of the base time range. */
   range?: string;
-}
-
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
 export type V1ExploreComparisonMode =
@@ -2101,13 +2093,9 @@ export interface V1ComponentVariable {
 
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
-export type V1ComponentSpecResolverProperties = { [key: string]: any };
-
 export interface V1ComponentSpec {
   displayName?: string;
   description?: string;
-  resolver?: string;
-  resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
@@ -2303,8 +2291,9 @@ export interface V1CanvasItem {
 
 export interface V1CanvasSpec {
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  maxWidth?: number;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
   securityRules?: V1SecurityRule[];
@@ -2693,6 +2682,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

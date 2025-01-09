@@ -800,7 +800,7 @@ message ResolveComponentRequest {
   string instance_id = 1;
   // Component name
   string component = 2;
-  // Optional args to pass to the data resolver and for resolving templating in the renderer properties
+  // Optional args for resolving templating in the renderer properties
   google.protobuf.Struct args = 3;
 }
 
@@ -808,12 +808,8 @@ message ResolveComponentResponse {
   // Show property with templating resolved for the provided args.
   // If it resolves to false, the other fields are not set.
   bool show = 1;
-  // Schema of the resolved component data
-  StructType schema = 2;
-  // Resolved component data
-  repeated google.protobuf.Struct data = 3;
   // Renderer properties with templating resolved for the provided args
-  google.protobuf.Struct renderer_properties = 4;
+  google.protobuf.Struct renderer_properties = 2;
 }
 
 // **********

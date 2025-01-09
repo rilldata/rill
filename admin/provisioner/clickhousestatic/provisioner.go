@@ -137,6 +137,14 @@ func (p *Provisioner) Provision(ctx context.Context, r *provisioner.Resource, op
 		return nil, fmt.Errorf("failed to grant privileges to clickhouse user: %w", err)
 	}
 
+	// Grant access to system.parts for reporting disk usage.
+	// NOTE 1: ClickHouse automatically adds row filters to restrict result to tables the user has access to.
+	// NOTE 2: We do not need to explicitly grant access to system.tables and system.columns because ClickHouse adds those implicitly.
+	_, err = p.ch.ExecContext(ctx, fmt.Sprintf("GRANT SELECT ON system.parts TO %s", user))
+	if err != nil {
+		return nil, fmt.Errorf("failed to grant system privileges to clickhouse user: %w", err)
+	}
+
 	// Grant some additional global privileges to the user
 	_, err = p.ch.ExecContext(ctx, fmt.Sprintf(`
 		GRANT

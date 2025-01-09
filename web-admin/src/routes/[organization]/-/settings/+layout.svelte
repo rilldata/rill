@@ -8,13 +8,16 @@
 
   export let data: PageData;
 
-  $: ({ subscription, neverSubscribed } = data);
+  $: ({ subscription, neverSubscribed, billingPortalUrl } = data);
 
   $: organization = $page.params.organization;
   $: basePage = `/${organization}/-/settings`;
   $: onEnterprisePlan =
     subscription?.plan && isEnterprisePlan(subscription?.plan);
   $: hideBillingSettings = neverSubscribed;
+  $: hideUsageSettings = onEnterprisePlan || !billingPortalUrl;
+
+  $: console.log(subscription);
 
   $: navItems = [
     { label: "General", route: "" },
@@ -22,7 +25,7 @@
       ? []
       : [
           { label: "Billing", route: "/billing" },
-          ...(onEnterprisePlan ? [] : [{ label: "Usage", route: "/usage" }]),
+          ...(hideUsageSettings ? [] : [{ label: "Usage", route: "/usage" }]),
         ]),
   ];
 </script>

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { InfoIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { InfoIcon } from "lucide-svelte";
+  import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
 
@@ -12,6 +12,7 @@
   export let id: string;
   export let label: string = "";
   export let lockTooltip: string = "";
+  export let size: "sm" | "md" | "lg" = "lg";
   export let options: {
     value: string;
     label: string;
@@ -87,8 +88,8 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {width &&
-        `w-[${width}px]`} {ringFocus &&
+      class="flex px-3 gap-x-2 max-w-full {size === 'sm' ? 'h-6' : ''} {width &&
+        `w-[${width}px]`}  {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''}"

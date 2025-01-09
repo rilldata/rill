@@ -19,7 +19,6 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
-  import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
@@ -41,7 +40,6 @@
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
-  const { customDashboards } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: currentFile = $page.params.file;
@@ -229,6 +227,20 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
+      <DropdownMenu.Item
+        class="flex gap-x-2"
+        on:click={async () => {
+          const newFilePath = await createResourceFile(ResourceKind.Canvas);
+          await wrapNavigation(newFilePath);
+        }}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Canvas]}
+          color={resourceColorMapping[ResourceKind.Canvas]}
+          size="16px"
+        />
+        Canvas dashboard
+      </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
@@ -253,32 +265,7 @@
           API
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
-        {#if $customDashboards}
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => handleAddResource(ResourceKind.Component)}
-          >
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              color={resourceColorMapping[ResourceKind.Component]}
-              size="16px"
-            />
-            Component
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => handleAddResource(ResourceKind.Canvas)}
-          >
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Canvas]}
-              color={resourceColorMapping[ResourceKind.Canvas]}
-              size="16px"
-            />
-            Canvas dashboard
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-        {/if}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
           on:click={() => handleAddResource(ResourceKind.Theme)}

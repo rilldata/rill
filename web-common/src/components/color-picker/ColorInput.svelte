@@ -1,12 +1,13 @@
 <script lang="ts">
   import * as Popover from "@rilldata/web-common/components/popover";
-  import ColorSlider from "./ColorSlider.svelte";
   import InputLabel from "../forms/InputLabel.svelte";
+  import ColorSlider from "./ColorSlider.svelte";
 
   export let stringColor: string | undefined;
   export let label: string;
   export let disabled = false;
   export let onChange: (color: string) => void;
+  export let small = false;
 
   let open = false;
 
@@ -184,6 +185,7 @@
 
 <div
   class="color-wrapper"
+  class:small
   class:pointer-events-none={disabled}
   class:bg-gray-50={disabled}
   class:text-gray-400={disabled}
@@ -198,7 +200,7 @@
       />
     </Popover.Trigger>
 
-    <Popover.Content class="w-[270px]  space-y-2" align="start" sideOffset={10}>
+    <Popover.Content class="w-[270px] space-y-2" align="start" sideOffset={10}>
       <div class="space-y-1">
         <InputLabel label="Hue" id="hue" />
         <ColorSlider
@@ -229,6 +231,7 @@
   </Popover.Root>
 
   <input
+    class:small
     bind:value={stringColor}
     {disabled}
     on:keydown={(e) => {
@@ -243,7 +246,7 @@
     }}
   />
 
-  <p class:text-gray-500={!disabled}>{label}</p>
+  <p class:small class:text-gray-500={!disabled}>{label}</p>
 </div>
 
 <style lang="postcss">
@@ -258,6 +261,10 @@
     @apply flex gap-x-3;
   }
 
+  .color-wrapper.small {
+    @apply h-6 text-xs;
+  }
+
   .color-wrapper:focus-within {
     @apply border-primary-500 ring-2 ring-primary-100;
   }
@@ -266,8 +273,16 @@
     @apply text-sm;
   }
 
+  p.small {
+    @apply text-xs;
+  }
+
   input {
     @apply w-full text-sm;
     @apply outline-none border-0 bg-transparent;
+  }
+
+  input.small {
+    @apply text-xs;
   }
 </style>
