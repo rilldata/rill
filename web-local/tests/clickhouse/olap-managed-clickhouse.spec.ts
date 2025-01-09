@@ -1,13 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { test as RillTest } from "../utils/test";
-import {
-  addFolderWithCheck,
-  addFileWithCheck,
-  waitForSource,
-  uploadFile,
-} from "../utils/sourceHelpers";
+import { addFolderWithCheck, addFileWithCheck } from "../utils/sourceHelpers";
 
-/// Managed ClickHouse
+/// Managed ClickHouse (return to this once managed CH is stable)
 
 test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
   RillTest("Create ClickHouse Connection...", async ({ page }) => {
@@ -60,8 +55,7 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     const clickhouseEntry = section.locator('li[aria-label="clickhouse"]');
     await expect(clickhouseEntry).toHaveCount(1);
 
-    const noTablesMessage = section.locator('span:has-text("No tables found")');
-    await expect(noTablesMessage).toBeVisible();
+    await page.waitForSelector('span:has-text("No tables found")');
 
     // Now that Managed ClickHouse has been set up, enable featureflag for CH modeling and start workflow.
 
@@ -72,7 +66,13 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
 
     await projectTextbox.click();
 
-    const projectlines = ["", "features:", "  - clickhouseModeling"];
+    const projectlines = [
+      "",
+      "olap_connector: clickhouse",
+      "",
+      "features:",
+      "  - clickhouseModeling",
+    ];
 
     // Type each line with a newline after
     for (const line of projectlines) {
@@ -82,17 +82,119 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
 
     await page.locator('button:has-text("Save")').click();
 
-    // await Promise.all([
-    //   waitForSource(page, "/sources/AdBids.yaml", [
-    //     "publisher",
-    //     "domain",
-    //     "timestamp",
-    //   ]),
-    //   uploadFile(page, "AdBids.csv"),
-    // ]);
+    // TODO: Create NORMAL model, metrics view and dashboard
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Model").click();
 
-    // TODO: Add source, create model, etc.
+    await page.locator('li[aria-label="/models/model.sql Nav Entry"]').hover();
+    await page.getByLabel("/models/model.sql actions menu trigger").click();
+    await page.locator('div[role="menuitem"]:has-text("Rename...")').click();
 
-    // TODO: Incremental Modeling
+    const fileNameField = page.locator("input#file-name");
+    await fileNameField.fill("AdBids_csv.yaml"); //must be the same name as output https://github.com/rilldata/rill/issues/6374
+    await page.locator('button[form="rename-asset-form"]').click();
+
+    // Mimic typing in the child contenteditable div
+    const managedSourceTextBox = await page.locator(
+      'div[role="textbox"] div.cm-content',
+    );
+    await managedSourceTextBox.click(); // Ensure it's focused for typing
+    await page.waitForTimeout(2000);
+
+    // Clear existing contents
+    await managedSourceTextBox.press("Meta+A"); // need to check this
+    await managedSourceTextBox.press("Backspace"); // Delete selected text
+
+    const sourceLines = [
+      "type: model",
+      "materialize: true",
+      "",
+      "sql: >",
+      "  SELECT timestamp, id, bid_price, domain, publisher",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
+      "        )",
+      "  {{ if dev }} LIMIT 100 {{ end }}",
+      "output:",
+      "  table: AdBids_csv",
+      "  engine: MergeTree",
+    ];
+
+    // Type each line with a newline after
+    for (const line of sourceLines) {
+      await managedSourceTextBox.type(line); // Type the line
+      await managedSourceTextBox.press("Enter"); // Press Enter for a new line
+    }
+
+    await page.waitForTimeout(5000); //allows the model to load
+
+    // Check the UI panel for column graphs
+
+    // Click Create metrics with AI
+
+    // Click Create Explore Dashboard
+
+    // Check that preview loads and has XYZ details
+
+    // DONE
+
+    // TODO: Incremental Modeling check UI buttons, metrics view, explore dashboard
+    await page.getByLabel("Add Asset").click();
+    await page.getByLabel("Add Model").click();
+
+    await page.locator('li[aria-label="/models/model.sql Nav Entry"]').hover();
+    await page.getByLabel("/models/model.sql actions menu trigger").click();
+    await page.locator('div[role="menuitem"]:has-text("Rename...")').click();
+
+    const fileNameField1 = page.locator("input#file-name");
+    await fileNameField1.fill("AdBids_csv_incremental.yaml"); //must be the same name as output https://github.com/rilldata/rill/issues/6374
+    await page.locator('button[form="rename-asset-form"]').click();
+
+    // Mimic typing in the child contenteditable div
+    const incrementalTextBox = await page.locator(
+      'div[role="textbox"] div.cm-content',
+    );
+    await incrementalTextBox.click(); // Ensure it's focused for typing
+    await page.waitForTimeout(2000);
+
+    // Clear existing contents
+    await incrementalTextBox.press("Meta+A"); // need to check this
+    await incrementalTextBox.press("Backspace"); // Delete selected text
+
+    const incrementalLines = [
+      "type: model",
+      "materialize: true",
+      "incremental: true:",
+      "",
+      "sql: >",
+      "  SELECT timestamp, id, bid_price, domain, publisher",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
+      "        )",
+      "  {{ if dev }} LIMIT 100 {{ end }}",
+      "output:",
+      "  table: AdBids_csv_incremental",
+      "  engine: MergeTree",
+    ];
+
+    // Type each line with a newline after
+    for (const line of incrementalLines) {
+      await incrementalTextBox.type(line); // Type the line
+      await incrementalTextBox.press("Enter"); // Press Enter for a new line
+    }
+
+    await page.waitForTimeout(5000); //allows the model to load
+
+    // Check the Refresh buttons for incremental modeling
+
+    // Check the UI panel for column graphs
+
+    // Click Create metrics with AI
+
+    // Click Create Explore Dashboard
+
+    // Check that preview loads and has XYZ details
+
+    // DONE
   });
 });

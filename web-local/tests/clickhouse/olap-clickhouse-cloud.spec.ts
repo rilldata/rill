@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { test as RillTest } from "../utils/test";
 
 /// ClickHouse Cloud test to add clickhouse connector, create metrics -> explore dashboard, as well as table -> dashboard.
+/// Second test, incremental modeling, create metrics -> explore dashboard (default limit 100,000)
 /// Credentials have access only to playwright_e2e db.
 
 test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
