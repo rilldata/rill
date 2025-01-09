@@ -21,7 +21,7 @@ export class RillTime {
 
     this.end = end ?? RillTimeAnchor.now();
     this.isComplete =
-      this.end.type === RillTimeAnchorType.Custom ||
+      this.end.type === RillTimeAnchorType.Relative ||
       this.end.truncate !== undefined;
   }
 
@@ -31,12 +31,16 @@ export class RillTime {
     }
 
     const start = capitalizeFirstChar(this.start.getLabel());
-    if (
+    const hasNonStandardStart =
+      this.start.type === RillTimeAnchorType.Custom || !!this.start.offset;
+    const hasNonStandardEnd =
       this.end &&
-      this.end.type === RillTimeAnchorType.Custom &&
-      this.end.grain &&
-      this.end.grain.count < 0
-    ) {
+      ((this.end.type === RillTimeAnchorType.Relative &&
+        this.end.grain &&
+        this.end.grain.count !== 0) ||
+        this.end.type === RillTimeAnchorType.Custom ||
+        !!this.end.offset);
+    if (hasNonStandardStart || hasNonStandardEnd) {
       return this.timeRange;
     }
 
@@ -49,6 +53,7 @@ export enum RillTimeAnchorType {
   Now = "Now",
   Earliest = "Earliest",
   Latest = "Latest",
+  Relative = "Relative",
   Custom = "Custom",
 }
 
@@ -66,11 +71,11 @@ const GrainToUnit = {
 export const InvalidTime = "Invalid";
 export class RillTimeAnchor {
   public truncate: RillTimeGrain | undefined = undefined;
+  public absolute: string | undefined = undefined;
+  public grain: RillTimeGrain | undefined = undefined;
+  public offset: RillTimeGrain | undefined = undefined;
 
-  public constructor(
-    public readonly type: RillTimeAnchorType,
-    public readonly grain: RillTimeGrain | undefined = undefined,
-  ) {}
+  public constructor(public readonly type: RillTimeAnchorType) {}
 
   public static now() {
     return new RillTimeAnchor(RillTimeAnchorType.Now);
@@ -81,8 +86,26 @@ export class RillTimeAnchor {
   public static latest() {
     return new RillTimeAnchor(RillTimeAnchorType.Latest);
   }
-  public static custom(grain: RillTimeGrain) {
-    return new RillTimeAnchor(RillTimeAnchorType.Custom, grain);
+  public static relative(grain: RillTimeGrain) {
+    return new RillTimeAnchor(RillTimeAnchorType.Relative).withGrain(grain);
+  }
+  public static absolute(time: string) {
+    return new RillTimeAnchor(RillTimeAnchorType.Custom).withAbsolute(time);
+  }
+
+  public withGrain(grain: RillTimeGrain) {
+    this.grain = grain;
+    return this;
+  }
+
+  public withOffset(grain: RillTimeGrain) {
+    this.offset = grain;
+    return this;
+  }
+
+  public withAbsolute(time: string) {
+    this.absolute = time;
+    return this;
   }
 
   public withTruncate(truncate: RillTimeGrain) {

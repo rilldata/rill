@@ -37,6 +37,18 @@ describe("rill time", () => {
       ["-7d, latest/d : |h|", "Last 7 days"],
       ["-6d, latest : |h|", "Last 6 days, incomplete"],
       ["-6d, latest : h", "Last 6 days, incomplete"],
+
+      ["2024-01-01, 2024-03-31", "2024-01-01, 2024-03-31"],
+      [
+        "2024-01-01 10:00, 2024-03-31 18:00",
+        "2024-01-01 10:00, 2024-03-31 18:00",
+      ],
+
+      ["-7W+2d", "-7W+2d"],
+      ["-7W,latest+2d", "-7W,latest+2d"],
+      ["-7W,-7W+2d", "-7W,-7W+2d"],
+      ["-7W+2d", "-7W+2d"],
+      ["2024-01-01-1W,2024-01-01", "2024-01-01-1W,2024-01-01"],
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
@@ -48,7 +60,6 @@ describe("rill time", () => {
         expect(parser.results).length(1);
 
         const rt = parseRillTime(rillTime);
-        console.log(rt);
         expect(rt.getLabel()).toEqual(label);
       });
     }
