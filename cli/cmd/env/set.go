@@ -11,23 +11,21 @@ import (
 
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, environment string
+	var projectPath, projectName, environment, keyValPair string
 
 	setCmd := &cobra.Command{
-		Use:   "set <key> <value>",
-		Args:  cobra.ExactArgs(2),
+		Use:   "set [<project-name>] [--env=key=value]",
+		Args:  cobra.ExactArgs(1),
 		Short: "Set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			key := args[0]
-			value := args[1]
 			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			if err := envValidator.ValidateName(key); err != nil {
-				return err
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Find the cloud project name
@@ -36,6 +34,11 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
+			}
+
+			key, value, err := envValidator.ParseAndValidate(keyValPair)
+			if err != nil {
+				return err
 			}
 
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
@@ -56,6 +59,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	setCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
+	setCmd.Flags().StringVar(&keyValPair, "env", "", "Specify a key and value to insert in environment (i.e. somekey=somevalue)")
 
 	return setCmd
 }
