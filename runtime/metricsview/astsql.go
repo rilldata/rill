@@ -258,7 +258,7 @@ func (b *sqlBuilder) writeInlineSelect(n *SelectNode) error {
 					tablePart += b.ast.dialect.EscapeIdentifier(f.Name)
 				}
 				valuesPart += ", "
-				if f.Expr == nilExpr {
+				if f.Expr == nilExpr || f.Expr == "NaN" {
 					valuesPart += "NULL"
 				} else {
 					valuesPart += f.Expr
