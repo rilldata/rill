@@ -19,6 +19,7 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.27.0
+	github.com/alecthomas/participle/v2 v2.1.1
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/apache/arrow/go/v15 v15.0.2
 	github.com/aws/aws-sdk-go v1.49.0
@@ -174,7 +175,6 @@ require (
 	github.com/Microsoft/hcsshim v0.11.5 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
-	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/apache/arrow-go/v18 v18.0.0 // indirect

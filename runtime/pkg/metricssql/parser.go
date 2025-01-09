@@ -50,11 +50,13 @@ type query struct {
 	q *metricsview.Query
 
 	controller *runtime.Controller
+	claims     *runtime.SecurityClaims
 	instanceID string
 	priority   int
 
 	// fields available after parsing FROM clause
 	metricsViewSpec *runtimev1.MetricsViewSpec
+	security        *runtime.ResolvedSecurity
 	dims            map[string]any
 	measures        map[string]any
 }
@@ -82,6 +84,7 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	q := &query{
 		q:          &metricsview.Query{},
 		controller: c.controller,
+		claims:     c.claims,
 		instanceID: c.instanceID,
 		priority:   c.priority,
 	}
@@ -159,7 +162,13 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 	if spec == nil {
 		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
+	security, err := q.controller.Runtime.ResolveSecurity(q.instanceID, q.claims, mv)
+	if err != nil {
+		// if left is not a table source, then it must be a join
+		return fmt.Errorf("metrics sql: failed to resolve security")
+	}
 	q.metricsViewSpec = spec
+	q.security = security
 	q.measures = make(map[string]any, len(spec.Measures))
 	for _, measure := range spec.Measures {
 		q.measures[measure.Name] = nil

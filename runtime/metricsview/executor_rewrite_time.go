@@ -12,6 +12,37 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
+func (e *Executor) GetMinTime(ctx context.Context, colName string) (time.Time, error) {
+	if colName == "" {
+		// we cannot get min time without a time dimension or a column name specified. return a 0 time
+		return time.Time{}, nil
+	}
+
+	dialect := e.olap.Dialect()
+	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", dialect.EscapeIdentifier(colName), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer res.Close()
+
+	var t time.Time
+	if res.Next() {
+		if err := res.Scan(&t); err != nil {
+			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
+		}
+	}
+	if res.Err() != nil {
+		return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", res.Err())
+	}
+	return t, nil
+}
+
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
 	tz := time.UTC
@@ -56,7 +87,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
-	minTime, err := e.getMinTime(ctx)
+	minTime, err := e.GetMinTime(ctx, e.metricsView.TimeDimension)
 	if err != nil {
 		return err
 	}
@@ -206,36 +237,5 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 	}
 
 	e.watermark = t
-	return t, nil
-}
-
-func (e *Executor) getMinTime(ctx context.Context) (time.Time, error) {
-	if e.metricsView.TimeDimension == "" {
-		// we cannot get min time without a time dimension specified. return a 0 time
-		return time.Time{}, nil
-	}
-
-	dialect := e.olap.Dialect()
-	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", dialect.EscapeIdentifier(e.metricsView.TimeDimension), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer res.Close()
-
-	var t time.Time
-	if res.Next() {
-		if err := res.Scan(&t); err != nil {
-			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
-		}
-		if res.Err() != nil {
-			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", res.Err())
-		}
-	}
 	return t, nil
 }

@@ -3,7 +3,6 @@ package metricssqlparser
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	rt, unit, colName, err := parseTimeRangeArgs(node.Args)
+	rt, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -29,17 +28,15 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	for i := 1; i <= unit; i++ {
-		watermark, _, err = rt.Resolve(rilltime.ResolverContext{
-			Now:        time.Now(),
-			MinTime:    minTime,
-			MaxTime:    watermark,
-			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
-		})
-		if err != nil {
-			return nil, err
-		}
+	watermark, _, err = rt.Resolve(rilltime.ResolverContext{
+		Now:        time.Now(),
+		MinTime:    minTime,
+		MaxTime:    watermark,
+		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &metricsview.Expression{
@@ -48,7 +45,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 }
 
 func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	rt, unit, colName, err := parseTimeRangeArgs(node.Args)
+	rt, colName, err := parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -63,17 +60,15 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	for i := 1; i <= unit; i++ {
-		_, watermark, err = rt.Resolve(rilltime.ResolverContext{
-			Now:        time.Now(),
-			MinTime:    minTime,
-			MaxTime:    watermark,
-			FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
-			FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
-		})
-		if err != nil {
-			return nil, err
-		}
+	_, watermark, err = rt.Resolve(rilltime.ResolverContext{
+		Now:        time.Now(),
+		MinTime:    minTime,
+		MaxTime:    watermark,
+		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
+		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &metricsview.Expression{
@@ -116,6 +111,7 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 	return watermark, nil
 }
 
+// getMinTime creates a executor and calls GetMinTime
 func (q *query) getMinTime(ctx context.Context, colName string) (time.Time, error) {
 	if colName == "" {
 		colName = q.metricsViewSpec.TimeDimension
@@ -125,74 +121,42 @@ func (q *query) getMinTime(ctx context.Context, colName string) (time.Time, erro
 		return time.Time{}, nil
 	}
 
-	olap, release, err := q.controller.AcquireOLAP(ctx, q.metricsViewSpec.Connector)
+	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, q.security, q.priority)
 	if err != nil {
 		return time.Time{}, err
 	}
-	defer release()
-
-	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", olap.Dialect().EscapeIdentifier(colName), olap.Dialect().EscapeTable(q.metricsViewSpec.Database, q.metricsViewSpec.DatabaseSchema, q.metricsViewSpec.Table))
-	result, err := olap.Execute(ctx, &drivers.Statement{Query: sql, Priority: q.priority})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer result.Close()
-
-	var t time.Time
-	if result.Next() {
-		if err := result.Scan(&t); err != nil {
-			return time.Time{}, fmt.Errorf("error scanning min time: %w", err)
-		}
-	}
-	if result.Err() != nil {
-		return time.Time{}, fmt.Errorf("error scanning min time: %w", result.Err())
-	}
-	return t, nil
+	return ex.GetMinTime(ctx, colName)
 }
 
-func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.RillTime, int, string, error) {
+func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.RillTime, string, error) {
 	if len(args) == 0 {
-		return nil, 0, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
+		return nil, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
 	}
-	if len(args) > 3 {
-		return nil, 0, "", fmt.Errorf("metrics sql: time_range_end() function expects at most 3 arguments")
+	if len(args) > 2 {
+		return nil, "", fmt.Errorf("metrics sql: time_range_end() function expects at most 2 arguments")
 	}
 	// identify optional args
 	var (
-		col  string
-		unit int
-		err  error
+		col string
+		err error
 	)
-	// identify unit
-	if len(args) == 1 {
-		unit = 1
-	} else {
-		val, err := parseValueExpr(args[1])
-		if err != nil {
-			return nil, 0, "", err
-		}
-		unit, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, 0, "", err
-		}
-	}
 
 	// identify column name
-	if len(args) == 3 {
-		col, err = parseColumnNameExpr(args[2])
+	if len(args) == 2 {
+		col, err = parseColumnNameExpr(args[1])
 		if err != nil {
-			return nil, 0, "", err
+			return nil, "", err
 		}
 	}
 
 	du, err := parseValueExpr(args[0])
 	if err != nil {
-		return nil, 0, "", err
+		return nil, "", err
 	}
 
 	rt, err := rilltime.Parse(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
 	if err != nil {
-		return nil, 0, "", fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
+		return nil, "", fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
 	}
-	return rt, unit, col, nil
+	return rt, col, nil
 }
