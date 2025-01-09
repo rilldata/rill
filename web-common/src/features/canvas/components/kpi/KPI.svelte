@@ -116,8 +116,8 @@
     bind:clientHeight={containerHeight}
     class="flex flex-col h-full w-full bg-white p-4"
   >
-    <div class="flex justify-between items-center mb-2">
-      <span class="font-semibold text-lg truncate pr-2"
+    <div class="flex justify-between items-center mb-0.5">
+      <span class="font-medium text-sm truncate pr-2 text-gray-700"
         >{measure?.displayName || measureName}</span
       >
       {#if comparisonTimeRange && $comparisonValue.data}
@@ -131,7 +131,9 @@
     </div>
 
     <div class="flex justify-between items-center mb-2">
-      <span class="text-2xl font-light">{measureValueFormatted}</span>
+      <span class="text-3xl font-medium text-gray-700"
+        >{measureValueFormatted}</span
+      >
       {#if $comparisonValue.data}
         <div class="flex items-baseline gap-x-3 text-sm">
           <div

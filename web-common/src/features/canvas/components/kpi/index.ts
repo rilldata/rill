@@ -25,7 +25,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
   defaultSize = { width: 8, height: 4 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<KPISpec> = {},
   ) {

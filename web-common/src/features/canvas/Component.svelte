@@ -93,12 +93,12 @@
       style:border-radius="{radius}px"
     >
       {#if title || description}
-        <div class="w-full h-fit flex flex-col border-b bg-white p-2">
+        <div class="w-full h-fit flex flex-col bg-white p-2">
           {#if title}
-            <h1 class="text-slate-700">{title}</h1>
+            <h1 class="title">{title}</h1>
           {/if}
           {#if description}
-            <h2 class="text-slate-600 leading-none">{description}</h2>
+            <h2 class="description">{description}</h2>
           {/if}
         </div>
       {/if}
@@ -122,5 +122,14 @@
   h2 {
     font-size: 12px;
     font-weight: 400;
+  }
+
+  .title {
+    font-size: 15px;
+    @apply font-medium text-gray-800;
+  }
+  .description {
+    font-size: 13px;
+    @apply text-gray-600 leading-none pt-0.5;
   }
 </style>

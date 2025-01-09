@@ -8,7 +8,7 @@
   import type { View } from "svelte-vega";
   import { getChartData } from "./selector";
   import type { ChartConfig, ChartType } from "./types";
-  import { generateSpec } from "./util";
+  import { generateSpec, mergedVlConfig } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
@@ -23,6 +23,10 @@
 
   $: data = getChartData(stateManagers, instanceId, chartConfig);
   $: spec = generateSpec(chartType, chartConfig, $data);
+
+  $: config = chartConfig.vl_config
+    ? mergedVlConfig(chartConfig.vl_config)
+    : undefined;
 </script>
 
 {#if chartConfig?.x}
@@ -38,6 +42,7 @@
       canvasDashboard
       data={{ "metrics-view": $data.data }}
       {spec}
+      {config}
     />
   {/if}
 {/if}
