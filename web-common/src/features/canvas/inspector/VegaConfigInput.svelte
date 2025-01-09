@@ -33,6 +33,7 @@
 <div class="config-input">
   <InputLabel small label="Vega Lite config" optional id="vl-config" />
   <textarea
+    style:font-family="monospace"
     class="w-full mt-2 p-2 border border-gray-300 rounded-sm"
     rows="20"
     bind:value={paramValues[KEY]}

@@ -2,6 +2,7 @@ import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { generateVLBarChartSpec } from "./bar-chart/spec";
 import { generateVLLineChartSpec } from "./line-chart/spec";
@@ -33,8 +34,8 @@ export const chartMetadata: ChartMetadata[] = [
 
 export function mergedVlConfig(config: string): Config {
   const defaultConfig = getRillTheme(true);
-
   let parsedConfig: Config;
+
   try {
     parsedConfig = JSON.parse(config) as Config;
   } catch {
@@ -42,8 +43,10 @@ export function mergedVlConfig(config: string): Config {
     return defaultConfig;
   }
 
-  return {
-    ...defaultConfig,
-    ...parsedConfig,
-  };
+  const reverseArrayMerge = (
+    destinationArray: unknown[],
+    sourceArray: unknown[],
+  ) => [...sourceArray, ...destinationArray];
+
+  return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
 }
