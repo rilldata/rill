@@ -23,7 +23,7 @@ export class AsyncSaveState {
   private errorStore = writable<null | Error>(null);
   private promise: ReturnType<typeof this.createDeferred> | undefined;
   private touchedStore = writable(false);
-  readonly lastSaveTime = 0;
+  public lastSaveTime = 0;
 
   touched = {
     subscribe: this.touchedStore.subscribe,
