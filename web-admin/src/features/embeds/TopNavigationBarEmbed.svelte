@@ -1,5 +1,5 @@
 <script lang="ts">
-  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
+  import BreadcrumbItemEmbed from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItemEmbed.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type {
@@ -70,12 +70,11 @@
         {/if}
 
         {#if currentResource}
-          <BreadcrumbItem
+          <BreadcrumbItemEmbed
             options={breadcrumbOptions}
             current={currentResourceName}
             onSelect={onSelectResource}
             isCurrentPage
-            isEmbedded
           />
         {/if}
       </ol>
