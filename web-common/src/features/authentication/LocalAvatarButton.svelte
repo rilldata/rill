@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
-  import NoUserImage from "@rilldata/web-common/components/icons/NoUserImage.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import {
@@ -56,15 +56,11 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none w-7">
       {#if loggedIn && !photoUrlErrored}
-        <img
+        <Avatar
           src={$user.data?.user?.photoUrl}
-          alt="avatar"
-          class="h-7 inline-flex items-center rounded-full"
-          referrerpolicy="no-referrer"
-          on:error={() => (photoUrlErrored = true)}
+          alt={$user.data?.user?.displayName || $user.data?.user?.email}
+          avatarSize="h-7 w-7"
         />
-      {:else if photoUrlErrored}
-        <NoUserImage />
       {:else}
         <NoUser />
       {/if}
