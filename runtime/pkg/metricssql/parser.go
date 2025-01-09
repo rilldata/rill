@@ -56,7 +56,7 @@ type query struct {
 
 	// fields available after parsing FROM clause
 	metricsViewSpec *runtimev1.MetricsViewSpec
-	security        *runtime.ResolvedSecurity
+	executor        *metricsview.Executor
 	dims            map[string]any
 	measures        map[string]any
 }
@@ -162,13 +162,18 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 	if spec == nil {
 		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
+	q.metricsViewSpec = spec
 	security, err := q.controller.Runtime.ResolveSecurity(q.instanceID, q.claims, mv)
 	if err != nil {
-		// if left is not a table source, then it must be a join
-		return fmt.Errorf("metrics sql: failed to resolve security")
+		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
 	}
-	q.metricsViewSpec = spec
-	q.security = security
+
+	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
+	if err != nil {
+		return fmt.Errorf("metrics sql: failed to create executor: %w", err)
+	}
+	q.executor = ex
+
 	q.measures = make(map[string]any, len(spec.Measures))
 	for _, measure := range spec.Measures {
 		q.measures[measure.Name] = nil

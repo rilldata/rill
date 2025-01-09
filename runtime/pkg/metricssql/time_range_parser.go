@@ -23,7 +23,10 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	minTime, err := q.getMinTime(ctx, colName)
+	if colName == "" {
+		colName = q.metricsViewSpec.TimeDimension
+	}
+	minTime, err := q.executor.GetMinTime(ctx, colName)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +58,10 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	minTime, err := q.getMinTime(ctx, colName)
+	if colName == "" {
+		colName = q.metricsViewSpec.TimeDimension
+	}
+	minTime, err := q.executor.GetMinTime(ctx, colName)
 	if err != nil {
 		return nil, err
 	}
@@ -109,23 +115,6 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 		return watermark, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
 	}
 	return watermark, nil
-}
-
-// getMinTime creates a executor and calls GetMinTime
-func (q *query) getMinTime(ctx context.Context, colName string) (time.Time, error) {
-	if colName == "" {
-		colName = q.metricsViewSpec.TimeDimension
-	}
-	if colName == "" {
-		// we cannot get min time without a time dimension or a column name specified. return a 0 time
-		return time.Time{}, nil
-	}
-
-	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, q.security, q.priority)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return ex.GetMinTime(ctx, colName)
 }
 
 func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.RillTime, string, error) {
