@@ -12,7 +12,10 @@
 
   async function updateConfig() {
     let config = paramValues[KEY];
+
     if (!config) {
+      error = null;
+      component.updateProperty(KEY, null);
       return;
     }
 

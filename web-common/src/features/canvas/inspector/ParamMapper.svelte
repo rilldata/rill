@@ -9,10 +9,11 @@
   import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
   import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
   import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
   export let component: CanvasComponentObj;
@@ -71,7 +72,7 @@
 
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
-          <FieldSelectorDropdown
+          <SingleFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -84,8 +85,7 @@
 
           <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
         {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
-          <FieldSelectorDropdown
-            multi
+          <MultiFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}

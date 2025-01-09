@@ -1,6 +1,6 @@
 <script lang="ts">
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { FieldConfig } from "../components/charts/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
   export let key: string;
   export let config: { label?: string };
@@ -21,7 +21,7 @@
 </script>
 
 <div class="space-y-2">
-  <FieldSelectorDropdown
+  <SingleFieldInput
     label={config.label || key}
     metricName={metricsView}
     id={`${key}-field`}
