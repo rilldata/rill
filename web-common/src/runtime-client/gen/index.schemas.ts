@@ -349,6 +349,12 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type QueryServiceResolveCanvasBodyArgs = { [key: string]: any };
+
+export type QueryServiceResolveCanvasBody = {
+  args?: QueryServiceResolveCanvasBodyArgs;
+};
+
 export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
@@ -582,12 +588,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -615,6 +615,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -829,15 +835,58 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
 export interface V1ResolveComponentResponse {
-  /** Show property with templating resolved for the provided args.
-If it resolves to false, the other fields are not set. */
-  show?: boolean;
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+/**
+ * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+ */
+export type V1ResolveCanvasResponseReferencedMetricsViews = {
+  [key: string]: V1MetricsViewSpec;
+};
+
+/**
+ * All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+ */
+export type V1ResolveCanvasResponseResolvedComponents = {
+  [key: string]: V1ComponentSpec;
+};
+
+export interface V1ResolveCanvasResponse {
+  canvas?: V1Resource;
+  /** All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec). */
+  resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
+  /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
+  referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
 export interface V1ReportState {
@@ -891,26 +940,6 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
