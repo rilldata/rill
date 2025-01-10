@@ -4484,36 +4484,89 @@ export class Canvas extends Message<Canvas> {
  */
 export class CanvasSpec extends Message<CanvasSpec> {
   /**
+   * Display name for the canvas.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
+   * Max width in pixels of the canvas.
+   *
    * @generated from field: uint32 max_width = 2;
    */
   maxWidth = 0;
 
   /**
+   * Horizontal gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_x = 9;
+   */
+  gapX = 0;
+
+  /**
+   * Vertical gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_y = 10;
+   */
+  gapY = 0;
+
+  /**
+   * Name of the theme to use. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: string theme = 7;
    */
   theme = "";
 
   /**
+   * Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+   *
    * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
    */
   embeddedTheme?: ThemeSpec;
 
   /**
+   * List of selectable time ranges with comparison time ranges.
+   * If the list is empty, a default list should be shown.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreTimeRange time_ranges = 11;
+   */
+  timeRanges: ExploreTimeRange[] = [];
+
+  /**
+   * List of selectable time zones.
+   * If the list is empty, a default list should be shown.
+   * The values should be valid IANA location identifiers.
+   *
+   * @generated from field: repeated string time_zones = 12;
+   */
+  timeZones: string[] = [];
+
+  /**
+   * Preset UI state to show by default.
+   *
+   * @generated from field: rill.runtime.v1.CanvasPreset default_preset = 15;
+   */
+  defaultPreset?: CanvasPreset;
+
+  /**
+   * Variables that can be used in the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
    */
   variables: ComponentVariable[] = [];
 
   /**
+   * Items to render on the canvas
+   *
    * @generated from field: repeated rill.runtime.v1.CanvasItem items = 4;
    */
   items: CanvasItem[] = [];
 
   /**
+   * Security rules to apply for access to the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
@@ -4528,8 +4581,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "gap_x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "gap_y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
+    { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
@@ -4653,6 +4711,64 @@ export class CanvasItem extends Message<CanvasItem> {
 
   static equals(a: CanvasItem | PlainMessage<CanvasItem> | undefined, b: CanvasItem | PlainMessage<CanvasItem> | undefined): boolean {
     return proto3.util.equals(CanvasItem, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasPreset
+ */
+export class CanvasPreset extends Message<CanvasPreset> {
+  /**
+   * Time range for the explore.
+   * It corresponds to the `range` property of the explore's `time_ranges`.
+   * If not found in `time_ranges`, it should be added to the list.
+   *
+   * @generated from field: optional string time_range = 1;
+   */
+  timeRange?: string;
+
+  /**
+   * Comparison mode.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+   *
+   * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 2;
+   */
+  comparisonMode = ExploreComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+   *
+   * @generated from field: optional string comparison_dimension = 8;
+   */
+  comparisonDimension?: string;
+
+  constructor(data?: PartialMessage<CanvasPreset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasPreset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
+    return proto3.util.equals(CanvasPreset, a, b);
   }
 }
 
