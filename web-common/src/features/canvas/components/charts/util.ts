@@ -50,3 +50,15 @@ export function mergedVlConfig(config: string): Config {
 
   return merge(defaultConfig, parsedConfig, { arrayMerge: reverseArrayMerge });
 }
+
+export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
+  let xLabel = "";
+  if (config.x?.field) {
+    xLabel = data.fields[config.x.field]?.displayName || config.x.field;
+  }
+  let yLabel = "";
+  if (config.y?.field) {
+    yLabel = data.fields[config.y.field]?.displayName || config.y.field;
+  }
+  return `${yLabel} vs ${xLabel}`;
+}

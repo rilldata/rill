@@ -8,6 +8,7 @@
   } from "../entity-management/resource-selectors";
   import type ResizeHandle from "./ResizeHandle.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
+  import ComponentTitle from "@rilldata/web-common/features/canvas/ComponentTitle.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -92,16 +93,7 @@
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
-      {#if title || description}
-        <div class="w-full h-fit flex flex-col bg-white p-2">
-          {#if title}
-            <h1 class="title">{title}</h1>
-          {/if}
-          {#if description}
-            <h2 class="description">{description}</h2>
-          {/if}
-        </div>
-      {/if}
+      <ComponentTitle {title} {description} />
       {#if renderer && rendererProperties}
         <ComponentRenderer {renderer} {componentName} />
       {/if}
@@ -112,24 +104,5 @@
 <style lang="postcss">
   .wrapper {
     @apply absolute;
-  }
-
-  h1 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  h2 {
-    font-size: 12px;
-    font-weight: 400;
-  }
-
-  .title {
-    font-size: 15px;
-    @apply font-medium text-gray-800;
-  }
-  .description {
-    font-size: 13px;
-    @apply text-gray-600 leading-none pt-0.5;
   }
 </style>

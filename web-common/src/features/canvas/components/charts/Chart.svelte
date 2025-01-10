@@ -1,5 +1,7 @@
 <script lang="ts">
   import VegaLiteRenderer from "@rilldata/web-common/components/vega/VegaLiteRenderer.svelte";
+  import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
+  import ComponentTitle from "@rilldata/web-common/features/canvas/ComponentTitle.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -7,8 +9,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { View } from "svelte-vega";
   import { getChartData } from "./selector";
-  import type { ChartConfig, ChartType } from "./types";
-  import { generateSpec, mergedVlConfig } from "./util";
+  import type { ChartType } from "./types";
+  import { generateSpec, getChartTitle, mergedVlConfig } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
@@ -16,7 +18,7 @@
   let stateManagers = getCanvasStateManagers();
 
   const instanceId = $runtime.instanceId;
-  $: chartConfig = rendererProperties as ChartConfig;
+  $: chartConfig = rendererProperties as ChartSpec;
   $: chartType = renderer as ChartType;
 
   let viewVL: View;
@@ -27,6 +29,8 @@
   $: config = chartConfig.vl_config
     ? mergedVlConfig(chartConfig.vl_config)
     : undefined;
+
+  $: title = getChartTitle(chartConfig, $data);
 </script>
 
 {#if chartConfig?.x}
@@ -37,6 +41,9 @@
   {:else if $data.error}
     <div class="text-red-500">{$data.error.message}</div>
   {:else}
+    {#if !chartConfig.title && !chartConfig.description}
+      <ComponentTitle faint {title} />
+    {/if}
     <VegaLiteRenderer
       bind:viewVL
       canvasDashboard
