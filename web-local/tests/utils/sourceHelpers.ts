@@ -110,16 +110,18 @@ export async function addFileWithCheck(
 
 export async function addFolderWithCheck(
   page: Page,
-  file: string, //used to check URL for creation 
+  file: string, //used to check URL for creation
 ) {
   // add asset button
   await page.getByLabel("Add Asset").click();
   // Hover over "More" to reveal the dropdown menu
-  await page.locator('text=More').hover();
+  await page.locator("text=More").hover();
   // Click the "Blank file" button
-  await page.getByRole('menuitem', { name: 'Folder' }).click();
+  await page.getByRole("menuitem", { name: "Folder" }).click();
   // check folder exists
-  await page.waitForSelector(`button[id="/${file}-nav-entry"]`, { state: "visible", });
+  await page.waitForSelector(`button[id="/${file}-nav-entry"]`, {
+    state: "visible",
+  });
 }
 
 export async function waitForTable(
