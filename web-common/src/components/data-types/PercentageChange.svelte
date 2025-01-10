@@ -79,8 +79,9 @@
       <span class="text-gray-400">-</span>
     {:else if value !== null && assembled}
       <span class:text-red-500={diffIsNegative}>
-        {approxSign}{negSign}{posSign}{intValue}{suffix}
-        <span class="opacity-50">%</span>
+        {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
+          >%</span
+        >
       </span>
     {/if}
   </slot>
