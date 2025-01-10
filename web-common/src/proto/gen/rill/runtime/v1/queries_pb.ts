@@ -4899,6 +4899,13 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
   /**
    * Not optional, not null
    *
+   * @generated from field: google.protobuf.Timestamp watermark = 4;
+   */
+  watermark?: Timestamp;
+
+  /**
+   * Not optional, not null
+   *
    * @generated from field: rill.runtime.v1.TimeRangeSummary.Interval interval = 3;
    */
   interval?: TimeRangeSummary_Interval;
@@ -4913,6 +4920,7 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "min", kind: "message", T: Timestamp },
     { no: 2, name: "max", kind: "message", T: Timestamp },
+    { no: 4, name: "watermark", kind: "message", T: Timestamp },
     { no: 3, name: "interval", kind: "message", T: TimeRangeSummary_Interval },
   ]);
 

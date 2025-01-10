@@ -998,6 +998,8 @@ message TimeRangeSummary {
   google.protobuf.Timestamp min = 1;
   // Not optional, not null
   google.protobuf.Timestamp max = 2;
+  // Not optional, not null
+  google.protobuf.Timestamp watermark = 4;
   message Interval {
     int32 months = 1;
     int32 days = 2;

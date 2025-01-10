@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
@@ -129,40 +130,39 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 		return e.watermark, nil
 	}
 
-	dialect := e.olap.Dialect()
-
-	var expr string
-	if e.metricsView.WatermarkExpression != "" {
-		expr = e.metricsView.WatermarkExpression
-	} else if e.metricsView.TimeDimension != "" {
-		expr = fmt.Sprintf("MAX(%s)", dialect.EscapeIdentifier(e.metricsView.TimeDimension))
-	} else {
-		return time.Time{}, errors.New("cannot determine time anchor for relative time range")
-	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s", expr, dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
+	res, err := e.rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         e.instanceID,
+		Resolver:           "metrics_time_range",
+		ResolverProperties: map[string]any{"metrics_view": e.metricsView},
+		Args:               map[string]any{"priority": e.priority},
+		Claims:             nil, // TODO
 	})
 	if err != nil {
 		return time.Time{}, err
 	}
 	defer res.Close()
 
-	var t time.Time
-	if res.Next() {
-		if err := res.Scan(&t); err != nil {
-			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return time.Time{}, errors.New("time range query returned no results")
 		}
+		return time.Time{}, err
 	}
 
-	if t.IsZero() {
-		t = time.Now()
+	watermarkVal, ok := row["watermark"]
+	if !ok {
+		return time.Time{}, errors.New("time range query failed to return watermark")
+	}
+	watermark, ok := watermarkVal.(time.Time)
+	if !ok {
+		return time.Time{}, errors.New("time range query returned invalid watermark")
 	}
 
-	e.watermark = t
-	return t, nil
+	if watermark.IsZero() {
+		watermark = time.Now()
+	}
+
+	e.watermark = watermark
+	return watermark, nil
 }

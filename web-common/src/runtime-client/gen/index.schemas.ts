@@ -597,6 +597,7 @@ export interface V1TimeSeriesResponse {
 export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
+  watermark?: string;
   interval?: TimeRangeSummaryInterval;
 }
 

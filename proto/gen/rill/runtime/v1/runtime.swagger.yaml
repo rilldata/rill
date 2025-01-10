@@ -6330,6 +6330,10 @@ definitions:
         type: string
         format: date-time
         title: Not optional, not null
+      watermark:
+        type: string
+        format: date-time
+        title: Not optional, not null
       interval:
         $ref: '#/definitions/TimeRangeSummaryInterval'
         title: Not optional, not null
