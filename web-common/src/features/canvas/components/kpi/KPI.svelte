@@ -145,7 +145,8 @@
               class:text-red-500={$measureValue.data && $measureValue.data < 0}
             >
               <PercentageChange
-                customStyle="text-gray-500"
+                color="text-gray-500"
+                showPosSign
                 tabularNumber={false}
                 value={formatMeasurePercentageDifference(comparisonPercChange)}
               />
@@ -178,6 +179,8 @@
         {yMax}
       >
         <ChunkedLine
+          lineOpacity={0.6}
+          stopOpacity={0.2}
           lineColor={MainLineColor}
           areaGradientColors={focusedAreaGradient}
           data={sparkData}
