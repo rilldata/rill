@@ -55,7 +55,6 @@
             textClass="text-sm"
             size="sm"
             labelGap={2}
-            optional={!!config.optional}
             label={config.label ?? key}
             bind:value={localParamValues[key]}
             onBlur={async () => {
@@ -99,12 +98,7 @@
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
           <div class="flex items-center justify-between py-2">
-            <InputLabel
-              small
-              label={config.label ?? key}
-              optional={!!config.optional}
-              id={key}
-            />
+            <InputLabel small label={config.label ?? key} id={key} />
             <Switch
               bind:checked={localParamValues[key]}
               on:click={async () => {
@@ -116,12 +110,7 @@
 
           <!-- TEXT AREA -->
         {:else if config.type === "textArea"}
-          <InputLabel
-            small
-            label={config.label ?? key}
-            optional={!!config.optional}
-            id={key}
-          />
+          <InputLabel small label={config.label ?? key} id={key} />
           <textarea
             class="w-full p-2 border border-gray-300 rounded-sm"
             rows="4"
