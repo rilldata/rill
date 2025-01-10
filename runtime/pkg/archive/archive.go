@@ -83,6 +83,16 @@ func Create(ctx context.Context, files []drivers.DirEntry, root, url string, hea
 	return nil
 }
 
+// EstimateTarSize estimates the size of the tar ball that will be created from the given files.
+func EstimateTarSize(files []drivers.DirEntry, root string) (int64, error) {
+	b := &bytes.Buffer{}
+	err := createTar(b, files, root)
+	if err != nil {
+		return 0, fmt.Errorf("failed to estimate tar size: %w", err)
+	}
+	return int64(b.Len()), nil
+}
+
 // borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
 func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 	gw, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
