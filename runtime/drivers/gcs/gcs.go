@@ -80,7 +80,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("gcs driver can't be shared")
 	}
 
-	logger.Info("opening GCS connection", zap.String("instanceID", instanceID))
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
