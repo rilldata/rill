@@ -9,7 +9,7 @@ import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
-import { ComponentSpec, MetricsViewSpec, Resource } from "./resources_pb.js";
+import { Resource } from "./resources_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -3437,16 +3437,16 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
    * The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
    * (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
    *
-   * @generated from field: map<string, rill.runtime.v1.ComponentSpec> resolved_components = 2;
+   * @generated from field: map<string, rill.runtime.v1.Resource> resolved_components = 2;
    */
-  resolvedComponents: { [key: string]: ComponentSpec } = {};
+  resolvedComponents: { [key: string]: Resource } = {};
 
   /**
    * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
    *
-   * @generated from field: map<string, rill.runtime.v1.MetricsViewSpec> referenced_metrics_views = 3;
+   * @generated from field: map<string, rill.runtime.v1.Resource> referenced_metrics_views = 3;
    */
-  referencedMetricsViews: { [key: string]: MetricsViewSpec } = {};
+  referencedMetricsViews: { [key: string]: Resource } = {};
 
   constructor(data?: PartialMessage<ResolveCanvasResponse>) {
     super();
@@ -3457,8 +3457,8 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
   static readonly typeName = "rill.runtime.v1.ResolveCanvasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "canvas", kind: "message", T: Resource },
-    { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: ComponentSpec} },
-    { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: MetricsViewSpec} },
+    { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {

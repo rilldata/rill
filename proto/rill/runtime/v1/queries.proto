@@ -798,9 +798,9 @@ message ResolveCanvasResponse {
   // All the component resources referenced by the canvas.
   // The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
   // (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
-  map<string, ComponentSpec> resolved_components = 2;
+  map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
-  map<string, MetricsViewSpec> referenced_metrics_views = 3;
+  map<string, Resource> referenced_metrics_views = 3;
 }
 
 message ResolveComponentRequest {

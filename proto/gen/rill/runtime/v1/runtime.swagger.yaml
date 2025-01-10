@@ -5934,7 +5934,7 @@ definitions:
       resolvedComponents:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1ComponentSpec'
+          $ref: '#/definitions/v1Resource'
         description: |-
           All the component resources referenced by the canvas.
           The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
@@ -5942,7 +5942,7 @@ definitions:
       referencedMetricsViews:
         type: object
         additionalProperties:
-          $ref: '#/definitions/v1MetricsViewSpec'
+          $ref: '#/definitions/v1Resource'
         description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   v1ResolveComponentResponse:
     type: object

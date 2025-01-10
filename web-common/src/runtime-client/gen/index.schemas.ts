@@ -867,7 +867,7 @@ export interface V1ResolveComponentResponse {
  * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
  */
 export type V1ResolveCanvasResponseReferencedMetricsViews = {
-  [key: string]: V1MetricsViewSpec;
+  [key: string]: V1Resource;
 };
 
 /**
@@ -876,7 +876,7 @@ The resources state.valid_spec.renderer_properties will have templating resolved
 (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
  */
 export type V1ResolveCanvasResponseResolvedComponents = {
-  [key: string]: V1ComponentSpec;
+  [key: string]: V1Resource;
 };
 
 export interface V1ResolveCanvasResponse {
