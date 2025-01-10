@@ -42,18 +42,21 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			var table []*variable
+			var envVars []*variable
 
 			for _, v := range resp.Variables {
-				table = append(table, &variable{
+				envVars = append(envVars, &variable{
 					Name:        v.Name,
 					Value:       v.Value,
 					Environment: v.Environment,
 				})
 			}
 
-			ch.PrintfSuccess("\nVariables\n\n")
-			ch.PrintData(table)
+			if cmd.Flags().Changed("env") {
+				printEnv(envVars)
+			} else {
+				ch.PrintData(envVars)
+			}
 
 			return nil
 		},
@@ -62,8 +65,19 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	showCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	showCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	showCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
+	showCmd.Flags().Bool("env", false, "Print variables in shell export format")
 
 	return showCmd
+}
+
+func formatEnvVar(name, value string) string {
+	return fmt.Sprintf("%s=%s", name, value)
+}
+
+func printEnv(vars []*variable) {
+	for _, v := range vars {
+		fmt.Println(formatEnvVar(v.Name, v.Value))
+	}
 }
 
 type variable struct {
