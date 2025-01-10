@@ -7,10 +7,15 @@ import (
 
 // RuntimeCmd represents the runtime command
 func RuntimeCmd(ch *cmdutil.Helper) *cobra.Command {
+	internalGroupID := ""
+	if ch.IsDev() {
+		internalGroupID = "Internal"
+	}
 	runtimeCmd := &cobra.Command{
-		Use:    "runtime",
-		Hidden: !ch.IsDev(),
-		Short:  "Manage stand-alone runtimes",
+		Use:     "runtime",
+		Hidden:  !ch.IsDev(),
+		Short:   "Manage stand-alone runtimes",
+		GroupID: internalGroupID,
 	}
 	runtimeCmd.AddCommand(StartCmd(ch))
 	runtimeCmd.AddCommand(PingCmd(ch))
