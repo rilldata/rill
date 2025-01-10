@@ -17,9 +17,10 @@ var (
 	durationPattern = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
 	// nolint:govet // This is suggested usage by the docs.
 	rillTimeLexer = lexer.MustSimple([]lexer.SimpleRule{
+		{"Earliest", "earliest"},
 		{"Now", "now"},
 		{"Latest", "latest"},
-		{"Earliest", "earliest"},
+		{"Watermark", "watermark"},
 		// this needs to be after Now and Latest to match to them
 		{"Grain", `[smhdDWQMY]`},
 		// this has to be at the end
@@ -51,7 +52,7 @@ var (
 		"PQ": "-1Q,0Q",
 		"PY": "-1Y,0Y",
 	}
-	rillTimeParser = participle.MustBuild[RillTime](
+	rillTimeParser = participle.MustBuild[Expression](
 		participle.Lexer(rillTimeLexer),
 		participle.Elide("Whitespace"),
 	)
@@ -68,7 +69,7 @@ var (
 	}
 )
 
-type RillTime struct {
+type Expression struct {
 	Start       *TimeAnchor  `parser:"  @@"`
 	End         *TimeAnchor  `parser:"(',' @@)?"`
 	Modifiers   *Modifiers   `parser:"(':' @@)?"`
@@ -80,14 +81,15 @@ type RillTime struct {
 }
 
 type TimeAnchor struct {
-	Grain    *Grain  `parser:"( @@"`
-	AbsDate  *string `parser:"| @AbsoluteDate"`
-	AbsTime  *string `parser:"| @AbsoluteTime"`
-	Now      bool    `parser:"| @Now"`
-	Latest   bool    `parser:"| @Latest"`
-	Earliest bool    `parser:"| @Earliest)"`
-	Offset   *Grain  `parser:"@@?"`
-	Trunc    *string `parser:"  ('/' @Grain)?"`
+	Grain     *Grain  `parser:"( @@"`
+	AbsDate   *string `parser:"| @AbsoluteDate"`
+	AbsTime   *string `parser:"| @AbsoluteTime"`
+	Earliest  bool    `parser:"| @Earliest"`
+	Now       bool    `parser:"| @Now"`
+	Latest    bool    `parser:"| @Latest"`
+	Watermark bool    `parser:"| @Watermark)"`
+	Offset    *Grain  `parser:"@@?"`
+	Trunc     *string `parser:"  ('/' @Grain)?"`
 }
 
 type Modifiers struct {
@@ -105,16 +107,17 @@ type AtModifiers struct {
 	TimeZone *string     `parser:"@TimeZone?"`
 }
 
-type ResolverContext struct {
+type EvalOptions struct {
 	Now        time.Time
 	MinTime    time.Time
 	MaxTime    time.Time
+	Watermark  time.Time
 	FirstDay   int
 	FirstMonth int
 }
 
-func Parse(from string) (*RillTime, error) {
-	var rt *RillTime
+func Parse(from string) (*Expression, error) {
+	var rt *Expression
 	var err error
 
 	rt, err = ParseISO(from, false)
@@ -158,10 +161,10 @@ func Parse(from string) (*RillTime, error) {
 	return rt, nil
 }
 
-func ParseISO(from string, strict bool) (*RillTime, error) {
+func ParseISO(from string, strict bool) (*Expression, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
-		return &RillTime{
+		return &Expression{
 			Start: &TimeAnchor{Earliest: true},
 			End:   &TimeAnchor{Latest: true},
 		}, nil
@@ -184,7 +187,7 @@ func ParseISO(from string, strict bool) (*RillTime, error) {
 		return nil, fmt.Errorf("string %q is not a valid ISO 8601 duration", from)
 	}
 
-	rt := &RillTime{
+	rt := &Expression{
 		Start: &TimeAnchor{Grain: &Grain{}},
 		End:   &TimeAnchor{Now: true},
 	}
@@ -224,63 +227,67 @@ func ParseISO(from string, strict bool) (*RillTime, error) {
 	return rt, nil
 }
 
-func (r *RillTime) Resolve(resolverCtx ResolverContext) (time.Time, time.Time, error) {
-	if r.AtModifiers != nil && r.AtModifiers.Offset != nil {
-		resolverCtx.Now = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.Now, false)
-		resolverCtx.MinTime = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.MinTime, false)
-		resolverCtx.MaxTime = r.Modify(resolverCtx, r.AtModifiers.Offset, resolverCtx.MaxTime, false)
+func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
+	if e.AtModifiers != nil && e.AtModifiers.Offset != nil {
+		evalOpts.MinTime = e.Modify(evalOpts, e.AtModifiers.Offset, evalOpts.MinTime, false)
+		evalOpts.Now = e.Modify(evalOpts, e.AtModifiers.Offset, evalOpts.Now, false)
+		evalOpts.MaxTime = e.Modify(evalOpts, e.AtModifiers.Offset, evalOpts.MaxTime, false)
+		evalOpts.Watermark = e.Modify(evalOpts, e.AtModifiers.Offset, evalOpts.Watermark, false)
 	}
 
-	start := resolverCtx.Now
-	if r.End != nil && r.End.Latest {
+	start := evalOpts.Now
+	if e.End != nil && e.End.Latest {
 		// if end has latest mentioned then start also should be relative to latest.
-		start = resolverCtx.MaxTime
+		start = evalOpts.MaxTime
 	}
 
-	if r.Start != nil {
-		start = r.Modify(resolverCtx, r.Start, start, true)
+	if e.Start != nil {
+		start = e.Modify(evalOpts, e.Start, start, true)
 	}
 
-	end := resolverCtx.Now
-	if r.End != nil {
-		end = r.Modify(resolverCtx, r.End, end, true)
+	end := evalOpts.Now
+	if e.End != nil {
+		end = e.Modify(evalOpts, e.End, end, true)
 	}
 
 	return start, end, nil
 }
 
-func (r *RillTime) Modify(resolverCtx ResolverContext, ta *TimeAnchor, tm time.Time, addOffset bool) time.Time {
+func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, addOffset bool) time.Time {
 	isTruncate := true
-	truncateGrain := r.grain
+	truncateGrain := e.grain
 
 	if ta.Now {
-		tm = resolverCtx.Now.In(r.timeZone)
-		isTruncate = r.isComplete
+		tm = evalOpts.Now.In(e.timeZone)
+		isTruncate = e.isComplete
 	} else if ta.Earliest {
-		tm = resolverCtx.MinTime.In(r.timeZone)
+		tm = evalOpts.MinTime.In(e.timeZone)
 		isTruncate = true
 	} else if ta.Latest {
-		tm = resolverCtx.MaxTime.In(r.timeZone)
-		isTruncate = r.isComplete
+		tm = evalOpts.MaxTime.In(e.timeZone)
+		isTruncate = e.isComplete
+	} else if ta.Watermark {
+		tm = evalOpts.Watermark.In(e.timeZone)
+		isTruncate = e.isComplete
 	} else if ta.AbsDate != nil {
 		absTm, _ := time.Parse(time.DateOnly, *ta.AbsDate)
-		if addOffset && r.AtModifiers != nil && r.AtModifiers.Offset != nil {
-			absTm = r.Modify(resolverCtx, r.AtModifiers.Offset, absTm, false)
+		if addOffset && e.AtModifiers != nil && e.AtModifiers.Offset != nil {
+			absTm = e.Modify(evalOpts, e.AtModifiers.Offset, absTm, false)
 		}
-		tm = absTm.In(r.timeZone)
+		tm = absTm.In(e.timeZone)
 	} else if ta.AbsTime != nil {
 		absTm, _ := time.Parse("2006-01-02 15:04", *ta.AbsTime)
-		if addOffset && r.AtModifiers != nil && r.AtModifiers.Offset != nil {
-			absTm = r.Modify(resolverCtx, r.AtModifiers.Offset, absTm, false)
+		if addOffset && e.AtModifiers != nil && e.AtModifiers.Offset != nil {
+			absTm = e.Modify(evalOpts, e.AtModifiers.Offset, absTm, false)
 		}
-		tm = absTm.In(r.timeZone)
+		tm = absTm.In(e.timeZone)
 	} else if ta.Grain != nil {
-		tm = ta.Grain.offset(tm.In(r.timeZone))
+		tm = ta.Grain.offset(tm.In(e.timeZone))
 
 		truncateGrain = grainMap[ta.Grain.Grain]
 		isTruncate = true
 	} else {
-		return tm.In(r.timeZone)
+		return tm.In(e.timeZone)
 	}
 
 	if ta.Offset != nil {
@@ -293,52 +300,9 @@ func (r *RillTime) Modify(resolverCtx ResolverContext, ta *TimeAnchor, tm time.T
 	}
 
 	if isTruncate {
-		return timeutil.TruncateTime(tm, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+		return timeutil.TruncateTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
-	return timeutil.CeilTime(tm, truncateGrain, r.timeZone, resolverCtx.FirstDay, resolverCtx.FirstMonth)
-}
-
-func (t *TimeAnchor) Modify(resolverCtx ResolverContext, tm time.Time, tg timeutil.TimeGrain, tz *time.Location, isComplete bool) time.Time {
-	isTruncate := true
-	truncateGrain := tg
-
-	if t.Now {
-		tm = resolverCtx.Now.In(tz)
-		isTruncate = isComplete
-	} else if t.Earliest {
-		tm = resolverCtx.MinTime.In(tz)
-		isTruncate = true
-	} else if t.Latest {
-		tm = resolverCtx.MaxTime.In(tz)
-		isTruncate = isComplete
-	} else if t.AbsDate != nil {
-		absTm, _ := time.Parse(time.DateOnly, *t.AbsDate)
-		tm = absTm.In(tz)
-	} else if t.AbsTime != nil {
-		absTm, _ := time.Parse("2006-01-02 15:04", *t.AbsTime)
-		tm = absTm.In(tz)
-	} else if t.Grain != nil {
-		tm = t.Grain.offset(tm.In(tz))
-
-		truncateGrain = grainMap[t.Grain.Grain]
-		isTruncate = true
-	} else {
-		return tm.In(tz)
-	}
-
-	if t.Offset != nil {
-		tm = t.Offset.offset(tm)
-	}
-
-	if t.Trunc != nil {
-		truncateGrain = grainMap[*t.Trunc]
-		isTruncate = true
-	}
-
-	if isTruncate {
-		return timeutil.TruncateTime(tm, truncateGrain, tz, resolverCtx.FirstDay, resolverCtx.FirstMonth)
-	}
-	return timeutil.CeilTime(tm, truncateGrain, tz, resolverCtx.FirstDay, resolverCtx.FirstMonth)
+	return timeutil.CeilTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 }
 
 func (g *Grain) offset(tm time.Time) time.Time {

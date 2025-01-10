@@ -17,6 +17,7 @@ func Test_Resolve(t *testing.T) {
 	}{
 		// Earliest = 2023-08-09T10:32:36Z, Latest = 2024-08-06T06:32:36Z, = Now = 2024-08-09T10:32:36Z
 		{`m : |s|`, "2024-08-09T10:32:00Z", "2024-08-09T10:32:36Z"},
+		{`m : s`, "2024-08-09T10:32:00Z", "2024-08-09T10:32:36Z"},
 		{`-5m : |m|`, "2024-08-09T10:27:00Z", "2024-08-09T10:32:00Z"},
 		{`-5m, 0m : |m|`, "2024-08-09T10:27:00Z", "2024-08-09T10:32:00Z"},
 		{`h : m`, "2024-08-09T10:00:00Z", "2024-08-09T10:33:00Z"},
@@ -49,10 +50,10 @@ func Test_Resolve(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.timeRange, func(t *testing.T) {
-			rt, err := Parse(tc.timeRange)
+			rillTime, err := Parse(tc.timeRange)
 			require.NoError(t, err)
 
-			start, end, err := rt.Resolve(ResolverContext{
+			start, end, err := rillTime.Eval(EvalOptions{
 				Now:        now,
 				MinTime:    now.AddDate(-1, 0, 0),
 				MaxTime:    maxTime,

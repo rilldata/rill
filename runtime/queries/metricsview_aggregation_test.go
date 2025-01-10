@@ -4951,10 +4951,10 @@ func testMetricsViewsAggregation_comparison_using_rill_time(t *testing.T, rt *ru
 		},
 
 		TimeRange: &runtimev1.TimeRange{
-			RillTime: "2022-03-01-7d,2022-03-01",
+			Expression: "2022-03-01-7d,2022-03-01",
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			RillTime: "2022-03-01-7d,2022-03-01 @-7d",
+			Expression: "2022-03-01-7d,2022-03-01 @-7d",
 		},
 		SecurityClaims: testClaims(),
 	}

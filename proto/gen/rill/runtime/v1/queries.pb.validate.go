@@ -6178,7 +6178,7 @@ func (m *TimeRange) validate(all bool) error {
 
 	// no validation rules for TimeZone
 
-	// no validation rules for RillTime
+	// no validation rules for Expression
 
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)
@@ -9576,23 +9576,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSearchResponseValidationError{}
 
-// Validate checks the field values on MetricsViewResolveTimeRangesRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsViewResolveTimeRangesRequest) Validate() error {
+// Validate checks the field values on MetricsViewTimeRangesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewTimeRangesRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewResolveTimeRangesRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsViewResolveTimeRangesRequestMultiError, or nil if none found.
-func (m *MetricsViewResolveTimeRangesRequest) ValidateAll() error {
+// ValidateAll checks the field values on MetricsViewTimeRangesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewTimeRangesRequestMultiError, or nil if none found.
+func (m *MetricsViewTimeRangesRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewResolveTimeRangesRequest) validate(all bool) error {
+func (m *MetricsViewTimeRangesRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -9602,7 +9601,7 @@ func (m *MetricsViewResolveTimeRangesRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
-		err := MetricsViewResolveTimeRangesRequestValidationError{
+		err := MetricsViewTimeRangesRequestValidationError{
 			field:  "MetricsViewName",
 			reason: "value length must be at least 1 runes",
 		}
@@ -9615,20 +9614,19 @@ func (m *MetricsViewResolveTimeRangesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return MetricsViewResolveTimeRangesRequestMultiError(errors)
+		return MetricsViewTimeRangesRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewResolveTimeRangesRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewResolveTimeRangesRequest.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewResolveTimeRangesRequestMultiError []error
+// MetricsViewTimeRangesRequestMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewTimeRangesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewTimeRangesRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewResolveTimeRangesRequestMultiError) Error() string {
+func (m MetricsViewTimeRangesRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9637,12 +9635,12 @@ func (m MetricsViewResolveTimeRangesRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewResolveTimeRangesRequestMultiError) AllErrors() []error { return m }
+func (m MetricsViewTimeRangesRequestMultiError) AllErrors() []error { return m }
 
-// MetricsViewResolveTimeRangesRequestValidationError is the validation error
-// returned by MetricsViewResolveTimeRangesRequest.Validate if the designated
-// constraints aren't met.
-type MetricsViewResolveTimeRangesRequestValidationError struct {
+// MetricsViewTimeRangesRequestValidationError is the validation error returned
+// by MetricsViewTimeRangesRequest.Validate if the designated constraints
+// aren't met.
+type MetricsViewTimeRangesRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9650,24 +9648,24 @@ type MetricsViewResolveTimeRangesRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewResolveTimeRangesRequestValidationError) Field() string { return e.field }
+func (e MetricsViewTimeRangesRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewResolveTimeRangesRequestValidationError) Reason() string { return e.reason }
+func (e MetricsViewTimeRangesRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewResolveTimeRangesRequestValidationError) Cause() error { return e.cause }
+func (e MetricsViewTimeRangesRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewResolveTimeRangesRequestValidationError) Key() bool { return e.key }
+func (e MetricsViewTimeRangesRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewResolveTimeRangesRequestValidationError) ErrorName() string {
-	return "MetricsViewResolveTimeRangesRequestValidationError"
+func (e MetricsViewTimeRangesRequestValidationError) ErrorName() string {
+	return "MetricsViewTimeRangesRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewResolveTimeRangesRequestValidationError) Error() string {
+func (e MetricsViewTimeRangesRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9679,14 +9677,14 @@ func (e MetricsViewResolveTimeRangesRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewResolveTimeRangesRequest.%s: %s%s",
+		"invalid %sMetricsViewTimeRangesRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewResolveTimeRangesRequestValidationError{}
+var _ error = MetricsViewTimeRangesRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -9694,48 +9692,47 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewResolveTimeRangesRequestValidationError{}
+} = MetricsViewTimeRangesRequestValidationError{}
 
-// Validate checks the field values on MetricsViewResolveTimeRangesResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *MetricsViewResolveTimeRangesResponse) Validate() error {
+// Validate checks the field values on MetricsViewTimeRangesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewTimeRangesResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewResolveTimeRangesResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsViewResolveTimeRangesResponseMultiError, or nil if none found.
-func (m *MetricsViewResolveTimeRangesResponse) ValidateAll() error {
+// ValidateAll checks the field values on MetricsViewTimeRangesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MetricsViewTimeRangesResponseMultiError, or nil if none found.
+func (m *MetricsViewTimeRangesResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewResolveTimeRangesResponse) validate(all bool) error {
+func (m *MetricsViewTimeRangesResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	for idx, item := range m.GetRanges() {
+	for idx, item := range m.GetTimeRanges() {
 		_, _ = idx, item
 
 		if all {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewResolveTimeRangesResponseValidationError{
-						field:  fmt.Sprintf("Ranges[%v]", idx),
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewResolveTimeRangesResponseValidationError{
-						field:  fmt.Sprintf("Ranges[%v]", idx),
+					errors = append(errors, MetricsViewTimeRangesResponseValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -9743,8 +9740,8 @@ func (m *MetricsViewResolveTimeRangesResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewResolveTimeRangesResponseValidationError{
-					field:  fmt.Sprintf("Ranges[%v]", idx),
+				return MetricsViewTimeRangesResponseValidationError{
+					field:  fmt.Sprintf("TimeRanges[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -9754,20 +9751,19 @@ func (m *MetricsViewResolveTimeRangesResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsViewResolveTimeRangesResponseMultiError(errors)
+		return MetricsViewTimeRangesResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewResolveTimeRangesResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewResolveTimeRangesResponse.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewResolveTimeRangesResponseMultiError []error
+// MetricsViewTimeRangesResponseMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewTimeRangesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type MetricsViewTimeRangesResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewResolveTimeRangesResponseMultiError) Error() string {
+func (m MetricsViewTimeRangesResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9776,12 +9772,12 @@ func (m MetricsViewResolveTimeRangesResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewResolveTimeRangesResponseMultiError) AllErrors() []error { return m }
+func (m MetricsViewTimeRangesResponseMultiError) AllErrors() []error { return m }
 
-// MetricsViewResolveTimeRangesResponseValidationError is the validation error
-// returned by MetricsViewResolveTimeRangesResponse.Validate if the designated
+// MetricsViewTimeRangesResponseValidationError is the validation error
+// returned by MetricsViewTimeRangesResponse.Validate if the designated
 // constraints aren't met.
-type MetricsViewResolveTimeRangesResponseValidationError struct {
+type MetricsViewTimeRangesResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9789,24 +9785,24 @@ type MetricsViewResolveTimeRangesResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewResolveTimeRangesResponseValidationError) Field() string { return e.field }
+func (e MetricsViewTimeRangesResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewResolveTimeRangesResponseValidationError) Reason() string { return e.reason }
+func (e MetricsViewTimeRangesResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewResolveTimeRangesResponseValidationError) Cause() error { return e.cause }
+func (e MetricsViewTimeRangesResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewResolveTimeRangesResponseValidationError) Key() bool { return e.key }
+func (e MetricsViewTimeRangesResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewResolveTimeRangesResponseValidationError) ErrorName() string {
-	return "MetricsViewResolveTimeRangesResponseValidationError"
+func (e MetricsViewTimeRangesResponseValidationError) ErrorName() string {
+	return "MetricsViewTimeRangesResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewResolveTimeRangesResponseValidationError) Error() string {
+func (e MetricsViewTimeRangesResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9818,14 +9814,14 @@ func (e MetricsViewResolveTimeRangesResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewResolveTimeRangesResponse.%s: %s%s",
+		"invalid %sMetricsViewTimeRangesResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewResolveTimeRangesResponseValidationError{}
+var _ error = MetricsViewTimeRangesResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -9833,7 +9829,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewResolveTimeRangesResponseValidationError{}
+} = MetricsViewTimeRangesResponseValidationError{}
 
 // Validate checks the field values on ResolveComponentRequest with the rules
 // defined in the proto definition for this message. If any rules are

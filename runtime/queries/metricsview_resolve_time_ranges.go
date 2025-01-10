@@ -14,48 +14,48 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type MetricsViewResolveTimeRanges struct {
+type MetricsViewTimeRanges struct {
 	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
 	MinTime         time.Time               `json:"min_time,omitempty"`
-	RillTimes       []string                `json:"rill_times,omitempty"`
+	Expressions     []string                `json:"expressions,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
-	Result *runtimev1.MetricsViewResolveTimeRangesResponse `json:"-"`
+	Result *runtimev1.MetricsViewTimeRangesResponse `json:"-"`
 }
 
-var _ runtime.Query = &MetricsViewResolveTimeRanges{}
+var _ runtime.Query = &MetricsViewTimeRanges{}
 
-func (q *MetricsViewResolveTimeRanges) Key() string {
+func (q *MetricsViewTimeRanges) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewResolveTimeRanges:%s", string(r))
+	return fmt.Sprintf("MetricsViewTimeRanges:%s", string(r))
 }
 
-func (q *MetricsViewResolveTimeRanges) Deps() []*runtimev1.ResourceName {
+func (q *MetricsViewTimeRanges) Deps() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{
 		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
 	}
 }
 
-func (q *MetricsViewResolveTimeRanges) MarshalResult() *runtime.QueryResult {
+func (q *MetricsViewTimeRanges) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,
 		Bytes: sizeProtoMessage(q.Result),
 	}
 }
 
-func (q *MetricsViewResolveTimeRanges) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.MetricsViewResolveTimeRangesResponse)
+func (q *MetricsViewTimeRanges) UnmarshalResult(v any) error {
+	res, ok := v.(*runtimev1.MetricsViewTimeRangesResponse)
 	if !ok {
-		return fmt.Errorf("MetricsViewResolveTimeRanges: mismatched unmarshal input")
+		return fmt.Errorf("MetricsViewTimeRanges: mismatched unmarshal input")
 	}
 	q.Result = res
 	return nil
 }
 
-func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+func (q *MetricsViewTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
 	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
@@ -76,14 +76,14 @@ func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.
 	// to keep results consistent
 	now := time.Now()
 
-	ranges := make([]*runtimev1.TimeRange, len(q.RillTimes))
-	for i, tr := range q.RillTimes {
-		rt, err := rilltime.Parse(tr)
+	timeRanges := make([]*runtimev1.TimeRange, len(q.Expressions))
+	for i, tr := range q.Expressions {
+		rillTime, err := rilltime.Parse(tr)
 		if err != nil {
 			return fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}
 
-		start, end, err := rt.Resolve(rilltime.ResolverContext{
+		start, end, err := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    q.MinTime,
 			MaxTime:    watermark,
@@ -94,21 +94,21 @@ func (q *MetricsViewResolveTimeRanges) Resolve(ctx context.Context, rt *runtime.
 			return err
 		}
 
-		ranges[i] = &runtimev1.TimeRange{
+		timeRanges[i] = &runtimev1.TimeRange{
 			Start: timestamppb.New(start),
 			End:   timestamppb.New(end),
 			// for a reference
-			RillTime: tr,
+			Expression: tr,
 		}
 	}
 
-	q.Result = &runtimev1.MetricsViewResolveTimeRangesResponse{
-		Ranges: ranges,
+	q.Result = &runtimev1.MetricsViewTimeRangesResponse{
+		TimeRanges: timeRanges,
 	}
 
 	return nil
 }
 
-func (q *MetricsViewResolveTimeRanges) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+func (q *MetricsViewTimeRanges) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return nil
 }

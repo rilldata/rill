@@ -153,7 +153,7 @@ service QueryService {
     };
   }
 
-  rpc MetricsViewResolveTimeRanges(MetricsViewResolveTimeRangesRequest) returns (MetricsViewResolveTimeRangesResponse) {
+  rpc MetricsViewTimeRanges(MetricsViewTimeRangesRequest) returns (MetricsViewTimeRangesResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/time-ranges",
       body: "*"
@@ -559,8 +559,8 @@ message TimeRange {
   // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
   // Optional. Rill format time range. Should only be used for alerts and reports.
-  // Resolve the times and use `start` and `end` while querying in UI to keep time consistent across queries.
-  string rill_time = 7;
+  // For dashboard call ResolveTimeRanges.
+  string expression = 7;
 }
 
 // Present for backwards compatibility
@@ -780,15 +780,15 @@ message MetricsViewSearchResponse {
   repeated SearchResult results = 1;
 }
 
-message MetricsViewResolveTimeRangesRequest {
+message MetricsViewTimeRangesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  repeated string rill_times = 3;
+  repeated string expressions = 3;
   int32 priority = 4;
 }
 
-message MetricsViewResolveTimeRangesResponse {
-  repeated TimeRange ranges = 1;
+message MetricsViewTimeRangesResponse {
+  repeated TimeRange time_ranges = 1;
 }
 
 // **********

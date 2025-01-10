@@ -37,8 +37,8 @@ import type {
   QueryServiceMetricsViewSearchBody,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
-  V1MetricsViewResolveTimeRangesResponse,
-  QueryServiceMetricsViewResolveTimeRangesBody,
+  V1MetricsViewTimeRangesResponse,
+  QueryServiceMetricsViewTimeRangesBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -1009,39 +1009,38 @@ export const createQueryServiceMetricsViewTimeRange = <
   return query;
 };
 
-export const queryServiceMetricsViewResolveTimeRanges = (
+export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
+  queryServiceMetricsViewTimeRangesBody: QueryServiceMetricsViewTimeRangesBody,
 ) => {
-  return httpClient<V1MetricsViewResolveTimeRangesResponse>({
+  return httpClient<V1MetricsViewTimeRangesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceMetricsViewResolveTimeRangesBody,
+    data: queryServiceMetricsViewTimeRangesBody,
   });
 };
 
-export type QueryServiceMetricsViewResolveTimeRangesMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
-  >;
-export type QueryServiceMetricsViewResolveTimeRangesMutationBody =
-  QueryServiceMetricsViewResolveTimeRangesBody;
-export type QueryServiceMetricsViewResolveTimeRangesMutationError =
+export type QueryServiceMetricsViewTimeRangesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
+>;
+export type QueryServiceMetricsViewTimeRangesMutationBody =
+  QueryServiceMetricsViewTimeRangesBody;
+export type QueryServiceMetricsViewTimeRangesMutationError =
   ErrorType<RpcStatus>;
 
-export const createQueryServiceMetricsViewResolveTimeRanges = <
+export const createQueryServiceMetricsViewTimeRanges = <
   TError = ErrorType<RpcStatus>,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
     TError,
     {
       instanceId: string;
       metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
+      data: QueryServiceMetricsViewTimeRangesBody;
     },
     TContext
   >;
@@ -1049,29 +1048,25 @@ export const createQueryServiceMetricsViewResolveTimeRanges = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
     {
       instanceId: string;
       metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
+      data: QueryServiceMetricsViewTimeRangesBody;
     }
   > = (props) => {
     const { instanceId, metricsViewName, data } = props ?? {};
 
-    return queryServiceMetricsViewResolveTimeRanges(
-      instanceId,
-      metricsViewName,
-      data,
-    );
+    return queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
     TError,
     {
       instanceId: string;
       metricsViewName: string;
-      data: QueryServiceMetricsViewResolveTimeRangesBody;
+      data: QueryServiceMetricsViewTimeRangesBody;
     },
     TContext
   >(mutationFn, mutationOptions);
