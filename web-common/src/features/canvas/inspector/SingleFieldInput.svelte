@@ -12,7 +12,7 @@
   export let selectedItem: string | undefined = undefined;
   export let type: "measure" | "dimension";
   export let searchableItems: string[] | undefined = undefined;
-  export let onSelect: (item: string) => void = () => {};
+  export let onSelect: (item: string, displayName: string) => void = () => {};
 
   let open = false;
   let searchValue = "";
@@ -59,7 +59,7 @@
             <DropdownMenu.Item
               class="pl-8 mx-1"
               on:click={() => {
-                onSelect(item);
+                onSelect(item, $fieldData.displayMap[item] || item);
                 open = false;
               }}
             >

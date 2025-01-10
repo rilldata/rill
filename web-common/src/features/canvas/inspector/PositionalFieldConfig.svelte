@@ -20,6 +20,8 @@
       field: fieldName,
       type: isDimension ? "nominal" : "quantitative",
     };
+
+    // TODO: Add displayName to title
     onChange(updatedConfig);
   }
 
