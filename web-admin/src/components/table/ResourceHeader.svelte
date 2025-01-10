@@ -29,7 +29,7 @@ Rounded table corners are tricky:
 -->
 <style lang="postcss">
   thead tr td {
-    @apply pl-[17px] pr-4 py-3 max-w-[800px] flex items-center gap-x-2 bg-slate-100;
+    @apply pl-[17px] pr-4 py-3  flex items-center gap-x-2 bg-slate-100;
     @apply font-semibold text-gray-500;
     @apply border-y;
   }

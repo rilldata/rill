@@ -10,7 +10,7 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-<ContentContainer>
+<ContentContainer maxWidth={800} title="Project dashboards">
   <div class="flex flex-col items-center gap-y-4">
     <DashboardsTable />
   </div>

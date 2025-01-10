@@ -45,13 +45,15 @@
 
   // These can be undefined
   $: ({
-    organization,
-    project,
-    dashboard: dashboardParam,
-    alert,
-    report,
-    token,
-  } = $page.params);
+    params: {
+      organization,
+      project,
+      dashboard: dashboardParam,
+      alert,
+      report,
+      token,
+    },
+  } = $page);
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;

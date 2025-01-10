@@ -52,19 +52,6 @@ export const deploymentChipDisplays: Record<V1DeploymentStatus, StatusDisplay> =
     },
   };
 
-export function prettyReconcileStatus(status: V1ReconcileStatus) {
-  switch (status) {
-    case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
-      return "Idle";
-    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
-      return "Pending";
-    case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-      return "Running";
-    case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
-      return "Unspecified";
-  }
-}
-
 export function getResourceKindTagColor(kind: string) {
   switch (kind) {
     case "rill.runtime.v1.MetricsView":

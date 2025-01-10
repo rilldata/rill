@@ -7,7 +7,7 @@
   $: project = $page.params.project;
 </script>
 
-<ContentContainer>
+<ContentContainer title="Project reports">
   <div class="flex flex-col items-center gap-y-4">
     <ReportsTable {organization} {project} />
   </div>

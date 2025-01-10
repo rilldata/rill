@@ -49,12 +49,8 @@
     <Table
       {columns}
       data={$reportQuery.data?.resource.report.state.executionHistory}
-      maxWidthOverride="max-w-[960px]"
     >
-      <ReportHistoryTableHeader
-        slot="header"
-        maxWidthOverride="max-w-[960px]"
-      />
+      <ReportHistoryTableHeader slot="header" />
     </Table>
   {/if}
 </div>

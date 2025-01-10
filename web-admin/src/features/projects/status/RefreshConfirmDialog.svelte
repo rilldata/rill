@@ -24,9 +24,9 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
+  <!-- <AlertDialogTrigger asChild>
     <div class="hidden"></div>
-  </AlertDialogTrigger>
+  </AlertDialogTrigger> -->
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>Refresh all sources and models?</AlertDialogTitle>

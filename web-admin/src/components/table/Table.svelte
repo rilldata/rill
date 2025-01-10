@@ -14,11 +14,8 @@
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
-  export let maxWidthOverride: string | null = null;
 
   const dispatch = createEventDispatcher();
-
-  let maxWidth = maxWidthOverride ?? "max-w-[800px]";
 
   let sorting = [];
   function setSorting(updater) {
@@ -75,7 +72,7 @@
 
 <slot name="toolbar" />
 
-<table class="w-full {maxWidth}">
+<table class="w-full">
   <slot name="header" />
   <tbody>
     {#if $table.getRowModel().rows.length === 0}
@@ -85,9 +82,9 @@
         </td>
       </tr>
     {:else}
-      {#each $table.getRowModel().rows as row}
+      {#each $table.getRowModel().rows as row (row.id)}
         <tr on:click={() => handleClickRow(row)}>
-          {#each row.getVisibleCells() as cell}
+          {#each row.getVisibleCells() as cell (cell.id)}
             <td class="hover:bg-slate-50">
               <svelte:component
                 this={flexRender(cell.column.columnDef.cell, cell.getContext())}

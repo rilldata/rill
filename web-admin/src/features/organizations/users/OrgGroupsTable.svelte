@@ -51,4 +51,4 @@
   ];
 </script>
 
-<BasicTable {data} {columns} emptyText="No groups found" scrollable />
+<BasicTable {data} {columns} emptyText="No groups found" />
