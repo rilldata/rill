@@ -82,7 +82,7 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 
-  {#if selectedItems.length > 0}
+  {#if selectedItems?.length > 0}
     <div class="flex flex-col gap-1 mt-2">
       {#each selectedItems as item}
         <div class="flex items-center justify-between gap-x-2">
