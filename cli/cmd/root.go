@@ -154,16 +154,14 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		whoami.WhoamiCmd(ch),
 	)
 
-	if ch.IsDev() {
-		// Internal commands - hidden from help menu
-		cmdutil.AddGroup(rootCmd, "Internal",
-			admin.AdminCmd(ch),
-			runtime.RuntimeCmd(ch),
-			devtool.DevtoolCmd(ch),
-			sudo.SudoCmd(ch),
-			verifyInstallCmd(ch),
-		)
-	}
+	// Internal commands - hidden from help menu
+	cmdutil.AddGroup(rootCmd, "Internal",
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		devtool.DevtoolCmd(ch),
+		sudo.SudoCmd(ch),
+		verifyInstallCmd(ch),
+	)
 
 	// Additional sub-commands
 	rootCmd.AddCommand(
