@@ -3896,9 +3896,6 @@ definitions:
           $ref: '#/definitions/v1ComponentVariable'
       output:
         $ref: '#/definitions/v1ComponentVariable'
-      show:
-        type: string
-        description: Templated string that should evaluate to a boolean.
       definedInCanvas:
         type: boolean
   v1ComponentState:

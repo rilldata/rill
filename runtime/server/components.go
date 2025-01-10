@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"strconv"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -64,23 +63,6 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		ExtraProps: map[string]any{
 			"args": args,
 		},
-	}
-
-	// Resolve templating in the show property
-	if spec.Show != "" {
-		v, err := rillv1.ResolveTemplate(spec.Show, td)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to resolve templating in property \"show\": %s", err.Error())
-		}
-
-		show, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to parse value %q as a bool for property \"show\": %s", v, err.Error())
-		}
-
-		if !show {
-			return &runtimev1.ResolveComponentResponse{Show: false}, nil
-		}
 	}
 
 	// Resolve templating in the renderer properties

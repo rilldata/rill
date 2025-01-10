@@ -9705,8 +9705,6 @@ func (m *ComponentSpec) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Show
-
 	// no validation rules for DefinedInCanvas
 
 	if len(errors) > 0 {

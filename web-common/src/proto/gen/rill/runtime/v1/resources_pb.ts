@@ -4304,13 +4304,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   output?: ComponentVariable;
 
   /**
-   * Templated string that should evaluate to a boolean.
-   *
-   * @generated from field: string show = 10;
-   */
-  show = "";
-
-  /**
    * @generated from field: bool defined_in_canvas = 6;
    */
   definedInCanvas = false;
@@ -4329,7 +4322,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
-    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

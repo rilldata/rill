@@ -679,7 +679,6 @@ message ComponentSpec {
   google.protobuf.Struct renderer_properties = 5;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
-  string show = 10; // Templated string that should evaluate to a boolean.
   bool defined_in_canvas = 6;
 }
 
