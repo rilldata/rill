@@ -22,9 +22,7 @@
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      //   size = entry.contentRect.width;
       if (entry.target instanceof HTMLElement) {
-        //   size = entry.clientWidth;
         left = entry.target.offsetLeft;
         size = entry.target.clientWidth;
       }
