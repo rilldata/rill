@@ -10,7 +10,7 @@
   $: project = $page.params.project;
 </script>
 
-<ContentContainer title="Project status" maxWidth={960}>
+<ContentContainer title="Project status" maxWidth={1100}>
   <div class="flex flex-col gap-y-4 size-full">
     <div class="flex gap-x-20 items-start">
       <ProjectGithubConnection {organization} {project} />

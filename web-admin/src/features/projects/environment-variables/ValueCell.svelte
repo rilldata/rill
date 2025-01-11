@@ -1,6 +1,4 @@
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";

@@ -115,7 +115,7 @@
       {/each}
     </div>
   {:else}
-    <div class="flex flex-col items-center gap-y-1">
+    <div class="flex flex-col items-center gap-y-1 py-10">
       {#if emptyIcon}
         <svelte:component this={emptyIcon} size={32} color="#CBD5E1" />
       {/if}

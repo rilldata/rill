@@ -29,10 +29,15 @@
   ];
 </script>
 
-<ContentContainer title="Settings" maxWidth={960}>
-  <div class="container flex-col sm:flex-row">
-    <LeftNav {basePage} baseRoute="/[organization]/-/settings" {navItems} />
-    <div class="flex flex-col gap-y-6">
+<ContentContainer title="Organization settings" maxWidth={1100}>
+  <div class="container flex-col md:flex-row">
+    <LeftNav
+      {basePage}
+      baseRoute="/[organization]/-/settings"
+      {navItems}
+      minWidth="180px"
+    />
+    <div class="flex flex-col gap-y-6 w-full">
       <slot />
     </div>
   </div>

@@ -1,14 +1,25 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import AlertsTable from "@rilldata/web-admin/features/alerts/listing/AlertsTable.svelte";
+  import { useAlerts } from "@rilldata/web-admin/features/alerts/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import ProjectPage from "@rilldata/web-admin/features/projects/ProjectPage.svelte";
+
+  $: ({ instanceId } = $runtime);
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
+  $: query = useAlerts(instanceId);
+
+  $: ({ data } = $query);
+
+  $: alerts = data?.resources ?? [];
 </script>
 
-<ContentContainer title="Project alerts">
-  <div class="flex flex-col items-center gap-y-4">
-    <AlertsTable {organization} {project} />
-  </div>
-</ContentContainer>
+<ProjectPage {query} kind="alert">
+  <AlertsTable {organization} {project} data={alerts} slot="table" />
+  <svelte:fragment slot="action">
+    To create an alert, click the "Create alert" button in a dashboard.
+  </svelte:fragment>
+</ProjectPage>

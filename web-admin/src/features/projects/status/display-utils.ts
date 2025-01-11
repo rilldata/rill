@@ -4,7 +4,6 @@ import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelt
 import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
 import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
 export type StatusDisplay = {
   icon: any; // SvelteComponent

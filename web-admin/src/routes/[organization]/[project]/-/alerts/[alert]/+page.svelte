@@ -9,7 +9,7 @@
   $: alert = $page.params.alert;
 </script>
 
-<ContentContainer maxWidth={960}>
+<ContentContainer maxWidth={1100}>
   <div class=" flex flex-col items-start gap-y-9">
     <AlertMetadata {alert} {organization} {project} />
     <AlertHistoryTable {alert} />

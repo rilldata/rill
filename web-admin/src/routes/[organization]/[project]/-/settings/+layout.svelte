@@ -21,7 +21,7 @@
   ];
 </script>
 
-<ContentContainer title="Project settings" maxWidth={960}>
+<ContentContainer title="Project settings" maxWidth={1100}>
   <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}
