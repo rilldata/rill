@@ -1,12 +1,16 @@
 <script lang="ts">
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import { useReports } from "@rilldata/web-admin/features/scheduled-reports/selectors";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import NoResourceCTA from "@rilldata/web-admin/features/projects/NoResourceCTA.svelte";
   import ResourceError from "@rilldata/web-admin/features/projects/ResourceError.svelte";
+  import type { CreateQueryResult, QueryKey } from "@tanstack/svelte-query";
+  import type { V1ListResourcesResponse } from "@rilldata/web-common/runtime-client";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 
-  export let query: ReturnType<typeof useReports>;
   export let kind: "report" | "dashboard" | "alert";
+  export let query: CreateQueryResult<V1ListResourcesResponse, HTTPError> & {
+    queryKey: QueryKey;
+  };
 
   $: ({ data, isLoading, isError, isSuccess } = $query);
 
