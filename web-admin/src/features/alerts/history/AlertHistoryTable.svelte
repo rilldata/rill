@@ -48,6 +48,7 @@
     <NoAlertRunsYet />
   {:else}
     <Table
+      kind="alert"
       {columns}
       data={$alertQuery.data?.resource.alert.state.executionHistory}
     >

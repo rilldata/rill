@@ -47,6 +47,7 @@
     <NoRunsYet />
   {:else}
     <Table
+      kind="report"
       {columns}
       data={$reportQuery.data?.resource.report.state.executionHistory}
     >
