@@ -87,6 +87,7 @@ func newMetricsViewCacheKeyResolver(ctx context.Context, opts *runtime.ResolverO
 }
 
 func (r *metricsViewCacheKeyResolver) Close() error {
+	r.executor.Close()
 	return nil
 }
 
