@@ -9,7 +9,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/druid/druidsqldriver"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -33,7 +32,6 @@ type AST struct {
 	security    *runtime.ResolvedSecurity
 	query       *Query
 	dialect     drivers.Dialect
-	olapContext map[string]any
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -42,8 +40,9 @@ type AST struct {
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
 //   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
-	Alias                string           // Alias for the node used by outer SELECTs to reference it.
-	IsCTE                bool             // Whether this node is a Common Table Expression
+	Alias                string // Alias for the node used by outer SELECTs to reference it.
+	IsCTE                bool   // Whether this node is a Common Table Expression
+	InlineSelect         string
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
@@ -62,7 +61,6 @@ type SelectNode struct {
 	Offset               *int64           // Offset for the query
 	FromCrossSelect      *SelectNode      // sub-select containing cross join to select from (only one of FromTable, FromSelect, FromCrossSelect can be set)
 	CrossJoinSelects     []*SelectNode    // sub-selects containing cross joins of FromCrossSelect
-	UnionAllSelects      []*SelectNode    // Selects to union all, if this is set all other selects are ignored
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.
@@ -159,6 +157,40 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Q
 		}
 		if tg.ToTimeutil() < minGrain.ToTimeutil() {
 			minGrain = tg
+		}
+	}
+
+	// If there is only one time dimension and null fill is enabled, we set the spine to the time range
+	if qry.FillMissing && len(computedTimeDims) > 0 {
+		if qry.Spine != nil {
+			// should we silently ignore instead of error ?
+			return nil, fmt.Errorf("cannot have both where and time spine")
+		}
+		if len(computedTimeDims) > 1 {
+			return nil, fmt.Errorf("cannot have multiple time spines")
+		}
+		if q.TimeRange == nil || q.TimeRange.Start == nil || q.TimeRange.End == nil {
+			return nil, fmt.Errorf("time range is required for null fill")
+		}
+
+		timeDim := computedTimeDims[0]
+		if timeDim.Compute.TimeFloor.Grain == metricsview.TimeGrainUnspecified {
+			return nil, fmt.Errorf("time grain is required for null fill")
+		}
+
+		tz, err := time.LoadLocation(qry.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time zone %q: %w", qry.TimeZone, err)
+		}
+
+		qry.Spine = &metricsview.Spine{}
+		s := timeutil.TruncateTime(q.TimeRange.Start.AsTime(), timeDim.Compute.TimeFloor.Grain.ToTimeutil(), tz, 1, 1)
+		e := q.TimeRange.End.AsTime()
+		qry.Spine.TimeRange = &metricsview.TimeSpine{
+			Start: s,
+			End:   e,
+			Grain: timeDim.Compute.TimeFloor.Grain,
+			Alias: timeDim.Name,
 		}
 	}
 
@@ -655,9 +687,6 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 		if err != nil {
 			return nil, err
 		}
-		if sn == nil {
-			return n, nil
-		}
 
 		a.wrapSelect(n, a.generateIdentifier())
 		n.SpineSelect = sn
@@ -699,62 +728,73 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
-		if a.dialect == drivers.DialectDruid {
-			if a.olapContext == nil {
-				a.olapContext = make(map[string]any)
-			}
-			a.olapContext[druidsqldriver.SkipEmptyBucketsContextKey] = false
-			return nil, nil
-		}
-
 		// if spine generates more than 1000 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
 		if bins > 1000 {
-			return nil, errors.New("time spine generates more than 1000 values")
+			return nil, errors.New("failed to apply time spine: time range has more than 1000 bins")
 		}
 
-		var rangeSelect *SelectNode
-		if a.dialect == drivers.DialectDuckDB {
-			from := fmt.Sprintf("range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", spine.TimeRange.Start.Format(time.RFC3339), spine.TimeRange.End.Format(time.RFC3339), spine.TimeRange.Grain)
-			rangeSelect = &SelectNode{
-				Alias: alias,
-				DimFields: []FieldNode{
-					{
-						Name:        spine.TimeRange.Alias,
-						DisplayName: spine.TimeRange.Alias,
-						Expr:        "range",
-					},
+		rangeDim := spine.TimeRange.Alias
+
+		sel := ""
+		start := spine.TimeRange.Start
+		end := spine.TimeRange.End
+		grain := spine.TimeRange.Grain
+		d := a.dialect
+		switch d {
+		case drivers.DialectDuckDB:
+			sel = fmt.Sprintf("SELECT range AS %s FROM range('%s'::TIMESTAMP, '%s'::TIMESTAMP, INTERVAL '1 %s')", rangeDim, start.Format(time.RFC3339), end.Format(time.RFC3339), grain)
+		case drivers.DialectClickHouse:
+			// generate select like - SELECT '2021-01-01T00:00:00.000'::DATETIME64 AS "time" UNION ALL SELECT '2021-01-01T01:00:00.000'::DATETIME64 AS "time" ...
+			var sb strings.Builder
+			sb.WriteString("SELECT ")
+			for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
+				if t != start {
+					sb.WriteString(" UNION ALL ")
+				}
+				sb.WriteString(fmt.Sprintf("'%s'::DATETIME64 as %s", t.Format("2006-01-02T15:04:05.000"), d.EscapeIdentifier(spine.TimeRange.Alias)))
+			}
+			sel = sb.String()
+		case drivers.DialectDruid:
+			// generate select like - SELECT * FROM (
+			//  VALUES
+			//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP)),
+			//  (CAST('2006-01-02T15:04:05Z' AS TIMESTAMP))
+			//) t (time)
+			var sb strings.Builder
+			sb.WriteString("SELECT * FROM (VALUES ")
+			for t := start; t.Before(end); t = timeutil.AddTime(t, grain.ToTimeutil(), 1) {
+				if t != start {
+					sb.WriteString(", ")
+				}
+				sb.WriteString(fmt.Sprintf("(CAST('%s' AS TIMESTAMP))", t.Format(time.RFC3339)))
+			}
+			sb.WriteString(fmt.Sprintf(") t (%s)", d.EscapeIdentifier(spine.TimeRange.Alias)))
+			sel = sb.String()
+		default:
+			return nil, fmt.Errorf("unsupported dialect %q", d)
+		}
+
+		rangeSelect := &SelectNode{
+			Alias: alias,
+			DimFields: []FieldNode{
+				{
+					Name:        rangeDim,
+					DisplayName: rangeDim,
+					Expr:        rangeDim,
 				},
-				FromTable: &from,
-			}
-		} else if a.dialect == drivers.DialectClickHouse {
-			rangeSelect = &SelectNode{
-				Alias: alias,
-			}
-
-			// ClickHouse does not support range() function, so we need to generate a series of timestamps
-			for t := spine.TimeRange.Start; t.Before(spine.TimeRange.End); t = timeutil.AddTime(t, spine.TimeRange.Grain.ToTimeutil(), 1) {
-				rangeSelect.UnionAllSelects = append(rangeSelect.UnionAllSelects, &SelectNode{
-					Alias: "", // alias is not needed for union all selects
-					DimFields: []FieldNode{
-						{
-							Name:        spine.TimeRange.Alias,
-							DisplayName: spine.TimeRange.Alias,
-							Expr:        fmt.Sprintf("'%s'::DateTime64", t.Format("2006-01-02T15:04:05.000")),
-						},
-					},
-				})
-			}
-		} else {
-			return nil, errors.New("unsupported dialect")
+			},
+			InlineSelect: sel,
 		}
+
+		// if there is only one dimension in the query, then we can directly join the spine time range with the dimension
 		if len(a.dimFields) == 1 {
 			return rangeSelect, nil
 		}
 
 		var newDims []FieldNode
 		for _, f := range a.dimFields {
-			if f.Name != spine.TimeRange.Alias {
+			if f.Name != rangeDim {
 				newDims = append(newDims, f)
 			}
 		}
@@ -1089,17 +1129,6 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 				DisplayName: f.DisplayName,
 				Expr:        a.sqlForMember(cpy.Alias, f.Name),
 			})
-		}
-
-		if len(cjs.UnionAllSelects) > 0 {
-			// All dimensions will be same across UNION ALL SELECTS so we can just pick the first one
-			for _, f := range cjs.UnionAllSelects[0].DimFields {
-				s.DimFields = append(s.DimFields, FieldNode{
-					Name:        f.Name,
-					DisplayName: f.DisplayName,
-					Expr:        a.sqlForMember(cpy.Alias, f.Name),
-				})
-			}
 		}
 	}
 

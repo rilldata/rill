@@ -90,18 +90,8 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
-	if len(n.UnionAllSelects) > 0 {
-		for i, s := range n.UnionAllSelects {
-			if i > 0 {
-				b.out.WriteString(" UNION ALL ")
-			}
-			b.out.WriteByte('(')
-			err := b.writeSelect(s)
-			if err != nil {
-				return err
-			}
-			b.out.WriteByte(')')
-		}
+	if n.InlineSelect != "" {
+		b.out.WriteString(n.InlineSelect)
 		return nil
 	}
 
@@ -138,8 +128,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	}
 
 	if n.FromTable == nil && n.FromSelect == nil && n.FromCrossSelect == nil {
-		// will happen for union all select
-		return nil
+		panic("internal: FromTable, FromSelect and FromCrossSelect are all nil")
 	}
 
 	b.out.WriteString(" FROM ")
@@ -164,6 +153,13 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, cjs := range n.CrossJoinSelects {
+			err := b.writeJoin("CROSS JOIN", n.FromSelect, cjs)
 			if err != nil {
 				return err
 			}
@@ -195,7 +191,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(s.Alias)
 		}
 	} else {
-		panic("internal: FromTable and FromSelect are both nil")
+		panic("internal: FromTable, FromSelect and FromCrossSelect are all nil")
 	}
 
 	var wroteWhere bool
