@@ -4,7 +4,7 @@ import { test as setup } from "./base";
 import { ADMIN_AUTH_FILE } from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
-setup("should authenticate and deploy a project", async ({ page }) => {
+setup("should deploy a project", async ({ page }) => {
   if (
     !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
     !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
@@ -14,7 +14,7 @@ setup("should authenticate and deploy a project", async ({ page }) => {
     );
   }
 
-  // Log in with the admin account
+  // Log in to Rill with the admin account
   await page.goto("/");
   await page.getByRole("button", { name: "Continue with Email" }).click();
   await page.getByPlaceholder("Enter your email address").click();
@@ -29,6 +29,7 @@ setup("should authenticate and deploy a project", async ({ page }) => {
   // The login flow sets cookies in the process of several redirects.
   // Wait for the final URL to ensure that the cookies are actually set.
   await page.waitForURL("/");
+
   // End of authentication steps.
   await page.context().storageState({ path: ADMIN_AUTH_FILE });
 
@@ -59,17 +60,8 @@ setup("should authenticate and deploy a project", async ({ page }) => {
   // Manually navigate to the GitHub auth URL
   const url = match[0];
   await page.goto(url);
-  // Log-in to GitHub
-  await page.getByLabel("Username or email address").click();
-  await page
-    .getByLabel("Username or email address")
-    .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL);
-  await page.getByLabel("Password").click();
-  await page
-    .getByLabel("Password")
-    .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL("/-/github/connect/success");
+
   // Wait for the deployment to complete (TODO: replace this with a better check)
   await page.waitForTimeout(10000);
   // Expect to see the successful deployment

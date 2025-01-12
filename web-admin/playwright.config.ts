@@ -2,7 +2,7 @@ import { devices, type PlaywrightTestConfig } from "@playwright/test";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { ADMIN_AUTH_FILE } from "./tests/setup/constants";
+import { ADMIN_AUTH_FILE, GITHUB_AUTH_FILE } from "./tests/setup/constants";
 
 // Load environment variables from our root `.env` file
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,12 +32,20 @@ const config: PlaywrightTestConfig = {
     video: "retain-on-failure",
   },
   projects: [
+    // Run this manually whenever we need to renew the GitHub auth cookies
+    {
+      name: "save-github-cookies",
+      testMatch: "auth.github.ts",
+    },
     {
       name: "data-setup",
       testMatch: "data.setup.ts",
       ...(process.env.E2E_NO_DATA_TEARDOWN
         ? {}
         : { teardown: "data-teardown" }),
+      use: {
+        storageState: GITHUB_AUTH_FILE,
+      },
     },
     {
       name: "data-teardown",
