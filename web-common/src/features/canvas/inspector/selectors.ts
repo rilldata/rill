@@ -15,19 +15,32 @@ export const useAllDimensionFromMetric = (
   useMetricsViewValidSpec(
     instanceId,
     metricsViewName,
-    (meta) => meta?.dimensions,
+    (meta) => meta?.dimensions ?? [],
+  );
+
+export const useAllMeasuresFromMetric = (
+  instanceId: string,
+  metricsViewName: string,
+) =>
+  useMetricsViewValidSpec(
+    instanceId,
+    metricsViewName,
+    (meta) => meta?.measures ?? [],
   );
 
 export const useAllSimpleMeasureFromMetric = (
   instanceId: string,
   metricsViewName: string,
 ) =>
-  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
-    meta?.measures?.filter(
-      (m) =>
-        !m.window &&
-        m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
-    ),
+  useMetricsViewValidSpec(
+    instanceId,
+    metricsViewName,
+    (meta) =>
+      meta?.measures?.filter(
+        (m) =>
+          !m.window &&
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+      ) ?? [],
   );
 
 export function getParsedDocument(fileArtifact: FileArtifact) {

@@ -86,6 +86,8 @@
     dimensionIdMap,
   );
 
+  $: console.log($dashboardStore.whereFilter);
+
   $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,
@@ -191,7 +193,7 @@
 
       {#if !readOnly}
         <FilterButton
-          allDimensions={$allDimensions}
+          allDimensions={dimensions}
           filteredSimpleMeasures={$filteredSimpleMeasures()}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}

@@ -1,4 +1,5 @@
 import { writable, type Writable } from "svelte/store";
+import { CanvasFilters } from "./canvas-filters";
 import { CanvasTimeControls } from "./canvas-time-control";
 
 export class CanvasEntity {
@@ -8,6 +9,12 @@ export class CanvasEntity {
    * time related writables
    */
   timeControls: CanvasTimeControls;
+
+  /**
+   * Dimension and measure filters for the canvas entity
+   */
+  filters: CanvasFilters;
+
   /**
    * Index of the component higlighted or selected in the canvas
    */
@@ -16,6 +23,7 @@ export class CanvasEntity {
   constructor(name: string) {
     this.name = name;
     this.timeControls = new CanvasTimeControls();
+    this.filters = new CanvasFilters();
     this.selectedComponentIndex = writable(null);
   }
 
