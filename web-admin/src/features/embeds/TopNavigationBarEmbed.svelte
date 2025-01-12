@@ -68,7 +68,6 @@
             <span class="text-gray-600">/</span>
           </div>
         {/if}
-
         {#if currentResource}
           <BreadcrumbItemEmbed
             options={breadcrumbOptions}

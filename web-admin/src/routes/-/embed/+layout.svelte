@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
-  const instanhceId = $page.url.searchParams.get("instance_id");
+  const instanceId = $page.url.searchParams.get("instance_id");
   const runtimeHost = $page.url.searchParams
     .get("runtime_host")
     .replace("localhost:9091", "localhost:8081");
@@ -10,8 +10,8 @@
 </script>
 
 <RuntimeProvider
-  host="localhost:8081"
-  instanceId="03000859377c4b33a8fe18062dfa1dca"
+  host={runtimeHost}
+  {instanceId}
   jwt={accessToken}
   authContext="embed"
 >
