@@ -73,7 +73,6 @@
     metricsViewName,
     measureName,
     timeRange,
-    undefined,
   );
 
   $: sparkData = $sparkline?.data || [];

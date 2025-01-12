@@ -2,12 +2,12 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import CanvasGrainSelector from "@rilldata/web-common/features/canvas/filters/CanvasGrainSelector.svelte";
   import {
     useAllDimensionFromMetric,
     useAllMeasuresFromMetric,
     useAllSimpleMeasureFromMetric,
-  } from "@rilldata/web-common/features/canvas/inspector/selectors";
+  } from "@rilldata/web-common/features/canvas/components/selectors";
+  import CanvasGrainSelector from "@rilldata/web-common/features/canvas/filters/CanvasGrainSelector.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
   import FilterButton from "@rilldata/web-common/features/dashboards/filters/FilterButton.svelte";

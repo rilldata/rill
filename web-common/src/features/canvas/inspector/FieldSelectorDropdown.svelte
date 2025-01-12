@@ -4,15 +4,15 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import {
+    useAllDimensionFromMetric,
+    useAllSimpleMeasureFromMetric,
+  } from "@rilldata/web-common/features/canvas/components/selectors";
+  import {
     getDimensionDisplayName,
     getMeasureDisplayName,
   } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { MinusIcon, PlusIcon } from "lucide-svelte";
-  import {
-    useAllDimensionFromMetric,
-    useAllSimpleMeasureFromMetric,
-  } from "./selectors";
 
   export let metricName: string;
   export let label: string | undefined = undefined;
