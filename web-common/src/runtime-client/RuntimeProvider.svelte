@@ -10,13 +10,7 @@
   export let authContext: AuthContext;
 
   $: runtime
-    .setRuntime(
-      queryClient,
-      "http://localhost:8081",
-      "03000859377c4b33a8fe18062dfa1dca",
-      jwt,
-      authContext,
-    )
+    .setRuntime(queryClient, host, instanceId, jwt, authContext)
     .catch(console.error);
 
   $: ({ host: _host, instanceId: _instanceId } = $runtime);

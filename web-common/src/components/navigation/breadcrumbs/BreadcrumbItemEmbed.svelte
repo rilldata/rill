@@ -1,41 +1,48 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { getNonVariableSubRoute } from "@rilldata/web-common/components/navigation/breadcrumbs/utils";
-  import type { PathOption, PathOptions } from "./types";
+  import type { PathOptions } from "./types";
 
   export let options: PathOptions;
   export let current: string;
   export let isCurrentPage = false;
-  export let depth: number = 0;
-  export let currentPath: (string | undefined)[] = [];
   export let onSelect: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current.toLowerCase());
 
   let groupedData = new Map();
 
-  for (let [key] of options) {
+  // Group data by colon separator
+  for (let [key, value] of options) {
     const [group, sub] = key.split(":");
     if (sub) {
       if (!groupedData.has(group)) {
         groupedData.set(group, []);
       }
-      groupedData.get(group).push(sub);
+      groupedData.get(group).push({ key, label: value.label });
     } else {
-      if (!groupedData.has(group)) {
-        groupedData.set(group, null); // options without a namespace
-      }
+      groupedData.set(group, { key, label: value.label }); // Standalone items
     }
   }
 
-  $: console.log(groupedData);
+  const handleSelect = (key: string) => {
+    if (onSelect) {
+      onSelect(key);
+    }
+  };
 </script>
 
 <li class="flex items-center gap-x-2 px-2">
   <div class="flex flex-row gap-x-1 items-center">
+    {#if selected}
+      <a
+        href={isCurrentPage ? "#top" : undefined}
+        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
+        class:current={isCurrentPage}
+      >
+        <span>{selected?.label}</span>
+      </a>
+    {/if}
     {#if options.size > 1}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
@@ -45,40 +52,40 @@
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" class="min-w-44 max-h-96">
           {#each Array.from(groupedData.entries()) as [group, subItems]}
-            {#if subItems}
+            {#if Array.isArray(subItems)}
+              <!-- Grouped submenu -->
               <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>Group Name</DropdownMenu.SubTrigger>
+                <DropdownMenu.SubTrigger>{group}</DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent
                   align="start"
                   class="min-w-44 max-h-96"
                 >
                   {#each subItems as subItem}
-                    <DropdownMenu.CheckboxItem
-                      >{subItem}</DropdownMenu.CheckboxItem
+                    <DropdownMenu.Item
+                      class="cursor-pointer"
+                      on:click={() => handleSelect(subItem.key)}
                     >
+                      <span class="text-xs text-gray-800 flex-grow">
+                        {subItem.label}
+                      </span>
+                    </DropdownMenu.Item>
                   {/each}
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
             {:else}
-              <DropdownMenu.CheckboxItem>{group}</DropdownMenu.CheckboxItem>
+              <!-- Standalone item -->
+              <DropdownMenu.Item
+                class="cursor-pointer"
+                on:click={() => handleSelect(subItems.key)}
+              >
+                <span class="text-xs text-gray-800 flex-grow">
+                  {subItems.label}
+                </span>
+              </DropdownMenu.Item>
             {/if}
           {/each}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
-    {/if}
-    {#if selected}
-      <a
-        href={isCurrentPage ? "#top" : undefined}
-        class="text-gray-500 hover:text-gray-600 flex flex-row items-center gap-x-2"
-        class:current={isCurrentPage}
-      >
-        <span>{selected?.label}</span>
-      </a>
-      {#if selected?.pill}
-        <Chip type="dimension" label={selected.pill} readOnly compact>
-          <svelte:fragment slot="body">{selected.pill}</svelte:fragment>
-        </Chip>
-      {/if}
     {/if}
   </div>
 </li>
@@ -90,7 +97,7 @@
 
   .trigger {
     @apply flex flex-col justify-center items-center;
-    @apply transition-transform  text-gray-500;
+    @apply transition-transform text-gray-500;
     @apply px-0.5 py-1 rounded;
   }
 
