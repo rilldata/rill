@@ -46,16 +46,13 @@ test.describe("Connecting to ClickHouse Cloud", () => {
 
     // find database in the UI, ensures that the database has loaded.
     // sometimes the context deadline exceed message appears so try again,
-    const failedToConnect = page.locator(
-      'li[aria-label="clickhouse"] button:has-text("Error: context deadline exceeded ")',
-    );
+
     const playwrightButton = page.locator(
       'li[aria-label="clickhouse"] button:has-text("playwright_E2E")',
     );
     const ukPricePaidItem = page.locator(
       'a.clickable-text[href="/connector/clickhouse/clickhouse/playwright_E2E/uk_price_paid"]',
     );
-    const isVisible = await ukPricePaidItem.isVisible();
     const maxRetries = 10;
     let retries = 0;
 

@@ -121,7 +121,7 @@ test.describe("SQLite Test, then read into Rill", () => {
     console.log("Database file deleted");
   });
 
-  test("Load and validate data in SQLite", async ({}) => {
+  test("Load and validate data in SQLite", async () => {
     // Validate data in the database
     const sales = await db.all("SELECT * FROM sales");
     expect(sales).toHaveLength(100000);

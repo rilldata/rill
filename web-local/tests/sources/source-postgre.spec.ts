@@ -33,6 +33,7 @@ test.describe("PostgreSQL Test with Docker, then read into Rill", () => {
       execSync("docker rm playwright-postgres --force", { stdio: "inherit" });
       console.log("Docker container removed successfully.");
     } catch (error) {
+      console.log(error);
       console.log("Not Applicable: Continue.");
     }
     // Start PostgreSQL Docker container
@@ -70,6 +71,7 @@ test.describe("PostgreSQL Test with Docker, then read into Rill", () => {
               );
           `);
     } catch (error) {
+      console.log(error);
       console.error("Couldn't create table");
     }
   });
@@ -84,7 +86,7 @@ test.describe("PostgreSQL Test with Docker, then read into Rill", () => {
     execSync("docker rm playwright-postgres --force");
   });
 
-  test("Load and validate data in PostgreSQL", async ({ page }) => {
+  test("Load and validate data in PostgreSQL", async () => {
     // Load data into PostgreSQL
     await client.query(`
       COPY sales (sale_date, sale_id, customer_id, products, sales_amount_usd, discounts, duration_ms, is_online, region)

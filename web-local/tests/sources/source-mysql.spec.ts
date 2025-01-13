@@ -33,6 +33,7 @@ test.describe("MySQL Test with Docker, then read into Rill", () => {
       execSync("docker rm playwright-mysql --force", { stdio: "inherit" });
       console.log("Docker container removed successfully.");
     } catch (error) {
+      console.log(error);
       console.log("Not Applicable: Continue.");
     }
 
@@ -97,7 +98,7 @@ test.describe("MySQL Test with Docker, then read into Rill", () => {
     execSync("docker rm playwright-mysql --force");
   });
 
-  test("Load and validate data in MySQL", async ({ page }) => {
+  test("Load and validate data in MySQL", async () => {
     // Insert data into MySQL
     await connection.query(`
         LOAD DATA INFILE '/var/lib/mysql-files/sales_data_mysql.csv'
