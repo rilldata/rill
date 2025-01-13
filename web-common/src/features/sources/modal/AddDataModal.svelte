@@ -3,26 +3,20 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog-v2";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import {
-    createRuntimeServiceGetInstance,
-    createRuntimeServiceListConnectorDrivers,
-    type V1ConnectorDriver,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
-  import { derived } from "svelte/store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import {
-    CLICKHOUSE_SOURCE_CONNECTORS,
-    DUCKDB_SOURCE_CONNECTORS,
-  } from "../../connectors/connector-availability";
   import { logoIconMapping } from "../../connectors/connector-icon-mapping";
-  import type { OlapDriver } from "../../connectors/olap/olap-config";
+  import {
+    useCurrentOlapConnector,
+    useSourceConnectorsForCurrentOlapConnector,
+  } from "../../connectors/olap/selectors";
   import { duplicateSourceName } from "../sources-store";
   import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
@@ -33,47 +27,11 @@
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
 
-  const sourceConnectors = derived(
-    [
-      createRuntimeServiceListConnectorDrivers(),
-      createRuntimeServiceGetInstance($runtime.instanceId, {
-        sensitive: true,
-      }),
-    ],
-    ([connectors, instance]) => {
-      return getSourceConnectorsForOlapDriver(
-        connectors.data?.connectors ?? [],
-        instance.data?.instance?.olapConnector as string,
-      );
-    },
+  $: olapConnector = useCurrentOlapConnector($runtime.instanceId);
+  $: olapConnectorType = $olapConnector.data?.type;
+  $: sourceConnectors = useSourceConnectorsForCurrentOlapConnector(
+    $runtime.instanceId,
   );
-
-  function getSourceConnectorsForOlapDriver(
-    connectors: V1ConnectorDriver[],
-    olapDriver: OlapDriver,
-  ) {
-    const sourceConnectors =
-      olapDriver === "clickhouse"
-        ? CLICKHOUSE_SOURCE_CONNECTORS
-        : olapDriver === "duckdb"
-          ? DUCKDB_SOURCE_CONNECTORS
-          : [];
-
-    return connectors
-      .filter(
-        // Only show the given OLAP connector's available source connectors
-        (a) => {
-          return a.name && sourceConnectors.includes(a.name);
-        },
-      )
-      .sort(
-        // CAST SAFETY: we have filtered out any connectors that
-        // don't have a `name` in the previous filter
-        (a, b) =>
-          sourceConnectors.indexOf(a.name as string) -
-          sourceConnectors.indexOf(b.name as string),
-      );
-  }
 
   onMount(() => {
     function listen(e: PopStateEvent) {
@@ -158,7 +116,7 @@
           <DuplicateSource onCancel={resetModal} onComplete={resetModal} />
         {:else if requestConnector}
           <RequestConnectorForm on:close={resetModal} on:back={back} />
-        {:else if step === 1}
+        {:else if step === 1 && olapConnectorType}
           {#if $sourceConnectors.length === 0}
             <div class="text-slate-500">
               No connectors available for your current OLAP engine.
@@ -182,18 +140,18 @@
               {/each}
             </div>
           {/if}
-        {:else if step === 2 && selectedConnector}
+        {:else if step === 2 && olapConnectorType && selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
           {:else if selectedConnector && selectedConnector.name}
             <AddDataForm
               connector={selectedConnector}
               formType="source"
-              olapDriver="duckdb"
+              olapDriver={olapConnectorType}
               {onSubmit}
             >
               <svelte:fragment slot="actions" let:submitting>
-                <div class="flex items-ceDUCKDB_SOURCE_CONNECTORS ml-auto">
+                <div class="flex items-center gap-x-2 ml-auto">
                   <Button on:click={back} type="secondary">Back</Button>
                   <Button
                     disabled={submitting}
