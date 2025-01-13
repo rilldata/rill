@@ -1,0 +1,13 @@
+.option {
+  @apply border border-slate-200 rounded;
+  @apply bg-white;
+  @apply transition-colors;
+}
+
+.option:hover {
+  @apply bg-slate-50;
+}
+
+.option.selected {
+  @apply border-2 border-primary-300 bg-slate-50;
+}
