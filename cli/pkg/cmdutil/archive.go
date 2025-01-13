@@ -45,7 +45,7 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 		return "", err
 	}
 
-	err = archive.Create(ctx, entries, rootPath, asset.SignedUrl, asset.SigningHeaders)
+	err = archive.CreateAndUpload(ctx, entries, rootPath, asset.SignedUrl, asset.SigningHeaders)
 	if err != nil {
 		return "", err
 	}

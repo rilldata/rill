@@ -66,7 +66,7 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	return nil
 }
 
-func Create(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
+func CreateAndUpload(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
 	// generate a tar ball
 	b := &bytes.Buffer{}
 
