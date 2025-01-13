@@ -8,13 +8,15 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceUnpackEmpty,
+    runtimeServicePutFile,
+  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
-  import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
 
@@ -46,12 +48,15 @@
           await invalidate("init");
         }
 
-        const yaml = compileLocalFileSourceYAML(filePath);
-        await createSource(instanceId, tableName, yaml);
         const newFilePath = getFileAPIPathFromNameAndType(
           tableName,
           EntityType.Table,
         );
+        await runtimeServicePutFile(instanceId, {
+          path: newFilePath,
+          blob: compileLocalFileSourceYAML(filePath),
+          createOnly: false,
+        });
         await goto(`/files/${newFilePath}`);
       } catch (err) {
         console.error(err);
