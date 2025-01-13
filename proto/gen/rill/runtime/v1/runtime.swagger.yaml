@@ -1012,6 +1012,41 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
+    post:
+      summary: ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+      operationId: QueryService_ResolveCanvas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveCanvasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: canvas
+          description: Canvas name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args for resolving templating in the component properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1103,7 +1138,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/components/{component}/resolve:
     post:
-      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      summary: ResolveComponent resolves renderer for a Component resource.
       operationId: QueryService_ResolveComponent
       responses:
         "200":
@@ -5939,14 +5974,28 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveCanvasResponse:
+    type: object
+    properties:
+      canvas:
+        $ref: '#/definitions/v1Resource'
+        description: The canvas resource.
+      resolvedComponents:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: |-
+          All the component resources referenced by the canvas.
+          The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+          (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+      referencedMetricsViews:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   v1ResolveComponentResponse:
     type: object
     properties:
-      show:
-        type: boolean
-        description: |-
-          Show property with templating resolved for the provided args.
-          If it resolves to false, the other fields are not set.
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
