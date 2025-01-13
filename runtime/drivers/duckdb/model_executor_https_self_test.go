@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/https"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	_ "github.com/rilldata/rill/runtime/drivers/https"
 )
 
 // CSV Data used in the test
