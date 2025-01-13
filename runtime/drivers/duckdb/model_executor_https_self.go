@@ -3,35 +3,13 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/https"
 )
-
-type httpsToSelfInputProps struct {
-	Path    string            `mapstructure:"path"`
-	URI     string            `mapstructure:"uri"`
-	Headers map[string]string `mapstructure:"headers"`
-}
-
-func (p *httpsToSelfInputProps) resolvePath() string {
-	// Backwards compatibility for "uri" renamed to "path"
-	if p.URI != "" {
-		return p.URI
-	}
-	return p.Path
-}
-
-func (p *httpsToSelfInputProps) Validate() error {
-	if p.URI == "" && p.Path == "" {
-		return fmt.Errorf("missing property 'path'")
-	}
-	if p.URI != "" && p.Path != "" {
-		return fmt.Errorf("cannot set both 'uri' and 'path'")
-	}
-	return nil
-}
 
 type httpsToSelfExecutor struct {
 	c *connection
@@ -47,17 +25,9 @@ func (e *httpsToSelfExecutor) Concurrency(desired int) (int, bool) {
 }
 
 func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
-	inputProps := &httpsToSelfInputProps{}
-	if err := mapstructure.WeakDecode(opts.InputProperties, inputProps); err != nil {
-		return nil, fmt.Errorf("failed to parse input properties: %w", err)
-	}
-	if err := inputProps.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid input properties: %w", err)
-	}
-
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, inputProps)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
@@ -69,13 +39,22 @@ func (e *httpsToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelEx
 	return executor.Execute(ctx, newOpts)
 }
 
-func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputProps *httpsToSelfInputProps) (map[string]any, error) {
+func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, props map[string]any) (map[string]any, error) {
+	// somewhat unlikely but we also allow to define a http connector which models can refer
+	cfg := inputHandle.Config()
+	// config properties can also be set as input properties
+	maps.Copy(cfg, props)
+	inputProps := &https.ConfigProperties{}
+	if err := mapstructure.WeakDecode(cfg, inputProps); err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+
 	m := &ModelInputProperties{}
 	safeSecret := safeSQLName(fmt.Sprintf("%s__%s__secret__", modelName, inputConnector))
 	if len(inputProps.Headers) != 0 {
 		m.PreExec = createSecretSQL(safeSecret, inputProps.Headers)
 	}
-	m.SQL = "SELECT * FROM " + safeSQLString(inputProps.resolvePath())
+	m.SQL = "SELECT * FROM " + safeSQLString(inputProps.ResolvePath())
 	propsMap := make(map[string]any)
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
