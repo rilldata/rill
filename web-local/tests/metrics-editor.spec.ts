@@ -11,6 +11,30 @@ import { test } from "./utils/test";
 test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
+  test("Can add measures and dimensions", async ({ page }) => {
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+
+    await page.getByRole("button", { name: "Add new measure" }).click();
+
+    await page.getByText("Model column").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Measure");
+    await page.getByRole("button", { name: "Add measure" }).click();
+
+    await expect(page.getByText("New Measure", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Add new dimension" }).click();
+
+    await page.getByText("Column from model").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Dimension");
+    await page.getByRole("button", { name: "Add dimension" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).toBeVisible();
+  });
+
   test("Metrics editor", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 

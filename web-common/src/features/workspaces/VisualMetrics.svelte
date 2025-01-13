@@ -727,8 +727,12 @@
               square
               gray
               noStroke
+              label="Add new {type.slice(0, -1)}"
               on:click={() => {
-                editingItemData.set(null);
+                editingItemData.set({
+                  type,
+                  index: -1,
+                });
               }}
             >
               <PlusIcon size="16px" />
@@ -781,11 +785,12 @@
     {/if}
   </div>
 
-  {#if editingItem && $editingItemData !== null}
+  {#if $editingItemData !== null}
     {@const { index, type } = $editingItemData}
     {#key editingItem}
       <Sidebar
-        item={editingItem}
+        item={editingItem ??
+          (type === "measures" ? new YAMLMeasure() : new YAMLDimension())}
         {type}
         {index}
         {columns}
