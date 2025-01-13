@@ -9831,6 +9831,364 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewTimeRangesResponseValidationError{}
 
+// Validate checks the field values on ResolveCanvasRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveCanvasRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveCanvasRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResolveCanvasRequestMultiError, or nil if none found.
+func (m *ResolveCanvasRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveCanvasRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Canvas
+
+	if all {
+		switch v := interface{}(m.GetArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveCanvasRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveCanvasRequestValidationError{
+					field:  "Args",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveCanvasRequestValidationError{
+				field:  "Args",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveCanvasRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveCanvasRequestMultiError is an error wrapping multiple validation
+// errors returned by ResolveCanvasRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveCanvasRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveCanvasRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveCanvasRequestMultiError) AllErrors() []error { return m }
+
+// ResolveCanvasRequestValidationError is the validation error returned by
+// ResolveCanvasRequest.Validate if the designated constraints aren't met.
+type ResolveCanvasRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveCanvasRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveCanvasRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveCanvasRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveCanvasRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveCanvasRequestValidationError) ErrorName() string {
+	return "ResolveCanvasRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveCanvasRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveCanvasRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveCanvasRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveCanvasRequestValidationError{}
+
+// Validate checks the field values on ResolveCanvasResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ResolveCanvasResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ResolveCanvasResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ResolveCanvasResponseMultiError, or nil if none found.
+func (m *ResolveCanvasResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ResolveCanvasResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetCanvas()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResolveCanvasResponseValidationError{
+					field:  "Canvas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResolveCanvasResponseValidationError{
+					field:  "Canvas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCanvas()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResolveCanvasResponseValidationError{
+				field:  "Canvas",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetResolvedComponents()))
+		i := 0
+		for key := range m.GetResolvedComponents() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetResolvedComponents()[key]
+			_ = val
+
+			// no validation rules for ResolvedComponents[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, ResolveCanvasResponseValidationError{
+							field:  fmt.Sprintf("ResolvedComponents[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, ResolveCanvasResponseValidationError{
+							field:  fmt.Sprintf("ResolvedComponents[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return ResolveCanvasResponseValidationError{
+						field:  fmt.Sprintf("ResolvedComponents[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	{
+		sorted_keys := make([]string, len(m.GetReferencedMetricsViews()))
+		i := 0
+		for key := range m.GetReferencedMetricsViews() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetReferencedMetricsViews()[key]
+			_ = val
+
+			// no validation rules for ReferencedMetricsViews[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, ResolveCanvasResponseValidationError{
+							field:  fmt.Sprintf("ReferencedMetricsViews[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, ResolveCanvasResponseValidationError{
+							field:  fmt.Sprintf("ReferencedMetricsViews[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return ResolveCanvasResponseValidationError{
+						field:  fmt.Sprintf("ReferencedMetricsViews[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	if len(errors) > 0 {
+		return ResolveCanvasResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ResolveCanvasResponseMultiError is an error wrapping multiple validation
+// errors returned by ResolveCanvasResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ResolveCanvasResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResolveCanvasResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResolveCanvasResponseMultiError) AllErrors() []error { return m }
+
+// ResolveCanvasResponseValidationError is the validation error returned by
+// ResolveCanvasResponse.Validate if the designated constraints aren't met.
+type ResolveCanvasResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ResolveCanvasResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ResolveCanvasResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ResolveCanvasResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ResolveCanvasResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ResolveCanvasResponseValidationError) ErrorName() string {
+	return "ResolveCanvasResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ResolveCanvasResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sResolveCanvasResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ResolveCanvasResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ResolveCanvasResponseValidationError{}
+
 // Validate checks the field values on ResolveComponentRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -9987,8 +10345,6 @@ func (m *ResolveComponentResponse) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Show
 
 	if all {
 		switch v := interface{}(m.GetRendererProperties()).(type) {

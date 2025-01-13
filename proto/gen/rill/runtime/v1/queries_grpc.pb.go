@@ -33,6 +33,7 @@ const (
 	QueryService_MetricsViewSchema_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSchema"
 	QueryService_MetricsViewSearch_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSearch"
 	QueryService_MetricsViewTimeRanges_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
+	QueryService_ResolveCanvas_FullMethodName               = "/rill.runtime.v1.QueryService/ResolveCanvas"
 	QueryService_ResolveComponent_FullMethodName            = "/rill.runtime.v1.QueryService/ResolveComponent"
 	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
 	QueryService_ColumnTopK_FullMethodName                  = "/rill.runtime.v1.QueryService/ColumnTopK"
@@ -113,7 +114,9 @@ type QueryServiceClient interface {
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(ctx context.Context, in *MetricsViewSearchRequest, opts ...grpc.CallOption) (*MetricsViewSearchResponse, error)
 	MetricsViewTimeRanges(ctx context.Context, in *MetricsViewTimeRangesRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangesResponse, error)
-	// ResolveComponent resolves the data and renderer for a Component resource.
+	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+	ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error)
+	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(ctx context.Context, in *ResolveComponentRequest, opts ...grpc.CallOption) (*ResolveComponentResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
@@ -295,6 +298,16 @@ func (c *queryServiceClient) MetricsViewTimeRanges(ctx context.Context, in *Metr
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MetricsViewTimeRangesResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewTimeRanges_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveCanvasResponse)
+	err := c.cc.Invoke(ctx, QueryService_ResolveCanvas_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +518,9 @@ type QueryServiceServer interface {
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(context.Context, *MetricsViewSearchRequest) (*MetricsViewSearchResponse, error)
 	MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error)
-	// ResolveComponent resolves the data and renderer for a Component resource.
+	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+	ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error)
+	// ResolveComponent resolves renderer for a Component resource.
 	ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
@@ -585,6 +600,9 @@ func (UnimplementedQueryServiceServer) MetricsViewSearch(context.Context, *Metri
 }
 func (UnimplementedQueryServiceServer) MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTimeRanges not implemented")
+}
+func (UnimplementedQueryServiceServer) ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveCanvas not implemented")
 }
 func (UnimplementedQueryServiceServer) ResolveComponent(context.Context, *ResolveComponentRequest) (*ResolveComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveComponent not implemented")
@@ -890,6 +908,24 @@ func _QueryService_MetricsViewTimeRanges_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).MetricsViewTimeRanges(ctx, req.(*MetricsViewTimeRangesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_ResolveCanvas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveCanvasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).ResolveCanvas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_ResolveCanvas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).ResolveCanvas(ctx, req.(*ResolveCanvasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1204,6 +1240,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTimeRanges",
 			Handler:    _QueryService_MetricsViewTimeRanges_Handler,
+		},
+		{
+			MethodName: "ResolveCanvas",
+			Handler:    _QueryService_ResolveCanvas_Handler,
 		},
 		{
 			MethodName: "ResolveComponent",

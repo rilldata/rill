@@ -9,6 +9,7 @@ import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
+import { Resource } from "./resources_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -3389,9 +3390,9 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   metricsViewName = "";
 
   /**
-   * @generated from field: repeated string rill_times = 3;
+   * @generated from field: repeated string expressions = 3;
    */
-  rillTimes: string[] = [];
+  expressions: string[] = [];
 
   /**
    * @generated from field: int32 priority = 4;
@@ -3408,7 +3409,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "rill_times", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "expressions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
@@ -3463,6 +3464,118 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
 
   static equals(a: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined, b: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewTimeRangesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveCanvasRequest
+ */
+export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
+  /**
+   * Instance ID
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Canvas name
+   *
+   * @generated from field: string canvas = 2;
+   */
+  canvas = "";
+
+  /**
+   * Optional args for resolving templating in the component properties
+   *
+   * @generated from field: google.protobuf.Struct args = 3;
+   */
+  args?: Struct;
+
+  constructor(data?: PartialMessage<ResolveCanvasRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveCanvasRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "args", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
+    return new ResolveCanvasRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveCanvasRequest {
+    return new ResolveCanvasRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveCanvasRequest {
+    return new ResolveCanvasRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveCanvasRequest | PlainMessage<ResolveCanvasRequest> | undefined, b: ResolveCanvasRequest | PlainMessage<ResolveCanvasRequest> | undefined): boolean {
+    return proto3.util.equals(ResolveCanvasRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolveCanvasResponse
+ */
+export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
+  /**
+   * The canvas resource.
+   *
+   * @generated from field: rill.runtime.v1.Resource canvas = 1;
+   */
+  canvas?: Resource;
+
+  /**
+   * All the component resources referenced by the canvas.
+   * The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+   * (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+   *
+   * @generated from field: map<string, rill.runtime.v1.Resource> resolved_components = 2;
+   */
+  resolvedComponents: { [key: string]: Resource } = {};
+
+  /**
+   * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+   *
+   * @generated from field: map<string, rill.runtime.v1.Resource> referenced_metrics_views = 3;
+   */
+  referencedMetricsViews: { [key: string]: Resource } = {};
+
+  constructor(data?: PartialMessage<ResolveCanvasResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolveCanvasResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "canvas", kind: "message", T: Resource },
+    { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {
+    return new ResolveCanvasResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolveCanvasResponse {
+    return new ResolveCanvasResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolveCanvasResponse {
+    return new ResolveCanvasResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolveCanvasResponse | PlainMessage<ResolveCanvasResponse> | undefined, b: ResolveCanvasResponse | PlainMessage<ResolveCanvasResponse> | undefined): boolean {
+    return proto3.util.equals(ResolveCanvasResponse, a, b);
   }
 }
 
@@ -3526,14 +3639,6 @@ export class ResolveComponentRequest extends Message<ResolveComponentRequest> {
  */
 export class ResolveComponentResponse extends Message<ResolveComponentResponse> {
   /**
-   * Show property with templating resolved for the provided args.
-   * If it resolves to false, the other fields are not set.
-   *
-   * @generated from field: bool show = 1;
-   */
-  show = false;
-
-  /**
    * Renderer properties with templating resolved for the provided args
    *
    * @generated from field: google.protobuf.Struct renderer_properties = 2;
@@ -3548,7 +3653,6 @@ export class ResolveComponentResponse extends Message<ResolveComponentResponse> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ResolveComponentResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "renderer_properties", kind: "message", T: Struct },
   ]);
 

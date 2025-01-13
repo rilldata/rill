@@ -24,7 +24,6 @@ type ComponentYAML struct {
 	Subtitle    string                    `yaml:"subtitle"` // Deprecated: use description
 	Input       []*ComponentVariableYAML  `yaml:"input"`
 	Output      *ComponentVariableYAML    `yaml:"output"`
-	Show        string                    `yaml:"show"`
 	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
@@ -159,7 +158,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		RendererProperties: rendererProps,
 		Input:              input,
 		Output:             output,
-		Show:               tmp.Show,
 	}
 
 	return spec, refs, nil

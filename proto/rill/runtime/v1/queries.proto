@@ -6,6 +6,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/resources.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
@@ -162,7 +163,15 @@ service QueryService {
 
   // Canvas APIs
 
-  // ResolveComponent resolves the data and renderer for a Component resource.
+  // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+  rpc ResolveCanvas(ResolveCanvasRequest) returns (ResolveCanvasResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/canvases/{canvas}/resolve",
+      body: "*"
+    };
+  }
+
+  // ResolveComponent resolves renderer for a Component resource.
   rpc ResolveComponent(ResolveComponentRequest) returns (ResolveComponentResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/components/{component}/resolve",
@@ -795,6 +804,26 @@ message MetricsViewTimeRangesResponse {
 // Canvas APIs
 // **********
 
+message ResolveCanvasRequest {
+  // Instance ID
+  string instance_id = 1;
+  // Canvas name
+  string canvas = 2;
+  // Optional args for resolving templating in the component properties
+  google.protobuf.Struct args = 3;
+}
+
+message ResolveCanvasResponse {
+  // The canvas resource.
+  Resource canvas = 1;
+  // All the component resources referenced by the canvas.
+  // The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+  // (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+  map<string, Resource> resolved_components = 2;
+  // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+  map<string, Resource> referenced_metrics_views = 3;
+}
+
 message ResolveComponentRequest {
   // Instance ID
   string instance_id = 1;
@@ -805,9 +834,6 @@ message ResolveComponentRequest {
 }
 
 message ResolveComponentResponse {
-  // Show property with templating resolved for the provided args.
-  // If it resolves to false, the other fields are not set.
-  bool show = 1;
   // Renderer properties with templating resolved for the provided args
   google.protobuf.Struct renderer_properties = 2;
 }

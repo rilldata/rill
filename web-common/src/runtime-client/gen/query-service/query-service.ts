@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ColumnCardinalityResponse,
+  V1ResolveCanvasResponse,
   RpcStatus,
+  QueryServiceResolveCanvasBody,
+  V1ColumnCardinalityResponse,
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
@@ -79,6 +81,70 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
+/**
+ * @summary ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+ */
+export const queryServiceResolveCanvas = (
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+) => {
+  return httpClient<V1ResolveCanvasResponse>({
+    url: `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveCanvasBody,
+  });
+};
+
+export type QueryServiceResolveCanvasMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveCanvas>>
+>;
+export type QueryServiceResolveCanvasMutationBody =
+  QueryServiceResolveCanvasBody;
+export type QueryServiceResolveCanvasMutationError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveCanvas = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    TError,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    }
+  > = (props) => {
+    const { instanceId, canvas, data } = props ?? {};
+
+    return queryServiceResolveCanvas(instanceId, canvas, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    TError,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary Get cardinality for a column
  */
@@ -234,7 +300,7 @@ export const createQueryServiceTableColumns = <
 };
 
 /**
- * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ * @summary ResolveComponent resolves renderer for a Component resource.
  */
 export const queryServiceResolveComponent = (
   instanceId: string,
