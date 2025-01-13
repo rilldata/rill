@@ -130,7 +130,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Command Groups
 
 	// Project commands
-	cmdutil.AddGroup(rootCmd, "Project",
+	cmdutil.AddGroup(rootCmd, "Project", false,
 		start.StartCmd(ch),
 		deploy.DeployCmd(ch),
 		project.ProjectCmd(ch),
@@ -139,7 +139,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	)
 
 	// Organization commands
-	cmdutil.AddGroup(rootCmd, "Organization",
+	cmdutil.AddGroup(rootCmd, "Organization", false,
 		org.OrgCmd(ch),
 		user.UserCmd(ch),
 		usergroup.UsergroupCmd(ch),
@@ -148,16 +148,21 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	)
 
 	// Auth commands
-	cmdutil.AddGroup(rootCmd, "Auth",
+	cmdutil.AddGroup(rootCmd, "Auth", false,
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),
 		whoami.WhoamiCmd(ch),
 	)
 
 	// Internal commands
-	if ch.IsDev() {
-		cmdutil.AddGroup(rootCmd, "Internal")
-	}
+	cmdutil.AddGroup(rootCmd, "Internal", !ch.IsDev(),
+		// These commands are hidden from the help menu
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		devtool.DevtoolCmd(ch),
+		sudo.SudoCmd(ch),
+		verifyInstallCmd(ch),
+	)
 
 	// Additional sub-commands
 	rootCmd.AddCommand(
@@ -166,11 +171,6 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		versioncmd.VersionCmd(),
 		upgrade.UpgradeCmd(ch),
 		uninstall.UninstallCmd(ch),
-		admin.AdminCmd(ch),
-		runtime.RuntimeCmd(ch),
-		devtool.DevtoolCmd(ch),
-		sudo.SudoCmd(ch),
-		verifyInstallCmd(ch),
 	)
 
 	return rootCmd.ExecuteContext(ctx)

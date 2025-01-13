@@ -7,9 +7,6 @@ import (
 
 func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
 	internalGroupID := ""
-	if ch.IsDev() {
-		internalGroupID = "Internal"
-	}
 	devtoolCmd := &cobra.Command{
 		Use:   "devtool",
 		Short: "Utilities for developing Rill",

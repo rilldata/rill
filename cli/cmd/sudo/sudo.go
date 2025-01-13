@@ -16,9 +16,6 @@ import (
 
 func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 	internalGroupID := ""
-	if ch.IsDev() {
-		internalGroupID = "Internal"
-	}
 	sudoCmd := &cobra.Command{
 		Use:     "sudo",
 		Short:   "sudo commands for superusers",
