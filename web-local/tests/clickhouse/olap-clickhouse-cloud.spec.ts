@@ -5,7 +5,7 @@ import { test as RillTest } from "../utils/test";
 /// Second test, incremental modeling, create metrics -> explore dashboard (default limit 100,000)
 /// Credentials have access only to playwright_e2e db.
 
-test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
+test.describe("Connecting to ClickHouse Cloud", () => {
   RillTest("Create ClickHouse Connection...", async ({ page }) => {
     // Create clickhouse.yaml
     await page.getByLabel("Add Asset").click();
@@ -45,20 +45,33 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     await expect(clickhouseEntry).toHaveCount(1);
 
     // find database in the UI, ensures that the database has loaded.
-    const defaultButton = page.locator(
+    // sometimes the context deadline exceed message appears so try again,
+    const failedToConnect = page.locator(
+      'li[aria-label="clickhouse"] button:has-text("Error: context deadline exceeded ")',
+    );
+    const playwrightButton = page.locator(
       'li[aria-label="clickhouse"] button:has-text("playwright_E2E")',
     );
     const ukPricePaidItem = page.locator(
       'a.clickable-text[href="/connector/clickhouse/clickhouse/playwright_E2E/uk_price_paid"]',
     );
-
-    // Check if the table uk_pricepaid is visible.
     const isVisible = await ukPricePaidItem.isVisible();
+    const maxRetries = 10;
+    let retries = 0;
 
-    if (!isVisible) {
-      // Click the "default" button to expand the table
-      await defaultButton.click();
+    while (!(await playwrightButton.isVisible())) {
+      if (retries >= maxRetries) {
+        throw new Error(
+          "playwrightButton did not become visible after maximum retries.",
+        );
+      }
+
+      console.log(`Reloading page... Attempt ${retries + 1}`);
+      await page.reload();
+      await page.waitForTimeout(5000); // Wait for 2 seconds before checking again
+      retries++;
     }
+    await playwrightButton.click();
 
     // Hover over the "uk_price_paid" item and create metrics
     await ukPricePaidItem.hover();
@@ -140,7 +153,7 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     // sometimes its too fast and the typing gets messed up so adding a 2 second wait
     await page.waitForTimeout(2000);
 
-    const projectlines = ["", "features:", "  - clickhouseModeling"];
+    const projectlines = ["\n", "features:\n", "  - clickhouseModeling\n"];
 
     // Type each line with a newline after
     for (const line of projectlines) {
@@ -259,18 +272,18 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     await incrementalTextBox.press("Backspace"); // Delete selected text
 
     const incrementalLines = [
-      "type: model",
-      "materialize: true",
-      "incremental: true",
-      "sql: >",
-      "  SELECT timestamp, id, bid_price, domain, publisher",
-      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
-      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
-      "        )",
-      "  {{ if dev }} LIMIT 100 {{ end }}",
-      "output:",
-      "  table: AdBids_csv",
-      "  engine: MergeTree",
+      "type: model\n",
+      "materialize: true\n",
+      "incremental: true\n",
+      "sql: >\n",
+      "  SELECT timestamp, id, bid_price, domain, publisher\n",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',\n",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'\n",
+      "        )\n",
+      "  {{ if dev }} LIMIT 100 {{ end }}\n",
+      "output:\n",
+      "  table: AdBids_csv\n",
+      "  engine: MergeTree\n",
     ];
 
     // Type each line with a newline after

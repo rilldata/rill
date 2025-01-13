@@ -4,7 +4,7 @@ import { addFolderWithCheck, addFileWithCheck } from "../utils/sourceHelpers";
 
 /// Managed ClickHouse (return to this once managed CH is stable)
 
-test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
+test.describe("Connecting to Managed ClickHouse.", () => {
   RillTest("Create ClickHouse Connection...", async ({ page }) => {
     /// Using Managed ClickHouse , create a metrics view then explore dashboard from a model. include checks on each step.
     addFolderWithCheck(page, "untitled_folder");
@@ -41,7 +41,11 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     );
     await childTextbox.click(); // Ensure it's focused for typing
 
-    const lines = ["type: connector", "driver: clickhouse", "managed: true"];
+    const lines = [
+      "type: connector\n",
+      "driver: clickhouse\n",
+      "managed: true\n",
+    ];
 
     // Type each line with a newline after
     for (const line of lines) {
@@ -67,11 +71,11 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     await projectTextbox.click();
 
     const projectlines = [
+      "\n",
+      "olap_connector: clickhouse\n",
       "",
-      "olap_connector: clickhouse",
-      "",
-      "features:",
-      "  - clickhouseModeling",
+      "features:\n",
+      "  - clickhouseModeling\n",
     ];
 
     // Type each line with a newline after
@@ -82,11 +86,35 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
 
     await page.locator('button:has-text("Save")').click();
 
+    const ClickHouseReady = await page.locator(
+      'li[aria-label="clickhouse"] button:has-text("No tables found")',
+    );
+
+    // loop and refresh page until ClickHouse is Ready
+    const maxRetries = 10;
+    let retries = 0;
+    await page.reload();
+    await page.waitForTimeout(2000);
+    while (!(await ClickHouseReady.isVisible())) {
+      if (retries >= maxRetries) {
+        throw new Error(
+          "playwrightButton did not become visible after maximum retries.",
+        );
+      }
+
+      console.log(`Reloading page... Attempt ${retries + 1}`);
+      await page.reload();
+      await page.waitForTimeout(5000); // Wait for 2 seconds before checking again
+      retries++;
+    }
+
     // TODO: Create NORMAL model, metrics view and dashboard
     await page.getByLabel("Add Asset").click();
     await page.getByLabel("Add Model").click();
 
+    await page.waitForSelector('li[aria-label="/models/model.sql Nav Entry"]');
     await page.locator('li[aria-label="/models/model.sql Nav Entry"]').hover();
+
     await page.getByLabel("/models/model.sql actions menu trigger").click();
     await page.locator('div[role="menuitem"]:has-text("Rename...")').click();
 
@@ -106,18 +134,18 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     await managedSourceTextBox.press("Backspace"); // Delete selected text
 
     const sourceLines = [
-      "type: model",
-      "materialize: true",
+      "type: model\n",
+      "materialize: true\n",
       "",
-      "sql: >",
-      "  SELECT timestamp, id, bid_price, domain, publisher",
-      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
-      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
-      "        )",
-      "  {{ if dev }} LIMIT 100 {{ end }}",
-      "output:",
-      "  table: AdBids_csv",
-      "  engine: MergeTree",
+      "sql: >\n",
+      "  SELECT timestamp, id, bid_price, domain, publisher\n",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',\n",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'\n",
+      "        )\n",
+      "  {{ if dev }} LIMIT 100 {{ end }}\n",
+      "output:\n",
+      "  table: AdBids_csv\n",
+      "  engine: MergeTree\n",
     ];
 
     // Type each line with a newline after
@@ -162,19 +190,19 @@ test.describe("Connecting to ClickHouse Cloud and Managed ClickHouse.", () => {
     await incrementalTextBox.press("Backspace"); // Delete selected text
 
     const incrementalLines = [
-      "type: model",
-      "materialize: true",
-      "incremental: true:",
+      "type: model\n",
+      "materialize: true\n",
+      "incremental: true:\n",
       "",
-      "sql: >",
-      "  SELECT timestamp, id, bid_price, domain, publisher",
-      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',",
-      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'",
-      "        )",
-      "  {{ if dev }} LIMIT 100 {{ end }}",
-      "output:",
-      "  table: AdBids_csv_incremental",
-      "  engine: MergeTree",
+      "sql: >\n",
+      "  SELECT timestamp, id, bid_price, domain, publisher\n",
+      "  FROM gcs('https://storage.googleapis.com/playwright-gcs-qa/AdBids_csv.csv',\n",
+      "          'CSV', 'timestamp DateTime, id UInt32, bid_price Double, domain String, publisher String'\n",
+      "        )\n",
+      "  {{ if dev }} LIMIT 100 {{ end }}\n",
+      "output:\n",
+      "  table: AdBids_csv_incremental\n",
+      "  engine: MergeTree\n",
     ];
 
     // Type each line with a newline after

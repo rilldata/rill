@@ -90,20 +90,18 @@ test.describe("Checking the Inspector Panel for Source and Model. Check if value
     await childTextbox.press("Backspace"); // Delete selected text
 
     const lines = [
-      "-- Model SQL",
-      "-- Reference documentation: https://docs.rilldata.com/reference/project-files/models",
-      "SELECT a.*,",
-      "    b.* exclude customer_id",
-      "FROM sales AS a",
-      "LEFT JOIN customer_data AS b",
-      "ON a.customer_id = b.customer_id",
-      "",
-      "",
+      "-- Model SQL\n",
+      "-- Reference documentation: https://docs.rilldata.com/reference/project-files/models\n",
+      "SELECT a.*,\n",
+      "    b.* exclude customer_id\n",
+      "FROM sales AS a\n",
+      "LEFT JOIN customer_data AS b\n",
+      "ON a.customer_id = b.customer_id\n",
     ];
 
-    // Type each line with a newline after
+    // Type all lines at once
     for (const line of lines) {
-      await childTextbox.type(line); // Type the line
+      await childTextbox.type(line);
       await childTextbox.press("Enter"); // Press Enter for a new line
     }
 

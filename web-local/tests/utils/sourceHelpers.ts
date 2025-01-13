@@ -7,11 +7,7 @@ import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
 import { fileURLToPath } from "url";
-import {
-  clickModalButton,
-  waitForProfiling,
-  getFileNavEntry,
-} from "./commonHelpers";
+import { clickModalButton, waitForProfiling } from "./commonHelpers";
 import { waitForFileNavEntry } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
