@@ -9,6 +9,7 @@
     type VisualizationSpec,
   } from "svelte-vega";
   import { get } from "svelte/store";
+  import type { Config } from "vega-lite";
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { getRillTheme } from "./vega-config";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
@@ -20,6 +21,7 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let chartView = false;
+  export let config: Config | undefined = undefined;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
   export let viewVL: View;
 
@@ -36,7 +38,7 @@
   }
 
   $: options = <EmbedOptions>{
-    config: getRillTheme(canvasDashboard),
+    config: config || getRillTheme(canvasDashboard),
     renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors

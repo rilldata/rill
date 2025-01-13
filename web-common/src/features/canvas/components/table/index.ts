@@ -26,7 +26,7 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   defaultSize = { width: 16, height: 10 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<TableSpec> = {},
   ) {

@@ -15,7 +15,7 @@
 </script>
 
 <div
-  class="markdown size-full items-center flex justify-center bg-white"
+  class="markdown size-full p-2 flex flex-col justify-center bg-white"
   style={styleString}
 >
   {#await marked(markdownProperties.content) then content}
@@ -24,8 +24,26 @@
 </div>
 
 <style lang="postcss">
+  :global(.markdown) {
+    @apply text-gray-800;
+  }
   :global(.markdown h1) {
-    font-size: 2em;
-    font-weight: 500;
+    font-size: 24px;
+    @apply font-medium;
+  }
+  :global(.markdown h2) {
+    font-size: 20px;
+    @apply font-medium;
+  }
+  :global(.markdown h3) {
+    font-size: 18px;
+    @apply font-medium;
+  }
+  :global(.markdown h4) {
+    font-size: 16px;
+    @apply font-medium;
+  }
+  :global(.markdown p) {
+    font-size: 14px;
   }
 </style>

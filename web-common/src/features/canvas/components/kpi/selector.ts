@@ -64,8 +64,12 @@ export function useKPIComparisonTotal(
   const { timeControls } = ctx.canvasEntity;
 
   return derived(
-    [timeControls.selectedComparisonTimeRange, timeControls.selectedTimezone],
-    ([selectedComparisonTimeRange, timeZone], set) => {
+    [
+      timeControls.selectedComparisonTimeRange,
+      timeControls.selectedTimezone,
+      timeControls.showTimeComparison,
+    ],
+    ([selectedComparisonTimeRange, timeZone, showComparison], set) => {
       let timeRange: V1TimeRange = {
         start: selectedComparisonTimeRange?.start?.toISOString(),
         end: selectedComparisonTimeRange?.end?.toISOString(),
@@ -86,8 +90,10 @@ export function useKPIComparisonTotal(
         {
           query: {
             enabled:
-              !!selectedComparisonTimeRange?.start &&
-              !!selectedComparisonTimeRange?.end,
+              !!overrideComparisonRange ||
+              (showComparison &&
+                !!selectedComparisonTimeRange?.start &&
+                !!selectedComparisonTimeRange?.end),
             select: (data) => {
               return data.data?.[0]?.[measure] ?? null;
             },

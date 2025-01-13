@@ -9,10 +9,11 @@
   import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
   import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
+  import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
   import PositionalFieldConfig from "./PositionalFieldConfig.svelte";
 
   export let component: CanvasComponentObj;
@@ -54,7 +55,6 @@
             textClass="text-sm"
             size="sm"
             labelGap={2}
-            optional={!!config.optional}
             label={config.label ?? key}
             bind:value={localParamValues[key]}
             onBlur={async () => {
@@ -71,7 +71,7 @@
 
           <!-- MEASURE / DIMENSION -->
         {:else if metricsView && (config.type === "measure" || config.type === "dimension")}
-          <FieldSelectorDropdown
+          <SingleFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -84,8 +84,7 @@
 
           <!-- MULTIPLE MEASURE / MULTIPLE DIMENSION -->
         {:else if metricsView && (config.type === "multi_measures" || config.type === "multi_dimensions")}
-          <FieldSelectorDropdown
-            multi
+          <MultiFieldInput
             label={config.label ?? key}
             metricName={metricsView}
             id={key}
@@ -99,12 +98,7 @@
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
           <div class="flex items-center justify-between py-2">
-            <InputLabel
-              small
-              label={config.label ?? key}
-              optional={!!config.optional}
-              id={key}
-            />
+            <InputLabel small label={config.label ?? key} id={key} />
             <Switch
               bind:checked={localParamValues[key]}
               on:click={async () => {
@@ -116,12 +110,7 @@
 
           <!-- TEXT AREA -->
         {:else if config.type === "textArea"}
-          <InputLabel
-            small
-            label={config.label ?? key}
-            optional={!!config.optional}
-            id={key}
-          />
+          <InputLabel small label={config.label ?? key} id={key} />
           <textarea
             class="w-full p-2 border border-gray-300 rounded-sm"
             rows="4"
@@ -138,7 +127,7 @@
             {key}
             {config}
             {metricsView}
-            value={localParamValues[key] || {}}
+            fieldConfig={localParamValues[key] || {}}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

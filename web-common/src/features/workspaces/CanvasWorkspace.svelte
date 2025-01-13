@@ -36,7 +36,7 @@
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
 
-  const componentRegistry = getComponentRegistry(fileArtifact);
+  const componentRegistry = getComponentRegistry();
 
   $: ({
     saveLocalContent: updateComponentFile,
