@@ -889,13 +889,6 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -922,6 +915,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1380,10 +1380,6 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -1866,11 +1862,6 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
 
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
-}
-
 export interface V1ExploreSpec {
   displayName?: string;
   description?: string;
@@ -1921,6 +1912,11 @@ export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string for the duration of the comparison time range.
 If not specified, it should fallback to the range of the base time range. */
   range?: string;
+}
+
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
 export type V1ExploreComparisonMode =
@@ -2121,8 +2117,6 @@ export interface V1ComponentSpec {
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
-  /** Templated string that should evaluate to a boolean. */
-  show?: string;
   definedInCanvas?: boolean;
 }
 
@@ -2301,6 +2295,20 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
+}
+
+export interface V1CanvasPreset {
+  /** Time range for the explore.
+It corresponds to the `range` property of the explore's `time_ranges`.
+If not found in `time_ranges`, it should be added to the list. */
+  timeRange?: string;
+  comparisonMode?: V1ExploreComparisonMode;
+  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
+  comparisonDimension?: string;
+}
+
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2311,17 +2319,31 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
+  /** Display name for the canvas. */
   displayName?: string;
+  /** Max width in pixels of the canvas. */
   maxWidth?: number;
+  /** Horizontal gap in pixels of the canvas. */
+  gapX?: number;
+  /** Vertical gap in pixels of the canvas. */
+  gapY?: number;
+  /** Name of the theme to use. Only one of theme and embedded_theme can be set. */
   theme?: string;
   embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown.
+TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1CanvasPreset;
+  /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
-}
-
-export interface V1CanvasState {
-  validSpec?: V1CanvasSpec;
 }
 
 export interface V1Canvas {
@@ -2703,6 +2725,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {
