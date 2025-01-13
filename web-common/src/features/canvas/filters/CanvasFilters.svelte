@@ -69,6 +69,14 @@
     metricsViewName,
   );
 
+  // $: alllDimensions = useAllDimensionFromMetrics(instanceId, [
+  //   "nyc_311_latest_metrics",
+  //   "bids",
+  //   "auction",
+  // ]);
+
+  // $: console.log($alllDimensions);
+
   $: dimensions = $dimensionsQuery?.data || [];
   $: dimensionIdMap = getMapFromArray(
     dimensions,

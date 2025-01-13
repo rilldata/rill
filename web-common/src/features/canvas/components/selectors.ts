@@ -1,5 +1,21 @@
 import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
 import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
+import { derived } from "svelte/store";
+
+export const useAllDimensionFromMetrics = (
+  instanceId: string,
+  metricsViewNames: string[],
+) => {
+  const dimensionsByViewStores = metricsViewNames.map((viewName) =>
+    useAllDimensionFromMetric(instanceId, viewName),
+  );
+  return derived(dimensionsByViewStores, ($dimensionsByViewStores) =>
+    $dimensionsByViewStores
+      .filter((dimensions) => dimensions?.data)
+      .map((dimensions) => dimensions.data)
+      .flat(),
+  );
+};
 
 export const useAllDimensionFromMetric = (
   instanceId: string,

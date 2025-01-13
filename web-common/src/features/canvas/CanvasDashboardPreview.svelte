@@ -79,6 +79,7 @@
     items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
     items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
+    // TODO: Do not update if there is no change
     dispatch("update", {
       index: selectedIndex,
       position: [items[selectedIndex].x, items[selectedIndex].y],

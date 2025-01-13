@@ -76,6 +76,7 @@
   );
 
   $: sparkData = $sparkline?.data || [];
+  $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
@@ -163,7 +164,7 @@
       {/if}
     </div>
 
-    {#if containerHeight && containerWidth && showSparkline && sparkData.length}
+    {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
       <SimpleDataGraphic
         height={sparklineHeight}
         width={containerWidth + 10}
