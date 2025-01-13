@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -17,10 +18,10 @@ import (
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
 type ReportYAML struct {
 	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName string           `yaml:"display_name"`
-	Title       string           `yaml:"title"` // Deprecated: use display_name
-	Refresh     *ScheduleYAML    `yaml:"refresh"`
-	Watermark   string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	DisplayName string        `yaml:"display_name"`
+	Title       string        `yaml:"title"` // Deprecated: use display_name
+	Refresh     *ScheduleYAML `yaml:"refresh"`
+	Watermark   string        `yaml:"watermark"` // options: "trigger_time", "inherit"
 	Intervals   struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
@@ -95,7 +96,7 @@ func (p *Parser) parseReport(node *Node) error {
 
 	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions) with only one component
 	if tmp.Intervals.Duration != "" {
-		err := validateISO8601(tmp.Intervals.Duration, true, true)
+		err := duration.ValidateISO8601(tmp.Intervals.Duration, true, true)
 		if err != nil {
 			return fmt.Errorf(`invalid value %q for property "intervals.duration"`, tmp.Intervals.Duration)
 		}

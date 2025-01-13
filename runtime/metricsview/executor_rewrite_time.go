@@ -43,11 +43,10 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	}
 
 	if tr.Expression == "" {
-		if !tr.Start.IsZero() || !tr.End.IsZero() {
-			return errors.New("start or end time cannot be specified along with expression")
-		}
-
 		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
+	}
+	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+		return errors.New("other fields are not supported when expression is provided")
 	}
 
 	rillTime, err := rilltime.Parse(tr.Expression)
@@ -85,7 +84,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	return nil
 }
 
-// resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
+// resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
 func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		t, err := e.loadWatermark(ctx, executionTime)
