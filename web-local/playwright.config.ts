@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/clickhouse",
   testIgnore: [
-    '**/source-sqlite.spec.ts', '**/source-duckdb.spec.ts'
+    '**/source-sqlite.spec.ts', '**/source-duckdb.spec.ts', '**/source-mysql.spec.ts', '**/source-postgre.spec.ts'
   ],
   testMatch: "olap-managed-clickhouse.spec.ts",
   /* Don't run tests in files in parallel in CI*/
