@@ -727,6 +727,7 @@
               square
               gray
               noStroke
+              label="Add new {type.slice(0, -1)}"
               on:click={() => {
                 editingItemData.set({
                   type,
