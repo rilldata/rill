@@ -13,7 +13,6 @@ type httpsToSelfInputProps struct {
 	Path    string            `mapstructure:"path"`
 	URI     string            `mapstructure:"uri"`
 	Headers map[string]string `mapstructure:"headers"`
-	Format  string
 }
 
 func (p *httpsToSelfInputProps) resolvePath() string {
@@ -81,7 +80,6 @@ func (e *httpsToSelfExecutor) modelInputProperties(modelName, inputConnector str
 	if err := mapstructure.Decode(m, &propsMap); err != nil {
 		return nil, err
 	}
-	fmt.Printf("propsMap: %v\n", propsMap)
 	return propsMap, nil
 }
 
