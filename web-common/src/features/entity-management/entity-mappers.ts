@@ -48,7 +48,7 @@ export function getFileAPIPathFromNameAndType(
   switch (type) {
     case EntityType.Connector:
       return `connectors/${name}.yaml`;
-    case EntityType.Table:
+    case EntityType.Source:
       return `sources/${name}.yaml`;
     case EntityType.Model:
       return `models/${name}.sql`;

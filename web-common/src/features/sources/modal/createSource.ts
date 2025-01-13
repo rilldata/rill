@@ -8,7 +8,7 @@ export async function createSource(
   yaml: string,
 ) {
   return runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(tableName, EntityType.Table),
+    path: getFileAPIPathFromNameAndType(tableName, EntityType.Source),
     blob: yaml,
     // create source is used to upload and replace.
     // so we cannot send createOnly=true until we refactor it to use refresh source
