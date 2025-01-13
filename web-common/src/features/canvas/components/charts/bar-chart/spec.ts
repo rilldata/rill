@@ -19,6 +19,7 @@ export function generateVLBarChartSpec(
           title: data.fields[config.x.field]?.displayName || config.x.field,
           type: config.x.type,
           ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
+          ...(!config.x.showAxisTitle && { axis: { title: null } }),
         },
       }),
       ...(config.y && {
@@ -27,6 +28,7 @@ export function generateVLBarChartSpec(
           title: data.fields[config.y.field]?.displayName || config.y.field,
           type: config.y.type,
           ...(config.y.timeUnit && { timeUnit: config.y.timeUnit }),
+          ...(!config.y.showAxisTitle && { axis: { title: null } }),
         },
       }),
       ...(config.color &&

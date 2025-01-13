@@ -22,7 +22,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   defaultSize = { width: 12, height: 8 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<ChartSpec> = {},
   ) {
@@ -47,6 +47,7 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         y: { type: "positional", label: "Y-axis" },
         color: { type: "mark", label: "Color", meta: { type: "color" } },
         tooltip: { type: "tooltip", label: "Tooltip", showInUI: false },
+        vl_config: { type: "config", showInUI: false },
         ...commonOptions,
       },
       filter: getFilterOptions(false),

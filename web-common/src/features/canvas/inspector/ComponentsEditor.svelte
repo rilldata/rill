@@ -4,6 +4,7 @@
     getHeaderForComponent,
     isCanvasComponentType,
   } from "@rilldata/web-common/features/canvas/components/util";
+  import VegaConfigInput from "@rilldata/web-common/features/canvas/inspector/VegaConfigInput.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -51,7 +52,13 @@
   disableHorizontalPadding
   title={getHeaderForComponent(renderer)}
 >
-  <ComponentTabs bind:currentTab slot="header" />
+  <svelte:fragment slot="header">
+    {#if componentType}
+      {#key componentType}
+        <ComponentTabs {componentType} bind:currentTab />
+      {/key}
+    {/if}
+  </svelte:fragment>
 
   {#if componentType && component && rendererProperties}
     {#key selectedComponentIndex}
@@ -63,6 +70,8 @@
         />
       {:else if currentTab === "filters"}
         <FiltersMapper {component} paramValues={rendererProperties} />
+      {:else if currentTab === "config"}
+        <VegaConfigInput {component} paramValues={rendererProperties} />
       {/if}
     {/key}
   {:else}
