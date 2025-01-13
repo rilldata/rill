@@ -83,14 +83,24 @@ func CreateAndUpload(ctx context.Context, files []drivers.DirEntry, root, url st
 	return nil
 }
 
-// EstimateTarSize estimates the size of the tar ball that will be created from the given files.
-func EstimateTarSize(files []drivers.DirEntry, root string) (int64, error) {
+func Create(ctx context.Context, files []drivers.DirEntry, root string) (*bytes.Buffer, error) {
 	b := &bytes.Buffer{}
+
 	err := createTar(b, files, root)
 	if err != nil {
-		return 0, fmt.Errorf("failed to estimate tar size: %w", err)
+		return nil, err
 	}
-	return int64(b.Len()), nil
+
+	return b, nil
+}
+
+func Upload(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
+	err := uploadTarBall(ctx, url, body, headers)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes

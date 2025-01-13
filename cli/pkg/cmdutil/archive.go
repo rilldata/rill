@@ -28,10 +28,12 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 		return "", fmt.Errorf("failed to get root path: %w", err)
 	}
 
-	estimatedSize, err := archive.EstimateTarSize(entries, rootPath)
+	b, err := archive.Create(ctx, entries, rootPath)
 	if err != nil {
 		return "", err
 	}
+
+	estimatedSizeBytes := int64(b.Len())
 
 	// generate a upload URL
 	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
@@ -39,13 +41,13 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 		Type:               "deploy",
 		Name:               name,
 		Extension:          "tar.gz",
-		EstimatedSizeBytes: estimatedSize,
+		EstimatedSizeBytes: estimatedSizeBytes,
 	})
 	if err != nil {
 		return "", err
 	}
 
-	err = archive.CreateAndUpload(ctx, entries, rootPath, asset.SignedUrl, asset.SigningHeaders)
+	err = archive.Upload(ctx, asset.SignedUrl, b, asset.SigningHeaders)
 	if err != nil {
 		return "", err
 	}
