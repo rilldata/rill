@@ -3,7 +3,6 @@ package env
 import (
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var re = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_.]*$`)
@@ -15,21 +14,11 @@ func ValidateName(name string) error {
 	return nil
 }
 
-func ParseKeyVal(s string) (string, string, error) {
-	parts := strings.Split(s, "=")
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid key-value pair %q: must be in the form key=value", s)
+func ValidateVariables(variables map[string]string) error {
+	for name := range variables {
+		if err := ValidateName(name); err != nil {
+			return err
+		}
 	}
-	return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]), nil
-}
-
-func ParseAndValidate(s string) (string, string, error) {
-	key, value, err := ParseKeyVal(s)
-	if err != nil {
-		return "", "", err
-	}
-	if err := ValidateName(key); err != nil {
-		return "", "", err
-	}
-	return key, value, nil
+	return nil
 }

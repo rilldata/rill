@@ -11,11 +11,12 @@ import (
 
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectPath, projectName, environment, keyValPair string
+	var projectPath, projectName, environment string
+	var variables map[string]string
 
 	setCmd := &cobra.Command{
-		Use:   "set [<project-name>] [--env=key=value]",
-		Args:  cobra.ExactArgs(1),
+		Use:   "set [<project>] <key> <value>",
+		Args:  cobra.RangeArgs(2, 3),
 		Short: "Set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -24,19 +25,20 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if len(args) > 0 {
-				projectName = args[0]
+			if len(args) == 2 {
+				variables = map[string]string{args[0]: args[1]}
+			} else {
+				projectName, variables = args[0], map[string]string{args[1]: args[2]}
 			}
 
-			// Find the cloud project name
 			if projectName == "" {
-				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
 				if err != nil {
 					return fmt.Errorf("unable to infer project name (use `--project` to explicitly specify the name): %w", err)
 				}
 			}
 
-			key, value, err := envValidator.ParseAndValidate(keyValPair)
+			err = envValidator.ValidateVariables(variables)
 			if err != nil {
 				return err
 			}
@@ -45,7 +47,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				Organization: ch.Org,
 				Project:      projectName,
 				Environment:  environment,
-				Variables:    map[string]string{key: value},
+				Variables:    variables,
 			})
 			if err != nil {
 				return err
@@ -59,7 +61,5 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	setCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
-	setCmd.Flags().StringVar(&keyValPair, "env", "", "Specify a key and value to insert in environment (i.e. somekey=somevalue)")
-
 	return setCmd
 }
