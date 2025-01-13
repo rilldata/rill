@@ -89,7 +89,7 @@ export async function submitAddDataForm(
   );
 
   /**
-   * Sources
+   * Sources / Models
    */
 
   if (formType === "source") {
@@ -135,6 +135,7 @@ export async function submitAddDataForm(
           EntityType.Model,
         );
 
+        // Make a new <model>.yaml file
         await runtimeServicePutFile(instanceId, {
           path: newModelFilePath,
           blob: compileClickhouseSourceConnectorFile(connector, formValues),
@@ -142,7 +143,19 @@ export async function submitAddDataForm(
           createOnly: false,
         });
 
-        // Return the path to the new source file
+        // Update the `.env` file
+        await runtimeServicePutFile(instanceId, {
+          path: ".env",
+          blob: await updateDotEnvWithSecrets(
+            queryClient,
+            connector,
+            formValues,
+          ),
+          create: true,
+          createOnly: false,
+        });
+
+        // Return the path to the new model file
         return newModelFilePath;
       }
       default:
