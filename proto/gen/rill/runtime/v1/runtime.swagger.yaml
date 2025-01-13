@@ -1012,6 +1012,41 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
+    post:
+      summary: ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+      operationId: QueryService_ResolveCanvas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveCanvasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: canvas
+          description: Canvas name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args for resolving templating in the component properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1103,7 +1138,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/components/{component}/resolve:
     post:
-      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      summary: ResolveComponent resolves renderer for a Component resource.
       operationId: QueryService_ResolveComponent
       responses:
         "200":
@@ -3472,33 +3507,85 @@ definitions:
       height:
         type: integer
         format: int64
+  v1CanvasPreset:
+    type: object
+    properties:
+      timeRange:
+        type: string
+        description: |-
+          Time range for the explore.
+          It corresponds to the `range` property of the explore's `time_ranges`.
+          If not found in `time_ranges`, it should be added to the list.
+      comparisonMode:
+        $ref: '#/definitions/v1ExploreComparisonMode'
+        description: |-
+          Comparison mode.
+          TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+      comparisonDimension:
+        type: string
+        description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   v1CanvasSpec:
     type: object
     properties:
       displayName:
         type: string
+        description: Display name for the canvas.
       maxWidth:
         type: integer
         format: int64
+        description: Max width in pixels of the canvas.
+      gapX:
+        type: integer
+        format: int64
+        description: Horizontal gap in pixels of the canvas.
+      gapY:
+        type: integer
+        format: int64
+        description: Vertical gap in pixels of the canvas.
       theme:
         type: string
+        description: Name of the theme to use. Only one of theme and embedded_theme can be set.
       embeddedTheme:
         $ref: '#/definitions/v1ThemeSpec'
+        description: Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExploreTimeRange'
+        description: |-
+          List of selectable time ranges with comparison time ranges.
+          If the list is empty, a default list should be shown.
+          TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      timeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selectable time zones.
+          If the list is empty, a default list should be shown.
+          The values should be valid IANA location identifiers.
+      defaultPreset:
+        $ref: '#/definitions/v1CanvasPreset'
+        description: Preset UI state to show by default.
       variables:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ComponentVariable'
+        description: Variables that can be used in the canvas.
       items:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
+        title: Items to render on the canvas
       securityRules:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
+        description: Security rules to apply for access to the canvas.
   v1CanvasState:
     type: object
     properties:
@@ -3844,9 +3931,6 @@ definitions:
           $ref: '#/definitions/v1ComponentVariable'
       output:
         $ref: '#/definitions/v1ComponentVariable'
-      show:
-        type: string
-        description: Templated string that should evaluate to a boolean.
       definedInCanvas:
         type: boolean
   v1ComponentState:
@@ -5890,14 +5974,28 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveCanvasResponse:
+    type: object
+    properties:
+      canvas:
+        $ref: '#/definitions/v1Resource'
+        description: The canvas resource.
+      resolvedComponents:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: |-
+          All the component resources referenced by the canvas.
+          The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+          (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+      referencedMetricsViews:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   v1ResolveComponentResponse:
     type: object
     properties:
-      show:
-        type: boolean
-        description: |-
-          Show property with templating resolved for the provided args.
-          If it resolves to false, the other fields are not set.
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args

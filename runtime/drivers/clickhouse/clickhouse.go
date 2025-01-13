@@ -114,8 +114,6 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. Required for running distributed queries.
 	Cluster string `mapstructure:"cluster"`
-	// EnableCache controls whether to enable cache for Clickhouse queries.
-	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
