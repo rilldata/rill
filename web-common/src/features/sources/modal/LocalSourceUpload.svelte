@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto, invalidate } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     openFileUploadDialog,
@@ -48,11 +48,11 @@
 
         const yaml = compileLocalFileSourceYAML(filePath);
         await createSource(instanceId, tableName, yaml);
-        const newFilePath = getFilePathFromNameAndType(
+        const newFilePath = getFileAPIPathFromNameAndType(
           tableName,
           EntityType.Table,
         );
-        await goto(`/files${newFilePath}`);
+        await goto(`/files/${newFilePath}`);
       } catch (err) {
         console.error(err);
       }
