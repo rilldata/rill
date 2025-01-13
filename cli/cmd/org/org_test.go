@@ -162,6 +162,20 @@ func TestOrganizationWorkflow(t *testing.T) {
 	require.Equal(t, len(orgList), 1)
 	require.Equal(t, orgList[0].Name, "new-test")
 
+	// edit organization display name
+	buf.Reset()
+	cmd = EditCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--org", "new-test", "--display-name", "new-test-display", "--force"})
+	err = cmd.Execute()
+	require.NoError(t, err)
+
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	require.NoError(t, err)
+	require.Equal(t, len(orgList), 1)
+	require.Equal(t, orgList[0].DisplayName, "new-test-display")
+
 	// Switch organization
 	buf.Reset()
 	helper.Printer.OverrideHumanOutput(&buf)
@@ -181,7 +195,8 @@ func TestOrganizationWorkflow(t *testing.T) {
 }
 
 type Org struct {
-	Name string `json:"Name"`
+	Name        string `json:"Name"`
+	DisplayName string `json:"DisplayName"`
 }
 
 // mockGithub provides a mock implementation of admin.Github.
