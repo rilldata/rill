@@ -52,10 +52,10 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				})
 			}
 
-			if cmd.Flags().Changed("env") {
-				printEnv(envVars)
-			} else {
+			if cmd.Flags().Lookup("format").Changed {
 				ch.PrintData(envVars)
+			} else {
+				printEnv(envVars)
 			}
 
 			return nil
@@ -65,7 +65,6 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	showCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
 	showCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	showCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
-	showCmd.Flags().Bool("env", false, "Print variables in shell export format")
 
 	return showCmd
 }
@@ -75,8 +74,25 @@ func formatEnvVar(name, value string) string {
 }
 
 func printEnv(vars []*variable) {
+	tmpKey := "none"
+	envMap := make(map[string][]*variable)
 	for _, v := range vars {
-		fmt.Println(formatEnvVar(v.Name, v.Value))
+		if v.Environment == "" {
+			v.Environment = tmpKey
+		}
+		if _, ok := envMap[v.Environment]; !ok {
+			envMap[v.Environment] = []*variable{}
+		}
+		envMap[v.Environment] = append(envMap[v.Environment], v)
+	}
+
+	for env, vars := range envMap {
+		if env != tmpKey {
+			fmt.Printf("# %s\n", env)
+		}
+		for _, v := range vars {
+			fmt.Printf("%s\n", formatEnvVar(v.Name, v.Value))
+		}
 	}
 }
 
