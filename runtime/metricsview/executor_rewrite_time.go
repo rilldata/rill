@@ -4,16 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"time"
 
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
+	minTime, maxTime, watermark, err := e.Timestamps(ctx, executionTime)
+	if err != nil {
+		return fmt.Errorf("failed to fetch time stamps: %w", err)
+	}
+
 	tz := time.UTC
 	if qry.TimeZone != "" {
 		var err error
@@ -23,12 +26,12 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err := e.resolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
+	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, minTime, maxTime, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, minTime, maxTime, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -37,17 +40,13 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, minTime, maxTime, watermark time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
 
 	if tr.Start.IsZero() && tr.End.IsZero() {
-		t, err := e.loadWatermark(ctx, executionTime)
-		if err != nil {
-			return err
-		}
-		tr.End = t
+		tr.End = watermark
 	}
 
 	var isISO bool
@@ -117,52 +116,4 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	tr.RoundToGrain = TimeGrainUnspecified
 
 	return nil
-}
-
-// resolveWatermark resolves the metric view's watermark expression.
-// If the resolved time is zero, it defaults to the current time.
-func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) (time.Time, error) {
-	if executionTime != nil {
-		return *executionTime, nil
-	}
-
-	if !e.watermark.IsZero() {
-		return e.watermark, nil
-	}
-
-	res, err := e.rt.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         e.instanceID,
-		Resolver:           "metrics_time_range",
-		ResolverProperties: map[string]any{"metrics_view": e.metricsView},
-		Args:               map[string]any{"priority": e.priority},
-		Claims:             nil, // TODO
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer res.Close()
-
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return time.Time{}, errors.New("time range query returned no results")
-		}
-		return time.Time{}, err
-	}
-
-	watermarkVal, ok := row["watermark"]
-	if !ok {
-		return time.Time{}, errors.New("time range query failed to return watermark")
-	}
-	watermark, ok := watermarkVal.(time.Time)
-	if !ok {
-		return time.Time{}, errors.New("time range query returned invalid watermark")
-	}
-
-	if watermark.IsZero() {
-		watermark = time.Now()
-	}
-
-	e.watermark = watermark
-	return watermark, nil
 }

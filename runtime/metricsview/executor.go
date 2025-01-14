@@ -35,7 +35,7 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	watermark time.Time
+	min, max, watermark time.Time
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -84,7 +84,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			return []byte(""), true, nil
 		}
 		// watermark is the default cache key for streaming metrics views
-		watermark, err := e.loadWatermark(ctx, nil)
+		_, _, watermark, err := e.Timestamps(ctx, nil)
 		if err != nil {
 			return nil, false, err
 		}
@@ -127,10 +127,39 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Watermark returns the current watermark of the metrics view.
-// If the watermark resolves to null, it defaults to the current time.
-func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
-	return e.loadWatermark(ctx, nil)
+// Timestamps queries min, max and watermark for the metrics view
+func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (time.Time, time.Time, time.Time, error) {
+	if !e.min.IsZero() {
+		return e.min, e.max, e.watermark, nil
+	}
+
+	var err error
+	switch e.olap.Dialect() {
+	case drivers.DialectDuckDB:
+		e.min, e.max, e.watermark, err = e.resolveDuckDB(ctx)
+	case drivers.DialectDruid:
+		e.min, e.max, e.watermark, err = e.resolveDruid(ctx)
+	case drivers.DialectClickHouse:
+		e.min, e.max, e.watermark, err = e.resolveClickHouseAndPinot(ctx)
+	case drivers.DialectPinot:
+		e.min, e.max, e.watermark, err = e.resolveClickHouseAndPinot(ctx)
+	default:
+		return time.Time{}, time.Time{}, time.Time{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
+	}
+	if err != nil {
+		return time.Time{}, time.Time{}, time.Time{}, err
+	}
+	if executionTime != nil {
+		e.watermark = *executionTime
+	}
+	return e.min, e.max, e.watermark, nil
+}
+
+func (e *Executor) BindQuery(ctx context.Context, qry *Query, min, max, watermark time.Time) error {
+	e.min = min
+	e.max = max
+	e.watermark = watermark
+	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
 // Schema returns a schema for the metrics view's dimensions and measures.

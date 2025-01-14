@@ -7,18 +7,14 @@ import (
 	"io"
 	"time"
 
-	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	defaultExecutionTimeout = time.Minute * 3
-	hourInDay               = 24
+	hourInDay = 24
 )
 
 var microsInDay = hourInDay * time.Hour.Microseconds()
@@ -28,12 +24,11 @@ func init() {
 }
 
 type metricsViewTimeRangeResolver struct {
-	runtime            *runtime.Runtime
-	instanceID         string
-	mvName             string
-	mv                 *runtimev1.MetricsViewSpec
-	resolvedMVSecurity *runtime.ResolvedSecurity
-	args               *metricsViewTimeRangeResolverArgs
+	runtime    *runtime.Runtime
+	instanceID string
+	mvName     string
+	executor   *metricsview.Executor
+	args       *metricsViewTimeRangeResolverArgs
 }
 
 type metricsViewTimeRangeResolverArgs struct {
@@ -41,9 +36,7 @@ type metricsViewTimeRangeResolverArgs struct {
 }
 
 type metricsViewTimeRange struct {
-	MetricsView     string                     `mapstructure:"metrics_view"`
-	MetricsViewSpec *runtimev1.MetricsViewSpec `mapstructure:"metrics_view_spec"`
-	Security        *runtime.ResolvedSecurity  `mapstructure:"security"`
+	MetricsView string `mapstructure:"metrics_view"`
 }
 
 func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -65,29 +58,19 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 	var spec *runtimev1.MetricsViewSpec
 	var security *runtime.ResolvedSecurity
 
-	if tr.MetricsView != "" {
-		res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: tr.MetricsView}, false)
-		if err != nil {
-			return nil, err
-		}
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: tr.MetricsView}, false)
+	if err != nil {
+		return nil, err
+	}
 
-		spec = res.GetMetricsView().State.ValidSpec
-		if spec == nil {
-			return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
-		}
+	spec = res.GetMetricsView().State.ValidSpec
+	if spec == nil {
+		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
+	}
 
-		security, err = opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
-		if err != nil {
-			return nil, err
-		}
-	} else if tr.MetricsViewSpec != nil {
-		spec = tr.MetricsViewSpec
-		if tr.Security == nil {
-			return nil, errors.New("metrics view security not specified")
-		}
-		security = tr.Security
-	} else {
-		return nil, errors.New("no metrics view specified")
+	security, err = opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	if err != nil {
+		return nil, err
 	}
 
 	if spec.TimeDimension == "" {
@@ -98,13 +81,14 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, runtime.ErrForbidden
 	}
 
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, spec, false, security, args.Priority)
+
 	return &metricsViewTimeRangeResolver{
-		runtime:            opts.Runtime,
-		instanceID:         opts.InstanceID,
-		mvName:             tr.MetricsView,
-		mv:                 spec,
-		resolvedMVSecurity: security,
-		args:               args,
+		runtime:    opts.Runtime,
+		instanceID: opts.InstanceID,
+		mvName:     tr.MetricsView,
+		executor:   ex,
+		args:       args,
 	}, nil
 }
 
@@ -125,39 +109,17 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	olap, release, err := r.runtime.OLAP(ctx, r.instanceID, r.mv.Connector)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	var tr *runtimev1.TimeRangeSummary
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		tr, err = r.resolveDuckDB(ctx, olap, r.mv.TimeDimension, escapeMetricsViewTable(drivers.DialectDuckDB, r.mv), r.resolvedMVSecurity.RowFilter(), r.args.Priority)
-	case drivers.DialectDruid:
-		tr, err = r.resolveDruid(ctx, olap, r.mv.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, r.mv), r.resolvedMVSecurity.RowFilter(), r.args.Priority)
-	case drivers.DialectClickHouse:
-		tr, err = r.resolveClickHouseAndPinot(ctx, olap, r.mv.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, r.mv), r.resolvedMVSecurity.RowFilter(), r.args.Priority)
-	case drivers.DialectPinot:
-		tr, err = r.resolveClickHouseAndPinot(ctx, olap, r.mv.TimeDimension, escapeMetricsViewTable(drivers.DialectPinot, r.mv), r.resolvedMVSecurity.RowFilter(), r.args.Priority)
-	default:
-		return nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
+	minTime, maxTime, watermark, err := r.executor.Timestamps(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	row := map[string]any{}
-	if tr.Min != nil {
-		row["min"] = tr.Min.AsTime()
-		row["max"] = tr.Max.AsTime()
-		row["watermark"] = tr.Watermark.AsTime()
-		row["interval"] = map[string]any{
-			"days":   tr.Interval.Days,
-			"months": tr.Interval.Months,
-			"micros": tr.Interval.Micros,
-		}
+	if !minTime.IsZero() {
+		row["min"] = minTime
+		row["max"] = maxTime
+		row["watermark"] = watermark
+		row["interval"] = durationToInterval(maxTime.Sub(minTime))
 	}
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
@@ -184,278 +146,16 @@ func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.W
 	return errors.New("not implemented")
 }
 
-func (r *metricsViewTimeRangeResolver) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) (*runtimev1.TimeRangeSummary, error) {
-	var watermarkExpr string
-	if r.mv.WatermarkExpression != "" {
-		watermarkExpr = r.mv.WatermarkExpression
-	} else {
-		watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
+func durationToInterval(duration time.Duration) map[string]any {
+	hours := duration.Hours()
+	days := int32(0)
+	if hours >= hourInDay {
+		days = int32(hours / hourInDay)
 	}
-
-	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[3]s %[4]s",
-		olap.Dialect().EscapeIdentifier(timeDim),
-		watermarkExpr,
-		escapedTableName,
-		filter,
-	)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            rangeSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, err
+	micros := duration.Microseconds() - microsInDay*int64(days)
+	return map[string]any{
+		"days":   days,
+		"months": 0,
+		"micros": micros,
 	}
-	defer rows.Close()
-
-	if rows.Next() {
-		summary := &runtimev1.TimeRangeSummary{}
-		rowMap := make(map[string]any)
-		err = rows.MapScan(rowMap)
-		if err != nil {
-			return nil, err
-		}
-		if v := rowMap["min"]; v != nil {
-			minTime, ok := v.(time.Time)
-			if !ok {
-				return nil, fmt.Errorf("not a timestamp column")
-			}
-			summary.Min = timestamppb.New(minTime)
-			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-			summary.Watermark = timestamppb.New(rowMap["watermark"].(time.Time))
-			summary.Interval, err = handleDuckDBInterval(rowMap["interval"])
-			if err != nil {
-				return nil, err
-			}
-		}
-		return summary, nil
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, errors.New("no rows returned")
-}
-
-func (r *metricsViewTimeRangeResolver) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) (*runtimev1.TimeRangeSummary, error) {
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-
-	var minTime, maxTime, watermark time.Time
-	group, ctx := errgroup.WithContext(ctx)
-
-	group.Go(func() error {
-		minSQL := fmt.Sprintf(
-			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
-			olap.Dialect().EscapeIdentifier(timeDim),
-			escapedTableName,
-			filter,
-		)
-
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            minSQL,
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&minTime)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
-			}
-			return errors.New("no rows returned for min time")
-		}
-
-		return nil
-	})
-
-	group.Go(func() error {
-		maxSQL := fmt.Sprintf(
-			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
-			olap.Dialect().EscapeIdentifier(timeDim),
-			escapedTableName,
-			filter,
-		)
-
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            maxSQL,
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&maxTime)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
-			}
-			return errors.New("no rows returned for max time")
-		}
-		return nil
-	})
-
-	group.Go(func() error {
-		var watermarkExpr string
-		if r.mv.WatermarkExpression != "" {
-			watermarkExpr = r.mv.WatermarkExpression
-		} else {
-			watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
-		}
-
-		maxSQL := fmt.Sprintf(
-			"SELECT %[1]s as \"watermark\" FROM %[2]s %[3]s",
-			watermarkExpr,
-			escapedTableName,
-			filter,
-		)
-
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            maxSQL,
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&watermark)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
-			}
-			return errors.New("no rows returned for max time")
-		}
-		return nil
-	})
-
-	err := group.Wait()
-	if err != nil {
-		return nil, err
-	}
-
-	summary := &runtimev1.TimeRangeSummary{}
-	summary.Min = timestamppb.New(minTime)
-	summary.Max = timestamppb.New(maxTime)
-	summary.Watermark = timestamppb.New(watermark)
-	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-		Micros: maxTime.Sub(minTime).Microseconds(),
-	}
-	return summary, nil
-}
-
-func (r *metricsViewTimeRangeResolver) resolveClickHouseAndPinot(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) (*runtimev1.TimeRangeSummary, error) {
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-
-	var watermarkExpr string
-	if r.mv.WatermarkExpression != "" {
-		watermarkExpr = r.mv.WatermarkExpression
-	} else {
-		watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
-	}
-
-	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
-		olap.Dialect().EscapeIdentifier(timeDim),
-		watermarkExpr,
-		escapedTableName,
-		filter,
-	)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            rangeSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		summary := &runtimev1.TimeRangeSummary{}
-		var minVal, maxVal, watermark *time.Time
-		err = rows.Scan(&minVal, &maxVal, &watermark)
-		if err != nil {
-			return nil, err
-		}
-
-		if minVal != nil {
-			summary.Min = timestamppb.New(*minVal)
-		}
-		if maxVal != nil {
-			summary.Max = timestamppb.New(*maxVal)
-		}
-		if watermark != nil {
-			summary.Max = timestamppb.New(*watermark)
-		}
-		if minVal != nil && maxVal != nil {
-			// ignoring months for now since its hard to compute and anyways not being used
-			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
-			duration := maxVal.Sub(*minVal)
-			hours := duration.Hours()
-			if hours >= hourInDay {
-				summary.Interval.Days = int32(hours / hourInDay)
-			}
-			summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
-		}
-		return summary, nil
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, errors.New("no rows returned")
-}
-
-func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
-	switch i := interval.(type) {
-	case duckdb.Interval:
-		result := new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = i.Days
-		result.Months = i.Months
-		result.Micros = i.Micros
-		return result, nil
-	case int64:
-		// for date type column interval is difference in num days for two dates
-		result := new(runtimev1.TimeRangeSummary_Interval)
-		result.Days = int32(i)
-		return result, nil
-	}
-	return nil, fmt.Errorf("cannot handle interval type %T", interval)
-}
-
-func escapeMetricsViewTable(d drivers.Dialect, mv *runtimev1.MetricsViewSpec) string {
-	return d.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
 }
