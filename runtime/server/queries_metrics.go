@@ -350,22 +350,13 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		}
 		return nil, err
 	}
-	timeRangeSummary := struct {
-		Min, Max, Watermark string
-		Interval            *runtimev1.TimeRangeSummary_Interval
-	}{} // TODO: move this to a good place
-	err = mapstructure.Decode(row, &timeRangeSummary)
+	timeRangeSummary, err := decodeTimeRangeSummary(row)
 	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.MetricsViewTimeRangeResponse{
-		TimeRangeSummary: &runtimev1.TimeRangeSummary{
-			Min:       mustParse(timeRangeSummary.Min),
-			Max:       mustParse(timeRangeSummary.Max),
-			Watermark: mustParse(timeRangeSummary.Watermark),
-			Interval:  timeRangeSummary.Interval,
-		},
+		TimeRangeSummary: timeRangeSummary,
 	}, nil
 }
 
@@ -486,8 +477,37 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	return res, mv.State, nil
 }
 
-// TODO: handle error
-func mustParse(tm string) *timestamppb.Timestamp {
-	t, _ := time.Parse(time.RFC3339, tm)
-	return timestamppb.New(t)
+type decodedTimeRangeSummary struct {
+	Min, Max, Watermark string
+	Interval            *runtimev1.TimeRangeSummary_Interval
+}
+
+func decodeTimeRangeSummary(row map[string]any) (*runtimev1.TimeRangeSummary, error) {
+	timeRangeSummary := decodedTimeRangeSummary{} // TODO: move this to a good place
+	err := mapstructure.Decode(row, &timeRangeSummary)
+	if err != nil {
+		return nil, err
+	}
+
+	minTime, err := time.Parse(time.RFC3339, timeRangeSummary.Min)
+	if err != nil {
+		return nil, err
+	}
+
+	maxTime, err := time.Parse(time.RFC3339, timeRangeSummary.Max)
+	if err != nil {
+		return nil, err
+	}
+
+	watermark, err := time.Parse(time.RFC3339, timeRangeSummary.Watermark)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.TimeRangeSummary{
+		Min:       timestamppb.New(minTime),
+		Max:       timestamppb.New(maxTime),
+		Watermark: timestamppb.New(watermark),
+		Interval:  timeRangeSummary.Interval,
+	}, nil
 }
