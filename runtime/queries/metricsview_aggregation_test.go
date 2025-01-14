@@ -63,6 +63,9 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
+	t.Run("testMetricsViewsAggregation_comparison_iso_timerange", func(t *testing.T) {
+		testMetricsViewsAggregation_comparison_iso_timerange(t, rt, instanceID)
+	})
 }
 
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {

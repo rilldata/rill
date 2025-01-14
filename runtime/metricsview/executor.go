@@ -155,9 +155,10 @@ func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (ti
 	return e.min, e.max, e.watermark, nil
 }
 
-func (e *Executor) BindQuery(ctx context.Context, qry *Query, min, max, watermark time.Time) error {
-	e.min = min
-	e.max = max
+// BindQuery allows to set min, max and watermark from a cache.
+func (e *Executor) BindQuery(ctx context.Context, qry *Query, minTime, maxTime, watermark time.Time) error {
+	e.min = minTime
+	e.max = maxTime
 	e.watermark = watermark
 	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }

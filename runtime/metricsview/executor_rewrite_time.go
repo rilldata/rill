@@ -12,7 +12,7 @@ import (
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
-	minTime, maxTime, watermark, err := e.Timestamps(ctx, executionTime)
+	_, _, watermark, err := e.Timestamps(ctx, executionTime)
 	if err != nil {
 		return fmt.Errorf("failed to fetch time stamps: %w", err)
 	}
@@ -26,12 +26,12 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err = e.resolveTimeRange(ctx, qry.TimeRange, tz, minTime, maxTime, watermark)
+	err = e.resolveTimeRange(qry.TimeRange, tz, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, minTime, maxTime, watermark)
+	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -40,7 +40,7 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, minTime, maxTime, watermark time.Time) error {
+func (e *Executor) resolveTimeRange(tr *TimeRange, tz *time.Location, watermark time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}

@@ -55,33 +55,33 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 		return nil, err
 	}
 
-	var spec *runtimev1.MetricsViewSpec
-	var security *runtime.ResolvedSecurity
-
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: tr.MetricsView}, false)
 	if err != nil {
 		return nil, err
 	}
 
-	spec = res.GetMetricsView().State.ValidSpec
-	if spec == nil {
+	mv := res.GetMetricsView().State.ValidSpec
+	if mv == nil {
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err = opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
-	if err != nil {
-		return nil, err
+	if mv.TimeDimension == "" {
+		return nil, fmt.Errorf("metrics view '%s' does not have a time dimension", tr.MetricsView)
 	}
 
-	if spec.TimeDimension == "" {
-		return nil, fmt.Errorf("metrics view '%s' does not have a time dimension", tr.MetricsView)
+	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
+	if err != nil {
+		return nil, err
 	}
 
 	if !security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
 
-	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, spec, false, security, args.Priority)
+	ex, err := metricsview.NewExecutor(ctx, opts.Runtime, opts.InstanceID, mv, false, security, args.Priority)
+	if err != nil {
+		return nil, err
+	}
 
 	return &metricsViewTimeRangeResolver{
 		runtime:    opts.Runtime,
