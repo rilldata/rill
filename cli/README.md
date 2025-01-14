@@ -31,3 +31,5 @@ go run ./cli start dev-project
 ## Generating CLI reference docs
 
 See `../docs/README.md` for details about the generated CLI reference docs.
+
+dummy cli change
