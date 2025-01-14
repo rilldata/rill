@@ -24,7 +24,8 @@
 
   $: selectedComponentName =
     $selectedComponentIndex !== null
-      ? $validSpecStore?.data?.items?.[$selectedComponentIndex]?.component
+      ? $validSpecStore?.data?.canvas?.items?.[$selectedComponentIndex]
+          ?.component
       : null;
 
   async function updateProperties(

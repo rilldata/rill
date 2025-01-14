@@ -15,7 +15,9 @@ export class CanvasTimeControls {
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;
-  allTimeRange: Readable<TimeRange>;
+  isReady: Writable<boolean>;
+
+  timeRangeSummaryStore: (ctx: StateManagers) => Readable<TimeRange>;
 
   constructor() {
     this.selectedTimeRange = writable({
@@ -27,34 +29,20 @@ export class CanvasTimeControls {
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
-  }
 
-  combineAllTimeRange(ctx: StateManagers) {
-    const timeRangeSummaryStore: Readable<TimeRange> = derived(
-      [ctx.runtime, ctx.validSpecStore],
-      ([r, validSpec], set) => {
-        const metricsReferred = new Set<string>();
-        if (validSpec?.data?.items?.length) {
-          validSpec.data.items.forEach((component) => {
-            // TODO: Spec should contain individual component spec
-            const metricsView = component["metrics_view"] as string | undefined;
-            if (metricsView) {
-              metricsReferred.add(metricsView);
-            }
-          });
-        } else {
+    this.timeRangeSummaryStore = (ctx) =>
+      derived([ctx.runtime, ctx.validSpecStore], ([r, validSpec], set) => {
+        const metricsReferred = Object.keys(
+          validSpec?.data?.metricsViews || {},
+        );
+        if (!metricsReferred.length) {
           return set({
             start: new Date(0),
             end: new Date(),
           });
         }
-        console.log(metricsReferred);
-        if (metricsReferred.size === 0) {
-          return set({
-            start: new Date(0),
-            end: new Date(),
-          });
-        }
+
+        console.log("metricsReferred", metricsReferred);
         const timeRangeQueries = [...metricsReferred].map((metricView) => {
           return createQueryServiceMetricsViewTimeRange(
             r.instanceId,
@@ -71,10 +59,9 @@ export class CanvasTimeControls {
         });
 
         return derived(timeRangeQueries, (timeRanges, querySet) => {
-          let start = new Date(0);
-          let end = new Date();
+          let start = new Date();
+          let end = new Date(0);
           timeRanges.forEach((timeRange) => {
-            console.log(timeRange);
             const metricsStart = timeRange.data?.timeRangeSummary?.min;
             const metricsEnd = timeRange.data?.timeRangeSummary?.max;
             if (metricsStart) {
@@ -90,11 +77,7 @@ export class CanvasTimeControls {
           });
           querySet({ start, end });
         }).subscribe(set);
-      },
-    );
-
-    this.allTimeRange = timeRangeSummaryStore;
-    return timeRangeSummaryStore;
+      });
   }
 
   setTimeZone(timezone: string) {

@@ -29,7 +29,7 @@
     remoteContent,
   } = fileArtifact);
 
-  $: spec = structuredClone($validSpecStore?.data ?? spec);
+  $: spec = structuredClone($validSpecStore?.data?.canvas ?? spec);
 
   $: ({ items = [] } = spec);
 
