@@ -32,33 +32,37 @@ const config: PlaywrightTestConfig = {
     video: "retain-on-failure",
   },
   projects: [
-    process.env.CI
-      ? {} // skip in CI
-      : {
-          // Whenever the GitHub auth cookies expire, run this project manually to renew them.
-          // Commit the resultant `playwright/.auth/github.json` file to the repo.
-          name: "save-github-cookies",
-          testMatch: "auth.github.ts",
-        },
+    ...(process.env.CI
+      ? [] // skip in CI
+      : [
+          {
+            // Whenever the GitHub auth cookies expire, run this project manually to renew them.
+            // Commit the resultant `playwright/.auth/github.json` file to the repo.
+            name: "save-github-cookies",
+            testMatch: "auth.github.ts",
+          },
+        ]),
     {
       name: "data-setup",
       testMatch: "data.setup.ts",
       ...(process.env.E2E_NO_DATA_TEARDOWN || process.env.CI
-        ? {}
+        ? undefined
         : { teardown: "data-teardown" }),
       use: {
         storageState: GITHUB_AUTH_FILE,
       },
     },
-    process.env.CI
-      ? {} // skip in CI
-      : {
-          name: "data-teardown",
-          testMatch: "data.teardown.ts",
-          use: {
-            storageState: ADMIN_AUTH_FILE,
+    ...(process.env.CI
+      ? [] // skip in CI
+      : [
+          {
+            name: "data-teardown",
+            testMatch: "data.teardown.ts",
+            use: {
+              storageState: ADMIN_AUTH_FILE,
+            },
           },
-        },
+        ]),
     {
       name: "e2e",
       dependencies: process.env.E2E_NO_DATA_SETUP_OR_TEARDOWN
