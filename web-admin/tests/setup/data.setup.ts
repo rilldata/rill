@@ -13,6 +13,8 @@ setup("should deploy a project", async ({ page }) => {
       "Missing required environment variables for authentication",
     );
   }
+  // Set timeout to 90 seconds
+  setup.setTimeout(90 * 1000);
 
   // Log in to Rill with the admin account
   await page.goto("/");
@@ -70,10 +72,26 @@ setup("should deploy a project", async ({ page }) => {
   await expect(page.getByText("e2e")).toBeVisible(); // Organization breadcrumb
   await expect(page.getByText("Free trial")).toBeVisible(); // Billing status
   await expect(page.getByText("openrtb")).toBeVisible(); // Project breadcrumb
+
+  // Check that the dashboards are listed
   await expect(
     page.getByRole("link", { name: "Programmatic Ads Auction" }).first(),
-  ).toBeVisible(); // Link to dashboard
+  ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Programmatic Ads Bids" }),
-  ).toBeVisible(); // Link to dashboard
+  ).toBeVisible();
+
+  // Wait for the first dashboard to be ready
+  await expect
+    .poll(
+      async () => {
+        await page.reload();
+        const listing = page.getByRole("link", {
+          name: "Programmatic Ads Auction auction_explore",
+        });
+        return listing.textContent();
+      },
+      { intervals: Array(12).fill(5 * 1000), timeout: 60 * 1000 },
+    )
+    .toContain("Last refreshed");
 });
