@@ -280,7 +280,7 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 	if proj.Subpath != "" {
 		archivePath = filepath.Join(archivePath, proj.Subpath)
 	}
-	err = archive.Create(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
+	err = archive.CreateAndUpload(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
 	if err != nil {
 		return nil, err
 	}

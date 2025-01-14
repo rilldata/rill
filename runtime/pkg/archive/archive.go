@@ -66,7 +66,7 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	return nil
 }
 
-func Create(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
+func CreateAndUpload(ctx context.Context, files []drivers.DirEntry, root, url string, headers map[string]string) error {
 	// generate a tar ball
 	b := &bytes.Buffer{}
 
@@ -76,6 +76,26 @@ func Create(ctx context.Context, files []drivers.DirEntry, root, url string, hea
 	}
 
 	err = uploadTarBall(ctx, url, b, headers)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Create(ctx context.Context, files []drivers.DirEntry, root string) (*bytes.Buffer, error) {
+	b := &bytes.Buffer{}
+
+	err := createTar(b, files, root)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func Upload(ctx context.Context, url string, body io.Reader, headers map[string]string) error {
+	err := uploadTarBall(ctx, url, body, headers)
 	if err != nil {
 		return err
 	}
