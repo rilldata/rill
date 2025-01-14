@@ -74,25 +74,24 @@ func formatEnvVar(name, value string) string {
 }
 
 func printEnv(vars []*variable) {
-	tmpKey := "none"
 	envMap := make(map[string][]*variable)
 	for _, v := range vars {
 		if v.Environment == "" {
-			v.Environment = tmpKey
+			fmt.Printf("%s\n", formatEnvVar(v.Name, v.Value))
+			continue
 		}
 		if _, ok := envMap[v.Environment]; !ok {
 			envMap[v.Environment] = []*variable{}
 		}
 		envMap[v.Environment] = append(envMap[v.Environment], v)
 	}
-
+	fmt.Println()
 	for env, vars := range envMap {
-		if env != tmpKey {
-			fmt.Printf("# %s\n", env)
-		}
+		fmt.Printf("# Environment: %s\n", env)
 		for _, v := range vars {
 			fmt.Printf("%s\n", formatEnvVar(v.Name, v.Value))
 		}
+		fmt.Println()
 	}
 }
 
