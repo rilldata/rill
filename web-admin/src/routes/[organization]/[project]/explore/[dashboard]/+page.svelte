@@ -64,13 +64,13 @@
     $explore.error?.response?.status === 404;
   // TODO: should these be checking metricsView or explore?
   $: isDashboardReconcilingForFirstTime =
-    $explore?.data?.metricsView?.metricsView?.state?.validSpec === null &&
+    !$explore?.data?.metricsView?.metricsView?.state?.validSpec &&
     !$explore?.data?.metricsView?.meta?.reconcileError;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
   $: isDashboardErrored =
-    $explore?.data?.metricsView?.metricsView?.state?.validSpec === null &&
+    !$explore?.data?.metricsView?.metricsView?.state?.validSpec &&
     !!$explore?.data?.metricsView?.meta?.reconcileError;
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
 
