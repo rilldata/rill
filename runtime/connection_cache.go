@@ -106,7 +106,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
-	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name))
+	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
 	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
