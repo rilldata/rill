@@ -475,7 +475,10 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
-		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', '%s'), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", specifier, expr, tz), nil
+		if tz == "" {
+			return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS')", specifier, expr), nil
+		}
+		return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS', '%s')", specifier, expr, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -490,6 +493,8 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+	case DialectPinot:
+		return fmt.Sprintf("DATETIMECONVERT(DATETRUNC('MILLISECONDS', %s) - DATETRUNC('MILLISECONDS', %s), '1:MILLISECONDS:EPOCH', '1:%s:EPOCH')", t1.Format(time.RFC3339), t2.Format(time.RFC3339), unit), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

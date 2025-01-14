@@ -6,11 +6,6 @@ node_modules
 /package
 .env
 .env.*
-server/__pycache__/*
-web-local/src/server/duckdb
-web-local/src/server/scratch/
-server/venv/
-tsc-tmp/
 .vscode
 /temp
 /tmp

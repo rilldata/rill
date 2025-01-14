@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ColumnCardinalityResponse,
+  V1ResolveCanvasResponse,
   RpcStatus,
+  QueryServiceResolveCanvasBody,
+  V1ColumnCardinalityResponse,
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
@@ -76,6 +78,93 @@ import type { ErrorType } from "../../http-client";
 type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+/**
+ * @summary ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+ */
+export const queryServiceResolveCanvas = (
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ResolveCanvasResponse>({
+    url: `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveCanvasBody,
+    signal,
+  });
+};
+
+export const getQueryServiceResolveCanvasQueryKey = (
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+) => [
+  `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
+  queryServiceResolveCanvasBody,
+];
+
+export type QueryServiceResolveCanvasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveCanvas>>
+>;
+export type QueryServiceResolveCanvasQueryError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveCanvas = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveCanvasQueryKey(
+      instanceId,
+      canvas,
+      queryServiceResolveCanvasBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>
+  > = ({ signal }) =>
+    queryServiceResolveCanvas(
+      instanceId,
+      canvas,
+      queryServiceResolveCanvasBody,
+      signal,
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && canvas),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 /**
  * @summary Get cardinality for a column
@@ -232,7 +321,7 @@ export const createQueryServiceTableColumns = <
 };
 
 /**
- * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ * @summary ResolveComponent resolves renderer for a Component resource.
  */
 export const queryServiceResolveComponent = (
   instanceId: string,

@@ -80,7 +80,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	tr, ok := to.AsTransporter(inputHandle, to)
 	require.True(t, ok)
 
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;", "db": dbURL}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;", "database_url": dbURL}, map[string]any{"table": "sink"}, &drivers.TransferOptions{})
 	require.NoError(t, err)
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)

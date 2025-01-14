@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -102,6 +104,9 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 
 		activityDims := instanceAnnotationsToAttribs(inst)
+		if cfg.provision {
+			activityDims = append(activityDims, attribute.Bool("managed", true))
+		}
 		if activityClient != nil {
 			activityClient = activityClient.With(activityDims...)
 		}
@@ -110,10 +115,14 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 			if cfg.name == inst.AdminConnector {
 				return nil, fmt.Errorf("cannot provision the admin connector (catch-22)")
 			}
+
+			// Give the driver a hint that it's a managed connector.
+			cfg.config = maps.Clone(cfg.config)
+			cfg.config["managed"] = true
+
 			if inst.AdminConnector == "" {
 				// Provisioning has been requested, but the instance does not have an admin connector.
 				// As a fallback, we pass the provision arguments to the driver, giving it a chance to provision itself if it supports it.
-				cfg.config = maps.Clone(cfg.config)
 				cfg.config["provision"] = true
 				cfg.config["provision_args"] = cfg.provisionArgs
 			} else {
@@ -130,7 +139,6 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 				}
 
 				// Merge the new provisioned config with the existing one.
-				cfg.config = maps.Clone(cfg.config)
 				for key, value := range newConfig {
 					cfg.config[key] = value
 				}
@@ -138,10 +146,18 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
+	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
 	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
+	r.activity.Record(ctx, "connection_open", activity.EventTypeLog,
+		attribute.String("instance_id", cfg.instanceID),
+		attribute.String("driver", cfg.driver),
+		attribute.String("name", cfg.name),
+		attribute.Bool("provision", cfg.provision),
+		attribute.Bool("success", err == nil),
+	)
 	if err != nil {
 		return nil, err
 	}

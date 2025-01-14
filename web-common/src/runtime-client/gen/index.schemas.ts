@@ -349,6 +349,12 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type QueryServiceResolveCanvasBodyArgs = { [key: string]: any };
+
+export type QueryServiceResolveCanvasBody = {
+  args?: QueryServiceResolveCanvasBodyArgs;
+};
+
 export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
@@ -829,19 +835,58 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
-export type V1ResolveComponentResponseDataItem = { [key: string]: any };
-
 export interface V1ResolveComponentResponse {
-  /** Show property with templating resolved for the provided args.
-If it resolves to false, the other fields are not set. */
-  show?: boolean;
-  schema?: V1StructType;
-  data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+/**
+ * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+ */
+export type V1ResolveCanvasResponseReferencedMetricsViews = {
+  [key: string]: V1Resource;
+};
+
+/**
+ * All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+ */
+export type V1ResolveCanvasResponseResolvedComponents = {
+  [key: string]: V1Resource;
+};
+
+export interface V1ResolveCanvasResponse {
+  canvas?: V1Resource;
+  /** All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec). */
+  resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
+  /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
+  referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -895,26 +940,6 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -2085,19 +2110,13 @@ export interface V1ComponentVariable {
 
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
-export type V1ComponentSpecResolverProperties = { [key: string]: any };
-
 export interface V1ComponentSpec {
   displayName?: string;
   description?: string;
-  resolver?: string;
-  resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
-  /** Templated string that should evaluate to a boolean. */
-  show?: string;
   definedInCanvas?: boolean;
 }
 
@@ -2276,6 +2295,20 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
+}
+
+export interface V1CanvasPreset {
+  /** Time range for the explore.
+It corresponds to the `range` property of the explore's `time_ranges`.
+If not found in `time_ranges`, it should be added to the list. */
+  timeRange?: string;
+  comparisonMode?: V1ExploreComparisonMode;
+  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
+  comparisonDimension?: string;
+}
+
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2286,16 +2319,31 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
+  /** Display name for the canvas. */
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  /** Max width in pixels of the canvas. */
+  maxWidth?: number;
+  /** Horizontal gap in pixels of the canvas. */
+  gapX?: number;
+  /** Vertical gap in pixels of the canvas. */
+  gapY?: number;
+  /** Name of the theme to use. Only one of theme and embedded_theme can be set. */
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown.
+TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1CanvasPreset;
+  /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
-}
-
-export interface V1CanvasState {
-  validSpec?: V1CanvasSpec;
 }
 
 export interface V1Canvas {

@@ -59,7 +59,7 @@ const UNSUPPORTED_EXTENSIONS = [
   ".pptx",
 ];
 
-const EVENT_IGNORE_BUFFER = 1500;
+const EVENT_IGNORE_BUFFER = 1750;
 
 export class FileArtifact {
   readonly path: string;
@@ -142,14 +142,15 @@ export class FileArtifact {
     const editorContent = get(this.editorContent);
 
     const remoteContentHasChanged = currentRemoteContent !== fetchedContent;
+    const isSaveConfirmation = editorContent === fetchedContent;
 
     this.saveState.resolve();
 
-    if (editorContent === fetchedContent) {
+    if (isSaveConfirmation) {
       // This is the primary sequence that happens after saving
-      // Local content is not null, user initiates a save, we receive a FILE_WRITE event
-      // After fetching the remote content, it should match the local content
-      // So, we revert our local content store
+      // Editor content is not null, user initiates a save, we receive a FILE_WRITE event
+      // After fetching the remote content, it should match the editor content
+      // So, we revert our editor content store
       this.resetConflictState();
       this.saveState.untouch(this.path);
     }
@@ -161,19 +162,19 @@ export class FileArtifact {
 
       if (inferred) this.inferredResourceKind.set(inferred);
 
-      if (editorContent !== null) {
+      if (editorContent === null) {
+        this.updateEditorContent(fetchedContent, false, false, true);
+      } else if (!isSaveConfirmation) {
         // This is the secondary sequence wherein a file is saved in an external editor
-        // We receive a FILE_EVENT_WRITE event and the remote content is different from local content
-        // This can also happen when a file is savedmand then edited
+        // We receive a FILE_EVENT_WRITE event and the remote content is different from editor content
+        // This can also happen when a file is saved and then edited
         // in the application before the event is received
-        // In this case, we ignore updates that happen within 1.5 seconds of the last save
+        // In this case, we ignore updates that happen within 1.75 seconds of the last save
         // If we receive an update after that period we can "safely" assume
         // that the user has made conflicting changes externally
         if (Date.now() - this.saveState.lastSaveTime > EVENT_IGNORE_BUFFER) {
           this.inConflict.set(true);
         }
-      } else {
-        this.updateEditorContent(fetchedContent, false, false, true);
       }
     }
 

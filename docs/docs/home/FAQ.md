@@ -95,3 +95,37 @@ You can follow the same steps as above. The button will have changed from `deplo
 ### How do I share my dashboard to other users?
 
 You will need to [invite users to your organization/project](https://docs.rilldata.com/manage/user-management#option-1---admin-invites-user) or send them a URL for them to [request access to your dashboard](https://docs.rilldata.com/manage/user-management#option-2---user-requests-access). If you just want them to see the contents of your dashboard, you can look into using [public URLs](https://docs.rilldata.com/explore/share-url).
+
+
+## Rill Cloud Trial
+### What is Rill Cloud Trial?
+We offer a free 30 day trial to any one interested in testing out our online platform. Simply create an account and deploy your project from Rill Developer. If you haven't already created and account and logged in, you will be prompted during the deployment process. 
+
+There are no feature limitations in a free trial but we have set the limit for imported data to 10GB per project with two projects per deployment. You can check the data usage in the settings page. 
+
+:::note 
+The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Teams plan and input your payment method to continue using Rill!
+:::
+![img](/img/FAQ/rill-trial-banner.png)
+
+### When does my trial start?
+Your trial will start when you deploy a project to Rill Cloud from Rill Developer. An Organization will be autoamatically created during this process using your email and the project will be the folder that your Rill project exists in. You can change the name using [CLI commands](https://docs.rilldata.com/reference/cli/project/rename). 
+
+### How long does my Rill Cloud Trial last?
+A Rill Cloud trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
+
+### What is included in the free trial? 
+The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required and there are no locked features. 
+
+### What happens to my project if I do not upgrade to a Team plan?
+Your projects will hibernate. Your project metadata will still be available once you've activated your team plan. If you'd like to delete your deployment from Rill Cloud, you can do so via the [CLI commands.](https://docs.rilldata.com/reference/cli/org/delete)
+
+![expired](/img/FAQ/expired-project.png)
+
+### What is project hibernation?
+When a project is inactive for a specific number of days or your trial has expired, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. 
+
+If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed. Once the payment is confirmed, you can reaccess the project with the following CLI command.
+```
+rill project hibernate <project_id> --redeploy
+```

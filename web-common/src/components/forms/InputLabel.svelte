@@ -1,7 +1,7 @@
 <script lang="ts">
+  import InfoCircle from "../icons/InfoCircle.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import InfoCircle from "../icons/InfoCircle.svelte";
 
   export let id: string;
   export let label: string;
@@ -9,10 +9,15 @@
   export let optional = false;
   export let capitalize = true;
   export let link: string | undefined = undefined;
+  export let small = false;
 </script>
 
 <div class="label-wrapper">
-  <label for={id} class="line-clamp-1" class:capitalize>
+  <label
+    for={id}
+    class="line-clamp-1 {small ? 'text-xs' : 'text-sm'}"
+    class:capitalize
+  >
     {label}
     {#if optional}
       <span class="text-gray-500 text-[12px] font-normal">(optional)</span>
@@ -41,6 +46,6 @@
   }
 
   label {
-    @apply text-sm font-medium text-gray-800;
+    @apply font-medium text-gray-800;
   }
 </style>
