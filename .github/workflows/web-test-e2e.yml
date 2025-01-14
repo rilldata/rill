@@ -120,7 +120,7 @@ jobs:
           path: rill
 
       - name: Add CLI binary to PATH
-        run: -|
+        run: |
           chmod +x rill
           echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
 
