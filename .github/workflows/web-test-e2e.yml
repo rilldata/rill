@@ -105,14 +105,14 @@ jobs:
         with:
           node-version: 20
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: NPM Install
         run: npm install
         # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
         env:
           HUSKY: 0
-          
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
