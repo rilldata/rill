@@ -12,6 +12,7 @@ on:
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
+      - "cli/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
