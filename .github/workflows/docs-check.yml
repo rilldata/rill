@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
+      - "cli/**"
   workflow_dispatch:
   pull_request:
     paths:
@@ -16,6 +17,16 @@ env:
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
 
 jobs:
+  # If changes are made inside the cli directory, generate the cli docs
+  generate:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'cli/')
+    steps:
+      # echo out the modified files
+      - name: List modified files
+        run: echo "${{ github.event.head_commit.modified }}"
+
+  # Build the docs
   build:
     runs-on: ubuntu-latest
     steps:
