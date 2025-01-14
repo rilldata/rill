@@ -196,7 +196,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
 
-	e.rewriteApproxComparisons(ast, ok, false)
+	e.rewriteApproxComparisons(ast, ok)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	e.rewriteApproxComparisons(ast, false, true)
+	e.rewriteApproxComparisons(ast, false)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err

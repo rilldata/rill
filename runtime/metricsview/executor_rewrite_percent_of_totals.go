@@ -48,7 +48,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	e.rewriteApproxComparisons(ast, false, false)
+	e.rewriteApproxComparisons(ast, false)
 	err = e.rewriteQueryDruidExactify(ctx, totalsQry)
 	if err != nil {
 		return err
