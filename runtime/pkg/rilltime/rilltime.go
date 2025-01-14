@@ -193,7 +193,7 @@ func ParseISO(from string, strict bool) (*Expression, error) {
 
 	rt := &Expression{
 		Start: &TimeAnchor{},
-		End:   &TimeAnchor{Now: true},
+		End:   &TimeAnchor{Latest: true},
 		// mirrors old UI behaviour
 		isComplete: false,
 	}
@@ -268,10 +268,12 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 
 	if ta.isoDuration != nil {
 		// handling for old iso format
-		return ta.isoDuration.Sub(evalOpts.MinTime.In(e.timeZone))
-	}
-
-	if ta.Now {
+		tm = ta.isoDuration.Sub(evalOpts.MaxTime.In(e.timeZone))
+		isTruncate = true
+		if e.grain != nil && e.grain.Grain != "" {
+			truncateGrain = grainMap[e.grain.Grain]
+		}
+	} else if ta.Now {
 		tm = evalOpts.Now.In(e.timeZone)
 		isTruncate = e.isComplete
 		isBoundary = true

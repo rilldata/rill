@@ -17,6 +17,7 @@ import (
 type MetricsViewTimeRanges struct {
 	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
 	MinTime         time.Time               `json:"min_time,omitempty"`
+	MaxTime         time.Time               `json:"max_time,omitempty"`
 	Expressions     []string                `json:"expressions,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
@@ -86,7 +87,8 @@ func (q *MetricsViewTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime
 		start, end, err := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
 			MinTime:    q.MinTime,
-			MaxTime:    watermark,
+			MaxTime:    q.MaxTime,
+			Watermark:  watermark,
 			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})

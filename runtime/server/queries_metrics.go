@@ -431,6 +431,7 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	q := &queries.MetricsViewTimeRanges{
 		MetricsViewName: req.MetricsViewName,
 		MinTime:         timeRangeQuery.Result.TimeRangeSummary.Min.AsTime(),
+		MaxTime:         timeRangeQuery.Result.TimeRangeSummary.Max.AsTime(),
 		Expressions:     req.Expressions,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}

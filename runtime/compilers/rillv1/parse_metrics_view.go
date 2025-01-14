@@ -4,30 +4,31 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName       string `yaml:"display_name"`
-	Title             string `yaml:"title"` // Deprecated: use display_name
-	Description       string `yaml:"description"`
-	Model             string `yaml:"model"`
-	Database          string `yaml:"database"`
-	DatabaseSchema    string `yaml:"database_schema"`
-	Table             string `yaml:"table"`
-	TimeDimension     string `yaml:"timeseries"`
-	Watermark         string `yaml:"watermark"`
-	SmallestTimeGrain string `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
+	DisplayName       string           `yaml:"display_name"`
+	Title             string           `yaml:"title"` // Deprecated: use display_name
+	Description       string           `yaml:"description"`
+	Model             string           `yaml:"model"`
+	Database          string           `yaml:"database"`
+	DatabaseSchema    string           `yaml:"database_schema"`
+	Table             string           `yaml:"table"`
+	TimeDimension     string           `yaml:"timeseries"`
+	Watermark         string           `yaml:"watermark"`
+	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name        string
 		DisplayName string `yaml:"display_name"`

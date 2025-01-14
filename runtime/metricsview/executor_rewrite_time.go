@@ -64,10 +64,16 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return err
 	}
 
+	maxTime, err := e.MaxTime(ctx, e.metricsView.TimeDimension)
+	if err != nil {
+		return err
+	}
+
 	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    minTime,
-		MaxTime:    watermark,
+		MaxTime:    maxTime,
+		Watermark:  watermark,
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})

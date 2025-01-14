@@ -30,11 +30,16 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 	if err != nil {
 		return nil, err
 	}
+	maxTime, err := q.executor.MaxTime(ctx, colName)
+	if err != nil {
+		return nil, err
+	}
 
 	watermark, _, err = rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    minTime,
-		MaxTime:    watermark,
+		MaxTime:    maxTime,
+		Watermark:  watermark,
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})
@@ -65,11 +70,16 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	if err != nil {
 		return nil, err
 	}
+	maxTime, err := q.executor.MaxTime(ctx, colName)
+	if err != nil {
+		return nil, err
+	}
 
 	_, watermark, err = rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    minTime,
-		MaxTime:    watermark,
+		MaxTime:    maxTime,
+		Watermark:  watermark,
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})

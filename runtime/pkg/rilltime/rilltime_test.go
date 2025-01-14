@@ -10,6 +10,7 @@ import (
 func Test_Resolve(t *testing.T) {
 	now := parseTestTime(t, "2024-08-09T10:32:36Z")
 	maxTime := parseTestTime(t, "2024-08-06T06:32:36Z")
+	watermark := parseTestTime(t, "2024-08-05T06:32:36Z")
 	testCases := []struct {
 		timeRange string
 		start     string
@@ -30,6 +31,8 @@ func Test_Resolve(t *testing.T) {
 		{`-2d, now/d : h @ -5d`, "2024-08-02T00:00:00Z", "2024-08-04T00:00:00Z"},
 		{`-2d, now/d @ -5d`, "2024-08-02T00:00:00Z", "2024-08-04T00:00:00Z"},
 
+		{`watermark-7D, watermark : h`, "2024-07-29T07:00:00Z", "2024-08-05T07:00:00Z"},
+
 		{`-7d, now/d : h @ {Asia/Kathmandu}`, "2024-08-01T18:15:00Z", "2024-08-08T18:15:00Z"},
 		{`-7d, now/d : |h| @ {Asia/Kathmandu}`, "2024-08-01T18:15:00Z", "2024-08-08T18:15:00Z"},
 		{`-7d, now/d : |h| @ -5d {Asia/Kathmandu}`, "2024-07-27T18:15:00Z", "2024-08-03T18:15:00Z"},
@@ -47,7 +50,9 @@ func Test_Resolve(t *testing.T) {
 		{`-7W+5d, latest : h`, "2024-06-17T00:00:00Z", "2024-08-06T07:00:00Z"},
 		{`-7W+8d, latest : h`, "2024-06-24T00:00:00Z", "2024-08-06T07:00:00Z"},
 
-		// TODO: add backwards compatibility tests
+		{"P2DT10H", "2024-08-03T20:00:00Z", "2024-08-06T07:32:36Z"},
+		{"rill-MTD", "2024-08-01T00:00:00Z", "2024-08-06T06:32:37Z"},
+		{"rill-PW", "2024-07-29T00:00:00Z", "2024-08-05T00:00:00Z"},
 	}
 
 	for _, tc := range testCases {
@@ -59,6 +64,7 @@ func Test_Resolve(t *testing.T) {
 				Now:        now,
 				MinTime:    now.AddDate(-1, 0, 0),
 				MaxTime:    maxTime,
+				Watermark:  watermark,
 				FirstDay:   1,
 				FirstMonth: 1,
 			})
