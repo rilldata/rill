@@ -11,9 +11,13 @@ test.describe("Explores", () => {
       .first()
       .click();
 
+    // Set the time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+
     // Check the Big Number
     await expect(
-      page.getByRole("button", { name: "Requests 635M" }),
+      page.getByRole("button", { name: "Requests 547M" }),
     ).toBeVisible();
   });
 });
