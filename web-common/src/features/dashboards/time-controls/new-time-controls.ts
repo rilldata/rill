@@ -425,14 +425,14 @@ export function bucketTimeRanges(timeRanges: V1TimeRange[]) {
       if (!timeRange) return buckets;
       let rillTime: RillTime | null = null;
       try {
-        rillTime = parseRillTime(timeRange.rillTime ?? "");
+        rillTime = parseRillTime(timeRange.expression ?? "");
       } catch {
         // no-op
       }
       if (!rillTime) return buckets;
 
       const bucket = <RangeBucket>{
-        range: timeRange.rillTime ?? "",
+        range: timeRange.expression ?? "",
         label: rillTime.getLabel(),
         shortLabel: rillTime.getLabel(),
       };

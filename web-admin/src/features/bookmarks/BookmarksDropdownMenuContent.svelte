@@ -86,7 +86,7 @@
     $schemaResp.data?.schema,
     $exploreState,
     defaultExplorePreset,
-    $timeRanges.data?.ranges ?? [],
+    $timeRanges.data?.timeRanges ?? [],
   );
   $: filteredBookmarks = searchBookmarks(categorizedBookmarks, searchText);
 

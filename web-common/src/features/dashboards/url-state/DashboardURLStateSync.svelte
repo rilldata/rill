@@ -61,7 +61,7 @@
     timeControlsState = getTimeControlState(
       metricsSpec,
       exploreSpec,
-      timeRangesResp?.ranges ?? [],
+      timeRangesResp?.timeRanges ?? [],
       $dashboardStore,
     );
   }
@@ -208,7 +208,7 @@
     timeControlsState ??= getTimeControlState(
       metricsSpec,
       exploreSpec,
-      timeRangesResp?.ranges ?? [],
+      timeRangesResp?.timeRanges ?? [],
       get(metricsExplorerStore).entities[exploreName],
     );
     const redirectUrl = new URL($page.url);

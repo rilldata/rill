@@ -62,7 +62,7 @@
 
   $: timeRanges = getTimeRanges($exploreName);
   let showDefaultItem = false; // TODO
-  $: ranges = bucketTimeRanges($timeRanges.data?.ranges ?? []);
+  $: ranges = bucketTimeRanges($timeRanges.data?.timeRanges ?? []);
 
   $: activeTimeGrain = selectedTimeRange?.interval;
 
@@ -86,10 +86,10 @@
   }
 
   function onSelectRange(name: NamedRange | ISODurationString) {
-    if (!allTimeRange?.end || !$timeRanges.data?.ranges) {
+    if (!allTimeRange?.end || !$timeRanges.data?.timeRanges) {
       return;
     }
-    const tr = findTimeRange(name, $timeRanges.data?.ranges ?? []);
+    const tr = findTimeRange(name, $timeRanges.data?.timeRanges ?? []);
     if (!tr) return;
     selectRange(tr);
   }

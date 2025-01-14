@@ -25,9 +25,9 @@ import {
 import {
   type RpcStatus,
   type V1ExploreSpec,
-  type V1MetricsViewResolveTimeRangesResponse,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
+  type V1MetricsViewTimeRangesResponse,
   V1TimeGrain,
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
@@ -82,7 +82,7 @@ export const timeControlStateSelector = ([
 ]: [
   V1MetricsViewSpec | undefined,
   V1ExploreSpec | undefined,
-  QueryObserverResult<V1MetricsViewResolveTimeRangesResponse, RpcStatus>,
+  QueryObserverResult<V1MetricsViewTimeRangesResponse, RpcStatus>,
   MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView?.timeDimension);
@@ -91,7 +91,7 @@ export const timeControlStateSelector = ([
     !explore ||
     !metricsExplorer ||
     !timeRanges.isSuccess ||
-    !timeRanges?.data?.ranges ||
+    !timeRanges?.data?.timeRanges ||
     !hasTimeSeries
   ) {
     return {
@@ -103,7 +103,7 @@ export const timeControlStateSelector = ([
   const state = getTimeControlState(
     metricsView,
     explore,
-    timeRanges.data.ranges,
+    timeRanges.data.timeRanges,
     metricsExplorer,
   );
   if (!state) {
@@ -457,7 +457,7 @@ export function findTimeRange(
   name: string,
   timeRanges: V1TimeRange[],
 ): DashboardTimeControls | undefined {
-  const tr = timeRanges.find((tr) => tr.rillTime === name);
+  const tr = timeRanges.find((tr) => tr.expression === name);
   if (!tr) return undefined;
   return {
     name: name as TimeRangePreset,

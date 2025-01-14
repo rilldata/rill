@@ -2,11 +2,11 @@ import { useExploreValidSpec } from "@rilldata/web-common/features/explores/sele
 import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  createQueryServiceMetricsViewResolveTimeRanges,
-  getQueryServiceMetricsViewResolveTimeRangesQueryKey,
-  queryServiceMetricsViewResolveTimeRanges,
+  createQueryServiceMetricsViewTimeRanges,
+  getQueryServiceMetricsViewTimeRangesQueryKey,
+  queryServiceMetricsViewTimeRanges,
   type V1ExploreSpec,
-  type V1MetricsViewResolveTimeRangesResponse,
+  type V1MetricsViewTimeRangesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -29,15 +29,15 @@ export function getTimeRanges(exploreName: string) {
           : []),
       ]);
 
-      createQueryServiceMetricsViewResolveTimeRanges(
+      createQueryServiceMetricsViewTimeRanges(
         get(runtime).instanceId,
         explore.metricsView!,
         {
-          rillTimes,
+          expressions: rillTimes,
         },
       ).subscribe(set);
     },
-  ) as CreateQueryResult<V1MetricsViewResolveTimeRangesResponse>;
+  ) as CreateQueryResult<V1MetricsViewTimeRangesResponse>;
 }
 
 export async function fetchTimeRanges(exploreSpec: V1ExploreSpec) {
@@ -52,15 +52,15 @@ export async function fetchTimeRanges(exploreSpec: V1ExploreSpec) {
   const metricsViewName = exploreSpec.metricsView!;
 
   const timeRangesResp = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewResolveTimeRangesQueryKey(
+    queryKey: getQueryServiceMetricsViewTimeRangesQueryKey(
       instanceId,
       metricsViewName,
-      { rillTimes },
+      { expressions: rillTimes },
     ),
     queryFn: () =>
-      queryServiceMetricsViewResolveTimeRanges(instanceId, metricsViewName, {
-        rillTimes,
+      queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, {
+        expressions: rillTimes,
       }),
   });
-  return timeRangesResp.ranges ?? [];
+  return timeRangesResp.timeRanges ?? [];
 }

@@ -96,7 +96,7 @@ export default defineConfig({
               signal: true,
             },
           },
-          QueryService_MetricsViewResolveTimeRanges: {
+          QueryService_MetricsViewTimeRanges: {
             query: {
               useQuery: true,
               signal: true,
