@@ -21,11 +21,18 @@ jobs:
   # If changes are made inside the cli directory, generate the cli docs
   generate:
     runs-on: ubuntu-latest
-    # if: contains(github.event.head_commit.modified, 'cli/**')
     steps:
-      # echo out the modified files
-      - name: List modified files
-        run: echo "${{ github.event.head_commit.modified }}"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes in cli directory
+        id: check_changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -qE '^cli/'; then
+            echo "::set-output name=cli::true"
+          else
+            echo "::set-output name=cli::false"
+          fi
 
   # Build the docs
   build:
