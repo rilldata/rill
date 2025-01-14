@@ -218,6 +218,10 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  rpc ListSourceConnectors(ListSourceConnectorsRequest) returns (ListSourceConnectorsResponse) {
+    option (google.api.http) = {get: "/v1/connectors/{olap}/meta"};
+  }
+  
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -802,6 +806,16 @@ message ListConnectorDriversRequest {}
 
 // Response message for RuntimeService.ListConnectorDrivers
 message ListConnectorDriversResponse {
+  repeated ConnectorDriver connectors = 1;
+}
+
+// Request message for RuntimeService.ListSourceConnectors
+message ListSourceConnectorsRequest {
+  string olap = 1;
+}
+
+// Response message for RuntimeService.ListSourceConnectors
+message ListSourceConnectorsResponse {
   repeated ConnectorDriver connectors = 1;
 }
 

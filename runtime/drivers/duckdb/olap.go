@@ -28,6 +28,56 @@ var (
 	connectionsInUse      = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
 )
 
+func (c *connection) IngestionSpec() map[string][]*drivers.PropertySpec {
+	return map[string][]*drivers.PropertySpec{
+		"s3": []*drivers.PropertySpec{
+			{
+				Key:         "path",
+				Type:        drivers.StringPropertyType,
+				DisplayName: "S3 URI",
+				Description: "Path to file on the disk.",
+				Placeholder: "s3://bucket-name/path/to/file.csv",
+				Required:    true,
+				Hint:        "Glob patterns are supported",
+			},
+			{
+				Key:         "region",
+				Type:        drivers.StringPropertyType,
+				DisplayName: "AWS region",
+				Description: "AWS Region for the bucket.",
+				Placeholder: "us-east-1",
+				Required:    false,
+				Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+			},
+			{
+				Key:         "endpoint",
+				Type:        drivers.StringPropertyType,
+				DisplayName: "Endpoint URL",
+				Description: "Override S3 Endpoint URL",
+				Placeholder: "https://my.s3.server.com",
+				Required:    false,
+				Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
+			},
+			{
+				Key:         "name",
+				Type:        drivers.StringPropertyType,
+				DisplayName: "Source name",
+				Description: "The name of the source",
+				Placeholder: "my_new_source",
+				Required:    true,
+			},
+			{
+				Key:         "aws.credentials",
+				Type:        drivers.InformationalPropertyType,
+				DisplayName: "AWS credentials",
+				Description: "AWS credentials inferred from your local environment.",
+				Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
+				DocsURL:     "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
+			},
+		},
+	}
+}
+
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
