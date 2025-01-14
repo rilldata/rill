@@ -24,5 +24,6 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 
 ![Connecting to Google Sheets](/img/reference/connectors/googlesheets/googlesheets.png)
 
-<img src = '/img/reference/connectors/bigquery/bigquery.png' class='rounded-png' />
-<br />
+:::note gsheets DuckDB Community Extension
+We have not yet implemented the DuckDB community extension for gsheets in our deployment of DuckDB. Please contact us if you are interested in using this feature.
+:::
