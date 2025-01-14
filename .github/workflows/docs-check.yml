@@ -21,7 +21,7 @@ jobs:
   # If changes are made inside the cli directory, generate the cli docs
   generate:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'cli/')
+    # if: contains(github.event.head_commit.modified, 'cli/**')
     steps:
       # echo out the modified files
       - name: List modified files
