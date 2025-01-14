@@ -120,7 +120,9 @@ jobs:
           path: rill
 
       - name: Add CLI binary to PATH
-        run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+        run: -|
+          chmod +x rill
+          echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
 
       - name: Install browser for UI tests
         run: npx playwright install
