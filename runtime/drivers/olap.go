@@ -44,7 +44,7 @@ type InsertTableOptions struct {
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 // NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
-	IngestionSpec() map[string][]*PropertySpec
+	SourcesSpec() map[string][]*PropertySpec
 	Dialect() Dialect
 	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error

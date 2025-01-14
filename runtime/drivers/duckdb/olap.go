@@ -28,7 +28,7 @@ var (
 	connectionsInUse      = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
 )
 
-func (c *connection) IngestionSpec() map[string][]*drivers.PropertySpec {
+func (c *connection) SourcesSpec() map[string][]*drivers.PropertySpec {
 	return map[string][]*drivers.PropertySpec{
 		"s3": []*drivers.PropertySpec{
 			{

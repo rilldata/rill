@@ -219,7 +219,7 @@ service RuntimeService {
   }
 
   rpc ListSourceConnectors(ListSourceConnectorsRequest) returns (ListSourceConnectorsResponse) {
-    option (google.api.http) = {get: "/v1/connectors/{olap}/meta"};
+    option (google.api.http) = {get: "/v1/source-connectors/{olap}/meta"};
   }
   
   // Access management
