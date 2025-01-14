@@ -39,13 +39,11 @@ type AST struct {
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
 //   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
+	RawSelect            string           // Raw SQL SELECT statement to use
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
-	IsInline             bool             // Whether this node is an inline view
-	InlineDimFields      [][]FieldNode    // Dimension fields to select in the inline view, row based representation of the dimensions. Each index in the outer array represents a row in the inline view.
-	InlineMeasureFields  [][]FieldNode    // Measure fields to select in the inline view, row based representation of the measures. Each index in the outer array represents a row in the inline view.
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
@@ -112,8 +110,6 @@ const (
 	JoinTypeLeft        JoinType = "LEFT OUTER"
 	JoinTypeRight       JoinType = "RIGHT OUTER"
 )
-
-const nilExpr = "__<nil>__"
 
 // NewAST builds a new SQL AST based on a metrics query.
 //
@@ -628,70 +624,6 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 
 // buildBaseSelect constructs a base SELECT node against the underlying table.
 func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error) {
-	if a.query.inlineBaseSelect && !comparison {
-		n := &SelectNode{
-			Alias:     alias,
-			DimFields: a.dimFields,
-			Group:     true,
-			FromTable: a.underlyingTable,
-			IsInline:  true,
-		} // keep the dims and from table so that while adding time comparison measures to the AST structure is maintained
-
-		// Add the dimension fields to the inline view.
-		inDims := make([][]FieldNode, 0, len(a.query.inlineDims))
-		for dim, values := range a.query.inlineDims {
-			fields := make([]FieldNode, 0, len(values))
-			for _, v := range values {
-				f := FieldNode{
-					Name: dim.(string),
-				}
-				switch v := v.(type) {
-				case time.Time:
-					if a.dialect == drivers.DialectClickHouse {
-						f.Expr = fmt.Sprintf("parseDateTimeBestEffort('%s')", v.Format(time.RFC3339))
-					} else {
-						f.Expr = fmt.Sprintf("CAST('%s' AS TIMESTAMP)", v.Format(time.RFC3339))
-					}
-				case bool:
-					f.Expr = fmt.Sprintf("%v", v)
-				default:
-					f.Expr = fmt.Sprintf("'%v'", v)
-				}
-				if v == nil {
-					f.Expr = nilExpr
-				}
-				fields = append(fields, f)
-			}
-			inDims = append(inDims, fields)
-		}
-
-		// Add the measure fields to the inline view.
-		inMeasures := make([][]FieldNode, 0, len(a.query.inlineMeasures))
-		for measure, values := range a.query.inlineMeasures {
-			fields := make([]FieldNode, 0, len(values))
-			for _, v := range values {
-				if v == nil {
-					v = nilExpr
-				}
-				f := FieldNode{
-					Name: measure.(string),
-					Expr: fmt.Sprintf("%v", v),
-				}
-				fields = append(fields, f)
-			}
-			inMeasures = append(inMeasures, fields)
-		}
-
-		// rotate the dim and measures matrix so that we store the values row by row
-		inDims = rotateMatrix(inDims)
-		inMeasures = rotateMatrix(inMeasures)
-
-		n.InlineDimFields = inDims
-		n.InlineMeasureFields = inMeasures
-
-		return n, nil
-	}
-
 	n := &SelectNode{
 		Alias:     alias,
 		DimFields: a.dimFields,
@@ -708,72 +640,6 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	}
 
 	a.addTimeRange(n, tr)
-
-	if comparison && a.query.inlineBaseSelect {
-		// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
-		for dim, values := range a.query.inlineDims {
-			var inExpr *Expression
-			if len(a.query.inlineDims) == 0 {
-				inExpr = &Expression{
-					Value: false,
-				}
-			} else {
-				// if any dim value is nil add condition with eq operator with nil value
-				var vals []any
-				foundNil := false
-				for _, k := range values {
-					if k == nil {
-						foundNil = true
-					} else {
-						vals = append(vals, k)
-					}
-				}
-				inExpr = &Expression{
-					Condition: &Condition{
-						Operator: OperatorIn,
-						Expressions: []*Expression{
-							{Name: dim.(string)},
-							{Value: vals},
-						},
-					},
-				}
-				if foundNil {
-					inExpr = &Expression{
-						Condition: &Condition{
-							Operator: OperatorOr,
-							Expressions: []*Expression{
-								inExpr,
-								{
-									Condition: &Condition{
-										Operator: OperatorEq,
-										Expressions: []*Expression{
-											{Name: dim.(string)},
-											{Value: nil},
-										},
-									},
-								},
-							},
-						},
-					}
-				}
-			}
-
-			expr, args, err := a.sqlForExpression(inExpr, n, true, true)
-			if err != nil {
-				return nil, fmt.Errorf("failed to compile 'having': %w", err)
-			}
-			res := &ExprNode{
-				Expr: expr,
-				Args: args,
-			}
-
-			if n.Where == nil {
-				n.Where = res
-			} else {
-				n.Where = n.Where.and(res.Expr, res.Args)
-			}
-		}
-	}
 
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
@@ -1143,10 +1009,6 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 
 	s.Limit = nil
 	s.Offset = nil
-
-	s.IsInline = false
-	s.InlineDimFields = nil
-	s.InlineMeasureFields = nil
 }
 
 // findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.
@@ -1392,23 +1254,4 @@ func hasMeasure(n *SelectNode, name string) bool {
 		}
 	}
 	return false
-}
-
-func rotateMatrix(matrix [][]FieldNode) [][]FieldNode {
-	if len(matrix) == 0 {
-		return matrix
-	}
-
-	rotatedMatrix := make([][]FieldNode, len(matrix[0]))
-	for i := range rotatedMatrix {
-		rotatedMatrix[i] = make([]FieldNode, len(matrix))
-	}
-
-	for i, row := range matrix {
-		for j, field := range row {
-			rotatedMatrix[j][i] = field
-		}
-	}
-
-	return rotatedMatrix
 }

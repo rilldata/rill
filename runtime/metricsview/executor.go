@@ -164,11 +164,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
-	err := e.rewriteTwoPhaseComparisons(ctx, qry)
-	if err != nil {
-		return nil, err
-	}
-
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
 		return nil, err
@@ -196,7 +191,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast)
+	if err != nil {
+		return nil, err
+	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
+
+	e.rewriteApproxComparisons(ast, ok, false)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	e.rewriteApproxComparisons(ast, false, true)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err
@@ -390,9 +390,6 @@ func (e *Executor) Search(ctx context.Context, qry *SearchQuery, executionTime *
 			Offset:              nil,
 			TimeZone:            "",
 			UseDisplayNames:     false,
-			inlineBaseSelect:    false,
-			inlineDims:          nil,
-			inlineMeasures:      nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
 
@@ -472,9 +469,6 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *SearchQuery, e
 		Offset:              nil,
 		TimeZone:            "",
 		UseDisplayNames:     false,
-		inlineBaseSelect:    false,
-		inlineDims:          nil,
-		inlineMeasures:      nil,
 	} //exhaustruct:enforce
 
 	if err := e.rewriteQueryTimeRanges(ctx, q, executionTime); err != nil {

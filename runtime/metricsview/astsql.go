@@ -1,11 +1,8 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // SQL builds a SQL query from the AST.
@@ -93,8 +90,9 @@ func (b *sqlBuilder) writeSelectWithDisplayNames(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
-	if n.IsInline {
-		return b.writeInlineSelect(n)
+	if n.RawSelect != "" {
+		b.out.WriteString(n.RawSelect)
+		return nil
 	}
 
 	b.out.WriteString("SELECT ")
@@ -222,82 +220,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	}
 
 	return nil
-}
-
-func (b *sqlBuilder) writeInlineSelect(n *SelectNode) error {
-	sel := ""
-	if b.ast.dialect == drivers.DialectDruid {
-		// format - select * from (values (1, 2), (3, 4)) t(a, b)
-		valuesPart := "SELECT * FROM (VALUES "
-		tablePart := "t("
-		for i, dimRow := range n.InlineDimFields {
-			measureRow := n.InlineMeasureFields[i]
-			if i > 0 {
-				valuesPart += ", "
-			}
-			valuesPart += "("
-			for j, f := range dimRow {
-				if i == 0 {
-					if j > 0 {
-						tablePart += ", "
-					}
-					tablePart += b.ast.dialect.EscapeIdentifier(f.Name)
-				}
-				if j > 0 {
-					valuesPart += ", "
-				}
-				if f.Expr == nilExpr {
-					valuesPart += "NULL"
-				} else {
-					valuesPart += f.Expr
-				}
-			}
-			for _, f := range measureRow {
-				if i == 0 {
-					tablePart += ", "
-					tablePart += b.ast.dialect.EscapeIdentifier(f.Name)
-				}
-				valuesPart += ", "
-				if f.Expr == nilExpr || f.Expr == "NaN" {
-					valuesPart += "NULL"
-				} else {
-					valuesPart += f.Expr
-				}
-			}
-			valuesPart += ")"
-		}
-		sel = valuesPart + ") " + tablePart + ")"
-	} else {
-		// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
-		for i, dimRow := range n.InlineDimFields {
-			if i > 0 {
-				sel += " UNION ALL "
-			}
-			measureRow := n.InlineMeasureFields[i]
-			sel += "SELECT "
-			for j, f := range dimRow {
-				if j > 0 {
-					sel += ", "
-				}
-				if f.Expr == nilExpr {
-					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
-				} else {
-					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))
-				}
-			}
-			for _, f := range measureRow {
-				sel += ", "
-				if f.Expr == nilExpr {
-					sel += fmt.Sprintf("NULL AS %s", b.ast.dialect.EscapeIdentifier(f.Name))
-				} else {
-					sel += fmt.Sprintf("%s AS %s", f.Expr, b.ast.dialect.EscapeIdentifier(f.Name))
-				}
-			}
-		}
-	}
-
-	_, err := b.out.WriteString(sel)
-	return err
 }
 
 func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -16,8 +17,12 @@ import (
 	_ "time/tzdata"
 )
 
-// ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
-var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
+var (
+	// ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
+	ErrUnsupportedConnector = errors.New("drivers: connector not supported")
+	// ErrOptimizationFailure is returned when an optimization fails.
+	ErrOptimizationFailure = errors.New("drivers: optimization failure")
+)
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
@@ -492,6 +497,126 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
+	values := make([]any, len(result.Schema.Fields))
+	valuePtrs := make([]any, len(result.Schema.Fields)) // TODO try with []*any
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	var dimVals []any
+
+	rows := 0
+	prefix := ""
+	suffix := ""
+	for result.Next() {
+		if err := result.Scan(valuePtrs...); err != nil {
+			return "", nil, fmt.Errorf("select inline: failed to scan value: %w", err)
+		}
+		if d == DialectDruid {
+			// format - select * from (values (1, 2), (3, 4)) t(a, b)
+			if rows == 0 {
+				prefix = "SELECT * FROM (VALUES "
+				suffix = "t("
+			}
+			if rows > 0 {
+				prefix += ", "
+			}
+		} else {
+			// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
+			if rows > 0 {
+				prefix += " UNION ALL "
+			}
+			prefix += "SELECT "
+		}
+
+		dimVals = append(dimVals, values[0])
+		for i, v := range values {
+			if d == DialectDruid {
+				if i == 0 {
+					prefix += "("
+				}
+				if rows == 0 {
+					suffix += d.EscapeIdentifier(result.Schema.Fields[i].Name)
+					if i != len(result.Schema.Fields)-1 {
+						suffix += ", "
+					}
+				}
+			}
+			if i > 0 {
+				prefix += ", "
+			}
+			ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
+			if err != nil {
+				return "", nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
+			}
+			if !ok {
+				return "", nil, fmt.Errorf("select inline: unsupported value type %q: %w", result.Schema.Fields[i].Type.Code, ErrOptimizationFailure)
+			}
+			if d == DialectDruid {
+				prefix += expr
+			} else {
+				prefix += fmt.Sprintf("%s AS %s", expr, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+			}
+		}
+
+		if d == DialectDruid {
+			prefix += ")"
+			if rows == 0 {
+				suffix += ")"
+			}
+		}
+
+		rows++
+	}
+
+	if d == DialectDruid {
+		prefix += ") "
+	}
+
+	return prefix + suffix, dimVals, nil
+}
+
+func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
+	if val == nil {
+		return true, "NULL", nil
+	}
+	switch typ {
+	case runtimev1.Type_CODE_STRING:
+		return true, fmt.Sprintf("'%v'", val), nil
+	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+		// check NaN and Inf
+		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
+			return true, "NULL", nil
+		}
+
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_BOOL:
+		return true, fmt.Sprintf("%v", val), nil
+	case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+		if t, ok := val.(time.Time); ok {
+			if ok, expr := d.GetTimeExpr(t); ok {
+				return true, expr, nil
+			}
+			return false, "", fmt.Errorf("cannot get time expr for dialect %q", d)
+		}
+		return false, "", fmt.Errorf("unsupported time type %q", typ)
+	default:
+		return false, "", fmt.Errorf("unsupported type %q", typ)
+	}
+}
+
+func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
+	switch d {
+	case DialectClickHouse:
+		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339))
+	case DialectDuckDB, DialectDruid, DialectPinot:
+		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339))
+	default:
+		return false, ""
 	}
 }
 

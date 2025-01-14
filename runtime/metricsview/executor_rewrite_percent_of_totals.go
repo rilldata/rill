@@ -39,9 +39,6 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 		Offset:              nil,
 		TimeZone:            qry.TimeZone,
 		UseDisplayNames:     false,
-		inlineBaseSelect:    false,
-		inlineDims:          nil,
-		inlineMeasures:      nil,
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
@@ -51,7 +48,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *Query) error
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	e.rewriteApproxComparisons(ast)
+	e.rewriteApproxComparisons(ast, false, false)
 	err = e.rewriteQueryDruidExactify(ctx, totalsQry)
 	if err != nil {
 		return err
