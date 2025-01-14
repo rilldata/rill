@@ -70,7 +70,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func formatEnvVar(name, value string) string {
-	return fmt.Sprintf("%s=%s", name, value)
+	return fmt.Sprintf("%s=%q", name, value)
 }
 
 func printEnv(vars []*variable) {
