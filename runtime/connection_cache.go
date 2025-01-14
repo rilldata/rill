@@ -115,7 +115,6 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		attribute.String("instance_id", cfg.instanceID),
 		attribute.String("driver", cfg.driver),
 		attribute.String("name", cfg.name),
-		attribute.Bool("provision", cfg.provision),
 		attribute.Bool("success", err == nil),
 	)
 	if err != nil {
