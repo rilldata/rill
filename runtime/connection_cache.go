@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/metric"
@@ -106,18 +105,10 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 		}
 	}
 
-	r.Logger.Debug("opening connection", zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver), zap.String("name", cfg.name), zap.Bool("provision", cfg.provision))
 	handle, err := drivers.Open(cfg.driver, cfg.instanceID, cfg.config, r.storage.WithPrefix(cfg.instanceID, cfg.name), activityClient, logger)
 	if err == nil && ctx.Err() != nil {
 		err = fmt.Errorf("timed out while opening driver %q", cfg.driver)
 	}
-	r.activity.Record(ctx, "connection_open", activity.EventTypeLog,
-		attribute.String("instance_id", cfg.instanceID),
-		attribute.String("driver", cfg.driver),
-		attribute.String("name", cfg.name),
-		attribute.Bool("provision", cfg.provision),
-		attribute.Bool("success", err == nil),
-	)
 	if err != nil {
 		return nil, err
 	}
