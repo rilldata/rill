@@ -18,23 +18,6 @@ env:
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
 
 jobs:
-  # If changes are made inside the cli directory, generate the cli docs
-  generate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check for changes in cli directory
-        id: check_changes
-        run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -qE '^cli/'; then
-            echo "::set-output name=cli::true"
-          else
-            echo "::set-output name=cli::false"
-          fi
-
-  # Build the docs
   build:
     runs-on: ubuntu-latest
     steps:
@@ -45,6 +28,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Filter modified codepaths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            common:
+              - "cli/**"
+
+      - name: Check if CLI docs need to be generated
+        if: ${{ steps.filter.outputs.common == 'true' }}
+        run: echo "Will generate docs"
 
       - name: Build docs
         run: |-
