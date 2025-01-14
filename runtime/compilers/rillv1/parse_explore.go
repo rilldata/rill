@@ -171,21 +171,9 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
 		for _, ctr := range tr.ComparisonTimeRanges {
-			isNewFormat := false
-			if ctr.Range != "" {
-				rt, err := rilltime.Parse(ctr.Range)
-				if err != nil {
-					return fmt.Errorf("invalid comparison range %q: %w", ctr.Range, err)
-				}
-				isNewFormat = rt.IsNewFormat
-			}
-			if ctr.Offset != "" {
-				if isNewFormat {
-					return fmt.Errorf("offset cannot be provided along with rill time range")
-				}
-				if err := validateISO8601(ctr.Offset, false, false); err != nil {
-					return fmt.Errorf("invalid comparison offset %q: %w", ctr.Offset, err)
-				}
+			err = rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
+			if err != nil {
+				return err
 			}
 			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
 				Offset: ctr.Offset,

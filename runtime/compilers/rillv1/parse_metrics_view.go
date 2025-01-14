@@ -6,7 +6,6 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
@@ -749,22 +748,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			}
 
 			for _, o := range r.ComparisonTimeRanges {
-				isNewFormat := false
-				if o.Range != "" {
-					rt, err := rilltime.Parse(r.Range)
-					if err != nil {
-						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
-					}
-					isNewFormat = rt.IsNewFormat
-				}
-
-				if o.Offset != "" {
-					if isNewFormat {
-						return fmt.Errorf("offset cannot be provided along with rill time range")
-					}
-					if err := validateISO8601(o.Offset, false, false); err != nil {
-						return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
-					}
+				err = rilltime.ParseCompatibility(o.Range, o.Offset)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -980,59 +966,6 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
-}
-
-// validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
-// a) that the duration does not have seconds granularity,
-// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
-// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
-func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
-	d, err := duration.ParseISO8601(isoDuration)
-	if err != nil {
-		return err
-	}
-
-	sd, ok := d.(duration.StandardDuration)
-	if !ok {
-		if onlyStandard {
-			return fmt.Errorf("only standard durations are allowed")
-		}
-		return nil
-	}
-
-	if sd.Second != 0 {
-		return fmt.Errorf("durations with seconds are not allowed")
-	}
-
-	if onlyOneComponent {
-		n := 0
-		if sd.Year != 0 {
-			n++
-		}
-		if sd.Month != 0 {
-			n++
-		}
-		if sd.Week != 0 {
-			n++
-		}
-		if sd.Day != 0 {
-			n++
-		}
-		if sd.Hour != 0 {
-			n++
-		}
-		if sd.Minute != 0 {
-			n++
-		}
-		if sd.Second != 0 {
-			n++
-		}
-		if n > 1 {
-			return fmt.Errorf("only one component is allowed")
-		}
-	}
-
-	return nil
 }
 
 var validationTemplateData = TemplateData{

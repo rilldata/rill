@@ -401,11 +401,11 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-func (s *Server) MetricsViewResolveTimeRanges(ctx context.Context, req *runtimev1.MetricsViewResolveTimeRangesRequest) (*runtimev1.MetricsViewResolveTimeRangesResponse, error) {
+func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.MetricsViewTimeRangesRequest) (*runtimev1.MetricsViewTimeRangesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.StringSlice("args.rill_times", req.RillTimes),
+		attribute.StringSlice("args.expressions", req.Expressions),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -428,10 +428,11 @@ func (s *Server) MetricsViewResolveTimeRanges(ctx context.Context, req *runtimev
 		return nil, err
 	}
 
-	q := &queries.MetricsViewResolveTimeRanges{
+	q := &queries.MetricsViewTimeRanges{
 		MetricsViewName: req.MetricsViewName,
 		MinTime:         timeRangeQuery.Result.TimeRangeSummary.Min.AsTime(),
-		RillTimes:       req.RillTimes,
+		MaxTime:         timeRangeQuery.Result.TimeRangeSummary.Max.AsTime(),
+		Expressions:     req.Expressions,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

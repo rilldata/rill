@@ -93,6 +93,9 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	if err := q.parseFrom(ctx, stmt.From); err != nil {
 		return nil, err
 	}
+	if q.executor != nil {
+		defer q.executor.Close()
+	}
 
 	// parse select fields
 	if err := q.parseSelect(stmt.Fields); err != nil {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -24,6 +25,9 @@ type Spec struct {
 	// DSN with admin permissions for a Clickhouse service.
 	// This will be used to create a new (virtual) database and access-restricted user for each provisioned resource.
 	DSN string `json:"dsn"`
+	// Path to a file that we should load the DSN from.
+	// This is an alternative to specifying the DSN directly, which can be useful for secrets management.
+	DSNPath string `json:"dsn_path"`
 }
 
 // Provisioner provisions Clickhouse resources using a static, multi-tenant Clickhouse service.
@@ -41,6 +45,14 @@ func New(specJSON []byte, _ database.DB, logger *zap.Logger) (provisioner.Provis
 	err := json.Unmarshal(specJSON, spec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
+	}
+
+	if spec.DSNPath != "" {
+		dsn, err := os.ReadFile(spec.DSNPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read DSN file: %w", err)
+		}
+		spec.DSN = strings.TrimSpace(string(dsn))
 	}
 
 	opts, err := clickhouse.ParseDSN(spec.DSN)

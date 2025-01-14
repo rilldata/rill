@@ -113,10 +113,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	if c.config.SettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1"
-		if c.config.EnableCache {
-			stmt.Query += ", use_query_cache = 1"
-		}
+		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 	}
 
 	// Gather metrics only for actual queries

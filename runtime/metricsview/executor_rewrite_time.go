@@ -12,37 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-func (e *Executor) GetMinTime(ctx context.Context, colName string) (time.Time, error) {
-	if colName == "" {
-		// we cannot get min time without a time dimension or a column name specified. return a 0 time
-		return time.Time{}, nil
-	}
-
-	dialect := e.olap.Dialect()
-	sql := fmt.Sprintf("SELECT MIN(%s) FROM %s", dialect.EscapeIdentifier(colName), dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer res.Close()
-
-	var t time.Time
-	if res.Next() {
-		if err := res.Scan(&t); err != nil {
-			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
-		}
-	}
-	if res.Err() != nil {
-		return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", res.Err())
-	}
-	return t, nil
-}
-
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
 	tz := time.UTC
@@ -73,29 +42,38 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		return nil
 	}
 
-	if tr.RillTime == "" {
-		return e.resolveTimeRangeLegacy(ctx, tr, tz, executionTime)
+	if tr.Expression == "" {
+		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
+	}
+	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+		return errors.New("other fields are not supported when expression is provided")
 	}
 
-	rt, err := rilltime.Parse(tr.RillTime)
+	rillTime, err := rilltime.Parse(tr.Expression)
 	if err != nil {
 		return err
 	}
 
-	t, err := e.loadWatermark(ctx, executionTime)
+	watermark, err := e.loadWatermark(ctx, executionTime)
 	if err != nil {
 		return err
 	}
 
-	minTime, err := e.GetMinTime(ctx, e.metricsView.TimeDimension)
+	minTime, err := e.MinTime(ctx, e.metricsView.TimeDimension)
 	if err != nil {
 		return err
 	}
 
-	tr.Start, tr.End, err = rt.Resolve(rilltime.ResolverContext{
+	maxTime, err := e.MaxTime(ctx, e.metricsView.TimeDimension)
+	if err != nil {
+		return err
+	}
+
+	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
 		MinTime:    minTime,
-		MaxTime:    t,
+		MaxTime:    maxTime,
+		Watermark:  watermark,
 		FirstDay:   int(e.metricsView.FirstDayOfWeek),
 		FirstMonth: int(e.metricsView.FirstMonthOfYear),
 	})
@@ -104,7 +82,7 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	}
 
 	// Clear all other fields than Start and End
-	tr.RillTime = ""
+	tr.Expression = ""
 	tr.IsoDuration = ""
 	tr.IsoOffset = ""
 	tr.RoundToGrain = TimeGrainUnspecified
@@ -112,8 +90,8 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 	return nil
 }
 
-// resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRangeLegacy(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+// resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
+func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		t, err := e.loadWatermark(ctx, executionTime)
 		if err != nil {

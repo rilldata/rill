@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ColumnCardinalityResponse,
+  V1ResolveCanvasResponse,
   RpcStatus,
+  QueryServiceResolveCanvasBody,
+  V1ColumnCardinalityResponse,
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
@@ -37,8 +39,8 @@ import type {
   QueryServiceMetricsViewSearchBody,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
-  V1MetricsViewResolveTimeRangesResponse,
-  QueryServiceMetricsViewResolveTimeRangesBody,
+  V1MetricsViewTimeRangesResponse,
+  QueryServiceMetricsViewTimeRangesBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -79,6 +81,70 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
+/**
+ * @summary ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+ */
+export const queryServiceResolveCanvas = (
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+) => {
+  return httpClient<V1ResolveCanvasResponse>({
+    url: `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveCanvasBody,
+  });
+};
+
+export type QueryServiceResolveCanvasMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveCanvas>>
+>;
+export type QueryServiceResolveCanvasMutationBody =
+  QueryServiceResolveCanvasBody;
+export type QueryServiceResolveCanvasMutationError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveCanvas = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    TError,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    }
+  > = (props) => {
+    const { instanceId, canvas, data } = props ?? {};
+
+    return queryServiceResolveCanvas(instanceId, canvas, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+    TError,
+    {
+      instanceId: string;
+      canvas: string;
+      data: QueryServiceResolveCanvasBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary Get cardinality for a column
  */
@@ -234,7 +300,7 @@ export const createQueryServiceTableColumns = <
 };
 
 /**
- * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ * @summary ResolveComponent resolves renderer for a Component resource.
  */
 export const queryServiceResolveComponent = (
   instanceId: string,
@@ -1009,91 +1075,68 @@ export const createQueryServiceMetricsViewTimeRange = <
   return query;
 };
 
-export const queryServiceMetricsViewResolveTimeRanges = (
+export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
-  signal?: AbortSignal,
+  queryServiceMetricsViewTimeRangesBody: QueryServiceMetricsViewTimeRangesBody,
 ) => {
-  return httpClient<V1MetricsViewResolveTimeRangesResponse>({
+  return httpClient<V1MetricsViewTimeRangesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceMetricsViewResolveTimeRangesBody,
-    signal,
+    data: queryServiceMetricsViewTimeRangesBody,
   });
 };
 
-export const getQueryServiceMetricsViewResolveTimeRangesQueryKey = (
-  instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
-) => [
-  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-ranges`,
-  queryServiceMetricsViewResolveTimeRangesBody,
-];
-
-export type QueryServiceMetricsViewResolveTimeRangesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
+export type QueryServiceMetricsViewTimeRangesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
-export type QueryServiceMetricsViewResolveTimeRangesQueryError =
+export type QueryServiceMetricsViewTimeRangesMutationBody =
+  QueryServiceMetricsViewTimeRangesBody;
+export type QueryServiceMetricsViewTimeRangesMutationError =
   ErrorType<RpcStatus>;
 
-export const createQueryServiceMetricsViewResolveTimeRanges = <
-  TData = Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+export const createQueryServiceMetricsViewTimeRanges = <
   TError = ErrorType<RpcStatus>,
->(
-  instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewResolveTimeRangesBody: QueryServiceMetricsViewResolveTimeRangesBody,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & {
-  queryKey: QueryKey;
-} => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getQueryServiceMetricsViewResolveTimeRangesQueryKey(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewResolveTimeRangesBody,
-    );
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>
-  > = ({ signal }) =>
-    queryServiceMetricsViewResolveTimeRanges(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewResolveTimeRangesBody,
-      signal,
-    );
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof queryServiceMetricsViewResolveTimeRanges>>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
     TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(instanceId && metricsViewName),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & {
-    queryKey: QueryKey;
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangesBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangesBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewTimeRanges(instanceId, metricsViewName, data);
   };
 
-  query.queryKey = queryKey;
-
-  return query;
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangesBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
 };
-
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
