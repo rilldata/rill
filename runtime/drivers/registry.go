@@ -139,7 +139,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,
 		ModelMaterializeDelaySeconds:      0,
-		MetricsApproximateComparisons:     false,
+		MetricsApproximateComparisons:     true,
 		MetricsApproximateComparisonsCTE:  false,
 		MetricsApproxTwoPhaseComparisons:  true,
 		MetricsExactifyDruidTopN:          false,

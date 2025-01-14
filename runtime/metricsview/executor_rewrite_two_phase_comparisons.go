@@ -31,7 +31,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		}
 
 		if qm.Name == sortField.Name {
-			// only supported sorting on base value TODO extend for comparison value
+			// only supported sorting on base value and dims TODO extend for comparison value
 			return false, nil
 		}
 	}
@@ -73,15 +73,28 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		return false, nil
 	}
 
+	// figure out node at which join comparison select is present
+	n := ast.Root
+	for {
+		if n.JoinComparisonSelect != nil {
+			break
+		}
+		n = n.FromSelect
+		if n == nil {
+			// no join comparison select found
+			return false, nil
+		}
+	}
+
 	base := &SelectNode{
-		Alias:     ast.Root.FromSelect.Alias,
-		DimFields: ast.Root.FromSelect.DimFields,
+		Alias:     n.FromSelect.Alias,
+		DimFields: n.FromSelect.DimFields,
 		RawSelect: sel,
 	}
 
-	ast.Root.FromSelect = base
+	n.FromSelect = base
 
-	comp := ast.Root.JoinComparisonSelect
+	comp := n.JoinComparisonSelect
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
 	var inExpr *Expression
