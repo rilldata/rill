@@ -39,7 +39,9 @@ jobs:
 
       - name: Check if CLI docs need to be generated
         if: ${{ steps.filter.outputs.common == 'true' }}
-        run: echo "Will generate docs"
+        run: |
+          echo "Changes detected in cli, generating docs"
+          make docs.generate
 
       - name: Build docs
         run: |-
