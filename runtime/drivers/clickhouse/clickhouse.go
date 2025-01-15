@@ -168,7 +168,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			if value, ok := config[key].(string); ok {
 				parsedDuration, err := time.ParseDuration(value)
 				if err != nil {
-					return fmt.Errorf("failed to parse '%s': %v", key, err)
+					return fmt.Errorf("failed to parse '%s': %w", key, err)
 				}
 				*field = parsedDuration
 			}
