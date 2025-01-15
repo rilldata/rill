@@ -125,6 +125,9 @@ jobs:
           ls -lrt
           echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Install browser for UI tests
         run: npx playwright install
 
