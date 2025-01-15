@@ -677,18 +677,39 @@ paths:
           schema:
             type: object
             properties:
+              model:
+                type: string
+                description: |-
+                  Model to base the metrics view on.
+                  If you set this, do NOT set connector, database, database_schema or table.
               connector:
                 type: string
+                description: |-
+                  Connector for the table.
+                  See "table" for more details.
               database:
                 type: string
+                description: |-
+                  Database for the table.
+                  See "table" for more details.
               databaseSchema:
                 type: string
+                description: |-
+                  Database schema for the table.
+                  See "table" for more details.
               table:
                 type: string
+                description: |-
+                  Table to base the metrics view on.
+                  If you set this, do NOT set model.
               path:
                 type: string
+                description: Path to save the metrics view file to.
               useAi:
                 type: boolean
+                description: |-
+                  If true, the AI will be used to generate the metrics view file.
+                  Otherwise, it falls back to a simpler heuristic approach.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -4439,6 +4460,7 @@ definitions:
     properties:
       aiSucceeded:
         type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GenerateRendererResponse:
     type: object

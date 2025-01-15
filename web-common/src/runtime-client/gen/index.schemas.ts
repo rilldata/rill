@@ -447,11 +447,25 @@ export type RuntimeServiceRenameFileBody = {
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
+  /** Model to base the metrics view on.
+If you set this, do NOT set connector, database, database_schema or table. */
+  model?: string;
+  /** Connector for the table.
+See "table" for more details. */
   connector?: string;
+  /** Database for the table.
+See "table" for more details. */
   database?: string;
+  /** Database schema for the table.
+See "table" for more details. */
   databaseSchema?: string;
+  /** Table to base the metrics view on.
+If you set this, do NOT set model. */
   table?: string;
+  /** Path to save the metrics view file to. */
   path?: string;
+  /** If true, the AI will be used to generate the metrics view file.
+Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
 };
 
@@ -1771,6 +1785,7 @@ export interface V1GenerateRendererResponse {
 }
 
 export interface V1GenerateMetricsViewFileResponse {
+  /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
 }
 

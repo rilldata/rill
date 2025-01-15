@@ -2134,31 +2134,56 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   instanceId = "";
 
   /**
+   * Model to base the metrics view on.
+   * If you set this, do NOT set connector, database, database_schema or table.
+   *
+   * @generated from field: string model = 8;
+   */
+  model = "";
+
+  /**
+   * Connector for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string connector = 2;
    */
   connector = "";
 
   /**
+   * Database for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database = 6;
    */
   database = "";
 
   /**
+   * Database schema for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database_schema = 7;
    */
   databaseSchema = "";
 
   /**
+   * Table to base the metrics view on.
+   * If you set this, do NOT set model.
+   *
    * @generated from field: string table = 3;
    */
   table = "";
 
   /**
+   * Path to save the metrics view file to.
+   *
    * @generated from field: string path = 4;
    */
   path = "";
 
   /**
+   * If true, the AI will be used to generate the metrics view file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
    * @generated from field: bool use_ai = 5;
    */
   useAi = false;
@@ -2172,6 +2197,7 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2204,6 +2230,8 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
  */
 export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
   /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
    * @generated from field: bool ai_succeeded = 1;
    */
   aiSucceeded = false;
