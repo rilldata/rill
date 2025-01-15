@@ -614,9 +614,9 @@ func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, err
 func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
 	switch d {
 	case DialectClickHouse:
-		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339))
+		return true, fmt.Sprintf("parseDateTimeBestEffort('%s')", t.Format(time.RFC3339Nano))
 	case DialectDuckDB, DialectDruid, DialectPinot:
-		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339))
+		return true, fmt.Sprintf("CAST('%s' AS TIMESTAMP)", t.Format(time.RFC3339Nano))
 	default:
 		return false, ""
 	}

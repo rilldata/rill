@@ -88,8 +88,8 @@ type InstanceConfig struct {
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
 	// MetricsApproximateComparisonsCTE indicates whether to rewrite metrics comparison queries to use a CTE for base query.
 	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
-	// MetricsApproxTwoPhaseComparisons indicates whether to rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
-	MetricsApproxTwoPhaseComparisons bool `mapstructure:"rill.metrics.two_phase_comparisons"`
+	// MetricsApproxComparisonTwoPhaseLimit if query limit is less than this then rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
+	MetricsApproxComparisonTwoPhaseLimit int64 `mapstructure:"rill.metrics.approximate_comparisons_two_phase_limit"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
@@ -134,16 +134,16 @@ func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		DownloadLimitBytes:                int64(datasize.MB * 128),
-		InteractiveSQLRowLimit:            10_000,
-		StageChanges:                      true,
-		ModelDefaultMaterialize:           false,
-		ModelMaterializeDelaySeconds:      0,
-		MetricsApproximateComparisons:     true,
-		MetricsApproximateComparisonsCTE:  false,
-		MetricsApproxTwoPhaseComparisons:  true,
-		MetricsExactifyDruidTopN:          false,
-		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
+		DownloadLimitBytes:                   int64(datasize.MB * 128),
+		InteractiveSQLRowLimit:               10_000,
+		StageChanges:                         true,
+		ModelDefaultMaterialize:              false,
+		ModelMaterializeDelaySeconds:         0,
+		MetricsApproximateComparisons:        true,
+		MetricsApproximateComparisonsCTE:     false,
+		MetricsApproxComparisonTwoPhaseLimit: 250,
+		MetricsExactifyDruidTopN:             false,
+		AlertsDefaultStreamingRefreshCron:    "*/10 * * * *", // Every 10 minutes
 	}
 
 	// Resolve variables

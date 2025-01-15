@@ -10,8 +10,7 @@ import (
 
 // rewriteTwoPhaseComparisons rewrites the query to query base time range first and then use the results to query the comparison time range.
 func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, ast *AST, ogLimit *int64) (bool, error) {
-	// Check if it's enabled.
-	if !e.instanceCfg.MetricsApproxTwoPhaseComparisons {
+	if qry.Limit == nil || (*qry.Limit > e.instanceCfg.MetricsApproxComparisonTwoPhaseLimit) {
 		return false, nil
 	}
 
