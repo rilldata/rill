@@ -328,12 +328,12 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
 
 	groups, err := s.admin.DB.FindUsergroupsForUser(ctx, user.ID, orgID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
