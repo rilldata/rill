@@ -150,17 +150,7 @@ func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (Ti
 		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
 	if err != nil {
-		if errors.Is(err, ErrNoTimestampData) {
-			// we should not fail when there is no data
-			// this replicates the old `t.IsZero()` check in `loadWatermark`
-			e.timestamps = TimestampsResult{
-				Min:       time.Now(),
-				Max:       time.Now(),
-				Watermark: time.Now(),
-			}
-		} else {
-			return TimestampsResult{}, err
-		}
+		return TimestampsResult{}, err
 	}
 
 	if executionTime != nil {

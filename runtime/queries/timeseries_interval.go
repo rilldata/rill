@@ -60,6 +60,10 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 
+	if !ctr.Result.Min.IsValid() {
+		q.Result = &runtimev1.ColumnRollupIntervalResponse{}
+		return nil
+	}
 	duration := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	hours := duration.Hours()
 	days := int64(0)

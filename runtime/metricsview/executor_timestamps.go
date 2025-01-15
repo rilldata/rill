@@ -14,8 +14,6 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-var ErrNoTimestampData = errors.New("no data for timestamp calculation")
-
 func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
@@ -55,8 +53,9 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		if err != nil {
 			return TimestampsResult{}, err
 		}
+		// Table is empty for the filters. duckdb returns null in this case
 		if minTime == nil {
-			return TimestampsResult{}, ErrNoTimestampData
+			return TimestampsResult{}, nil
 		}
 		return TimestampsResult{
 			Min:       *minTime,

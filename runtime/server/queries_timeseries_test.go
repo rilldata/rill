@@ -13,7 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestServer_Timeseries_EmptyModel(t *testing.T) {

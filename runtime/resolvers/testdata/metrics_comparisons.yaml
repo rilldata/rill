@@ -167,8 +167,8 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 2
-        sum_prev: 7
+      - sum: 7
+        sum_prev: 2
         country: "US"
   - name: iso_ranges_clickhouse
     resolver: metrics
@@ -190,6 +190,6 @@ tests:
       sort:
         - name: sum
     result:
-      - sum: 2
-        sum_prev: 7
+      - sum: 7
+        sum_prev: 2
         country: "US"
