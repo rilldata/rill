@@ -500,8 +500,8 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 	}
 }
 
-// SelectInlineResults returns a SQL query which inline results from the result set supplied.
-func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
+// SelectInlineResults returns a SQL query which inline results from the result set supplied along with the positional arguments and dimension values.
+func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, error) {
 	values := make([]any, len(result.Schema.Fields))
 	valuePtrs := make([]any, len(result.Schema.Fields))
 	for i := range values {
@@ -509,6 +509,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
 	}
 
 	var dimVals []any
+	var args []any
 
 	rows := 0
 	prefix := ""
@@ -516,7 +517,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
 	// creating inline query for all dialects in one loop, accumulating field exprs first and then creating the query can be more cleaner
 	for result.Next() {
 		if err := result.Scan(valuePtrs...); err != nil {
-			return "", nil, fmt.Errorf("select inline: failed to scan value: %w", err)
+			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
 		if d == DialectDruid {
 			// format - select * from (values (1, 2), (3, 4)) t(a, b)
@@ -551,17 +552,19 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
 			if i > 0 {
 				prefix += ", "
 			}
-			ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
-			if err != nil {
-				return "", nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
-			}
-			if !ok {
-				return "", nil, fmt.Errorf("select inline: unsupported value type %q: %w", result.Schema.Fields[i].Type.Code, ErrOptimizationFailure)
-			}
+
 			if d == DialectDruid {
+				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
+				if err != nil {
+					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
+				}
+				if !ok {
+					return "", nil, nil, fmt.Errorf("select inline: unsupported value type %q: %w", result.Schema.Fields[i].Type.Code, ErrOptimizationFailure)
+				}
 				prefix += expr
 			} else {
-				prefix += fmt.Sprintf("%s AS %s", expr, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				prefix += fmt.Sprintf("%s AS %s", "?", d.EscapeIdentifier(result.Schema.Fields[i].Name))
+				args = append(args, v)
 			}
 		}
 
@@ -579,7 +582,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, error) {
 		prefix += ") "
 	}
 
-	return prefix + suffix, dimVals, nil
+	return prefix + suffix, args, dimVals, nil
 }
 
 func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {

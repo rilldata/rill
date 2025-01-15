@@ -60,7 +60,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	}
 	defer baseRes.Close()
 
-	sel, dimVals, err := e.olap.Dialect().SelectInlineResults(baseRes)
+	sel, args, dimVals, err := e.olap.Dialect().SelectInlineResults(baseRes)
 	if err != nil {
 		if errors.Is(err, drivers.ErrOptimizationFailure) {
 			return false, nil
@@ -88,7 +88,10 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 	base := &SelectNode{
 		Alias:     n.FromSelect.Alias,
 		DimFields: n.FromSelect.DimFields,
-		RawSelect: sel,
+		RawSelect: &ExprNode{
+			Expr: sel,
+			Args: args,
+		},
 	}
 
 	n.FromSelect = base

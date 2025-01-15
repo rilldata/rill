@@ -39,7 +39,7 @@ type AST struct {
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
 //   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
-	RawSelect            string           // Raw SQL SELECT statement to use
+	RawSelect            *ExprNode        // Raw SQL SELECT statement to use
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
 	DimFields            []FieldNode      // Dimensions fields to select
