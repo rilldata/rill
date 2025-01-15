@@ -9,12 +9,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const config: PlaywrightTestConfig = {
-  ...(process.env.E2E_NO_GLOBAL_SETUP_OR_TEARDOWN
-    ? {}
-    : {
-        globalSetup: "./tests/setup/global.setup.ts",
-        globalTeardown: "./tests/setup/global.teardown.ts",
-      }),
   webServer: {
     command: "npm run build && npm run preview",
     port: 3000,
@@ -43,11 +37,11 @@ const config: PlaywrightTestConfig = {
           },
         ]),
     {
-      name: "data-setup",
-      testMatch: "data.setup.ts",
-      ...(process.env.E2E_NO_DATA_TEARDOWN || process.env.CI
+      name: "setup",
+      testMatch: "setup.ts",
+      ...(process.env.E2E_NO_TEARDOWN || process.env.CI
         ? undefined
-        : { teardown: "data-teardown" }),
+        : { teardown: "teardown" }),
       use: {
         storageState: GITHUB_AUTH_FILE,
       },
@@ -56,8 +50,8 @@ const config: PlaywrightTestConfig = {
       ? [] // skip in CI
       : [
           {
-            name: "data-teardown",
-            testMatch: "data.teardown.ts",
+            name: "teardown",
+            testMatch: "teardown.ts",
             use: {
               storageState: ADMIN_AUTH_FILE,
             },
@@ -65,9 +59,7 @@ const config: PlaywrightTestConfig = {
         ]),
     {
       name: "e2e",
-      dependencies: process.env.E2E_NO_DATA_SETUP_OR_TEARDOWN
-        ? []
-        : ["data-setup"],
+      dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
       testIgnore: "/setup",
       use: {
         storageState: ADMIN_AUTH_FILE,
