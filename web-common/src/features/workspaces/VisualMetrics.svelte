@@ -96,7 +96,7 @@
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
-  $: ({ editorContent, saveContent, getResource } = fileArtifact);
+  $: ({ editorContent, updateEditorContent, getResource } = fileArtifact);
 
   // YAML Parsing
   $: parsedDocument = parseDocument($editorContent ?? "");
@@ -320,7 +320,7 @@
     unsavedChanges = false;
   }
 
-  async function updateProperties(
+  function updateProperties(
     newRecord: Record<string, unknown>,
     removeProperties?: string[],
   ) {
@@ -338,7 +338,7 @@
       });
     }
 
-    await saveContent(parsedDocument.toString());
+    updateEditorContent(parsedDocument.toString(), false, true);
   }
 
   $: editingItem = $editingItemData
@@ -419,7 +419,7 @@
     }
   }
 
-  async function deleteItems(items: Partial<typeof selected>) {
+  function deleteItems(items: Partial<typeof selected>) {
     let deletedEditingItem = false;
 
     Object.entries(items).forEach(([type, indices]) => {
@@ -451,7 +451,7 @@
 
     selected = selected;
 
-    await saveContent(parsedDocument.toString());
+    updateEditorContent(parsedDocument.toString(), false, true);
 
     if (deletedEditingItem) {
       resetEditing();
@@ -460,7 +460,7 @@
     eventBus.emit("notification", { message: "Item deleted", type: "success" });
   }
 
-  async function duplicateItem(index: number, type: ItemType) {
+  function duplicateItem(index: number, type: ItemType) {
     const sequence = raw[type];
 
     if (!(sequence instanceof YAMLSeq)) {
@@ -496,7 +496,7 @@
 
     items.splice(index + 1, 0, newItem);
 
-    await updateProperties({ [type]: items });
+    updateProperties({ [type]: items });
 
     eventBus.emit("notification", {
       message: "Item duplicated",
@@ -513,7 +513,7 @@
       connector: rawConnector,
       database_schema: rawDatabaseSchema,
     };
-    await updateProperties(storedProperties);
+    updateProperties(storedProperties);
 
     storedProperties = currentProperties;
     tableMode = !mode;
@@ -582,7 +582,7 @@
             label="Model"
             onChange={async (newModelOrSourceName) => {
               if (!modelOrSourceOrTableName) {
-                await updateProperties({ model: newModelOrSourceName }, [
+                updateProperties({ model: newModelOrSourceName }, [
                   "table",
                   "database",
                   "connector",

@@ -36,6 +36,8 @@
     field?: string,
   ) => void;
 
+  $: console.log(type, { items });
+
   let clientWidth: HTMLTableRowElement;
   let tbody: HTMLTableSectionElement;
   let scroll = 0;
