@@ -45,41 +45,6 @@ jobs:
               - "runtime/**"
               - "web-common/**"
 
-      - name: Set up NodeJS
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Set up go for E2E
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23
-
-      - name: go build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: NPM Install
-        run: npm install
-        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
-        env:
-          HUSKY: 0
-
-      - name: Build and embed static UI
-        run: PLAYWRIGHT_TEST=true make cli
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rill
-          path: rill
-          retention-days: 1
-
       - name: Evaluate e2e tests matrix
         id: matrix
         run: |
@@ -100,13 +65,13 @@ jobs:
       matrix:
         name: ${{ fromJson(needs.build.outputs.matrix) }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: NPM Install
         run: npm install
@@ -114,15 +79,28 @@ jobs:
         env:
           HUSKY: 0
 
-      - uses: actions/download-artifact@v4
+      - name: Set up go for E2E
+        uses: actions/setup-go@v5
         with:
-          name: rill
+          go-version: 1.23
 
-      - name: Add CLI binary to PATH
-        run: |
-          chmod +x rill
-          ls -lrt
-          echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+      - name: go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build and embed static UI
+        if: matrix.name == 'web-local'
+        run: PLAYWRIGHT_TEST=true make cli
+
+      - name: Build rill cli only
+        if: matrix.name == 'web-admin'
+        run: PLAYWRIGHT_TEST=true make cli-only
 
       - name: Install browser for UI tests
         run: npx playwright install
