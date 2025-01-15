@@ -5,19 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 )
-
-const (
-	hourInDay = 24
-)
-
-var microsInDay = hourInDay * time.Hour.Microseconds()
 
 func init() {
 	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
@@ -132,18 +125,4 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func durationToInterval(duration time.Duration) map[string]any {
-	hours := duration.Hours()
-	days := int32(0)
-	if hours >= hourInDay {
-		days = int32(hours / hourInDay)
-	}
-	micros := duration.Microseconds() - microsInDay*int64(days)
-	return map[string]any{
-		"days":   days,
-		"months": 0,
-		"micros": micros,
-	}
 }

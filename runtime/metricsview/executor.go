@@ -35,8 +35,8 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	min, max, watermark time.Time
-	timestamps          TimestampsResult
+	watermark  time.Time
+	timestamps TimestampsResult
 }
 
 type TimestampsResult struct {
@@ -136,7 +136,7 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 
 // Timestamps queries min, max and watermark for the metrics view
 func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (TimestampsResult, error) {
-	if !e.min.IsZero() {
+	if !e.timestamps.Min.IsZero() {
 		return e.timestamps, nil
 	}
 
