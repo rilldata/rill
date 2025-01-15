@@ -209,7 +209,7 @@ export class FileArtifact {
     await this.saveContent(get(this.editorContent) ?? "");
   };
 
-  saveContent = async (blob: string) => {
+  private saveContent = async (blob: string) => {
     const instanceId = get(runtime).instanceId;
 
     // Optimistically update the query
