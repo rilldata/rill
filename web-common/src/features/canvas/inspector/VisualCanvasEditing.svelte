@@ -64,7 +64,7 @@
   }
 </script>
 
-<Inspector minWidth={280} filePath={path}>
+<Inspector minWidth={320} filePath={path}>
   {#if selectedComponentName}
     <ComponentsEditor {fileArtifact} {selectedComponentName} />
   {:else}

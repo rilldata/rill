@@ -43,12 +43,12 @@
     | undefined = undefined;
   export let additionalClass = "";
   export let onInput: (
-    newValue: string,
+    newValue: string | number,
     e: Event & {
       currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
-  export let onChange: (newValue: string) => void = voidFunction;
+  export let onChange: (newValue: string | number) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
       currentTarget: EventTarget & HTMLDivElement;
@@ -168,11 +168,14 @@
           name={id}
           class={size}
           {disabled}
-          value={value ?? ""}
+          value={value ?? (inputType === "number" ? 0 : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
-            value = e.currentTarget.value;
+            value =
+              inputType === "number" && e.currentTarget.value !== ""
+                ? e.currentTarget.valueAsNumber
+                : e.currentTarget.value;
             onInput(value, e);
           }}
           on:keydown={onKeydown}

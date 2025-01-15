@@ -1,17 +1,30 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import MultiSelectInput from "@rilldata/web-common/features/visual-editing/MultiSelectInput.svelte";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import ThemeInput from "@rilldata/web-common/features/visual-editing/ThemeInput.svelte";
+  import {
+    DEFAULT_RANGES,
+    isString,
+    numberGuard,
+    stringGuard,
+  } from "@rilldata/web-common/features/workspaces/visual-util";
+  import {
+    DEFAULT_TIME_RANGES,
+    DEFAULT_TIMEZONES,
+  } from "@rilldata/web-common/lib/time/config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { YAMLMap } from "yaml";
+  import { YAMLMap, YAMLSeq } from "yaml";
 
   export let updateProperties: (
     newRecord: Record<string, unknown>,
@@ -28,7 +41,38 @@
   $: rawTitle = $parsedDocument.get("title");
   $: rawDisplayName = $parsedDocument.get("display_name");
   $: rawTheme = $parsedDocument.get("theme");
-  $: maxWidth = DASHBOARD_WIDTH; //Add property
+  $: rawTimeRanges = $parsedDocument.get("time_ranges");
+  $: rawTimeZones = $parsedDocument.get("time_zones");
+  $: rawMaxWidth = $parsedDocument.get("max_width");
+
+  $: timeZones = new Set(
+    rawTimeZones instanceof YAMLSeq
+      ? rawTimeZones.toJSON().filter(isString)
+      : [],
+  );
+
+  $: timeRanges = new Set(
+    rawTimeRanges instanceof YAMLSeq
+      ? rawTimeRanges.toJSON().filter(isString)
+      : [],
+  );
+
+  async function onSelectTimeRangeItem(item: string) {
+    const deleted = timeRanges.delete(item);
+    if (!deleted) {
+      timeRanges.add(item);
+    }
+
+    const time_ranges = Array.from(timeRanges);
+
+    const properties: Record<string, unknown> = {
+      time_ranges,
+    };
+
+    await updateProperties(properties);
+  }
+
+  $: maxWidth = numberGuard(rawMaxWidth) ?? DASHBOARD_WIDTH;
 
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
 
@@ -45,10 +89,6 @@
       : rawTheme instanceof YAMLMap
         ? $validSpecStore?.data?.canvas?.embeddedTheme
         : undefined;
-
-  function stringGuard(value: unknown | undefined): string {
-    return value && typeof value === "string" ? value : "";
-  }
 </script>
 
 <SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
@@ -70,7 +110,6 @@
   </div>
   <div class="page-param">
     <Input
-      hint="Max width for the canvas"
       capitalizeLabel={false}
       size="sm"
       labelGap={2}
@@ -78,12 +117,65 @@
       inputType="number"
       bind:value={maxWidth}
       onBlur={async () => {
-        await updateProperties({ display_name: title }, ["title"]);
+        await updateProperties({ max_width: maxWidth });
       }}
       onEnter={async () => {
-        await updateProperties({ display_name: title });
+        await updateProperties({ max_width: maxWidth });
       }}
     />
+  </div>
+  <div class="page-param flex flex-col gap-y-2">
+    <InputLabel id="canvas-filter" small label="Filter" />
+    <div class="flex flex-col gap-y-1">
+      <MultiSelectInput
+        small
+        label="Time ranges"
+        id="canvas-time-range"
+        defaultLabel="Default time ranges"
+        showLabel={false}
+        defaultItems={DEFAULT_RANGES}
+        keyNotSet={!rawTimeRanges}
+        selectedItems={timeRanges}
+        onSelectCustomItem={onSelectTimeRangeItem}
+        setItems={async (time_ranges) => {
+          if (time_ranges.length === 0) {
+            await updateProperties({ time_ranges }, [["time_range"]]);
+          } else {
+            await updateProperties({ time_ranges });
+          }
+        }}
+        let:item
+      >
+        {DEFAULT_TIME_RANGES[item]?.label ?? item}
+      </MultiSelectInput>
+
+      <MultiSelectInput
+        small
+        label="Time zones"
+        id="visual-explore-zone"
+        showLabel={false}
+        defaultLabel="Default time zones"
+        searchableItems={Intl.supportedValuesOf("timeZone")}
+        defaultItems={DEFAULT_TIMEZONES}
+        keyNotSet={!rawTimeZones}
+        selectedItems={timeZones}
+        clearKey={async () => {
+          await updateProperties({}, ["time_zones"]);
+        }}
+        onSelectCustomItem={async (item) => {
+          const deleted = timeZones.delete(item);
+          if (!deleted) timeZones.add(item);
+
+          await updateProperties({ time_zones: Array.from(timeZones) });
+        }}
+        setItems={async (time_zones) => {
+          await updateProperties({ time_zones });
+        }}
+        let:item
+      >
+        <ZoneDisplay iana={item} />
+      </MultiSelectInput>
+    </div>
   </div>
   <div class="page-param">
     <ThemeInput
