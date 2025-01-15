@@ -390,7 +390,13 @@ function fromExploreUrlParams(
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
     const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
     if (measures.has(sortBy)) {
-      preset.exploreSortBy = sortBy;
+      if (preset.measures && preset.measures.includes(sortBy)) {
+        preset.exploreSortBy = sortBy;
+      } else {
+        errors.push(
+          getSingleFieldError("sort by measure", sortBy, "It is hidden."),
+        );
+      }
     } else {
       errors.push(getSingleFieldError("sort by measure", sortBy));
     }
