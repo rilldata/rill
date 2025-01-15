@@ -121,6 +121,20 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort      int  `mapstructure:"embed_port"`
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// MaxOpenConns is the maximum number of open connections to the database.
+	// https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
+	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+	// DialTimeout is the timeout for dialing the Clickhouse server. Default is 30s.
+	// key: dial_timeout
+	DialTimeout time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
+	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
+	// key: conn_max_lifetime
+	ConnMaxLifetime time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
+	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
+	// key: read_timeout
+	ReadTimeout time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
 }
 
 // Open connects to Clickhouse using std API.
@@ -149,6 +163,18 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	} else if conf.Host != "" {
 		opts = &clickhouse.Options{}
 
+		// Anonymous function to parse duration fields
+		parseDurationField := func(config map[string]interface{}, key string, field *time.Duration) error {
+			if value, ok := config[key].(string); ok {
+				parsedDuration, err := time.ParseDuration(value)
+				if err != nil {
+					return fmt.Errorf("failed to parse '%s': %v", key, err)
+				}
+				*field = parsedDuration
+			}
+			return nil
+		}
+
 		// address
 		host := conf.Host
 		if conf.Port != 0 {
@@ -173,6 +199,31 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// database
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
+		}
+
+		// max_open_conns
+		if conf.MaxOpenConns != 0 {
+			maxOpenConnections = conf.MaxOpenConns
+		}
+
+		// max_idle_conns
+		if conf.MaxIdleConns != 0 {
+			opts.MaxIdleConns = conf.MaxIdleConns
+		}
+
+		// dial_timeout
+		if err := parseDurationField(config, "dial_timeout", &conf.DialTimeout); err != nil {
+			return nil, err
+		}
+
+		// conn_max_lifetime
+		if err := parseDurationField(config, "conn_max_lifetime", &conf.ConnMaxLifetime); err != nil {
+			return nil, err
+		}
+
+		// read_timeout
+		if err := parseDurationField(config, "read_timeout", &conf.ReadTimeout); err != nil {
+			return nil, err
 		}
 	} else if conf.Provision {
 		// run clickhouse locally
