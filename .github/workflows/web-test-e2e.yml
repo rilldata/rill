@@ -102,6 +102,9 @@ jobs:
         if: matrix.name == 'web-admin'
         run: PLAYWRIGHT_TEST=true make cli-only
 
+      - name: Add CLI binary to PATH
+        run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+
       - name: Install browser for UI tests
         run: npx playwright install
 
@@ -114,9 +117,6 @@ jobs:
       - name: Set up GCloud SDK
         if: matrix.name == 'web-admin'
         uses: google-github-actions/setup-gcloud@v2
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
 
       - name: Test ${{ matrix.name }}
         run: |-
