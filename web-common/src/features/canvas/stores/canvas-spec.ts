@@ -3,6 +3,7 @@ import { type CanvasValidResponse } from "@rilldata/web-common/features/canvas/s
 import {
   MetricsViewSpecMeasureType,
   type MetricsViewSpecDimensionV2,
+  type MetricsViewSpecMeasureV2,
   type RpcStatus,
   type V1CanvasSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -15,15 +16,25 @@ export class CanvasResolvedSpec {
 
   getMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2[]>;
+  ) => Readable<MetricsViewSpecMeasureV2[]>;
 
   getSimpleMeasuresForMetricView: (
     metricViewName: string,
-  ) => Readable<MetricsViewSpecDimensionV2[]>;
+  ) => Readable<MetricsViewSpecMeasureV2[]>;
+
+  getMeasureForMetricView: (
+    measureName: string,
+    metricViewName: string,
+  ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
 
   getDimensionsForMetricView: (
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2[]>;
+
+  getDimensionForMetricView: (
+    dimensionName: string,
+    metricViewName: string,
+  ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
 
   constructor(
     validSpecStore: Readable<
@@ -73,5 +84,38 @@ export class CanvasResolvedSpec {
           $validSpecStore.data?.metricsViews[metricViewName];
         return metricsViewData?.state?.validSpec?.dimensions ?? [];
       });
+
+    this.getMeasureForMetricView = (
+      measureName: string,
+      metricViewName: string,
+    ) =>
+      derived(this.getMeasuresForMetricView(metricViewName), (measures) => {
+        return measures?.find((measure) => measure.name === measureName);
+      });
+
+    this.getDimensionForMetricView = (
+      dimensionName: string,
+      metricViewName: string,
+    ) =>
+      derived(this.getDimensionsForMetricView(metricViewName), (dimensions) => {
+        return dimensions?.find(
+          (d) => d.name === dimensionName || d.column === dimensionName,
+        );
+      });
+
+    // export const useAllDimensionFromMetrics = (
+    //   instanceId: string,
+    //   metricsViewNames: string[],
+    // ) => {
+    //   const dimensionsByViewStores = metricsViewNames.map((viewName) =>
+    //     useAllDimensionFromMetric(instanceId, viewName),
+    //   );
+    //   return derived(dimensionsByViewStores, ($dimensionsByViewStores) =>
+    //     $dimensionsByViewStores
+    //       .filter((dimensions) => dimensions?.data)
+    //       .map((dimensions) => dimensions.data)
+    //       .flat(),
+    //   );
+    // };
   }
 }

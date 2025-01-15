@@ -14,7 +14,6 @@ import {
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
-import { useMeasureDimensionSpec } from "../selectors";
 
 export type ChartDataResult = {
   data: V1MetricsViewAggregationResponseDataItem[];
@@ -23,7 +22,7 @@ export type ChartDataResult = {
     string,
     MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
   >;
-  error?: HTTPError;
+  error?: HTTPError | null;
 };
 
 export function getChartData(
@@ -32,6 +31,7 @@ export function getChartData(
   config: ChartConfig,
 ): Readable<ChartDataResult> {
   const chartDataQuery = createChartDataQuery(ctx, config);
+  const { spec } = ctx.canvasEntity;
 
   const fields: { name: string; type: "measure" | "dimension" }[] = [];
   if (config.y?.field) fields.push({ name: config.y.field, type: "measure" });
@@ -40,25 +40,21 @@ export function getChartData(
     fields.push({ name: config.color.field, type: "dimension" });
   }
 
-  const specQueries = useMeasureDimensionSpec(
-    instanceId,
-    config.metrics_view,
-    fields,
-  );
+  // Match each field to its corresponding measure or dimension spec.
+  const fieldReadableMap = fields.map((field) => {
+    if (field.type === "measure") {
+      return spec.getMeasureForMetricView(field.name, config.metrics_view);
+    } else {
+      return spec.getDimensionForMetricView(field.name, config.metrics_view);
+    }
+  });
 
   return derived(
-    [chartDataQuery, ...specQueries],
-    ([chartData, ...specResults]) => {
-      const isFetching =
-        specResults.some((q) => q?.isFetching) || chartData.isFetching;
-      const error = chartData.isError
-        ? chartData.error
-        : specResults.find((q) => q?.isError)?.error;
-
-      // For convenience, match each field to its corresponding data.
-      const resultMap = fields.reduce(
-        (acc, f, i) => {
-          acc[f.name] = specResults[i]?.data;
+    [chartDataQuery, ...fieldReadableMap],
+    ([chartData, ...fieldMap]) => {
+      const fieldSpecMap = fields.reduce(
+        (acc, field, index) => {
+          acc[field.name] = fieldMap?.[index];
           return acc;
         },
         {} as Record<
@@ -66,12 +62,11 @@ export function getChartData(
           MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
         >,
       );
-
       return {
         data: chartData?.data?.data || [],
-        isFetching,
-        error,
-        fields: resultMap,
+        isFetching: chartData.isFetching,
+        error: chartData.error,
+        fields: fieldSpecMap,
       };
     },
   );
