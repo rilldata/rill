@@ -34,11 +34,11 @@ jobs:
         id: filter
         with:
           filters: |
-            common:
+            cli:
               - "cli/**"
 
       - name: Check if CLI docs need to be generated
-        if: ${{ steps.filter.outputs.common == 'true' }}
+        if: ${{ steps.filter.outputs.cli == 'true' }}
         run: |
           echo "Changes detected in cli, generating docs"
           make docs.generate
