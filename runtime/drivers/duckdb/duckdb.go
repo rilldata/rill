@@ -488,7 +488,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
+		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
