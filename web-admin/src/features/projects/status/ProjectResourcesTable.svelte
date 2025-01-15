@@ -42,6 +42,9 @@
           message: row.original.meta.reconcileError,
           status: row.original.meta.reconcileStatus,
         }),
+      meta: {
+        marginLeft: "1",
+      },
     },
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
@@ -65,5 +68,5 @@
 <BasicTable
   {data}
   {columns}
-  columnLayout="minmax(95px, 120px) minmax(100px, 1fr) 54px minmax(80px, 210px) minmax(80px, 210px) "
+  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) "
 />

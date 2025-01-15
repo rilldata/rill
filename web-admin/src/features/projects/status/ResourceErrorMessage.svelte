@@ -13,7 +13,7 @@
 </script>
 
 <div class="container">
-  {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}}
+  {#if status === V1ReconcileStatus.RECONCILE_STATUS_PENDING || status === V1ReconcileStatus.RECONCILE_STATUS_RUNNING}
     <LoadingSpinner size="18px" />
   {:else if message}
     <Tooltip distance={8}>

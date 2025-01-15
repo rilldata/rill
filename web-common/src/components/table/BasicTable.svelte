@@ -79,16 +79,19 @@
           this={header.column.getCanSort() ? "button" : "div"}
           role="columnheader"
           tabindex="0"
-          class="pl-4 py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate"
+          class="pl-{header.column.columnDef.meta?.marginLeft ||
+            '4'} py-2 font-semibold text-gray-500 text-left flex flex-row items-center gap-x-1 truncate"
           on:click={header.column.getToggleSortingHandler()}
         >
           {#if !header.isPlaceholder}
-            <svelte:component
-              this={flexRender(
-                header.column.columnDef.header,
-                header.getContext(),
-              )}
-            />
+            <span class="truncate">
+              <svelte:component
+                this={flexRender(
+                  header.column.columnDef.header,
+                  header.getContext(),
+                )}
+              />
+            </span>
             {#if header.column.getIsSorted().toString() === "asc"}
               <span>
                 <ArrowDown flip size="12px" />
@@ -107,7 +110,10 @@
   {#each rows as row (row.id)}
     <div class="row {rowPadding}">
       {#each row.getVisibleCells() as cell (cell.id)}
-        <div class="pl-4 pr-1 flex items-center truncate">
+        <div
+          class="pl-{cell.column.columnDef.meta?.marginLeft ||
+            '4'} pr-1 flex items-center truncate"
+        >
           <svelte:component
             this={flexRender(cell.column.columnDef.cell, cell.getContext())}
           />
