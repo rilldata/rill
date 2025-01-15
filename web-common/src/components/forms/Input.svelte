@@ -9,6 +9,7 @@
   const voidFunction = () => {};
 
   export let value: number | string | undefined;
+  export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
   export let description = "";
@@ -43,12 +44,12 @@
     | undefined = undefined;
   export let additionalClass = "";
   export let onInput: (
-    newValue: string | number,
+    newValue: string,
     e: Event & {
       currentTarget: EventTarget & HTMLElement;
     },
   ) => void = voidFunction;
-  export let onChange: (newValue: string | number) => void = voidFunction;
+  export let onChange: (newValue: string) => void = voidFunction;
   export let onBlur: (
     e: FocusEvent & {
       currentTarget: EventTarget & HTMLDivElement;
@@ -60,7 +61,6 @@
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
-  export let inputType: "text" | "number" = "text";
   export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
@@ -172,10 +172,15 @@
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
-            value =
-              inputType === "number" && e.currentTarget.value !== ""
-                ? e.currentTarget.valueAsNumber
-                : e.currentTarget.value;
+            if (inputType === "number") {
+              if (e.currentTarget.value === "") {
+                value = "";
+              } else {
+                value = e.currentTarget.valueAsNumber;
+              }
+              return;
+            }
+            value = e.currentTarget.value;
             onInput(value, e);
           }}
           on:keydown={onKeydown}

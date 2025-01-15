@@ -6,22 +6,19 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
 
-  const { validSpecStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasSpec } = canvasEntity.spec;
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
-  $: themeName = themeFromUrl ?? $validSpecStore?.data?.canvas?.theme;
+  $: themeName = themeFromUrl ?? $canvasSpec?.theme;
   $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
 
-  $: setTheme(
-    $theme?.data?.theme?.spec ?? $validSpecStore?.data?.canvas?.embeddedTheme,
-  );
+  $: setTheme($theme?.data?.theme?.spec ?? $canvasSpec?.embeddedTheme);
 
   onMount(() => {
     // Handle the case where we have data in cache but the dashboard is not mounted yet
-    setTheme(
-      $theme?.data?.theme?.spec ?? $validSpecStore?.data?.canvas?.embeddedTheme,
-    );
+    setTheme($theme?.data?.theme?.spec ?? $canvasSpec?.embeddedTheme);
   });
 </script>
 

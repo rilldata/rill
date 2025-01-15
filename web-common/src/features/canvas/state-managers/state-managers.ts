@@ -1,13 +1,10 @@
-import {
-  useCanvasValidSpec,
-  type CanvasValidResponse,
-} from "@rilldata/web-common/features/canvas/selector";
-import { type RpcStatus } from "@rilldata/web-common/runtime-client";
+import { useCanvasValidSpec } from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
-import { derived, writable, type Readable, type Writable } from "svelte/store";
+import { derived, writable, type Writable } from "svelte/store";
 import { useCanvasEntity } from "../stores/canvas-entities";
 import type { CanvasEntity } from "../stores/canvas-entity";
 
@@ -15,9 +12,6 @@ export type StateManagers = {
   runtime: Writable<Runtime>;
   canvasName: Writable<string>;
   canvasEntity: CanvasEntity;
-  validSpecStore: Readable<
-    QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
-  >;
   queryClient: QueryClient;
 };
 
@@ -36,23 +30,20 @@ export function createStateManagers({
 }): StateManagers {
   const canvasNameStore = writable(canvasName);
 
-  const canvasEntity = useCanvasEntity(canvasName);
-
-  const validSpecStore: Readable<
-    QueryObserverResult<CanvasValidResponse, RpcStatus>
-  > = derived([runtime, canvasNameStore], ([r, canvasName], set) =>
-    useCanvasValidSpec(r.instanceId, canvasName, { queryClient }).subscribe(
-      set,
-    ),
+  const validSpecStore: CanvasSpecResponseStore = derived(
+    [runtime, canvasNameStore],
+    ([r, canvasName], set) =>
+      useCanvasValidSpec(r.instanceId, canvasName, { queryClient }).subscribe(
+        set,
+      ),
   );
 
-  canvasEntity.timeControls.setInitialState(runtime, validSpecStore);
+  const canvasEntity = useCanvasEntity(canvasName, validSpecStore);
 
   return {
     runtime: runtime,
     canvasName: canvasNameStore,
     canvasEntity,
-    validSpecStore,
     queryClient,
   };
 }

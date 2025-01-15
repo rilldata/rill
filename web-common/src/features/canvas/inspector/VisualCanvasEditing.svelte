@@ -9,7 +9,8 @@
 
   export let fileArtifact: FileArtifact;
 
-  const { validSpecStore, canvasEntity } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasSpec } = canvasEntity.spec;
 
   $: ({
     editorContent,
@@ -24,8 +25,7 @@
 
   $: selectedComponentName =
     $selectedComponentIndex !== null
-      ? $validSpecStore?.data?.canvas?.items?.[$selectedComponentIndex]
-          ?.component
+      ? $canvasSpec?.items?.[$selectedComponentIndex]?.component
       : null;
 
   async function updateProperties(

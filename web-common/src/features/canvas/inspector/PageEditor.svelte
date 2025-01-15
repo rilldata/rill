@@ -1,7 +1,7 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
+  import { DEFAULT_DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
@@ -32,7 +32,8 @@
   ) => Promise<void>;
   export let fileArtifact: FileArtifact;
 
-  const { validSpecStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasSpec } = canvasEntity.spec;
 
   $: ({ instanceId } = $runtime);
 
@@ -72,7 +73,7 @@
     await updateProperties(properties);
   }
 
-  $: maxWidth = numberGuard(rawMaxWidth) ?? DASHBOARD_WIDTH;
+  $: maxWidth = numberGuard(rawMaxWidth) ?? DEFAULT_DASHBOARD_WIDTH;
 
   $: title = stringGuard(rawTitle) || stringGuard(rawDisplayName);
 
@@ -87,7 +88,7 @@
     : typeof rawTheme === "string"
       ? rawTheme
       : rawTheme instanceof YAMLMap
-        ? $validSpecStore?.data?.canvas?.embeddedTheme
+        ? $canvasSpec?.embeddedTheme
         : undefined;
 </script>
 

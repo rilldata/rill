@@ -1,4 +1,5 @@
 import type { CanvasValidResponse } from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { getTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
@@ -12,7 +13,10 @@ import {
   V1TimeGrain,
   type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import {
+  runtime,
+  type Runtime,
+} from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import {
   derived,
@@ -33,7 +37,8 @@ export class CanvasTimeControls {
   allTimeRange: Readable<TimeRange>;
   isReady: Writable<boolean>;
 
-  constructor() {
+  constructor(validSpecStore: CanvasSpecResponseStore) {
+    // TODO: Refactor this
     this.allTimeRange = writable({
       name: TimeRangePreset.ALL_TIME,
       start: new Date(0),
@@ -50,14 +55,11 @@ export class CanvasTimeControls {
     this.selectedTimezone = writable("UTC");
 
     this.isReady = writable(true);
+
+    this.setInitialState(validSpecStore);
   }
 
-  setInitialState(
-    runtime: Writable<Runtime>,
-    validSpecStore: Readable<
-      QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
-    >,
-  ) {
+  setInitialState(validSpecStore: CanvasSpecResponseStore) {
     this.timeRangeSummaryStore(runtime, validSpecStore);
     const store = derived(
       [this.allTimeRange, validSpecStore],

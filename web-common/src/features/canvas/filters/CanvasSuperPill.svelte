@@ -28,16 +28,15 @@
   export let activeTimeZone: string;
 
   const ctx = getCanvasStateManagers();
-  const { validSpecStore, canvasName, canvasEntity } = ctx;
+  const { canvasName, canvasEntity } = ctx;
+  const { canvasSpec } = ctx.canvasEntity.spec;
   const { timeControls } = canvasEntity;
 
   $: localUserPreferences = initLocalUserPreferenceStore($canvasName);
 
-  $: canvasSpec = $validSpecStore.data?.canvas;
-
   $: selectedRange = selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS;
 
-  $: defaultTimeRange = canvasSpec?.defaultPreset?.timeRange || "PT24H";
+  $: defaultTimeRange = $canvasSpec?.defaultPreset?.timeRange || "PT24H";
 
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
@@ -46,7 +45,7 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  $: availableTimeZones = canvasSpec?.timeZones ?? [];
+  $: availableTimeZones = $canvasSpec?.timeZones ?? [];
 
   $: ({
     latestWindowTimeRanges,
