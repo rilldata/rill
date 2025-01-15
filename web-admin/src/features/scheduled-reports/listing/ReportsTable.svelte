@@ -1,24 +1,14 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
-  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
-  import { useReports } from "../selectors";
-  import NoReportsCTA from "./NoReportsCTA.svelte";
-  import ReportsError from "./ReportsError.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
 
+  export let data: V1Resource[];
   export let organization: string;
   export let project: string;
-
-  $: ({ instanceId } = $runtime);
-
-  $: reports = useReports(instanceId);
 
   /**
    * Table column definitions.
@@ -35,8 +25,8 @@
       id: "composite",
       cell: (info) =>
         flexRender(ReportsTableCompositeCell, {
-          organization: organization,
-          project: project,
+          organization,
+          project,
           id: info.row.original.meta.name.name,
           title: info.row.original.report.spec.displayName,
           lastRun:
@@ -76,20 +66,6 @@
   };
 </script>
 
-{#if $reports.isLoading}
-  <div class="m-auto mt-20">
-    <DelayedSpinner isLoading={$reports.isLoading} size="24px" />
-  </div>
-{:else if $reports.isError}
-  <ReportsError />
-{:else if $reports.isSuccess}
-  {#if $reports.data.resources.length === 0}
-    <NoReportsCTA />
-  {:else}
-    <Table {columns} data={$reports?.data?.resources} {columnVisibility}>
-      <Toolbar slot="toolbar" />
-      <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
-      <ResourceTableEmpty kind="report" slot="empty" />
-    </Table>
-  {/if}
-{/if}
+<Table {columns} {data} {columnVisibility} kind="report">
+  <ResourceHeader kind="report" icon={ReportIcon} slot="header" />
+</Table>
