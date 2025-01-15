@@ -1,4 +1,3 @@
-import { createTimeAndFilterStore } from "@rilldata/web-common/features/canvas/components/time-filter-store";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
@@ -21,12 +20,16 @@ export function useKPITotals(
   measure: string,
   overrideTimeRange: string | undefined,
 ): CreateQueryResult<number | null, HTTPError> {
-  const { selectedTimeRange } = ctx.canvasEntity.timeControls;
+  const { canvasEntity } = ctx;
+  const { selectedTimeRange } = canvasEntity.timeControls;
 
-  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
-    timeRangeStore: selectedTimeRange,
-    overrideTimeRange: overrideTimeRange,
-  });
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    metricsViewName,
+    {
+      timeRangeStore: selectedTimeRange,
+      overrideTimeRange: overrideTimeRange,
+    },
+  );
 
   return derived(timeAndFilterStore, ({ timeRange, where }, set) => {
     return createQueryServiceMetricsViewAggregation(
@@ -58,14 +61,18 @@ export function useKPIComparisonTotal(
   measure: string,
   overrideComparisonRange: string | undefined,
 ): CreateQueryResult<number | null, HTTPError> {
+  const { canvasEntity } = ctx;
   const { showTimeComparison, selectedComparisonTimeRange } =
-    ctx.canvasEntity.timeControls;
+    canvasEntity.timeControls;
 
   // Build the store that yields { finalTimeRange, where }
-  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
-    timeRangeStore: selectedComparisonTimeRange,
-    overrideTimeRange: overrideComparisonRange,
-  });
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    metricsViewName,
+    {
+      timeRangeStore: selectedComparisonTimeRange,
+      overrideTimeRange: overrideComparisonRange,
+    },
+  );
 
   return derived(
     [timeAndFilterStore, showTimeComparison],
@@ -108,12 +115,16 @@ export function useKPISparkline(
     metricsViewName,
     { query: { queryClient: ctx.queryClient } },
   );
-  const { selectedTimeRange } = ctx.canvasEntity.timeControls;
+  const { canvasEntity } = ctx;
+  const { selectedTimeRange } = canvasEntity.timeControls;
 
-  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
-    timeRangeStore: selectedTimeRange,
-    overrideTimeRange: overrideTimeRange,
-  });
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    metricsViewName,
+    {
+      timeRangeStore: selectedTimeRange,
+      overrideTimeRange: overrideTimeRange,
+    },
+  );
 
   return derived(
     [allTimeRangeQuery, selectedTimeRange, timeAndFilterStore],
