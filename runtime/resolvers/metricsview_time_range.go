@@ -109,34 +109,22 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	minTime, maxTime, watermark, err := r.executor.Timestamps(ctx, nil)
+	ts, err := r.executor.Timestamps(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	row := map[string]any{}
-	if !minTime.IsZero() {
-		row["min"] = minTime
-		row["max"] = maxTime
-		row["watermark"] = watermark
-		row["interval"] = durationToInterval(maxTime.Sub(minTime))
+	if !ts.Min.IsZero() {
+		row["min"] = ts.Min
+		row["max"] = ts.Max
+		row["watermark"] = ts.Watermark
 	}
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
 			{Name: "min", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
 			{Name: "max", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
 			{Name: "watermark", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP, Nullable: true}},
-			{Name: "interval", Type: &runtimev1.Type{
-				Code: runtimev1.Type_CODE_STRUCT,
-				StructType: &runtimev1.StructType{
-					Fields: []*runtimev1.StructType_Field{
-						{Name: "days", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
-						{Name: "months", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT32}},
-						{Name: "micros", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}},
-					},
-				},
-				Nullable: true,
-			}},
 		},
 	}
 	return runtime.NewMapsResolverResult([]map[string]any{row}, schema), nil

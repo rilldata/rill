@@ -479,7 +479,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 
 type decodedTimeRangeSummary struct {
 	Min, Max, Watermark string
-	Interval            *runtimev1.TimeRangeSummary_Interval
 }
 
 func decodeTimeRangeSummary(row map[string]any) (*runtimev1.TimeRangeSummary, error) {
@@ -508,6 +507,5 @@ func decodeTimeRangeSummary(row map[string]any) (*runtimev1.TimeRangeSummary, er
 		Min:       timestamppb.New(minTime),
 		Max:       timestamppb.New(maxTime),
 		Watermark: timestamppb.New(watermark),
-		Interval:  timeRangeSummary.Interval,
 	}, nil
 }

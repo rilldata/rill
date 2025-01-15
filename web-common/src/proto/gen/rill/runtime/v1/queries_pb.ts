@@ -5007,13 +5007,6 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
    */
   watermark?: Timestamp;
 
-  /**
-   * Not optional, not null
-   *
-   * @generated from field: rill.runtime.v1.TimeRangeSummary.Interval interval = 3;
-   */
-  interval?: TimeRangeSummary_Interval;
-
   constructor(data?: PartialMessage<TimeRangeSummary>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5025,7 +5018,6 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
     { no: 1, name: "min", kind: "message", T: Timestamp },
     { no: 2, name: "max", kind: "message", T: Timestamp },
     { no: 4, name: "watermark", kind: "message", T: Timestamp },
-    { no: 3, name: "interval", kind: "message", T: TimeRangeSummary_Interval },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRangeSummary {
@@ -5042,55 +5034,6 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
 
   static equals(a: TimeRangeSummary | PlainMessage<TimeRangeSummary> | undefined, b: TimeRangeSummary | PlainMessage<TimeRangeSummary> | undefined): boolean {
     return proto3.util.equals(TimeRangeSummary, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.TimeRangeSummary.Interval
- */
-export class TimeRangeSummary_Interval extends Message<TimeRangeSummary_Interval> {
-  /**
-   * @generated from field: int32 months = 1;
-   */
-  months = 0;
-
-  /**
-   * @generated from field: int32 days = 2;
-   */
-  days = 0;
-
-  /**
-   * @generated from field: int64 micros = 3;
-   */
-  micros = protoInt64.zero;
-
-  constructor(data?: PartialMessage<TimeRangeSummary_Interval>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.TimeRangeSummary.Interval";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "months", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "micros", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: TimeRangeSummary_Interval | PlainMessage<TimeRangeSummary_Interval> | undefined, b: TimeRangeSummary_Interval | PlainMessage<TimeRangeSummary_Interval> | undefined): boolean {
-    return proto3.util.equals(TimeRangeSummary_Interval, a, b);
   }
 }
 

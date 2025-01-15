@@ -14,7 +14,13 @@ const (
 	defaultExecutionTimeout = time.Minute * 3
 )
 
-func (e *Executor) resolveDuckDB(ctx context.Context) (time.Time, time.Time, time.Time, error) {
+var ErrNoTimestampData = errors.New("no data for timestamp calculation")
+
+func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (TimestampsResult, error) {
+	filter := e.security.RowFilter()
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
 	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
@@ -26,11 +32,11 @@ func (e *Executor) resolveDuckDB(ctx context.Context) (time.Time, time.Time, tim
 	}
 
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[3]s %[4]s",
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
 		timeDim,
 		watermarkExpr,
 		escapedTableName,
-		e.security.RowFilter(),
+		filter,
 	)
 
 	rows, err := e.olap.Execute(ctx, &drivers.Statement{
@@ -39,34 +45,35 @@ func (e *Executor) resolveDuckDB(ctx context.Context) (time.Time, time.Time, tim
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
+		return TimestampsResult{}, err
 	}
 	defer rows.Close()
 
 	if rows.Next() {
-		rowMap := make(map[string]any)
-		err = rows.MapScan(rowMap)
+		var minTime, maxTime, watermark *time.Time
+		err = rows.Scan(&minTime, &maxTime, &watermark)
 		if err != nil {
-			return time.Time{}, time.Time{}, time.Time{}, err
+			return TimestampsResult{}, err
 		}
-		if v := rowMap["min"]; v != nil {
-			minTime, ok := v.(time.Time)
-			if !ok {
-				return time.Time{}, time.Time{}, time.Time{}, fmt.Errorf("not a timestamp column")
-			}
-			return minTime, rowMap["max"].(time.Time), rowMap["watermark"].(time.Time), nil
+		if minTime == nil {
+			return TimestampsResult{}, ErrNoTimestampData
 		}
+		return TimestampsResult{
+			Min:       *minTime,
+			Max:       *maxTime,
+			Watermark: *watermark,
+		}, nil
 	}
 
 	err = rows.Err()
 	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
+		return TimestampsResult{}, err
 	}
 
-	return time.Time{}, time.Time{}, time.Time{}, errors.New("no rows returned")
+	return TimestampsResult{}, errors.New("no rows returned")
 }
 
-func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time.Time, error) {
+func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	filter := e.security.RowFilter()
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
@@ -74,7 +81,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time
 	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
 	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
 
-	var minTime, maxTime, watermark time.Time
+	var ts TimestampsResult
 	group, ctx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
@@ -96,7 +103,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time
 		defer rows.Close()
 
 		if rows.Next() {
-			err = rows.Scan(&minTime)
+			err = rows.Scan(&ts.Min)
 			if err != nil {
 				return err
 			}
@@ -130,7 +137,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time
 		defer rows.Close()
 
 		if rows.Next() {
-			err = rows.Scan(&maxTime)
+			err = rows.Scan(&ts.Max)
 			if err != nil {
 				return err
 			}
@@ -170,7 +177,7 @@ func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time
 		defer rows.Close()
 
 		if rows.Next() {
-			err = rows.Scan(&watermark)
+			err = rows.Scan(&ts.Watermark)
 			if err != nil {
 				return err
 			}
@@ -186,58 +193,8 @@ func (e *Executor) resolveDruid(ctx context.Context) (time.Time, time.Time, time
 
 	err := group.Wait()
 	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
+		return TimestampsResult{}, err
 	}
 
-	return minTime, maxTime, watermark, nil
-}
-
-func (e *Executor) resolveClickHouseAndPinot(ctx context.Context) (time.Time, time.Time, time.Time, error) {
-	filter := e.security.RowFilter()
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-	timeDim := e.olap.Dialect().EscapeIdentifier(e.metricsView.TimeDimension)
-	escapedTableName := e.olap.Dialect().EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table)
-
-	var watermarkExpr string
-	if e.metricsView.WatermarkExpression != "" {
-		watermarkExpr = e.metricsView.WatermarkExpression
-	} else {
-		watermarkExpr = fmt.Sprintf("MAX(%s)", timeDim)
-	}
-
-	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\", %[2]s as \"watermark\" FROM %[3]s %[4]s",
-		timeDim,
-		watermarkExpr,
-		escapedTableName,
-		filter,
-	)
-
-	rows, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            rangeSQL,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var minVal, maxVal, watermark *time.Time
-		err = rows.Scan(&minVal, &maxVal, &watermark)
-		if err != nil {
-			return time.Time{}, time.Time{}, time.Time{}, err
-		}
-		return *minVal, *maxVal, *watermark, nil
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
-	}
-
-	return time.Time{}, time.Time{}, time.Time{}, errors.New("no rows returned")
+	return ts, nil
 }

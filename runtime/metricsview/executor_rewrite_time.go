@@ -12,9 +12,13 @@ import (
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
-	_, _, watermark, err := e.Timestamps(ctx, executionTime)
+	if e.metricsView.TimeDimension == "" {
+		return nil
+	}
+
+	ts, err := e.Timestamps(ctx, executionTime)
 	if err != nil {
-		return fmt.Errorf("failed to fetch time stamps: %w", err)
+		return fmt.Errorf("failed to fetch timestamps: %w", err)
 	}
 
 	tz := time.UTC
@@ -26,12 +30,12 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err = e.resolveTimeRange(qry.TimeRange, tz, watermark)
+	err = e.resolveTimeRange(qry.TimeRange, tz, ts.Watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, watermark)
+	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, ts.Watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}

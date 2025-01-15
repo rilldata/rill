@@ -132,44 +132,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: instanceID,
-		Resolver:   "metrics_time_range",
-		ResolverProperties: map[string]any{
-			"metrics_view": q.MetricsViewName,
-		},
-		Args: map[string]any{
-			"priority": q.Priority,
-		},
-		Claims: q.SecurityClaims,
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Close()
-
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return errors.New("time range query returned no results")
-		}
-		return err
-	}
-
-	minTime, err := anyToTime(row["min"].(string))
-	if err != nil {
-		return err
-	}
-	maxTime, err := anyToTime(row["max"].(string))
-	if err != nil {
-		return err
-	}
-	watermark, err := anyToTime(row["watermark"].(string))
+	tsRes, err := q.resolveTimestampResult(ctx, rt, instanceID)
 	if err != nil {
 		return err
 	}
 
-	err = e.BindQuery(ctx, qry, minTime, maxTime, watermark)
+	err = e.BindQuery(ctx, qry, tsRes)
 	if err != nil {
 		return err
 	}
@@ -375,6 +343,49 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	return qry, nil
 }
 
+func (q *MetricsViewAggregation) resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID string) (metricsview.TimestampsResult, error) {
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_time_range",
+		ResolverProperties: map[string]any{
+			"metrics_view": q.MetricsViewName,
+		},
+		Args: map[string]any{
+			"priority": q.Priority,
+		},
+		Claims: q.SecurityClaims,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+		}
+		return metricsview.TimestampsResult{}, err
+	}
+
+	tsRes := metricsview.TimestampsResult{}
+
+	tsRes.Min, err = anyToTime(row["min"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Max, err = anyToTime(row["max"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Watermark, err = anyToTime(row["watermark"])
+	if err != nil {
+		return tsRes, err
+	}
+
+	return tsRes, nil
+}
+
 func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.Expression, error) {
 	if expr != nil && sql != "" {
 		sqlExpr, err := metricssqlparser.ParseSQLFilter(sql)
@@ -403,7 +414,11 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 func anyToTime(tm any) (time.Time, error) {
 	tmStr, ok := tm.(string)
 	if !ok {
-		return time.Time{}, errors.New("invalid type")
+		t, ok := tm.(time.Time)
+		if !ok {
+			return time.Time{}, errors.New("invalid type")
+		}
+		return t, nil
 	}
-	return time.Parse(time.RFC3339, tmStr)
+	return time.Parse(time.RFC3339Nano, tmStr)
 }

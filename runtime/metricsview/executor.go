@@ -36,6 +36,13 @@ type Executor struct {
 	instanceCfg drivers.InstanceConfig
 
 	min, max, watermark time.Time
+	timestamps          TimestampsResult
+}
+
+type TimestampsResult struct {
+	Min       time.Time
+	Max       time.Time
+	Watermark time.Time
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -84,11 +91,11 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			return []byte(""), true, nil
 		}
 		// watermark is the default cache key for streaming metrics views
-		_, _, watermark, err := e.Timestamps(ctx, nil)
+		ts, err := e.Timestamps(ctx, nil)
 		if err != nil {
 			return nil, false, err
 		}
-		return []byte(watermark.Format(time.RFC3339)), true, nil
+		return []byte(ts.Watermark.Format(time.RFC3339)), true, nil
 	}
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
@@ -128,38 +135,43 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 }
 
 // Timestamps queries min, max and watermark for the metrics view
-func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (time.Time, time.Time, time.Time, error) {
+func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (TimestampsResult, error) {
 	if !e.min.IsZero() {
-		return e.min, e.max, e.watermark, nil
+		return e.timestamps, nil
 	}
 
 	var err error
 	switch e.olap.Dialect() {
-	case drivers.DialectDuckDB:
-		e.min, e.max, e.watermark, err = e.resolveDuckDB(ctx)
+	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
+		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
 	case drivers.DialectDruid:
-		e.min, e.max, e.watermark, err = e.resolveDruid(ctx)
-	case drivers.DialectClickHouse:
-		e.min, e.max, e.watermark, err = e.resolveClickHouseAndPinot(ctx)
-	case drivers.DialectPinot:
-		e.min, e.max, e.watermark, err = e.resolveClickHouseAndPinot(ctx)
+		e.timestamps, err = e.resolveDruid(ctx)
 	default:
-		return time.Time{}, time.Time{}, time.Time{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
+		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
 	}
 	if err != nil {
-		return time.Time{}, time.Time{}, time.Time{}, err
+		if errors.Is(err, ErrNoTimestampData) {
+			// we should not fail when there is no data
+			// this replicates the old `t.IsZero()` check in `loadWatermark`
+			e.timestamps = TimestampsResult{
+				Min:       time.Now(),
+				Max:       time.Now(),
+				Watermark: time.Now(),
+			}
+		} else {
+			return TimestampsResult{}, err
+		}
 	}
+
 	if executionTime != nil {
 		e.watermark = *executionTime
 	}
-	return e.min, e.max, e.watermark, nil
+	return e.timestamps, nil
 }
 
 // BindQuery allows to set min, max and watermark from a cache.
-func (e *Executor) BindQuery(ctx context.Context, qry *Query, minTime, maxTime, watermark time.Time) error {
-	e.min = minTime
-	e.max = maxTime
-	e.watermark = watermark
+func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
+	e.timestamps = timestamps
 	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
