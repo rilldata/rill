@@ -11,7 +11,7 @@ on:
       - "web-common/**"
       - "web-local/**"
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -59,34 +59,19 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    needs: build
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
-        name: ${{ fromJson(needs.build.outputs.matrix) }}
+        name: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Set up go for E2E
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: go build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
 
       - name: NPM Install
         run: npm install
@@ -94,8 +79,28 @@ jobs:
         env:
           HUSKY: 0
 
+      - name: Set up go for E2E
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('./go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Build and embed static UI
+        if: matrix.name == 'web-local'
         run: PLAYWRIGHT_TEST=true make cli
+
+      - name: Build rill cli only
+        if: matrix.name == 'web-admin'
+        run: PLAYWRIGHT_TEST=true make cli-only
 
       - name: Add CLI binary to PATH
         run: echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
