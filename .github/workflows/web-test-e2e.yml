@@ -122,6 +122,7 @@ jobs:
       - name: Add CLI binary to PATH
         run: |
           chmod +x rill
+          ls -lrt
           echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
 
       - name: Install browser for UI tests
