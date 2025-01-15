@@ -9,6 +9,13 @@ export const toggleMeasureVisibility = (
     const deleted = dashboard.visibleMeasureKeys.delete(measureName);
     if (!deleted) {
       dashboard.visibleMeasureKeys.add(measureName);
+    } else if (
+      dashboard.leaderboardMeasureName === measureName &&
+      dashboard.visibleMeasureKeys.size > 0
+    ) {
+      dashboard.leaderboardMeasureName = dashboard.visibleMeasureKeys
+        .keys()
+        .next().value;
     }
   } else {
     const allSelected =

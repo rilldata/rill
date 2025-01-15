@@ -3,6 +3,7 @@
   import DashboardVisibilityDropdown from "@rilldata/web-common/components/menu/shadcn/DashboardVisibilityDropdown.svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import { getFilteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "../state-managers/state-managers";
 
@@ -10,11 +11,7 @@
 
   const {
     selectors: {
-      measures: {
-        filteredSimpleMeasures,
-        leaderboardMeasureName,
-        getMeasureByName,
-      },
+      measures: { leaderboardMeasureName, getMeasureByName, visibleMeasures },
       dimensions: { visibleDimensions, allDimensions },
     },
     actions: {
@@ -26,7 +23,7 @@
 
   let active = false;
 
-  $: measures = $filteredSimpleMeasures();
+  $: measures = getFilteredSimpleMeasures($visibleMeasures);
 
   $: metricsExplorer = $metricsExplorerStore.entities[exploreName];
 
