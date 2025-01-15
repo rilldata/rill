@@ -188,7 +188,7 @@
   {scale}
   {showGrid}
   height={maxBottom * gridCell * scale}
-  width={defaults.DASHBOARD_WIDTH}
+  width={defaults.DEFAULT_DASHBOARD_WIDTH}
   on:click={deselect}
   on:scroll={handleScroll}
 >

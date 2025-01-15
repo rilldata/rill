@@ -84,7 +84,7 @@
   ];
 
   $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
-  $: [xMin, xMax] = extent(sparkData, (d) => d["ts"]);
+  $: [xMin, xMax] = extent(sparkData, (d) => d["ts_position"]);
 
   $: measureValueFormatter = measure
     ? createMeasureValueFormatter<null>(measure, "big-number")

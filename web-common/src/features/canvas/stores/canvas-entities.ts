@@ -1,11 +1,12 @@
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { CanvasEntity } from "./canvas-entity";
 
 export class CanvasEntities {
   private entities: Map<string, CanvasEntity> = new Map();
 
-  addCanvas(name: string) {
+  addCanvas(name: string, validSpecStore: CanvasSpecResponseStore) {
     if (!this.entities.has(name)) {
-      this.entities.set(name, new CanvasEntity(name));
+      this.entities.set(name, new CanvasEntity(name, validSpecStore));
     }
   }
 
@@ -17,11 +18,11 @@ export class CanvasEntities {
     return this.entities.has(name);
   }
 
-  getCanvas(name: string) {
+  getCanvas(name: string, validSpecStore: CanvasSpecResponseStore) {
     let canvasEntity = this.entities.get(name);
 
     if (!canvasEntity) {
-      canvasEntity = new CanvasEntity(name);
+      canvasEntity = new CanvasEntity(name, validSpecStore);
       this.entities.set(name, canvasEntity);
     }
 
@@ -31,6 +32,9 @@ export class CanvasEntities {
 
 export const canvasEntities = new CanvasEntities();
 
-export function useCanvasEntity(name: string) {
-  return canvasEntities.getCanvas(name);
+export function useCanvasEntity(
+  name: string,
+  validSpecStore: CanvasSpecResponseStore,
+) {
+  return canvasEntities.getCanvas(name, validSpecStore);
 }

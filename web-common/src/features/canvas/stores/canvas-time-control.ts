@@ -1,4 +1,8 @@
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasValidResponse } from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
+import { getTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   TimeRangePreset,
   type DashboardTimeControls,
@@ -7,17 +11,39 @@ import {
 import {
   createQueryServiceMetricsViewTimeRange,
   V1TimeGrain,
+  type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import { derived, writable, type Readable, type Writable } from "svelte/store";
+import {
+  runtime,
+  type Runtime,
+} from "@rilldata/web-common/runtime-client/runtime-store";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 
 export class CanvasTimeControls {
+  /**
+   * Writables
+   */
   selectedTimeRange: Writable<DashboardTimeControls>;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;
   allTimeRange: Readable<TimeRange>;
+  isReady: Writable<boolean>;
 
-  constructor() {
+  constructor(validSpecStore: CanvasSpecResponseStore) {
+    // TODO: Refactor this
+    this.allTimeRange = writable({
+      name: TimeRangePreset.ALL_TIME,
+      start: new Date(0),
+      end: new Date(),
+    });
     this.selectedTimeRange = writable({
       name: TimeRangePreset.ALL_TIME,
       start: new Date(0),
@@ -27,34 +53,70 @@ export class CanvasTimeControls {
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
+
+    this.isReady = writable(true);
+
+    this.setInitialState(validSpecStore);
   }
 
-  combineAllTimeRange(ctx: StateManagers) {
-    const timeRangeSummaryStore: Readable<TimeRange> = derived(
-      [ctx.runtime, ctx.validSpecStore],
+  setInitialState(validSpecStore: CanvasSpecResponseStore) {
+    this.timeRangeSummaryStore(runtime, validSpecStore);
+    const store = derived(
+      [this.allTimeRange, validSpecStore],
+      ([allTimeRange, validSpec]) => {
+        if (!validSpec.data) {
+          this.isReady.set(false);
+        }
+
+        const selectedTimezone = get(this.selectedTimezone);
+        const defaultTimeRange = isoDurationToFullTimeRange(
+          validSpec.data?.canvas?.defaultPreset?.timeRange,
+          allTimeRange.start,
+          allTimeRange.end,
+          selectedTimezone,
+        );
+
+        const newTimeRange: DashboardTimeControls = {
+          name: defaultTimeRange.name,
+          start: defaultTimeRange.start,
+          end: defaultTimeRange.end,
+        };
+
+        newTimeRange.interval = getTimeGrain(
+          undefined,
+          newTimeRange,
+          V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        );
+
+        this.selectedTimeRange.set(newTimeRange);
+        this.isReady.set(true);
+      },
+    );
+
+    // Subscribe to ensure the derived code runs
+    store.subscribe(() => {});
+  }
+
+  timeRangeSummaryStore = (
+    runtime: Writable<Runtime>,
+    validSpecStore: Readable<
+      QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
+    >,
+  ) => {
+    this.allTimeRange = derived(
+      [runtime, validSpecStore],
       ([r, validSpec], set) => {
-        const metricsReferred = new Set<string>();
-        if (validSpec?.data?.items?.length) {
-          validSpec.data.items.forEach((component) => {
-            // TODO: Spec should contain individual component spec
-            const metricsView = component["metrics_view"] as string | undefined;
-            if (metricsView) {
-              metricsReferred.add(metricsView);
-            }
-          });
-        } else {
+        const metricsReferred = Object.keys(
+          validSpec?.data?.metricsViews || {},
+        );
+        if (!metricsReferred.length) {
           return set({
+            name: TimeRangePreset.ALL_TIME,
             start: new Date(0),
             end: new Date(),
           });
         }
-        console.log(metricsReferred);
-        if (metricsReferred.size === 0) {
-          return set({
-            start: new Date(0),
-            end: new Date(),
-          });
-        }
+
         const timeRangeQueries = [...metricsReferred].map((metricView) => {
           return createQueryServiceMetricsViewTimeRange(
             r.instanceId,
@@ -62,7 +124,7 @@ export class CanvasTimeControls {
             {},
             {
               query: {
-                queryClient: ctx.queryClient,
+                queryClient: queryClient,
                 staleTime: Infinity,
                 cacheTime: Infinity,
               },
@@ -71,10 +133,9 @@ export class CanvasTimeControls {
         });
 
         return derived(timeRangeQueries, (timeRanges, querySet) => {
-          let start = new Date(0);
-          let end = new Date();
+          let start = new Date();
+          let end = new Date(0);
           timeRanges.forEach((timeRange) => {
-            console.log(timeRange);
             const metricsStart = timeRange.data?.timeRangeSummary?.min;
             const metricsEnd = timeRange.data?.timeRangeSummary?.max;
             if (metricsStart) {
@@ -88,14 +149,11 @@ export class CanvasTimeControls {
               end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
             }
           });
-          querySet({ start, end });
+          querySet({ name: TimeRangePreset.ALL_TIME, start, end });
         }).subscribe(set);
       },
     );
-
-    this.allTimeRange = timeRangeSummaryStore;
-    return timeRangeSummaryStore;
-  }
+  };
 
   setTimeZone(timezone: string) {
     this.selectedTimezone.set(timezone);

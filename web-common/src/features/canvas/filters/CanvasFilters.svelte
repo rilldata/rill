@@ -16,7 +16,6 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -30,20 +29,15 @@
   const ROW_HEIGHT = "26px";
 
   const { instanceId } = $runtime;
-  const { canvasEntity } = getCanvasStateManagers();
-  const { timeControls, filters } = canvasEntity;
+  const ctx = getCanvasStateManagers();
+  const { timeControls, filters } = ctx.canvasEntity;
 
   $: selectedTimeRange = timeControls.selectedTimeRange;
   $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
   $: activeTimeZone = timeControls.selectedTimezone;
 
   $: whereFilter = filters.whereFilter;
-
-  const allTimeRange = {
-    name: TimeRangePreset.ALL_TIME,
-    start: new Date(0),
-    end: new Date(),
-  };
+  $: allTimeRange = timeControls.allTimeRange;
 
   const {
     toggleDimensionValueSelection,
@@ -122,12 +116,12 @@
   <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
     <Calendar size="16px" />
     <CanvasSuperPill
-      {allTimeRange}
+      allTimeRange={$allTimeRange}
       selectedTimeRange={$selectedTimeRange}
       activeTimeZone={$activeTimeZone}
     />
     <CanvasComparisonPill
-      {allTimeRange}
+      allTimeRange={$allTimeRange}
       selectedTimeRange={$selectedTimeRange}
       selectedComparisonTimeRange={$selectedComparisonTimeRange}
     />
