@@ -15,16 +15,6 @@ setup(
     const timeout = 180_000;
     setup.setTimeout(timeout);
 
-    // Check that the required environment variables are set
-    if (
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
-    ) {
-      throw new Error(
-        "Missing required environment variables for authentication",
-      );
-    }
-
     // Get the repository root directory, the only place from which `rill devtool` is allowed to be run
     const currentDir = path.dirname(fileURLToPath(import.meta.url));
     const repoRoot = path.resolve(currentDir, "../../../");
@@ -40,6 +30,17 @@ setup(
         timeoutMs: timeout,
       },
     );
+
+    // Check that the required environment variables are set
+    // The above `rill devtool` command pulls the `.env` file with these values.
+    if (
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
+    ) {
+      throw new Error(
+        "Missing required environment variables for authentication",
+      );
+    }
 
     // Start the admin and runtime services in a detached background process.
     // A detached process ensures they are not cleaned up when this setup project completes.
