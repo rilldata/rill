@@ -32,7 +32,7 @@
   }
 
   .option-wrapper.small {
-    @apply h-5 text-xs;
+    @apply h-6 text-xs;
   }
 
   .expand {

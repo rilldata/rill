@@ -57,6 +57,7 @@
 
   <FieldSwitcher
     {small}
+    expand
     fields={["Presets", "Custom"]}
     selected={presetMode ? 0 : 1}
     onClick={(_, field) => {

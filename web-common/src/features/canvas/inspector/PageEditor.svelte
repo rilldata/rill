@@ -127,7 +127,7 @@
   </div>
   <div class="page-param flex flex-col gap-y-2">
     <InputLabel id="canvas-filter" small label="Filter" />
-    <div class="flex flex-col gap-y-1">
+    <div class="flex flex-col gap-y-2">
       <MultiSelectInput
         small
         label="Time ranges"
