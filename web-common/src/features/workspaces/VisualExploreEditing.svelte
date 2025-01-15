@@ -214,7 +214,7 @@
     }
   }
 
-  async function updateProperties(
+  function updateProperties(
     newRecord: Record<string, unknown>,
     removeProperties?: Array<string | string[]>,
   ) {
