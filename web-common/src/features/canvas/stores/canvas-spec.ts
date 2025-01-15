@@ -8,6 +8,7 @@ import { derived, type Readable } from "svelte/store";
 
 export class CanvasResolvedSpec {
   canvasSpec: Readable<V1CanvasSpec | undefined>;
+  isLoading: Readable<boolean>;
 
   constructor(
     validSpecStore: Readable<
@@ -16,6 +17,10 @@ export class CanvasResolvedSpec {
   ) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
       return $validSpecStore.data?.canvas;
+    });
+
+    this.isLoading = derived(validSpecStore, ($validSpecStore) => {
+      return $validSpecStore.isLoading;
     });
   }
 }
