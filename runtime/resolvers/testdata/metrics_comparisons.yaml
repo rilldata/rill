@@ -147,3 +147,49 @@ tests:
       - sum: 4
         sum_prev: 2
         time__day: "2024-01-04T00:00:00Z"
+  - name: iso_ranges_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        iso_duration: P2D
+      comparison_time_range:
+        iso_duration: P2D
+        iso_offset: P2D
+      sort:
+        - name: sum
+    result:
+      - sum: 2
+        sum_prev: 7
+        country: "US"
+  - name: iso_ranges_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        iso_duration: P2D
+      comparison_time_range:
+        iso_duration: P2D
+        iso_offset: P2D
+      sort:
+        - name: sum
+    result:
+      - sum: 2
+        sum_prev: 7
+        country: "US"

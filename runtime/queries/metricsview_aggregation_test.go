@@ -63,9 +63,6 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
 	})
-	t.Run("testMetricsViewsAggregation_comparison_iso_timerange", func(t *testing.T) {
-		testMetricsViewsAggregation_comparison_iso_timerange(t, rt, instanceID)
-	})
 }
 
 func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
@@ -106,9 +103,6 @@ func TestMetricViewAggregationAgainstDuckDB(t *testing.T) {
 	t.Run("testMetricsViewAggregation_percent_of_totals_with_limit", func(t *testing.T) { testMetricsViewAggregation_percent_of_totals_with_limit(t, rt, instanceID) })
 	t.Run("testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta", func(t *testing.T) {
 		testMetricsViewsAggregation_comparison_with_offset_and_limit_and_delta(t, rt, instanceID)
-	})
-	t.Run("testMetricsViewsAggregation_comparison_iso_timerange", func(t *testing.T) {
-		testMetricsViewsAggregation_comparison_iso_timerange(t, rt, instanceID)
 	})
 }
 
@@ -4811,59 +4805,6 @@ func testMetricsViewsAggregation_comparison_with_offset(t *testing.T, rt *runtim
 	require.Equal(t, "news.yahoo.com,1.50,1.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 	i++
 	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
-}
-
-func testMetricsViewsAggregation_comparison_iso_timerange(t *testing.T, rt *runtime.Runtime, instanceID string) {
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "m1",
-			},
-			{
-				Name: "m1__p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "m1",
-					},
-				},
-			},
-		},
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "m1",
-			},
-		},
-		TimeRange: &runtimev1.TimeRange{
-			IsoDuration: "P7D",
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			IsoDuration: "P7D",
-			IsoOffset:   "P7D",
-		},
-		SecurityClaims: testClaims(),
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	rows := q.Result.Data
-	require.Equal(t, 5, len(rows))
-
-	i := 0
-	require.Equal(t, "Yahoo,1.49,1.48", fieldsToString2digits(rows[i], "pub", "m1", "m1__p"))
-	i++
-	require.Equal(t, "Google,1.52,1.48", fieldsToString2digits(rows[i], "pub", "m1", "m1__p"))
-	i++
-	require.Equal(t, "null,3.05,2.97", fieldsToString2digits(rows[i], "pub", "m1", "m1__p"))
-	i++
-	require.Equal(t, "Facebook,3.41,3.43", fieldsToString2digits(rows[i], "pub", "m1", "m1__p"))
-	i++
-	require.Equal(t, "Microsoft,3.83,3.82", fieldsToString2digits(rows[i], "pub", "m1", "m1__p"))
 }
 
 func testMetricsViewAggregation_percent_of_totals(t *testing.T, rt *runtime.Runtime, instanceID string) {

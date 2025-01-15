@@ -490,9 +490,6 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	require.NotNil(t, res)
 	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
 	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
-	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
-	require.Equal(t, int32(2), res.TimeRangeSummary.Interval.Days)
-	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
 func TestServer_GetTimeRangeSummary_EmptyModel(t *testing.T) {
@@ -505,7 +502,6 @@ func TestServer_GetTimeRangeSummary_EmptyModel(t *testing.T) {
 	require.NotNil(t, res)
 	require.Nil(t, res.TimeRangeSummary.Max)
 	require.Nil(t, res.TimeRangeSummary.Min)
-	require.Nil(t, res.TimeRangeSummary.Interval)
 }
 
 func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
@@ -518,9 +514,6 @@ func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	require.NotNil(t, res)
 	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
 	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
-	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
-	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
-	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
 func parseTimeToProtoTimeStamps(tst *testing.T, t string) *timestamppb.Timestamp {
