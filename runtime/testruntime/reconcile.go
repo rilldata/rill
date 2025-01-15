@@ -65,10 +65,9 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
-	// Get spec version before refresh
-	r, err := ctrl.Get(context.Background(), n, false)
+	// Get resource before refresh
+	rPrev, err := ctrl.Get(context.Background(), n, false)
 	require.NoError(t, err)
-	prevSpecVersion := r.Meta.SpecVersion
 
 	// Create refresh trigger
 	trgName := &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: time.Now().String()}
@@ -87,8 +86,12 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	err = ctrl.WaitUntilIdle(context.Background(), false)
 	require.NoError(t, err)
 
+	// Get resource after refresh
+	rNew, err := ctrl.Get(context.Background(), n, false)
+	require.NoError(t, err)
+
 	// Check the resource's spec version has increased
-	require.Greater(t, r.Meta.SpecVersion, prevSpecVersion)
+	require.Greater(t, rNew.Meta.SpecVersion, rPrev.Meta.SpecVersion)
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {

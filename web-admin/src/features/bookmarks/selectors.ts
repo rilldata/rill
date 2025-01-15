@@ -8,7 +8,10 @@ import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboar
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import {
+  getTimeControlState,
+  timeControlStateSelector,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -20,6 +23,7 @@ import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { derived, get, type Readable } from "svelte/store";
@@ -61,12 +65,14 @@ export function categorizeBookmarks(
   schema: V1StructType | undefined,
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ) {
   const bookmarks: Bookmarks = {
     home: undefined,
     personal: [],
     shared: [],
   };
+  if (!exploreState) return bookmarks;
   bookmarkResp?.forEach((bookmarkResource) => {
     const bookmark = parseBookmark(
       bookmarkResource,
@@ -75,6 +81,7 @@ export function categorizeBookmarks(
       schema ?? {},
       exploreState,
       defaultExplorePreset,
+      timeRangeSummary,
     );
     if (isHomeBookmark(bookmarkResource)) {
       bookmarks.home = bookmark;
@@ -135,30 +142,6 @@ export function getPrettySelectedTimeRange(
   );
 }
 
-export function convertBookmarkToUrlSearchParams(
-  bookmarkResource: V1Bookmark,
-  metricsViewSpec: V1MetricsViewSpec,
-  exploreSpec: V1ExploreSpec,
-  schema: V1StructType,
-  exploreState: MetricsExplorerEntity | undefined,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  const exploreStateFromBookmark = getDashboardStateFromUrl(
-    bookmarkResource.data ?? "",
-    metricsViewSpec,
-    exploreSpec,
-    schema,
-  );
-  return convertExploreStateToURLSearchParams(
-    {
-      ...(exploreState ?? {}),
-      ...exploreStateFromBookmark,
-    } as MetricsExplorerEntity,
-    exploreSpec,
-    defaultExplorePreset,
-  );
-}
-
 function parseBookmark(
   bookmarkResource: V1Bookmark,
   metricsViewSpec: V1MetricsViewSpec,
@@ -166,21 +149,37 @@ function parseBookmark(
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
 ): BookmarkEntry {
-  const url = new URL(get(page).url);
-  url.search = convertBookmarkToUrlSearchParams(
-    bookmarkResource,
+  const exploreStateFromBookmark = getDashboardStateFromUrl(
+    bookmarkResource.data ?? "",
     metricsViewSpec,
     exploreSpec,
     schema,
-    exploreState,
+  );
+  const finalExploreState = {
+    ...(exploreState ?? {}),
+    ...exploreStateFromBookmark,
+  } as MetricsExplorerEntity;
+
+  const url = new URL(get(page).url);
+  url.search = convertExploreStateToURLSearchParams(
+    finalExploreState,
+    exploreSpec,
+    getTimeControlState(
+      metricsViewSpec,
+      exploreSpec,
+      timeRangeSummary,
+      finalExploreState,
+    ),
     defaultExplorePreset,
   );
   return {
     resource: bookmarkResource,
     absoluteTimeRange:
-      exploreState.selectedTimeRange?.name === TimeRangePreset.CUSTOM,
-    filtersOnly: !exploreState.pivot,
+      exploreStateFromBookmark.selectedTimeRange?.name ===
+      TimeRangePreset.CUSTOM,
+    filtersOnly: !exploreStateFromBookmark.pivot,
     url: url.toString(),
   };
 }

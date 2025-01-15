@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,6 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -162,7 +162,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": "4",
+					"Measure 0": "4",
 				})),
 			},
 			SentNotifications: true,
@@ -187,7 +187,6 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -321,7 +320,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": "4",
+					"Measure 0": "4",
 				})),
 			},
 			SentNotifications: true,
@@ -382,7 +381,7 @@ notify:
 					IntervalsIsoDuration:   "P1D",
 					IntervalsCheckUnclosed: true,
 					Resolver:               "sql",
-					ResolverProperties:     must(structpb.NewStruct(map[string]any{"sql": "select * from bar where country <> 'Denmark'"})),
+					ResolverProperties:     must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from bar where country <> 'Denmark'"})),
 					NotifyOnRecover:        false,
 					NotifyOnFail:           true,
 					NotifyOnError:          false,
@@ -472,7 +471,6 @@ SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 		"/metrics/mv1.yaml": `
 version: 1
 type: metrics_view
-display_name: mv1
 model: bar
 timeseries: __time
 dimensions:
@@ -580,7 +578,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		Spec: &runtimev1.MetricsViewSpec{
 			Connector:     "duckdb",
 			Model:         model,
-			DisplayName:   name,
+			DisplayName:   rillv1.ToDisplayName(name),
 			TimeDimension: timeDim,
 			Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 			Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -590,7 +588,7 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 				Connector:     "duckdb",
 				Table:         model,
 				Model:         model,
-				DisplayName:   name,
+				DisplayName:   rillv1.ToDisplayName(name),
 				TimeDimension: timeDim,
 				Measures:      make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
 				Dimensions:    make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
@@ -598,25 +596,30 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []string) 
 		},
 	}
 	for i, measure := range measures {
+		name := fmt.Sprintf("measure_%d", i)
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       fmt.Sprintf("measure_%d", i),
-			Expression: measure,
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Name:        name,
+			DisplayName: rillv1.ToDisplayName(name),
+			Expression:  measure,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       fmt.Sprintf("measure_%d", i),
-			Expression: measure,
-			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+			Name:        name,
+			DisplayName: rillv1.ToDisplayName(name),
+			Expression:  measure,
+			Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:   dimension,
-			Column: dimension,
+			Name:        dimension,
+			DisplayName: rillv1.ToDisplayName(dimension),
+			Column:      dimension,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:   dimension,
-			Column: dimension,
+			Name:        dimension,
+			DisplayName: rillv1.ToDisplayName(dimension),
+			Column:      dimension,
 		}
 	}
 	metricsRes := &runtimev1.Resource{

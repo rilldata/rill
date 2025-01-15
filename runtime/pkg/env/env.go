@@ -13,3 +13,12 @@ func ValidateName(name string) error {
 	}
 	return nil
 }
+
+func ValidateVariables(variables map[string]string) error {
+	for name := range variables {
+		if err := ValidateName(name); err != nil {
+			return err
+		}
+	}
+	return nil
+}

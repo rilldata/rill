@@ -70,6 +70,11 @@ type MetricsViewYAML struct {
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
 	AvailableTimeRanges []ExploreTimeRangeYAML `yaml:"available_time_ranges"`
+	Cache               struct {
+		Enabled *bool  `yaml:"enabled"`
+		KeySQL  string `yaml:"key_sql"`
+		KeyTTL  string `yaml:"key_ttl"`
+	} `yaml:"cache"`
 }
 
 type MetricsViewFieldSelectorYAML struct {
@@ -530,6 +535,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			dim.DisplayName = dim.Label
 		}
 
+		if dim.DisplayName == "" {
+			dim.DisplayName = ToDisplayName(dim.Name)
+		}
+
 		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
 			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
 		}
@@ -561,6 +570,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		// Backwards compatibility
 		if measure.Label != "" && measure.DisplayName == "" {
 			measure.DisplayName = measure.Label
+		}
+
+		if measure.DisplayName == "" {
+			measure.DisplayName = ToDisplayName(measure.Name)
 		}
 
 		lower := strings.ToLower(measure.Name)
@@ -770,6 +783,14 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
 
+	var cacheTTLDuration time.Duration
+	if tmp.Cache.KeyTTL != "" {
+		cacheTTLDuration, err = time.ParseDuration(tmp.Cache.KeyTTL)
+		if err != nil {
+			return fmt.Errorf(`invalid "cache.key_ttl": %w`, err)
+		}
+	}
+
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -783,6 +804,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Table = tmp.Table
 	spec.Model = tmp.Model
 	spec.DisplayName = tmp.DisplayName
+	if spec.DisplayName == "" {
+		spec.DisplayName = ToDisplayName(node.Name)
+	}
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
 	spec.WatermarkExpression = tmp.Watermark
@@ -809,6 +833,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	spec.Measures = measures
 
 	spec.SecurityRules = securityRules
+	spec.CacheEnabled = tmp.Cache.Enabled
+	spec.CacheKeySql = tmp.Cache.KeySQL
+	spec.CacheKeyTtlSeconds = int64(cacheTTLDuration.Seconds())
 
 	// Backwards compatibility: When the version is 0, populate the deprecated fields and also emit an Explore resource for the metrics view.
 	if node.Version > 0 {

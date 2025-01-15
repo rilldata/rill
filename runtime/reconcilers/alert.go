@@ -360,7 +360,7 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n, false)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,9 @@ The main feature-set component for dashboard filters
   export let timeRange: V1TimeRange | undefined;
   export let comparisonTimeRange: V1TimeRange | undefined = undefined;
 
-  $: validExploreSpecs = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: ({ instanceId } = $runtime);
+
+  $: validExploreSpecs = useExploreValidSpec(instanceId, exploreName);
 
   // Get dimension filters
   $: dimensions = allDimensions({
@@ -63,7 +65,7 @@ The main feature-set component for dashboard filters
       <div animate:flip={{ duration: 200 }}>
         {#if dimension?.column || dimension?.expression}
           <DimensionFilterReadOnlyChip
-            label={label ?? name}
+            label={label || name}
             values={selectedValues}
             {isInclude}
           />
@@ -75,7 +77,7 @@ The main feature-set component for dashboard filters
     {#each measureFilters as { name, label, dimensionName, filter } (name)}
       <div animate:flip={{ duration: 200 }}>
         <MeasureFilterReadOnlyChip
-          label={label ?? name}
+          label={label || name}
           {dimensionName}
           {filter}
         />

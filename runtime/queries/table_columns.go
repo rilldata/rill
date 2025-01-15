@@ -70,7 +70,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+		return olap.WithConnection(ctx, priority, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 			// views return duplicate column names, so we need to create a temporary table
 			temporaryTableName := tempName("profile_columns_")
 			err = olap.Exec(ctx, &drivers.Statement{

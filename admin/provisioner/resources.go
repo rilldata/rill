@@ -14,6 +14,14 @@ const (
 	ResourceTypeClickHouse ResourceType = "clickhouse"
 )
 
+func (r ResourceType) Valid() bool {
+	switch r {
+	case ResourceTypeRuntime, ResourceTypeClickHouse:
+		return true
+	}
+	return false
+}
+
 // RuntimeArgs describe the expected arguments for provisioning a runtime resource.
 type RuntimeArgs struct {
 	Slots   int    `mapstructure:"slots"`

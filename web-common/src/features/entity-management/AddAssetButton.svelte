@@ -19,10 +19,10 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useIsModelingSupportedForDefaultOlapDriver } from "../connectors/olap/selectors";
-  import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
   import { createResourceFile } from "../file-explorer/new-files";
   import { addSourceModal } from "../sources/modal/add-source-visibility";
+  import CreateExploreDialog from "./CreateExploreDialog.svelte";
   import { removeLeadingSlash } from "./entity-mappers";
   import {
     useDirectoryNamesInDirectory,
@@ -34,16 +34,14 @@
     resourceIconMapping,
   } from "./resource-icon-mapping";
   import { ResourceKind, useFilteredResources } from "./resource-selectors";
-  import CreateExploreDialog from "./CreateExploreDialog.svelte";
 
   let active = false;
   let showExploreDialog = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
-  const { customDashboards } = featureFlags;
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
     ? currentFile.split("/").slice(0, -1).join("/")
@@ -59,7 +57,7 @@
   );
 
   $: isModelingSupportedForDefaultOlapDriver =
-    useIsModelingSupportedForDefaultOlapDriver($runtime.instanceId);
+    useIsModelingSupportedForDefaultOlapDriver(instanceId);
 
   $: metricsViewQuery = useFilteredResources(
     instanceId,
@@ -229,6 +227,20 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
+      <DropdownMenu.Item
+        class="flex gap-x-2"
+        on:click={async () => {
+          const newFilePath = await createResourceFile(ResourceKind.Canvas);
+          await wrapNavigation(newFilePath);
+        }}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Canvas]}
+          color={resourceColorMapping[ResourceKind.Canvas]}
+          size="16px"
+        />
+        Canvas dashboard
+      </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
@@ -253,32 +265,7 @@
           API
           <DropdownMenu.Separator />
         </DropdownMenu.Item>
-        {#if $customDashboards}
-          <DropdownMenu.Separator />
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => handleAddResource(ResourceKind.Component)}
-          >
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Component]}
-              color={resourceColorMapping[ResourceKind.Component]}
-              size="16px"
-            />
-            Component
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => handleAddResource(ResourceKind.Canvas)}
-          >
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Canvas]}
-              color={resourceColorMapping[ResourceKind.Canvas]}
-              size="16px"
-            />
-            Canvas dashboard
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator />
-        {/if}
+        <DropdownMenu.Separator />
         <DropdownMenu.Item
           class="flex gap-x-2"
           on:click={() => handleAddResource(ResourceKind.Theme)}

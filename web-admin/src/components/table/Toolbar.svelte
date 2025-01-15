@@ -19,7 +19,7 @@
   beforeNavigate(() => (filter = "")); // resets filter when changing projects
 </script>
 
-<div class="w-full max-w-[800px] flex items-center">
+<div class="w-full flex items-center">
   <!-- Search bar -->
   <Search
     placeholder="Search"

@@ -35,7 +35,7 @@
   $: id = `${dir.path}-nav-entry`;
   $: expanded = $directoryState[dir.path];
   $: padding = getPaddingFromPath(dir.path);
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
 

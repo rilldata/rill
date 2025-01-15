@@ -10,7 +10,7 @@ tags:
 
 ### Create the explore dashboard
 
-When you're ready, you can create the visualization on top of the metric layer. Let's select `Create Explore dashboard`. This will create a simple explore-dashboards/uk_price_paid_metrics_explore.yaml file that reads in all the dimensions and measures. For more information on the available key-pairs, please refer to the [reference documentation.](https://docs.rilldata.com/reference/project-files/explores)
+When you're ready, you can create the visualization on top of the metric layer. Let's select `Create Explore dashboard`. This will create a simple explore-dashboards/uk_price_paid_metrics_explore.yaml file that reads in all the dimensions and measures. For more information on the available key-pairs, please refer to the [reference documentation.](https://docs.rilldata.com/reference/project-files/explore-dashboards)
 
 ---
 

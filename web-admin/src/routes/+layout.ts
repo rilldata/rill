@@ -7,8 +7,12 @@ export const ssr = false;
 
 import { dev } from "$app/environment";
 import {
+  adminServiceGetCurrentUser,
+  getAdminServiceGetCurrentUserQueryKey,
+  type V1GetCurrentUserResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
+  type V1User,
 } from "@rilldata/web-admin/client";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
@@ -49,9 +53,21 @@ export const load = async ({ params, url, route }) => {
     }
   }
 
+  let user: V1User | undefined;
+  try {
+    const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
+      queryKey: getAdminServiceGetCurrentUserQueryKey(),
+      queryFn: () => adminServiceGetCurrentUser(),
+    });
+    user = userQuery.user;
+  } catch {
+    // no-op
+  }
+
   // If no organization or project, return empty permissions
-  if (!organization || !project) {
+  if (!organization) {
     return {
+      user,
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
     };
@@ -70,6 +86,14 @@ export const load = async ({ params, url, route }) => {
     }
   }
 
+  if (!project) {
+    return {
+      user,
+      organizationPermissions,
+      projectPermissions: <V1ProjectPermissions>{},
+    };
+  }
+
   try {
     const {
       projectPermissions,
@@ -79,13 +103,14 @@ export const load = async ({ params, url, route }) => {
 
     await runtime.setRuntime(
       queryClient,
-      fixLocalhostRuntimePort(runtimeData.host),
+      fixLocalhostRuntimePort(runtimeData.host ?? ""),
       runtimeData.instanceId,
       runtimeData.jwt?.token,
       runtimeData.jwt?.authContext,
     );
 
     return {
+      user,
       organizationPermissions,
       projectPermissions,
       project: proj,

@@ -184,6 +184,9 @@ func (p *Parser) parseReport(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ReportSpec.DisplayName = tmp.DisplayName
+	if r.ReportSpec.DisplayName == "" {
+		r.ReportSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule
 	}

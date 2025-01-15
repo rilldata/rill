@@ -400,7 +400,7 @@ func (c *Client) SendInvoicePaymentFailed(opts *InvoicePaymentFailed) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Payment failed for %s. Please update your payment method", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-We couldn’t process your payment for <b>%s</b>. You have until <b>%s</b> to update your payment details before your org is <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
+We couldn’t process your payment for <b>%s</b>. You have until <b>%s</b> to update your payment details before your org is hibernated.
 `, opts.OrgName, opts.GracePeriodEndDate.Format(dateFormat))),
 		ButtonText: "Update Payment Info",
 		ButtonLink: opts.PaymentURL,
@@ -496,7 +496,7 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		ToName:  opts.ToName,
 		Subject: fmt.Sprintf("Subscription for %s has now ended. Org is hibernated", opts.OrgName),
 		PreButton: template.HTML(fmt.Sprintf(`
-Your cancelled subscription for <b>%s</b> has and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
+Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
 If you’d like to reactive your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),

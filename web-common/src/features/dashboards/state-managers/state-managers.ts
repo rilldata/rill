@@ -3,16 +3,9 @@ import {
   type MetricsExplorerEntity,
   contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/url-state/explore-web-view-store";
+import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import {
-  getLocalUserPreferencesState,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
@@ -128,6 +121,8 @@ export function createStateManagers({
           query: {
             queryClient,
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
+            staleTime: Infinity,
+            cacheTime: Infinity,
           },
         },
       ).subscribe(set),
@@ -153,26 +148,15 @@ export function createStateManagers({
       }
       return getDefaultExplorePreset(
         validSpec.data?.explore ?? {},
-        getLocalUserPreferencesState(exploreName),
         timeRangeSummary.data,
       );
     },
   );
-  dashboardStore.subscribe((dashState) => {
-    const exploreState = get(validSpecStore).data?.explore;
-    if (!dashState || !exploreState) return;
-    updateExploreSessionStore(
-      exploreName,
-      extraKeyPrefix,
-      dashState,
-      exploreState,
-    );
-  });
 
-  // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
-  initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
+  const persistentDashboardStore = createPersistentDashboardStore(
+    (extraKeyPrefix || "") + exploreName,
+  );
   initLocalUserPreferenceStore(exploreName);
-  const persistentDashboardStore = getPersistentDashboardStore();
 
   return {
     runtime: runtime,

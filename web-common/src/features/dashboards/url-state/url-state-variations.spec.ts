@@ -11,6 +11,7 @@ import {
   AD_BIDS_TIME_DIMENSION_DETAILS_PRESET,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
 import {
   AD_BIDS_CLOSE_DIMENSION_TABLE,
   AD_BIDS_CLOSE_TDD,
@@ -41,13 +42,11 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { convertURLToExploreState } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
-import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExplorePreset,
@@ -55,7 +54,9 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { deepClone } from "@vitest/utils";
 import { get } from "svelte/store";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.stubEnv("TZ", "UTC");
 
 const TestCases: {
   title: string;
@@ -254,7 +255,7 @@ const TestCases: {
       "Time dimensional details with no preset and has time dimensional details in state",
     mutations: [AD_BIDS_OPEN_IMP_TDD, AD_BIDS_SWITCH_TO_STACKED_BAR_IN_TDD],
     expectedUrl:
-      "http://localhost/?view=ttd&measure=impressions&chart_type=stacked_bar",
+      "http://localhost/?view=tdd&measure=impressions&chart_type=stacked_bar",
   },
   {
     title: "Time dimensional details with no preset, open and close TDD",
@@ -330,12 +331,8 @@ describe("Human readable URL state variations", () => {
   });
 
   beforeEach(() => {
+    sessionStorage.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
-    getLocalUserPreferences().updateTimeZone("UTC");
-    localStorage.setItem(
-      `${AD_BIDS_EXPLORE_NAME}-userPreference`,
-      `{"timezone":"UTC"}`,
-    );
   });
 
   describe("Should update url state and restore default state on empty params", () => {
@@ -344,19 +341,19 @@ describe("Human readable URL state variations", () => {
         const explore: V1ExploreSpec = {
           ...AD_BIDS_EXPLORE_INIT,
           ...(preset ? { defaultPreset: preset } : {}),
+          timeZones: ["UTC", "Asia/Kathmandu"],
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const initState = getCleanMetricsExploreForAssertion();
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          {
-            timeZone: "UTC",
-          },
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 
@@ -367,6 +364,12 @@ describe("Human readable URL state variations", () => {
         url.search = convertExploreStateToURLSearchParams(
           get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
           explore,
+          getTimeControlState(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+            get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
+          ),
           defaultExplorePreset,
         );
         expect(url.toString()).to.eq(expectedUrl);
@@ -396,15 +399,14 @@ describe("Human readable URL state variations", () => {
         };
         metricsExplorerStore.init(
           AD_BIDS_EXPLORE_NAME,
-          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
-          explore,
-          AD_BIDS_TIME_RANGE_SUMMARY,
+          getInitExploreStateForTest(
+            AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+            explore,
+            AD_BIDS_TIME_RANGE_SUMMARY,
+          ),
         );
         const defaultExplorePreset = getDefaultExplorePreset(
           explore,
-          {
-            timeZone: "UTC",
-          },
           AD_BIDS_TIME_RANGE_SUMMARY,
         );
 

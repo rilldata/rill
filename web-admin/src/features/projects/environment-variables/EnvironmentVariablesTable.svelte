@@ -23,9 +23,6 @@
           name: row.original.name,
           environment: row.original.environment,
         }),
-      meta: {
-        widthPercent: 30,
-      },
     },
     {
       accessorKey: "value",
@@ -35,14 +32,10 @@
         flexRender(ValueCell, {
           value: row.original.value,
         }),
-      meta: {
-        widthPercent: 30,
-      },
     },
     {
       header: "Activity",
       accessorFn: (row) => row.createdOn,
-      enableSorting: false,
       cell: ({ row }) => {
         return flexRender(ActivityCell, {
           updatedOn: row.original.updatedOn,
@@ -61,11 +54,14 @@
           variableNames,
         }),
       enableSorting: false,
-      meta: {
-        widthPercent: 0,
-      },
     },
   ];
 </script>
 
-<BasicTable {data} {columns} emptyIcon={KeyIcon} {emptyText} scrollable />
+<BasicTable
+  {data}
+  {columns}
+  emptyIcon={KeyIcon}
+  {emptyText}
+  columnLayout="minmax(170px, 1.75fr) 2fr minmax(84px, 1fr) 56px"
+/>

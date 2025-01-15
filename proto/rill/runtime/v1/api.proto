@@ -313,6 +313,9 @@ message Connector {
   map<string, string> config = 3;
   // Properties in config that use templating
   repeated string templated_properties = 5;
+  // Provision settings if its a managed connector
+  bool provision = 6;
+  google.protobuf.Struct provision_args = 7;
   // DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   map<string, string> config_from_variables = 4;
 }
@@ -529,16 +532,31 @@ message UnpackEmptyResponse {}
 // Request message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Model to base the metrics view on.
+  // If you set this, do NOT set connector, database, database_schema or table.
+  string model = 8;
+  // Connector for the table.
+  // See "table" for more details.
   string connector = 2;
+  // Database for the table.
+  // See "table" for more details.
   string database = 6;
+  // Database schema for the table.
+  // See "table" for more details.
   string database_schema = 7;
+  // Table to base the metrics view on.
+  // If you set this, do NOT set model.
   string table = 3;
+  // Path to save the metrics view file to.
   string path = 4;
+  // If true, the AI will be used to generate the metrics view file.
+  // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
 }
 
@@ -782,6 +800,10 @@ message AnalyzedConnector {
   map<string, string> project_config = 5;
   // Config properties set as dynamic variables
   map<string, string> env_config = 6;
+  // Provision indicates if its a managed connector
+  bool provision = 10;
+  // Provision args for the provisioner if provision is true
+  google.protobuf.Struct provision_args = 11;
   // True if the connector can be accessed without credentials
   bool has_anonymous_access = 7;
   // List of resources that appear to use the connector

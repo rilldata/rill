@@ -10,14 +10,18 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
+  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isReconciling = false;
+  let isRefreshConfirmDialogOpen = false;
+
+  $: ({ instanceId } = $runtime);
 
   $: resources = createRuntimeServiceListResources(
-    $runtime.instanceId,
+    instanceId,
     // All resource "kinds"
     undefined,
     {
@@ -30,6 +34,7 @@
           );
         },
         refetchOnMount: true,
+        refetchOnWindowFocus: true,
         refetchInterval: isReconciling ? 500 : false,
       },
     },
@@ -47,7 +52,7 @@
     isReconciling = true;
 
     void $createTrigger.mutateAsync({
-      instanceId: $runtime.instanceId,
+      instanceId,
       data: {
         allSourcesModels: true,
       },
@@ -55,7 +60,7 @@
 
     void queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey(
-        $runtime.instanceId,
+        instanceId,
         // All resource "kinds"
         undefined,
       ),
@@ -67,12 +72,14 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-4">
+<section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
-      on:click={refreshAllSourcesAndModels}
+      on:click={() => {
+        isRefreshConfirmDialogOpen = true;
+      }}
       disabled={isReconciling}
     >
       {#if isReconciling}
@@ -82,6 +89,7 @@
       {/if}
     </Button>
   </div>
+
   {#if $resources.isLoading}
     <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
   {:else if $resources.isError}
@@ -92,3 +100,8 @@
     <ProjectResourcesTable data={$resources.data} />
   {/if}
 </section>
+
+<RefreshConfirmDialog
+  bind:open={isRefreshConfirmDialogOpen}
+  onRefresh={refreshAllSourcesAndModels}
+/>

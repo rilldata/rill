@@ -52,12 +52,11 @@
   export let switchView: () => void;
 
   $: ({ instanceId } = $runtime);
-  $: ({ localContent, remoteContent, saveContent, path, updateLocalContent } =
-    fileArtifact);
+  $: ({ editorContent, path, updateEditorContent } = fileArtifact);
 
   $: exploreSpec = exploreResource?.state?.validSpec;
 
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? "");
 
   $: metricsViewsQuery = useFilteredResources(
     instanceId,
@@ -243,11 +242,7 @@
 
     killState();
 
-    if (autoSave) {
-      await saveContent(parsedDocument.toString());
-    } else {
-      updateLocalContent(parsedDocument.toString(), true);
-    }
+    updateEditorContent(parsedDocument.toString(), false, autoSave);
   }
 
   function killState() {

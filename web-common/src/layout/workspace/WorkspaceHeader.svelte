@@ -94,6 +94,7 @@
             type="secondary"
             square
             selected={$tableVisible}
+            label="Toggle table visibility"
             on:click={workspaceLayout.table.toggle}
           >
             <HideBottomPane size="18px" open={$tableVisible} />
@@ -112,6 +113,7 @@
             type="secondary"
             square
             selected={$inspectorVisible}
+            label="Toggle inspector visibility"
             on:click={workspaceLayout.inspector.toggle}
           >
             <HideSidebar open={$inspectorVisible} size="18px" />

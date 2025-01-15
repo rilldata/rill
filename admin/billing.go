@@ -34,6 +34,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -124,6 +125,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -181,6 +183,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 			Name:                                org.Name,
 			DisplayName:                         org.DisplayName,
 			Description:                         org.Description,
+			LogoAssetID:                         org.LogoAssetID,
 			CustomDomain:                        org.CustomDomain,
 			QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
 			QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
@@ -212,7 +215,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 	if err != nil {
 		if !errors.Is(err, billing.ErrNotFound) {
 			if errors.Is(err, billing.ErrCustomerIDRequired) {
-				return nil, nil, fmt.Errorf("org billing not initialized yet, retry")
+				return nil, nil, fmt.Errorf("org billing not initialized yet")
 			}
 			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
@@ -247,6 +250,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
 		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),

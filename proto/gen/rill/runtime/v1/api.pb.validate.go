@@ -1164,6 +1164,37 @@ func (m *Connector) validate(all bool) error {
 
 	// no validation rules for Config
 
+	// no validation rules for Provision
+
+	if all {
+		switch v := interface{}(m.GetProvisionArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProvisionArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorValidationError{
+				field:  "ProvisionArgs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for ConfigFromVariables
 
 	if len(errors) > 0 {
@@ -5155,6 +5186,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Model
+
 	// no validation rules for Connector
 
 	// no validation rules for Database
@@ -8564,6 +8597,37 @@ func (m *AnalyzedConnector) validate(all bool) error {
 	// no validation rules for ProjectConfig
 
 	// no validation rules for EnvConfig
+
+	// no validation rules for Provision
+
+	if all {
+		switch v := interface{}(m.GetProvisionArgs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "ProvisionArgs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProvisionArgs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalyzedConnectorValidationError{
+				field:  "ProvisionArgs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for HasAnonymousAccess
 

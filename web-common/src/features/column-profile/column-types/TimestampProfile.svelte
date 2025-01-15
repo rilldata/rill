@@ -23,20 +23,19 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
-
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
-
   export let enableProfiling = true;
 
-  let timestampDetailHeight = 160;
+  $: ({ instanceId } = $runtime);
 
+  let timestampDetailHeight = 160;
   let active = false;
 
   /** queries used to power the different plots */
   $: nullPercentage = getNullPercentage(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -46,7 +45,7 @@
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

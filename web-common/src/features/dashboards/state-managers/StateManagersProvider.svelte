@@ -17,7 +17,7 @@
     metricsViewName,
     exploreName,
     extraKeyPrefix:
-      orgName && projectName ? `__${orgName}__${projectName}` : "",
+      orgName && projectName ? `${orgName}__${projectName}__` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
 

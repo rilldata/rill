@@ -21,20 +21,19 @@
   export let columnName: string;
   export let example: any;
   export let type: string;
-
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
   export let mode: "example" | "summaries" = "summaries";
-
   export let enableProfiling = true;
 
   let active = false;
-
   let topKLimit = 15;
 
+  $: ({ instanceId } = $runtime);
+
   $: nulls = getNullPercentage(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -44,7 +43,7 @@
   );
 
   $: columnCardinality = getCountDistinct(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,
@@ -54,7 +53,7 @@
   );
 
   $: topK = getTopK(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

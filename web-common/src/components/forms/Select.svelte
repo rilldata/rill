@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { InfoIcon } from "lucide-svelte";
-  import { createEventDispatcher } from "svelte";
   import * as Select from "@rilldata/web-common/components/select";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import { InfoIcon } from "lucide-svelte";
+  import { createEventDispatcher } from "svelte";
   import DataTypeIcon from "../data-types/DataTypeIcon.svelte";
   import Search from "../search/Search.svelte";
 
@@ -12,7 +12,14 @@
   export let id: string;
   export let label: string = "";
   export let lockTooltip: string = "";
-  export let options: { value: string; label: string; type?: string }[];
+  export let size: "sm" | "md" | "lg" = "lg";
+  export let options: {
+    value: string;
+    label: string;
+    type?: string;
+    disabled?: boolean;
+    tooltip?: string;
+  }[];
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
@@ -81,8 +88,8 @@
       {lockable}
       {lockTooltip}
       bind:el={selectElement}
-      class="flex px-3 gap-x-2 max-w-full {width &&
-        `w-[${width}px]`} {ringFocus &&
+      class="flex px-3 gap-x-2 max-w-full {size === 'sm' ? 'h-6' : ''} {width &&
+        `w-[${width}px]`}  {ringFocus &&
         'focus:ring-2 focus:ring-primary-100'} {truncate
         ? 'break-all overflow-hidden'
         : ''}"
@@ -101,12 +108,31 @@
           <Search bind:value={searchText} showBorderOnFocus={false} />
         </div>
       {/if}
-      {#each filteredOptions as { type, value, label } (value)}
-        <Select.Item {value} {label} class="text-[{fontSize}px] gap-x-2">
-          {#if type}
-            <DataTypeIcon {type} />
+      {#each filteredOptions as { type, value, label, disabled, tooltip } (value)}
+        <Select.Item
+          {value}
+          {label}
+          {disabled}
+          class="text-[{fontSize}px] gap-x-2"
+        >
+          {#if tooltip}
+            <Tooltip.Root portal="body">
+              <Tooltip.Trigger class="select-tooltip cursor-default">
+                {#if type}
+                  <DataTypeIcon {type} />
+                {/if}
+                {label ?? value}
+              </Tooltip.Trigger>
+              <Tooltip.Content side="right" sideOffset={8}>
+                {tooltip}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          {:else}
+            {#if type}
+              <DataTypeIcon {type} />
+            {/if}
+            {label ?? value}
           {/if}
-          {label ?? value}
         </Select.Item>
       {:else}
         <div class="px-2.5 py-1.5 text-gray-600">No results found</div>

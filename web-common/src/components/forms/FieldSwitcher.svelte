@@ -2,9 +2,10 @@
   export let fields: string[];
   export let selected: number = -1;
   export let onClick: (i: number, value: string) => void = () => {};
+  export let small = false;
 </script>
 
-<div class="option-wrapper">
+<div class:small class="option-wrapper">
   {#each fields as field, i (field)}
     <button
       on:click={() => onClick(i, field)}
@@ -21,8 +22,16 @@
     @apply capitalize;
   }
 
+  button:hover:not(.selected) {
+    @apply bg-slate-50;
+  }
+
   .option-wrapper {
     @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
+  }
+
+  .option-wrapper.small {
+    @apply h-5 text-xs;
   }
 
   .option-wrapper > .selected {

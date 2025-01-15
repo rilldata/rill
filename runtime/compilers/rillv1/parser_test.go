@@ -276,14 +276,16 @@ schema: default
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Model:     "m2",
+				Connector:   "duckdb",
+				Model:       "m2",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{
 						Name:           "b",
+						DisplayName:    "B",
 						Expression:     "count(*)",
 						Type:           runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 						FormatD3:       "0,0",
@@ -1069,13 +1071,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"},
 			Paths: []string{"/mv1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t1",
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "Mv1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 7,
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -1091,13 +1094,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "mv2"},
 			Paths: []string{"/mv2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t2",
+				Connector:   "duckdb",
+				Table:       "t2",
+				DisplayName: "Mv2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek: 1,
 				SecurityRules: []*runtimev1.SecurityRule{
@@ -1209,13 +1213,14 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "t1",
+				Connector:   "duckdb",
+				Table:       "t1",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
@@ -1497,13 +1502,14 @@ measures:
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
 			Paths: []string{"/metrics/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Connector: "duckdb",
-				Table:     "d1",
+				Connector:   "duckdb",
+				Table:       "d1",
+				DisplayName: "D1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a", Column: "a"},
+					{Name: "a", DisplayName: "A", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+					{Name: "b", DisplayName: "B", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 			},
 		},
@@ -1540,6 +1546,18 @@ theme:
   colors:
     primary: red
 `,
+		// Canvas referencing the external theme resource
+		`canvases/c1.yaml`: `
+type: canvas
+theme: t1
+`,
+		// Canvas that defines an inline theme
+		`canvases/c2.yaml`: `
+type: canvas
+theme:
+  colors:
+    primary: red
+`,
 	})
 
 	resources := []*Resource{
@@ -1568,6 +1586,7 @@ theme:
 			Paths: []string{"/explores/e1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}, {Kind: ResourceKindTheme, Name: "t1"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "E1",
 				MetricsView:        "missing",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
@@ -1579,9 +1598,35 @@ theme:
 			Paths: []string{"/explores/e2.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
 			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "E2",
 				MetricsView:        "missing",
 				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
 				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				EmbeddedTheme: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					PrimaryColorRaw: "red",
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c1"},
+			Paths: []string{"/canvases/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName: "C1",
+				Theme:       "t1",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "c2"},
+			Paths: []string{"/canvases/c2.yaml"},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName: "C2",
 				EmbeddedTheme: &runtimev1.ThemeSpec{
 					PrimaryColor: &runtimev1.Color{
 						Red:   1,
@@ -1619,34 +1664,39 @@ func TestComponentsAndCanvas(t *testing.T) {
 		`rill.yaml`: ``,
 		`components/c1.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: foo
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c2.yaml`: fmt.Sprintf(`
 type: component
-data:
-  api: MetricsViewAggregation
-  args:
-    metrics_view: bar
-vega_lite: >
-  %s
+vega_lite:
+  spec: '%s'
 `, vegaLiteSpec),
 		`components/c3.yaml`: `
 type: component
-data:
-  metrics_sql: SELECT 1
-line_chart:
-  x: time
-  y: total_sales
+kpi:
+  metrics_view: foo
+  measure: bar
+  time_range: P1W
 `,
 		`canvases/d1.yaml`: `
 type: canvas
-columns: 4
-gap: 3
+
+max_width: 4
+gap_x: 1
+gap_y: 2
+
+time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
+defaults:
+  time_range: P4W
+
 items:
 - component: c1
 - component: c2
@@ -1662,10 +1712,8 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
 			Paths: []string{"/components/c1.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
+				DisplayName:        "C1",
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1673,10 +1721,8 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
 			Paths: []string{"/components/c2.yaml"},
-			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "api",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
+				DisplayName:        "C2",
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
 			},
@@ -1684,11 +1730,11 @@ items:
 		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
 			Paths: []string{"/components/c3.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "foo"}},
 			ComponentSpec: &runtimev1.ComponentSpec{
-				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
-				Renderer:           "line_chart",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
+				DisplayName:        "C3",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "foo", "measure": "bar", "time_range": "P1W"})),
 			},
 		},
 		{
@@ -1709,8 +1755,25 @@ items:
 				{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				Columns: 4,
-				Gap:     3,
+				DisplayName: "D1",
+				MaxWidth:    4,
+				GapX:        1,
+				GapY:        2,
+				TimeRanges: []*runtimev1.ExploreTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonTimeRanges: []*runtimev1.ExploreComparisonTimeRange{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
+				DefaultPreset: &runtimev1.CanvasPreset{
+					TimeRange:      asPtr("P4W"),
+					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
+				},
 				Items: []*runtimev1.CanvasItem{
 					{Component: "c1"},
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
@@ -1759,7 +1822,7 @@ metrics_sql: select * from m1
 			Paths: []string{"/apis/a1.yaml"},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
 			},
 		},
 		{
@@ -1826,7 +1889,7 @@ select 3
 			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select 1"})),
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
 			},
 		},
 		// m1
@@ -1901,33 +1964,38 @@ measures:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Connector:     "duckdb",
 				Table:         "t1",
+				DisplayName:   "D1",
 				TimeDimension: "t",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "foo", Column: "foo"},
+					{Name: "foo", DisplayName: "Foo", Column: "foo"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{
-						Name:       "a",
-						Expression: "count(*)",
-						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+						Name:        "a",
+						DisplayName: "A",
+						Expression:  "count(*)",
+						Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 					},
 					{
 						Name:               "b",
+						DisplayName:        "B",
 						Expression:         "a+1",
 						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						ReferencedMeasures: []string{"a"},
 					},
 					{
 						Name:               "c",
+						DisplayName:        "C",
 						Expression:         "sum(a)",
 						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						PerDimensions:      []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "foo"}},
 						ReferencedMeasures: []string{"a"},
 					},
 					{
-						Name:       "d",
-						Expression: "a/lag(a)",
-						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						Name:        "d",
+						DisplayName: "D",
+						Expression:  "a/lag(a)",
+						Type:        runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 						Window: &runtimev1.MetricsViewSpec_MeasureWindow{
 							Partition:       true,
 							OrderBy:         []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
@@ -2003,6 +2071,123 @@ refresh:
 	p, err = Parse(ctx, repo, "", "dev", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, nil)
+}
+
+func TestConnector(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+`})
+	r := &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver: "clickhouse",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed: true
+`})
+	r = &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver:    "clickhouse",
+			Provision: true,
+		},
+	}
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed:
+  hello: world
+time_zone: America/Los_Angeles
+`})
+	r = &Resource{
+		Name:  ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"},
+		Paths: []string{"/connectors/clickhouse.yaml"},
+		ConnectorSpec: &runtimev1.ConnectorSpec{
+			Driver:        "clickhouse",
+			Properties:    map[string]string{"time_zone": "America/Los_Angeles"},
+			Provision:     true,
+			ProvisionArgs: must(structpb.NewStruct(map[string]any{"hello": "world"})),
+		},
+	}
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{r}, nil)
+
+	putRepo(t, repo, map[string]string{
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+managed: 10
+`})
+	p, err = Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{
+		{Message: "failed to decode 'managed'", FilePath: "/connectors/clickhouse.yaml"},
+	})
+}
+
+func TestNamespace(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.yaml`: `
+type: model
+sql: SELECT 1
+`,
+		`explores/e1.yaml`: `
+type: explore
+namespace: foo
+metrics_view: missing
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				InputConnector:  "duckdb",
+				InputProperties: must(structpb.NewStruct(map[string]any{"sql": `SELECT 1`})),
+				OutputConnector: "duckdb",
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindExplore, Name: "foo:e1"},
+			Paths: []string{"/explores/e1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "missing"}},
+			ExploreSpec: &runtimev1.ExploreSpec{
+				DisplayName:        "Foo: E1",
+				MetricsView:        "missing",
+				DimensionsSelector: &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+				MeasuresSelector:   &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_All{All: true}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
@@ -2094,4 +2279,11 @@ func normalizeJSON(t *testing.T, s string) string {
 	b, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(b)
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

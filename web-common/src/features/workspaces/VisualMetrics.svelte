@@ -44,8 +44,7 @@
   import Sidebar from "../visual-metrics-editing/Sidebar.svelte";
   import type { Confirmation, ItemType } from "../visual-metrics-editing/lib";
   import {
-    editingIndex,
-    editingItem,
+    editingItemData,
     types,
     YAMLDimension,
     YAMLMeasure,
@@ -71,9 +70,10 @@
   export let fileArtifact: FileArtifact;
   export let errors: LineStatus[];
   export let switchView: () => void;
+  export let unsavedChanges = false;
 
   let searchValue = "";
-  let unsavedChanges = false;
+
   let confirmation: Confirmation | null = null;
   let tableSelectionOpen = false;
   let collapsed = {
@@ -96,10 +96,10 @@
 
   $: totalSelected = selected.measures.size + selected.dimensions.size;
 
-  $: ({ remoteContent, localContent, saveContent, getResource } = fileArtifact);
+  $: ({ editorContent, saveContent, getResource } = fileArtifact);
 
   // YAML Parsing
-  $: parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? "");
 
   $: raw = {
     measures: parsedDocument.get("measures"),
@@ -306,8 +306,7 @@
     const item = itemGroups[type][index];
 
     if (item) {
-      editingItem.set({ item, type });
-      editingIndex.set(index);
+      editingItemData.set({ index, type });
     }
 
     if (field) {
@@ -317,8 +316,7 @@
   }
 
   function resetEditing() {
-    editingItem.set(null);
-    editingIndex.set(null);
+    editingItemData.set(null);
     unsavedChanges = false;
   }
 
@@ -343,6 +341,10 @@
     await saveContent(parsedDocument.toString());
   }
 
+  $: editingItem = $editingItemData
+    ? itemGroups[$editingItemData.type][$editingItemData?.index]
+    : null;
+
   function resourceToOption(resource: V1Resource) {
     const value = resource.meta?.name?.name ?? "";
     return {
@@ -361,7 +363,7 @@
     type: ItemType,
   ) {
     initIndexes.sort((a, b) => a - b);
-    const editingItemIndex = initIndexes.indexOf($editingIndex ?? -1);
+    const editingItemIndex = initIndexes.indexOf($editingItemData?.index ?? -1);
 
     const sequence = raw[type];
 
@@ -391,7 +393,7 @@
     });
 
     if (editingItemIndex !== -1) {
-      editingIndex.set(newIndexes[editingItemIndex]);
+      editingItemData.set({ index: newIndexes[editingItemIndex], type });
     }
 
     if (selected[type].size) {
@@ -432,9 +434,10 @@
       }
       const items = sequence.items as Array<YAMLMap>;
 
-      if ($editingIndex !== null) {
+      if ($editingItemData !== null) {
         deletedEditingItem =
-          indices.has($editingIndex) && type === $editingItem?.type;
+          indices.has($editingItemData.index) &&
+          type === $editingItemData?.type;
       }
 
       const filtered = items.filter((_, i) => !indices.has(i));
@@ -724,14 +727,11 @@
               square
               gray
               noStroke
+              label="Add new {type.slice(0, -1)}"
               on:click={() => {
-                editingIndex.set(-1);
-                editingItem.set({
+                editingItemData.set({
                   type,
-                  item:
-                    type === "measures"
-                      ? new YAMLMeasure()
-                      : new YAMLDimension(),
+                  index: -1,
                 });
               }}
             >
@@ -746,9 +746,8 @@
               {items}
               {searchValue}
               longest={{ name: longestName, label: longestLabel }}
-              editingIndex={$editingIndex !== null &&
-              $editingItem?.type === type
-                ? $editingIndex
+              editingIndex={$editingItemData?.type === type
+                ? $editingItemData.index
                 : null}
               {reorderList}
               onDuplicate={duplicateItem}
@@ -786,12 +785,12 @@
     {/if}
   </div>
 
-  {#if $editingItem && $editingIndex !== null}
-    {@const { item, type } = $editingItem}
-    {@const index = $editingIndex}
-    {#key $editingItem}
+  {#if $editingItemData !== null}
+    {@const { index, type } = $editingItemData}
+    {#key editingItem}
       <Sidebar
-        {item}
+        item={editingItem ??
+          (type === "measures" ? new YAMLMeasure() : new YAMLDimension())}
         {type}
         {index}
         {columns}
@@ -832,6 +831,7 @@
               }
             : selected,
         );
+        resetEditing();
       } else if (confirmation?.action === "switch") {
         await updateProperties(
           {
@@ -842,6 +842,7 @@
           },
           ["table"],
         );
+        resetEditing();
       } else if (confirmation?.action === "cancel") {
         if (
           confirmation?.field &&
@@ -857,7 +858,6 @@
         }
       }
 
-      resetEditing();
       confirmation = null;
     }}
   />

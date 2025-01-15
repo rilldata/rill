@@ -132,15 +132,6 @@ export function useMetricsViewTimeRange(
   );
 }
 
-export const useMetricsViewSpecMeasure = (
-  instanceId: string,
-  metricsViewName: string,
-  measureName: string,
-) =>
-  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
-    meta?.measures?.find((measure) => measure.name === measureName),
-  );
-
 export function getFiltersForOtherDimensions(
   whereFilter: V1Expression,
   dimName: string,

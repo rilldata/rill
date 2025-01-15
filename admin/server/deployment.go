@@ -134,12 +134,12 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		case *adminv1.GetDeploymentCredentialsRequest_UserId:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
 			attr = forVal.Attributes.AsMap()
@@ -229,12 +229,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		case *adminv1.GetIFrameRequest_UserId:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.UserId, "")
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_UserEmail:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.UserEmail)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		case *adminv1.GetIFrameRequest_Attributes:
 			attr = forVal.Attributes.AsMap()

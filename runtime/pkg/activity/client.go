@@ -141,6 +141,9 @@ func (c *Client) RecordBehavioralLegacy(name string, extraAttrs ...attribute.Key
 	//     payload        map[string]any
 
 	data := c.resolveAttrs(context.Background(), extraAttrs)
+	if data == nil {
+		data = make(map[string]any)
+	}
 
 	if _, ok := data["install_id"]; !ok {
 		data["install_id"] = ""

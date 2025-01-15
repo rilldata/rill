@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -18,7 +17,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 	claims := auth.GetClaims(ctx)
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.ResourceKind, req.ResourceName, claims.OwnerID())
@@ -42,7 +41,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
@@ -76,7 +75,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -136,7 +135,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
@@ -180,7 +179,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)

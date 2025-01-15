@@ -49,6 +49,7 @@
 
   export let exploreName: string;
   export let workspaceWidth: number;
+  export let timeSeriesWidth: number;
   export let hideStartPivotButton = false;
 
   const {
@@ -290,6 +291,7 @@
   end={endValue}
   start={startValue}
   {workspaceWidth}
+  {timeSeriesWidth}
 >
   <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
@@ -307,8 +309,8 @@
         tooltipText="Choose measures to display"
         onSelect={(name) => toggleMeasureVisibility(allMeasureNames, name)}
         selectableItems={$allMeasures.map(({ name, displayName }) => ({
-          name: name ?? "",
-          label: displayName ?? name ?? "",
+          name: name || "",
+          label: displayName || name || "",
         }))}
         selectedItems={visibleMeasureNames}
         onToggleSelectAll={() => {

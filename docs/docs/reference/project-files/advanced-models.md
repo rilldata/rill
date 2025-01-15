@@ -61,5 +61,7 @@ partitions:
   - **`incremental_strategy`** - refers to how the incremental refresh will behave, (merge or append)  _(optional)_.
   - **`unique_key`** - required if incremental_stategy is defined, refers to the unique column to use to merge  _(optional)_.
   - **`materialize`** - refers to the output table being materialized  _(optional)_.
+  - **`columns`** - refers to a list of columns if you required to manually define column name and types  _(optional)_.
+  - **`engine_full`** - refers to the ClickHouse engine specifications, (ENGINE = ... PARTITION BY ... ORDER BY ... SETTINGS ...) _(optional)_.
 
 **`materialize`** - refers to the model being materialized as a table or not _(optional)_. 

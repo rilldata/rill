@@ -1331,6 +1331,23 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeZones: string[] = [];
 
+  /**
+   * Cache controls for the metrics view.
+   *
+   * @generated from field: optional bool cache_enabled = 25;
+   */
+  cacheEnabled?: boolean;
+
+  /**
+   * @generated from field: string cache_key_sql = 26;
+   */
+  cacheKeySql = "";
+
+  /**
+   * @generated from field: int64 cache_key_ttl_seconds = 27;
+   */
+  cacheKeyTtlSeconds = protoInt64.zero;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1362,6 +1379,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -4264,16 +4284,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   description = "";
 
   /**
-   * @generated from field: string resolver = 2;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 3;
-   */
-  resolverProperties?: Struct;
-
-  /**
    * @generated from field: string renderer = 4;
    */
   renderer = "";
@@ -4294,13 +4304,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   output?: ComponentVariable;
 
   /**
-   * Templated string that should evaluate to a boolean.
-   *
-   * @generated from field: string show = 10;
-   */
-  show = "";
-
-  /**
    * @generated from field: bool defined_in_canvas = 6;
    */
   definedInCanvas = false;
@@ -4315,13 +4318,10 @@ export class ComponentSpec extends Message<ComponentSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
-    { no: 10, name: "show", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -4476,31 +4476,89 @@ export class Canvas extends Message<Canvas> {
  */
 export class CanvasSpec extends Message<CanvasSpec> {
   /**
+   * Display name for the canvas.
+   *
    * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
-   * @generated from field: uint32 columns = 2;
+   * Max width in pixels of the canvas.
+   *
+   * @generated from field: uint32 max_width = 2;
    */
-  columns = 0;
+  maxWidth = 0;
 
   /**
-   * @generated from field: uint32 gap = 3;
+   * Horizontal gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_x = 9;
    */
-  gap = 0;
+  gapX = 0;
 
   /**
+   * Vertical gap in pixels of the canvas.
+   *
+   * @generated from field: uint32 gap_y = 10;
+   */
+  gapY = 0;
+
+  /**
+   * Name of the theme to use. Only one of theme and embedded_theme can be set.
+   *
+   * @generated from field: string theme = 7;
+   */
+  theme = "";
+
+  /**
+   * Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+   *
+   * @generated from field: rill.runtime.v1.ThemeSpec embedded_theme = 8;
+   */
+  embeddedTheme?: ThemeSpec;
+
+  /**
+   * List of selectable time ranges with comparison time ranges.
+   * If the list is empty, a default list should be shown.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+   *
+   * @generated from field: repeated rill.runtime.v1.ExploreTimeRange time_ranges = 11;
+   */
+  timeRanges: ExploreTimeRange[] = [];
+
+  /**
+   * List of selectable time zones.
+   * If the list is empty, a default list should be shown.
+   * The values should be valid IANA location identifiers.
+   *
+   * @generated from field: repeated string time_zones = 12;
+   */
+  timeZones: string[] = [];
+
+  /**
+   * Preset UI state to show by default.
+   *
+   * @generated from field: rill.runtime.v1.CanvasPreset default_preset = 15;
+   */
+  defaultPreset?: CanvasPreset;
+
+  /**
+   * Variables that can be used in the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
    */
   variables: ComponentVariable[] = [];
 
   /**
+   * Items to render on the canvas
+   *
    * @generated from field: repeated rill.runtime.v1.CanvasItem items = 4;
    */
   items: CanvasItem[] = [];
 
   /**
+   * Security rules to apply for access to the canvas.
+   *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
    */
   securityRules: SecurityRule[] = [];
@@ -4514,8 +4572,14 @@ export class CanvasSpec extends Message<CanvasSpec> {
   static readonly typeName = "rill.runtime.v1.CanvasSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "max_width", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "gap_x", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "gap_y", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
+    { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
+    { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
@@ -4639,6 +4703,64 @@ export class CanvasItem extends Message<CanvasItem> {
 
   static equals(a: CanvasItem | PlainMessage<CanvasItem> | undefined, b: CanvasItem | PlainMessage<CanvasItem> | undefined): boolean {
     return proto3.util.equals(CanvasItem, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CanvasPreset
+ */
+export class CanvasPreset extends Message<CanvasPreset> {
+  /**
+   * Time range for the explore.
+   * It corresponds to the `range` property of the explore's `time_ranges`.
+   * If not found in `time_ranges`, it should be added to the list.
+   *
+   * @generated from field: optional string time_range = 1;
+   */
+  timeRange?: string;
+
+  /**
+   * Comparison mode.
+   * TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+   *
+   * @generated from field: rill.runtime.v1.ExploreComparisonMode comparison_mode = 2;
+   */
+  comparisonMode = ExploreComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+   *
+   * @generated from field: optional string comparison_dimension = 8;
+   */
+  comparisonDimension?: string;
+
+  constructor(data?: PartialMessage<CanvasPreset>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CanvasPreset";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "comparison_mode", kind: "enum", T: proto3.getEnumType(ExploreComparisonMode) },
+    { no: 8, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CanvasPreset {
+    return new CanvasPreset().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CanvasPreset | PlainMessage<CanvasPreset> | undefined, b: CanvasPreset | PlainMessage<CanvasPreset> | undefined): boolean {
+    return proto3.util.equals(CanvasPreset, a, b);
   }
 }
 
@@ -5056,6 +5178,49 @@ export class CharLocation extends Message<CharLocation> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.ConnectorV2
+ */
+export class ConnectorV2 extends Message<ConnectorV2> {
+  /**
+   * @generated from field: rill.runtime.v1.ConnectorSpec spec = 1;
+   */
+  spec?: ConnectorSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.ConnectorState state = 2;
+   */
+  state?: ConnectorState;
+
+  constructor(data?: PartialMessage<ConnectorV2>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectorV2";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: ConnectorSpec },
+    { no: 2, name: "state", kind: "message", T: ConnectorState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorV2 {
+    return new ConnectorV2().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectorV2 | PlainMessage<ConnectorV2> | undefined, b: ConnectorV2 | PlainMessage<ConnectorV2> | undefined): boolean {
+    return proto3.util.equals(ConnectorV2, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ConnectorSpec
  */
 export class ConnectorSpec extends Message<ConnectorSpec> {
@@ -5073,6 +5238,16 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    * @generated from field: repeated string templated_properties = 4;
    */
   templatedProperties: string[] = [];
+
+  /**
+   * @generated from field: bool provision = 5;
+   */
+  provision = false;
+
+  /**
+   * @generated from field: google.protobuf.Struct provision_args = 6;
+   */
+  provisionArgs?: Struct;
 
   /**
    * DEPRECATED: properties_from_variables stores properties whose value is a variable.
@@ -5093,6 +5268,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 1, name: "driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "properties", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "provision_args", kind: "message", T: Struct },
     { no: 3, name: "properties_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -5147,49 +5324,6 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.ConnectorV2
- */
-export class ConnectorV2 extends Message<ConnectorV2> {
-  /**
-   * @generated from field: rill.runtime.v1.ConnectorSpec spec = 1;
-   */
-  spec?: ConnectorSpec;
-
-  /**
-   * @generated from field: rill.runtime.v1.ConnectorState state = 2;
-   */
-  state?: ConnectorState;
-
-  constructor(data?: PartialMessage<ConnectorV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ConnectorV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "spec", kind: "message", T: ConnectorSpec },
-    { no: 2, name: "state", kind: "message", T: ConnectorState },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorV2 {
-    return new ConnectorV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ConnectorV2 | PlainMessage<ConnectorV2> | undefined, b: ConnectorV2 | PlainMessage<ConnectorV2> | undefined): boolean {
-    return proto3.util.equals(ConnectorV2, a, b);
   }
 }
 

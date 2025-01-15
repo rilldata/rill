@@ -18,7 +18,6 @@
     cleanUpComparisonValue,
     compareLeaderboardValues,
     getSort,
-    type LeaderboardItemData,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
@@ -39,13 +38,14 @@
     getFiltersForOtherDimensions,
   } from "../selectors";
   import { getIndependentMeasures } from "../state-managers/selectors/measures";
-  import {
-    LEADERBOARD_DEFAULT_COLUMN_WIDTHS,
-    type ColumnWidths,
-  } from "./leaderboard-widths";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
+  import {
+    valueColumn,
+    deltaColumn,
+    DEFAULT_COL_WIDTH,
+  } from "./leaderboard-widths";
 
   const slice = 7;
   const gutterWidth = 24;
@@ -62,20 +62,16 @@
   export let metricsViewName: string;
   export let metricsView: V1MetricsViewSpec;
   export let sortType: SortType;
+  export let tableWidth: number;
   export let sortedAscending: boolean;
   export let isValidPercentOfTotal: boolean;
   export let timeControlsReady: boolean;
+  export let firstColumnWidth: number;
   export let isSummableMeasure: boolean;
   export let filterExcludeMode: boolean;
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
-  export let columnWidths: ColumnWidths = LEADERBOARD_DEFAULT_COLUMN_WIDTHS;
-  export let estimateAndUpdateLeaderboardWidths: (
-    dimensionName: string,
-    aboveTheFold: LeaderboardItemData[],
-    belowTheFold: LeaderboardItemData[],
-  ) => void;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -87,6 +83,9 @@
     | ((value: string | number) => string);
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleSort: (sortType: DashboardState_LeaderboardSortType) => void;
+  export let toggleComparisonDimension: (
+    dimensionName: string | undefined,
+  ) => void;
 
   const observer = new IntersectionObserver(
     ([entry]) => {
@@ -257,24 +256,6 @@
   );
 
   $: columnCount = comparisonTimeRange ? 3 : isValidPercentOfTotal ? 2 : 1;
-
-  // Estimate the common column widths for all leaderboards
-  $: if (aboveTheFold.length || belowTheFoldRows.length) {
-    estimateAndUpdateLeaderboardWidths(
-      dimensionName,
-      aboveTheFold,
-      belowTheFoldRows,
-    );
-  }
-
-  $: tableWidth =
-    columnWidths.dimension +
-    columnWidths.value +
-    (comparisonTimeRange
-      ? columnWidths.delta + columnWidths.deltaPercent
-      : isValidPercentOfTotal
-        ? columnWidths.percentOfTotal
-        : 0);
 </script>
 
 <div
@@ -288,13 +269,13 @@
   <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
-      <col style:width="{columnWidths.dimension}px" />
-      <col style:width="{columnWidths.value}px" />
+      <col style:width="{firstColumnWidth}px" />
+      <col style:width="{$valueColumn}px" />
       {#if !!comparisonTimeRange}
-        <col style:width="{columnWidths.delta}px" />
-        <col style:width="{columnWidths.deltaPercent}px" />
+        <col style:width="{$deltaColumn}px" />
+        <col style:width="{DEFAULT_COL_WIDTH}px" />
       {:else if isValidPercentOfTotal}
-        <col style:width="{columnWidths.percentOfTotal}px" />
+        <col style:width="{DEFAULT_COL_WIDTH}px" />
       {/if}
     </colgroup>
 
@@ -311,6 +292,7 @@
       isTimeComparisonActive={!!comparisonTimeRange}
       {toggleSort}
       {setPrimaryDimension}
+      {toggleComparisonDimension}
     />
 
     <tbody>
@@ -320,6 +302,7 @@
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
             {tableWidth}
+            {firstColumnWidth}
             {isSummableMeasure}
             {isBeingCompared}
             {filterExcludeMode}
@@ -328,8 +311,6 @@
             {itemData}
             {isValidPercentOfTotal}
             isTimeComparisonActive={!!comparisonTimeRange}
-            {columnWidths}
-            {gutterWidth}
             {toggleDimensionValueSelection}
             {formatter}
           />
@@ -339,6 +320,7 @@
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           {itemData}
+          {firstColumnWidth}
           {isSummableMeasure}
           {tableWidth}
           {dimensionName}
@@ -347,8 +329,6 @@
           {atLeastOneActive}
           {isValidPercentOfTotal}
           isTimeComparisonActive={!!comparisonTimeRange}
-          {columnWidths}
-          {gutterWidth}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}

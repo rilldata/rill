@@ -17,11 +17,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test(t *testing.T) {
+func TestClickHouseStatic(t *testing.T) {
 	// Create a test ClickHouse cluster
 	container, err := testcontainersclickhouse.Run(
 		context.Background(),
-		"clickhouse/clickhouse-server:24.6.2.17",
+		"clickhouse/clickhouse-server:24.11.1.2557",
 		// Add a user config file that enables access management for the "default" user
 		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
 			req.Files = append(req.Files, testcontainers.ContainerFile{
@@ -66,7 +66,7 @@ func Test(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db1.Exec("INSERT INTO test VALUES (1)")
 	require.NoError(t, err)
-	rows, err := db1.Query("SELECT COUNT(*) FROM system.tables")
+	rows, err := db1.Query("SELECT COUNT(*) FROM system.tables WHERE database <> 'system'")
 	require.NoError(t, err)
 	for rows.Next() {
 		var count int
@@ -88,7 +88,7 @@ func Test(t *testing.T) {
 	require.Error(t, err)
 
 	// Check the second connection can't see the other connection's tables in the information schema
-	rows, err = db2.Query("SELECT name FROM system.tables")
+	rows, err = db2.Query("SELECT name FROM system.tables WHERE database <> 'system'")
 	require.NoError(t, err)
 	for rows.Next() {
 		require.Fail(t, "unexpected visible table in information schema")

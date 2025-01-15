@@ -215,10 +215,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add handler for combined OpenAPI spec of custom APIs
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/api/openapi", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.combinedOpenAPISpec))))
 
-	// Add handler for resolving component data
-	// NOTE: Deprecated in favor of the ResolveComponent RPC.
-	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/components/{name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.componentDataHandler))))
-
 	// Serving static assets
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/assets/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.assetsHandler))))
 

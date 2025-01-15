@@ -98,55 +98,34 @@ You will need to [invite users to your organization/project](https://docs.rillda
 
 
 ## Rill Cloud Trial
-
 ### What is Rill Cloud Trial?
+We offer a free 30 day trial to any one interested in testing out our online platform. Simply create an account and deploy your project from Rill Developer. If you haven't already created and account and logged in, you will be prompted during the deployment process. 
 
-We now offer a self serve option for our users using Rill Cloud to get started. Before signing up for a [Teams plan](https://www.rilldata.com/pricing), you can create an account and start your free trial. Note that the banner will show you the remaining days for your trial and will update as the expiration gets closer! 
+There are no feature limitations in a free trial but we have set the limit for imported data to 10GB per project with two projects per deployment. You can check the data usage in the settings page. 
 
+:::note 
+The banner will show you the remaining days for your trial and will update as the expiration gets closer! Upgrade to a Teams plan and input your payment method to continue using Rill!
+:::
 ![img](/img/FAQ/rill-trial-banner.png)
 
 ### When does my trial start?
-
-Your trial will start when you deploy a project to Rill Cloud. An Organization will be autoamatically created during this process using your email.
+Your trial will start when you deploy a project to Rill Cloud from Rill Developer. An Organization will be autoamatically created during this process using your email and the project will be the folder that your Rill project exists in. You can change the name using [CLI commands](https://docs.rilldata.com/reference/cli/project/rename). 
 
 ### How long does my Rill Cloud Trial last?
-
-Currently, a Rill Cloud Trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
+A Rill Cloud trial lasts for 30 days. If you have any comments or concerns, please reach out to us on our [various platforms](../contact.md)! 
 
 ### What is included in the free trial? 
+The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required and there are no locked features. 
 
-The free trial is locked at 2 projects and up to 10GB of data each. You can invite as many users as required. 
-
-### What happens to my project if I do not pay on time?
-
-Your projects will hibernate. Your project metadata will still be available once you've activated your team plan.
+### What happens to my project if I do not upgrade to a Team plan?
+Your projects will hibernate. Your project metadata will still be available once you've activated your team plan. If you'd like to delete your deployment from Rill Cloud, you can do so via the [CLI commands.](https://docs.rilldata.com/reference/cli/org/delete)
 
 ![expired](/img/FAQ/expired-project.png)
 
 ### What is project hibernation?
+When a project is inactive for a specific number of days or your trial has expired, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. 
 
-When a project is inactive for a specific number of days or your trial has expired, we automatically hibernate the project. What this means is that all of your information and metadata is saved and resource consumption will be zero. You will need to unhibernate the project to gain access to the dashboard again. If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed. Once the payment is confirmed, you can redeploy the project with the following:
-
+If the project is hibernated due to payment issues, the project will stay in this state until payment is confirmed. Once the payment is confirmed, you can reaccess the project with the following CLI command.
 ```
 rill project hibernate <project_id> --redeploy
 ```
-
-## Rill Cloud Team Plan (Billing)
-
-### How do I activate my Team Plan?
-
-You can activate your Team Plan via the Billing page from the settings in Rill Cloud. If you have not already, you will be prompted to add a payment method via Stripe. Please note that the cost of your plan depends on how much data you will be ingesting into Rill. For more information on costs, please refer to our [pricing page](https://www.rilldata.com/pricing). 
-
-![billing](/img/FAQ/rill-org-billing.png)
-
-
-### What does the Team Plan include?
-
-The base Team Plan starts at $250/month with 10GB of data included. For data over 10GB, this is priced at $25/GB. For more information, please refer to our [pricing page](https://www.rilldata.com/pricing). 
-
-
-### How can I see my current data usage?
-
-This is viewable via the Usage page in the Organization Settings page.
-
-! [usage] ()

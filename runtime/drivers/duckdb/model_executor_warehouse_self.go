@@ -56,15 +56,13 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 
 		// NOTE: This intentionally drops the end table if not staging changes.
-		if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
-			_ = olap.DropTable(ctx, stagingTableName, t.View)
-		}
+		_ = olap.DropTable(ctx, stagingTableName)
 	}
 
 	err := e.queryAndInsert(ctx, opts, olap, stagingTableName, outputProps)
 	if err != nil {
 		if !opts.IncrementalRun {
-			_ = olap.DropTable(ctx, stagingTableName, false)
+			_ = olap.DropTable(ctx, stagingTableName)
 		}
 		return nil, err
 	}
@@ -113,8 +111,7 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 	for {
 		files, err := iter.Next()
 		if err != nil {
-			// TODO: Why is this not just one error?
-			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) || errors.Is(err, drivers.ErrIteratorDone) {
+			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) {
 				break
 			}
 			return err
@@ -132,7 +129,13 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		qry := fmt.Sprintf("SELECT * FROM %s", from)
 
 		if !create && opts.IncrementalRun {
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+			insertOpts := &drivers.InsertTableOptions{
+				ByName:    false,
+				InPlace:   true,
+				Strategy:  outputProps.IncrementalStrategy,
+				UniqueKey: outputProps.UniqueKey,
+			}
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to incrementally insert into table: %w", err)
 			}
@@ -140,14 +143,19 @@ func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, opts *driv
 		}
 
 		if !create {
-			err := olap.InsertTableAsSelect(ctx, outputTable, qry, false, true, drivers.IncrementalStrategyAppend, nil)
+			insertOpts := &drivers.InsertTableOptions{
+				ByName:   false,
+				InPlace:  true,
+				Strategy: drivers.IncrementalStrategyAppend,
+			}
+			err := olap.InsertTableAsSelect(ctx, outputTable, qry, insertOpts)
 			if err != nil {
 				return fmt.Errorf("failed to insert into table: %w", err)
 			}
 			continue
 		}
 
-		err = olap.CreateTableAsSelect(ctx, outputTable, false, qry, nil)
+		err = olap.CreateTableAsSelect(ctx, outputTable, qry, &drivers.CreateTableOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}

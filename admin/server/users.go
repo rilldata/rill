@@ -102,7 +102,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	// Owner is a user
@@ -124,7 +124,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	if req.Preferences.TimeZone != nil {
@@ -177,7 +177,7 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -207,7 +207,7 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, fmt.Errorf("not authenticated as a user")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 	tokenID := claims.AuthTokenID()
 
@@ -240,7 +240,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		if err != nil {
 			return nil, err
 		}
-		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: organizationToDTO(org, true)}
+		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: s.organizationToDTO(org, true)}
 	case *adminv1.SudoGetResourceRequest_ProjectId:
 		proj, err := s.admin.DB.FindProject(ctx, id.ProjectId)
 		if err != nil {

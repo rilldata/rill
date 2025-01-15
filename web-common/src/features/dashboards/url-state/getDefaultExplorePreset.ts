@@ -1,14 +1,15 @@
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { ExploreStateDefaultTimezone } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   ToURLParamTDDChartMap,
   ToURLParamTimeGrainMapMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
-import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { inferCompareTimeRange } from "@rilldata/web-common/lib/time/comparisons";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   V1ExploreComparisonMode,
   V1ExploreSortType,
@@ -20,7 +21,6 @@ import {
 
 export function getDefaultExplorePreset(
   explore: V1ExploreSpec,
-  preferences: LocalUserPreferences,
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   const defaultExplorePreset: V1ExplorePreset = {
@@ -31,7 +31,7 @@ export function getDefaultExplorePreset(
     dimensions: explore.dimensions,
 
     timeRange: fullTimeRange ? "inf" : "",
-    timezone: preferences.timeZone ?? "UTC",
+    timezone: explore.defaultPreset?.timezone ?? getLocalIANA(),
     timeGrain: "",
     comparisonMode: V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_NONE,
     compareTimeRange: "",
@@ -54,6 +54,18 @@ export function getDefaultExplorePreset(
 
     ...(explore.defaultPreset ?? {}),
   };
+
+  if (!explore.timeZones?.length) {
+    // this is the old behaviour. if no timezones are configures for the explore, default it to UTC and not local IANA
+    defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
+  } else if (!explore.timeZones?.includes(defaultExplorePreset.timezone!)) {
+    // else if the default is not in the list of timezones
+    if (explore.timeZones?.includes(ExploreStateDefaultTimezone)) {
+      defaultExplorePreset.timezone = ExploreStateDefaultTimezone;
+    } else {
+      defaultExplorePreset.timezone = explore.timeZones[0];
+    }
+  }
 
   if (!defaultExplorePreset.timeGrain) {
     defaultExplorePreset.timeGrain = getDefaultPresetTimeGrain(

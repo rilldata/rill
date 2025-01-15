@@ -85,6 +85,7 @@
                 option,
                 $page.route.id ?? "",
               )}
+              preloadData={option.preloadData}
               on:click={() => {
                 if (onSelect) {
                   onSelect(id);

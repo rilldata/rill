@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/apache/arrow/go/v14/arrow"
-	"github.com/apache/arrow/go/v14/arrow/array"
-	"github.com/apache/arrow/go/v14/arrow/memory"
-	"github.com/apache/arrow/go/v14/parquet"
-	"github.com/apache/arrow/go/v14/parquet/compress"
-	"github.com/apache/arrow/go/v14/parquet/file"
-	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/apache/arrow/go/v15/arrow"
+	"github.com/apache/arrow/go/v15/arrow/array"
+	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow/go/v15/parquet"
+	"github.com/apache/arrow/go/v15/parquet/compress"
+	"github.com/apache/arrow/go/v15/parquet/file"
+	"github.com/apache/arrow/go/v15/parquet/pqarrow"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/container"
 	"gocloud.dev/blob"
@@ -24,7 +24,7 @@ const _batchSize = int64(1024)
 // downloadParquet downloads partial file as per extractOption
 func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject, option *extractOption, fw *os.File) error {
 	reader := NewBlobObjectReader(ctx, bucket, obj)
-	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
+	mem := memory.DefaultAllocator
 	props := parquet.NewReaderProperties(mem)
 
 	pf, err := file.NewParquetReader(reader, file.WithReadProps(props))

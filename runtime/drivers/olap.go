@@ -25,19 +25,35 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
+type CreateTableOptions struct {
+	View         bool
+	BeforeCreate string
+	AfterCreate  string
+	TableOpts    map[string]any
+}
+
+type InsertTableOptions struct {
+	BeforeInsert string
+	AfterInsert  string
+	ByName       bool
+	InPlace      bool
+	Strategy     IncrementalStrategy
+	UniqueKey    []string
+}
+
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 // NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
 	Dialect() Dialect
-	WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn WithConnectionFunc) error
+	WithConnection(ctx context.Context, priority int, longRunning bool, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 
-	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
-	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
-	DropTable(ctx context.Context, name string, view bool) error
-	RenameTable(ctx context.Context, name, newName string, view bool) error
+	CreateTableAsSelect(ctx context.Context, name, sql string, opts *CreateTableOptions) error
+	InsertTableAsSelect(ctx context.Context, name, sql string, opts *InsertTableOptions) error
+	DropTable(ctx context.Context, name string) error
+	RenameTable(ctx context.Context, name, newName string) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
 
@@ -250,6 +266,9 @@ func (d Dialect) RequiresCastForLike() bool {
 
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
+	if d == DialectDuckDB {
+		return d.EscapeIdentifier(table)
+	}
 	var sb strings.Builder
 	if db != "" {
 		sb.WriteString(d.EscapeIdentifier(db))
@@ -456,7 +475,10 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
-		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', '%s'), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", specifier, expr, tz), nil
+		if tz == "" {
+			return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS')", specifier, expr), nil
+		}
+		return fmt.Sprintf("date_trunc('%s', %s, 'MILLISECONDS', '%s')", specifier, expr, tz), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}
@@ -471,6 +493,8 @@ func (d Dialect) DateDiff(grain runtimev1.TimeGrain, t1, t2 time.Time) (string, 
 		return fmt.Sprintf("TIMESTAMPDIFF(%q, TIME_PARSE('%s'), TIME_PARSE('%s'))", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
 	case DialectDuckDB:
 		return fmt.Sprintf("DATEDIFF('%s', TIMESTAMP '%s', TIMESTAMP '%s')", unit, t1.Format(time.RFC3339), t2.Format(time.RFC3339)), nil
+	case DialectPinot:
+		return fmt.Sprintf("DATETIMECONVERT(DATETRUNC('MILLISECONDS', %s) - DATETRUNC('MILLISECONDS', %s), '1:MILLISECONDS:EPOCH', '1:%s:EPOCH')", t1.Format(time.RFC3339), t2.Format(time.RFC3339), unit), nil
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", d)
 	}

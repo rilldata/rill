@@ -57,7 +57,7 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, mv.Streaming, sec, priority)
 	if err != nil {
 		return err
 	}

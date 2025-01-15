@@ -19,7 +19,7 @@ type warehouseToDuckDB struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Transporter = &sqlStoreToDuckDB{}
+var _ drivers.Transporter = &warehouseToDuckDB{}
 
 func NewWarehouseToDuckDB(from drivers.Warehouse, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &warehouseToDuckDB{
@@ -75,10 +75,15 @@ func (w *warehouseToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		}
 
 		if create {
-			err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
+			err = w.to.CreateTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), &drivers.CreateTableOptions{})
 			create = false
 		} else {
-			err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), false, true, drivers.IncrementalStrategyAppend, nil)
+			insertOpts := &drivers.InsertTableOptions{
+				ByName:   false,
+				InPlace:  true,
+				Strategy: drivers.IncrementalStrategyAppend,
+			}
+			err = w.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), insertOpts)
 		}
 		if err != nil {
 			return err
