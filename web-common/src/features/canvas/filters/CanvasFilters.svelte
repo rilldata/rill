@@ -11,9 +11,7 @@
   $: selectedTimeRange = timeControls.selectedTimeRange;
   $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
   $: activeTimeZone = timeControls.selectedTimezone;
-  $: allTimeRange = timeControls.timeRangeSummaryStore(ctx);
-
-  $: console.log($allTimeRange);
+  $: allTimeRange = timeControls.allTimeRange;
 </script>
 
 <div class="flex flex-col gap-y-2 w-full h-20 justify-center ml-2">

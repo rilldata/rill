@@ -1,4 +1,7 @@
-import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import type { CanvasValidResponse } from "@rilldata/web-common/features/canvas/selector";
+import { getTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   TimeRangePreset,
   type DashboardTimeControls,
@@ -7,19 +10,35 @@ import {
 import {
   createQueryServiceMetricsViewTimeRange,
   V1TimeGrain,
+  type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
-import { derived, writable, type Readable, type Writable } from "svelte/store";
+import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
 
 export class CanvasTimeControls {
+  /**
+   * Writables
+   */
   selectedTimeRange: Writable<DashboardTimeControls>;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;
+  allTimeRange: Readable<TimeRange>;
   isReady: Writable<boolean>;
 
-  timeRangeSummaryStore: (ctx: StateManagers) => Readable<TimeRange>;
-
   constructor() {
+    this.allTimeRange = writable({
+      name: TimeRangePreset.ALL_TIME,
+      start: new Date(0),
+      end: new Date(),
+    });
     this.selectedTimeRange = writable({
       name: TimeRangePreset.ALL_TIME,
       start: new Date(0),
@@ -30,19 +49,72 @@ export class CanvasTimeControls {
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
 
-    this.timeRangeSummaryStore = (ctx) =>
-      derived([ctx.runtime, ctx.validSpecStore], ([r, validSpec], set) => {
+    this.isReady = writable(true);
+  }
+
+  setInitialState(
+    runtime: Writable<Runtime>,
+    validSpecStore: Readable<
+      QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
+    >,
+  ) {
+    this.timeRangeSummaryStore(runtime, validSpecStore);
+    const store = derived(
+      [this.allTimeRange, validSpecStore],
+      ([allTimeRange, validSpec]) => {
+        if (!validSpec.data) {
+          this.isReady.set(false);
+        }
+
+        const selectedTimezone = get(this.selectedTimezone);
+        const defaultTimeRange = isoDurationToFullTimeRange(
+          validSpec.data?.canvas?.defaultPreset?.timeRange,
+          allTimeRange.start,
+          allTimeRange.end,
+          selectedTimezone,
+        );
+
+        const newTimeRange: DashboardTimeControls = {
+          name: defaultTimeRange.name,
+          start: defaultTimeRange.start,
+          end: defaultTimeRange.end,
+        };
+
+        newTimeRange.interval = getTimeGrain(
+          undefined,
+          newTimeRange,
+          V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        );
+
+        this.selectedTimeRange.set(newTimeRange);
+        this.isReady.set(true);
+      },
+    );
+
+    // Subscribe to ensure the derived code runs
+    store.subscribe(() => {});
+  }
+
+  timeRangeSummaryStore = (
+    runtime: Writable<Runtime>,
+    validSpecStore: Readable<
+      QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
+    >,
+  ) => {
+    this.allTimeRange = derived(
+      [runtime, validSpecStore],
+      ([r, validSpec], set) => {
         const metricsReferred = Object.keys(
           validSpec?.data?.metricsViews || {},
         );
         if (!metricsReferred.length) {
           return set({
+            name: TimeRangePreset.ALL_TIME,
             start: new Date(0),
             end: new Date(),
           });
         }
 
-        console.log("metricsReferred", metricsReferred);
         const timeRangeQueries = [...metricsReferred].map((metricView) => {
           return createQueryServiceMetricsViewTimeRange(
             r.instanceId,
@@ -50,7 +122,7 @@ export class CanvasTimeControls {
             {},
             {
               query: {
-                queryClient: ctx.queryClient,
+                queryClient: queryClient,
                 staleTime: Infinity,
                 cacheTime: Infinity,
               },
@@ -75,10 +147,11 @@ export class CanvasTimeControls {
               end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
             }
           });
-          querySet({ start, end });
+          querySet({ name: TimeRangePreset.ALL_TIME, start, end });
         }).subscribe(set);
-      });
-  }
+      },
+    );
+  };
 
   setTimeZone(timezone: string) {
     this.selectedTimezone.set(timezone);

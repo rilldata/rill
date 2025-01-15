@@ -46,6 +46,8 @@ export function createStateManagers({
     ),
   );
 
+  canvasEntity.timeControls.setInitialState(runtime, validSpecStore);
+
   return {
     runtime: runtime,
     canvasName: canvasNameStore,
