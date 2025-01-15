@@ -14,16 +14,19 @@ func PushCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	pushCmd := &cobra.Command{
-		Use:   "push",
+		Use:   "push [<project-name>]",
 		Short: "Push local .env contents to cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
 				projectPath, err = normalizeProjectPath(projectPath)
 				if err != nil {
 					return err
 				}
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Parse and verify the project directory
