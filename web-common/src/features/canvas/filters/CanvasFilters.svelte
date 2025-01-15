@@ -2,11 +2,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import {
-    useAllDimensionFromMetric,
-    useAllMeasuresFromMetric,
-    useAllSimpleMeasureFromMetric,
-  } from "@rilldata/web-common/features/canvas/components/selectors";
   import CanvasGrainSelector from "@rilldata/web-common/features/canvas/filters/CanvasGrainSelector.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
@@ -16,7 +11,6 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -28,9 +22,8 @@
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  const { instanceId } = $runtime;
   const ctx = getCanvasStateManagers();
-  const { timeControls, filters } = ctx.canvasEntity;
+  const { timeControls, filters, spec } = ctx.canvasEntity;
 
   $: selectedTimeRange = timeControls.selectedTimeRange;
   $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
@@ -56,12 +49,9 @@
     measureHasFilter,
   } = filters;
 
-  $: dimensionsQuery = useAllDimensionFromMetric(instanceId, metricsViewName);
-  $: measuresQuery = useAllMeasuresFromMetric(instanceId, metricsViewName);
-  $: simpleMeasuresQuery = useAllSimpleMeasureFromMetric(
-    instanceId,
-    metricsViewName,
-  );
+  $: dimensions = spec.getDimensionsForMetricView(metricsViewName);
+  $: measures = spec.getMeasuresForMetricView(metricsViewName);
+  $: simpleMeasures = spec.getSimpleMeasuresForMetricView(metricsViewName);
 
   // $: alllDimensions = useAllDimensionFromMetrics(instanceId, [
   //   "nyc_311_latest_metrics",
@@ -69,17 +59,12 @@
   //   "auction",
   // ]);
 
-  // $: console.log($alllDimensions);
-
-  $: dimensions = $dimensionsQuery?.data || [];
   $: dimensionIdMap = getMapFromArray(
-    dimensions,
+    $dimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
-  $: simpleMeasures = $simpleMeasuresQuery?.data || [];
-  $: measures = $measuresQuery?.data || [];
-  $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
+  $: measureIdMap = getMapFromArray($measures, (m) => m.name as string);
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
   $: allDimensionFilters = $getAllDimensionFilterItems(
@@ -148,7 +133,7 @@
         </div>
       {:else}
         {#each allDimensionFilters as { name, label, selectedValues } (name)}
-          {@const dimension = dimensions.find(
+          {@const dimension = $dimensions.find(
             (d) => d.name === name || d.column === name,
           )}
           {@const dimensionName = dimension?.name || dimension?.column}
@@ -175,7 +160,7 @@
         {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
-              allDimensions={dimensions}
+              allDimensions={$dimensions}
               {name}
               {label}
               {dimensionName}
@@ -190,8 +175,8 @@
 
       {#if !readOnly}
         <FilterButton
-          allDimensions={dimensions}
-          filteredSimpleMeasures={simpleMeasures}
+          allDimensions={$dimensions}
+          filteredSimpleMeasures={$simpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
           {setTemporaryFilterName}

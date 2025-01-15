@@ -1,7 +1,4 @@
-import {
-  useAllDimensionFromMetric,
-  useAllSimpleMeasureFromMetric,
-} from "@rilldata/web-common/features/canvas/components/selectors";
+import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -21,54 +18,47 @@ export function getParsedDocument(fileArtifact: FileArtifact) {
 }
 
 export function useMetricFieldData(
-  instanceId: string,
-  metricName: string,
+  ctx: StateManagers,
+  metricViewName: string,
   type: "measure" | "dimension",
   searchableItems: string[] | undefined,
   searchValue: string,
 ) {
-  const allDimensions = useAllDimensionFromMetric(instanceId, metricName);
-  const allFilteredMeasures = useAllSimpleMeasureFromMetric(
-    instanceId,
-    metricName,
-  );
+  const { spec } = ctx.canvasEntity;
+  const allDimensions = spec.getDimensionsForMetricView(metricViewName);
+  const allMeasures = spec.getSimpleMeasuresForMetricView(metricViewName);
 
-  return derived(
-    [allDimensions, allFilteredMeasures],
-    ([$allDimensions, $allFilteredMeasures]) => {
-      let items: string[] = [];
-      let displayMap: Record<string, string> = {};
+  return derived([allDimensions, allMeasures], ([dimensions, measures]) => {
+    let items: string[] = [];
+    let displayMap: Record<string, string> = {};
 
-      if (type === "measure") {
-        const itemsData = $allFilteredMeasures?.data ?? [];
-        items = itemsData?.map((m) => m.name as string) ?? [];
-        displayMap = Object.fromEntries(
-          itemsData.map((item) => [
-            item.name as string,
-            getMeasureDisplayName(item),
-          ]),
-        );
-      } else {
-        const itemsData = $allDimensions?.data ?? [];
-        items = itemsData?.map((d) => d.name || (d.column as string)) ?? [];
-        displayMap = Object.fromEntries(
-          itemsData.map((item) => [
-            item.name || (item.column as string),
-            getDimensionDisplayName(item),
-          ]),
-        );
-      }
+    if (type === "measure") {
+      items = measures?.map((m) => m.name as string) ?? [];
+      displayMap = Object.fromEntries(
+        measures.map((item) => [
+          item.name as string,
+          getMeasureDisplayName(item),
+        ]),
+      );
+    } else {
+      items = dimensions?.map((d) => d.name || (d.column as string)) ?? [];
+      displayMap = Object.fromEntries(
+        dimensions.map((item) => [
+          item.name || (item.column as string),
+          getDimensionDisplayName(item),
+        ]),
+      );
+    }
 
-      const filteredItems = (
-        searchableItems && searchValue ? searchableItems : items
-      ).filter((item) => {
-        const matches =
-          displayMap[item]?.toLowerCase().includes(searchValue.toLowerCase()) ||
-          item.toLowerCase().includes(searchValue.toLowerCase());
-        return matches;
-      });
+    const filteredItems = (
+      searchableItems && searchValue ? searchableItems : items
+    ).filter((item) => {
+      const matches =
+        displayMap[item]?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        item.toLowerCase().includes(searchValue.toLowerCase());
+      return matches;
+    });
 
-      return { items, displayMap, filteredItems };
-    },
-  );
+    return { items, displayMap, filteredItems };
+  });
 }

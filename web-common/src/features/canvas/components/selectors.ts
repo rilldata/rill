@@ -1,56 +1,19 @@
 import { useMetricsViewValidSpec } from "@rilldata/web-common/features/dashboards/selectors";
-import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
-import { derived } from "svelte/store";
 
-export const useAllDimensionFromMetrics = (
-  instanceId: string,
-  metricsViewNames: string[],
-) => {
-  const dimensionsByViewStores = metricsViewNames.map((viewName) =>
-    useAllDimensionFromMetric(instanceId, viewName),
-  );
-  return derived(dimensionsByViewStores, ($dimensionsByViewStores) =>
-    $dimensionsByViewStores
-      .filter((dimensions) => dimensions?.data)
-      .map((dimensions) => dimensions.data)
-      .flat(),
-  );
-};
-
-export const useAllDimensionFromMetric = (
-  instanceId: string,
-  metricsViewName: string,
-) =>
-  useMetricsViewValidSpec(
-    instanceId,
-    metricsViewName,
-    (meta) => meta?.dimensions ?? [],
-  );
-
-export const useAllMeasuresFromMetric = (
-  instanceId: string,
-  metricsViewName: string,
-) =>
-  useMetricsViewValidSpec(
-    instanceId,
-    metricsViewName,
-    (meta) => meta?.measures ?? [],
-  );
-
-export const useAllSimpleMeasureFromMetric = (
-  instanceId: string,
-  metricsViewName: string,
-) =>
-  useMetricsViewValidSpec(
-    instanceId,
-    metricsViewName,
-    (meta) =>
-      meta?.measures?.filter(
-        (m) =>
-          !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
-      ) ?? [],
-  );
+// export const useAllDimensionFromMetrics = (
+//   instanceId: string,
+//   metricsViewNames: string[],
+// ) => {
+//   const dimensionsByViewStores = metricsViewNames.map((viewName) =>
+//     useAllDimensionFromMetric(instanceId, viewName),
+//   );
+//   return derived(dimensionsByViewStores, ($dimensionsByViewStores) =>
+//     $dimensionsByViewStores
+//       .filter((dimensions) => dimensions?.data)
+//       .map((dimensions) => dimensions.data)
+//       .flat(),
+//   );
+// };
 
 export const useMetricsViewSpecMeasure = (
   instanceId: string,

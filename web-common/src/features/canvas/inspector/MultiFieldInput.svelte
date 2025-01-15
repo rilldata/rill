@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { MinusIcon, PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "./selectors";
 
@@ -18,10 +18,10 @@
   let open = false;
   let searchValue = "";
 
-  const { instanceId } = $runtime;
+  const ctx = getCanvasStateManagers();
 
   $: fieldData = useMetricFieldData(
-    instanceId,
+    ctx,
     metricName,
     type,
     searchableItems,

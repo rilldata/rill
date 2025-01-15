@@ -23,15 +23,10 @@ export function useKPITotals(
 ): CreateQueryResult<number | null, HTTPError> {
   const { selectedTimeRange } = ctx.canvasEntity.timeControls;
 
-  const timeAndFilterStore = createTimeAndFilterStore(
-    ctx,
-    instanceId,
-    metricsViewName,
-    {
-      timeRangeStore: selectedTimeRange,
-      overrideTimeRange: overrideTimeRange,
-    },
-  );
+  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
+    timeRangeStore: selectedTimeRange,
+    overrideTimeRange: overrideTimeRange,
+  });
 
   return derived(timeAndFilterStore, ({ timeRange, where }, set) => {
     return createQueryServiceMetricsViewAggregation(
@@ -67,15 +62,10 @@ export function useKPIComparisonTotal(
     ctx.canvasEntity.timeControls;
 
   // Build the store that yields { finalTimeRange, where }
-  const timeAndFilterStore = createTimeAndFilterStore(
-    ctx,
-    instanceId,
-    metricsViewName,
-    {
-      timeRangeStore: selectedComparisonTimeRange,
-      overrideTimeRange: overrideComparisonRange,
-    },
-  );
+  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
+    timeRangeStore: selectedComparisonTimeRange,
+    overrideTimeRange: overrideComparisonRange,
+  });
 
   return derived(
     [timeAndFilterStore, showTimeComparison],
@@ -120,15 +110,10 @@ export function useKPISparkline(
   );
   const { selectedTimeRange } = ctx.canvasEntity.timeControls;
 
-  const timeAndFilterStore = createTimeAndFilterStore(
-    ctx,
-    instanceId,
-    metricsViewName,
-    {
-      timeRangeStore: selectedTimeRange,
-      overrideTimeRange: overrideTimeRange,
-    },
-  );
+  const timeAndFilterStore = createTimeAndFilterStore(ctx, metricsViewName, {
+    timeRangeStore: selectedTimeRange,
+    overrideTimeRange: overrideTimeRange,
+  });
 
   return derived(
     [allTimeRangeQuery, selectedTimeRange, timeAndFilterStore],
