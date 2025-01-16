@@ -79,7 +79,7 @@ In the below example, bids is another measure defined in the metrics view and we
     expression: AVG(bids)
     requires: [bids]
     window:
-      #order: timestamp
+      order: timestamp
       frame: RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW
 ```
 ## Dimension Expressions
