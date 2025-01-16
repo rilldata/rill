@@ -25,6 +25,7 @@ type metricsResolver struct {
 	executor   *metricsview.Executor
 	query      *metricsview.Query
 	args       *metricsResolverArgs
+	claims     *runtime.SecurityClaims
 }
 
 type metricsResolverArgs struct {
@@ -78,6 +79,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		executor:   executor,
 		query:      qry,
 		args:       args,
+		claims:     opts.Claims,
 	}, nil
 }
 
@@ -116,6 +118,16 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, r.claims, r.args.Priority)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.executor.BindQuery(ctx, r.query, tsRes)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
