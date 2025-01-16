@@ -1,8 +1,8 @@
 import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
+  buildValidMetricsViewFilter,
   createAndExpression,
-  getValidFilterForMetricView,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
@@ -93,7 +93,7 @@ export class CanvasEntity {
         }
 
         const where =
-          getValidFilterForMetricView(whereFilter, dtf, dimensions, measures) ??
+          buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
           createAndExpression([]);
 
         return { timeRange, where };

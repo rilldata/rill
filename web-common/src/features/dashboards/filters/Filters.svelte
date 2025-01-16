@@ -86,8 +86,6 @@
     dimensionIdMap,
   );
 
-  $: console.log($dashboardStore.whereFilter);
-
   $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
   $: allMeasureFilters = $getAllMeasureFilterItems(
     currentMeasureFilters,

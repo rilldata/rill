@@ -391,7 +391,7 @@ export function isExpressionUnsupported(expression: V1Expression) {
   return false;
 }
 
-export function getValidFilterForMetricView(
+export function buildValidMetricsViewFilter(
   filter: V1Expression,
   dtf: DimensionThresholdFilter[],
   dimensions: MetricsViewSpecDimensionV2[],
