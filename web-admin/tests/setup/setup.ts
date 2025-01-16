@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import axios from "axios";
 import { spawn } from "child_process";
+import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,6 +31,10 @@ setup(
         timeoutMs: timeout,
       },
     );
+
+    // Load environment variables from our root `.env` file
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
     // Check that the required environment variables are set
     // The above `rill devtool` command pulls the `.env` file with these values.
