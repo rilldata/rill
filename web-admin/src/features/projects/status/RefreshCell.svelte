@@ -29,7 +29,7 @@
 
 {#if dateTime.isValid}
   <Tooltip distance={8} location="top" suppress={clientWidth > 180}>
-    <div bind:clientWidth class=" w-full">
+    <div bind:clientWidth class="truncate w-full">
       {formattedDate}
     </div>
     <TooltipContent slot="tooltip-content">

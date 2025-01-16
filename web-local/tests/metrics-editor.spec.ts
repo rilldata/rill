@@ -11,7 +11,7 @@ import { test } from "./utils/test";
 test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
-  test("Can add measures and dimensions", async ({ page }) => {
+  test("Can add and remove measures and dimensions", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
     await page.getByRole("button", { name: "Add new measure" }).click();
@@ -33,6 +33,30 @@ test.describe("Metrics editor", () => {
     await expect(
       page.getByText("New Dimension", { exact: true }),
     ).toBeVisible();
+
+    // Delete measure
+    await page.getByRole("row", { name: "measure New Measure" }).hover();
+    await page
+      .getByRole("button", { name: "Delete measure New Measure" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Measure", { exact: true }),
+    ).not.toBeVisible();
+
+    // Delete dimension
+    await page.getByRole("row", { name: "dimension New Dimension" }).hover();
+    await page
+      .getByRole("button", { name: "Delete dimension New Dimension" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).not.toBeVisible();
   });
 
   test("Metrics editor", async ({ page }) => {

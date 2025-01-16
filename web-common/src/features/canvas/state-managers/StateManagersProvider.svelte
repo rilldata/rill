@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createCanvasStateSync } from "@rilldata/web-common/features/canvas/stores/syncCanvasState";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setContext } from "svelte";
@@ -13,14 +12,14 @@
     canvasName,
   });
 
-  const canvasStoreReady = createCanvasStateSync(canvasName);
+  $: isLoading = stateManagers.canvasEntity.spec.isLoading;
 
   setContext(DEFAULT_STORE_KEY, stateManagers);
 </script>
 
-{#if canvasStoreReady.isFetching}
+{#if $isLoading}
   <div class="grid place-items-center size-full">
-    <DelayedSpinner isLoading={canvasStoreReady.isFetching} size="40px" />
+    <DelayedSpinner isLoading size="40px" />
   </div>
 {:else}
   <slot />
