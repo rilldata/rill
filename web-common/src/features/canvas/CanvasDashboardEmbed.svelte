@@ -52,7 +52,6 @@
         {instanceId}
         {componentName}
         {chartView}
-        {scale}
         {radius}
         embed={true}
         padding={gapSize}
@@ -61,6 +60,8 @@
           gridCell}
         left={Number(component.x) * gridCell}
         top={Number(component.y) * gridCell}
+        rowIndex={Math.floor(Number(component.y))}
+        columnIndex={Math.floor(Number(component.x))}
       />
     {/if}
   {/each}

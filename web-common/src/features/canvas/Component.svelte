@@ -18,7 +18,6 @@
   export let embed = false;
   export let radius: number;
   export let selected = false;
-  export let interacting = false;
   export let width: number;
   export let height: number;
   export let chartView = false;
@@ -132,10 +131,10 @@
     </div>
   {/if}
   <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
-    <!-- class:shadow-md={interacting || isHovered} -->
     <div
-      class="size-full overflow-hidden flex flex-col flex-none rounded-sm shadow-md border border-slate-200"
+      class="size-full overflow-hidden flex flex-col flex-none rounded-sm border border-slate-200"
       style:border-radius="{radius}px"
+      class:shadow-md={isHovered}
     >
       <ComponentTitle {title} {description} />
       {#if renderer && rendererProperties}

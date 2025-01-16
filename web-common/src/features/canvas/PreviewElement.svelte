@@ -101,7 +101,6 @@
     <Component
       {instanceId}
       {i}
-      {interacting}
       {componentName}
       {padding}
       {radius}
@@ -136,7 +135,6 @@
     <Component
       {instanceId}
       {i}
-      {interacting}
       {componentName}
       {padding}
       {radius}
