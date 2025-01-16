@@ -38,7 +38,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 				sortField.Name = qm.Compute.ComparisonValue.Measure
 				continue
 			}
-			// only supported sorting on base or compare value and dims
+			// only supports sorting on base or compare value and dims
 			return false, nil
 		}
 	}
@@ -104,7 +104,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 
 	var comp *SelectNode
 	if !sortCompare {
-		// sorting by base value set the inline results as base node and add base results to comparison node where clause
+		// sorting by base value - set the inline results as base node and add base results to comparison node where clause
 		n.FromSelect = base
 		comp = n.JoinComparisonSelect
 	} else {
