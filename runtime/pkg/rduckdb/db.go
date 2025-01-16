@@ -741,13 +741,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 				return err
 			}
 		}
-		if !read {
-			// disable any more configuration changes on the write handle via init queries
-			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
-			if err != nil {
-				return err
-			}
-		}
 		return nil
 	})
 	if err != nil {
