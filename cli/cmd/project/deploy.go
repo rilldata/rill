@@ -47,9 +47,12 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "deploy",
+		Use:   "deploy [<path>]",
 		Short: "Deploy project to Rill Cloud by uploading the project files",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
 			return DeployWithUploadFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -173,6 +176,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return err
 		}
 		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+
 		// Update the project
 		// Silently ignores other flags like description etc which are handled with project update.
 		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
@@ -188,6 +192,23 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 			return fmt.Errorf("update project failed with error %w", err)
 		}
 		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+
+		// Fetch vars from .env
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else {
+			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
+
+		// Success
 		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
 		return nil
 	}

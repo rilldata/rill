@@ -38,9 +38,12 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "connect-github",
+		Use:   "connect-github [<path>]",
 		Short: "Deploy project to Rill Cloud by pulling project files from a git repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
