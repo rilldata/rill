@@ -32,7 +32,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -393,21 +392,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	// Parse .env and push it as variables
-	repo, instanceID, err := cmdutil.RepoForProjectPath(s.app.ProjectPath)
+	// Parse .env and push it as variables
+	dotenv, err := ParseDotenv(ctx, s.app.ProjectPath)
 	if err != nil {
-		return nil, err
-	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse project: %w", err)
-	}
-	if parser.RillYAML == nil {
-		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
+		return nil, fmt.Errorf("failed to parse .env: %w", err)
 	}
 	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 		Organization: r.Msg.Org,
 		Project:      r.Msg.ProjectName,
-		Variables:    parser.DotEnv,
+		Variables:    dotenv,
 	})
 	if err != nil {
 		return nil, err
@@ -458,6 +451,20 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Parse .env and push it as variables
+	dotenv, err := ParseDotenv(ctx, s.app.ProjectPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse .env: %w", err)
+	}
+	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		Organization: projResp.Project.OrgName,
+		Project:      projResp.Project.Name,
+		Variables:    dotenv,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO : Add other update project fields

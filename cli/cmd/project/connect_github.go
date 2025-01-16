@@ -264,9 +264,25 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
-	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
+	// Upload .env
 	if isLocalGitPath {
-		variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else {
+			c, err := ch.Client()
+			if err != nil {
+				return err
+			}
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
 	}
 
 	// Open browser
