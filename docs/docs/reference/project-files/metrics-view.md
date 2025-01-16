@@ -67,7 +67,9 @@ In your Rill project directory, create a metrics view, `<metrics_view>.yaml`, fi
     - **`ordertime`** — boolean, sets the order only by the time dimensions _(optional)_ 
     - **`frame`** — sets the frame of your window. _(optional)_ 
   - **`requires`** — using an available measure or dimension in your metrics view to set a required parameter, cannot be used with simple measures  _(optional)_
- 
+ :::note window limitations
+Rill supports window function, but only when applied post-aggregation. This means that window functions can only operate on data that has already been grouped and aggregated by the defined dimensions (dims).
+ :::
 ```yaml
 measures:
  - name: bids_1day_rolling_avg
