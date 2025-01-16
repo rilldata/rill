@@ -592,11 +592,18 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, error) {
 	if val == nil {
-		return true, "NULL", nil
+		ok, expr := d.GetNullExpr(typ)
+		if ok {
+			return true, expr, nil
+		}
+		return false, "", fmt.Errorf("could not get null expr for type %q", typ)
 	}
 	switch typ {
 	case runtimev1.Type_CODE_STRING:
-		return true, fmt.Sprintf("'%v'", val), nil
+		if s, ok := val.(string); ok {
+			return true, d.EscapeStringValue(s), nil
+		}
+		return false, "", fmt.Errorf("could not cast value %v to string type", val)
 	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256, runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
 		// check NaN and Inf
 		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
@@ -617,6 +624,26 @@ func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, err
 	default:
 		return false, "", fmt.Errorf("unsupported type %q", typ)
 	}
+}
+
+func (d Dialect) GetNullExpr(typ runtimev1.Type_Code) (bool, string) {
+	if d == DialectDruid {
+		switch typ {
+		case runtimev1.Type_CODE_STRING:
+			return true, "CAST(NULL AS VARCHAR)"
+		case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+			return true, "CAST(NULL AS INTEGER)"
+		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+			return true, "CAST(NULL AS DOUBLE)"
+		case runtimev1.Type_CODE_BOOL:
+			return true, "CAST(NULL AS BOOLEAN)"
+		case runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIMESTAMP:
+			return true, "CAST(NULL AS TIMESTAMP)"
+		default:
+			return false, ""
+		}
+	}
+	return true, "NULL"
 }
 
 func (d Dialect) GetTimeExpr(t time.Time) (bool, string) {
