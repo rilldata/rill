@@ -8,10 +8,10 @@
   const viewOptions = [
     { view: "code", icon: Code },
     { view: "split", icon: Split },
-    { view: "no-code", icon: Viz },
+    { view: "viz", icon: Viz },
   ];
 
-  export let selectedView: "code" | "split" | "no-code" = "split";
+  export let selectedView: "code" | "split" | "viz" = "split";
   export let allowSplit = true;
 
   let tooltip: { view: string; top: number; left: number } | null = null;

@@ -1,61 +1,64 @@
 <script lang="ts">
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import {
     resourceColorMapping,
     resourceIconMapping,
   } from "../entity-management/resource-icon-mapping";
   import type { ResourceKind } from "../entity-management/resource-selectors";
   import { Code2Icon } from "lucide-svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
-  export let selectedView: "code" | "no-code" | "split" = "no-code";
+  export let selectedView: "code" | "viz" | "split" = "viz";
   export let resourceKind: ResourceKind;
 
   $: viewOptions = [
     { view: "code", icon: Code2Icon },
-    { view: "no-code", icon: resourceIconMapping[resourceKind] },
+    { view: "viz", icon: resourceIconMapping[resourceKind] },
   ];
 </script>
 
-<div class="radio" role="radiogroup">
+<div class="radio relative">
+  <span
+    style:left={selectedView === "code" ? "2px" : "24px"}
+    class="toggle size-[22px] absolute rounded-[4px] z-0 transition-all"
+  />
   {#each viewOptions as { view, icon: Icon } (view)}
-    <input
-      tabindex="0"
-      type="radio"
-      id={view}
-      name="view"
-      class="screenreader-only"
-      value={view}
-      checked={view === selectedView}
-      bind:group={selectedView}
-    />
-
-    <label aria-label={view} for={view} title={view}>
-      <Icon
-        size="15px"
-        color={view === selectedView && resourceKind
-          ? resourceColorMapping[resourceKind]
-          : "#9CA3AF"}
-      />
-    </label>
+    <Tooltip activeDelay={700} distance={8}>
+      <button
+        aria-label={view}
+        id={view}
+        name="view"
+        class="size-[22px] z-10 hover:brightness-75"
+        value={view}
+        on:click={() => {
+          if (selectedView === "code") {
+            selectedView = "viz";
+          } else {
+            selectedView = "code";
+          }
+        }}
+      >
+        <Icon
+          size="15px"
+          color={view === selectedView && resourceKind
+            ? resourceColorMapping[resourceKind]
+            : "#9CA3AF"}
+        />
+      </button>
+      <TooltipContent slot="tooltip-content">
+        {view === "code" ? "Code view" : "Leave code view"}
+      </TooltipContent>
+    </Tooltip>
   {/each}
 </div>
 
 <style lang="postcss">
-  label {
+  button {
     @apply flex-none flex items-center justify-center rounded-[4px];
     @apply size-[22px] cursor-pointer;
   }
 
-  .screenreader-only {
-    position: absolute;
-    clip: rect(1px, 1px, 1px, 1px);
-    padding: 0;
-    border: 0;
-    height: 1px;
-    width: 1px;
-    overflow: hidden;
-  }
-
-  input:checked + label {
+  .toggle {
     @apply bg-white outline outline-slate-200 outline-[1px];
   }
 

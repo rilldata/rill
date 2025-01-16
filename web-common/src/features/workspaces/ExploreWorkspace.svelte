@@ -108,7 +108,7 @@
         {fileArtifact}
         {lineBasedRuntimeErrors}
       />
-    {:else if selectedView === "no-code"}
+    {:else if selectedView === "viz"}
       {#if mainError}
         <ErrorPage
           body={mainError.message}
@@ -125,13 +125,13 @@
   </WorkspaceEditorContainer>
 
   <VisualExploreEditing
-    autoSave={selectedView === "no-code" || $autoSave}
+    autoSave={selectedView === "viz" || $autoSave}
     slot="inspector"
     exploreResource={exploreResource?.explore}
     {metricsViewName}
     {exploreName}
     {fileArtifact}
-    viewingDashboard={selectedView === "no-code"}
+    viewingDashboard={selectedView === "viz"}
     switchView={() => selectedViewStore.set("code")}
   />
 </WorkspaceContainer>
