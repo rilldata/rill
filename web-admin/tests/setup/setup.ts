@@ -7,7 +7,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 import { test as setup } from "./base";
-import { ADMIN_AUTH_FILE } from "./constants";
+import {
+  ADMIN_AUTH_FILE,
+  RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+} from "./constants";
 import { cliLogin } from "./fixtures/cli";
 
 setup(
@@ -61,7 +64,10 @@ setup(
     );
     // Write the pid to a file, so I can kill it later
     if (child.pid) {
-      fs.writeFileSync("rill-devtool-pid.txt", child.pid.toString());
+      fs.writeFileSync(
+        RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+        child.pid.toString(),
+      );
     } else {
       throw new Error("Failed to get pid of child process");
     }
@@ -83,8 +89,9 @@ setup(
     console.log("Runtime service ready");
 
     // Pull the repositories to be used for testing
+    const examplesRepoPath = "tests/setup/git/repos/rill-examples";
     await execAsync(
-      "git clone https://github.com/rilldata/rill-examples.git tests/setup/git/repos/rill-examples",
+      `rm -rf ${examplesRepoPath} && git clone https://github.com/rilldata/rill-examples.git ${examplesRepoPath}`,
     );
 
     // Log in with the admin account
@@ -102,7 +109,7 @@ setup(
     await page.waitForURL("/");
 
     // Save auth cookies to file
-    // Subsequent tests can use these cookies to authenticate, rather than logging in again.
+    // Subsequent tests can seed their browser with these cookies, instead of going through the log-in flow again.
     await page.context().storageState({ path: ADMIN_AUTH_FILE });
 
     // Create an organization named "e2e"
@@ -138,7 +145,8 @@ setup(
     await page.goto(url);
     await page.waitForURL("/-/github/connect/success");
 
-    // Wait for the deployment to complete (TODO: replace this with a better check)
+    // Wait for the deployment to complete
+    // TODO: Replace this with a better check. Maybe we could modify `spawnAndMatch` to match an array of regexes.
     await page.waitForTimeout(10000);
 
     // Expect to see the successful deployment

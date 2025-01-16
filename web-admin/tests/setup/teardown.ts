@@ -1,13 +1,17 @@
 import fs from "fs";
 import { execAsync } from "../utils/spawn";
 import { test as teardown } from "./base";
+import { RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE } from "./constants";
 
 teardown("should stop all services", async () => {
   // Stop the admin and runtime services:
   // 1. Get the process ID from the file
   // 2. Get the process group ID
   // 3. Kill the whole process group
-  const processID = fs.readFileSync("rill-devtool-pid.txt", "utf8");
+  const processID = fs.readFileSync(
+    RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
+    "utf8",
+  );
   const { stdout: processGroupID } = await execAsync(
     `ps -o pgid= -p ${processID}`,
   );

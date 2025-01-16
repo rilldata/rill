@@ -22,6 +22,7 @@ node_modules
 /dev-cloud-state*
 /e2e-cloud-state*
 **/playwright-report
+**/playwright
 **/test-results
 
 # data files

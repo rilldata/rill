@@ -9,12 +9,10 @@ const config: PlaywrightTestConfig = {
     timeout: 120_000,
   },
   retries: 0,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   use: {
     baseURL: "http://localhost:3000",
     ...devices["Desktop Chrome"],
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     video: "retain-on-failure",
   },
@@ -40,7 +38,7 @@ const config: PlaywrightTestConfig = {
       },
     },
     ...(process.env.CI
-      ? [] // skip in CI
+      ? [] // skip in CI, since the GitHub Action uses an ephemeral runner
       : [
           {
             name: "teardown",

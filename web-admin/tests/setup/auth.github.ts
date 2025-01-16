@@ -22,7 +22,9 @@ setup("should authenticate to GitHub", async ({ page }) => {
     .getByLabel("Password")
     .fill(process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  // Note: when running this locally, you might have to pause here to do 2FA
+
+  // Run in `debug` mode and pause here to do 2FA
+  await page.pause();
   await page.waitForURL("https://github.com");
 
   // Save the auth cookies

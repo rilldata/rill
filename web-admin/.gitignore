@@ -1,5 +1,3 @@
 /.svelte-kit
 build
-playwright/.auth/*
 !playwright/.auth/github.json
-rill-devtool-pid.txt
