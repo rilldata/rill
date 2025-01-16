@@ -2,7 +2,6 @@
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import Component from "./Component.svelte";
-  import * as defaults from "./constants";
 </script>
 
 <script lang="ts">
@@ -16,7 +15,6 @@
   export let top: number;
   export let left: number;
   export let radius: number;
-  export let scale: number;
   export let instanceId: string;
   export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
   export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;

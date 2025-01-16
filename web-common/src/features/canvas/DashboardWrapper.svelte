@@ -2,7 +2,6 @@
   export let width: number;
   export let height: number;
   export let scale: number;
-  export let embed = false;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let color = "bg-slate-200";
 </script>

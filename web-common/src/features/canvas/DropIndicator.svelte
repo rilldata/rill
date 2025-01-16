@@ -12,8 +12,7 @@
     height: {height}px;
     top: {top}px;
     left: {left}px;
-    {width ? `width: ${width}px;` : ''}
-    {orientation === 'vertical' ? 'width: 2px;' : ''}
+    width: {orientation === 'vertical' ? '2px' : width ? `${width}px` : 'auto'};
     {orientation === 'horizontal' && !width ? 'right: 0;' : ''}
   "
 />

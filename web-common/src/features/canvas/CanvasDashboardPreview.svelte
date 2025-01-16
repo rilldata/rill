@@ -500,7 +500,6 @@
           <PreviewElement
             {instanceId}
             {i}
-            {scale}
             {component}
             {radius}
             selected={selectedIndex === i}
