@@ -2,11 +2,8 @@ package server
 
 import (
 	"context"
-	"errors"
-	"io"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -327,36 +324,19 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: req.InstanceId,
-		Resolver:   "metrics_time_range",
-		ResolverProperties: map[string]any{
-			"metrics_view": req.MetricsViewName,
-		},
-		Args: map[string]any{
-			"priority": req.Priority,
-		},
-		Claims: auth.GetClaims(ctx).SecurityClaims(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	row, err := res.Next()
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return nil, errors.New("time range query returned no results")
-		}
-		return nil, err
-	}
-	timeRangeSummary, err := decodeTimeRangeSummary(row)
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 
 	return &runtimev1.MetricsViewTimeRangeResponse{
-		TimeRangeSummary: timeRangeSummary,
+		TimeRangeSummary: &runtimev1.TimeRangeSummary{
+			// JS identifies no time present using a null check instead of `IsZero`
+			// So send null when time.IsZero
+			Min:       valOrNullTime(ts.Min),
+			Max:       valOrNullTime(ts.Max),
+			Watermark: valOrNullTime(ts.Watermark),
+		},
 	}, nil
 }
 
@@ -519,35 +499,9 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	return res, mv.State, nil
 }
 
-type decodedTimeRangeSummary struct {
-	Min, Max, Watermark string
-}
-
-func decodeTimeRangeSummary(row map[string]any) (*runtimev1.TimeRangeSummary, error) {
-	timeRangeSummary := decodedTimeRangeSummary{} // TODO: move this to a good place
-	err := mapstructure.Decode(row, &timeRangeSummary)
-	if err != nil {
-		return nil, err
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
 	}
-
-	minTime, err := time.Parse(time.RFC3339, timeRangeSummary.Min)
-	if err != nil {
-		return nil, err
-	}
-
-	maxTime, err := time.Parse(time.RFC3339, timeRangeSummary.Max)
-	if err != nil {
-		return nil, err
-	}
-
-	watermark, err := time.Parse(time.RFC3339, timeRangeSummary.Watermark)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.TimeRangeSummary{
-		Min:       timestamppb.New(minTime),
-		Max:       timestamppb.New(maxTime),
-		Watermark: timestamppb.New(watermark),
-	}, nil
+	return timestamppb.New(v)
 }

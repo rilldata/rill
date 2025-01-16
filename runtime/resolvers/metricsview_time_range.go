@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -102,7 +103,7 @@ func (r *metricsViewTimeRangeResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	ts, err := r.executor.Timestamps(ctx, nil)
+	ts, err := r.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +113,10 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 		row["min"] = ts.Min
 		row["max"] = ts.Max
 		row["watermark"] = ts.Watermark
+	} else {
+		row["min"] = nil
+		row["max"] = nil
+		row["watermark"] = nil
 	}
 	schema := &runtimev1.StructType{
 		Fields: []*runtimev1.StructType_Field{
@@ -125,4 +130,62 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
+}
+
+func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_time_range",
+		ResolverProperties: map[string]any{
+			"metrics_view": metricsViewName,
+		},
+		Args: map[string]any{
+			"priority": priority,
+		},
+		Claims: security,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+		}
+		return metricsview.TimestampsResult{}, err
+	}
+
+	tsRes := metricsview.TimestampsResult{}
+
+	tsRes.Min, err = anyToTime(row["min"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Max, err = anyToTime(row["max"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Watermark, err = anyToTime(row["watermark"])
+	if err != nil {
+		return tsRes, err
+	}
+
+	return tsRes, nil
+}
+
+func anyToTime(tm any) (time.Time, error) {
+	if tm == nil {
+		return time.Time{}, nil
+	}
+	tmStr, ok := tm.(string)
+	if !ok {
+		t, ok := tm.(time.Time)
+		if !ok {
+			return time.Time{}, errors.New("invalid type")
+		}
+		return t, nil
+	}
+	return time.Parse(time.RFC3339Nano, tmStr)
 }

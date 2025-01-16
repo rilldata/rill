@@ -53,14 +53,10 @@ func (e *Executor) resolveDuckDBClickHouseAndPinot(ctx context.Context) (Timesta
 		if err != nil {
 			return TimestampsResult{}, err
 		}
-		// Table is empty for the filters. duckdb returns null in this case
-		if minTime == nil {
-			return TimestampsResult{}, nil
-		}
 		return TimestampsResult{
-			Min:       *minTime,
-			Max:       *maxTime,
-			Watermark: *watermark,
+			Min:       safeTime(minTime),
+			Max:       safeTime(maxTime),
+			Watermark: safeTime(watermark),
 		}, nil
 	}
 
@@ -196,4 +192,11 @@ func (e *Executor) resolveDruid(ctx context.Context) (TimestampsResult, error) {
 	}
 
 	return ts, nil
+}
+
+func safeTime(tm *time.Time) time.Time {
+	if tm == nil {
+		return time.Time{}
+	}
+	return *tm
 }

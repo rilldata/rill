@@ -17,7 +17,7 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		return nil
 	}
 
-	ts, err := e.Timestamps(ctx, executionTime)
+	ts, err := e.Timestamps(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch timestamps: %w", err)
 	}
@@ -31,12 +31,17 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err = e.resolveTimeRange(qry.TimeRange, tz, ts.Watermark)
+	watermark := ts.Watermark
+	if executionTime != nil {
+		watermark = *executionTime
+	}
+
+	err = e.resolveTimeRange(qry.TimeRange, tz, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, ts.Watermark)
+	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, watermark)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}

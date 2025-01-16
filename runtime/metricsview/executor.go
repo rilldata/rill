@@ -35,7 +35,6 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	watermark  time.Time
 	timestamps TimestampsResult
 }
 
@@ -91,7 +90,7 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			return []byte(""), true, nil
 		}
 		// watermark is the default cache key for streaming metrics views
-		ts, err := e.Timestamps(ctx, nil)
+		ts, err := e.Timestamps(ctx)
 		if err != nil {
 			return nil, false, err
 		}
@@ -135,7 +134,7 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 }
 
 // Timestamps queries min, max and watermark for the metrics view
-func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (TimestampsResult, error) {
+func (e *Executor) Timestamps(ctx context.Context) (TimestampsResult, error) {
 	if !e.timestamps.Min.IsZero() {
 		return e.timestamps, nil
 	}
@@ -153,9 +152,6 @@ func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (Ti
 		return TimestampsResult{}, err
 	}
 
-	if executionTime != nil {
-		e.watermark = *executionTime
-	}
 	return e.timestamps, nil
 }
 
