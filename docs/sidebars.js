@@ -172,7 +172,7 @@ const sidebars = {
             'tutorials/other/dashboard-row-policies',
             'tutorials/other/embed-dashboard',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
-            'tutorials/other/avg_avg',
+            'tutorials/other/avg_avg'
 
           ]
         },
