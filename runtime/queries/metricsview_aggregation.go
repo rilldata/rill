@@ -132,14 +132,16 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
-	if err != nil {
-		return err
-	}
+	if mv.ValidSpec.TimeDimension != "" {
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		if err != nil {
+			return err
+		}
 
-	err = e.BindQuery(ctx, qry, tsRes)
-	if err != nil {
-		return err
+		err = e.BindQuery(ctx, qry, tsRes)
+		if err != nil {
+			return err
+		}
 	}
 
 	var format drivers.FileFormat
