@@ -392,7 +392,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	// Parse .env and push it as variables
-	// Parse .env and push it as variables
 	dotenv, err := ParseDotenv(ctx, s.app.ProjectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env: %w", err)
