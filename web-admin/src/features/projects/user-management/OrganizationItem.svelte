@@ -41,7 +41,6 @@
         shape="square"
         name={organization}
         count={userGroupMemberUsersCount}
-        isEveryoneFromText
       />
       <UserManagementOrganizationSetRole {organization} {project} {group} />
     </div>

@@ -349,6 +349,12 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type QueryServiceResolveCanvasBodyArgs = { [key: string]: any };
+
+export type QueryServiceResolveCanvasBody = {
+  args?: QueryServiceResolveCanvasBodyArgs;
+};
+
 export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
@@ -441,11 +447,25 @@ export type RuntimeServiceRenameFileBody = {
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
+  /** Model to base the metrics view on.
+If you set this, do NOT set connector, database, database_schema or table. */
+  model?: string;
+  /** Connector for the table.
+See "table" for more details. */
   connector?: string;
+  /** Database for the table.
+See "table" for more details. */
   database?: string;
+  /** Database schema for the table.
+See "table" for more details. */
   databaseSchema?: string;
+  /** Table to base the metrics view on.
+If you set this, do NOT set model. */
   table?: string;
+  /** Path to save the metrics view file to. */
   path?: string;
+  /** If true, the AI will be used to generate the metrics view file.
+Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
 };
 
@@ -829,19 +849,58 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
+}
+
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
-export type V1ResolveComponentResponseDataItem = { [key: string]: any };
-
 export interface V1ResolveComponentResponse {
-  /** Show property with templating resolved for the provided args.
-If it resolves to false, the other fields are not set. */
-  show?: boolean;
-  schema?: V1StructType;
-  data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+/**
+ * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+ */
+export type V1ResolveCanvasResponseReferencedMetricsViews = {
+  [key: string]: V1Resource;
+};
+
+/**
+ * All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+ */
+export type V1ResolveCanvasResponseResolvedComponents = {
+  [key: string]: V1Resource;
+};
+
+export interface V1ResolveCanvasResponse {
+  canvas?: V1Resource;
+  /** All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec). */
+  resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
+  /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
+  referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -895,26 +954,6 @@ export interface V1RefreshTriggerState {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export interface V1RefreshModelTrigger {
@@ -1339,6 +1378,10 @@ Deprecated: Now defined in the Explore resource. */
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
   availableTimeZones?: string[];
+  /** Cache controls for the metrics view. */
+  cacheEnabled?: boolean;
+  cacheKeySql?: string;
+  cacheKeyTtlSeconds?: string;
 }
 
 export interface V1MetricsViewState {
@@ -1351,10 +1394,6 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -1746,6 +1785,7 @@ export interface V1GenerateRendererResponse {
 }
 
 export interface V1GenerateMetricsViewFileResponse {
+  /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
 }
 
@@ -1825,9 +1865,61 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
+export type V1ExploreWebView =
+  (typeof V1ExploreWebView)[keyof typeof V1ExploreWebView];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreWebView = {
+  EXPLORE_WEB_VIEW_UNSPECIFIED: "EXPLORE_WEB_VIEW_UNSPECIFIED",
+  EXPLORE_WEB_VIEW_EXPLORE: "EXPLORE_WEB_VIEW_EXPLORE",
+  EXPLORE_WEB_VIEW_TIME_DIMENSION: "EXPLORE_WEB_VIEW_TIME_DIMENSION",
+  EXPLORE_WEB_VIEW_PIVOT: "EXPLORE_WEB_VIEW_PIVOT",
+  EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
+} as const;
+
+export interface V1ExploreSpec {
+  displayName?: string;
+  description?: string;
+  metricsView?: string;
+  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
+  dimensions?: string[];
+  dimensionsSelector?: V1FieldSelector;
+  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1ExplorePreset;
+  /** If true, the pivot tab will be hidden when the explore is embedded. */
+  embedsHidePivot?: boolean;
+  /** Security for the explore dashboard.
+These are not currently parsed from YAML, but will be derived from the parent metrics view. */
+  securityRules?: V1SecurityRule[];
+}
+
 export interface V1ExploreState {
   validSpec?: V1ExploreSpec;
 }
+
+export type V1ExploreSortType =
+  (typeof V1ExploreSortType)[keyof typeof V1ExploreSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExploreSortType = {
+  EXPLORE_SORT_TYPE_UNSPECIFIED: "EXPLORE_SORT_TYPE_UNSPECIFIED",
+  EXPLORE_SORT_TYPE_VALUE: "EXPLORE_SORT_TYPE_VALUE",
+  EXPLORE_SORT_TYPE_PERCENT: "EXPLORE_SORT_TYPE_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_PERCENT: "EXPLORE_SORT_TYPE_DELTA_PERCENT",
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE: "EXPLORE_SORT_TYPE_DELTA_ABSOLUTE",
+  EXPLORE_SORT_TYPE_DIMENSION: "EXPLORE_SORT_TYPE_DIMENSION",
+} as const;
 
 export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string to use as an offset from the base time range. */
@@ -1860,40 +1952,30 @@ export interface V1ExplorePreset {
   /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
   measures?: string[];
   measuresSelector?: V1FieldSelector;
+  where?: V1Expression;
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
 If not found in `time_ranges`, it should be added to the list. */
   timeRange?: string;
+  timezone?: string;
+  timeGrain?: string;
+  selectTimeRange?: string;
   comparisonMode?: V1ExploreComparisonMode;
+  compareTimeRange?: string;
   /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
   comparisonDimension?: string;
-}
-
-export interface V1ExploreSpec {
-  displayName?: string;
-  description?: string;
-  metricsView?: string;
-  /** Dimensions to show. If `dimensions_selector` is set, this will only be set in `state.valid_spec`. */
-  dimensions?: string[];
-  dimensionsSelector?: V1FieldSelector;
-  /** Measures to show. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
-  measures?: string[];
-  measuresSelector?: V1FieldSelector;
-  theme?: string;
-  embeddedTheme?: V1ThemeSpec;
-  /** List of selectable time ranges with comparison time ranges.
-If the list is empty, a default list should be shown. */
-  timeRanges?: V1ExploreTimeRange[];
-  /** List of selectable time zones.
-If the list is empty, a default list should be shown.
-The values should be valid IANA location identifiers. */
-  timeZones?: string[];
-  defaultPreset?: V1ExplorePreset;
-  /** If true, the pivot tab will be hidden when the explore is embedded. */
-  embedsHidePivot?: boolean;
-  /** Security for the explore dashboard.
-These are not currently parsed from YAML, but will be derived from the parent metrics view. */
-  securityRules?: V1SecurityRule[];
+  view?: V1ExploreWebView;
+  exploreSortBy?: string;
+  exploreSortAsc?: boolean;
+  exploreSortType?: V1ExploreSortType;
+  exploreExpandedDimension?: string;
+  timeDimensionMeasure?: string;
+  timeDimensionChartType?: string;
+  timeDimensionPin?: boolean;
+  pivotRows?: string[];
+  pivotCols?: string[];
+  pivotSortBy?: string;
+  pivotSortAsc?: boolean;
 }
 
 export interface V1Explore {
@@ -1976,12 +2058,16 @@ NOTE : properties_from_variables and properties both should be used to get all p
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
+export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
+
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
   templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
   /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
@@ -2011,6 +2097,8 @@ export interface V1ConnectorDriver {
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
 
+export type V1ConnectorProvisionArgs = { [key: string]: any };
+
 export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Connector {
@@ -2019,6 +2107,8 @@ export interface V1Connector {
   name?: string;
   config?: V1ConnectorConfig;
   templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorProvisionArgs;
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
 
@@ -2035,19 +2125,13 @@ export interface V1ComponentVariable {
 
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
-export type V1ComponentSpecResolverProperties = { [key: string]: any };
-
 export interface V1ComponentSpec {
   displayName?: string;
   description?: string;
-  resolver?: string;
-  resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
-  /** Templated string that should evaluate to a boolean. */
-  show?: string;
   definedInCanvas?: boolean;
 }
 
@@ -2226,6 +2310,20 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
+}
+
+export interface V1CanvasPreset {
+  /** Time range for the explore.
+It corresponds to the `range` property of the explore's `time_ranges`.
+If not found in `time_ranges`, it should be added to the list. */
+  timeRange?: string;
+  comparisonMode?: V1ExploreComparisonMode;
+  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
+  comparisonDimension?: string;
+}
+
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2236,16 +2334,31 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
+  /** Display name for the canvas. */
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  /** Max width in pixels of the canvas. */
+  maxWidth?: number;
+  /** Horizontal gap in pixels of the canvas. */
+  gapX?: number;
+  /** Vertical gap in pixels of the canvas. */
+  gapY?: number;
+  /** Name of the theme to use. Only one of theme and embedded_theme can be set. */
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown.
+TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  defaultPreset?: V1CanvasPreset;
+  /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
-}
-
-export interface V1CanvasState {
-  validSpec?: V1CanvasSpec;
 }
 
 export interface V1Canvas {
@@ -2321,6 +2434,8 @@ export interface V1AnalyzedVariable {
   usedBy?: V1ResourceName[];
 }
 
+export type V1AnalyzedConnectorProvisionArgs = { [key: string]: any };
+
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
 export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
@@ -2339,6 +2454,8 @@ export interface V1AnalyzedConnector {
   presetConfig?: V1AnalyzedConnectorPresetConfig;
   projectConfig?: V1AnalyzedConnectorProjectConfig;
   envConfig?: V1AnalyzedConnectorEnvConfig;
+  provision?: boolean;
+  provisionArgs?: V1AnalyzedConnectorProvisionArgs;
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];
   errorMessage?: string;
@@ -2482,6 +2599,7 @@ export const TypeCode = {
   CODE_FLOAT32: "CODE_FLOAT32",
   CODE_FLOAT64: "CODE_FLOAT64",
   CODE_TIMESTAMP: "CODE_TIMESTAMP",
+  CODE_INTERVAL: "CODE_INTERVAL",
   CODE_DATE: "CODE_DATE",
   CODE_TIME: "CODE_TIME",
   CODE_STRING: "CODE_STRING",
@@ -2622,6 +2740,10 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

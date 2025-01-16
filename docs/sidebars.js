@@ -32,7 +32,7 @@ const sidebars = {
         {
           type: 'category',
           label: 'Rill Developer to Rill Cloud in 6 steps!',
-          description: 'Rill Developer to  to Rill Cloud',
+          description: 'Rill Developer to  Rill Cloud',
 
           items: [
             'tutorials/rill_basics/launch',
@@ -70,25 +70,11 @@ const sidebars = {
 
               ]
             },
- /*           {　waiting for canvas dashboard release
-              type: 'category',
-              label: 'Rill Canvas Dashboards',
-              items: [
-                'tutorials/rill_advanced_features/canvas_dashboards/getting-started',
-                'tutorials/rill_advanced_features/canvas_dashboards/template-charts',
-                'tutorials/rill_advanced_features/canvas_dashboards/vega-lite',
-                'tutorials/rill_advanced_features/canvas_dashboards/vega-lite2',
-                'tutorials/rill_advanced_features/canvas_dashboards/canvas-dashboards',
-                'tutorials/rill_advanced_features/canvas_dashboards/filters'
 
-              ]
-          },
-*/  
-
-            { 
+            {
               type: 'category',
               label: 'Advanced Models',
-              
+
               items: [
                 'tutorials/rill_advanced_features/incremental_models/introduction',
                 {
@@ -106,7 +92,7 @@ const sidebars = {
 
               ]
             },
-            
+
             {
               type: 'category',
               label: 'Custom APIs',
@@ -184,15 +170,9 @@ const sidebars = {
           items: [
             'tutorials/other/add-column-dimension',
             'tutorials/other/dashboard-row-policies',
-   //         'tutorials/other/custom-charts',
-   //         'tutorials/other/create-map-component',
-   //         'tutorials/other/component-variable-freedom',
             'tutorials/other/embed-dashboard',
             'tutorials/other/Rill Cloud/share-dashboard-publicly',
-      //      'tutorials/other/Rill Cloud/views',
-      //      'tutorials/other/Rill Cloud/visual-metric-editor-rc',
-       //     'tutorials/other/yaml-vs-ui',
-                   'tutorials/other/avg_avg',
+            'tutorials/other/avg_avg'
 
           ]
         },

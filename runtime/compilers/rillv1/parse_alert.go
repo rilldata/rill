@@ -137,7 +137,7 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	if !isLegacyQuery {
 		var refs []ResourceName
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, node.Connector)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
@@ -276,6 +276,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.AlertSpec.DisplayName = tmp.DisplayName
+	if r.AlertSpec.DisplayName == "" {
+		r.AlertSpec.DisplayName = ToDisplayName(node.Name)
+	}
 	if schedule != nil {
 		r.AlertSpec.RefreshSchedule = schedule
 	}

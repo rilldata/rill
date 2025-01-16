@@ -10,7 +10,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import { useExploreStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -21,18 +21,20 @@
   export let exploreName: string;
   export let formState: ReturnType<typeof createForm<BookmarkFormValues>>;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: ({ instanceId } = $runtime);
+
+  $: exploreState = useExploreState(exploreName);
 
   let timeRange: V1TimeRange;
   $: timeRange = {
-    isoDuration: $exploreStore.selectedTimeRange?.name,
-    start: $exploreStore.selectedTimeRange?.start?.toISOString() ?? "",
-    end: $exploreStore.selectedTimeRange?.end?.toISOString() ?? "",
+    isoDuration: $exploreState.selectedTimeRange?.name,
+    start: $exploreState.selectedTimeRange?.start?.toISOString() ?? "",
+    end: $exploreState.selectedTimeRange?.end?.toISOString() ?? "",
   };
 
   $: selectedTimeRange = getPrettySelectedTimeRange(
     queryClient,
-    $runtime?.instanceId,
+    instanceId,
     metricsViewName,
     exploreName,
   );
@@ -70,8 +72,8 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
       <div class="text-gray-500">Inherited from underlying dashboard view.</div>
     </Label>
     <FilterChipsReadOnly
-      dimensionThresholdFilters={$exploreStore.dimensionThresholdFilters}
-      filters={$exploreStore.whereFilter}
+      dimensionThresholdFilters={$exploreState.dimensionThresholdFilters}
+      filters={$exploreState.whereFilter}
       {exploreName}
       {timeRange}
     />

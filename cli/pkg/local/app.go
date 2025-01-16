@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/c2h5oh/datasize"
@@ -27,6 +26,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
@@ -156,19 +156,21 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
 	// }
-
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
-		DataDir:                      dbDirPath,
 		SystemConnectors:             systemConnectors,
 		SecurityEngineCacheSize:      1000,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, opts.Ch.Telemetry(ctx), email.New(sender))
+	st, err := storage.New(dbDirPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	rt, err := runtime.New(ctx, rtOpts, logger, st, opts.Ch.Telemetry(ctx), email.New(sender))
 	if err != nil {
 		return nil, err
 	}
@@ -194,26 +196,13 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
-	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	defaultOLAP := false
 	olapCfg := make(map[string]string)
-	if opts.OlapDriver == DefaultOLAPDriver && opts.OlapDSN == DefaultOLAPDSN {
-		defaultOLAP = true
-		val, err := isExternalStorageEnabled(vars)
-		if err != nil {
-			return nil, err
-		}
-		olapCfg["external_table_storage"] = strconv.FormatBool(val)
-	}
-
 	if opts.OlapDriver == "duckdb" {
+		if opts.OlapDSN != DefaultOLAPDSN {
+			return nil, fmt.Errorf("setting DSN for DuckDB is not supported")
+		}
 		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
-		if !defaultOLAP {
-			// dsn is automatically computed by duckdb driver so we set only when non default dsn is passed
-			olapCfg["dsn"] = opts.OlapDSN
-			olapCfg["error_on_incompatible_version"] = "true"
-		}
 	}
 
 	// Add OLAP connector
@@ -425,6 +414,13 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 	uri := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
 	for {
+		// Wait a bit before (re)trying.
+		//
+		// We sleep before the first health check as a slightly hacky way to protect against the situation where
+		// another Rill server is already running, which will pass the health check as a false positive.
+		// By sleeping first, the ctx is in practice sure to have been cancelled with a "port taken" error at that point.
+		time.Sleep(250 * time.Millisecond)
+
 		// Check for cancellation
 		if ctx.Err() != nil {
 			return
@@ -438,14 +434,17 @@ func (a *App) PollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 				break
 			}
 		}
-
-		// Wait a bit and retry
-		time.Sleep(250 * time.Millisecond)
 	}
 
 	// Health check succeeded
 	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
+		// Check for cancellation again to be safe
+		if ctx.Err() != nil {
+			return
+		}
+
+		// Open the browser
 		err := browser.Open(uri)
 		if err != nil {
 			a.Logger.Debugf("could not open browser: %v", err)
@@ -605,15 +604,4 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 	if !skip {
 		s.Encoder.AddString(key, val)
 	}
-}
-
-// isExternalStorageEnabled determines if external storage can be enabled.
-func isExternalStorageEnabled(variables map[string]string) (bool, error) {
-	// check if flag explicitly passed
-	val, ok := variables["connector.duckdb.external_table_storage"]
-	if !ok {
-		// mark enabled by default
-		return true, nil
-	}
-	return strconv.ParseBool(val)
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { goto, invalidate } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -7,10 +7,8 @@
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
-  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
@@ -19,7 +17,6 @@
   import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
-  const queryClient = useQueryClient();
 
   $: ({ instanceId } = $runtime);
 
@@ -42,6 +39,11 @@
               displayName: EMPTY_PROJECT_TITLE,
             },
           });
+
+          // Race condition: invalidate("init") must be called before we navigate to
+          // `/files/${newFilePath}`. invalidate("init") is also called in the
+          // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
+          await invalidate("init");
         }
 
         const yaml = compileLocalFileSourceYAML(filePath);
@@ -50,7 +52,6 @@
           tableName,
           EntityType.Table,
         );
-        await checkSourceImported(queryClient, newFilePath);
         await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);

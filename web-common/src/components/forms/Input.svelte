@@ -2,13 +2,14 @@
   import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
-  import Select from "./Select.svelte";
-  import InputLabel from "./InputLabel.svelte";
   import FieldSwitcher from "./FieldSwitcher.svelte";
+  import InputLabel from "./InputLabel.svelte";
+  import Select from "./Select.svelte";
 
   const voidFunction = () => {};
 
-  export let value: string | undefined;
+  export let value: number | string | undefined;
+  export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
   export let description = "";
@@ -23,6 +24,7 @@
   export let truncate = false;
   export let width: string = "100%";
   export let size: "sm" | "md" | "lg" = "lg";
+  export let labelGap = 1;
   export let selected: number = -1;
   export let full = false;
   export let multiline = false;
@@ -53,8 +55,13 @@
       currentTarget: EventTarget & HTMLDivElement;
     },
   ) => void = voidFunction;
-  export let onEnter: () => void = voidFunction;
+  export let onEnter: (
+    e: KeyboardEvent & {
+      currentTarget: EventTarget & HTMLDivElement;
+    },
+  ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
+  export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
   let showPassword = false;
@@ -62,7 +69,7 @@
   let selectElement: HTMLButtonElement | undefined;
   let focus = false;
 
-  $: type = secret && !showPassword ? "password" : "text";
+  $: type = secret && !showPassword ? "password" : inputType;
 
   onMount(() => {
     if (claimFocusOnMount) {
@@ -91,9 +98,10 @@
     },
   ) {
     if (e.key === "Enter") {
+      if (e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
-      onEnter();
+      onEnter(e);
     } else if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
@@ -102,7 +110,7 @@
 </script>
 
 <div
-  class="component-wrapper {additionalClass}"
+  class="component-wrapper gap-y-{labelGap} {additionalClass}"
   class:w-full={full}
   style:width
 >
@@ -113,6 +121,7 @@
       {id}
       {hint}
       {link}
+      small={size === "sm"}
       capitalize={capitalizeLabel}
     >
       <slot name="mode-switch" slot="mode-switch" />
@@ -120,7 +129,7 @@
   {/if}
 
   {#if fields && fields?.length > 1}
-    <FieldSwitcher {fields} {selected} />
+    <FieldSwitcher {fields} {selected} onClick={onFieldSwitch} />
   {/if}
 
   {#if !options}
@@ -135,7 +144,7 @@
         </span>
       {/if}
 
-      {#if multiline}
+      {#if multiline && typeof value !== "number"}
         <div
           {id}
           contenteditable
@@ -153,17 +162,25 @@
         />
       {:else}
         <input
-          title={value}
+          title={label}
           {id}
           {type}
           {placeholder}
           name={id}
           class={size}
           {disabled}
-          value={value ?? ""}
+          value={value ?? (inputType === "number" ? 0 : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
+            if (inputType === "number") {
+              if (e.currentTarget.value === "") {
+                value = "";
+              } else {
+                value = e.currentTarget.valueAsNumber;
+              }
+              return;
+            }
             value = e.currentTarget.value;
             onInput(value, e);
           }}
@@ -189,7 +206,7 @@
         </button>
       {/if}
     </div>
-  {:else}
+  {:else if typeof value !== "number"}
     <Select
       {disabled}
       {enableSearch}
@@ -202,7 +219,8 @@
       bind:value
       {options}
       {onChange}
-      fontSize={14}
+      {size}
+      fontSize={size === "sm" ? 12 : 14}
       {truncate}
       placeholder={disabled ? disabledMessage : placeholder}
     />
@@ -229,11 +247,12 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col gap-y-1 h-fit justify-center;
+    @apply flex  flex-col h-fit justify-center;
   }
 
   .sm {
     height: 24px;
+    font-size: 12px;
   }
 
   .md {
@@ -260,12 +279,15 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input {
     @apply truncate;
   }
 
   .multiline-input {
     @apply py-1;
-    line-height: 1.6;
+    line-height: 1.58;
   }
 
   .multiline-input {

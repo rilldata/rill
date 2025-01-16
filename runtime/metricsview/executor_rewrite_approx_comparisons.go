@@ -8,28 +8,29 @@ import (
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
 // which enables more efficient query execution at the cost of some accuracy.
-// ---- CTE Optimization ---- //
+// ---- CTE rewrite ---- //
 // Extracts out the base or comparison query into a CTE depending on the sort field.
-// This is done to enable more efficient query execution by adding filter in the join query to select only dimension values present in the CTE.
-func (e *Executor) rewriteApproxComparisons(ast *AST) {
+// This is done to prevent running a group by query on comparison time range without a limit which can fail in some olap engines if dim cardinality is very high by adding filter in the join query to select only dimension values present in the CTE.
+// This does cause CTE to be scanned twice but at least query will not fail.
+func (e *Executor) rewriteApproxComparisons(ast *AST, isMultiPhase bool) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
 	}
 
-	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root)
+	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root, isMultiPhase)
 }
 
-func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode, isMultiPhase bool) bool {
 	// If n is a comparison node, rewrite it
 	var rewrote bool
 	if n.JoinComparisonSelect != nil {
-		rewrote = e.rewriteApproxComparisonNode(a, n)
+		rewrote = e.rewriteApproxComparisonNode(a, n, isMultiPhase)
 	}
 
 	// Recursively walk the base select.
 	// NOTE: Probably doesn't matter, but should we walk the left join and comparison sub-selects?
 	if n.FromSelect != nil {
-		rewroteNested := e.rewriteApproxComparisonsWalk(a, n.FromSelect)
+		rewroteNested := e.rewriteApproxComparisonsWalk(a, n.FromSelect, isMultiPhase)
 		rewrote = rewrote || rewroteNested
 	}
 
@@ -41,7 +42,7 @@ func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode) bool {
 	return rewrote
 }
 
-func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPhase bool) bool {
 	// Can only rewrite when sorting by exactly one field.
 	if len(a.Root.OrderBy) != 1 {
 		return false
@@ -112,15 +113,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// ---- CTE Optimization ---- //
-		// make FromSelect a CTE
-		a.convertToCTE(n.FromSelect)
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+			// rewrite base query as CTE and use results from CTE in the comparison query
+			// make FromSelect a CTE
+			a.convertToCTE(n.FromSelect)
 
-		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.JoinComparisonSelect.DimFields {
-			dimName := a.dialect.EscapeIdentifier(dim.Name)
-			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+			for _, dim := range n.JoinComparisonSelect.DimFields {
+				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+			}
 		}
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
@@ -131,15 +134,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		// ---- CTE Optimization ---- //
-		// make JoinComparisonSelect a CTE
-		a.convertToCTE(n.JoinComparisonSelect)
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+			// rewrite comparison query as CTE and use results from CTE in the base query
+			// make JoinComparisonSelect a CTE
+			a.convertToCTE(n.JoinComparisonSelect)
 
-		// now change the FromSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.FromSelect.DimFields {
-			dimName := a.dialect.EscapeIdentifier(dim.Name)
-			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
+			// now change the FromSelect WHERE clause to use selected dim values from CTE
+			for _, dim := range n.FromSelect.DimFields {
+				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+				n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.JoinComparisonSelect.Alias, dimName), nil)
+			}
 		}
 	} else if sortDim {
 		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
@@ -149,15 +154,17 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		// ---- CTE Optimization ---- //
-		// make FromSelect a CTE
-		a.convertToCTE(n.FromSelect)
+		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+			// rewrite base query as CTE and use results from CTE in the comparison query
+			// make FromSelect a CTE
+			a.convertToCTE(n.FromSelect)
 
-		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
-		for _, dim := range n.JoinComparisonSelect.DimFields {
-			dimName := a.dialect.EscapeIdentifier(dim.Name)
-			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
-			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+			// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
+			for _, dim := range n.JoinComparisonSelect.DimFields {
+				dimName := a.dialect.EscapeIdentifier(dim.Name)
+				dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+				n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, n.FromSelect.Alias, dimName), nil)
+			}
 		}
 	} else if sortDelta {
 		return false

@@ -21,36 +21,39 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
-  import { EnvironmentType } from "./types";
+  import { EnvironmentType, type VariableNames } from "./types";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { getCurrentEnvironment, isDuplicateKey } from "./utils";
   import { onMount } from "svelte";
+  import { debounce } from "lodash";
 
   export let open = false;
   export let id: string;
   export let environment: string;
   export let name: string;
   export let value: string;
-  export let variableNames: string[] = [];
+  export let variableNames: VariableNames = [];
 
   let initialEnvironment: {
     isDevelopment: boolean;
     isProduction: boolean;
   };
-  let isDevelopment: boolean;
-  let isProduction: boolean;
+  let isDevelopment = false;
+  let isProduction = false;
   let isKeyAlreadyExists = false;
   let inputErrors: { [key: number]: boolean } = {};
+  let showEnvironmentError = false;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: isEnvironmentSelected = isDevelopment || isProduction;
-  $: hasChanges =
+  $: hasNewChanges =
     $form.key !== initialValues.key ||
     $form.value !== initialValues.value ||
     initialEnvironment?.isDevelopment !== isDevelopment ||
     initialEnvironment?.isProduction !== isProduction;
   $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
+  $: hasNoEnvironment = showEnvironmentError && !isDevelopment && !isProduction;
 
   const queryClient = useQueryClient();
   const updateProjectVariables = createAdminServiceUpdateProjectVariables();
@@ -67,63 +70,45 @@
       key: string()
         .optional()
         .matches(
-          /^[a-zA-Z0-9_]+$/,
-          "Key must only contain letters, numbers, and underscores",
+          /^[a-zA-Z_][a-zA-Z0-9_.]*$/,
+          // See: https://github.com/rilldata/rill/pull/6121/files#diff-04140a6ac071a4bac716371f8b66a56c89c9d52cfbf2b05ea1e14ee8d4e301e7R12
+          "Key must start with a letter or underscore and can only contain letters, digits, underscores, and dots",
         ),
       value: string().optional(),
     }),
   );
 
-  const {
-    form,
-    enhance,
-    formId,
-    submit,
-    errors,
-    allErrors,
-    submitting,
-    reset,
-  } = superForm(defaults(initialValues, schema), {
-    // See: https://superforms.rocks/concepts/multiple-forms#setting-id-on-the-client
-    id: id,
-    SPA: true,
-    validators: schema,
-    async onUpdate({ form }) {
-      if (!form.valid) return;
-      const values = form.data;
+  const { form, enhance, formId, submit, errors, allErrors, submitting } =
+    superForm(defaults(initialValues, schema), {
+      id: id,
+      SPA: true,
+      validators: schema,
+      resetForm: false,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
 
-      const flatVariable = {
-        [values.key]: values.value,
-      };
+        checkForExistingKeys();
+        if (isKeyAlreadyExists) return;
 
-      try {
-        await handleUpdateProjectVariables(flatVariable);
-        open = false;
-      } catch (error) {
-        console.error(error);
-      }
-    },
-  });
+        const flatVariable = {
+          [values.key]: values.value,
+        };
 
-  function processEnvironment() {
-    if (isDevelopment && isProduction) {
-      return undefined;
-    }
-
-    if (isDevelopment) {
-      return EnvironmentType.DEVELOPMENT;
-    }
-
-    if (isProduction) {
-      return EnvironmentType.PRODUCTION;
-    }
-
-    return undefined;
-  }
+        try {
+          await handleUpdateProjectVariables(flatVariable);
+          open = false;
+          handleReset();
+        } catch (error) {
+          console.error(error);
+        }
+      },
+    });
 
   async function handleUpdateProjectVariables(
     flatVariable: AdminServiceUpdateProjectVariablesBodyVariables,
   ) {
+    // Check if the key has changed, if so, check for existing keys
     if ($form.key !== initialValues.key) {
       checkForExistingKeys();
     }
@@ -146,7 +131,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -155,7 +140,10 @@
       // If the key remains the same, update the environment or value
       if (initialValues.key === $form.key) {
         // If environment has changed, remove the old key and add the new key
-        if (initialValues.environment !== processEnvironment()) {
+        if (
+          initialValues.environment !==
+          getCurrentEnvironment(isDevelopment, isProduction)
+        ) {
           await $updateProjectVariables.mutateAsync({
             organization,
             project,
@@ -170,7 +158,7 @@
           organization,
           project,
           data: {
-            environment: processEnvironment(),
+            environment: getCurrentEnvironment(isDevelopment, isProduction),
             variables: flatVariable,
           },
         });
@@ -203,22 +191,33 @@
   }
 
   function handleReset() {
-    reset();
+    $form.environment = initialValues.environment;
+    $form.key = initialValues.key;
+    $form.value = initialValues.value;
+    isDevelopment = false;
+    isProduction = false;
+    inputErrors = {};
     isKeyAlreadyExists = false;
+    showEnvironmentError = false;
   }
 
   function checkForExistingKeys() {
-    const existingKeys = [$form.key];
     inputErrors = {};
     isKeyAlreadyExists = false;
 
-    existingKeys.forEach((key, index) => {
-      // Case sensitive
-      if (variableNames.some((existingKey) => existingKey === key)) {
-        inputErrors[index] = true;
-        isKeyAlreadyExists = true;
-      }
-    });
+    const newEnvironment = getCurrentEnvironment(isDevelopment, isProduction);
+
+    if (
+      isDuplicateKey(
+        newEnvironment,
+        $form.key,
+        variableNames,
+        initialValues.key,
+      )
+    ) {
+      inputErrors[0] = true;
+      isKeyAlreadyExists = true;
+    }
   }
 
   function setInitialCheckboxState() {
@@ -234,15 +233,37 @@
       isDevelopment = true;
       isProduction = true;
     }
-  }
 
-  onMount(() => {
-    setInitialCheckboxState();
     initialEnvironment = {
       isDevelopment,
       isProduction,
     };
+  }
+
+  function handleDialogOpen() {
+    handleReset();
+    setInitialCheckboxState();
+  }
+
+  function handleEnvironmentChange() {
+    showEnvironmentError = true;
+  }
+
+  onMount(() => {
+    handleDialogOpen();
   });
+
+  $: if (open) {
+    handleDialogOpen();
+  }
+
+  const debouncedCheckForExistingKeys = debounce(() => {
+    checkForExistingKeys();
+  }, 500);
+
+  $: if ($form.key) {
+    debouncedCheckForExistingKeys();
+  }
 </script>
 
 <Dialog
@@ -277,13 +298,22 @@
               bind:checked={isDevelopment}
               id="development"
               label="Development"
+              onCheckedChange={handleEnvironmentChange}
             />
             <Checkbox
               bind:checked={isProduction}
               id="production"
               label="Production"
+              onCheckedChange={handleEnvironmentChange}
             />
           </div>
+          {#if hasNoEnvironment}
+            <div class="mt-1">
+              <p class="text-xs text-red-600 font-normal">
+                You must select at least one environment
+              </p>
+            </div>
+          {/if}
         </div>
         <div class="flex flex-col items-start gap-1">
           <div class="text-sm font-medium text-gray-800">Variable</div>
@@ -298,11 +328,6 @@
                   : ""}
                 placeholder="Key"
                 on:input={(e) => handleKeyChange(e)}
-                onBlur={() => {
-                  if ($form.key !== initialValues.key) {
-                    checkForExistingKeys();
-                  }
-                }}
               />
               <Input
                 bind:value={$form.value}
@@ -322,7 +347,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  This key already exists for this project.
+                  This key already exists for your target environment(s)
                 </p>
               </div>
             {/if}
@@ -343,12 +368,13 @@
         type="primary"
         form={$formId}
         disabled={$submitting ||
-          !hasChanges ||
-          !isEnvironmentSelected ||
+          !hasNewChanges ||
           hasExistingKeys ||
-          $allErrors.length > 0}
-        submitForm>Edit</Button
+          hasNoEnvironment}
+        submitForm
       >
+        Edit
+      </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>

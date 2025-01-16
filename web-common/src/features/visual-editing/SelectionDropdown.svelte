@@ -11,6 +11,7 @@
   export let searchableItems: string[] | undefined = undefined;
   export let excludable: boolean = false;
   export let excludeMode: boolean = false;
+  export let small = false;
   export let id: string = "";
   export let onSelect: (item: string) => void;
   export let setItems: (items: string[], exclude?: boolean) => void;
@@ -45,7 +46,8 @@
       use:builder.action
       {...builder}
       class:open
-      class="flex px-3 gap-x-2 h-8 max-w-full items-center text-sm border-gray-300 border rounded-[2px] break-all overflow-hidden"
+      class:small
+      class="dropdown-trigger"
     >
       {#if type}
         {selectedItems.size} {type}
@@ -140,6 +142,17 @@
 </DropdownMenu.Root>
 
 <style lang="postcss">
+  .dropdown-trigger {
+    @apply flex items-center;
+    @apply px-3 gap-x-2 h-8 max-w-full;
+    @apply text-sm;
+    @apply border-gray-300 border rounded-[2px];
+    @apply break-all overflow-hidden;
+  }
+
+  .dropdown-trigger.small {
+    @apply h-6 text-xs;
+  }
   .open {
     @apply ring-2 ring-primary-100 border-primary-600;
   }

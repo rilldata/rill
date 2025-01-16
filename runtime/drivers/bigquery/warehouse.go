@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v14/parquet"
-	"github.com/apache/arrow/go/v14/parquet/compress"
-	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/apache/arrow/go/v15/parquet"
+	"github.com/apache/arrow/go/v15/parquet/compress"
+	"github.com/apache/arrow/go/v15/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -146,11 +146,10 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any) (dr
 		c.logger.Debug("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 	}
 
-	tempDir, err := os.MkdirTemp(c.config.TempDir, "bigquery")
+	tempDir, err := c.storage.RandomTempDir("bigquery-*")
 	if err != nil {
 		return nil, err
 	}
-
 	return &fileIterator{
 		client:       client,
 		bqIter:       it,

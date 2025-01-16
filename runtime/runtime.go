@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -28,13 +29,13 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	DataDir                      string
 }
 
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
 	Logger         *zap.Logger
+	storage        *storage.Client
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
@@ -43,7 +44,7 @@ type Runtime struct {
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, st *storage.Client, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -52,6 +53,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 		Email:          emailClient,
 		opts:           opts,
 		Logger:         logger,
+		storage:        st,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
@@ -96,7 +98,8 @@ func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, claims, res)
+	vars := inst.ResolveVariables(false)
+	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, vars, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -145,6 +148,8 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 				Type:                r.ConnectorSpec.Driver,
 				Config:              r.ConnectorSpec.Properties,
 				TemplatedProperties: r.ConnectorSpec.TemplatedProperties,
+				Provision:           r.ConnectorSpec.Provision,
+				ProvisionArgs:       r.ConnectorSpec.ProvisionArgs,
 				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
@@ -196,6 +201,8 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 		Type:                connector.Driver,
 		Config:              connector.Properties,
 		TemplatedProperties: connector.TemplatedProperties,
+		Provision:           connector.Provision,
+		ProvisionArgs:       connector.ProvisionArgs,
 		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 

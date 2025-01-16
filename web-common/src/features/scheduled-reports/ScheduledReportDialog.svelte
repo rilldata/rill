@@ -34,6 +34,8 @@
   export let exploreName: string | undefined = undefined;
   export let reportSpec: V1ReportSpec | undefined = undefined;
 
+  $: ({ instanceId } = $runtime);
+
   $: isEdit = !!reportSpec;
 
   const user = createAdminServiceGetCurrentUser();
@@ -103,7 +105,7 @@
 
       if (isEdit) {
         await queryClient.invalidateQueries(
-          getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
+          getRuntimeServiceGetResourceQueryKey(instanceId, {
             "name.name": reportName,
             "name.kind": ResourceKind.Report,
           }),
@@ -111,7 +113,7 @@
       }
 
       await queryClient.invalidateQueries(
-        getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+        getRuntimeServiceListResourcesQueryKey(instanceId),
       );
 
       open = false;
@@ -142,6 +144,7 @@
         return handleSubmit(values);
       },
       validationMethod: "oninput",
+      invalidateAll: false,
     },
   );
 </script>

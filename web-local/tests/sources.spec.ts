@@ -79,6 +79,7 @@ path: ${TestDataPath}/non_existent_file.csv`;
     // Edit source path to an existent file
     const adImpressionsSource = `connector: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
+
     await updateCodeEditor(page, adImpressionsSource);
     await page.getByRole("button", { name: "Save" }).click();
 

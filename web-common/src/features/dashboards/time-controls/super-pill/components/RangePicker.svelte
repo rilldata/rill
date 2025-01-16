@@ -1,16 +1,16 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { DateTime, Interval } from "luxon";
   import type {
-    RangeBuckets,
-    NamedRange,
     ISODurationString,
+    NamedRange,
+    RangeBuckets,
   } from "../../new-time-controls";
   import { getRangeLabel } from "../../new-time-controls";
-  import TimeRangeMenu from "./TimeRangeMenu.svelte";
-  import { DateTime, Interval } from "luxon";
-  import RangeDisplay from "./RangeDisplay.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
+  import RangeDisplay from "./RangeDisplay.svelte";
+  import TimeRangeMenu from "./TimeRangeMenu.svelte";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -18,6 +18,8 @@
   export let zone: string;
   export let showDefaultItem: boolean;
   export let grain: string;
+  export let minDate: DateTime | undefined = undefined;
+  export let maxDate: DateTime | undefined = undefined;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
@@ -76,6 +78,8 @@
             {firstVisibleMonth}
             {interval}
             {zone}
+            {maxDate}
+            {minDate}
             applyRange={applyCustomRange}
             closeMenu={() => (open = false)}
           />

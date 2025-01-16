@@ -18,8 +18,9 @@
   export let indentLevel = 0;
 
   let mode = "summaries";
-
   let container;
+
+  $: ({ instanceId } = $runtime);
 
   onMount(() => {
     const observer = new ResizeObserver(() => {
@@ -30,7 +31,7 @@
   });
 
   $: profileColumns = createQueryServiceTableColumns(
-    $runtime?.instanceId,
+    instanceId,
     objectName,
     {
       connector,
@@ -41,19 +42,15 @@
   );
 
   /** get single example */
-  $: exampleValue = createQueryServiceTableRows(
-    $runtime?.instanceId,
-    objectName,
-    {
-      connector,
-      database,
-      databaseSchema,
-      limit: 1,
-    },
-  );
+  $: exampleValue = createQueryServiceTableRows(instanceId, objectName, {
+    connector,
+    database,
+    databaseSchema,
+    limit: 1,
+  });
 
   $: nestedColumnProfileQuery = getSummaries(
-    $runtime?.instanceId,
+    instanceId,
     connector,
     database,
     databaseSchema,

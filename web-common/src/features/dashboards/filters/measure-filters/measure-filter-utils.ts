@@ -7,6 +7,8 @@ import {
   createAndExpression,
   createSubQueryExpression,
   filterExpressions,
+  isExpressionUnsupported,
+  isJoinerExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   DimensionThresholdFilter,
@@ -42,17 +44,24 @@ export function mergeDimensionAndMeasureFilter(
  * Measure filters will be sub-queries
  */
 export function splitWhereFilter(whereFilter: V1Expression | undefined) {
+  if (whereFilter && isExpressionUnsupported(whereFilter)) {
+    return { dimensionFilters: whereFilter, dimensionThresholdFilters: [] };
+  }
+
   const dimensionFilters = createAndExpression([]);
   const dimensionThresholdFilters: DimensionThresholdFilter[] = [];
   whereFilter?.cond?.exprs?.filter((e) => {
     const subqueryExpr = e.cond?.exprs?.[1];
     if (subqueryExpr?.subquery) {
+      const filters = isJoinerExpression(subqueryExpr.subquery.having)
+        ? (subqueryExpr.subquery.having?.cond?.exprs
+            ?.map(mapExprToMeasureFilter)
+            .filter(Boolean) as MeasureFilterEntry[])
+        : [mapExprToMeasureFilter(subqueryExpr.subquery.having)];
+
       dimensionThresholdFilters.push({
         name: subqueryExpr.subquery.dimension ?? "",
-        filters:
-          (subqueryExpr.subquery.having?.cond?.exprs
-            ?.map(mapExprToMeasureFilter)
-            .filter(Boolean) as MeasureFilterEntry[]) ?? [],
+        filters: filters.filter(Boolean) as MeasureFilterEntry[],
       });
       return;
     }

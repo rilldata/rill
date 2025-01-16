@@ -45,7 +45,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 	pbs := make([]*adminv1.Organization, len(orgs))
 	for i, org := range orgs {
-		pbs[i] = organizationToDTO(org)
+		pbs[i] = s.organizationToDTO(org, false)
 	}
 
 	return &adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}, nil
@@ -60,13 +60,23 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
+	perms := claims.OrganizationPermissions(ctx, org.ID)
+	if !perms.ReadOrg && !claims.Superuser(ctx) {
+		ok, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
+		}
+
+		perms.ReadOrg = true
+		perms.ReadProjects = true
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: organizationToDTO(org),
-		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
+		Organization: s.organizationToDTO(org, perms.ManageOrg),
+		Permissions:  perms,
 	}, nil
 }
 
@@ -119,7 +129,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	}
 
 	return &adminv1.CreateOrganizationResponse{
-		Organization: organizationToDTO(org),
+		Organization: s.organizationToDTO(org, true),
 	}, nil
 }
 
@@ -166,12 +176,22 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
+	logoAssetID := org.LogoAssetID
+	if req.LogoAssetId != nil { // Means it should be updated
+		if *req.LogoAssetId == "" { // Means it should be cleared
+			logoAssetID = nil
+		} else {
+			logoAssetID = req.LogoAssetId
+		}
+	}
+
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                valOrDefault(req.NewName, org.Name),
 		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
+		LogoAssetID:                         logoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -211,7 +231,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	return &adminv1.UpdateOrganizationResponse{
-		Organization: organizationToDTO(org),
+		Organization: s.organizationToDTO(org, true),
 	}, nil
 }
 
@@ -854,6 +874,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		Name:                                req.Organization,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
@@ -873,7 +894,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	}
 
 	return &adminv1.SudoUpdateOrganizationQuotasResponse{
-		Organization: organizationToDTO(updatedOrg),
+		Organization: s.organizationToDTO(updatedOrg, true),
 	}, nil
 }
 
@@ -897,6 +918,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		Name:                                org.Name,
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
 		CustomDomain:                        req.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -914,16 +936,22 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	}
 
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
-		Organization: organizationToDTO(org),
+		Organization: s.organizationToDTO(org, true),
 	}, nil
 }
 
-func organizationToDTO(o *database.Organization) *adminv1.Organization {
-	return &adminv1.Organization{
+func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *adminv1.Organization {
+	var logoURL string
+	if o.LogoAssetID != nil {
+		logoURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.LogoAssetID)
+	}
+
+	res := &adminv1.Organization{
 		Id:           o.ID,
 		Name:         o.Name,
 		DisplayName:  o.DisplayName,
 		Description:  o.Description,
+		LogoUrl:      logoURL,
 		CustomDomain: o.CustomDomain,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),
@@ -933,12 +961,17 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
 			StorageLimitBytesPerDeployment: o.QuotaStorageLimitBytesPerDeployment,
 		},
-		BillingCustomerId: o.BillingCustomerID,
-		PaymentCustomerId: o.PaymentCustomerID,
-		BillingEmail:      o.BillingEmail,
-		CreatedOn:         timestamppb.New(o.CreatedOn),
-		UpdatedOn:         timestamppb.New(o.UpdatedOn),
+		CreatedOn: timestamppb.New(o.CreatedOn),
+		UpdatedOn: timestamppb.New(o.UpdatedOn),
 	}
+
+	if privileged {
+		res.BillingCustomerId = o.BillingCustomerID
+		res.PaymentCustomerId = o.PaymentCustomerID
+		res.BillingEmail = o.BillingEmail
+	}
+
+	return res
 }
 
 func valOrEmptyString(v *int) string {

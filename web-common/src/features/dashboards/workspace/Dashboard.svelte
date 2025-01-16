@@ -6,7 +6,8 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
-  import { useExploreStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { useExploreState } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
@@ -14,24 +15,27 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
-  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { useTimeControlStore } from "../time-controls/time-control-store";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+  import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
 
   export let exploreName: string;
   export let metricsViewName: string;
   export let isEmbedded: boolean = false;
 
+  const DEFAULT_TIMESERIES_WIDTH = 580;
+  const MIN_TIMESERIES_WIDTH = 440;
   const StateManagers = getStateManagers();
   const {
     selectors: {
       measures: { visibleMeasures },
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName },
+      pivot: { showPivot },
     },
+
     dashboardStore,
-    validSpecStore,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
@@ -40,48 +44,56 @@
 
   let exploreContainerWidth: number;
 
+  $: ({ instanceId } = $runtime);
+
   $: ({ whereFilter, dimensionThresholdFilters } = $dashboardStore);
 
   $: extraLeftPadding = !$navigationOpen;
 
-  $: exploreStore = useExploreStore(exploreName);
+  $: exploreState = useExploreState(exploreName);
 
-  $: selectedDimensionName = $exploreStore?.selectedDimensionName;
+  $: selectedDimensionName = $exploreState?.selectedDimensionName;
   $: selectedDimension =
     selectedDimensionName && $getDimensionByName(selectedDimensionName);
-  $: expandedMeasureName = $exploreStore?.tdd?.expandedMeasureName;
-  $: showPivot = $exploreStore?.pivot?.active;
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricsViewName,
-  );
+  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricsViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the explore
-  $: explore = useExploreValidSpec($runtime.instanceId, exploreName);
+  $: explore = useExploreValidSpec(instanceId, exploreName);
 
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $explore.error?.response?.status === 404;
 
   $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
 
-  $: timeControls = $timeControlsStore;
+  $: ({
+    timeStart: start,
+    timeEnd: end,
+    showTimeComparison,
+    comparisonTimeStart,
+    comparisonTimeEnd,
+    ready: timeControlsReady = false,
+  } = $timeControlsStore);
 
   $: timeRange = {
-    start: timeControls.timeStart,
-    end: timeControls.timeEnd,
+    start,
+    end,
   };
 
-  $: comparisonTimeRange = timeControls.showTimeComparison
+  $: comparisonTimeRange = showTimeComparison
     ? {
-        start: timeControls.comparisonTimeStart,
-        end: timeControls.comparisonTimeEnd,
+        start: comparisonTimeStart,
+        end: comparisonTimeEnd,
       }
     : undefined;
 
-  $: metricsView = $validSpecStore.data?.metricsView ?? {};
+  $: metricsView = $explore.data?.metricsView ?? {};
+
+  let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
+  let resizing = false;
 </script>
 
 <article
@@ -100,7 +112,7 @@
         <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
-            <TabBar {hidePivot} />
+            <TabBar {hidePivot} {exploreName} onPivot={$showPivot} />
           </div>
         </section>
       {/key}
@@ -114,7 +126,7 @@
       header="This user can't access this dashboard"
       body="The security policy for this dashboard may make contents invisible to you. If you deploy this dashboard, {$selectedMockUserStore?.email} will see a 404."
     />
-  {:else if showPivot}
+  {:else if $showPivot}
     <PivotDisplay />
   {:else}
     <div
@@ -123,24 +135,48 @@
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      <div class="pt-2">
+      <div
+        class="pt-2 flex-none"
+        style:width={expandedMeasureName ? "auto" : `${metricsWidth}px`}
+      >
         {#key exploreName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {exploreName}
-              workspaceWidth={exploreContainerWidth}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+          {#if !$metricTimeSeries.isLoading}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {exploreName}
+                timeSeriesWidth={metricsWidth}
+                workspaceWidth={exploreContainerWidth}
+                hideStartPivotButton={hidePivot}
+              />
+            {:else}
+              <MeasuresContainer {exploreContainerWidth} {metricsViewName} />
+            {/if}
           {/if}
         {/key}
       </div>
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
-        <TimeDimensionDisplay {exploreName} {expandedMeasureName} />
+        <TimeDimensionDisplay
+          {exploreName}
+          {expandedMeasureName}
+          hideStartPivotButton={hidePivot}
+        />
       {:else}
-        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+        <div class="relative flex-none bg-gray-200 w-[1px]">
+          <Resizer
+            dimension={metricsWidth}
+            min={MIN_TIMESERIES_WIDTH}
+            max={exploreContainerWidth - 500}
+            basis={DEFAULT_TIMESERIES_WIDTH}
+            bind:resizing
+            side="right"
+            onUpdate={(width) => {
+              metricsWidth = width;
+            }}
+          />
+        </div>
+        <div class="pt-2 pl-1 overflow-auto w-full">
           {#if selectedDimension}
             <DimensionDisplay
               dimension={selectedDimension}
@@ -150,11 +186,12 @@
               {timeRange}
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
               {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
+              hideStartPivotButton={hidePivot}
             />
           {:else}
             <LeaderboardDisplay
@@ -165,7 +202,7 @@
               {timeRange}
               {comparisonTimeRange}
               {metricsView}
-              timeControlsReady={!!timeControls.ready}
+              {timeControlsReady}
             />
           {/if}
         </div>

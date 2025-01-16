@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import { isEmbedPage } from "../layout/navigation/navigation-utils";
   import AlertCircleOutline from "./icons/AlertCircleOutline.svelte";
 
   export let statusCode: number | undefined = undefined;
@@ -12,6 +14,8 @@
   export let fatal = false;
 
   let showDetail = false;
+
+  const onEmbedPage = isEmbedPage($page);
 </script>
 
 <CtaLayoutContainer>
@@ -23,7 +27,7 @@
     {/if}
     <h2 class="header">{header}</h2>
     <CtaMessage>{body}</CtaMessage>
-    {#if !fatal}
+    {#if !fatal && !onEmbedPage}
       <CtaButton variant="secondary" href="/">Back to home</CtaButton>
     {/if}
     {#if detail}

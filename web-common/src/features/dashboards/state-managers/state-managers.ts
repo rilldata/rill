@@ -1,20 +1,20 @@
 import {
-  contextColWidthDefaults,
   type ContextColWidths,
   type MetricsExplorerEntity,
+  contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  getPersistentDashboardStore,
-  initPersistentDashboardStore,
-} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
 import {
+  type RpcStatus,
+  type V1ExplorePreset,
   type V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
-  type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -31,9 +31,9 @@ import {
   type MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
-  useExploreStore,
+  useExploreState,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import { createStateManagerActions, type StateManagerActions } from "./actions";
+import { type StateManagerActions, createStateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
   type StateManagerReadables,
@@ -69,6 +69,7 @@ export type StateManagers = {
    * it's a one-off solution that introduces another new pattern.
    */
   contextColumnWidths: Writable<ContextColWidths>;
+  defaultExploreState: Readable<V1ExplorePreset>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -94,8 +95,8 @@ export function createStateManagers({
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
     [exploreNameStore],
     ([name], set) => {
-      const store = useExploreStore(name);
-      return store.subscribe(set);
+      const exploreState = useExploreState(name);
+      return exploreState.subscribe(set);
     },
   );
 
@@ -120,6 +121,8 @@ export function createStateManagers({
           query: {
             queryClient,
             enabled: !!validSpec?.data?.metricsView?.timeDimension,
+            staleTime: Infinity,
+            cacheTime: Infinity,
           },
         },
       ).subscribe(set),
@@ -137,9 +140,23 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
-  // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
-  initPersistentDashboardStore((extraKeyPrefix || "") + exploreName);
-  const persistentDashboardStore = getPersistentDashboardStore();
+  const defaultExploreState = derived(
+    [validSpecStore, timeRangeSummaryStore],
+    ([validSpec, timeRangeSummary]) => {
+      if (!validSpec.data?.explore) {
+        return {};
+      }
+      return getDefaultExplorePreset(
+        validSpec.data?.explore ?? {},
+        timeRangeSummary.data,
+      );
+    },
+  );
+
+  const persistentDashboardStore = createPersistentDashboardStore(
+    (extraKeyPrefix || "") + exploreName,
+  );
+  initLocalUserPreferenceStore(exploreName);
 
   return {
     runtime: runtime,
@@ -169,5 +186,6 @@ export function createStateManagers({
       persistentDashboardStore,
     }),
     contextColumnWidths,
+    defaultExploreState,
   };
 }

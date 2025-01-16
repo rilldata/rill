@@ -77,7 +77,7 @@
   <PopoverContent align="end" class="w-[520px] p-4">
     <div class="flex flex-col">
       <div class="flex flex-row items-center mb-4">
-        <div class="text-sm font-medium">{project}</div>
+        <div class="text-sm font-medium">Share project: {project}</div>
         <div class="grow"></div>
         <CopyInviteLinkButton {copyLink} />
       </div>
@@ -85,7 +85,7 @@
       {#if showOrganizationSection}
         <div class="mt-4">
           <div class="text-xs text-gray-500 font-semibold uppercase">
-            Organization
+            Org Users
           </div>
           <div class="flex flex-col gap-y-1">
             <OrganizationItem
@@ -99,7 +99,7 @@
       {#if showGroupsSection}
         <div class="mt-2">
           <div class="text-xs text-gray-500 font-semibold uppercase">
-            Groups
+            User Groups
           </div>
           <!-- 52 * 5 = 260px -->
           <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
@@ -110,7 +110,9 @@
         </div>
       {/if}
       <div class="mt-2">
-        <div class="text-xs text-gray-500 font-semibold uppercase">Users</div>
+        <div class="text-xs text-gray-500 font-semibold uppercase">
+          Project Users
+        </div>
         <!-- 52 * 5 = 260px -->
         <div class="flex flex-col gap-y-1 overflow-y-auto max-h-[260px]">
           {#each usersWithPendingInvites as user}

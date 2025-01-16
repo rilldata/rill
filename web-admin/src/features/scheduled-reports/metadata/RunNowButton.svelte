@@ -14,9 +14,11 @@
   export let project: string;
   export let report: string;
 
+  $: ({ instanceId } = $runtime);
+
   const queryClient = useQueryClient();
   const triggerReport = createAdminServiceTriggerReport();
-  const reportQuery = useReport($runtime.instanceId, report);
+  const reportQuery = useReport(instanceId, report);
 
   async function handleRunNow() {
     const lastExecution =
@@ -38,8 +40,8 @@
       $reportQuery.data.resource.report.state.executionHistory[0] ===
       lastExecution
     ) {
-      queryClient.invalidateQueries(
-        getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
+      await queryClient.invalidateQueries(
+        getRuntimeServiceGetResourceQueryKey(instanceId, {
           "name.name": report,
           "name.kind": ResourceKind.Report,
         }),

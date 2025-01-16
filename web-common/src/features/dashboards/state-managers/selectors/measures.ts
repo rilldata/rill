@@ -51,7 +51,7 @@ export const measureLabel = ({
     const measure = validMetricsView?.measures?.find(
       (d) => d.name === measureName,
     );
-    return measure?.displayName ?? measureName;
+    return measure?.displayName || measureName;
   };
 };
 export const isMeasureValidPercentOfTotal = ({

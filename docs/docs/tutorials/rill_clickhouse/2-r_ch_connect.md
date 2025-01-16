@@ -25,17 +25,8 @@ Depending what you choose, the contents of your connection will change and I rec
 
 :::
 
-### Changing the default OLAP engine
-Let's navigate to the rill.yaml file and add the following. 
-
-```yaml
-compiler: rillv1
-
-title: "Rill and ClickHouse Project"
-olap_connector: clickhouse
-```
-
-Once updated, we can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
+### Connect to ClickHouse
+We can create the clickhouse connection by selection `+Add Data` > `ClickHouse` and fill in the components on the UI.
 
 ![clickhouse](/img/tutorials/ch/clickhouse-connector.png)
 :::tip
@@ -47,7 +38,14 @@ You can obtain the credentials from your ClickHouse Cloud account by clicking th
 ```
 
 :::
-Once this is created, a `clickhouse.yaml` file will appear in the `connectors` folder.
+Once this is created, a `clickhouse.yaml` file will appear in the `connectors` folder and the following will be added to your rill.yaml.
+
+```yaml
+compiler: rillv1
+
+title: "Rill and ClickHouse Project"
+olap_connector: clickhouse #automatically added
+```
 
 Example for a locally running ClickHouse server:
 ```yaml

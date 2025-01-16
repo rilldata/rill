@@ -24,7 +24,12 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 				cfg[strings.ToLower(k)] = v
 			}
 			cfg["allow_host_access"] = r.opts.AllowHostAccess
-			return r.getConnection(ctx, "", c.Type, cfg)
+			return r.getConnection(ctx, cachedConnectionConfig{
+				instanceID: "",
+				name:       connector,
+				driver:     c.Type,
+				config:     cfg,
+			})
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
@@ -41,7 +46,14 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
 		return nil, nil, ctx.Err()
 	}
-	return r.getConnection(ctx, instanceID, cfg.Driver, cfg.Resolve())
+	return r.getConnection(ctx, cachedConnectionConfig{
+		instanceID:    instanceID,
+		name:          connector,
+		driver:        cfg.Driver,
+		config:        cfg.Resolve(),
+		provision:     cfg.Provision,
+		provisionArgs: cfg.ProvisionArgs,
+	})
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
@@ -196,6 +208,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		if c.Name == name {
 			res.Driver = c.Type
 			res.Preset = maps.Clone(c.Config) // Cloning because Preset may be mutated later, but the inst object is shared.
+			if c.Provision {
+				res.Provision = c.Provision
+				res.ProvisionArgs = c.ProvisionArgs.AsMap()
+			}
 			break
 		}
 	}
@@ -210,6 +226,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		res.Project, err = ResolveConnectorProperties(inst.Environment, inst.ResolveVariables(false), c)
 		if err != nil {
 			return nil, err
+		}
+		if c.Provision {
+			res.Provision = c.Provision
+			res.ProvisionArgs = c.ProvisionArgs.AsMap()
 		}
 
 		break
@@ -279,11 +299,6 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
-	// data_dir stores persistent data
-	res.setPreset("data_dir", r.DataDir(instanceID, name), true)
-	// temp_dir stores temporary data. The logic that creates any temporary file here should also delete them.
-	// The contents will also be deleted on runtime restarts.
-	res.setPreset("temp_dir", r.TempDir(instanceID), true)
 
 	// Done
 	return res, nil
@@ -334,6 +349,10 @@ type ConnectorConfig struct {
 	Preset  map[string]string
 	Project map[string]string
 	Env     map[string]string
+	// Provision will cause it to request the admin service to provision the connector.
+	Provision bool
+	// ProvisionArgs provide provisioning args for when ProvisionName is set.
+	ProvisionArgs map[string]any
 }
 
 // Resolve returns the final resolved connector configuration.

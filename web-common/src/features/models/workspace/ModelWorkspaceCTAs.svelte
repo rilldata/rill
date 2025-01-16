@@ -32,18 +32,16 @@
 
   const exportModelMutation = createExportTableMutation();
 
+  $: ({ instanceId } = $runtime);
   $: isModelIdle =
     resource?.meta?.reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  $: metricsViewsQuery = useGetMetricsViewsForModel(
-    $runtime.instanceId,
-    modelName,
-  );
+  $: metricsViewsQuery = useGetMetricsViewsForModel(instanceId, modelName);
 
   $: availableMetricsViews = $metricsViewsQuery.data ?? [];
 
   $: createMetricsViewFromTable = useCreateMetricsViewFromTableUIAction(
-    $runtime.instanceId,
+    instanceId,
     connector,
     "",
     "",
@@ -56,7 +54,7 @@
   const onExport = async (format: V1ExportFormat) => {
     return $exportModelMutation.mutateAsync({
       data: {
-        instanceId: $runtime.instanceId,
+        instanceId,
         format,
         tableName: modelName,
       },

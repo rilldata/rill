@@ -1,6 +1,7 @@
-<script>
+<script lang="ts">
   export let size = "1em";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
@@ -9,6 +10,7 @@
   viewBox="0 0 24 24"
   fill={color}
   xmlns="http://www.w3.org/2000/svg"
+  class={className}
 >
   <path
     fill-rule="evenodd"

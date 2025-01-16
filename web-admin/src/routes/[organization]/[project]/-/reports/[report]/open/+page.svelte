@@ -15,12 +15,13 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  $: ({ instanceId } = $runtime);
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: reportId = $page.params.report;
   $: executionTime = $page.url.searchParams.get("execution_time");
 
-  $: report = useReport($runtime.instanceId, reportId);
+  $: report = useReport(instanceId, reportId);
   $: exploreName = getExploreName(
     $report?.data?.resource?.report?.spec?.annotations?.web_open_path,
   );
@@ -35,15 +36,18 @@
   );
 
   $: if ($dashboardStateForReport?.data) {
-    void goto(
-      getExplorePageUrl(
-        $page.url,
-        organization,
-        project,
-        $dashboardStateForReport.data.exploreName,
-        $dashboardStateForReport.data.state,
-      ),
+    void gotoExplorePage();
+  }
+
+  async function gotoExplorePage() {
+    const explorePageUrl = await getExplorePageUrl(
+      $page.url,
+      organization,
+      project,
+      $dashboardStateForReport.data.exploreName,
+      $dashboardStateForReport.data.exploreState,
     );
+    return goto(explorePageUrl);
   }
 
   // TODO: error handling

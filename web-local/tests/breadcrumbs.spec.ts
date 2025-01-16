@@ -42,8 +42,9 @@ test.describe("Breadcrumbs", () => {
 
       await page.getByText("Create explore dashboard").click();
 
-      await page.getByText("Edit").click();
-      await page.getByText("Explore dashboard").click();
+      await page.waitForURL(
+        "**/files/dashboards/AdBids_model_metrics_explore.yaml",
+      );
 
       link = page.getByRole("link", {
         name: "AdBids_model_metrics_explore",
@@ -63,17 +64,13 @@ test.describe("Breadcrumbs", () => {
       await page.getByText("Go to dashboard").click();
       await page.getByText("Create dashboard").click();
 
-      await page.getByText("Edit").click();
-      await page.getByText("Metrics view").click();
-
-      await expect(
-        page.getByRole("button", {
-          name: "2 dashboards",
-          exact: true,
-        }),
-      ).toBeVisible();
+      await page.waitForURL(
+        "**/files/dashboards/AdBids_model_metrics_explore_1.yaml",
+      );
 
       await page.getByRole("link", { name: "AdBids", exact: true }).click();
+
+      await page.waitForURL("**/files/sources/AdBids.yaml");
 
       await expect(
         page.getByRole("link", {

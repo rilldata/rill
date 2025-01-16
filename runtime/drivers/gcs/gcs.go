@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
@@ -72,10 +73,9 @@ type driver struct{}
 type configProperties struct {
 	SecretJSON      string `mapstructure:"google_application_credentials"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	TempDir         string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")
 	}
@@ -87,8 +87,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	}
 
 	conn := &Connection{
-		config: conf,
-		logger: logger,
+		config:  conf,
+		storage: st,
+		logger:  logger,
 	}
 	return conn, nil
 }
@@ -166,8 +167,9 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 type Connection struct {
-	config *configProperties
-	logger *zap.Logger
+	config  *configProperties
+	storage *storage.Client
+	logger  *zap.Logger
 }
 
 var _ drivers.Handle = &Connection{}
@@ -260,11 +262,6 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
-}
-
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 

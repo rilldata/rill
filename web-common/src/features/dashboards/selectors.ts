@@ -8,6 +8,7 @@ import {
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type {
   RpcStatus,
   V1Expression,
@@ -124,20 +125,12 @@ export function useMetricsViewTimeRange(
           query: {
             ...queryOptions,
             enabled: !!metricsView.data?.timeDimension && queryOptions?.enabled,
+            queryClient,
           },
         },
       ).subscribe(set),
   );
 }
-
-export const useMetricsViewSpecMeasure = (
-  instanceId: string,
-  metricsViewName: string,
-  measureName: string,
-) =>
-  useMetricsViewValidSpec(instanceId, metricsViewName, (meta) =>
-    meta?.measures?.find((measure) => measure.name === measureName),
-  );
 
 export function getFiltersForOtherDimensions(
   whereFilter: V1Expression,

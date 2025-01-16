@@ -6,6 +6,7 @@ import {
   createSubQueryExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
+  convertExpressionToFilterParam,
   convertFilterParamToExpression,
   stripParserError,
 } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
@@ -18,23 +19,33 @@ describe("expression", () => {
   describe("positive cases", () => {
     const Cases = [
       {
-        expr: "country IN ('US','IN') and state = 'ABC'",
-        expected_expression: createAndExpression([
+        expr: "country IN ('US','IN')",
+        expectedExprString: "country IN ('US','IN')",
+        expectedExprObject: createInExpression("country", ["US", "IN"]),
+      },
+      {
+        expr: "country IN ('US','IN') and state eq 'ABC'",
+        expectedExprString: "country IN ('US','IN') AND state eq 'ABC'",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
         ]),
       },
       {
-        expr: "country IN ('US','IN') and state = 'ABC' and lat >= 12.56",
-        expected_expression: createAndExpression([
+        expr: "country IN ('US','IN') and state eq 'ABC' and lat gte 12.56",
+        expectedExprString:
+          "country IN ('US','IN') AND state eq 'ABC' AND lat gte 12.56",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
           createBinaryExpression("lat", V1Operation.OPERATION_GTE, 12.56),
         ]),
       },
       {
-        expr: "country IN ('US','IN') AND state = 'ABC' OR lat >= 12.56",
-        expected_expression: createAndExpression([
+        expr: "country IN ('US','IN') AND state eq 'ABC' OR lat gte 12.56",
+        expectedExprString:
+          "country IN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"]),
           createOrExpression([
             createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -43,8 +54,10 @@ describe("expression", () => {
         ]),
       },
       {
-        expr: "country not in ('US','IN') and (state = 'ABC' or lat >= 12.56)",
-        expected_expression: createAndExpression([
+        expr: "country not in ('US','IN') and (state eq 'ABC' or lat gte 12.56)",
+        expectedExprString:
+          "country NIN ('US','IN') AND (state eq 'ABC' OR lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createOrExpression([
             createBinaryExpression("state", V1Operation.OPERATION_EQ, "ABC"),
@@ -53,8 +66,10 @@ describe("expression", () => {
         ]),
       },
       {
-        expr: "country NIN ('US','IN') and state having (lat >= 12.56)",
-        expected_expression: createAndExpression([
+        expr: "country NIN ('US','IN') and state having (lat gte 12.56)",
+        expectedExprString:
+          "country NIN ('US','IN') AND state having (lat gte 12.56)",
+        expectedExprObject: createAndExpression([
           createInExpression("country", ["US", "IN"], true),
           createSubQueryExpression(
             "state",
@@ -63,18 +78,33 @@ describe("expression", () => {
           ),
         ]),
       },
+      {
+        expr: `"coun tr.y" IN ('U\\'S','I\\nN') and "st ate" having ("la t" gte 12.56)`,
+        expectedExprString: `"coun tr.y" IN ('U\\'S','I\\nN') AND "st ate" having ("la t" gte 12.56)`,
+        expectedExprObject: createAndExpression([
+          // values converted to V1Expression do not have escaped chars
+          createInExpression("coun tr.y", ["U'S", "I\nN"]),
+          createSubQueryExpression(
+            "st ate",
+            ["la t"],
+            createBinaryExpression("la t", V1Operation.OPERATION_GTE, 12.56),
+          ),
+        ]),
+      },
     ];
 
     const compiledGrammar = nearley.Grammar.fromCompiled(grammar);
-    for (const { expr, expected_expression } of Cases) {
+    for (const { expr, expectedExprString, expectedExprObject } of Cases) {
       it(expr, () => {
         const parser = new nearley.Parser(compiledGrammar);
         parser.feed(expr);
         // assert that there is only match. this ensures unambiguous grammar.
         expect(parser.results).length(1);
 
-        expect(convertFilterParamToExpression(expr)).toEqual(
-          expected_expression,
+        const exprObject = convertFilterParamToExpression(expr);
+        expect(exprObject).to.deep.eq(expectedExprObject);
+        expect(convertExpressionToFilterParam(exprObject)).toEqual(
+          expectedExprString,
         );
       });
     }
@@ -83,19 +113,19 @@ describe("expression", () => {
   describe("negative cases", () => {
     const Cases = [
       {
-        expr: "country ('US','IN') and state = 'ABC'",
+        expr: "country ('US','IN') and state eq 'ABC'",
         err: `Syntax error at line 1 col 9:
 
-1 country ('US','IN') and state = 'ABC'
+1 country ('US','IN') and state eq 'ABC'
           ^
 
 Unexpected "(".`,
       },
       {
-        expr: "country IN (US,'IN') and state = 'ABC'",
+        expr: "country IN (US,'IN') and state eq 'ABC'",
         err: `Syntax error at line 1 col 13:
 
-1 country IN (US,'IN') and state = 'ABC'
+1 country IN (US,'IN') and state eq 'ABC'
               ^
 
 Unexpected "U".`,

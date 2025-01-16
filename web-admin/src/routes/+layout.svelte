@@ -13,6 +13,7 @@
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
@@ -20,13 +21,15 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
-  import { initPylonWidget } from "@rilldata/web-common/features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;
 
   $: ({ projectPermissions, organizationPermissions } = data);
-  $: organization = $page.params.organization;
+  $: ({
+    params: { organization },
+    url: { pathname },
+  } = $page);
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -39,19 +42,20 @@
   featureFlags.set(true, "adminServer", "readOnly");
 
   let removeJavascriptListeners: () => void;
+
   initCloudMetrics()
     .then(() => {
       removeJavascriptListeners =
-        errorEventHandler.addJavascriptErrorListeners();
+        errorEventHandler?.addJavascriptErrorListeners();
     })
     .catch(console.error);
   initPylonWidget();
 
   onMount(() => {
-    return () => removeJavascriptListeners();
+    return () => removeJavascriptListeners?.();
   });
 
-  $: isEmbed = $page.url.pathname === "/-/embed";
+  $: isEmbed = pathname === "/-/embed";
 
   $: hideTopBar =
     // invite page shouldn't show the top bar because it is considered an onboard step
@@ -88,7 +92,11 @@
         />
 
         {#if withinOnlyOrg}
-          <OrganizationTabs />
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
         {/if}
       {/if}
       <ErrorBoundary>

@@ -587,6 +587,18 @@ export class Connector extends Message<Connector> {
   templatedProperties: string[] = [];
 
   /**
+   * Provision settings if its a managed connector
+   *
+   * @generated from field: bool provision = 6;
+   */
+  provision = false;
+
+  /**
+   * @generated from field: google.protobuf.Struct provision_args = 7;
+   */
+  provisionArgs?: Struct;
+
+  /**
    * DEPRECATED: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
    *
    * @generated from field: map<string, string> config_from_variables = 4;
@@ -605,6 +617,8 @@ export class Connector extends Message<Connector> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "provision_args", kind: "message", T: Struct },
     { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
@@ -2120,31 +2134,56 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   instanceId = "";
 
   /**
+   * Model to base the metrics view on.
+   * If you set this, do NOT set connector, database, database_schema or table.
+   *
+   * @generated from field: string model = 8;
+   */
+  model = "";
+
+  /**
+   * Connector for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string connector = 2;
    */
   connector = "";
 
   /**
+   * Database for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database = 6;
    */
   database = "";
 
   /**
+   * Database schema for the table.
+   * See "table" for more details.
+   *
    * @generated from field: string database_schema = 7;
    */
   databaseSchema = "";
 
   /**
+   * Table to base the metrics view on.
+   * If you set this, do NOT set model.
+   *
    * @generated from field: string table = 3;
    */
   table = "";
 
   /**
+   * Path to save the metrics view file to.
+   *
    * @generated from field: string path = 4;
    */
   path = "";
 
   /**
+   * If true, the AI will be used to generate the metrics view file.
+   * Otherwise, it falls back to a simpler heuristic approach.
+   *
    * @generated from field: bool use_ai = 5;
    */
   useAi = false;
@@ -2158,6 +2197,7 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
   static readonly typeName = "rill.runtime.v1.GenerateMetricsViewFileRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "database_schema", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -2190,6 +2230,8 @@ export class GenerateMetricsViewFileRequest extends Message<GenerateMetricsViewF
  */
 export class GenerateMetricsViewFileResponse extends Message<GenerateMetricsViewFileResponse> {
   /**
+   * Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
+   *
    * @generated from field: bool ai_succeeded = 1;
    */
   aiSucceeded = false;
@@ -3675,6 +3717,20 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
   envConfig: { [key: string]: string } = {};
 
   /**
+   * Provision indicates if its a managed connector
+   *
+   * @generated from field: bool provision = 10;
+   */
+  provision = false;
+
+  /**
+   * Provision args for the provisioner if provision is true
+   *
+   * @generated from field: google.protobuf.Struct provision_args = 11;
+   */
+  provisionArgs?: Struct;
+
+  /**
    * True if the connector can be accessed without credentials
    *
    * @generated from field: bool has_anonymous_access = 7;
@@ -3709,6 +3765,8 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
     { no: 4, name: "preset_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 5, name: "project_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 10, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "provision_args", kind: "message", T: Struct },
     { no: 7, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
     { no: 9, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },

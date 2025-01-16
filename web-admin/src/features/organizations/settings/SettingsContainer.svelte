@@ -35,7 +35,7 @@
 
 <style lang="postcss">
   .settings-container {
-    @apply w-full max-w-[844px] border border-slate-200 text-slate-700;
+    @apply w-full border border-slate-200 text-slate-700 rounded-sm;
   }
 
   .settings-header {

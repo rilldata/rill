@@ -550,7 +550,7 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n, false)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return err
 	}
@@ -1089,6 +1089,11 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		return nil, err
 	}
 
+	tempDir, err := r.C.Runtime.TempDir(r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Execute the stage step if configured
 	if executor.stage != nil {
 		// Also resolve templating in the stage props
@@ -1107,7 +1112,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 			IncrementalRun:       incrementalRun,
 			PartitionRun:         partition != nil,
 			PreviousResult:       prevResult,
-			TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
+			TempDir:              tempDir,
 		})
 		if err != nil {
 			return nil, err
@@ -1137,7 +1142,7 @@ func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedMo
 		IncrementalRun:       incrementalRun,
 		PartitionRun:         partition != nil,
 		PreviousResult:       prevResult,
-		TempDir:              r.C.Runtime.TempDir(r.C.InstanceID),
+		TempDir:              tempDir,
 	})
 	if err != nil {
 		return nil, err

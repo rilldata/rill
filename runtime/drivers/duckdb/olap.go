@@ -2,14 +2,8 @@ package duckdb
 
 import (
 	"context"
-	dbsql "database/sql"
 	"errors"
 	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/rduckdb"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -37,14 +32,14 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning bool, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
 		panic("nested WithConnection")
 	}
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority, longRunning, tx)
+	conn, release, err := c.acquireOLAPConn(ctx, priority, longRunning)
 	if err != nil {
 		return err
 	}
@@ -103,7 +98,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
 		attrs := []attribute.KeyValue{
-			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 			attribute.String("instance_id", c.instanceID),
@@ -129,7 +123,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, stmt.LongRunning, false)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, stmt.LongRunning)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
@@ -181,748 +175,193 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
-func (c *connection) estimateSize(includeTemp bool) int64 {
-	path := c.config.DBFilePath
-	if path == "" {
+func (c *connection) estimateSize() int64 {
+	db, release, err := c.acquireDB()
+	if err != nil {
 		return 0
 	}
-
-	paths := []string{path}
-	if includeTemp {
-		paths = append(paths, fmt.Sprintf("%s.wal", path))
-	}
-	if c.config.ExtTableStorage {
-		entries, err := os.ReadDir(c.config.DBStoragePath)
-		if err == nil { // ignore error
-			for _, entry := range entries {
-				if !entry.IsDir() {
-					continue
-				}
-				// this is to avoid counting temp tables during source ingestion
-				// in certain cases we only want to compute the size of the serving db files
-				if strings.HasPrefix(entry.Name(), "__rill_tmp_") && !includeTemp {
-					continue
-				}
-				path := filepath.Join(c.config.DBStoragePath, entry.Name())
-				version, exist, err := c.tableVersion(entry.Name())
-				if err != nil || !exist {
-					continue
-				}
-				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)))
-				if includeTemp {
-					paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
-				}
-			}
-		}
-	}
-	return fileSize(paths)
+	size := db.Size()
+	_ = release()
+	return size
 }
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	c.logger.Debug("add table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("typ", typ))
-	if !c.config.ExtTableStorage {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	version, exist, err := c.tableVersion(tableName)
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = release()
+	}()
 
-	if !exist {
-		return fmt.Errorf("table %q does not exist", tableName)
-	}
-	dbName := dbName(tableName, version)
-	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE %s.default ADD COLUMN %s %s", safeSQLName(dbName), safeSQLName(columnName), typ)})
-		if err != nil {
-			return err
-		}
-		// recreate view to propagate schema changes
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.default", safeSQLName(tableName), safeSQLName(dbName))})
+	err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ))
+		return err
 	})
+	return c.checkErr(err)
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	c.logger.Debug("alter table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("newType", newType))
-	if !c.config.ExtTableStorage {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	version, exist, err := c.tableVersion(tableName)
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = release()
+	}()
 
-	if !exist {
-		return fmt.Errorf("table %q does not exist", tableName)
-	}
-	dbName := dbName(tableName, version)
-	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE %s.default ALTER %s TYPE %s", safeSQLName(dbName), safeSQLName(columnName), newType)})
-		if err != nil {
-			return err
-		}
-
-		// recreate view to propagate schema changes
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.default", safeSQLName(tableName), safeSQLName(dbName))})
+	err = db.MutateTable(ctx, tableName, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType))
+		return err
 	})
+	return c.checkErr(err)
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
-	c.logger.Debug("create table", zap.String("name", name), zap.Bool("view", view))
-	if view {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeSQLName(name), sql),
-			Priority:    1,
-			LongRunning: true,
-		})
+func (c *connection) CreateTableAsSelect(ctx context.Context, name, sql string, opts *drivers.CreateTableOptions) error {
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return err
 	}
-	if !c.config.ExtTableStorage {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(name), sql),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	var cleanupFunc func()
-	err := c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		// NOTE: Running mkdir while holding the connection to avoid directory getting cleaned up when concurrent calls to RenameTable cause reopenDB to be called.
-
-		// create a new db file in /<instanceid>/<name> directory
-		sourceDir := filepath.Join(c.config.DBStoragePath, name)
-		if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-			return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
-		}
-
-		// check if some older version existed previously to detach it later
-		oldVersion, oldVersionExists, _ := c.tableVersion(name)
-
-		newVersion := fmt.Sprint(time.Now().UnixMilli())
-		dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
-		db := dbName(name, newVersion)
-
-		// attach new db
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
-		if err != nil {
-			removeDBFile(dbFile)
-			return fmt.Errorf("create: attach %q db failed: %w", dbFile, err)
-		}
-
-		// Enforce storage limits
-		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
-			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
-		}
-
-		// success update version
-		err = c.updateVersion(name, newVersion)
-		if err != nil {
-			// extreme bad luck
-			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
-			return fmt.Errorf("create: update version %q failed: %w", newVersion, err)
-		}
-
-		qry, err := c.generateSelectQuery(ctx, db)
-		if err != nil {
+	defer func() {
+		_ = release()
+	}()
+	var beforeCreateFn, afterCreateFn func(ctx context.Context, conn *sqlx.Conn) error
+	if opts.BeforeCreate != "" {
+		beforeCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, opts.BeforeCreate)
 			return err
 		}
-
-		// create view query
-		err = c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), qry),
-		})
-		if err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(db, dbFile) }
-			return fmt.Errorf("create: create view %q failed: %w", name, err)
-		}
-
-		if oldVersionExists {
-			oldDB := dbName(name, oldVersion)
-			// ignore these errors since source has been correctly ingested and attached
-			cleanupFunc = func() { c.detachAndRemoveFile(oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion))) }
-		}
-		return nil
-	})
-	if cleanupFunc != nil {
-		cleanupFunc()
 	}
-	return err
+	if opts.AfterCreate != "" {
+		afterCreateFn = func(ctx context.Context, conn *sqlx.Conn) error {
+			_, err := conn.ExecContext(ctx, opts.AfterCreate)
+			return err
+		}
+	}
+	err = db.CreateTableAsSelect(ctx, name, sql, &rduckdb.CreateTableOptions{View: opts.View, BeforeCreateFn: beforeCreateFn, AfterCreateFn: afterCreateFn})
+	return c.checkErr(err)
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	c.logger.Debug("insert table", zap.String("name", name), zap.Bool("byName", byName), zap.String("strategy", string(strategy)), zap.Strings("uniqueKey", uniqueKey))
-
-	if !c.config.ExtTableStorage {
-		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-			return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
-		})
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, opts *drivers.InsertTableOptions) error {
+	db, release, err := c.acquireDB()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = release()
+	}()
+	var byNameClause string
+	if opts.ByName {
+		byNameClause = "BY NAME"
 	}
 
-	if inPlace {
-		version, exist, err := c.tableVersion(name)
-		if err != nil {
+	if opts.Strategy == drivers.IncrementalStrategyAppend {
+		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) error {
+			if opts.BeforeInsert != "" {
+				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+				if err != nil {
+					return err
+				}
+			}
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeSQLName(name), byNameClause, sql))
+			if opts.AfterInsert != "" {
+				_, afterInsertExecErr := conn.ExecContext(ctx, opts.AfterInsert)
+				return errors.Join(err, afterInsertExecErr)
+			}
 			return err
-		}
-		if !exist {
-			return fmt.Errorf("insert: table %q does not exist", name)
-		}
-
-		db := dbName(name, version)
-		safeName := fmt.Sprintf("%s.default", safeSQLName(db))
-
-		return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-			return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
 		})
+		return c.checkErr(err)
 	}
 
-	var cleanupFunc func()
-	err := c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		// Get current table version
-		oldVersion, oldVersionExists, _ := c.tableVersion(name)
-		if !oldVersionExists {
-			return fmt.Errorf("table %q does not exist", name)
-		}
+	if opts.Strategy == drivers.IncrementalStrategyMerge {
+		err = db.MutateTable(ctx, name, func(ctx context.Context, conn *sqlx.Conn) (mutate error) {
+			// Execute the pre-init SQL first
+			if opts.BeforeInsert != "" {
+				_, err := conn.ExecContext(ctx, opts.BeforeInsert)
+				return err
+			}
+			defer func() {
+				if opts.AfterInsert != "" {
+					_, err := conn.ExecContext(ctx, opts.AfterInsert)
+					mutate = errors.Join(mutate, err)
+				}
+			}()
+			// Create a temporary table with the new data
+			tmp := uuid.New().String()
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql))
+			if err != nil {
+				return err
+			}
 
-		// Prepare a new version
-		newVersion := fmt.Sprint(time.Now().UnixMilli())
+			// check the count of the new data
+			// skip if the count is 0
+			// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
+			var empty bool
+			err = conn.QueryRowxContext(ctx, fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp))).Scan(&empty)
+			if err != nil {
+				return err
+			}
+			if empty {
+				return nil
+			}
 
-		// Prepare paths
-		sourceDir := filepath.Join(c.config.DBStoragePath, name)
-		oldDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion))
-		newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
-		oldDB := dbName(name, oldVersion)
-		newDB := dbName(name, newVersion)
+			// Drop the rows from the target table where the unique key is present in the temporary table
+			where := ""
+			for i, key := range opts.UniqueKey {
+				key = safeSQLName(key)
+				if i != 0 {
+					where += " AND "
+				}
+				where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
+			}
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where))
+			if err != nil {
+				return err
+			}
 
-		// Copy the old version to the new version
-		if err := copyFile(oldDBFile, newDBFile); err != nil {
-			return fmt.Errorf("insert: copy file failed: %w", err)
-		}
-
-		// Attach the new db
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newDBFile), safeSQLName(newDB))})
-		if err != nil {
-			removeDBFile(newDBFile)
-			return fmt.Errorf("insert: attach %q db failed: %w", newDBFile, err)
-		}
-
-		// Execute the insert
-		safeName := fmt.Sprintf("%s.default", safeSQLName(newDB))
-		err = c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
-		if err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("insert: create %q.default table failed: %w", newDB, err)
-		}
-
-		// Success: update version
-		err = c.updateVersion(name, newVersion)
-		if err != nil {
-			// extreme bad luck
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("insert: update version %q failed: %w", newVersion, err)
-		}
-
-		// Update the view to the external table in the main DB handle
-		qry, err := c.generateSelectQuery(ctx, newDB)
-		if err != nil {
+			// Insert the new data into the target table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeSQLName(name), byNameClause, safeSQLName(tmp)))
 			return err
-		}
-		err = c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), qry),
 		})
-		if err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("insert: create view %q failed: %w", name, err)
-		}
-
-		// Delete the old version (ignoring errors since source the new data has already been correctly inserted and attached)
-		cleanupFunc = func() { c.detachAndRemoveFile(oldDB, oldDBFile) }
-		return nil
-	})
-	if cleanupFunc != nil {
-		cleanupFunc()
+		return c.checkErr(err)
 	}
-	return err
+
+	return fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	c.logger.Debug("drop table", zap.String("name", name), zap.Bool("view", view))
-	if !c.config.ExtTableStorage {
-		var typ string
-		if view {
-			typ = "VIEW"
-		} else {
-			typ = "TABLE"
-		}
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(name)),
-			Priority:    100,
-			LongRunning: true,
-		})
-	}
-	// determine if it is a true view or view on externally stored table
-	version, exist, err := c.tableVersion(name)
+func (c *connection) DropTable(ctx context.Context, name string) error {
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
 	}
-
-	if !exist {
-		if !view {
-			return nil
-		}
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
-			Priority:    100,
-			LongRunning: true,
-		})
-	}
-
-	err = c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		// drop view
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name))})
-		if err != nil {
-			return err
-		}
-
-		oldDB := dbName(name, version)
-		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(oldDB))})
-		if err != nil && !strings.Contains(err.Error(), "database not found") { // ignore database not found errors for idempotency
-			return err
-		}
-		// delete source directory
-		return os.RemoveAll(filepath.Join(c.config.DBStoragePath, name))
-	})
-	return err
+	defer func() {
+		_ = release()
+	}()
+	err = db.DropTable(ctx, name)
+	return c.checkErr(err)
 }
 
 // RenameTable implements drivers.OLAPStore.
-// For drop and replace (when running `RenameTable("__tmp_foo", "foo")`):
-// `DROP VIEW __tmp_foo`
-// `DETACH __tmp_foo__1`
-// `mv __tmp_foo/1.db foo/2.db`
-// `echo 2 > version.txt`
-// `rm __tmp_foo`
-// `ATTACH 'foo/2.db' AS foo__2`
-// `CREATE OR REPLACE VIEW foo AS SELECT * FROM foo_2`
-// `DETACH foo__1`
-// `rm foo/1.db`
-func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
-	c.logger.Debug("rename table", zap.String("from", oldName), zap.String("to", newName), zap.Bool("view", view), zap.Bool("ext", c.config.ExtTableStorage))
-	if strings.EqualFold(oldName, newName) {
-		return fmt.Errorf("rename: old and new name are same case insensitive strings")
-	}
-	if !c.config.ExtTableStorage {
-		return c.dropAndReplace(ctx, oldName, newName, view)
-	}
-	// determine if it is a true view or a view on externally stored table
-	oldVersion, exist, err := c.tableVersion(oldName)
+func (c *connection) RenameTable(ctx context.Context, oldName, newName string) error {
+	db, release, err := c.acquireDB()
 	if err != nil {
 		return err
 	}
-	if !exist {
-		return c.dropAndReplace(ctx, oldName, newName, view)
-	}
-
-	oldVersionInNewDir, replaceInNewTable, err := c.tableVersion(newName)
-	if err != nil {
-		return err
-	}
-
-	newSrcDir := filepath.Join(c.config.DBStoragePath, newName)
-	oldSrcDir := filepath.Join(c.config.DBStoragePath, oldName)
-
-	// reopen duckdb connections which should delete any temporary files built up during ingestion
-	// need to do detach using tx=true to isolate it from other queries
-	err = c.WithConnection(ctx, 100, true, true, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
-		err = os.Mkdir(newSrcDir, fs.ModePerm)
-		if err != nil && !errors.Is(err, fs.ErrExist) {
-			return err
-		}
-
-		// drop old view
-		err = c.Exec(currentCtx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))})
-		if err != nil {
-			return fmt.Errorf("rename: drop %q view failed: %w", oldName, err)
-		}
-
-		// detach old db
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion)))})
-		if err != nil {
-			return fmt.Errorf("rename: detach %q db failed: %w", dbName(oldName, oldVersion), err)
-		}
-
-		// move old file as a new file in source directory
-		newVersion := fmt.Sprint(time.Now().UnixMilli())
-		newFile := filepath.Join(newSrcDir, fmt.Sprintf("%s.db", newVersion))
-		err = os.Rename(filepath.Join(oldSrcDir, fmt.Sprintf("%s.db", oldVersion)), newFile)
-		if err != nil {
-			return fmt.Errorf("rename: rename file failed: %w", err)
-		}
-		// also move .db.wal file in case checkpointing was not completed
-		_ = os.Rename(filepath.Join(oldSrcDir, fmt.Sprintf("%s.db.wal", oldVersion)),
-			filepath.Join(newSrcDir, fmt.Sprintf("%s.db.wal", newVersion)))
-
-		err = c.updateVersion(newName, newVersion)
-		if err != nil {
-			return fmt.Errorf("rename: update version failed: %w", err)
-		}
-		err = os.RemoveAll(filepath.Join(c.config.DBStoragePath, oldName))
-		if err != nil {
-			c.logger.Error("rename: unable to delete old path", zap.Error(err))
-		}
-
-		newDB := dbName(newName, newVersion)
-		// attach new db
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newFile), safeSQLName(newDB))})
-		if err != nil {
-			return fmt.Errorf("rename: attach %q db failed: %w", newDB, err)
-		}
-
-		qry, err := c.generateSelectQuery(ctx, newDB)
-		if err != nil {
-			return err
-		}
-
-		// change view query
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(newName), qry)})
-		if err != nil {
-			return fmt.Errorf("rename: create %q view failed: %w", newName, err)
-		}
-
-		if !replaceInNewTable {
-			return nil
-		}
-		// new table had some other file previously
-		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(newName, oldVersionInNewDir)))}); err != nil {
-			return err
-		}
-		removeDBFile(filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersionInNewDir)))
-		return nil
-	})
-	return err
+	defer func() {
+		_ = release()
+	}()
+	err = db.RenameTable(ctx, oldName, newName)
+	return c.checkErr(err)
 }
 
 func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
 	return false
-}
-
-func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	var byNameClause string
-	if byName {
-		byNameClause = "BY NAME"
-	}
-
-	if strategy == drivers.IncrementalStrategyAppend {
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeName, byNameClause, sql),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	if strategy == drivers.IncrementalStrategyMerge {
-		// Create a temporary table with the new data
-		tmp := uuid.New().String()
-		err := c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
-			Priority:    1,
-			LongRunning: true,
-		})
-		if err != nil {
-			return err
-		}
-
-		// check the count of the new data
-		// skip if the count is 0
-		// if there was no data in the empty file then the detected schema can be different from the current schema which leads to errors or performance issues
-		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SELECT COUNT(*) == 0 FROM %s", safeSQLName(tmp)),
-			Priority: 1,
-		})
-		if err != nil {
-			return err
-		}
-		var empty bool
-		for res.Next() {
-			if err := res.Scan(&empty); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-		if empty {
-			return nil
-		}
-
-		// Drop the rows from the target table where the unique key is present in the temporary table
-		where := ""
-		for i, key := range uniqueKey {
-			key = safeSQLName(key)
-			if i != 0 {
-				where += " AND "
-			}
-			where += fmt.Sprintf("base.%s IS NOT DISTINCT FROM tmp.%s", key, key)
-		}
-		err = c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where),
-			Priority:    1,
-			LongRunning: true,
-		})
-		if err != nil {
-			return err
-		}
-
-		// Insert the new data into the target table
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
-}
-
-func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string, view bool) error {
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
-
-	existing, err := c.InformationSchema().Lookup(ctx, "", "", newName)
-	if err != nil {
-		if !errors.Is(err, drivers.ErrNotFound) {
-			return err
-		}
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
-			Priority:    100,
-			LongRunning: true,
-		})
-	}
-
-	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		// The newName may currently be occupied by a name of another type than oldName.
-		var existingTyp string
-		if existing.View {
-			existingTyp = "VIEW"
-		} else {
-			existingTyp = "TABLE"
-		}
-
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(newName))})
-		if err != nil {
-			return err
-		}
-
-		return c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName))})
-	})
-}
-
-func (c *connection) detachAndRemoveFile(db, dbFile string) {
-	err := c.WithConnection(context.Background(), 100, false, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(db)), Priority: 100})
-		removeDBFile(dbFile)
-		return err
-	})
-	if err != nil {
-		c.logger.Debug("detach failed", zap.String("db", db), zap.Error(err))
-	}
-}
-
-func (c *connection) tableVersion(name string) (string, bool, error) {
-	pathToFile := filepath.Join(c.config.DBStoragePath, name, "version.txt")
-	contents, err := os.ReadFile(pathToFile)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return "", false, nil
-		}
-		return "", false, err
-	}
-	return strings.TrimSpace(string(contents)), true, nil
-}
-
-func (c *connection) updateVersion(name, version string) error {
-	pathToFile := filepath.Join(c.config.DBStoragePath, name, "version.txt")
-	file, err := os.Create(pathToFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(version)
-	return err
-}
-
-// convertToEnum converts a varchar col in table to an enum type.
-// Generally to be used for low cardinality varchar columns although not enforced here.
-func (c *connection) convertToEnum(ctx context.Context, table string, cols []string) error {
-	if len(cols) == 0 {
-		return fmt.Errorf("empty list")
-	}
-	if !c.config.ExtTableStorage {
-		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
-	}
-	c.logger.Debug("convert column to enum", zap.String("table", table), zap.Strings("col", cols))
-
-	oldVersion, exist, err := c.tableVersion(table)
-	if err != nil {
-		return err
-	}
-
-	if !exist {
-		return fmt.Errorf("table %q does not exist", table)
-	}
-
-	// scan main db and main schema
-	res, err := c.Execute(ctx, &drivers.Statement{
-		Query:    "SELECT current_database(), current_schema()",
-		Priority: 100,
-	})
-	if err != nil {
-		return err
-	}
-
-	var mainDB, mainSchema string
-	if res.Next() {
-		if err := res.Scan(&mainDB, &mainSchema); err != nil {
-			_ = res.Close()
-			return err
-		}
-	}
-	_ = res.Close()
-
-	sourceDir := filepath.Join(c.config.DBStoragePath, table)
-	newVersion := fmt.Sprint(time.Now().UnixMilli())
-	newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
-	newDB := dbName(table, newVersion)
-	var cleanupFunc func()
-	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		// attach new db
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newDBFile), safeSQLName(newDB))})
-		if err != nil {
-			removeDBFile(newDBFile)
-			return fmt.Errorf("create: attach %q db failed: %w", newDBFile, err)
-		}
-
-		// switch to new db
-		// this is only required since duckdb has bugs around db scoped custom types
-		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", safeSQLName(newDB))})
-		if err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("failed switch db %q: %w", newDB, err)
-		}
-		defer func() {
-			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
-			// we want to switch to original db and schema
-			err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(mainDB), safeSQLName(mainSchema))})
-			if err != nil {
-				cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-				// This should NEVER happen
-				c.fatalInternalError(fmt.Errorf("failed to switch back from db %q: %w", mainDB, err))
-			}
-		}()
-
-		oldDB := dbName(table, oldVersion)
-		for _, col := range cols {
-			enum := fmt.Sprintf("%s_enum", col)
-			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(oldDB), safeSQLName(col))}); err != nil {
-				cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-				return fmt.Errorf("failed to create enum %q: %w", enum, err)
-			}
-		}
-
-		var selectQry string
-		for _, col := range cols {
-			enum := fmt.Sprintf("%s_enum", col)
-			selectQry += fmt.Sprintf("CAST(%s AS %s) AS %s,", safeSQLName(col), safeSQLName(enum), safeSQLName(col))
-		}
-		selectQry += fmt.Sprintf("* EXCLUDE(%s)", strings.Join(cols, ","))
-
-		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE \"default\" AS SELECT %s FROM %s.default", selectQry, safeSQLName(oldDB))}); err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("failed to create table with enum values: %w", err)
-		}
-
-		// recreate view to propagate schema changes
-		selectQry, err := c.generateSelectQuery(ctx, newDB)
-		if err != nil {
-			return err
-		}
-
-		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
-		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(mainDB), safeSQLName(mainSchema), safeSQLName(table), selectQry)}); err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("failed to create view %q: %w", table, err)
-		}
-
-		// update version and detach old db
-		if err := c.updateVersion(table, newVersion); err != nil {
-			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
-			return fmt.Errorf("failed to update version: %w", err)
-		}
-
-		cleanupFunc = func() {
-			c.detachAndRemoveFile(oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
-		}
-		return nil
-	})
-	if cleanupFunc != nil {
-		cleanupFunc()
-	}
-	return err
-}
-
-// duckDB raises Contents of view were altered: types don't match! error even when number of columns are same but sequence of column changes in underlying table.
-// This causes temporary query failures till the model view is not updated to reflect the new column sequence.
-// We ensure that view for external table storage is always generated using a stable order of columns of underlying table.
-// Additionally we want to keep the same order as the underlying table locally so that we can show columns in the same order as they appear in source data.
-// Using `AllowHostAccess` as proxy to check if we are running in local/cloud mode.
-func (c *connection) generateSelectQuery(ctx context.Context, db string) (string, error) {
-	if c.config.AllowHostAccess {
-		return fmt.Sprintf("SELECT * FROM %s.default", safeSQLName(db)), nil
-	}
-
-	rows, err := c.Execute(ctx, &drivers.Statement{
-		Query: fmt.Sprintf(`
-			SELECT column_name AS name
-			FROM information_schema.columns
-			WHERE table_catalog = %s AND table_name = 'default'
-			ORDER BY name ASC`, safeSQLString(db)),
-	})
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	cols := make([]string, 0)
-	var col string
-	for rows.Next() {
-		if err := rows.Scan(&col); err != nil {
-			return "", err
-		}
-		cols = append(cols, safeName(col))
-	}
-
-	return fmt.Sprintf("SELECT %s FROM %s.default", strings.Join(cols, ", "), safeSQLName(db)), nil
 }
 
 func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -956,17 +395,6 @@ func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-func dbName(name, version string) string {
-	return fmt.Sprintf("%s_%s", name, version)
-}
-
-func removeDBFile(dbFile string) {
-	_ = os.Remove(dbFile)
-	// Hacky approach to remove the wal and tmp file
-	_ = os.Remove(dbFile + ".wal")
-	_ = os.RemoveAll(dbFile + ".tmp")
-}
-
 // safeSQLName returns a quoted SQL identifier.
 func safeSQLName(name string) string {
 	return safeName(name)
@@ -974,21 +402,4 @@ func safeSQLName(name string) string {
 
 func safeSQLString(name string) string {
 	return drivers.DialectDuckDB.EscapeStringValue(name)
-}
-
-func copyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, srcFile)
-	return err
 }

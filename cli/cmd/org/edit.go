@@ -11,7 +11,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, description, billingEmail string
+	var orgName, displayName, description, billingEmail string
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -55,6 +55,22 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			org := resp.Organization
 			req := &adminv1.UpdateOrganizationRequest{
 				Name: org.Name,
+			}
+
+			if cmd.Flags().Changed("display-name") {
+				req.DisplayName = &displayName
+			} else if ch.Interactive {
+				ok, err := cmdutil.ConfirmPrompt("Do you want to update the display name", "", false)
+				if err != nil {
+					return err
+				}
+				if ok {
+					displayName, err = cmdutil.InputPrompt("Enter the display name", org.DisplayName)
+					if err != nil {
+						return err
+					}
+					req.DisplayName = &displayName
+				}
 			}
 
 			if cmd.Flags().Changed("description") {
@@ -102,6 +118,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
+	editCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
 

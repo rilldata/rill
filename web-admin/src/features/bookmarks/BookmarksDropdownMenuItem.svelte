@@ -1,31 +1,33 @@
 <script lang="ts">
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { BookmarkIcon } from "lucide-svelte";
-  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import { createEventDispatcher } from "svelte";
-  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
+  import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
+  import { BookmarkIcon } from "lucide-svelte";
 
   export let bookmark: BookmarkEntry;
   export let readOnly = false;
 
-  const dispatch = createEventDispatcher();
-
-  function selectBookmark(e) {
-    if (e.skipSelection) return;
-    dispatch("select", bookmark);
-  }
+  export let onEdit: (bookmark: BookmarkEntry) => void;
+  export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
 
   function editBookmark(e) {
     e.skipSelection = true;
-    dispatch("edit", bookmark);
+    onEdit(bookmark);
   }
 
-  function deleteBookmark(e) {
+  let disableDelete = false;
+  async function deleteBookmark(e) {
+    disableDelete = true;
     e.skipSelection = true;
-    dispatch("delete", bookmark);
+    try {
+      await onDelete(bookmark);
+    } catch {
+      // no-op
+    }
+    disableDelete = false;
   }
 
   let hovered = false;
@@ -34,14 +36,12 @@
 <DropdownMenuItem class="py-2">
   <div
     class="flex justify-between gap-x-2 w-full"
-    on:click={selectBookmark}
-    on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}
     role="menuitem"
     tabindex="-1"
   >
-    <div class="flex flex-row gap-x-2">
+    <a href={bookmark.url} class="flex flex-row gap-x-2 w-full min-h-7">
       {#if bookmark.resource.default}
         <HomeBookmark size="16px" />
       {:else if bookmark.filtersOnly}
@@ -63,7 +63,7 @@
           </div>
         {/if}
       </div>
-    </div>
+    </a>
     {#if !readOnly}
       <div class="flex flex-row justify-end gap-x-2 items-start w-20">
         {#if hovered}
@@ -76,6 +76,8 @@
           <button
             on:click={deleteBookmark}
             class="bg-gray-100 hover:bg-primary-100 px-2 h-7 text-gray-400 hover:text-gray-500"
+            disabled={disableDelete}
+            aria-disabled={disableDelete}
           >
             <Trash size="16px" />
           </button>

@@ -677,18 +677,39 @@ paths:
           schema:
             type: object
             properties:
+              model:
+                type: string
+                description: |-
+                  Model to base the metrics view on.
+                  If you set this, do NOT set connector, database, database_schema or table.
               connector:
                 type: string
+                description: |-
+                  Connector for the table.
+                  See "table" for more details.
               database:
                 type: string
+                description: |-
+                  Database for the table.
+                  See "table" for more details.
               databaseSchema:
                 type: string
+                description: |-
+                  Database schema for the table.
+                  See "table" for more details.
               table:
                 type: string
+                description: |-
+                  Table to base the metrics view on.
+                  If you set this, do NOT set model.
               path:
                 type: string
+                description: Path to save the metrics view file to.
               useAi:
                 type: boolean
+                description: |-
+                  If true, the AI will be used to generate the metrics view file.
+                  Otherwise, it falls back to a simpler heuristic approach.
             title: Request message for RuntimeService.GenerateMetricsViewFile
       tags:
         - RuntimeService
@@ -1012,6 +1033,41 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/queries/canvases/{canvas}/resolve:
+    post:
+      summary: ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
+      operationId: QueryService_ResolveCanvas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveCanvasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: canvas
+          description: Canvas name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args for resolving templating in the component properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1103,7 +1159,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/components/{component}/resolve:
     post:
-      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      summary: ResolveComponent resolves renderer for a Component resource.
       operationId: QueryService_ResolveComponent
       responses:
         "200":
@@ -1133,7 +1189,7 @@ paths:
             properties:
               args:
                 type: object
-                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
+                title: Optional args for resolving templating in the renderer properties
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
@@ -3099,6 +3155,7 @@ definitions:
       - CODE_FLOAT32
       - CODE_FLOAT64
       - CODE_TIMESTAMP
+      - CODE_INTERVAL
       - CODE_DATE
       - CODE_TIME
       - CODE_STRING
@@ -3339,6 +3396,12 @@ definitions:
         additionalProperties:
           type: string
         title: Config properties set as dynamic variables
+      provision:
+        type: boolean
+        title: Provision indicates if its a managed connector
+      provisionArgs:
+        type: object
+        title: Provision args for the provisioner if provision is true
       hasAnonymousAccess:
         type: boolean
         title: True if the connector can be accessed without credentials
@@ -3465,32 +3528,85 @@ definitions:
       height:
         type: integer
         format: int64
+  v1CanvasPreset:
+    type: object
+    properties:
+      timeRange:
+        type: string
+        description: |-
+          Time range for the explore.
+          It corresponds to the `range` property of the explore's `time_ranges`.
+          If not found in `time_ranges`, it should be added to the list.
+      comparisonMode:
+        $ref: '#/definitions/v1ExploreComparisonMode'
+        description: |-
+          Comparison mode.
+          TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+      comparisonDimension:
+        type: string
+        description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
   v1CanvasSpec:
     type: object
     properties:
       displayName:
         type: string
-      columns:
+        description: Display name for the canvas.
+      maxWidth:
         type: integer
         format: int64
-      gap:
+        description: Max width in pixels of the canvas.
+      gapX:
         type: integer
         format: int64
+        description: Horizontal gap in pixels of the canvas.
+      gapY:
+        type: integer
+        format: int64
+        description: Vertical gap in pixels of the canvas.
+      theme:
+        type: string
+        description: Name of the theme to use. Only one of theme and embedded_theme can be set.
+      embeddedTheme:
+        $ref: '#/definitions/v1ThemeSpec'
+        description: Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ExploreTimeRange'
+        description: |-
+          List of selectable time ranges with comparison time ranges.
+          If the list is empty, a default list should be shown.
+          TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+      timeZones:
+        type: array
+        items:
+          type: string
+        description: |-
+          List of selectable time zones.
+          If the list is empty, a default list should be shown.
+          The values should be valid IANA location identifiers.
+      defaultPreset:
+        $ref: '#/definitions/v1CanvasPreset'
+        description: Preset UI state to show by default.
       variables:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1ComponentVariable'
+        description: Variables that can be used in the canvas.
       items:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1CanvasItem'
+        title: Items to render on the canvas
       securityRules:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1SecurityRule'
+        description: Security rules to apply for access to the canvas.
   v1CanvasState:
     type: object
     properties:
@@ -3825,10 +3941,6 @@ definitions:
         type: string
       description:
         type: string
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
       renderer:
         type: string
       rendererProperties:
@@ -3840,9 +3952,6 @@ definitions:
           $ref: '#/definitions/v1ComponentVariable'
       output:
         $ref: '#/definitions/v1ComponentVariable'
-      show:
-        type: string
-        description: Templated string that should evaluate to a boolean.
       definedInCanvas:
         type: boolean
   v1ComponentState:
@@ -3887,6 +3996,11 @@ definitions:
         items:
           type: string
         title: Properties in config that use templating
+      provision:
+        type: boolean
+        title: Provision settings if its a managed connector
+      provisionArgs:
+        type: object
       configFromVariables:
         type: object
         additionalProperties:
@@ -3953,6 +4067,10 @@ definitions:
         type: array
         items:
           type: string
+      provision:
+        type: boolean
+      provisionArgs:
+        type: object
       propertiesFromVariables:
         type: object
         additionalProperties:
@@ -4092,18 +4210,66 @@ definitions:
       measuresSelector:
         $ref: '#/definitions/v1FieldSelector'
         description: Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
+      where:
+        $ref: '#/definitions/v1Expression'
       timeRange:
         type: string
         description: |-
           Time range for the explore.
           It corresponds to the `range` property of the explore's `time_ranges`.
           If not found in `time_ranges`, it should be added to the list.
+      timezone:
+        type: string
+      timeGrain:
+        type: string
+      selectTimeRange:
+        type: string
       comparisonMode:
         $ref: '#/definitions/v1ExploreComparisonMode'
         description: Comparison mode.
+      compareTimeRange:
+        type: string
       comparisonDimension:
         type: string
         description: If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+      view:
+        $ref: '#/definitions/v1ExploreWebView'
+      exploreSortBy:
+        type: string
+      exploreSortAsc:
+        type: boolean
+      exploreSortType:
+        $ref: '#/definitions/v1ExploreSortType'
+      exploreExpandedDimension:
+        type: string
+      timeDimensionMeasure:
+        type: string
+      timeDimensionChartType:
+        type: string
+      timeDimensionPin:
+        type: boolean
+      pivotRows:
+        type: array
+        items:
+          type: string
+      pivotCols:
+        type: array
+        items:
+          type: string
+      pivotSortBy:
+        type: string
+      pivotSortAsc:
+        type: boolean
+  v1ExploreSortType:
+    type: string
+    enum:
+      - EXPLORE_SORT_TYPE_UNSPECIFIED
+      - EXPLORE_SORT_TYPE_VALUE
+      - EXPLORE_SORT_TYPE_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_PERCENT
+      - EXPLORE_SORT_TYPE_DELTA_ABSOLUTE
+      - EXPLORE_SORT_TYPE_DIMENSION
+    default: EXPLORE_SORT_TYPE_UNSPECIFIED
   v1ExploreSpec:
     type: object
     properties:
@@ -4184,6 +4350,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1ExploreComparisonTimeRange'
         title: Comparison time ranges available for this time range
+  v1ExploreWebView:
+    type: string
+    enum:
+      - EXPLORE_WEB_VIEW_UNSPECIFIED
+      - EXPLORE_WEB_VIEW_EXPLORE
+      - EXPLORE_WEB_VIEW_TIME_DIMENSION
+      - EXPLORE_WEB_VIEW_PIVOT
+      - EXPLORE_WEB_VIEW_CANVAS
+    default: EXPLORE_WEB_VIEW_UNSPECIFIED
   v1ExportFormat:
     type: string
     enum:
@@ -4285,6 +4460,7 @@ definitions:
     properties:
       aiSucceeded:
         type: boolean
+        description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
   v1GenerateRendererResponse:
     type: object
@@ -5096,6 +5272,14 @@ definitions:
         description: |-
           Available time zones list preferred time zones using IANA location identifiers.
           Deprecated: Now defined in the Explore resource.
+      cacheEnabled:
+        type: boolean
+        description: Cache controls for the metrics view.
+      cacheKeySql:
+        type: string
+      cacheKeyTtlSeconds:
+        type: string
+        format: int64
   v1MetricsViewState:
     type: object
     properties:
@@ -5812,22 +5996,28 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveCanvasResponse:
+    type: object
+    properties:
+      canvas:
+        $ref: '#/definitions/v1Resource'
+        description: The canvas resource.
+      resolvedComponents:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: |-
+          All the component resources referenced by the canvas.
+          The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+          (Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+      referencedMetricsViews:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1Resource'
+        description: All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   v1ResolveComponentResponse:
     type: object
     properties:
-      show:
-        type: boolean
-        description: |-
-          Show property with templating resolved for the provided args.
-          If it resolves to false, the other fields are not set.
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of the resolved component data
-      data:
-        type: array
-        items:
-          type: object
-        title: Resolved component data
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args

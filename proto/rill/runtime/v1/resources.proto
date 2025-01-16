@@ -282,6 +282,10 @@ message MetricsViewSpec {
   // Available time zones list preferred time zones using IANA location identifiers.
   // Deprecated: Now defined in the Explore resource.
   repeated string available_time_zones = 10;
+  // Cache controls for the metrics view.
+  optional bool cache_enabled = 25;
+  string cache_key_sql = 26;
+  int64 cache_key_ttl_seconds = 27;
 }
 
 message SecurityRule {
@@ -385,14 +389,38 @@ message ExplorePreset {
   repeated string measures = 4;
   // Dynamic selector for `measures`. Will be processed during validation, so it will always be empty in `state.valid_spec`.
   FieldSelector measures_selector = 10;
+
+  optional Expression where = 11;
+
   // Time range for the explore.
   // It corresponds to the `range` property of the explore's `time_ranges`.
   // If not found in `time_ranges`, it should be added to the list.
-  string time_range = 6;
+  optional string time_range = 6;
+  optional string timezone = 12;
+  optional string time_grain = 13;
+  optional string select_time_range = 14;
+
   // Comparison mode.
   ExploreComparisonMode comparison_mode = 7;
+  optional string compare_time_range = 15;
   // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
-  string comparison_dimension = 8;
+  optional string comparison_dimension = 8;
+
+  optional ExploreWebView view = 16;
+
+  optional string explore_sort_by = 17;
+  optional bool explore_sort_asc = 18;
+  optional ExploreSortType explore_sort_type = 19;
+  optional string explore_expanded_dimension = 20;
+
+  optional string time_dimension_measure = 21;
+  optional string time_dimension_chart_type = 22;
+  optional bool time_dimension_pin = 23;
+
+  repeated string pivot_rows = 24;
+  repeated string pivot_cols = 25;
+  optional string pivot_sort_by = 26;
+  optional bool pivot_sort_asc = 27;
 }
 
 enum ExploreComparisonMode {
@@ -400,6 +428,23 @@ enum ExploreComparisonMode {
   EXPLORE_COMPARISON_MODE_NONE = 1;
   EXPLORE_COMPARISON_MODE_TIME = 2;
   EXPLORE_COMPARISON_MODE_DIMENSION = 3;
+}
+
+enum ExploreWebView {
+  EXPLORE_WEB_VIEW_UNSPECIFIED = 0;
+  EXPLORE_WEB_VIEW_EXPLORE = 1;
+  EXPLORE_WEB_VIEW_TIME_DIMENSION = 2;
+  EXPLORE_WEB_VIEW_PIVOT = 3;
+  EXPLORE_WEB_VIEW_CANVAS = 4;
+}
+
+enum ExploreSortType {
+  EXPLORE_SORT_TYPE_UNSPECIFIED = 0;
+  EXPLORE_SORT_TYPE_VALUE = 1;
+  EXPLORE_SORT_TYPE_PERCENT = 2;
+  EXPLORE_SORT_TYPE_DELTA_PERCENT = 3;
+  EXPLORE_SORT_TYPE_DELTA_ABSOLUTE = 4;
+  EXPLORE_SORT_TYPE_DIMENSION = 5;
 }
 
 // FieldSelector describes logic for selecting a list of fields.
@@ -630,13 +675,10 @@ message Component {
 message ComponentSpec {
   string display_name = 1;
   string description = 7;
-  string resolver = 2;
-  google.protobuf.Struct resolver_properties = 3;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
-  string show = 10; // Templated string that should evaluate to a boolean.
   bool defined_in_canvas = 6;
 }
 
@@ -656,11 +698,33 @@ message Canvas {
 }
 
 message CanvasSpec {
+  // Display name for the canvas.
   string display_name = 1;
-  uint32 columns = 2;
-  uint32 gap = 3;
+  // Max width in pixels of the canvas.
+  uint32 max_width = 2;
+  // Horizontal gap in pixels of the canvas.
+  uint32 gap_x = 9;
+  // Vertical gap in pixels of the canvas.
+  uint32 gap_y = 10;
+  // Name of the theme to use. Only one of theme and embedded_theme can be set.
+  string theme = 7;
+  // Theme to use, provided inline. Only one of theme and embedded_theme can be set.
+  ThemeSpec embedded_theme = 8;
+  // List of selectable time ranges with comparison time ranges.
+  // If the list is empty, a default list should be shown.
+  // TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name.
+  repeated ExploreTimeRange time_ranges = 11;
+  // List of selectable time zones.
+  // If the list is empty, a default list should be shown.
+  // The values should be valid IANA location identifiers.
+  repeated string time_zones = 12;
+  // Preset UI state to show by default.
+  CanvasPreset default_preset = 15;
+  // Variables that can be used in the canvas.
   repeated ComponentVariable variables = 5;
+  // Items to render on the canvas
   repeated CanvasItem items = 4;
+  // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
 }
 
@@ -675,6 +739,18 @@ message CanvasItem {
   optional uint32 y = 3;
   optional uint32 width = 4;
   optional uint32 height = 5;
+}
+
+message CanvasPreset {
+  // Time range for the explore.
+  // It corresponds to the `range` property of the explore's `time_ranges`.
+  // If not found in `time_ranges`, it should be added to the list.
+  optional string time_range = 1;
+  // Comparison mode.
+  // TODO: Once the canvas APIs have stabilized, rename ExploreComparisonMode to a non-explore-specific name.
+  ExploreComparisonMode comparison_mode = 2;
+  // If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use.
+  optional string comparison_dimension = 8;
 }
 
 // API defines a custom operation for querying data stored in Rill.
@@ -726,10 +802,17 @@ message CharLocation {
   uint32 line = 1;
 }
 
+message ConnectorV2 {
+  ConnectorSpec spec = 1;
+  ConnectorState state = 2;
+}
+
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
   repeated string templated_properties = 4;
+  bool provision = 5;
+  google.protobuf.Struct provision_args = 6;
   // DEPRECATED: properties_from_variables stores properties whose value is a variable.
   // NOTE : properties_from_variables and properties both should be used to get all properties.
   map<string, string> properties_from_variables = 3;
@@ -737,9 +820,4 @@ message ConnectorSpec {
 
 message ConnectorState {
   string spec_hash = 1;
-}
-
-message ConnectorV2 {
-  ConnectorSpec spec = 1;
-  ConnectorState state = 2;
 }

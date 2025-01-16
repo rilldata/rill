@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apache/arrow/go/v14/arrow"
-	"github.com/apache/arrow/go/v14/arrow/array"
-	"github.com/apache/arrow/go/v14/arrow/memory"
-	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/apache/arrow/go/v15/arrow"
+	"github.com/apache/arrow/go/v15/arrow/array"
+	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow/go/v15/parquet/pqarrow"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -30,7 +30,7 @@ import (
 var ErrForbidden = errors.New("action not allowed")
 
 // resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -49,7 +49,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewSpec, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewState, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -61,12 +61,11 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	mv := res.GetMetricsView()
-	spec := mv.State.ValidSpec
-	if spec == nil {
+	if mv.State.ValidSpec == nil {
 		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
 	}
 
-	return res, spec, nil
+	return res, mv.State, nil
 }
 
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
@@ -275,10 +274,13 @@ func (builder *ExpressionBuilder) buildLikeExpression(cond *runtimev1.Condition)
 
 	// identify if immediate identifier has unnest
 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
+	if unnest {
+		leftExpr = builder.dialect.AutoUnnest(leftExpr)
+	}
 
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-	if unnest && builder.dialect != drivers.DialectDruid && builder.dialect != drivers.DialectPinot {
+	if unnest && builder.dialect == drivers.DialectDuckDB {
 		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
 	} else {
 		if builder.dialect == drivers.DialectDruid || builder.dialect == drivers.DialectPinot {
@@ -334,6 +336,9 @@ func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (
 
 	// identify if immediate identifier has unnest
 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
+	if unnest {
+		leftExpr = builder.dialect.AutoUnnest(leftExpr)
+	}
 
 	clauses := make([]string, 0)
 
@@ -342,7 +347,7 @@ func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (
 		questionMarks := strings.Join(valClauses, ",")
 		var clause string
 		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
-		if unnest && builder.dialect != drivers.DialectDruid {
+		if unnest && builder.dialect == drivers.DialectDuckDB {
 			clause = fmt.Sprintf("%s list_has_any((%s), ARRAY[%s])", notKeyword, leftExpr, questionMarks)
 		} else {
 			clause = fmt.Sprintf("(%s) %s IN (%s)", leftExpr, notKeyword, questionMarks)
@@ -642,7 +647,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			arrowField.Type = arrow.PrimitiveTypes.Float32
 		case runtimev1.Type_CODE_FLOAT64:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
+		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_INTERVAL:
 			arrowField.Type = arrow.BinaryTypes.String
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
 			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
@@ -653,7 +658,7 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	}
 	schema := arrow.NewSchema(fields, nil)
 
-	mem := memory.NewCheckedAllocator(memory.NewGoAllocator())
+	mem := memory.DefaultAllocator
 	recordBuilder := array.NewRecordBuilder(mem, schema)
 	defer recordBuilder.Release()
 	for _, s := range data {
@@ -701,6 +706,15 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 				}
 
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(string(bts))
+			case runtimev1.Type_CODE_INTERVAL:
+				switch v := v.GetKind().(type) {
+				case *structpb.Value_NumberValue:
+					s := fmt.Sprintf("%f", v.NumberValue)
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(s)
+				case *structpb.Value_StringValue:
+					recordBuilder.Field(idx).(*array.StringBuilder).Append(v.StringValue)
+				default:
+				}
 			}
 		}
 	}

@@ -39,6 +39,7 @@
     hint="Selection of {type} from the underlying metrics view for inclusion on the dashboard"
   />
   <FieldSwitcher
+    expand
     {fields}
     {selected}
     onClick={(_, field) => {
@@ -101,7 +102,7 @@
       }}
       let:item
     >
-      {items.find((m) => m.name === item)?.displayName ?? item}
+      {items.find((m) => m.name === item)?.displayName || item}
     </SelectionDropdown>
   {/if}
 </div>

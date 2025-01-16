@@ -11,6 +11,54 @@ import { test } from "./utils/test";
 test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
+  test("Can add and remove measures and dimensions", async ({ page }) => {
+    await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
+
+    await page.getByRole("button", { name: "Add new measure" }).click();
+
+    await page.getByText("Model column").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Measure");
+    await page.getByRole("button", { name: "Add measure" }).click();
+
+    await expect(page.getByText("New Measure", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Add new dimension" }).click();
+
+    await page.getByText("Column from model").click();
+    await page.getByRole("option", { name: "bid_price" }).click();
+    await page.getByLabel("Display name (optional)").fill("New Dimension");
+    await page.getByRole("button", { name: "Add dimension" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).toBeVisible();
+
+    // Delete measure
+    await page.getByRole("row", { name: "measure New Measure" }).hover();
+    await page
+      .getByRole("button", { name: "Delete measure New Measure" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Measure", { exact: true }),
+    ).not.toBeVisible();
+
+    // Delete dimension
+    await page.getByRole("row", { name: "dimension New Dimension" }).hover();
+    await page
+      .getByRole("button", { name: "Delete dimension New Dimension" })
+      .click();
+
+    await page.getByRole("button", { name: "Yes, delete" }).click();
+
+    await expect(
+      page.getByText("New Dimension", { exact: true }),
+    ).not.toBeVisible();
+  });
+
   test("Metrics editor", async ({ page }) => {
     await gotoNavEntry(page, AD_BIDS_METRICS_PATH);
 
@@ -66,7 +114,7 @@ test.describe("Metrics editor", () => {
 
     // go to the dashboard and make sure the metrics and dimensions are there.
     await gotoNavEntry(page, AD_BIDS_EXPLORE_PATH);
-    await page.waitForTimeout(3000);
+
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.

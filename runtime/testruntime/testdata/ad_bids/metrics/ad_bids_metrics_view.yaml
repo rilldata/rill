@@ -2,16 +2,18 @@
 # Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
 version: 1
-type: metrics_view
+type: metrics_view 
 
 display_name: Ad Bids
 model: ad_bids
 timeseries: timestamp
 
 dimensions:
-  - display_name: Publisher
+  - name: publisher
+    display_name: Publisher
     column: publisher
-  - display_name: Domain
+  - name: domain
+    display_name: Domain
     column: domain
 
 measures:

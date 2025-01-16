@@ -10,10 +10,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/apache/arrow/go/v14/arrow"
-	"github.com/apache/arrow/go/v14/arrow/array"
-	"github.com/apache/arrow/go/v14/arrow/memory"
-	"github.com/apache/arrow/go/v14/parquet/pqarrow"
+	"github.com/apache/arrow/go/v15/arrow"
+	"github.com/apache/arrow/go/v15/arrow/array"
+	"github.com/apache/arrow/go/v15/arrow/memory"
+	"github.com/apache/arrow/go/v15/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -268,7 +268,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 			arrowField.Type = arrow.PrimitiveTypes.Float64
 		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME:
 			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
-		case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+		case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
 			arrowField.Type = arrow.BinaryTypes.String
 		case runtimev1.Type_CODE_BYTES:
 			arrowField.Type = arrow.BinaryTypes.Binary
@@ -276,7 +276,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 		fields = append(fields, arrowField)
 	}
 	schema := arrow.NewSchema(fields, nil)
-	mem := memory.NewCheckedAllocator(memory.NewGoAllocator())
+	mem := memory.DefaultAllocator
 	recordBuilder := array.NewRecordBuilder(mem, schema)
 	defer recordBuilder.Release()
 
@@ -334,7 +334,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 					return err
 				}
 				recordBuilder.Field(i).(*array.TimestampBuilder).Append(tmp)
-			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_INTERVAL, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
 				res, err := json.Marshal(v)
 				if err != nil {
 					return fmt.Errorf("failed to convert to JSON value: %w", err)

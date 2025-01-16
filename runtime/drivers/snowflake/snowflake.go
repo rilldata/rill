@@ -7,6 +7,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 
 	// Load database/sql driver
@@ -63,10 +64,9 @@ type driver struct{}
 type configProperties struct {
 	DSN                string `mapstructure:"dsn"`
 	ParallelFetchLimit int    `mapstructure:"parallel_fetch_limit"`
-	TempDir            string `mapstructure:"temp_dir"`
 }
 
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}
@@ -80,6 +80,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	// actual db connection is opened during query
 	return &connection{
 		configProperties: conf,
+		storage:          st,
 		logger:           logger,
 	}, nil
 }
@@ -98,6 +99,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	configProperties *configProperties
+	storage          *storage.Client
 	logger           *zap.Logger
 }
 
@@ -199,11 +201,6 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return c, true
-}
-
-// AsSQLStore implements drivers.Connection.
-func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.

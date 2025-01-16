@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
@@ -13,8 +15,10 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -48,7 +52,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.NumberPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
 			Placeholder: "9000",
@@ -93,6 +97,11 @@ var maxOpenConnections = 20
 type driver struct{}
 
 type configProperties struct {
+	// Managed is set internally if the connector has `managed: true`.
+	Managed bool `mapstructure:"managed"`
+	// Provision is set when Managed is true and provisioning should be handled by this driver.
+	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
+	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
 	DSN      string `mapstructure:"dsn"`
 	Username string `mapstructure:"username"`
@@ -105,23 +114,18 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. Required for running distributed queries.
 	Cluster string `mapstructure:"cluster"`
-	// EnableCache controls whether to enable cache for Clickhouse queries.
-	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
-	EmbedPort int `mapstructure:"embed_port"`
-	// DataDir is the path to directory where db files will be created.
-	DataDir        string `mapstructure:"data_dir"`
-	TempDir        string `mapstructure:"temp_dir"`
-	CanScaleToZero bool   `mapstructure:"can_scale_to_zero"`
+	EmbedPort      int  `mapstructure:"embed_port"`
+	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 }
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -151,14 +155,11 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 			host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 		}
 		opts.Addr = []string{host}
+		opts.Protocol = clickhouse.Native
 		if conf.SSL {
-			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
-				MinVersion:         tls.VersionTLS12,
-				InsecureSkipVerify: false,
+				MinVersion: tls.VersionTLS12,
 			}
-		} else {
-			opts.Protocol = clickhouse.Native
 		}
 
 		// username password
@@ -173,16 +174,45 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
 		}
-	} else {
+	} else if conf.Provision {
 		// run clickhouse locally
-		embed = newEmbedClickHouse(conf.EmbedPort, conf.DataDir, conf.TempDir, logger)
+		dataDir, err := st.DataDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+		tempDir, err := st.TempDir(instanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
+	err = db.Ping()
+	if err != nil {
+		if !strings.Contains(err.Error(), "unexpected packet") && !strings.Contains(err.Error(), "i/o timeout") {
+			return nil, err
+		}
+		if conf.DSN != "" {
+			return nil, err
+		}
+		// may be the port is http, also try with http protocol if DSN is not provided
+		opts.Protocol = clickhouse.HTTP
+		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
+		err := db.Ping()
+		if err != nil {
+			return nil, err
+		}
+		// connection with http protocol is successful
+		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
+	}
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
@@ -190,11 +220,6 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
 	if err != nil {
 		return nil, fmt.Errorf("registering db stats metrics: %w", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("connection: %w", err)
 	}
 
 	// group by positional args are supported post 22.7 and we use them heavily in our queries
@@ -213,16 +238,25 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
-	conn := &connection{
-		db:      db,
-		config:  conf,
-		logger:  logger,
-		metaSem: semaphore.NewWeighted(1),
-		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
-		opts:    opts,
-		embed:   embed,
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &connection{
+		db:         db,
+		config:     conf,
+		logger:     logger,
+		activity:   ac,
+		instanceID: instanceID,
+		ctx:        ctx,
+		cancel:     cancel,
+		metaSem:    semaphore.NewWeighted(1),
+		olapSem:    priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		opts:       opts,
+		embed:      embed,
 	}
-	return conn, nil
+
+	c.used()
+	go c.periodicallyEmitStats(time.Minute)
+
+	return c, nil
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -244,6 +278,14 @@ type connection struct {
 	activity   *activity.Client
 	instanceID string
 
+	// context that is cancelled when the connection is closed
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	// lastUsedUnixTime stores the time we last queried the connection.
+	// This is used to guess if the DB may currently be scaled to zero.
+	lastUsedUnixTime atomic.Int64
+
 	// logic around this copied from duckDB driver
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
@@ -262,7 +304,9 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	err := c.db.PingContext(ctx)
+	c.used()
+	return err
 }
 
 // Driver implements drivers.Connection.
@@ -279,6 +323,8 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
+
 	errDB := c.db.Close()
 
 	var errEmbed error
@@ -372,12 +418,6 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Connection.
-// Use OLAPStore instead.
-func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
-}
-
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -385,4 +425,65 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+// used should be called after a query to the database completes.
+// It bumps the result of lastUsedOn(), which can be used to guess if the DB may currently be scaled to zero.
+//
+// Periodic background jobs that rely on lastUsedOn should not call this function since it will lead to the database never scaling to zero.
+func (c *connection) used() {
+	c.lastUsedUnixTime.Store(time.Now().Unix())
+}
+
+// lastUsedOn returns the time we last queried the connection.
+// This can be used to guess if the DB may currently be scaled to zero.
+func (c *connection) lastUsedOn() time.Time {
+	return time.Unix(c.lastUsedUnixTime.Load(), 0)
+}
+
+// Periodically collects stats about the database and emit them as activity events.
+func (c *connection) periodicallyEmitStats(d time.Duration) {
+	if c.activity == nil {
+		// Activity client isn't set, there is no need to report stats
+		return
+	}
+
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*d {
+				continue
+			}
+
+			// Emit the estimated size of the database.
+			size, err := c.estimateSize(c.ctx)
+			if err == nil {
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+			} else if !errors.Is(err, c.ctx.Err()) {
+				lvl := zap.WarnLevel
+				if c.config.Managed {
+					lvl = zap.ErrorLevel
+				}
+
+				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
+			}
+		case <-c.ctx.Done():
+			return
+		}
+	}
+}
+
+// estimateSize returns the estimated combined disk size of all resources in the database in bytes.
+func (c *connection) estimateSize(ctx context.Context) (int64, error) {
+	var size int64
+	err := c.db.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
 }

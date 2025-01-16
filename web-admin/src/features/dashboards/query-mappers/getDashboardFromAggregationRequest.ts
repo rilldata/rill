@@ -1,6 +1,6 @@
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
-  convertExprToToplist,
+  convertQueryFilterToToplistQuery,
   fillTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
@@ -8,6 +8,7 @@ import {
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
   mapExprToMeasureFilter,
+  measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
@@ -18,7 +19,9 @@ import {
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
+  createSubQueryExpression,
   forEachIdentifier,
+  getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -74,29 +77,34 @@ export async function getDashboardFromAggregationRequest({
   }
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
     const dimension = req.dimensions[0].name;
-    if (
+    if (exprHasComparison(req.having)) {
+      const expr = await convertQueryFilterToToplistQuery(
+        instanceId,
+        explore.metricsView ?? "",
+        req,
+        dimension,
+      );
+      dashboard.whereFilter =
+        mergeFilters(
+          dashboard.whereFilter ?? createAndExpression([]),
+          createAndExpression([expr]),
+        ) ?? createAndExpression([]);
+    } else if (
       req.having.cond.exprs.length > 1 ||
-      exprHasComparison(req.having) ||
       dashboard.dimensionThresholdFilters.length > 0
     ) {
-      const expr = await convertExprToToplist(
-        queryClient,
-        instanceId,
-        dashboard.name,
+      const extraFilter = createSubQueryExpression(
         dimension,
-        req.measures?.[0]?.name ?? "",
-        req.timeRange,
-        req.comparisonTimeRange,
-        executionTime,
-        req.where,
+        getAllIdentifiers(req.having),
         req.having,
       );
-      if (expr) {
-        dashboard.whereFilter =
-          mergeFilters(
-            dashboard.whereFilter ?? createAndExpression([]),
-            createAndExpression([expr]),
-          ) ?? createAndExpression([]);
+      if (dashboard.whereFilter?.cond?.exprs?.length) {
+        dashboard.whereFilter = createAndExpression([
+          dashboard.whereFilter,
+          extraFilter,
+        ]);
+      } else {
+        dashboard.whereFilter = extraFilter;
       }
     } else {
       dashboard.dimensionThresholdFilters = [
@@ -119,8 +127,12 @@ export async function getDashboardFromAggregationRequest({
   }
 
   dashboard.visibleMeasureKeys = new Set(
-    req.measures?.map((m) => m.name ?? "") ?? [],
+    req.measures
+      ?.map((m) => m.name ?? "")
+      .filter((m) => !measureHasSuffix(m)) ?? [],
   );
+  dashboard.allMeasuresVisible =
+    dashboard.visibleMeasureKeys.size === explore.measures?.length;
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (

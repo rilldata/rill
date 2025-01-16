@@ -11,7 +11,9 @@
 
   export let alert: string;
 
-  $: alertQuery = useAlert($runtime.instanceId, alert);
+  $: ({ instanceId } = $runtime);
+
+  $: alertQuery = useAlert(instanceId, alert);
 
   /**
    * Table column definitions.
@@ -46,11 +48,11 @@
     <NoAlertRunsYet />
   {:else}
     <Table
+      kind="alert"
       {columns}
       data={$alertQuery.data?.resource.alert.state.executionHistory}
-      maxWidthOverride="max-w-[960px]"
     >
-      <AlertHistoryTableHeader slot="header" maxWidthOverride="max-w-[960px]" />
+      <AlertHistoryTableHeader slot="header" />
     </Table>
   {/if}
 </div>
