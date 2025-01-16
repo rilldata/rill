@@ -64,7 +64,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	e.rewriteApproxComparisons(ast)
+	e.rewriteApproxComparisons(ast, false)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()

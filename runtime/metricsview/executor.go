@@ -164,6 +164,9 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, runtime.ErrForbidden
 	}
 
+	// preserve the original limit, required in 2 phase comparison
+	ogLimit := qry.Limit
+
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
 		return nil, err
@@ -191,7 +194,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit)
+	if err != nil {
+		return nil, err
+	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
+
+	e.rewriteApproxComparisons(ast, ok)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, err
@@ -302,7 +310,7 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	e.rewriteApproxComparisons(ast)
+	e.rewriteApproxComparisons(ast, false)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err
