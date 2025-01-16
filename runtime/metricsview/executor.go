@@ -35,7 +35,14 @@ type Executor struct {
 	olapRelease func()
 	instanceCfg drivers.InstanceConfig
 
-	watermark time.Time
+	watermark  time.Time
+	timestamps TimestampsResult
+}
+
+type TimestampsResult struct {
+	Min       time.Time
+	Max       time.Time
+	Watermark time.Time
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -84,11 +91,11 @@ func (e *Executor) CacheKey(ctx context.Context) ([]byte, bool, error) {
 			return []byte(""), true, nil
 		}
 		// watermark is the default cache key for streaming metrics views
-		watermark, err := e.loadWatermark(ctx, nil)
+		ts, err := e.Timestamps(ctx, nil)
 		if err != nil {
 			return nil, false, err
 		}
-		return []byte(watermark.Format(time.RFC3339)), true, nil
+		return []byte(ts.Watermark.Format(time.RFC3339)), true, nil
 	}
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
@@ -127,10 +134,35 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 	panic("not implemented")
 }
 
-// Watermark returns the current watermark of the metrics view.
-// If the watermark resolves to null, it defaults to the current time.
-func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
-	return e.loadWatermark(ctx, nil)
+// Timestamps queries min, max and watermark for the metrics view
+func (e *Executor) Timestamps(ctx context.Context, executionTime *time.Time) (TimestampsResult, error) {
+	if !e.timestamps.Min.IsZero() {
+		return e.timestamps, nil
+	}
+
+	var err error
+	switch e.olap.Dialect() {
+	case drivers.DialectDuckDB, drivers.DialectClickHouse, drivers.DialectPinot:
+		e.timestamps, err = e.resolveDuckDBClickHouseAndPinot(ctx)
+	case drivers.DialectDruid:
+		e.timestamps, err = e.resolveDruid(ctx)
+	default:
+		return TimestampsResult{}, fmt.Errorf("not available for dialect '%s'", e.olap.Dialect())
+	}
+	if err != nil {
+		return TimestampsResult{}, err
+	}
+
+	if executionTime != nil {
+		e.watermark = *executionTime
+	}
+	return e.timestamps, nil
+}
+
+// BindQuery allows to set min, max and watermark from a cache.
+func (e *Executor) BindQuery(ctx context.Context, qry *Query, timestamps TimestampsResult) error {
+	e.timestamps = timestamps
+	return e.rewriteQueryTimeRanges(ctx, qry, nil)
 }
 
 // MinTime is a temporary function that fetches min time. Will be replaced with metrics_time_range resolver in a future PR.

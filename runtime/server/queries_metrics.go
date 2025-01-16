@@ -2,7 +2,11 @@ package server
 
 import (
 	"context"
+	"errors"
+	"io"
+	"time"
 
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -11,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MetricsViewAggregation implements QueryService.
@@ -322,22 +327,37 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: req.InstanceId,
+		Resolver:   "metrics_time_range",
+		ResolverProperties: map[string]any{
+			"metrics_view": req.MetricsViewName,
+		},
+		Args: map[string]any{
+			"priority": req.Priority,
+		},
+		Claims: auth.GetClaims(ctx).SecurityClaims(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil, errors.New("time range query returned no results")
+		}
+		return nil, err
+	}
+	timeRangeSummary, err := decodeTimeRangeSummary(row)
 	if err != nil {
 		return nil, err
 	}
 
-	q := &queries.MetricsViewTimeRange{
-		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv.ValidSpec,
-		ResolvedMVSecurity: security,
-	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
-	if err != nil {
-		return nil, err
-	}
-
-	return q.Result, nil
+	return &runtimev1.MetricsViewTimeRangeResponse{
+		TimeRangeSummary: timeRangeSummary,
+	}, nil
 }
 
 func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsViewSchemaRequest) (*runtimev1.MetricsViewSchemaResponse, error) {
@@ -497,4 +517,37 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
+}
+
+type decodedTimeRangeSummary struct {
+	Min, Max, Watermark string
+}
+
+func decodeTimeRangeSummary(row map[string]any) (*runtimev1.TimeRangeSummary, error) {
+	timeRangeSummary := decodedTimeRangeSummary{} // TODO: move this to a good place
+	err := mapstructure.Decode(row, &timeRangeSummary)
+	if err != nil {
+		return nil, err
+	}
+
+	minTime, err := time.Parse(time.RFC3339, timeRangeSummary.Min)
+	if err != nil {
+		return nil, err
+	}
+
+	maxTime, err := time.Parse(time.RFC3339, timeRangeSummary.Max)
+	if err != nil {
+		return nil, err
+	}
+
+	watermark, err := time.Parse(time.RFC3339, timeRangeSummary.Watermark)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.TimeRangeSummary{
+		Min:       timestamppb.New(minTime),
+		Max:       timestamppb.New(maxTime),
+		Watermark: timestamppb.New(watermark),
+	}, nil
 }
