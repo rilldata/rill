@@ -47,10 +47,31 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type ConfigProperties struct {
+	Path    string            `mapstructure:"path"`
+	URI     string            `mapstructure:"uri"`
+	Headers map[string]string `mapstructure:"headers"`
+}
+
+func (p *ConfigProperties) ResolvePath() string {
+	// Backwards compatibility for "uri" renamed to "path"
+	if p.URI != "" {
+		return p.URI
+	}
+	return p.Path
+}
+
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("https driver can't be shared")
 	}
+
+	cfg := &ConfigProperties{}
+	err := mapstructure.WeakDecode(config, cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	conn := &connection{
 		config: config,
 		logger: logger,
