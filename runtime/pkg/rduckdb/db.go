@@ -16,6 +16,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -221,11 +222,12 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		remote:     opts.Remote,
 		writeSem:   semaphore.NewWeighted(1),
 		metaSem:    semaphore.NewWeighted(1),
-		localDirty: true,
+		localDirty: atomic.Bool{},
 		logger:     opts.Logger,
 		ctx:        bgctx,
 		cancel:     cancel,
 	}
+	db.localDirty.Store(true)
 	// create local path
 	err = os.MkdirAll(db.localPath, fs.ModePerm)
 	if err != nil {
@@ -294,7 +296,7 @@ type db struct {
 	// Meta operations are attach, detach, create view queries done on the db handle
 	metaSem *semaphore.Weighted
 	// localDirty is set to true when a change is committed to the remote but not yet reflected in the local db
-	localDirty bool
+	localDirty atomic.Bool
 	catalog    *catalog
 
 	logger *slog.Logger
@@ -440,7 +442,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 	}
 
 	d.catalog.addTableVersion(name, newMeta)
-	d.localDirty = false
+	d.localDirty.Store(false)
 	return nil
 }
 
@@ -512,7 +514,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 
 	d.catalog.addTableVersion(name, meta)
-	d.localDirty = false
+	d.localDirty.Store(false)
 	return nil
 }
 
@@ -541,7 +543,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	}
 
 	// drop the table from remote
-	d.localDirty = true
+	d.localDirty.Store(true)
 	err = d.deleteRemote(ctx, name, "")
 	if err != nil {
 		return fmt.Errorf("drop: unable to drop table %q from remote: %w", name, err)
@@ -549,7 +551,7 @@ func (d *db) DropTable(ctx context.Context, name string) error {
 	// no errors after this point since background goroutine will eventually sync the local db
 
 	d.catalog.removeTable(name)
-	d.localDirty = false
+	d.localDirty.Store(false)
 	return nil
 }
 
@@ -632,7 +634,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	// remove old table from local db
 	d.catalog.removeTable(oldName)
 	d.catalog.addTableVersion(newName, meta)
-	d.localDirty = false
+	d.localDirty.Store(false)
 	return nil
 }
 
@@ -644,6 +646,10 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
+			if !d.localDirty.Load() {
+				// all good
+				continue
+			}
 			err := d.writeSem.Acquire(d.ctx, 1)
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
@@ -651,16 +657,16 @@ func (d *db) localDBMonitor() {
 				}
 				continue
 			}
-			if !d.localDirty {
+			if !d.localDirty.Load() {
+				// just to be sure if a CRUD API was called in the meantime
 				d.writeSem.Release(1)
-				// all good
 				continue
 			}
 			err = d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
-			d.localDirty = false
+			d.localDirty.Store(false)
 			d.writeSem.Release(1)
 		}
 	}
