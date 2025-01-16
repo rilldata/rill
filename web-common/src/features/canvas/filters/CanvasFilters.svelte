@@ -5,13 +5,16 @@
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasSuperPill from "./CanvasSuperPill.svelte";
 
-  const ctx = getCanvasStateManagers();
-  const { timeControls } = ctx.canvasEntity;
-
-  $: selectedTimeRange = timeControls.selectedTimeRange;
-  $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
-  $: activeTimeZone = timeControls.selectedTimezone;
-  $: allTimeRange = timeControls.allTimeRange;
+  const {
+    canvasEntity: {
+      timeControls: {
+        selectedTimeRange,
+        selectedComparisonTimeRange,
+        selectedTimezone: activeTimeZone,
+        allTimeRange,
+      },
+    },
+  } = getCanvasStateManagers();
 </script>
 
 <div class="flex flex-col gap-y-2 w-full h-20 justify-center ml-2">

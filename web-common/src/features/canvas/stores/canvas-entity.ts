@@ -1,5 +1,8 @@
+import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { writable, type Writable } from "svelte/store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { derived, writable, type Writable } from "svelte/store";
 import { CanvasResolvedSpec } from "./canvas-spec";
 import { CanvasTimeControls } from "./canvas-time-control";
 
@@ -21,7 +24,11 @@ export class CanvasEntity {
    */
   selectedComponentIndex: Writable<number | null>;
 
-  constructor(name: string, validSpecStore: CanvasSpecResponseStore) {
+  constructor(name: string) {
+    const validSpecStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
+      useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
+    );
+
     this.name = name;
 
     this.selectedComponentIndex = writable(null);

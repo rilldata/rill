@@ -43,25 +43,25 @@ export function useDefaultMetrics(instanceId: string) {
   });
 }
 
-export interface CanvasValidResponse {
+export interface CanvasResponse {
   canvas: V1CanvasSpec | undefined;
   components: V1ResolveCanvasResponseResolvedComponents | undefined;
   metricsViews: Record<string, V1MetricsViewV2 | undefined>;
 }
 
-export function useCanvasValidSpec(
+export function useCanvas(
   instanceId: string,
   canvasName: string,
   queryOptions?: CreateQueryOptions<
     V1ResolveCanvasResponse,
     ErrorType<RpcStatus>,
-    CanvasValidResponse
+    CanvasResponse
   >,
-): CreateQueryResult<CanvasValidResponse, ErrorType<RpcStatus>> {
+): CreateQueryResult<CanvasResponse, ErrorType<RpcStatus>> {
   const defaultQueryOptions: CreateQueryOptions<
     V1ResolveCanvasResponse,
     ErrorType<RpcStatus>,
-    CanvasValidResponse
+    CanvasResponse
   > = {
     select: (data) => {
       const metricsViews: Record<string, V1MetricsViewV2 | undefined> = {};

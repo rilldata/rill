@@ -1,5 +1,5 @@
 import type { QueryObserverResult } from "@rilldata/svelte-query";
-import { type CanvasValidResponse } from "@rilldata/web-common/features/canvas/selector";
+import { type CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type {
   RpcStatus,
   V1CanvasSpec,
@@ -11,9 +11,7 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
 
   constructor(
-    validSpecStore: Readable<
-      QueryObserverResult<CanvasValidResponse, RpcStatus>
-    >,
+    validSpecStore: Readable<QueryObserverResult<CanvasResponse, RpcStatus>>,
   ) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
       return $validSpecStore.data?.canvas;

@@ -1,4 +1,4 @@
-import type { CanvasValidResponse } from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import { getTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -100,7 +100,7 @@ export class CanvasTimeControls {
   timeRangeSummaryStore = (
     runtime: Writable<Runtime>,
     validSpecStore: Readable<
-      QueryObserverResult<CanvasValidResponse | undefined, RpcStatus>
+      QueryObserverResult<CanvasResponse | undefined, RpcStatus>
     >,
   ) => {
     this.allTimeRange = derived(
