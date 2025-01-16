@@ -390,7 +390,10 @@ function fromExploreUrlParams(
   if (searchParams.has(ExploreStateURLParams.SortBy)) {
     const sortBy = searchParams.get(ExploreStateURLParams.SortBy) as string;
     if (measures.has(sortBy)) {
-      if (preset.measures && preset.measures.includes(sortBy)) {
+      if (
+        (preset.measures && preset.measures.includes(sortBy)) ||
+        !preset.measures
+      ) {
         preset.exploreSortBy = sortBy;
       } else {
         errors.push(

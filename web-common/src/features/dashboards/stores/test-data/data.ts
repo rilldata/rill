@@ -242,7 +242,7 @@ export const AD_BIDS_PRESET: V1ExplorePreset = {
   compareTimeRange: "rill-PP",
   measures: [AD_BIDS_IMPRESSIONS_MEASURE],
   dimensions: [AD_BIDS_PUBLISHER_DIMENSION],
-  exploreSortBy: AD_BIDS_BID_PRICE_MEASURE,
+  exploreSortBy: AD_BIDS_IMPRESSIONS_MEASURE,
   exploreSortAsc: true,
   exploreSortType: V1ExploreSortType.EXPLORE_SORT_TYPE_PERCENT,
 };
