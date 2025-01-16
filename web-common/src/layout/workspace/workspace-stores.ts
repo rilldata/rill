@@ -37,8 +37,7 @@ class WorkspaceLayoutStore {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
-
-      this.view.set(parsed.view);
+      if (parsed?.view) this.view.set(parsed.view);
     }
 
     const debouncer = debounce(
