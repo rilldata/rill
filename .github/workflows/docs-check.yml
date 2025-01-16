@@ -37,11 +37,10 @@ jobs:
             cli:
               - "cli/**"
 
-      - name: Check if CLI docs need to be generated
+      - name: Check if new files were created
         if: ${{ steps.filter.outputs.cli == 'true' }}
         run: |
-          echo "Changes detected in cli, generating docs"
-          make docs.generate
+          git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 1)
 
       - name: Build docs
         run: |-
