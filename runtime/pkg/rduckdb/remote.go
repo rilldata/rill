@@ -21,7 +21,7 @@ import (
 // pullFromRemote updates local data with the latest data from remote.
 // This is not safe for concurrent calls.
 func (d *db) pullFromRemote(ctx context.Context, updateCatalog bool) error {
-	if !d.localDirty.Load() || d.remote == nil {
+	if !d.localDirty || d.remote == nil {
 		// optimisation to skip sync if write was already synced
 		if !updateCatalog {
 			// cleanup of older versions of table
@@ -235,7 +235,7 @@ func (d *db) pushToRemote(ctx context.Context, table string, oldMeta, meta *tabl
 
 	// update table meta
 	// todo :: also use etag to avoid concurrent writer conflicts
-	d.localDirty.Store(true)
+	d.localDirty = true
 	m, err := json.Marshal(meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal table metadata: %w", err)
