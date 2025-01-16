@@ -22,8 +22,6 @@
     },
   } = ctx;
 
-  let showGrid = true;
-
   // Open inspector when a canvas item is selected
   $: workspaceLayout = workspaces.get(fileArtifact.path);
   $: if ($selectedIndex !== null && $selectedIndex !== undefined) {

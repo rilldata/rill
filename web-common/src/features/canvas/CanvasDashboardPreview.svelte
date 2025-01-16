@@ -63,7 +63,7 @@
 
   $: itemsByRow = groupItemsByRow(items);
 
-  const { canvasStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
 
   const dispatch = createEventDispatcher();
 
@@ -79,7 +79,7 @@
       e.detail.e.currentTarget.dataset.componentIndex,
     );
     selectedIndex = componentIndex;
-    $canvasStore.setSelectedComponentIndex(selectedIndex);
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
   function handleDragStart(e: CustomEvent) {
@@ -133,7 +133,7 @@
 
   function handleDeselect() {
     selectedIndex = null;
-    $canvasStore.setSelectedComponentIndex(selectedIndex);
+    canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
   function getDropPosition(e: DragEvent, targetIndex: number): DropPosition {
@@ -183,7 +183,7 @@
 
     if (selectedIndex === dragIndex) {
       selectedIndex = insertIndex;
-      $canvasStore.setSelectedComponentIndex(insertIndex);
+      canvasEntity.setSelectedComponentIndex(insertIndex);
     }
 
     dropTarget = null;
@@ -479,7 +479,6 @@
 <DashboardWrapper
   bind:contentRect
   {scale}
-  {showGrid}
   height={maxBottom * gridCell * scale}
   width={defaults.DEFAULT_DASHBOARD_WIDTH}
   on:click={handleDeselect}
