@@ -19,8 +19,10 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		return false, nil
 	}
 
-	// Find out what we're sorting by and also accumulate the underlying base measure
+	// Find out what we're sorting by and also accumulate the underlying base measures
 	sortField := qry.Sort[0]
+	tr := qry.TimeRange
+	sortCompare := false
 
 	var bm []Measure
 	for _, qm := range qry.Measures {
@@ -30,7 +32,13 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		}
 
 		if qm.Name == sortField.Name {
-			// only supported sorting on base value and dims TODO extend for comparison value
+			if qm.Compute.ComparisonValue != nil {
+				sortCompare = true
+				tr = qry.ComparisonTimeRange
+				sortField.Name = qm.Compute.ComparisonValue.Measure
+				continue
+			}
+			// only supported sorting on base or compare value and dims
 			return false, nil
 		}
 	}
@@ -42,8 +50,8 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		Measures:            bm,
 		PivotOn:             qry.PivotOn,
 		Spine:               qry.Spine,
-		Sort:                qry.Sort,
-		TimeRange:           qry.TimeRange,
+		Sort:                []Sort{sortField},
+		TimeRange:           tr,
 		ComparisonTimeRange: nil,
 		Where:               qry.Where,
 		Having:              nil,
@@ -94,11 +102,20 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *Query, a
 		},
 	}
 
-	n.FromSelect = base
+	var comp *SelectNode
+	if !sortCompare {
+		// sorting by base value set the inline results as base node and add base results to comparison node where clause
+		n.FromSelect = base
+		comp = n.JoinComparisonSelect
+	} else {
+		// flip base for sorting on comparison value - set inline results as join comparison select and add base results to base node where clause
+		base.Alias = n.JoinComparisonSelect.Alias
+		base.DimFields = n.JoinComparisonSelect.DimFields
+		n.JoinComparisonSelect = base
+		comp = n.FromSelect
+	}
 
-	comp := n.JoinComparisonSelect
-
-	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
+	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the comparison query's WHERE clause.
 	var inExpr *Expression
 
 	// if any dim value is nil add condition with eq operator with nil value
