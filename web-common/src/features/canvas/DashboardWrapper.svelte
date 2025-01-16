@@ -3,16 +3,16 @@
   export let height: number;
   export let scale: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-slate-200";
+  export let bgColor = "bg-white";
 </script>
 
 <div
-  class="dashboard-theme-boundary size-full bg-gray-100 flex justify-center overflow-y-auto"
+  class="dashboard-theme-boundary size-full flex justify-center overflow-y-auto"
   on:scroll
 >
   <div
     bind:contentRect
-    class="dashboard-wrapper {color} max-w-[1440px] min-h-full"
+    class="dashboard-wrapper {bgColor} max-w-[1440px] min-h-full"
     style:height="{height}px"
   >
     <div role="presentation" class="size-full relative" on:click|self>

@@ -15,7 +15,6 @@
   export let left: number;
   export let top: number;
   export let padding: number;
-  // export let scale: number;
   export let embed = false;
   export let radius: number;
   export let selected = false;
@@ -133,11 +132,10 @@
     </div>
   {/if}
   <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
+    <!-- class:shadow-md={interacting || isHovered} -->
     <div
-      class="size-full overflow-hidden flex flex-col flex-none"
-      class:shadow-md={interacting || isHovered}
+      class="size-full overflow-hidden flex flex-col flex-none rounded-sm shadow-md border border-slate-200"
       style:border-radius="{radius}px"
-      class:rounded-sm={isHovered}
     >
       <ComponentTitle {title} {description} />
       {#if renderer && rendererProperties}
@@ -162,15 +160,5 @@
 
   .drag-handle:active {
     @apply cursor-grabbing;
-  }
-
-  h1 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  h2 {
-    font-size: 12px;
-    font-weight: 400;
   }
 </style>

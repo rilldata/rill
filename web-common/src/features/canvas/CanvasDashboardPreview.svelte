@@ -639,8 +639,4 @@
   :global(body.resizing-col) {
     cursor: col-resize !important;
   }
-
-  .col-resize-group.active .col-resize-handle {
-    opacity: 1 !important;
-  }
 </style>
