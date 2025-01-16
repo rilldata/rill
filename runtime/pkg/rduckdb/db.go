@@ -647,7 +647,7 @@ func (d *db) localDBMonitor() {
 			return
 		case <-ticker.C:
 			if !d.localDirty.Load() {
-				// all good
+				// already in sync
 				continue
 			}
 			err := d.writeSem.Acquire(d.ctx, 1)
@@ -658,7 +658,7 @@ func (d *db) localDBMonitor() {
 				continue
 			}
 			if !d.localDirty.Load() {
-				// just to be sure if a CRUD API was called in the meantime
+				// tiny optimisation if a CRUD API was called in the meantime and already synced
 				d.writeSem.Release(1)
 				continue
 			}
