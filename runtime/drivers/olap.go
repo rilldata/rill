@@ -596,7 +596,7 @@ func (d Dialect) GetValExpr(val any, typ runtimev1.Type_Code) (bool, string, err
 	}
 	switch typ {
 	case runtimev1.Type_CODE_STRING:
-		return true, fmt.Sprintf("'%v'", val), nil
+		return true, fmt.Sprintf("%s", d.EscapeStringValue(val.(string))), nil
 	case runtimev1.Type_CODE_INT8, runtimev1.Type_CODE_INT16, runtimev1.Type_CODE_INT32, runtimev1.Type_CODE_INT64, runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT8, runtimev1.Type_CODE_UINT16, runtimev1.Type_CODE_UINT32, runtimev1.Type_CODE_UINT64, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256, runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
 		// check NaN and Inf
 		if f, ok := val.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
