@@ -26,7 +26,10 @@
   export let data;
 
   $: ({ projectPermissions, organizationPermissions } = data);
-  $: organization = $page.params.organization;
+  $: ({
+    params: { organization },
+    url: { pathname },
+  } = $page);
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -52,7 +55,7 @@
     return () => removeJavascriptListeners?.();
   });
 
-  $: isEmbed = $page.url.pathname === "/-/embed";
+  $: isEmbed = pathname === "/-/embed";
 
   $: hideTopBar =
     // invite page shouldn't show the top bar because it is considered an onboard step
@@ -89,7 +92,11 @@
         />
 
         {#if withinOnlyOrg}
-          <OrganizationTabs />
+          <OrganizationTabs
+            {organization}
+            {organizationPermissions}
+            {pathname}
+          />
         {/if}
       {/if}
       <ErrorBoundary>

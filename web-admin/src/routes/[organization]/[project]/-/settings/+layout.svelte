@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { page } from "$app/stores";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import LeftNav from "@rilldata/web-admin/components/nav/LeftNav.svelte";
 
   $: organization = $page.params.organization;
@@ -20,10 +21,8 @@
   ];
 </script>
 
-<div class="layout-container">
-  <h3>Settings</h3>
-
-  <div class="container">
+<ContentContainer title="Project settings" maxWidth={1100}>
+  <div class="container flex-col md:flex-row">
     <LeftNav
       {basePage}
       baseRoute="/[organization]/[project]/-/settings"
@@ -32,18 +31,10 @@
     />
     <slot />
   </div>
-</div>
+</ContentContainer>
 
 <style lang="postcss">
-  .layout-container {
-    @apply px-32 py-10;
-  }
-
-  h3 {
-    @apply text-2xl font-semibold;
-  }
-
   .container {
-    @apply flex flex-row pt-6 gap-x-6 max-w-full;
+    @apply flex pt-6 gap-6 max-w-full overflow-hidden;
   }
 </style>

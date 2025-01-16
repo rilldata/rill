@@ -98,6 +98,7 @@
     },
   ) {
     if (e.key === "Enter") {
+      if (e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
       onEnter(e);
@@ -278,6 +279,9 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input {
     @apply truncate;
   }
 

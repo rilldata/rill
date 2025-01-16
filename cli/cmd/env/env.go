@@ -10,10 +10,13 @@ import (
 
 func EnvCmd(ch *cmdutil.Helper) *cobra.Command {
 	envCmd := &cobra.Command{
-		Use:               "env",
+		Use:               "env [command] [<project-name>]",
 		Short:             "Manage variables for a project",
+		Args:              cobra.MaximumNArgs(1),
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
+
+	envCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
 	envCmd.AddCommand(ConfigureCmd(ch))
 	envCmd.AddCommand(PullCmd(ch))
 	envCmd.AddCommand(PushCmd(ch))

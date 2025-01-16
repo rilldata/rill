@@ -90,7 +90,7 @@
       : `No environment variables for ${environmentLabel}`;
 </script>
 
-<div class="flex flex-col w-full">
+<div class="flex flex-col w-full overflow-hidden">
   <div class="flex md:flex-row flex-col gap-6">
     {#if $getProjectVariables.isLoading}
       <DelayedSpinner isLoading={$getProjectVariables.isLoading} size="1rem" />
@@ -99,7 +99,7 @@
         Error loading environment variables: {$getProjectVariables.error}
       </div>
     {:else if $getProjectVariables.isSuccess}
-      <div class="flex flex-col gap-6 w-full">
+      <div class="flex flex-col gap-6 w-full overflow-hidden">
         <div class="flex flex-col">
           <RadixLarge>Environment variables</RadixLarge>
           <p class="text-sm text-slate-700 font-medium">
@@ -167,7 +167,7 @@
           </DropdownMenu.Root>
           <Button type="primary" large on:click={() => (open = true)}>
             <Plus size="16px" />
-            <span>Add environment variable</span>
+            <!-- <span>Add environment variable</span> -->
           </Button>
         </div>
         <EnvironmentVariablesTable

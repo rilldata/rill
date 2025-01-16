@@ -16,48 +16,47 @@
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasSuperPill from "./CanvasSuperPill.svelte";
 
+  const {
+    canvasEntity: {
+      filters: {
+        whereFilter,
+        toggleDimensionValueSelection,
+        removeDimensionFilter,
+        toggleDimensionFilterMode,
+        setMeasureFilter,
+        removeMeasureFilter,
+        setTemporaryFilterName,
+        clearAllFilters,
+        dimensionHasFilter,
+        getDimensionFilterItems,
+        getAllDimensionFilterItems,
+        isFilterExcludeMode,
+        getMeasureFilterItems,
+        getAllMeasureFilterItems,
+        measureHasFilter,
+      },
+      spec: {
+        getDimensionsForMetricView,
+        getMeasuresForMetricView,
+        getSimpleMeasuresForMetricView,
+      },
+      timeControls: {
+        selectedTimeRange,
+        selectedComparisonTimeRange,
+        selectedTimezone: activeTimeZone,
+        allTimeRange,
+      },
+    },
+  } = getCanvasStateManagers();
   export let readOnly = false;
   export let metricsViewName = "bids";
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  const ctx = getCanvasStateManagers();
-  const { timeControls, filters, spec } = ctx.canvasEntity;
-
-  $: selectedTimeRange = timeControls.selectedTimeRange;
-  $: selectedComparisonTimeRange = timeControls?.selectedComparisonTimeRange;
-  $: activeTimeZone = timeControls.selectedTimezone;
-
-  $: whereFilter = filters.whereFilter;
-  $: allTimeRange = timeControls.allTimeRange;
-
-  const {
-    toggleDimensionValueSelection,
-    removeDimensionFilter,
-    toggleDimensionFilterMode,
-    setMeasureFilter,
-    removeMeasureFilter,
-    setTemporaryFilterName,
-    clearAllFilters,
-    dimensionHasFilter,
-    getDimensionFilterItems,
-    getAllDimensionFilterItems,
-    isFilterExcludeMode,
-    getMeasureFilterItems,
-    getAllMeasureFilterItems,
-    measureHasFilter,
-  } = filters;
-
-  $: dimensions = spec.getDimensionsForMetricView(metricsViewName);
-  $: measures = spec.getMeasuresForMetricView(metricsViewName);
-  $: simpleMeasures = spec.getSimpleMeasuresForMetricView(metricsViewName);
-
-  // $: alllDimensions = useAllDimensionFromMetrics(instanceId, [
-  //   "nyc_311_latest_metrics",
-  //   "bids",
-  //   "auction",
-  // ]);
+  $: dimensions = getDimensionsForMetricView(metricsViewName);
+  $: measures = getMeasuresForMetricView(metricsViewName);
+  $: simpleMeasures = getSimpleMeasuresForMetricView(metricsViewName);
 
   $: dimensionIdMap = getMapFromArray(
     $dimensions,

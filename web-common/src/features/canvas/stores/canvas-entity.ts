@@ -1,10 +1,13 @@
+import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
   createAndExpression,
   getValidFilterForMetricView,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, writable, type Writable } from "svelte/store";
 import { CanvasFilters } from "./canvas-filters";
 import { CanvasResolvedSpec } from "./canvas-spec";
@@ -34,12 +37,17 @@ export class CanvasEntity {
    */
   selectedComponentIndex: Writable<number | null>;
 
-  constructor(name: string, validSpecStore: CanvasSpecResponseStore) {
+  constructor(name: string) {
+    const validSpecStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
+      useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
+    );
+
     this.name = name;
+
     this.selectedComponentIndex = writable(null);
     this.spec = new CanvasResolvedSpec(validSpecStore);
-    this.filters = new CanvasFilters();
     this.timeControls = new CanvasTimeControls(validSpecStore);
+    this.filters = new CanvasFilters();
   }
 
   setSelectedComponentIndex(index: number | null) {

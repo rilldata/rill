@@ -387,8 +387,11 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
 			return &localFileToSelfExecutor{c, f}, true
 		}
-		if opts.InputHandle.Driver() == "mysql" || opts.InputHandle.Driver() == "postgres" {
+		switch opts.InputHandle.Driver() {
+		case "mysql", "postgres":
 			return &sqlStoreToSelfExecutor{c}, true
+		case "https":
+			return &httpsToSelfExecutor{c}, true
 		}
 	}
 	if opts.InputHandle == c {
@@ -485,7 +488,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
+		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()

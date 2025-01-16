@@ -20,7 +20,7 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	pullCmd := &cobra.Command{
-		Use:   "pull",
+		Use:   "pull [<project-name>]",
 		Short: "Pull cloud credentials into local .env file",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If projectPath is provided, normalize it
@@ -30,6 +30,10 @@ func PullCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Parse and verify the project directory

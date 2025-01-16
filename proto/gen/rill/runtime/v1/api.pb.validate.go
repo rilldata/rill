@@ -5186,6 +5186,8 @@ func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Model
+
 	// no validation rules for Connector
 
 	// no validation rules for Database

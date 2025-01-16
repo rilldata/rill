@@ -1,24 +1,14 @@
 <script lang="ts">
   import ResourceHeader from "@rilldata/web-admin/components/table/ResourceHeader.svelte";
-  import ResourceTableEmpty from "@rilldata/web-admin/components/table/ResourceTableEmpty.svelte";
-  import Toolbar from "@rilldata/web-admin/components/table/Toolbar.svelte";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type ColumnDef } from "@tanstack/svelte-table";
   import { BellIcon } from "lucide-svelte";
   import Table from "../../../components/table/Table.svelte";
-  import { useAlerts } from "../../alerts/selectors";
-  import AlertsError from "./AlertsError.svelte";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
-  import NoAlertsCTA from "./NoAlertsCTA.svelte";
 
+  export let data: V1Resource[];
   export let organization: string;
   export let project: string;
-
-  $: ({ instanceId } = $runtime);
-
-  $: alerts = useAlerts(instanceId);
 
   /**
    * Table column definitions.
@@ -74,20 +64,6 @@
   };
 </script>
 
-{#if $alerts.isLoading}
-  <div class="m-auto mt-20">
-    <DelayedSpinner isLoading={$alerts.isLoading} size="24px" />
-  </div>
-{:else if $alerts.isError}
-  <AlertsError />
-{:else if $alerts.isSuccess}
-  {#if $alerts.data.resources.length === 0}
-    <NoAlertsCTA />
-  {:else}
-    <Table {columns} data={$alerts?.data?.resources} {columnVisibility}>
-      <Toolbar slot="toolbar" />
-      <ResourceHeader kind="alert" icon={BellIcon} slot="header" />
-      <ResourceTableEmpty kind="alert" slot="empty" />
-    </Table>
-  {/if}
-{/if}
+<Table {columns} {data} {columnVisibility} kind="alert">
+  <ResourceHeader kind="alert" icon={BellIcon} slot="header" />
+</Table>

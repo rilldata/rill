@@ -397,7 +397,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Check projects quota
