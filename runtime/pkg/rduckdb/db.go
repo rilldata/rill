@@ -644,11 +644,9 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
-				}
+			// We do not want the localDBMonitor to compete with write operations so we return early if writeSem is not available.
+			// Anyways if a write operation is in progress it will sync the local db
+			if !d.writeSem.TryAcquire(1) {
 				continue
 			}
 			if !d.localDirty {
@@ -656,7 +654,7 @@ func (d *db) localDBMonitor() {
 				// all good
 				continue
 			}
-			err = d.pullFromRemote(d.ctx, true)
+			err := d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
