@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -11,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MetricsViewAggregation implements QueryService.
@@ -322,22 +324,20 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	q := &queries.MetricsViewTimeRange{
-		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv.ValidSpec,
-		ResolvedMVSecurity: security,
-	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
-	if err != nil {
-		return nil, err
-	}
-
-	return q.Result, nil
+	return &runtimev1.MetricsViewTimeRangeResponse{
+		TimeRangeSummary: &runtimev1.TimeRangeSummary{
+			// JS identifies no time present using a null check instead of `IsZero`
+			// So send null when time.IsZero
+			Min:       valOrNullTime(ts.Min),
+			Max:       valOrNullTime(ts.Max),
+			Watermark: valOrNullTime(ts.Watermark),
+		},
+	}, nil
 }
 
 func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsViewSchemaRequest) (*runtimev1.MetricsViewSchemaResponse, error) {
@@ -455,4 +455,11 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
+}
+
+func valOrNullTime(v time.Time) *timestamppb.Timestamp {
+	if v.IsZero() {
+		return nil
+	}
+	return timestamppb.New(v)
 }

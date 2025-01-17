@@ -3114,18 +3114,6 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/runtimev1Type'
-  TimeRangeSummaryInterval:
-    type: object
-    properties:
-      months:
-        type: integer
-        format: int32
-      days:
-        type: integer
-        format: int32
-      micros:
-        type: string
-        format: int64
   TopKEntry:
     type: object
     properties:
@@ -6450,8 +6438,9 @@ definitions:
         type: string
         format: date-time
         title: Not optional, not null
-      interval:
-        $ref: '#/definitions/TimeRangeSummaryInterval'
+      watermark:
+        type: string
+        format: date-time
         title: Not optional, not null
   v1TimeSeriesResponse:
     type: object

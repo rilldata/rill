@@ -1024,13 +1024,8 @@ message TimeRangeSummary {
   google.protobuf.Timestamp min = 1;
   // Not optional, not null
   google.protobuf.Timestamp max = 2;
-  message Interval {
-    int32 months = 1;
-    int32 days = 2;
-    int64 micros = 3;
-  }
   // Not optional, not null
-  Interval interval = 3;
+  google.protobuf.Timestamp watermark = 4;
 }
 
 message ColumnCardinalityRequest {

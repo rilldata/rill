@@ -151,7 +151,6 @@ export const AD_BIDS_TIME_RANGE_SUMMARY: V1MetricsViewTimeRangeResponse = {
   timeRangeSummary: {
     min: TestTimeConstants.LAST_DAY.toISOString(),
     max: TestTimeConstants.NOW.toISOString(),
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
   },
 };
 
