@@ -611,7 +611,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		Type:           oldMeta.Type,
 		SQL:            oldMeta.SQL,
 	}
-	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
+	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -626,15 +626,6 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	}
 
 	// no errors after this point since background goroutine will eventually sync the local db
-
-	// drop the old version of the new table
-	if newTableOldMeta != nil {
-		err = d.deleteRemote(ctx, newName, newTableOldMeta.Version)
-		if err != nil {
-			d.logger.Debug("rename: unable to remove old table version", slog.String("name", newName), slog.String("error", err.Error()))
-			return nil
-		}
-	}
 
 	// update local meta for new table
 	err = d.writeTableMeta(newName, meta)
