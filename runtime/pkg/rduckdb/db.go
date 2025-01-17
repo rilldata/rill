@@ -578,6 +578,11 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to get table meta: %w", err)
 	}
 
+	newTableOldMeta, err := d.catalog.tableMeta(newName)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return fmt.Errorf("rename: unable to get table meta for new table: %w", err)
+	}
+
 	// copy the old table to new table
 	newVersion := newVersion()
 	if oldMeta.Type == "TABLE" {
@@ -621,6 +626,15 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	}
 
 	// no errors after this point since background goroutine will eventually sync the local db
+
+	// drop the old version of the new table
+	if newTableOldMeta != nil {
+		err = d.deleteRemote(ctx, newName, newTableOldMeta.Version)
+		if err != nil {
+			d.logger.Debug("rename: unable to remove old table version", slog.String("name", newName), slog.String("error", err.Error()))
+			return nil
+		}
+	}
 
 	// update local meta for new table
 	err = d.writeTableMeta(newName, meta)
