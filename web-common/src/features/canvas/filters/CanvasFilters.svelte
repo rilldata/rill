@@ -38,6 +38,7 @@
       spec: {
         getDimensionsForMetricView,
         getMeasuresForMetricView,
+        getAllSimpleMeasures,
         getSimpleMeasuresForMetricView,
       },
       timeControls: {
@@ -175,7 +176,7 @@
       {#if !readOnly}
         <FilterButton
           allDimensions={$dimensions}
-          filteredSimpleMeasures={$simpleMeasures}
+          filteredSimpleMeasures={$getAllSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
           {setTemporaryFilterName}

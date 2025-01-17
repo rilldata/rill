@@ -1,10 +1,8 @@
-import type { QueryObserverResult } from "@rilldata/svelte-query";
-import { type CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
+import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
   MetricsViewSpecMeasureType,
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
-  type RpcStatus,
   type V1CanvasSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
@@ -14,6 +12,7 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
+  /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
   ) => Readable<MetricsViewSpecMeasureV2[]>;
@@ -27,6 +26,9 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
 
+  getAllSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
+
+  /** Dimension Selectors */
   getDimensionsForMetricView: (
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2[]>;
@@ -36,9 +38,7 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
 
-  constructor(
-    validSpecStore: Readable<QueryObserverResult<CanvasResponse, RpcStatus>>,
-  ) {
+  constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
       return $validSpecStore.data?.canvas;
     });
@@ -65,15 +65,24 @@ export class CanvasResolvedSpec {
         const metricsViewData =
           $validSpecStore.data?.metricsViews[metricViewName];
 
-        return (
-          metricsViewData?.state?.validSpec?.measures?.filter(
-            (m) =>
-              !m.window &&
-              m.type !==
-                MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
-          ) ?? []
+        return this.filterSimpleMeasures(
+          metricsViewData?.state?.validSpec?.measures,
         );
       });
+
+    this.getAllSimpleMeasures = derived(validSpecStore, ($validSpecStore) => {
+      if (!$validSpecStore.data) return [];
+      const measures = Object.values(
+        $validSpecStore.data.metricsViews || {},
+      ).flatMap((metricsView) =>
+        this.filterSimpleMeasures(metricsView?.state?.validSpec?.measures),
+      );
+      const uniqueByName = new Map<string, MetricsViewSpecMeasureV2>();
+      for (const measure of measures) {
+        uniqueByName.set(measure.name as string, measure);
+      }
+      return [...uniqueByName.values()];
+    });
 
     this.getDimensionsForMetricView = (metricViewName: string) =>
       derived(validSpecStore, ($validSpecStore) => {
@@ -116,4 +125,16 @@ export class CanvasResolvedSpec {
     //   );
     // };
   }
+
+  private filterSimpleMeasures = (
+    measures: MetricsViewSpecMeasureV2[] | undefined,
+  ): MetricsViewSpecMeasureV2[] => {
+    return (
+      measures?.filter(
+        (m) =>
+          !m.window &&
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+      ) || []
+    );
+  };
 }

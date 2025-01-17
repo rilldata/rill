@@ -9,6 +9,7 @@ import {
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceResolveCanvas,
+  getQueryServiceResolveCanvasQueryKey,
   type RpcStatus,
   type V1CanvasSpec,
   type V1MetricsViewV2,
@@ -93,3 +94,8 @@ export function useCanvas(
     },
   );
 }
+
+export const canvasResolvedQueryKey = (
+  instanceId: string,
+  canvasName: string,
+) => getQueryServiceResolveCanvasQueryKey(instanceId, canvasName, {});
