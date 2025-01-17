@@ -62,7 +62,7 @@
     @apply p-4;
     @apply border border-slate-200;
     @apply rounded-lg;
-    @apply flex flex-col items-center;
+    @apply flex flex-col items-center justify-center;
     @apply gap-2;
     @apply cursor-pointer;
     @apply w-40 h-20;

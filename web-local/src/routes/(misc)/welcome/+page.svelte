@@ -6,21 +6,21 @@
   import AddFirstCredentials from "@rilldata/web-common/features/welcome/wizard/step2/AddFirstCredentials.svelte";
   import SelectTableForFirstDashboard from "@rilldata/web-common/features/welcome/wizard/step3/SelectTableForFirstDashboard.svelte";
 
-  // Initialize variables from localStorage with fallbacks
+  // Initialize variables from sessionStorage with fallbacks
   let step: 1 | 2 | 3 =
-    (Number(localStorage.getItem("welcomeStep")) as 1 | 2 | 3) || 1;
+    (Number(sessionStorage.getItem("welcomeStep")) as 1 | 2 | 3) || 1;
   let managementType: "rill-managed" | "self-managed" =
-    (localStorage.getItem("welcomeManagementType") as
+    (sessionStorage.getItem("welcomeManagementType") as
       | "rill-managed"
       | "self-managed") || "rill-managed";
   let olapDriver: OlapDriver =
-    (localStorage.getItem("welcomeOlapDriver") as OlapDriver) || "duckdb";
+    (sessionStorage.getItem("welcomeOlapDriver") as OlapDriver) || "duckdb";
   let firstDataSource: string | undefined =
-    localStorage.getItem("welcomeFirstDataSource") || undefined;
+    sessionStorage.getItem("welcomeFirstDataSource") || undefined;
 
   function onSelectManagementType(type: "rill-managed" | "self-managed") {
     managementType = type;
-    localStorage.setItem("welcomeManagementType", type);
+    sessionStorage.setItem("welcomeManagementType", type);
 
     if (type === "rill-managed") {
       onSelectOLAP("duckdb");
@@ -30,21 +30,21 @@
 
     // Reset the first data source
     firstDataSource = undefined;
-    localStorage.removeItem("welcomeFirstDataSource");
+    sessionStorage.removeItem("welcomeFirstDataSource");
   }
 
   function onSelectOLAP(olap: OlapDriver) {
     olapDriver = olap;
-    localStorage.setItem("welcomeOlapDriver", olap);
+    sessionStorage.setItem("welcomeOlapDriver", olap);
 
     // reset the first data source
     firstDataSource = undefined;
-    localStorage.removeItem("welcomeFirstDataSource");
+    sessionStorage.removeItem("welcomeFirstDataSource");
   }
 
   function onSelectFirstDataSource(dataSource: string) {
     firstDataSource = dataSource;
-    localStorage.setItem("welcomeFirstDataSource", dataSource);
+    sessionStorage.setItem("welcomeFirstDataSource", dataSource);
   }
 
   function onContinueFromFirstCredentials(newFilePath: string) {
@@ -57,9 +57,9 @@
     }
   }
 
-  // Update the step setter to save to localStorage
+  // Update the step setter to save to sessionStorage
   $: if (step) {
-    localStorage.setItem("welcomeStep", step.toString());
+    sessionStorage.setItem("welcomeStep", step.toString());
   }
 </script>
 

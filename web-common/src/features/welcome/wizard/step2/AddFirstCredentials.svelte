@@ -40,7 +40,11 @@
             disabled={submitting}
             large
           >
-            {firstDataSource ? "Add data" : "Connect"}
+            {submitting
+              ? "Testing connection..."
+              : firstDataSource
+                ? "Add data"
+                : "Connect"}
           </Button>
           <Button type="link" large on:click={onBack}>Back</Button>
         </div>

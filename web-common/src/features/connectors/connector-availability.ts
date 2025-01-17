@@ -1,7 +1,7 @@
 export const DUCKDB_SOURCE_CONNECTORS = [
   "duckdb",
   "motherduck",
-  "postgresql",
+  "postgres",
   "gcs",
   "bigquery",
   "snowflake",
