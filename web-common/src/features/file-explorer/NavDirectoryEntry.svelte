@@ -79,10 +79,9 @@
 
 <button
   class="pr-2 w-full h-6 text-left flex justify-between group gap-x-1 items-center
-  {isProtectedDirectory
-    ? 'text-gray-500'
-    : 'text-gray-900 hover:text-gray-900'} 
+   
   font-medium hover:bg-slate-100"
+  class:muted={isProtectedDirectory}
   {id}
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
@@ -132,3 +131,13 @@
     </DropdownMenu.Root>
   {/if}
 </button>
+
+<style>
+  button {
+    color: var(--gray-12);
+  }
+
+  .muted {
+    color: var(--gray-11);
+  }
+</style>

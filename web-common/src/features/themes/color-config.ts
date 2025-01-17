@@ -343,6 +343,34 @@ export const defaultPrimaryColors: LightnessMap = {
   950: "246 57% 20%",
 };
 
+export const defaultGrayColors: LightnessMap = {
+  50: "227 100% 96%",
+  100: "228 100% 93%",
+  200: "229 100% 88%",
+  300: "231 100% 81%",
+  400: "236 100% 73%",
+  500: "240 100% 67%",
+  600: "246 91% 58%",
+  700: "235 58% 49%",
+  800: "245 65% 41%",
+  900: "244 57% 34%",
+  950: "246 57% 20%",
+};
+
+export const darkGrayColors: LightnessMap = {
+  50: "227 100% 96%",
+  100: "228 100% 93%",
+  200: "229 100% 88%",
+  300: "231 100% 81%",
+  400: "236 100% 73%",
+  500: "240 100% 67%",
+  600: "246 91% 58%",
+  700: "235 58% 49%",
+  800: "245 65% 41%",
+  900: "244 57% 34%",
+  950: "246 57% 20%",
+};
+
 // backup pallette of primary colors
 // useful for testing application of colors
 // export const defaultPrimaryColors = Object.fromEntries(

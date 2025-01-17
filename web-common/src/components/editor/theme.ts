@@ -22,20 +22,24 @@ export const editorTheme = () =>
     ".cm-selectionLayer .cm-selectionBackground": {
       // This is unfortunate but it does not seem possible to otherwise select
       // the right element when the selection is focused.
-      backgroundColor: "hsla(214, 95%, 70%, 25%) !important",
+      backgroundColor: "red",
     },
 
     ".cm-line-level.cm-activeLine": {
-      backgroundColor: "hsl(1,90%,80%)",
+      backgroundColor: "red",
+    },
+
+    ".cm-activeLine": {
+      backgroundColor: "var(--gray-2)",
     },
 
     ".cm-line.cm-line-error.cm-activeLine": {
       // tailwind bg-red-200
-      backgroundColor: "#FEE2E2",
+      backgroundColor: "red",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       {
-        backgroundColor: "hsla(214, 95%, 70%, 25%)",
+        backgroundColor: "red",
         backgroundBlendMode: "hue",
       },
 
@@ -44,7 +48,7 @@ export const editorTheme = () =>
       backgroundBlendMode: "multiply",
     },
     ".cm-gutter": {
-      backgroundColor: "white",
+      backgroundColor: "hsl(var(--background))",
     },
     ".cm-gutters": {
       borderRight: "none",
@@ -56,25 +60,27 @@ export const editorTheme = () =>
       paddingLeft: "5px",
       paddingRight: "10px",
       minWidth: "32px",
-      backgroundColor: "white",
+      backgroundColor: "hsl(var(--background))",
     },
     ".cm-gutterElement.cm-activeLineGutter": {
       // backgroundColor: "hsla(214, 95%, 70%, 25%)",
       // backgroundBlendMode: "hue",
-      backgroundColor: "#f3f9ff",
+      backgroundColor: "hsl(var(--background))",
     },
     ".cm-tooltip": {
       borderRadius: "0.25rem",
       padding: "0.5rem",
-      color: "black",
+      color: "var(--gray-accent)",
+      backgroundColor: "var(--gray-2)",
+      borderColor: "var(--gray-3)",
     },
     ".cm-tooltip-autocomplete": {
-      backgroundColor: "rgb(243 249 255)",
+      backgroundColor: "red",
       border: "none",
       "& > ul > li[aria-selected]": {
         border: "none",
         borderRadius: "0.25rem",
-        backgroundColor: "rgb(15 119 204 / .25)",
+        backgroundColor: "red",
         color: "black",
       },
     },
@@ -86,24 +92,24 @@ export const editorTheme = () =>
       color: "rgb(15 119 204)",
     },
     ".cm-underline": {
-      backgroundColor: "rgb(254 240 138)",
+      // backgroundColor: "rgb(254 240 138)",
     },
 
     // key
     ".ͼc": {
-      color: "#2C2689",
+      color: "var(--code-key)",
     },
     // strings
     // note: we have to code .cm-line as well since CodeMirror does not seem to always wrap
     // strings in a classed span.
     ".cm-line": {
-      color: "hsl(175, 77%, 26%)",
+      color: "var(--code-green)",
     },
     ".ͼe": {
-      color: "#00c",
+      color: "var(--code-blue)",
     },
     ".ͼl": {
-      color: "hsl(263, 70%, 50%)",
+      color: "var(--code-purple)",
     },
     // decimal / number
     ".ͼd": {
@@ -111,14 +117,14 @@ export const editorTheme = () =>
     },
     // boolean
     ".ͼb": {
-      color: "hsl(35, 92%, 33%)",
+      color: "var(--code-orange)",
     },
     ".ͼ5": {
-      color: "black",
+      color: "var(--gray-12)",
     },
     // comment
     ".ͼm": {
-      color: "hsl(215, 25%, 27%)",
+      color: "var(--code-subtle)",
     },
 
     // make sure all the above colors are plain red when there is an error.

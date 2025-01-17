@@ -92,7 +92,7 @@
   $: showZigZag = barLength > tableWidth;
 
   $: barColor = excluded
-    ? "rgb(243 244 246)"
+    ? "var(--gray-4)"
     : selected || hovered
       ? "var(--color-primary-200)"
       : "var(--color-primary-100)";

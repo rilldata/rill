@@ -117,20 +117,21 @@
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-primary-600 text-white;
+    background-color: var(--violet-9);
+    color: var(--violet-contrast);
   }
 
   .primary:hover {
-    @apply bg-primary-700;
+    background-color: var(--violet-10);
   }
 
   .primary:active,
   .primary.selected {
-    @apply bg-primary-800;
+    background-color: var(--violet-10);
   }
 
   .primary:disabled {
-    @apply bg-slate-400;
+    background-color: var(--gray-6);
   }
 
   /* SECONDARY, GHOST, DASHED STYLES */
@@ -138,18 +139,20 @@
   .secondary,
   .ghost,
   .dashed {
-    @apply bg-transparent text-primary-600;
+    background-color: transparent;
+    color: var(--violet-a11);
   }
 
   .secondary,
   .dashed {
-    @apply border border-primary-300;
+    @apply border;
+    border-color: var(--violet-a6);
   }
 
   .secondary:hover,
   .ghost:hover,
   .dashed:hover {
-    @apply bg-primary-50;
+    background-color: var(--violet-a3);
   }
 
   .secondary:active,
@@ -158,7 +161,7 @@
   .ghost.selected,
   .dashed:active,
   .dashed.selected {
-    @apply bg-primary-100;
+    background-color: var(--violet-a3);
   }
 
   .secondary.loading,
@@ -184,7 +187,7 @@
   .ghost.selected:hover,
   .dashed:active:hover,
   .dashed.selected:hover {
-    @apply bg-primary-200;
+    background-color: var(--violet-a4);
   }
 
   /* PLAIN STYLES */
@@ -210,16 +213,17 @@
   /* SUBTLE STYLES */
 
   .subtle {
-    @apply bg-primary-50 text-primary-700;
+    background-color: var(--violet-a3);
+    color: var(--violet-a11);
   }
 
   .subtle:hover {
-    @apply bg-primary-100;
+    background-color: var(--violet-a4);
   }
 
   .subtle:active,
   .subtle.selected {
-    @apply bg-primary-200 text-primary-900;
+    background-color: var(--violet-a5);
   }
 
   .subtle.loading {

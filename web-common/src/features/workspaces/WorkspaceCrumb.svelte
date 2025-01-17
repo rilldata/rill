@@ -104,8 +104,8 @@
     <svelte:element
       this={dropdown ? "button" : "a"}
       class:open
-      class="text-gray-500 px-[5px] py-1 w-full max-w-fit line-clamp-1"
-      class:selected={current}
+      class="crumb"
+      class:muted={!current}
       href={dropdown
         ? undefined
         : exampleResource
@@ -150,13 +150,18 @@
 {/if}
 
 <style lang="postcss">
-  a:hover,
-  button:hover {
-    @apply text-gray-700;
+  .crumb {
+    @apply px-[5px] py-1 w-full max-w-fit line-clamp-1;
+    color: var(--gray-12);
   }
 
-  .selected {
-    @apply text-gray-900;
+  a:hover,
+  button:hover {
+    color: var(--gray-12);
+  }
+
+  .muted {
+    color: var(--gray-10);
   }
 
   .open {

@@ -3,33 +3,12 @@
 @tailwind utilities;
 
 @layer utilities {
-  .surface-bg {
-    @apply bg-gray-100 dark:bg-gray-800;
-  }
-
   .surface {
     @apply bg-white dark:bg-gray-800;
   }
 
-  .surface-secondary {
-    @apply bg-gray-100 dark:bg-gray-700;
-  }
-
-  .surface-impression {
-    @apply bg-gray-100 dark:bg-gray-900;
-  }
-
-  .surface-faint {
-    @apply bg-gray-50 dark:bg-transparent;
-  }
-
   .ui-copy {
     @apply text-gray-900 dark:text-white;
-  }
-
-  .ui-copy-dashboard-header {
-    @apply ui-copy;
-    font-size: 16px;
   }
 
   .ui-copy-muted {
@@ -58,10 +37,6 @@
       "kern";
   }
 
-  .ui-copy-icon-inactive {
-    @apply text-gray-500 dark:text-gray-500;
-  }
-
   .ui-copy-inactive {
     @apply text-gray-500 dark:text-gray-400;
   }
@@ -75,30 +50,8 @@
     @apply text-gray-400 dark:text-gray-400;
   }
 
-  .ui-copy-code {
-    font-family: var(--monospace);
-    font-size: 11px;
-    @apply text-gray-600;
-  }
-
-  .ui-divider {
-    @apply border-gray-300 dark:border-gray-600;
-  }
-
-  .ui-divider-faint {
-    @apply border-gray-200 dark:border-gray-600;
-  }
-
-  .ui-divider-strong {
-    @apply border-gray-400 dark:border-gray-500;
-  }
-
   .ui-measure-bar-included {
     @apply bg-primary-100 dark:bg-primary-700;
-  }
-
-  .ui-measure-bar-included-selected {
-    @apply bg-primary-200 dark:bg-primary-600;
   }
 
   .ui-measure-bar-excluded {
@@ -111,10 +64,6 @@
 
   .ui-editor-bg-error {
     @apply bg-red-50;
-  }
-
-  .ui-editor-border-error {
-    border-color: var(--ui-editor-error-foreground);
   }
 }
 
@@ -137,14 +86,6 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    /* 
-    FIXME: 
-    We need to overhaul these ShadCN vars to use the new
-    palette as the source of truth, and remove these manual
-    translations/approximations in HSL, but this is fine for
-     the initial roll out
-     */
-    
     /* 
     `246, 57%, 20%` approximates primary color 
     from our new palette vs previous color:
@@ -187,6 +128,335 @@
     /* Used to set svg gradient */
     --color-slate-200: theme("colors.slate.200");
     --color-slate-300: theme("colors.slate.300");
+
+
+    --color-primary-50: hsl(227, 100%, 96%);
+    --color-primary-100: hsl(228, 100%, 93%);
+    --color-primary-200: hsl(229, 100%, 88%);
+    --color-primary-300: hsl(231, 100%, 81%);
+    --color-primary-400: hsl(236, 100%, 73%);
+    --color-primary-500: hsl(240, 100%, 67%);
+    --color-primary-600: hsl(246, 91%, 58%);
+    --color-primary-700: hsl(235, 58%, 49%);
+    --color-primary-800: hsl(245, 65%, 41%);
+    --color-primary-900: hsl(244, 57%, 34%);
+    --color-primary-950: hsl(246, 57%, 20%);
+
+    --hsl-primary-50: 227 100% 96%;
+    --hsl-primary-100: 228 100% 93%;
+    --hsl-primary-200: 229 100% 88%;
+    --hsl-primary-300: 231 100% 81%;
+    --hsl-primary-400: 236 100% 73%;
+    --hsl-primary-500: 240 100% 67%;
+    --hsl-primary-600: 246 91% 58%;
+    --hsl-primary-700: 250 79% 50%;
+    --hsl-primary-800: 245 65% 41%;
+    --hsl-primary-900: 244 57% 34%;
+    --hsl-primary-950: 246 57% 20%;
+    
+    --color-gray-50: hsl(210, 20%, 98%);
+    --color-gray-100: hsl(220, 14.3%, 95.9%);
+    --color-gray-200: hsl(220, 13%, 91%);
+    --color-gray-300: hsl(216, 12.2%, 83.9%);
+    --color-gray-400: hsl(216, 12.2%, 83.9%);
+    --color-gray-500: hsl(220, 8.9%, 46.1%);
+    --color-gray-600: hsl(215, 13.8%, 34.1%);
+    --color-gray-700: hsl(216.89999999999998, 19.1%, 26.7%);
+    --color-gray-800: hsl(215, 27.9%, 16.9%);
+    --color-gray-900: hsl(220.89999999999998, 39.3%, 11%);
+    --color-gray-950: hsl(224, 71.4%, 4.1%);
+
+    --hsl-gray-50: 210 20% 98%;
+    --hsl-gray-100: 220 14.3% 95.9%;
+    --hsl-gray-200: 220 13% 91%;
+    --hsl-gray-300: 216 12.2% 83.9%;
+    --hsl-gray-400: 216 12.2% 83.9%;
+    --hsl-gray-500: 220 8.9% 46.1%;
+    --hsl-gray-600: 215 13.8% 34.1%;
+    --hsl-gray-700: 216.9 19.1% 26.7%;
+    --hsl-gray-800: 215 27.9% 16.9%;
+    --hsl-gray-900: 220.9 39.3% 11%;
+    --hsl-gray-950: 224 71.4% 4.1%;
+
+    --color-slate-50: hsl(210, 20%, 98%);
+    --color-slate-100: hsl(220, 14.3%, 95.9%);
+    --color-slate-200: hsl(220, 13%, 91%);
+    --color-slate-300: hsl(216, 12.2%, 83.9%);
+    --color-slate-400: hsl(216, 12.2%, 83.9%);
+    --color-slate-500: hsl(220, 8.9%, 46.1%);
+    --color-slate-600: hsl(215, 13.8%, 34.1%);
+    --color-slate-700: hsl(216.89999999999998, 19.1%, 26.7%);
+    --color-slate-800: hsl(215, 27.9%, 16.9%);
+    --color-slate-900: hsl(220.89999999999998, 39.3%, 11%);
+    --color-slate-950: hsl(224, 71.4%, 4.1%);
+
+    --hsl-slate-50: 210 20% 98%;
+    --hsl-slate-100: 220 14.3% 95.9%;
+    --hsl-slate-200: 220 13% 91%;
+    --hsl-slate-300: 216 12.2% 83.9%;
+    --hsl-slate-400: 216 12.2% 83.9%;
+    --hsl-slate-500: 220 8.9% 46.1%;
+    --hsl-slate-600: 215 13.8% 34.1%;
+    --hsl-slate-700: 216.9 19.1% 26.7%;
+    --hsl-slate-800: 215 27.9% 16.9%;
+    --hsl-slate-900: 220.9 39.3% 11%;
+    --hsl-slate-950: 224 71.4% 4.1%;
+
+    --code-green: hsl(175, 77%, 26%);
+    --code-purple: hsl(263, 70%, 50%);
+    --code-subtle: hsl(215, 25%, 27%);
+    --code-orange: hsl(35, 92%, 33%);
+    --code-blue: hsl(240, 100%, 40%);
+    --code-key: hsl(331, 53%, 39%);
+    
+    --violet-1: #fdfdff;
+    --violet-2: #f7f9ff;
+    --violet-3: #edf1ff;
+    --violet-4: #e0e8ff;
+    --violet-5: #d2ddff;
+    --violet-6: #c1ceff;
+    --violet-7: #aabaff;
+    --violet-8: #8b9dff;
+    --violet-9: #4735f5;
+    --violet-10: #3d1ae3;
+    --violet-11: #4944eb;
+    --violet-12: #22246f;
+  
+    --violet-a1: #0000ff02;
+    --violet-a2: #0040ff08;
+    --violet-a3: #0039ff12;
+    --violet-a4: #0042ff1f;
+    --violet-a5: #003fff2d;
+    --violet-a6: #0036ff3e;
+    --violet-a7: #0030ff55;
+    --violet-a8: #0028ff74;
+    --violet-a9: #1700f3ca;
+    --violet-a10: #2700e0e5;
+    --violet-a11: #0700e4bb;
+    --violet-a12: #000259dd;
+  
+    --violet-contrast: #fff;
+    --violet-surface: #f5f8ffcc;
+    --violet-indicator: #4735f5;
+    --violet-track: #4735f5;
+
+    --gray-1: #fcfcfd;
+    --gray-2: #f9f9fb;
+    --gray-3: #eff0f3;
+    --gray-4: #e7e8ec;
+    --gray-5: #e0e1e6;
+    --gray-6: #d8d9e0;
+    --gray-7: #cdced7;
+    --gray-8: #b9bbc6;
+    --gray-9: #8b8d98;
+    --gray-10: #80828d;
+    --gray-11: #62636c;
+    --gray-12: #1e1f24;
+  
+    --gray-a1: #00005503;
+    --gray-a2: #00005506;
+    --gray-a3: #00104010;
+    --gray-a4: #000b3618;
+    --gray-a5: #0009321f;
+    --gray-a6: #00073527;
+    --gray-a7: #00063332;
+    --gray-a8: #00083046;
+    --gray-a9: #00051d74;
+    --gray-a10: #00051b7f;
+    --gray-a11: #0002119d;
+    --gray-a12: #000107e1;
+  
+    --gray-contrast: #FFFFFF;
+    --gray-surface: #ffffffcc;
+    --gray-indicator: #8b8d98;
+    --gray-track: #8b8d98;
+
+  }
+
+
+ 
+
+  :root[data-theme="dark"] {
+
+    --code-blue: hsl(240, 55%, 69%);
+    --code-green: hsl(175, 77%, 39%);
+    --code-purple: hsl(263, 85%, 67%);
+    --code-subtle: hsl(216, 11%, 57%);
+    --code-orange: hsl(35, 75%, 48%);
+    --code-what: hsl(224, 76%, 48%);
+    --code-key: hsl(331, 52%, 56%);
+  
+
+    --violet-1: hsl(230, 41%, 9%);
+    --violet-2: hsl(233, 41%, 12%);
+    --violet-3: hsl(237, 52%, 22%);
+    --violet-4: hsl(240, 54%, 30%);
+    --violet-5: hsl(239, 52%, 35%);
+    --violet-6: hsl(238, 50%, 40%);
+    --violet-7: hsl(237, 48%, 47%);
+    --violet-8: hsl(237, 59%, 55%);
+    --violet-9: hsl(246, 91%, 58%);
+    --violet-10: hsl(250, 79%, 50%);
+    --violet-11: hsl(230, 100%, 81%);
+    --violet-12: hsl(225, 100%, 92%);
+  
+    --violet-a1: #0000ff0f;
+    --violet-a2: #1b36fe1c;
+    --violet-a3: #343fff49;
+    --violet-a4: #3b3bfd6d;
+    --violet-a5: #4446ff82;
+    --violet-a6: #4e55ff93;
+    --violet-a7: #535cfeac;
+    --violet-a8: #5860ffcd;
+    --violet-a9: #4936fef5;
+    --violet-a10: #431bffe1;
+    --violet-a11: #9daeff;
+    --violet-a12: #d6e0ff;
+  
+    --violet-contrast: #fff;
+    --violet-surface: #13194580;
+    --violet-indicator: #4735f5;
+    --violet-track: #4735f5;
+
+    --gray-1: #111113;
+    --gray-2: #19191b;
+    --gray-3: #222325;
+    --gray-4: #292a2e;
+    --gray-5: #303136;
+    --gray-6: #393a40;
+    --gray-7: #46484f;
+    --gray-8: #5f606a;
+    --gray-9: #6c6e79;
+    --gray-10: #797b86;
+    --gray-11: #b2b3bd;
+    --gray-12: #eeeef0;
+  
+    --gray-a1: #1111bb03;
+    --gray-a2: #cbcbf90b;
+    --gray-a3: #d6e2f916;
+    --gray-a4: #d1d9f920;
+    --gray-a5: #d7ddfd28;
+    --gray-a6: #d9defc33;
+    --gray-a7: #dae2fd43;
+    --gray-a8: #e0e3fd60;
+    --gray-a9: #e0e4fd70;
+    --gray-a10: #e3e7fd7e;
+    --gray-a11: #eff0feb9;
+    --gray-a12: #fdfdffef;
+  
+    --gray-contrast: #FFFFFF;
+    --gray-surface: rgba(0, 0, 0, 0.05);
+    --gray-indicator: #6c6e79;
+    --gray-track: #6c6e79;
+  }
+
+ 
+  
+ 
+
+   
+  
+    
+    
+   
+
+  :root[data-theme="dark"] {
+
+
+
+    --hsl-primary-900: 227 100% 96%;
+    --hsl-primary-800: 228 100% 93%;
+
+    --hsl-primary-700: 250 79% 50%;
+    --hsl-primary-600: 246 91% 58%;
+
+    --hsl-primary-500: 236 100% 73%;
+    --hsl-primary-400: 240 100% 67%;
+    --hsl-primary-300: 246 91% 58%;
+    --hsl-primary-200: 235 58% 49%;
+    --hsl-primary-100: 245 65% 41%;
+    --hsl-primary-50: 244 57% 34%;
+    --hsl-primary-950: 246 57% 20%;
+
+    --color-primary-900: hsl(227, 100%, 96%);
+    --color-primary-800: hsl(228, 100%, 93%);
+    --color-primary-700: hsl(229, 100%, 88%);
+    --color-primary-600: hsl(231, 100%, 81%);
+    --color-primary-500: hsl(236, 100%, 73%);
+    --color-primary-400: hsl(240, 100%, 67%);
+    --color-primary-300: hsl(246, 91%, 58%);
+    --color-primary-200: hsl(235, 58%, 49%);
+    --color-primary-100: hsl(245, 65%, 41%);
+    --color-primary-50: hsl(244, 57%, 34%);
+    --color-primary-50: hsl(246, 57%, 20%);
+
+
+    --color-gray-950: hsl(240, 20%, 99%);
+    --color-gray-900: hsl(240, 20%, 98%);
+    /* --color-gray-3: hsl(225, 14%, 95%); */
+    --color-gray-800: hsl(228, 12%, 92%);
+    --color-gray-700: hsl(230, 11%, 89%);
+    --color-gray-600: hsl(233, 11%, 86%);
+    --color-gray-500: hsl(234, 11%, 82%);
+    --color-gray-400: hsl(231, 10%, 75%);
+    --color-gray-300: hsl(231, 6%, 57%);
+    --color-gray-200: hsl(231, 5%, 53%);
+    --color-gray-100: hsl(234, 5%, 40%);
+    --color-gray-50: hsl(230, 9%, 2%);
+
+    --hsl-gray-950: 240 20% 99%;
+    --hsl-gray-900: 240 20% 98%;
+    --hsl-gray-800: 228 12% 92%;
+    --hsl-gray-700: 230 11% 89%;
+    --hsl-gray-600: 233 11% 86%;
+    --hsl-gray-500: 234 11% 82%;
+    --hsl-gray-400: 231 10% 75%;
+    --hsl-gray-300: 231 6% 57%;
+    --hsl-gray-200: 231 5% 20%;
+    --hsl-gray-100: 234 5% 11%;
+    --hsl-gray-50: 230 9% 2%;
+
+
+    --color-slate-950: var(--color-gray-950);
+    --color-slate-900: var(--color-gray-900);
+    --color-slate-800: var(--color-gray-800);
+    --color-slate-700: var(--color-gray-700);
+    --color-slate-600: var(--color-gray-600);
+    --color-slate-500: var(--color-gray-500);
+    --color-slate-400: var(--color-gray-400);
+    --color-slate-300: var(--color-gray-300);
+    --color-slate-200: var(--color-gray-200);
+    --color-slate-100: var(--color-gray-100);
+    --color-slate-50: var(--color-gray-50);
+
+    --hsl-slate-950: var(--hsl-gray-950);
+    --hsl-slate-900: var(--hsl-gray-900);
+    --hsl-slate-800: var(--hsl-gray-800);
+    --hsl-slate-700: var(--hsl-gray-700);
+    --hsl-slate-600: var(--hsl-gray-600);
+    --hsl-slate-500: var(--hsl-gray-500);
+    --hsl-slate-400: var(--hsl-gray-400);
+    --hsl-slate-300: var(--hsl-gray-300);
+    --hsl-slate-200: var(--hsl-gray-200);
+    --hsl-slate-100: var(--hsl-gray-100);
+    --hsl-slate-50: var(--hsl-gray-50);
+
+
+    --background: 0 0% 8%;
+    --foreground: 222.2 84% 4.9%;
+  
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+  
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+  
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    /* background-color: black; */
+    /* background-color: var(--color-gray-50); */
+
   }
 
   h1,
@@ -196,6 +466,9 @@
     @apply font-bold;
   }
 }
+
+
+
 
 html {
   @apply ui-copy;
@@ -207,9 +480,11 @@ button {
 }
 
 body {
-  background-color: white;
+  @apply bg-background;
   font-family: "Inter";
   font-size: 12px;
+
+  color: var(--gray-12);
 
   /* Use this for a few keyboard characters in tooltips, etc. */
   --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,

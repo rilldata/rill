@@ -101,10 +101,8 @@
   class:opacity-50={$hasUnsavedChanges || $saving}
 >
   <a
-    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
-    isDotFile
-      ? 'text-gray-500 hover:text-gray-500'
-      : 'text-gray-900 hover:text-gray-900'}"
+    class="w-full truncate flex items-center gap-x-1 font-medium"
+    class:muted={isProtectedDirectory || isDotFile}
     href={`/files${filePath}`}
     {id}
     class:italic={$hasUnsavedChanges || $saving}
@@ -148,7 +146,7 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
-        class="border-none bg-gray-800 text-white min-w-60"
+        class="border-none bg-gray-800 min-w-60"
         side="right"
         sideOffset={16}
       >
@@ -186,3 +184,13 @@
     </DropdownMenu.Root>
   {/if}
 </li>
+
+<style lang="postcss">
+  a {
+    color: var(--gray-12);
+  }
+
+  .muted {
+    color: var(--gray-11);
+  }
+</style>

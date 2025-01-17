@@ -160,6 +160,18 @@
         {/if}
       </div>
     </div>
+    <button
+      on:click={() => {
+        // toggle data-theme to dark
+        if (document.documentElement.getAttribute("data-theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "light");
+        } else {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      }}
+    >
+      Dark
+    </button>
     <Footer />
   </div>
 </nav>
@@ -191,7 +203,7 @@
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply transition-colors h-full bg-white;
+    @apply h-full bg-white;
   }
 
   .sidebar:not(.resizing) {

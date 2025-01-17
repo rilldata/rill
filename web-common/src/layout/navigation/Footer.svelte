@@ -19,7 +19,7 @@
       icon: Github,
       label: "Report an issue",
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
-      className: "fill-gray-500",
+      className: "fill-gray-800",
       shrinkIcon: true,
     },
   ];
