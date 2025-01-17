@@ -609,7 +609,7 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 		database = "currentDatabase()"
 	}
 	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
-	fmt.Fprintf(&distributed, " ENGINE = Distributed('%s', %s, '%s'", c.config.Cluster, database, localTableName(name))
+	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
 	} else {
@@ -1191,4 +1191,8 @@ func localTableName(name string) string {
 
 func tempTableForDictionary(name string) string {
 	return name + "_dict_temp_"
+}
+
+func safeSQLString(name string) string {
+	return drivers.DialectClickHouse.EscapeStringValue(name)
 }
