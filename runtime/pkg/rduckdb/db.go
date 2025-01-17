@@ -235,9 +235,8 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	// migrate db from old storage structure to new
 	err = db.migrateDB(ctx)
 	if err != nil && !errors.Is(err, context.Canceled) {
-		// do not return error data will be reingested
+		// do not return error just truncate the directory and start fresh
 		db.logger.Error("failed to migrate db", slog.String("error", err.Error()))
-		// just truncate the directory and start fresh
 		err = os.RemoveAll(db.localPath)
 		if err != nil {
 			return nil, err
@@ -254,7 +253,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	isBackedUp, _ := db.isBackedUp()
 	if !isBackedUp && db.remote != nil {
 		// switched on remote storage
-		// backup local data
+		// push local data to remote
 		err := db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
 			return db.pushToRemote(ctx, name, nil, meta)
 		})
@@ -262,7 +261,6 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			return nil, fmt.Errorf("unable to write local data to remote: %w", err)
 		}
 	}
-	// add a backup true/false signal so that we can check if the db is backed up
 	err = os.WriteFile(filepath.Join(db.localPath, "__rill_backup.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
 	if err != nil {
 		return nil, err
