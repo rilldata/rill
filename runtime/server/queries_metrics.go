@@ -413,29 +413,12 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	timeRangeQuery := &queries.MetricsViewTimeRange{
-		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv.ValidSpec,
-		ResolvedMVSecurity: security,
-	}
-	err = s.runtime.Query(ctx, req.InstanceId, timeRangeQuery, int(req.Priority))
-	if err != nil {
-		return nil, err
-	}
-
 	q := &queries.MetricsViewTimeRanges{
 		MetricsViewName: req.MetricsViewName,
-		MinTime:         timeRangeQuery.Result.TimeRangeSummary.Min.AsTime(),
-		MaxTime:         timeRangeQuery.Result.TimeRangeSummary.Max.AsTime(),
 		Expressions:     req.Expressions,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

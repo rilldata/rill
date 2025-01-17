@@ -9,17 +9,15 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewTimeRanges struct {
 	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
-	MinTime         time.Time               `json:"min_time,omitempty"`
-	MaxTime         time.Time               `json:"max_time,omitempty"`
 	Expressions     []string                `json:"expressions,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
+	Priority        int32                   `json:"priority,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeRangesResponse `json:"-"`
 }
@@ -58,18 +56,12 @@ func (q *MetricsViewTimeRanges) UnmarshalResult(v any) error {
 
 func (q *MetricsViewTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv.ValidSpec, false, sec, priority)
-	if err != nil {
-		return err
-	}
-	defer e.Close()
-
-	watermark, err := e.Watermark(ctx)
+	tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, priority)
 	if err != nil {
 		return err
 	}
@@ -86,9 +78,9 @@ func (q *MetricsViewTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime
 
 		start, end, err := rillTime.Eval(rilltime.EvalOptions{
 			Now:        now,
-			MinTime:    q.MinTime,
-			MaxTime:    q.MaxTime,
-			Watermark:  watermark,
+			MinTime:    tsRes.Min,
+			MaxTime:    tsRes.Max,
+			Watermark:  tsRes.Watermark,
 			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
 			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
 		})

@@ -18,28 +18,20 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	watermark, err := q.getWatermark(ctx, colName)
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO: do we still need to support this? If yes then we need to update Timestamps to take custom column name
 	if colName == "" {
 		colName = q.metricsViewSpec.TimeDimension
 	}
-	minTime, err := q.executor.MinTime(ctx, colName)
-	if err != nil {
-		return nil, err
-	}
-	maxTime, err := q.executor.MaxTime(ctx, colName)
+	ts, err := q.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	watermark, _, err = rillTime.Eval(rilltime.EvalOptions{
+	watermark, _, err := rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
-		MinTime:    minTime,
-		MaxTime:    maxTime,
-		Watermark:  watermark,
+		MinTime:    ts.Min,
+		MaxTime:    ts.Max,
+		Watermark:  ts.Watermark,
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})
@@ -58,28 +50,20 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	watermark, err := q.getWatermark(ctx, colName)
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO: do we still need to support this? If yes then we need to update Timestamps to take custom column name
 	if colName == "" {
 		colName = q.metricsViewSpec.TimeDimension
 	}
-	minTime, err := q.executor.MinTime(ctx, colName)
-	if err != nil {
-		return nil, err
-	}
-	maxTime, err := q.executor.MaxTime(ctx, colName)
+	ts, err := q.executor.Timestamps(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, watermark, err = rillTime.Eval(rilltime.EvalOptions{
+	_, watermark, err := rillTime.Eval(rilltime.EvalOptions{
 		Now:        time.Now(),
-		MinTime:    minTime,
-		MaxTime:    maxTime,
-		Watermark:  watermark,
+		MinTime:    ts.Min,
+		MaxTime:    ts.Max,
+		Watermark:  ts.Watermark,
 		FirstDay:   int(q.metricsViewSpec.FirstDayOfWeek),
 		FirstMonth: int(q.metricsViewSpec.FirstMonthOfYear),
 	})
