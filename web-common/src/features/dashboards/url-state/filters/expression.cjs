@@ -7,6 +7,7 @@ function id(x) { return x[0]; }
     inPostprocessor,
     havingPostprocessor,
     andOrPostprocessor,
+    objectPostprocessor
   } from "./post-processors.ts";
 let Lexer = undefined;
 let ParserRules = [
@@ -197,6 +198,12 @@ let ParserRules = [
     {"name": "value", "symbols": ["value$subexpression$2"], "postprocess": () => false},
     {"name": "value$subexpression$3", "symbols": [/[nN]/, /[uU]/, /[lL]/, /[lL]/], "postprocess": function(d) {return d.join(""); }},
     {"name": "value", "symbols": ["value$subexpression$3"], "postprocess": () => null},
+    {"name": "value", "symbols": [{"literal":"["}, "_", "value_list", "_", {"literal":"]"}], "postprocess": ([_1, _2, list]) => list},
+    {"name": "value$ebnf$1", "symbols": []},
+    {"name": "value$ebnf$1$subexpression$1", "symbols": ["_", {"literal":","}, "_", "key_value"]},
+    {"name": "value$ebnf$1", "symbols": ["value$ebnf$1", "value$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "value", "symbols": [{"literal":"{"}, "_", "key_value", "value$ebnf$1", "_", {"literal":"}"}], "postprocess": objectPostprocessor},
+    {"name": "key_value", "symbols": ["sqstring", "_", {"literal":":"}, "_", "value"], "postprocess": ([key, _1, _2, _3, value]) => ({ [key]: value })},
     {"name": "value_list", "symbols": ["value_list", "_", {"literal":","}, "_", "value"], "postprocess": ([list, _1, _2, _3, value]) => [...list, value]},
     {"name": "value_list", "symbols": ["value"], "postprocess": ([v]) => [v]}
 ];
