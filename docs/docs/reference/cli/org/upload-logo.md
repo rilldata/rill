@@ -1,20 +1,21 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill upgrade
+title: rill org upload-logo
 ---
-## rill upgrade
+## rill org upload-logo
 
-Upgrade Rill to the latest version
+Upload a custom logo
 
 ```
-rill upgrade [flags]
+rill org upload-logo [<org-name> [<path-to-image>]] [flags]
 ```
 
 ### Flags
 
 ```
-      --nightly          Install the latest nightly build
-      --version string   Install a specific version of Rill
+      --org string    Organization name
+      --path string   Path to image file (PNG or JPEG)
+      --remove        Remove the current logo
 ```
 
 ### Global flags
@@ -28,5 +29,5 @@ rill upgrade [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - A CLI for Rill
+* [rill org](org.md)	 - Manage organisations
 
