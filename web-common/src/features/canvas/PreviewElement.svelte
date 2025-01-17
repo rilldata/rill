@@ -9,7 +9,6 @@
   export let padding: number;
   export let component: V1CanvasItem;
   export let selected: boolean;
-  export let interacting: boolean;
   export let width: number;
   export let height: number;
   export let top: number;
@@ -31,19 +30,7 @@
 
   $: transform = `translate(${finalLeft}px, ${finalTop}px)`;
 
-  const dispatch = createEventDispatcher<{
-    change: {
-      e: MouseEvent;
-      dimensions: [number, number];
-      position: [number, number];
-      changeDimensions: [0 | 1 | -1, 0 | 1 | -1];
-      changePosition: [0 | 1, 0 | 1];
-    };
-    dragstart: { componentIndex: number; width: number; height: number };
-    dragend: void;
-    mouseenter: { index: number };
-    mouseleave: { index: number };
-  }>();
+  const dispatch = createEventDispatcher();
 
   function handleMouseDown(e: MouseEvent) {
     // if (e.button !== 0) return;

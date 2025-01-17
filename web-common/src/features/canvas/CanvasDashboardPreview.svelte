@@ -20,7 +20,6 @@
   export let showFilterBar = true;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  let scrollOffset = 0;
   let draggedComponent: {
     index: number;
     width: number;
@@ -51,9 +50,9 @@
   $: ({ instanceId } = $runtime);
 
   $: gridWidth = contentRect.width;
-  $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
+  $: scale = gridWidth / defaults.DEFAULT_DASHBOARD_WIDTH;
 
-  $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
+  $: gridCell = defaults.DEFAULT_DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: maxBottom = items.reduce((max, el) => {
@@ -121,14 +120,6 @@
   function handleDragEnd() {
     draggedComponent = null;
     dropTarget = null;
-  }
-
-  function handleScroll(
-    e: UIEvent & {
-      currentTarget: EventTarget & HTMLDivElement;
-    },
-  ) {
-    scrollOffset = e.currentTarget.scrollTop;
   }
 
   function handleDeselect() {
@@ -482,7 +473,6 @@
   height={maxBottom * gridCell * scale}
   width={defaults.DEFAULT_DASHBOARD_WIDTH}
   on:click={handleDeselect}
-  on:scroll={handleScroll}
   on:dragover={(e) => {
     e.preventDefault();
   }}
@@ -503,7 +493,6 @@
             {component}
             {radius}
             selected={selectedIndex === i}
-            interacting={false}
             padding={16}
             rowIndex={getRowIndex(component, items)}
             columnIndex={getColumnIndex(component, items)}
@@ -598,7 +587,7 @@
             ? 0
             : targetItem.x * gridCell}
         width={dropTarget.position === "bottom" || dropTarget.position === "top"
-          ? defaults.DASHBOARD_WIDTH
+          ? defaults.DEFAULT_DASHBOARD_WIDTH
           : undefined}
         orientation={dropTarget.position === "bottom" ||
         dropTarget.position === "top"

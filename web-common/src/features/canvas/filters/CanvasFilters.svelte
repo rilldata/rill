@@ -98,11 +98,12 @@
       selectedTimeRange={$selectedTimeRange}
       activeTimeZone={$activeTimeZone}
     />
-    <CanvasComparisonPill
+    <!-- FIXME:  -->
+    <!-- <CanvasComparisonPill
       allTimeRange={$allTimeRange}
       selectedTimeRange={$selectedTimeRange}
       selectedComparisonTimeRange={$selectedComparisonTimeRange}
-    />
+    /> -->
     <CanvasGrainSelector
       selectedTimeRange={$selectedTimeRange}
       selectedComparisonTimeRange={$selectedComparisonTimeRange}

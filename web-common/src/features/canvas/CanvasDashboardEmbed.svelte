@@ -14,8 +14,8 @@
   $: ({ instanceId } = $runtime);
 
   const dashboardWidth = chartView
-    ? defaults.DASHBOARD_WIDTH / 2
-    : defaults.DASHBOARD_WIDTH;
+    ? defaults.DEFAULT_DASHBOARD_WIDTH / 2
+    : defaults.DEFAULT_DASHBOARD_WIDTH;
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / dashboardWidth;
