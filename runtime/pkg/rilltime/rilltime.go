@@ -244,9 +244,14 @@ func ParseCompatibility(timeRange, offset string) error {
 
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
 	start := evalOpts.Now
-	if e.End != nil && e.End.Latest {
-		// if end has latest mentioned then start also should be relative to latest.
-		start = evalOpts.MaxTime
+	if e.End != nil {
+		if e.End.Latest {
+			// if end has latest mentioned then start also should be relative to latest.
+			start = evalOpts.MaxTime
+		} else if e.End.Watermark {
+			// if end has watermark mentioned then start also should be relative to latest.
+			start = evalOpts.Watermark
+		}
 	}
 
 	if e.Start != nil {
