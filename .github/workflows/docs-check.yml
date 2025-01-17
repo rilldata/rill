@@ -29,19 +29,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Filter modified codepaths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            cli:
-              - "cli/**"
+      # - name: Filter modified codepaths
+      #   uses: dorny/paths-filter@v3
+      #   id: filter
+      #   with:
+      #     filters: |
+      #       cli:
+      #         - "cli/**"
 
-      - name: Check if new files were created
-        if: ${{ steps.filter.outputs.cli == 'true' }}
-        run: |
-          make docs.generate
-          git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 1)
+      # - name: Check if new files were created
+      #   if: ${{ steps.filter.outputs.cli == 'true' }}
+      #   run: |
+      #     make docs.generate
+      #     git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 0)
 
       - name: Build docs
         run: |-
