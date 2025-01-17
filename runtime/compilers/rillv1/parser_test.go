@@ -1804,6 +1804,20 @@ sql: select * from m1
 type: api
 metrics_sql: select * from m1
 `,
+		// api a3 with security rules
+		`apis/a3.yaml`: `
+type: api
+sql: select * from m1
+security:
+  access: true
+`,
+		// api a4
+		`apis/a4.yaml`: `
+type: api
+metrics_sql: select * from m1
+security:
+  access: '{{ .user.admin }}'
+`,
 	})
 
 	resources := []*Resource{
@@ -1823,6 +1837,9 @@ metrics_sql: select * from m1
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
+				},
 			},
 		},
 		{
@@ -1831,6 +1848,37 @@ metrics_sql: select * from m1
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
+			Paths: []string{"/apis/a3.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
+			Paths: []string{"/apis/a4.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
 			},
 		},
 	}
@@ -1890,6 +1938,9 @@ select 3
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
+				},
 			},
 		},
 		// m1

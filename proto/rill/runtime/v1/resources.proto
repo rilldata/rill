@@ -765,6 +765,7 @@ message APISpec {
   string openapi_summary = 3;
   repeated google.protobuf.Struct openapi_parameters = 4;
   google.protobuf.Struct openapi_response_schema = 5;
+  repeated SecurityRule security_rules = 6;
 }
 
 message APIState {}

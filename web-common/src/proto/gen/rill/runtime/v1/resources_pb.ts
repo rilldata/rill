@@ -4838,6 +4838,11 @@ export class APISpec extends Message<APISpec> {
    */
   openapiResponseSchema?: Struct;
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
+   */
+  securityRules: SecurityRule[] = [];
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4851,6 +4856,7 @@ export class APISpec extends Message<APISpec> {
     { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
     { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
+    { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

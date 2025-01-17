@@ -77,6 +77,16 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
 
+	securityRules, err := tmp.Security.Proto()
+	if err != nil {
+		return fmt.Errorf("failed to parse security rules: %w", err)
+	}
+	for _, rule := range securityRules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'custom api' resource type only supports 'access' security rules")
+		}
+	}
+
 	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -88,6 +98,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.OpenapiSummary = openapiSummary
 	r.APISpec.OpenapiParameters = openapiParams
 	r.APISpec.OpenapiResponseSchema = openapiSchema
+	r.APISpec.SecurityRules = securityRules
 
 	return nil
 }
@@ -95,13 +106,14 @@ func (p *Parser) parseAPI(node *Node) error {
 // DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
 // It is used across multiple resources, usually under "data:", but inlined for APIs.
 type DataYAML struct {
-	Connector      string         `yaml:"connector"`
-	SQL            string         `yaml:"sql"`
-	MetricsSQL     string         `yaml:"metrics_sql"`
-	API            string         `yaml:"api"`
-	Args           map[string]any `yaml:"args"`
-	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
-	ResourceStatus map[string]any `yaml:"resource_status"`
+	Connector      string             `yaml:"connector"`
+	SQL            string             `yaml:"sql"`
+	MetricsSQL     string             `yaml:"metrics_sql"`
+	API            string             `yaml:"api"`
+	Args           map[string]any     `yaml:"args"`
+	Glob           yaml.Node          `yaml:"glob"` // Path (string) or properties (map[string]any)
+	ResourceStatus map[string]any     `yaml:"resource_status"`
+	Security       SecurityPolicyYAML `yaml:"security"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
