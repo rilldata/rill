@@ -237,6 +237,15 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	if err != nil && !errors.Is(err, context.Canceled) {
 		// do not return error data will be reingested
 		db.logger.Error("failed to migrate db", slog.String("error", err.Error()))
+		// just truncate the directory and start fresh
+		err = os.RemoveAll(db.localPath)
+		if err != nil {
+			return nil, err
+		}
+		err = os.MkdirAll(db.localPath, fs.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// By setting a backup signal we can check if the db is backed up to cloud storage
@@ -1169,7 +1178,13 @@ func (d *db) migrateDB(ctx context.Context) error {
 
 	// handle views
 	// present directly in main.db file
-	return d.migrateViews(tables)
+	if err := d.migrateViews(tables); err != nil {
+		return err
+	}
+	// drop the old db files
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db"))
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db.wal"))
+	return err
 }
 
 func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
@@ -1195,6 +1210,10 @@ func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
 			// view on a table, skip
 			continue
 		}
+		err := d.initLocalTable(viewName, "")
+		if err != nil {
+			return err
+		}
 		version := newVersion()
 		// create meta.json file
 		meta := &tableMeta{
@@ -1208,7 +1227,6 @@ func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
 		if err != nil {
 			return err
 		}
-		existingTables[viewName] = meta
 	}
 	return rows.Err()
 }
