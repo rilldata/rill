@@ -41,7 +41,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 		}
 
 		if rec.RecommendedSlots <= 0 {
-			w.logger.Debug("skipping autoscaler: the recommend slot is <= 0", zap.String("project_id", rec.ProjectID), zap.Int("recommendation_slots", rec.RecommendedSlots))
+			w.logger.Debug("skipping autoscaler: the recommend slot is <= 0", zap.String("project_id", rec.ProjectID), zap.Int("recommended_slots", rec.RecommendedSlots))
 			continue
 		}
 
@@ -53,18 +53,42 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
 		if err != nil {
-			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("project_name", targetProject.Name), zap.String("org_id", targetProject.OrganizationID), zap.Error(err))
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("org_id", targetProject.OrganizationID), zap.String("project_name", targetProject.Name), zap.Error(err))
 			continue
+		}
+
+		// If it's proposing to scale up, make sure we don't scale beyond the quota
+		if rec.RecommendedSlots > targetProject.ProdSlots {
+			usage, err := w.admin.DB.CountProjectsQuotaUsage(ctx, projectOrg.ID)
+			if err != nil {
+				return err
+			}
+
+			overshoot := max(
+				rec.RecommendedSlots-projectOrg.QuotaSlotsPerDeployment,
+				usage.Slots-targetProject.ProdSlots+rec.RecommendedSlots-projectOrg.QuotaSlotsTotal,
+			)
+
+			// If the recommendation would exceed a quota, change it to scale to the limit of the quota.
+			if overshoot > 0 {
+				if rec.RecommendedSlots-overshoot < targetProject.ProdSlots {
+					w.logger.Debug("skipping autoscaler: already scaled to or beyond the quota", zap.String("org_id", targetProject.OrganizationID), zap.String("project_name", targetProject.Name), zap.Int("recommended_slots", rec.RecommendedSlots))
+					continue
+				}
+
+				rec.RecommendedSlots -= overshoot
+			}
 		}
 
 		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots, w.admin.ScaleDownConstraint); !shouldScale {
 			logMessage := "skipping autoscaler: " + reason
 
 			logFields := []zap.Field{
-				zap.Int("project_slots", targetProject.ProdSlots),
-				zap.Int("recommend_slots", rec.RecommendedSlots),
-				zap.Float64("scale_threshold_percentage", scaleThreshold),
+				zap.String("org_id", targetProject.OrganizationID),
 				zap.String("project_name", targetProject.Name),
+				zap.Int("current_slots", targetProject.ProdSlots),
+				zap.Int("recommended_slots", rec.RecommendedSlots),
+				zap.Float64("scale_threshold_percentage", scaleThreshold),
 			}
 
 			if reason == scaledown {

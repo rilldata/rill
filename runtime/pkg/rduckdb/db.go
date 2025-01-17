@@ -578,6 +578,11 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to get table meta: %w", err)
 	}
 
+	newTableOldMeta, err := d.catalog.tableMeta(newName)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return fmt.Errorf("rename: unable to get table meta for new table: %w", err)
+	}
+
 	// copy the old table to new table
 	newVersion := newVersion()
 	if oldMeta.Type == "TABLE" {
@@ -606,7 +611,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		Type:           oldMeta.Type,
 		SQL:            oldMeta.SQL,
 	}
-	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
+	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -644,11 +649,9 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
-				}
+			// We do not want the localDBMonitor to compete with write operations so we return early if writeSem is not available.
+			// Anyways if a write operation is in progress it will sync the local db
+			if !d.writeSem.TryAcquire(1) {
 				continue
 			}
 			if !d.localDirty {
@@ -656,7 +659,7 @@ func (d *db) localDBMonitor() {
 				// all good
 				continue
 			}
-			err = d.pullFromRemote(d.ctx, true)
+			err := d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
@@ -739,13 +742,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
 				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
-			if err != nil {
-				return err
-			}
-		}
-		if !read {
-			// disable any more configuration changes on the write handle via init queries
-			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
 			if err != nil {
 				return err
 			}

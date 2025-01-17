@@ -9,6 +9,12 @@ sidebar_position: 10
 
 Rill is particularly suited for exploratory analysis - to be able to slice & dice data quickly. As such, there are a variety of filter types and filter mechanisms throughout the app. The goal for each Rill dashboard is to provide users with as all metrics and dimensions required for each use case and create an interactive experience to cut data in any form.
 
+:::tip Human readable URL
+With the release of v0.52, we have introduced an easy way to craft specific views by modifying the URL directly. As you select filters, time ranges, and default dimension and measures, the URL will change accordinglty. 
+
+.../explore/explore_dashboard?tr=P3M&compare_tr=rill-PP&f=dimension in ('exampleA', 'exampleB')
+:::
+
 ## Add / Hide Dimensions and Metrics
 
 Users can add or hide dimensions and metrics to a subset of fields they wish to see at any given time. At the top left, above the time series and above the top left leaderboard, you'll find the Measures & Dimensions selectors to add or hide from the page. In the example below, `network` and `country` are deselected so would be hidden from view.

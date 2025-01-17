@@ -19,7 +19,7 @@ export abstract class BaseCanvasComponent<T> {
    * File artifact where the component
    * is stored
    */
-  fileArtifact: FileArtifact;
+  fileArtifact: FileArtifact | undefined = undefined;
 
   // Let child classes define these
   /**
@@ -56,7 +56,7 @@ export abstract class BaseCanvasComponent<T> {
   ): T;
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined,
     path: (string | number)[],
     defaultSpec: T,
     initialSpec: Partial<T> = {},
@@ -69,6 +69,7 @@ export abstract class BaseCanvasComponent<T> {
   }
 
   private async updateYAML(newSpec: T): Promise<void> {
+    if (!this.fileArtifact) return;
     const parseDocumentStore = getParsedDocument(this.fileArtifact);
     const parsedDocument = get(parseDocumentStore);
 
@@ -114,6 +115,7 @@ export abstract class BaseCanvasComponent<T> {
    * Update the chart type of chart component in store and YAML
    */
   async updateChartType(key: ChartType) {
+    if (!this.fileArtifact) return;
     const currentSpec = get(this.specStore);
     const parentSpec = { [key]: currentSpec };
     const parentPath = this.pathInYAML.slice(0, -1);

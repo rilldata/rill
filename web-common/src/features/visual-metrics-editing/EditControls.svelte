@@ -17,13 +17,24 @@
   export let first = false;
   export let last = false;
   export let selected = false;
+  export let itemType: "measures" | "dimensions";
+  export let name: string;
 
   let type: "subtle" | "ghost";
   $: type = selected ? "subtle" : "ghost";
+
+  $: singularType = itemType.slice(0, -1);
 </script>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button {type} noStroke gray={!selected} square on:click={onEdit}>
+  <Button
+    {type}
+    noStroke
+    gray={!selected}
+    square
+    on:click={onEdit}
+    label="Edit {singularType} {name}"
+  >
     <Pen size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -32,7 +43,14 @@
 </Tooltip>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button {type} noStroke square gray={!selected} on:click={onDelete}>
+  <Button
+    {type}
+    noStroke
+    square
+    gray={!selected}
+    on:click={onDelete}
+    label="Delete {singularType} {name}"
+  >
     <Trash2Icon size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -41,7 +59,14 @@
 </Tooltip>
 
 <Tooltip distance={8} activeDelay={500}>
-  <Button {type} noStroke square gray={!selected} on:click={onDuplicate}>
+  <Button
+    {type}
+    noStroke
+    square
+    gray={!selected}
+    on:click={onDuplicate}
+    label="Duplicate {singularType} {name}"
+  >
     <CopyIcon size="14px" />
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -56,6 +81,7 @@
     square
     gray={!selected}
     disabled={first}
+    label="Move {singularType} {name} to top"
     on:click={() => onMoveTo(true)}
   >
     <ArrowUpToLineIcon size="14px" />
@@ -72,6 +98,7 @@
     square
     gray={!selected}
     disabled={last}
+    label="Move {singularType} {name} to bottom"
     on:click={() => onMoveTo(false)}
   >
     <ArrowDownToLineIcon size="14px" />

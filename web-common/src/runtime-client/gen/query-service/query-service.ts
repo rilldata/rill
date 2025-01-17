@@ -88,63 +88,86 @@ export const queryServiceResolveCanvas = (
   instanceId: string,
   canvas: string,
   queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ResolveCanvasResponse>({
     url: `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceResolveCanvasBody,
+    signal,
   });
 };
 
-export type QueryServiceResolveCanvasMutationResult = NonNullable<
+export const getQueryServiceResolveCanvasQueryKey = (
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+) => [
+  `/v1/instances/${instanceId}/queries/canvases/${canvas}/resolve`,
+  queryServiceResolveCanvasBody,
+];
+
+export type QueryServiceResolveCanvasQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceResolveCanvas>>
 >;
-export type QueryServiceResolveCanvasMutationBody =
-  QueryServiceResolveCanvasBody;
-export type QueryServiceResolveCanvasMutationError = ErrorType<RpcStatus>;
+export type QueryServiceResolveCanvasQueryError = ErrorType<RpcStatus>;
 
 export const createQueryServiceResolveCanvas = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
+>(
+  instanceId: string,
+  canvas: string,
+  queryServiceResolveCanvasBody: QueryServiceResolveCanvasBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveCanvasQueryKey(
+      instanceId,
+      canvas,
+      queryServiceResolveCanvasBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveCanvas>>
+  > = ({ signal }) =>
+    queryServiceResolveCanvas(
+      instanceId,
+      canvas,
+      queryServiceResolveCanvasBody,
+      signal,
+    );
+
+  const query = createQuery<
     Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
     TError,
-    {
-      instanceId: string;
-      canvas: string;
-      data: QueryServiceResolveCanvasBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
-    {
-      instanceId: string;
-      canvas: string;
-      data: QueryServiceResolveCanvasBody;
-    }
-  > = (props) => {
-    const { instanceId, canvas, data } = props ?? {};
-
-    return queryServiceResolveCanvas(instanceId, canvas, data);
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && canvas),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
   };
 
-  return createMutation<
-    Awaited<ReturnType<typeof queryServiceResolveCanvas>>,
-    TError,
-    {
-      instanceId: string;
-      canvas: string;
-      data: QueryServiceResolveCanvasBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary Get cardinality for a column
  */

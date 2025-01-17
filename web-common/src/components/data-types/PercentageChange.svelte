@@ -5,6 +5,8 @@
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
+  export let showPosSign = false;
+  export let color = "text-gray-900";
   export let customStyle = "";
   export let value:
     | string
@@ -19,6 +21,7 @@
   let diffIsNegative = false;
   let intValue: string;
   let negSign = "";
+  let posSign = "";
   let approxSign = "";
   let suffix = "";
 
@@ -47,6 +50,7 @@
     diffIsNegative = value?.neg === "-";
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
+    posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
     suffix = value?.suffix ?? "";
   } else if (typeof value === "number") {
     // FIXME: this seems to only come up in the tool tip,
@@ -56,6 +60,7 @@
     diffIsNegative = value < 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
+    posSign = !diffIsNegative && !approxSign && showPosSign ? "+" : "";
     negSign = "";
     suffix = "";
   }
@@ -63,6 +68,7 @@
 
 <Base
   {isNull}
+  {color}
   classes="{tabularNumber
     ? 'ui-copy-number'
     : ''} w-full {customStyle} {inTable && 'block text-right'}"
@@ -73,7 +79,9 @@
       <span class="text-gray-400">-</span>
     {:else if value !== null && assembled}
       <span class:text-red-500={diffIsNegative}>
-        {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>
+        {approxSign}{negSign}{posSign}{intValue}{suffix}<span class="opacity-50"
+          >%</span
+        >
       </span>
     {/if}
   </slot>

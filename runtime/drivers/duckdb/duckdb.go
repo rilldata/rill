@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -387,8 +386,11 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
 			return &localFileToSelfExecutor{c, f}, true
 		}
-		if opts.InputHandle.Driver() == "mysql" || opts.InputHandle.Driver() == "postgres" {
+		switch opts.InputHandle.Driver() {
+		case "mysql", "postgres":
 			return &sqlStoreToSelfExecutor{c}, true
+		case "https":
+			return &httpsToSelfExecutor{c}, true
 		}
 	}
 	if opts.InputHandle == c {
@@ -485,7 +487,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
+		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -496,10 +499,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		bootQueries = append(bootQueries,
-			"SET preserve_insertion_order TO false",
-			fmt.Sprintf("SET secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
-		)
+		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
 	}
 
 	// Add init SQL if provided

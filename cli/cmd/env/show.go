@@ -12,12 +12,16 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show [<project-name>]",
 		Short: "Show credentials and other variables",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
 				return err
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// Find the cloud project name
@@ -38,18 +42,21 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			var table []*variable
+			var envVars []*variable
 
 			for _, v := range resp.Variables {
-				table = append(table, &variable{
+				envVars = append(envVars, &variable{
 					Name:        v.Name,
 					Value:       v.Value,
 					Environment: v.Environment,
 				})
 			}
 
-			ch.PrintfSuccess("\nVariables\n\n")
-			ch.PrintData(table)
+			if cmd.Flags().Lookup("format").Changed {
+				ch.PrintData(envVars)
+			} else {
+				printEnv(envVars)
+			}
 
 			return nil
 		},
@@ -60,6 +67,32 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	showCmd.Flags().StringVar(&environment, "environment", "", "Optional environment to resolve for (options: dev, prod)")
 
 	return showCmd
+}
+
+func formatEnvVar(name, value string) string {
+	return fmt.Sprintf("%s=%q", name, value)
+}
+
+func printEnv(vars []*variable) {
+	envMap := make(map[string][]*variable)
+	for _, v := range vars {
+		if v.Environment == "" {
+			fmt.Printf("%s\n", formatEnvVar(v.Name, v.Value))
+			continue
+		}
+		if _, ok := envMap[v.Environment]; !ok {
+			envMap[v.Environment] = []*variable{}
+		}
+		envMap[v.Environment] = append(envMap[v.Environment], v)
+	}
+	fmt.Println()
+	for env, vars := range envMap {
+		fmt.Printf("# Environment: %s\n", env)
+		for _, v := range vars {
+			fmt.Printf("%s\n", formatEnvVar(v.Name, v.Value))
+		}
+		fmt.Println()
+	}
 }
 
 type variable struct {

@@ -1,7 +1,7 @@
 ---
 title: "Dashboard with more functionality"
 description:  Further build on project
-sidebar_label: "Advanced Dashboarding"
+sidebar_label: "Dashboards Features"
 sidebar_position: 16
 ---
 

@@ -15,7 +15,7 @@ export class ImageComponent extends BaseCanvasComponent<ImageSpec> {
   defaultSize = { width: 5, height: 5 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<ImageSpec> = {},
   ) {

@@ -13,19 +13,23 @@
     //   return `Added ${timeAgo(createdDate)}`;
     // }
 
-    return `Updated ${timeAgo(updatedDate)}`;
+    return `${timeAgo(updatedDate)}`;
   }
 
   $: formattedText = formatText();
 </script>
 
-<Tooltip distance={8} location="top" alignment="start">
-  <div class="text-xs text-gray-500 cursor-pointer w-fit">
-    {formattedText}
-  </div>
-  <TooltipContent slot="tooltip-content">
-    <span class="text-xs text-gray-50 font-medium"
-      >{new Date(updatedOn).toLocaleString()}</span
+<div class="flex justify-start items-center">
+  <Tooltip distance={8} location="top">
+    <div
+      class="flex flex-row gap-x-1 text-gray-500 cursor-pointer w-fit truncate line-clamp-1"
     >
-  </TooltipContent>
-</Tooltip>
+      {formattedText}
+    </div>
+    <TooltipContent slot="tooltip-content">
+      <span class="text-xs text-gray-50 font-medium">
+        {new Date(updatedOn).toLocaleString()}
+      </span>
+    </TooltipContent>
+  </Tooltip>
+</div>
