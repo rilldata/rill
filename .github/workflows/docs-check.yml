@@ -40,6 +40,7 @@ jobs:
       - name: Check if new files were created
         if: ${{ steps.filter.outputs.cli == 'true' }}
         run: |
+          make docs.generate
           git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 1)
 
       - name: Build docs
