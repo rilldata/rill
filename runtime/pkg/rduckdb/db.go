@@ -578,6 +578,11 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to get table meta: %w", err)
 	}
 
+	newTableOldMeta, err := d.catalog.tableMeta(newName)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return fmt.Errorf("rename: unable to get table meta for new table: %w", err)
+	}
+
 	// copy the old table to new table
 	newVersion := newVersion()
 	if oldMeta.Type == "TABLE" {
@@ -606,7 +611,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		Type:           oldMeta.Type,
 		SQL:            oldMeta.SQL,
 	}
-	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
+	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
