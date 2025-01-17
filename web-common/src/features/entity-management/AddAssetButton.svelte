@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Database, Folder, PlusCircleIcon } from "lucide-svelte";
   import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
@@ -42,6 +43,8 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
+  const { customDashboards } = featureFlags;
+
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
     ? currentFile.split("/").slice(0, -1).join("/")
@@ -227,20 +230,22 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
-      <DropdownMenu.Item
-        class="flex gap-x-2"
-        on:click={async () => {
-          const newFilePath = await createResourceFile(ResourceKind.Canvas);
-          await wrapNavigation(newFilePath);
-        }}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.Canvas]}
-          color={resourceColorMapping[ResourceKind.Canvas]}
-          size="16px"
-        />
-        Canvas dashboard
-      </DropdownMenu.Item>
+      {#if $customDashboards}
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={async () => {
+            const newFilePath = await createResourceFile(ResourceKind.Canvas);
+            await wrapNavigation(newFilePath);
+          }}
+        >
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Canvas]}
+            color={resourceColorMapping[ResourceKind.Canvas]}
+            size="16px"
+          />
+          Canvas dashboard
+        </DropdownMenu.Item>
+      {/if}
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
