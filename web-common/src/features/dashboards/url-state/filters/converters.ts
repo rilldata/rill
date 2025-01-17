@@ -21,10 +21,7 @@ export function convertExpressionToFilterParam(
   if (!expr) return "";
 
   if ("val" in expr) {
-    if (typeof expr.val === "string") {
-      return escapeValue(expr.val);
-    }
-    return expr.val + "";
+    return escapeValue(expr.val);
   }
 
   if (expr.ident) return escapeColumnName(expr.ident);
@@ -120,7 +117,25 @@ function escapeColumnName(columnName: string) {
   return `"${escapedColumnName}"`;
 }
 
-function escapeValue(value: string) {
+function escapeValue(value: unknown) {
+  switch (typeof value) {
+    case "string":
+      return escapeStringValue(value);
+
+    case "object":
+      if (!value) return "null";
+      if (Array.isArray(value)) {
+        return `[${value.map(escapeValue).join(",")}]`;
+      }
+      return `{${Object.keys(value)
+        .map((k) => `'${k}':${escapeValue(value[k])}`)
+        .join(",")}}`;
+  }
+
+  return value + "";
+}
+
+function escapeStringValue(value: string) {
   const escapedValue = value
     // TODO: this was a CodeQL suggestion. could this cause conflicts in values?
     .replace(/\\/g, "\\\\")
