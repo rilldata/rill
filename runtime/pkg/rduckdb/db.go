@@ -232,6 +232,33 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, fmt.Errorf("unable to create local path: %w", err)
 	}
 
+	// migrate db from old storage structure to new
+	err = db.migrateDB(ctx)
+	if err != nil && !errors.Is(err, context.Canceled) {
+		// do not return error data will be reingested
+		db.logger.Error("failed to migrate db", slog.String("error", err.Error()))
+	}
+
+	// By setting a backup signal we can check if the db is backed up to cloud storage
+	// The signal is a file __rill_backup.txt with true/false as content
+	// This is a temporary solution and will be removed in future when we enable cloud storage completely
+	isBackedUp, _ := db.isBackedUp()
+	if !isBackedUp && db.remote != nil {
+		// switched on remote storage
+		// backup local data
+		err := db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+			return db.pushToRemote(ctx, name, nil, meta)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to write local data to remote: %w", err)
+		}
+	}
+	// add a backup true/false signal so that we can check if the db is backed up
+	err = os.WriteFile(filepath.Join(db.localPath, "__rill_backup.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
 	// sync local data
 	err = db.pullFromRemote(ctx, false)
 	if err != nil {
@@ -1068,6 +1095,130 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 
 	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
+}
+
+func (d *db) migrateDB(ctx context.Context) error {
+	entries, err := os.ReadDir(d.opts.LocalPath)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+
+	// presence of meta.json indicates that the db is already migrated
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		_, err := os.Stat(filepath.Join(d.localPath, entry.Name(), "meta.json"))
+		if err == nil {
+			// already migrated
+			return nil
+		}
+	}
+
+	// files are in old structure
+	// Table migration requires following things:
+	// 1. Move the db file named <version>.db to the version folder
+	// 2. Rename the table from "default" to the table name
+	// 3. Create meta.json
+	//
+	// Views are directly present in main.db and are not versioned in old structure
+	tables := make(map[string]*tableMeta)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		contents, err := os.ReadFile(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		if err != nil {
+			// version.txt not found, skip this directory, also safe to delete this directory
+			_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name()))
+			continue
+		}
+		// get version
+		version := strings.TrimSpace(string(contents))
+		err = d.initLocalTable(entry.Name(), version)
+		if err != nil {
+			return err
+		}
+
+		err = os.Rename(filepath.Join(d.localPath, entry.Name(), fmt.Sprintf("%v.db", version)), filepath.Join(d.localPath, entry.Name(), version, "data.db"))
+		if err != nil {
+			return err
+		}
+		_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		err = renameTable(ctx, filepath.Join(d.localPath, entry.Name(), version, "data.db"), "default", entry.Name())
+		if err != nil {
+			return err
+		}
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           entry.Name(),
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "TABLE",
+		}
+		err = d.writeTableMeta(entry.Name(), meta)
+		if err != nil {
+			return err
+		}
+		tables[entry.Name()] = meta
+		// TODO :: also delete any left version.db files
+	}
+
+	// handle views
+	// present directly in main.db file
+	return d.migrateViews(tables)
+}
+
+func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
+	// does not take context by choice so that migration is not interrupted by context cancel
+	// The queries are expected to be fast
+	db, err := sql.Open("duckdb", filepath.Join(d.localPath, "main.db"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT view_name, sql FROM duckdb_views() WHERE database_name = current_database() AND schema_name = current_schema() AND internal = false")
+	if err != nil {
+		return err
+	}
+	var viewName, viewSQL string
+	for rows.Next() {
+		err = rows.Scan(&viewName, &viewSQL)
+		if err != nil {
+			return err
+		}
+		if _, ok := existingTables[viewName]; ok {
+			// view on a table, skip
+			continue
+		}
+		version := newVersion()
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           viewName,
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "VIEW",
+			SQL:            viewSQL,
+		}
+		err = d.writeTableMeta(viewName, meta)
+		if err != nil {
+			return err
+		}
+		existingTables[viewName] = meta
+	}
+	return rows.Err()
+}
+
+func (d *db) isBackedUp() (bool, error) {
+	contents, err := os.ReadFile(filepath.Join(d.localPath, "__rill_backup.txt"))
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(contents)) == "true", nil
 }
 
 type tableMeta struct {
