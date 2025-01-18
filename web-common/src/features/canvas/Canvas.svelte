@@ -44,8 +44,6 @@
 
   $: ({ items = [], filtersEnabled } = spec);
 
-  $: console.log("[Canvas] items updated:", items.length, items);
-
   $: ({ instanceId } = $runtime);
 
   $: metricsViewQuery = useDefaultMetrics(instanceId);
@@ -96,10 +94,7 @@
     updateEditorContent(parsedDocument.toString(), true);
     items = updatedItems;
     canvasEntity.setSelectedComponentIndex(null);
-
-    if ($autoSave) {
-      await updateComponentFile();
-    }
+    if ($autoSave) await updateComponentFile();
   }
 
   async function handleDelete(
@@ -159,15 +154,20 @@
     const parsedDocument = parseDocument(
       $editorContent ?? $remoteContent ?? "",
     );
-    const docJson = parsedDocument.toJSON();
-    const existingItems = docJson?.items || [];
+    const items = parsedDocument.get("items") as any;
+    if (!items) {
+      parsedDocument.set("items", []);
+    }
 
-    const rawItems = parsedDocument.get("items") as any;
+    const itemsToPosition =
+      spec?.items?.map((item) => ({
+        x: item.x ?? 0,
+        y: item.y ?? 0,
+        width: item.width ?? 0,
+        height: item.height ?? 0,
+      })) ?? [];
 
-    console.log("[Canvas] existingItems", existingItems);
-    console.log("[Canvas] rawItems", rawItems);
-
-    const [x, y] = findNextAvailablePosition(existingItems, width, height);
+    const [x, y] = findNextAvailablePosition(itemsToPosition, width, height);
 
     const newComponent = {
       component: { [componentType]: newSpec },
@@ -177,28 +177,11 @@
       y,
     };
 
-    console.log("[Canvas] newComponent", newComponent);
-
-    const updatedItems = [...existingItems, newComponent];
-
-    console.log("[Canvas] updatedItems", updatedItems);
-
-    console.log("[Canvas] docJson.items", docJson.items);
-
-    if (!docJson.items) {
-      parsedDocument.set("items", updatedItems);
-    } else {
-      parsedDocument.set("items", updatedItems);
-    }
-
-    const newIndex = existingItems.length;
-
-    // Save changes
+    items.add(newComponent);
     updateEditorContent(parsedDocument.toString(), true);
-    items = updatedItems;
 
     await updateComponentFile();
-    scrollToComponent(newIndex);
+    scrollToComponent(itemsToPosition.length);
   }
 
   // async function addComponent(componentName: CanvasComponentType) {
