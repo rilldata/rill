@@ -10,6 +10,11 @@
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";
   import BlankCanvas from "./BlankCanvas.svelte";
+  import { useDefaultMetrics } from "./selector";
+  import { getComponentRegistry } from "./components/util";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { findNextAvailablePosition } from "./util";
+  import type { CanvasComponentType } from "./components/types";
 
   export let fileArtifact: FileArtifact;
 
@@ -22,8 +27,8 @@
     },
   } = ctx;
 
-  // Open inspector when a canvas item is selected
   $: workspaceLayout = workspaces.get(fileArtifact.path);
+  // Open inspector when a canvas item is selected
   $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
     workspaceLayout.inspector.open();
   }
@@ -39,14 +44,13 @@
 
   $: ({ items = [], filtersEnabled } = spec);
 
-  async function handleDelete(
-    e: CustomEvent<{
-      index: number;
-    }>,
-  ) {
-    if (e.detail.index === undefined || e.detail.index === null) return;
-    await deleteComponent(e.detail.index);
-  }
+  $: console.log("[Canvas] items updated:", items.length, items);
+
+  $: ({ instanceId } = $runtime);
+
+  $: metricsViewQuery = useDefaultMetrics(instanceId);
+
+  const componentRegistry = getComponentRegistry();
 
   async function deleteComponent(index: number) {
     // Validate input
@@ -96,6 +100,15 @@
     }
   }
 
+  async function handleDelete(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    if (e.detail.index === undefined || e.detail.index === null) return;
+    await deleteComponent(e.detail.index);
+  }
+
   async function handleUpdate(
     e: CustomEvent<{
       index: number;
@@ -125,6 +138,69 @@
 
     updateEditorContent(parsedDocument.toString(), true);
     await saveLocalContent();
+  }
+
+  async function addComponent(componentType: CanvasComponentType) {
+    console.log("[CanvasDashboardPreview] adding component: ", componentType);
+
+    const defaultMetrics = $metricsViewQuery?.data;
+    if (!defaultMetrics) return;
+
+    const newSpec = componentRegistry[componentType].newComponentSpec(
+      defaultMetrics.metricsView,
+      defaultMetrics.measure,
+      defaultMetrics.dimension,
+    );
+
+    const { width, height } = componentRegistry[componentType].defaultSize;
+
+    const parsedDocument = parseDocument(
+      $editorContent ?? $remoteContent ?? "",
+    );
+    const docJson = parsedDocument.toJSON();
+    const existingItems = docJson?.items || [];
+
+    const [x, y] = findNextAvailablePosition(existingItems, width, height);
+
+    const newComponent = {
+      component: { [componentType]: newSpec },
+      height,
+      width,
+      x,
+      y,
+    };
+
+    const updatedItems = [...existingItems, newComponent];
+
+    if (!docJson.items) {
+      parsedDocument.set("items", updatedItems);
+    } else {
+      parsedDocument.set("items", updatedItems);
+    }
+
+    const newIndex = existingItems.length;
+
+    // Save changes
+    updateEditorContent(parsedDocument.toString(), true);
+    items = updatedItems;
+
+    await updateComponentFile();
+    scrollToComponent(newIndex);
+  }
+
+  function scrollToComponent(index: number) {
+    setTimeout(() => {
+      const component = document.querySelector(
+        `[data-component-index="${index}"]`,
+      );
+      if (component) {
+        component.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+  }
+
+  async function handleAdd(e: CustomEvent<{ type: CanvasComponentType }>) {
+    await addComponent(e.detail.type);
   }
 </script>
 

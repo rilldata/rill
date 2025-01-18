@@ -15,10 +15,8 @@
   import RowResizer from "./RowResizer.svelte";
   import ColumnResizer from "./ColumnResizer.svelte";
   import BlankCanvas from "./BlankCanvas.svelte";
-  import type { FileArtifact } from "../entity-management/file-artifact";
 
   export let items: V1CanvasItem[];
-  export let fileArtifact: FileArtifact;
   export let selectedIndex: number | null = null;
   export let showFilterBar = true;
 
@@ -604,7 +602,7 @@
     {/if}
   </DashboardWrapper>
 {:else}
-  <BlankCanvas {fileArtifact} />
+  <BlankCanvas on:add />
 {/if}
 
 <svelte:window
