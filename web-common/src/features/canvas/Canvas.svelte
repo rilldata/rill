@@ -131,6 +131,7 @@
 {#if items.length > 0}
   <CanvasDashboardPreview
     {items}
+    {fileArtifact}
     showFilterBar={filtersEnabled}
     selectedIndex={$selectedIndex}
     on:update={handleUpdate}

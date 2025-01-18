@@ -44,7 +44,7 @@
   }
 
   function handleDragStart(e: DragEvent) {
-    console.log("[PreviewElement] handleDragStart", { i, width, height });
+    console.log("[PreviewElement] handleDragStart", { i, width, height, e });
 
     dispatch("dragstart", {
       componentIndex: i,
