@@ -6,6 +6,21 @@
     ContextMenuItem,
     ContextMenuTrigger,
   } from "@rilldata/web-common/components/context-menu";
+  import type { CanvasComponentType } from "./components/types";
+  import ChartIcon from "./ChartIcon.svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
+
+  const menuItems: {
+    id: CanvasComponentType;
+    label: string;
+    icon: ComponentType<SvelteComponent>;
+  }[] = [
+    { id: "markdown", label: "Text", icon: ChartIcon },
+    { id: "kpi", label: "KPI", icon: ChartIcon },
+    { id: "image", label: "Image", icon: ChartIcon },
+    { id: "bar_chart", label: "Chart", icon: ChartIcon },
+    { id: "table", label: "Table", icon: ChartIcon },
+  ];
 </script>
 
 <div class="size-full p-2 bg-white">
@@ -20,15 +35,21 @@
       </button>
     </ContextMenuTrigger>
     <ContextMenuContent>
-      <ContextMenuItem on:click={() => console.log("Chart")}>
-        Add chart
-      </ContextMenuItem>
-      <ContextMenuItem on:click={() => console.log("Table")}>
-        Add table
-      </ContextMenuItem>
-      <ContextMenuItem on:click={() => console.log("Text")}>
-        Add text
-      </ContextMenuItem>
+      {#each menuItems as item}
+        <ContextMenuItem
+          on:click={() => console.log(item.id)}
+          class="text-gray-700 text-xs"
+        >
+          <div class="flex flex-row gap-x-2">
+            <svelte:component
+              this={item.icon}
+              size="16px"
+              class="text-gray-700"
+            />
+            <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+          </div>
+        </ContextMenuItem>
+      {/each}
     </ContextMenuContent>
   </ContextMenu>
 </div>
