@@ -72,6 +72,8 @@
     );
     const rawItems = parsedDocument.get("items") as any;
 
+    console.log("[Canvas] rawItems", rawItems);
+
     // Remove deleted item
     rawItems.delete(index);
 
@@ -141,7 +143,7 @@
   }
 
   async function addComponent(componentType: CanvasComponentType) {
-    console.log("[CanvasDashboardPreview] adding component: ", componentType);
+    console.log("[Canvas] adding component: ", componentType);
 
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
@@ -160,6 +162,11 @@
     const docJson = parsedDocument.toJSON();
     const existingItems = docJson?.items || [];
 
+    const rawItems = parsedDocument.get("items") as any;
+
+    console.log("[Canvas] existingItems", existingItems);
+    console.log("[Canvas] rawItems", rawItems);
+
     const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
     const newComponent = {
@@ -170,7 +177,13 @@
       y,
     };
 
+    console.log("[Canvas] newComponent", newComponent);
+
     const updatedItems = [...existingItems, newComponent];
+
+    console.log("[Canvas] updatedItems", updatedItems);
+
+    console.log("[Canvas] docJson.items", docJson.items);
 
     if (!docJson.items) {
       parsedDocument.set("items", updatedItems);
@@ -187,6 +200,40 @@
     await updateComponentFile();
     scrollToComponent(newIndex);
   }
+
+  // async function addComponent(componentName: CanvasComponentType) {
+  //   const defaultMetrics = $metricsViewQuery?.data;
+  //   if (!defaultMetrics) return;
+
+  //   const newSpec = componentRegistry[componentName].newComponentSpec(
+  //     defaultMetrics.metricsView,
+  //     defaultMetrics.measure,
+  //     defaultMetrics.dimension,
+  //   );
+
+  //   const { width, height } = componentRegistry[componentName].defaultSize;
+  //   const newComponent = {
+  //     component: { [componentName]: newSpec },
+  //     height,
+  //     width,
+  //     x: 0,
+  //     y: 0,
+  //   };
+  //   const parsedDocument = parseDocument(
+  //     $editorContent ?? $remoteContent ?? "",
+  //   );
+
+  //   const items = parsedDocument.get("items") as any;
+
+  //   if (!items) {
+  //     parsedDocument.set("items", [newComponent]);
+  //   } else {
+  //     items.add(newComponent);
+  //   }
+
+  //   updateEditorContent(parsedDocument.toString(), true);
+  //   await updateComponentFile();
+  // }
 
   function scrollToComponent(index: number) {
     setTimeout(() => {
@@ -207,14 +254,13 @@
 {#if items.length > 0}
   <CanvasDashboardPreview
     {items}
-    {fileArtifact}
     showFilterBar={filtersEnabled}
     selectedIndex={$selectedIndex}
     on:update={handleUpdate}
     on:delete={handleDelete}
   />
 {:else}
-  <BlankCanvas {fileArtifact} />
+  <BlankCanvas />
 {/if}
 
 <svelte:window

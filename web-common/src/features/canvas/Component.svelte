@@ -131,10 +131,10 @@
     </div>
   {/if}
   <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
+    <!-- class:shadow-md={isHovered} -->
     <div
       class="size-full overflow-hidden flex flex-col flex-none rounded-sm border border-slate-200"
       style:border-radius="{radius}px"
-      class:shadow-md={isHovered}
     >
       <ComponentTitle {title} {description} />
       {#if renderer && rendererProperties}

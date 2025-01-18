@@ -468,142 +468,136 @@
   </div>
 {/if}
 
-{#if items.length > 0}
-  <DashboardWrapper
-    bind:contentRect
-    {scale}
-    height={maxBottom * gridCell * scale}
-    width={defaults.DEFAULT_DASHBOARD_WIDTH}
-    on:click={handleDeselect}
-    on:dragover={(e) => {
-      e.preventDefault();
-    }}
-    on:drop={handleDrop}
-  >
-    <div class="grid-container w-full">
-      {#each itemsByRow as row, index (index)}
-        <div
-          class="row w-full"
-          data-row-index={index}
-          style="height: {row.height * gridCell}px;"
-        >
-          {#each row.items as component, itemIndex}
-            {@const i = items.indexOf(component)}
-            <PreviewElement
-              {instanceId}
-              {i}
-              {component}
-              {radius}
-              selected={selectedIndex === i}
-              padding={16}
-              rowIndex={getRowIndex(component, items)}
-              columnIndex={getColumnIndex(component, items)}
-              width={Math.min(
-                Number(component.width ?? defaults.COMPONENT_WIDTH),
-                defaults.COLUMN_COUNT,
-              ) * gridCell}
-              height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
-                gridCell}
-              top={0}
-              left={Math.min(
-                Number(component.x ?? 0),
-                defaults.COLUMN_COUNT -
-                  (component.width ?? defaults.COMPONENT_WIDTH),
-              ) * gridCell}
-              onDragOver={(e) =>
-                handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
-              onDrop={(e) =>
-                handleDrop(e instanceof CustomEvent ? e.detail : e)}
-              on:dragstart={handleDragStart}
-              on:dragend={handleDragEnd}
-              on:change={handleChange}
-              on:mouseenter={handleMouseEnter}
-              on:mouseleave={handleMouseLeave}
-            />
+<DashboardWrapper
+  bind:contentRect
+  {scale}
+  height={maxBottom * gridCell * scale}
+  width={defaults.DEFAULT_DASHBOARD_WIDTH}
+  on:click={handleDeselect}
+  on:dragover={(e) => {
+    e.preventDefault();
+  }}
+  on:drop={handleDrop}
+>
+  <div class="grid-container w-full">
+    {#each itemsByRow as row, index (index)}
+      <div
+        class="row w-full"
+        data-row-index={index}
+        style="height: {row.height * gridCell}px;"
+      >
+        {#each row.items as component, itemIndex}
+          {@const i = items.indexOf(component)}
+          <PreviewElement
+            {instanceId}
+            {i}
+            {component}
+            {radius}
+            selected={selectedIndex === i}
+            padding={16}
+            rowIndex={getRowIndex(component, items)}
+            columnIndex={getColumnIndex(component, items)}
+            width={Math.min(
+              Number(component.width ?? defaults.COMPONENT_WIDTH),
+              defaults.COLUMN_COUNT,
+            ) * gridCell}
+            height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
+              gridCell}
+            top={0}
+            left={Math.min(
+              Number(component.x ?? 0),
+              defaults.COLUMN_COUNT -
+                (component.width ?? defaults.COMPONENT_WIDTH),
+            ) * gridCell}
+            onDragOver={(e) =>
+              handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
+            onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
+            on:dragstart={handleDragStart}
+            on:dragend={handleDragEnd}
+            on:change={handleChange}
+            on:mouseenter={handleMouseEnter}
+            on:mouseleave={handleMouseLeave}
+          />
 
-            {#if itemIndex < row.items.length - 1}
-              <div
-                class="col-resize-group relative"
-                role="presentation"
-                class:active={activeResizeGroup === i}
-                on:mouseenter={() => handleResizeGroupEnter(i)}
-                on:mouseleave={() => handleResizeGroupLeave(i)}
-              >
-                <ColumnResizer
-                  left={((component.x ?? 0) +
-                    (component.width ?? defaults.COMPONENT_WIDTH)) *
-                    gridCell -
-                    1.5}
-                  height={row.height * gridCell}
-                  clicked={clickedResizeHandle === i}
-                  resizing={resizingCol?.index === i}
-                  on:resize={(e) =>
-                    handleColumnResizeStart(
-                      e.detail,
-                      i,
-                      (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
-                      component.x ?? 0,
-                    )}
-                  on:click={(e) => handleResizeHandleClick(i, e.detail)}
-                />
+          {#if itemIndex < row.items.length - 1}
+            <div
+              class="col-resize-group relative"
+              role="presentation"
+              class:active={activeResizeGroup === i}
+              on:mouseenter={() => handleResizeGroupEnter(i)}
+              on:mouseleave={() => handleResizeGroupLeave(i)}
+            >
+              <ColumnResizer
+                left={((component.x ?? 0) +
+                  (component.width ?? defaults.COMPONENT_WIDTH)) *
+                  gridCell -
+                  1.5}
+                height={row.height * gridCell}
+                clicked={clickedResizeHandle === i}
+                resizing={resizingCol?.index === i}
+                on:resize={(e) =>
+                  handleColumnResizeStart(
+                    e.detail,
+                    i,
+                    (component.width ?? defaults.COMPONENT_WIDTH) * gridCell,
+                    component.x ?? 0,
+                  )}
+                on:click={(e) => handleResizeHandleClick(i, e.detail)}
+              />
 
-                <FloatingButtonGroup
-                  show={clickedResizeHandle === i}
-                  left={((component.x ?? 0) +
-                    (component.width ?? defaults.COMPONENT_WIDTH)) *
-                    gridCell -
-                    12}
-                  top={row.height * gridCell}
-                  on:spreadevenly={() => {
-                    handleSpreadEvenly(i);
-                    clickedResizeHandle = null;
-                  }}
-                />
-              </div>
-            {/if}
-          {/each}
-        </div>
+              <FloatingButtonGroup
+                show={clickedResizeHandle === i}
+                left={((component.x ?? 0) +
+                  (component.width ?? defaults.COMPONENT_WIDTH)) *
+                  gridCell -
+                  12}
+                top={row.height * gridCell}
+                on:spreadevenly={() => {
+                  handleSpreadEvenly(i);
+                  clickedResizeHandle = null;
+                }}
+              />
+            </div>
+          {/if}
+        {/each}
+      </div>
 
-        <RowResizer
-          on:resize={(e) =>
-            handleRowResizeStart(e.detail, index, row.height * gridCell)}
-        />
-      {/each}
-    </div>
+      <RowResizer
+        on:resize={(e) =>
+          handleRowResizeStart(e.detail, index, row.height * gridCell)}
+      />
+    {/each}
+  </div>
 
-    {#if dropTarget && draggedComponent}
-      {@const targetItem = items[dropTarget.index]}
-      {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
-        <DropIndicator
-          height={dropTarget.position === "bottom" ||
-          dropTarget.position === "top"
-            ? 2
-            : targetItem.height * gridCell}
-          top={dropTarget.position === "bottom"
-            ? (targetItem.y + targetItem.height) * gridCell
-            : dropTarget.position === "top"
-              ? targetItem.y * gridCell
-              : targetItem.y * gridCell}
-          left={dropTarget.position === "right"
-            ? (targetItem.x + targetItem.width) * gridCell
-            : dropTarget.position === "bottom" || dropTarget.position === "top"
-              ? 0
-              : targetItem.x * gridCell}
-          width={dropTarget.position === "bottom" ||
-          dropTarget.position === "top"
-            ? defaults.DEFAULT_DASHBOARD_WIDTH
-            : undefined}
-          orientation={dropTarget.position === "bottom" ||
-          dropTarget.position === "top"
-            ? "horizontal"
-            : "vertical"}
-        />
-      {/if}
+  {#if dropTarget && draggedComponent}
+    {@const targetItem = items[dropTarget.index]}
+    {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
+      <DropIndicator
+        height={dropTarget.position === "bottom" ||
+        dropTarget.position === "top"
+          ? 2
+          : targetItem.height * gridCell}
+        top={dropTarget.position === "bottom"
+          ? (targetItem.y + targetItem.height) * gridCell
+          : dropTarget.position === "top"
+            ? targetItem.y * gridCell
+            : targetItem.y * gridCell}
+        left={dropTarget.position === "right"
+          ? (targetItem.x + targetItem.width) * gridCell
+          : dropTarget.position === "bottom" || dropTarget.position === "top"
+            ? 0
+            : targetItem.x * gridCell}
+        width={dropTarget.position === "bottom" || dropTarget.position === "top"
+          ? defaults.DEFAULT_DASHBOARD_WIDTH
+          : undefined}
+        orientation={dropTarget.position === "bottom" ||
+        dropTarget.position === "top"
+          ? "horizontal"
+          : "vertical"}
+      />
     {/if}
-  </DashboardWrapper>
-{:else}
-  <BlankCanvas on:add />
-{/if}
+  {/if}
+</DashboardWrapper>
 
 <svelte:window
   on:mousemove={(e) => {

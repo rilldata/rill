@@ -50,6 +50,7 @@
     getAllErrors,
     remoteContent,
     hasUnsavedChanges,
+    saveLocalContent,
   } = fileArtifact);
 
   $: resourceQuery = getResource(queryClient, instanceId);
@@ -89,26 +90,29 @@
     if (newRoute) await goto(newRoute);
   }
 
-  function addComponent(componentName: CanvasComponentType) {
+  async function addComponent(componentType: CanvasComponentType) {
+    console.log("[CanvasWorkspace] adding component: ", componentType);
+
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
-    const newSpec = componentRegistry[componentName].newComponentSpec(
+    const newSpec = componentRegistry[componentType].newComponentSpec(
       defaultMetrics.metricsView,
       defaultMetrics.measure,
       defaultMetrics.dimension,
     );
 
-    const { width, height } = componentRegistry[componentName].defaultSize;
+    const { width, height } = componentRegistry[componentType].defaultSize;
 
     const parsedDocument = parseDocument($editorContent ?? "");
+    const items = parsedDocument.get("items") as any;
     const docJson = parsedDocument.toJSON();
     const existingItems = docJson?.items || [];
 
     const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
     const newComponent = {
-      component: { [componentName]: newSpec },
+      component: { [componentType]: newSpec },
       height,
       width,
       x,
@@ -120,14 +124,12 @@
     if (!docJson.items) {
       parsedDocument.set("items", updatedItems);
     } else {
-      parsedDocument.set("items", updatedItems);
+      items.add(newComponent);
     }
 
     const newIndex = existingItems.length;
-    canvasEntity.setSelectedComponentIndex(newIndex);
-
     updateEditorContent(parsedDocument.toString(), true);
-    // await saveLocalContent();
+    await saveLocalContent();
     scrollToComponent(newIndex);
   }
 

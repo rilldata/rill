@@ -29,6 +29,7 @@
   ];
 
   function handleAddComponent(componentType: CanvasComponentType) {
+    console.log("[BlankCanvas] handleAddComponent", componentType);
     dispatch("add", { type: componentType });
   }
 </script>
