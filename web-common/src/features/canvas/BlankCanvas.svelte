@@ -2,8 +2,8 @@
   import { PlusCircleIcon } from "lucide-svelte";
 </script>
 
-<div class="size-full p-2">
-  <!-- TODO -->
+<div class="size-full p-2 bg-white">
+  <!-- FIXME -->
   <button
     type="button"
     class="flex flex-col items-center gap-2 p-8 rounded-[6px] border border-slate-200 w-full"

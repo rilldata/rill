@@ -45,8 +45,6 @@
   let activeResizeGroup: number | null = null;
   let clickedResizeHandle: number | null = null;
 
-  $: console.log("clickedResizeHandle: ", clickedResizeHandle);
-
   $: ({ instanceId } = $runtime);
 
   $: gridWidth = contentRect.width;
