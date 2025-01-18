@@ -3,6 +3,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { ChevronDown, Plus } from "lucide-svelte";
+  import type { ComponentType, SvelteComponent } from "svelte";
+  import ChartIcon from "../icons/ChartIcon.svelte";
+  import TableIcon from "../icons/TableIcon.svelte";
+  import TextIcon from "../icons/TextIcon.svelte";
+  import BigNumberIcon from "../icons/BigNumberIcon.svelte";
 
   export let addComponent: (componentType: CanvasComponentType) => void;
 
@@ -11,12 +16,13 @@
   const menuItems: {
     id: CanvasComponentType;
     label: string;
+    icon: ComponentType<SvelteComponent>;
   }[] = [
-    { id: "markdown", label: "Text" },
-    { id: "kpi", label: "KPI" },
-    { id: "image", label: "Image" },
-    { id: "bar_chart", label: "Chart" },
-    { id: "table", label: "Table" },
+    { id: "bar_chart", label: "Chart", icon: ChartIcon },
+    { id: "table", label: "Table", icon: TableIcon },
+    { id: "markdown", label: "Text", icon: TextIcon },
+    { id: "kpi", label: "KPI", icon: BigNumberIcon },
+    { id: "image", label: "Image", icon: ChartIcon },
   ];
 </script>
 
@@ -34,7 +40,10 @@
     <DropdownMenu.Group>
       {#each menuItems as item}
         <DropdownMenu.Item on:click={() => addComponent(item.id)}>
-          {item.label}
+          <div class="flex flex-row gap-x-2">
+            <svelte:component this={item.icon} />
+            <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+          </div>
         </DropdownMenu.Item>
       {/each}
     </DropdownMenu.Group>
