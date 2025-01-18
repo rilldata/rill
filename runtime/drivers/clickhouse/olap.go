@@ -604,9 +604,9 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	}
 	// create the distributed table
 	var distributed strings.Builder
-	database := c.config.Database
-	if c.config.Database == "" {
-		database = "currentDatabase()"
+	database := "currentDatabase()"
+	if c.config.Database != "" {
+		database = safeSQLString(c.config.Database)
 	}
 	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
 	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
