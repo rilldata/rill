@@ -137,7 +137,7 @@
     on:delete={handleDelete}
   />
 {:else}
-  <BlankCanvas />
+  <BlankCanvas {fileArtifact} />
 {/if}
 
 <svelte:window
