@@ -21,5 +21,5 @@ rill version [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill](cli.md)	 - A CLI for Rill
 

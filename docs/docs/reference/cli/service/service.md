@@ -23,7 +23,7 @@ Manage service accounts
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill service create](create.md)	 - Create service
 * [rill service delete](delete.md)	 - Delete service
 * [rill service list](list.md)	 - List service
