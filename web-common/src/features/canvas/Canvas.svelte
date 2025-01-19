@@ -155,9 +155,6 @@
       $editorContent ?? $remoteContent ?? "",
     );
     const items = parsedDocument.get("items") as any;
-    if (!items) {
-      parsedDocument.set("items", []);
-    }
 
     const itemsToPosition =
       spec?.items?.map((item) => ({
@@ -177,46 +174,16 @@
       y,
     };
 
-    items.add(newComponent);
+    if (!items) {
+      parsedDocument.set("items", [newComponent]);
+    } else {
+      items.add(newComponent);
+    }
     updateEditorContent(parsedDocument.toString(), true);
 
     await updateComponentFile();
     scrollToComponent(itemsToPosition.length);
   }
-
-  // async function addComponent(componentName: CanvasComponentType) {
-  //   const defaultMetrics = $metricsViewQuery?.data;
-  //   if (!defaultMetrics) return;
-
-  //   const newSpec = componentRegistry[componentName].newComponentSpec(
-  //     defaultMetrics.metricsView,
-  //     defaultMetrics.measure,
-  //     defaultMetrics.dimension,
-  //   );
-
-  //   const { width, height } = componentRegistry[componentName].defaultSize;
-  //   const newComponent = {
-  //     component: { [componentName]: newSpec },
-  //     height,
-  //     width,
-  //     x: 0,
-  //     y: 0,
-  //   };
-  //   const parsedDocument = parseDocument(
-  //     $editorContent ?? $remoteContent ?? "",
-  //   );
-
-  //   const items = parsedDocument.get("items") as any;
-
-  //   if (!items) {
-  //     parsedDocument.set("items", [newComponent]);
-  //   } else {
-  //     items.add(newComponent);
-  //   }
-
-  //   updateEditorContent(parsedDocument.toString(), true);
-  //   await updateComponentFile();
-  // }
 
   function scrollToComponent(index: number) {
     setTimeout(() => {

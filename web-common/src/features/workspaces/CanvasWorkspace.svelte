@@ -124,7 +124,7 @@
     if (!docJson.items) {
       parsedDocument.set("items", updatedItems);
     } else {
-      parsedDocument.set("items", updatedItems);
+      items.add(newComponent);
     }
 
     const newIndex = existingItems.length;

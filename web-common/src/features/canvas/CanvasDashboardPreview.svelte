@@ -14,7 +14,6 @@
   import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
   import RowResizer from "./RowResizer.svelte";
   import ColumnResizer from "./ColumnResizer.svelte";
-  import BlankCanvas from "./BlankCanvas.svelte";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
