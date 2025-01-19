@@ -28,6 +28,8 @@ export class CanvasResolvedSpec {
 
   getAllSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
 
+  getMetricsViewMeasureMap: Readable<Record<string, Set<string>>>;
+
   /** Dimension Selectors */
   getDimensionsForMetricView: (
     metricViewName: string,
@@ -37,6 +39,9 @@ export class CanvasResolvedSpec {
     dimensionName: string,
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
+
+  getAllDimensions: Readable<MetricsViewSpecMeasureV2[]>;
+  getMetricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
@@ -110,6 +115,40 @@ export class CanvasResolvedSpec {
         );
       });
 
+    this.getMetricsViewMeasureMap = derived(
+      validSpecStore,
+      ($validSpecStore) => {
+        const metricsViewMeasureMap: Record<string, Set<string>> = {};
+        for (const [metricViewName, metricsViewData] of Object.entries(
+          $validSpecStore.data?.metricsViews || {},
+        )) {
+          metricsViewMeasureMap[metricViewName] = new Set(
+            metricsViewData?.state?.validSpec?.measures?.map(
+              (m) => m.name as string,
+            ) || [],
+          );
+        }
+        return metricsViewMeasureMap;
+      },
+    );
+
+    this.getMetricsViewDimensionsMap = derived(
+      validSpecStore,
+      ($validSpecStore) => {
+        const metricsViewDimensionMap: Record<string, Set<string>> = {};
+        for (const [metricViewName, metricsViewData] of Object.entries(
+          $validSpecStore.data?.metricsViews || {},
+        )) {
+          metricsViewDimensionMap[metricViewName] = new Set(
+            metricsViewData?.state?.validSpec?.dimensions?.map(
+              (d) => (d.name || d.column) as string,
+            ) || [],
+          );
+        }
+        return metricsViewDimensionMap;
+      },
+    );
+
     // export const useAllDimensionFromMetrics = (
     //   instanceId: string,
     //   metricsViewNames: string[],
@@ -124,6 +163,14 @@ export class CanvasResolvedSpec {
     //       .flat(),
     //   );
     // };
+  }
+
+  getMetricViewFromMeasure(measureName: string) {
+    return derived(this.getMetricsViewMeasureMap, ($metricsMeasureMap) => {
+      for (const [key, value] of Object.entries($metricsMeasureMap)) {
+        if (value.has(measureName)) return key;
+      }
+    });
   }
 
   private filterSimpleMeasures = (

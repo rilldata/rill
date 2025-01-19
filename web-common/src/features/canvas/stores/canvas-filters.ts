@@ -119,10 +119,13 @@ export class CanvasFilters {
         ) => {
           const itemsCopy = [...measureFilterItems];
           if (tempFilter && measureIdMap.has(tempFilter)) {
+            // const metricsView = spec.getMetricViewFromMeasure(tempFilter);
             itemsCopy.push({
               dimensionName: "",
               name: tempFilter,
               label: getMeasureDisplayName(measureIdMap.get(tempFilter)),
+              // metricsView,
+              // dimensions: [],
             });
           }
           return itemsCopy;

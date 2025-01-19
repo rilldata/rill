@@ -27,8 +27,7 @@
     items: [],
   };
 
-  $: ({ saveLocalContent, updateEditorContent, editorContent, remoteContent } =
-    fileArtifact);
+  $: ({ saveLocalContent, updateEditorContent, editorContent } = fileArtifact);
 
   $: spec = structuredClone($canvasSpec ?? spec);
 

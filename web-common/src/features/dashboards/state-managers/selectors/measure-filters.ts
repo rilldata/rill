@@ -4,6 +4,7 @@ import type { DashboardDataSources } from "@rilldata/web-common/features/dashboa
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import type { Readable } from "svelte/store";
 
 export const measureHasFilter = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -18,6 +19,7 @@ export type MeasureFilterItem = {
   dimensionName: string;
   name: string;
   label: string;
+  metricsView?: Readable<string>;
   filter?: MeasureFilterEntry;
 };
 export const getMeasureFilterItems = (

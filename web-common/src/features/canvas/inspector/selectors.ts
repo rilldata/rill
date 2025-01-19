@@ -8,13 +8,10 @@ import { derived } from "svelte/store";
 import { parseDocument } from "yaml";
 
 export function getParsedDocument(fileArtifact: FileArtifact) {
-  const { editorContent, remoteContent } = fileArtifact;
-  return derived(
-    [editorContent, remoteContent],
-    ([$localContent, $remoteContent]) => {
-      return parseDocument($localContent ?? $remoteContent ?? "");
-    },
-  );
+  const { editorContent } = fileArtifact;
+  return derived([editorContent], ([$localContent]) => {
+    return parseDocument($localContent ?? "");
+  });
 }
 
 export function useMetricFieldData(

@@ -36,6 +36,8 @@
         measureHasFilter,
       },
       spec: {
+        getMetricsViewDimensionsMap,
+        getMetricsViewMeasureMap,
         getDimensionsForMetricView,
         getMeasuresForMetricView,
         getAllSimpleMeasures,
