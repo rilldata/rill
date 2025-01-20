@@ -1,11 +1,5 @@
 name: Build and Test docs
 on:
-  push:
-    tags:
-      - "*"
-    paths:
-      - ".github/workflows/docs-check.yml"
-      - "docs/**"
   workflow_dispatch:
   pull_request:
     paths:
