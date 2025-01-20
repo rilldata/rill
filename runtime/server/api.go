@@ -65,14 +65,22 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// TODO: Should it resolve security and check access here?
+	resolverProps := api.Spec.ResolverProperties.AsMap()
+	skipResolverSecurity := resolverProps["skip_resolver_security"]
+	claims := auth.GetClaims(ctx).SecurityClaims()
+	// for each claim skip checks
+	if skipResolverSecurity != nil && skipResolverSecurity.(bool) {
+		// SkipChecks
+		claims.SkipChecks = true
+	}
 
 	// Resolve the API to JSON data
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
+		ResolverProperties: resolverProps,
 		Args:               args,
-		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+		Claims:             claims,
 	})
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)

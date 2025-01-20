@@ -106,14 +106,15 @@ func (p *Parser) parseAPI(node *Node) error {
 // DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
 // It is used across multiple resources, usually under "data:", but inlined for APIs.
 type DataYAML struct {
-	Connector      string             `yaml:"connector"`
-	SQL            string             `yaml:"sql"`
-	MetricsSQL     string             `yaml:"metrics_sql"`
-	API            string             `yaml:"api"`
-	Args           map[string]any     `yaml:"args"`
-	Glob           yaml.Node          `yaml:"glob"` // Path (string) or properties (map[string]any)
-	ResourceStatus map[string]any     `yaml:"resource_status"`
-	Security       SecurityPolicyYAML `yaml:"security"`
+	Connector            string             `yaml:"connector"`
+	SQL                  string             `yaml:"sql"`
+	MetricsSQL           string             `yaml:"metrics_sql"`
+	API                  string             `yaml:"api"`
+	Args                 map[string]any     `yaml:"args"`
+	Glob                 yaml.Node          `yaml:"glob"` // Path (string) or properties (map[string]any)
+	ResourceStatus       map[string]any     `yaml:"resource_status"`
+	Security             SecurityPolicyYAML `yaml:"security"`
+	SkipResolverSecurity bool               `yaml:"skip_resolver_security"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -125,6 +126,10 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 	var resolver string
 	var refs []ResourceName
 	resolverProps := make(map[string]any)
+
+	if raw.SkipResolverSecurity {
+		resolverProps["skip_resolver_security"] = raw.SkipResolverSecurity
+	}
 
 	// Handle basic SQL resolver
 	if raw.SQL != "" {
