@@ -67,7 +67,7 @@ func (e *Executor) resolveTimeRange(tr *TimeRange, tz *time.Location, minTime, m
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
-	rillTime, err := rilltime.Parse(tr.Expression)
+	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{})
 	if err != nil {
 		return err
 	}

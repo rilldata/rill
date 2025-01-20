@@ -495,7 +495,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := rilltime.Parse(tmp.DefaultTimeRange)
+		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -742,7 +742,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := rilltime.Parse(r.Range)
+			_, err := rilltime.Parse(r.Range, rilltime.ParseOptions{})
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}

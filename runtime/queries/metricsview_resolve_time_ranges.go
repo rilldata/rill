@@ -71,7 +71,7 @@ func (q *MetricsViewTimeRanges) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	timeRanges := make([]*runtimev1.TimeRange, len(q.Expressions))
 	for i, tr := range q.Expressions {
-		rillTime, err := rilltime.Parse(tr)
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf("error parsing time range %s: %w", tr, err)
 		}

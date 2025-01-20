@@ -78,7 +78,7 @@ func parseTimeRangeArgs(args []ast.ExprNode) (*rilltime.Expression, error) {
 		return nil, err
 	}
 
-	rt, err := rilltime.Parse(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"))
+	rt, err := rilltime.Parse(strings.TrimSuffix(strings.TrimPrefix(du, "'"), "'"), rilltime.ParseOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
 	}

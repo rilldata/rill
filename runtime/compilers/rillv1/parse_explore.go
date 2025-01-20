@@ -166,7 +166,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	// Build and validate time ranges
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.TimeRanges {
-		if _, err := rilltime.Parse(tr.Range); err != nil {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
 			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
 		}
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
@@ -195,7 +195,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	var defaultPreset *runtimev1.ExplorePreset
 	if tmp.Defaults != nil {
 		if tmp.Defaults.TimeRange != "" {
-			if _, err := rilltime.Parse(tmp.Defaults.TimeRange); err != nil {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}
