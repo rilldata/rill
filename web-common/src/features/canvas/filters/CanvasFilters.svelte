@@ -17,7 +17,6 @@
   import CanvasSuperPill from "./CanvasSuperPill.svelte";
 
   export let readOnly = false;
-  export let metricsViewName = "bids";
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -40,7 +39,7 @@
         getAllMeasureFilterItems,
         measureHasFilter,
       },
-      spec: { getDimensionsForMetricView, getAllSimpleMeasures },
+      spec: { allDimensions, allSimpleMeasures },
       timeControls: {
         selectedTimeRange,
         selectedComparisonTimeRange,
@@ -50,15 +49,13 @@
     },
   } = getCanvasStateManagers();
 
-  $: dimensions = getDimensionsForMetricView(metricsViewName);
-
   $: dimensionIdMap = getMapFromArray(
-    $dimensions,
+    $allDimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
   $: measureIdMap = getMapFromArray(
-    $getAllSimpleMeasures,
+    $allSimpleMeasures,
     (m) => m.name as string,
   );
 
@@ -128,15 +125,15 @@
           No filters selected
         </div>
       {:else}
-        {#each allDimensionFilters as { name, label, selectedValues } (name)}
-          {@const dimension = $dimensions.find(
+        {#each allDimensionFilters as { name, label, selectedValues, metricsViewNames } (name)}
+          {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
           {@const dimensionName = dimension?.name || dimension?.column}
           <div animate:flip={{ duration: 200 }}>
-            {#if dimensionName}
+            {#if dimensionName && metricsViewNames?.length}
               <DimensionFilter
-                {metricsViewName}
+                {metricsViewNames}
                 {readOnly}
                 {name}
                 {label}
@@ -156,7 +153,7 @@
         {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
-              allDimensions={dimensionsForMeasure || $dimensions}
+              allDimensions={dimensionsForMeasure || $allDimensions}
               {name}
               {label}
               {dimensionName}
@@ -171,8 +168,8 @@
 
       {#if !readOnly}
         <FilterButton
-          allDimensions={$dimensions}
-          filteredSimpleMeasures={$getAllSimpleMeasures}
+          allDimensions={$allDimensions}
+          filteredSimpleMeasures={$allSimpleMeasures}
           dimensionHasFilter={$dimensionHasFilter}
           measureHasFilter={$measureHasFilter}
           {setTemporaryFilterName}

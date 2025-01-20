@@ -26,7 +26,7 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
 
-  getAllSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
+  allSimpleMeasures: Readable<MetricsViewSpecMeasureV2[]>;
 
   metricsViewMeasureMap: Readable<Record<string, Set<string>>>;
 
@@ -40,7 +40,7 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
 
-  getAllDimensions: Readable<MetricsViewSpecMeasureV2[]>;
+  allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   constructor(validSpecStore: CanvasSpecResponseStore) {
@@ -75,7 +75,7 @@ export class CanvasResolvedSpec {
         );
       });
 
-    this.getAllSimpleMeasures = derived(validSpecStore, ($validSpecStore) => {
+    this.allSimpleMeasures = derived(validSpecStore, ($validSpecStore) => {
       if (!$validSpecStore.data) return [];
       const measures = Object.values(
         $validSpecStore.data.metricsViews || {},
@@ -85,6 +85,23 @@ export class CanvasResolvedSpec {
       const uniqueByName = new Map<string, MetricsViewSpecMeasureV2>();
       for (const measure of measures) {
         uniqueByName.set(measure.name as string, measure);
+      }
+      return [...uniqueByName.values()];
+    });
+
+    this.allDimensions = derived(validSpecStore, ($validSpecStore) => {
+      if (!$validSpecStore.data) return [];
+      const dimensions = Object.values(
+        $validSpecStore.data.metricsViews || {},
+      ).flatMap(
+        (metricsView) => metricsView?.state?.validSpec?.dimensions || [],
+      );
+      const uniqueByName = new Map<string, MetricsViewSpecDimensionV2>();
+      for (const dimension of dimensions) {
+        uniqueByName.set(
+          (dimension.name || dimension.column) as string,
+          dimension,
+        );
       }
       return [...uniqueByName.values()];
     });
@@ -145,11 +162,6 @@ export class CanvasResolvedSpec {
         return metricsViewDimensionMap;
       },
     );
-    // this.getAllDimensions = derived([validSpecStore, this.metricViewNames], [$validSpecStore,metricViewNames] => {
-    //   return metricViewNames.map((metricViewName) => {
-    //     return this.getDimensionsForMetricView(metricViewName);
-    //   }).flat();
-    // });
   }
 
   getDimensionsFromMeasure(measureName: string): MetricsViewSpecDimensionV2[] {
@@ -162,6 +174,15 @@ export class CanvasResolvedSpec {
     if (metricViewName)
       return get(this.getDimensionsForMetricView(metricViewName));
     return [];
+  }
+
+  getMetricsViewNamesForDimension(dimensionName: string): string[] {
+    const metricsDimensionMap = get(this.metricsViewDimensionsMap);
+    const metricViewNames: string[] = [];
+    for (const [key, value] of Object.entries(metricsDimensionMap)) {
+      if (value.has(dimensionName)) metricViewNames.push(key);
+    }
+    return metricViewNames;
   }
 
   private filterSimpleMeasures = (

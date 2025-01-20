@@ -7,16 +7,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fly } from "svelte/transition";
-  import {
-    createInExpression,
-    createLikeExpression,
-  } from "../../stores/filter-utils";
+  import { useDimensionSearch } from "./dimensionFilterValues";
 
   export let name: string;
-  export let metricsViewName: string;
+  export let metricsViewNames: string[];
   export let label: string;
   export let selectedValues: string[];
   export let excludeMode: boolean;
@@ -31,46 +27,25 @@
 
   let open = openOnMount && !selectedValues.length;
   let searchText = "";
-  let allValues: string[] = [];
 
   $: ({ instanceId } = $runtime);
 
-  $: addNull = searchText.length !== 0 && "null".includes(searchText);
-
-  $: searchQuery = createQueryServiceMetricsViewAggregation(
+  $: searchValues = useDimensionSearch(
     instanceId,
-    metricsViewName,
-    {
-      dimensions: [{ name }],
-
-      timeRange: {
-        start: timeStart,
-        end: timeEnd,
-      },
-      limit: "100",
-      offset: "0",
-      sort: [{ name }],
-      where: addNull
-        ? createInExpression(name, [null])
-        : createLikeExpression(name, `%${searchText}%`),
-    },
-    {
-      query: {
-        enabled: Boolean(timeControlsReady && open),
-      },
-    },
+    metricsViewNames,
+    name,
+    searchText,
+    timeStart,
+    timeEnd,
+    Boolean(timeControlsReady && open),
   );
 
-  $: allValues =
-    $searchQuery?.data?.data?.map((datum) => datum[name] as string) ??
-    allValues;
-
   $: allSelected = Boolean(
-    selectedValues.length && allValues?.length === selectedValues.length,
+    selectedValues.length && $searchValues?.length === selectedValues.length,
   );
 
   function onToggleSelectAll() {
-    allValues?.forEach((dimensionValue) => {
+    $searchValues?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -146,7 +121,7 @@
     selectableGroups={[
       {
         name: "DIMENSIONS",
-        items: allValues.map((dimensionValue) => ({
+        items: $searchValues.map((dimensionValue) => ({
           name: dimensionValue,
           label: dimensionValue,
         })),

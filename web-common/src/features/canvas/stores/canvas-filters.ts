@@ -158,13 +158,15 @@ export class CanvasFilters {
           dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
         ) => {
           const merged = [...dimensionFilterItems];
-
           if (tempFilter && dimensionIdMap.has(tempFilter)) {
+            const metricsViewNames =
+              spec.getMetricsViewNamesForDimension(tempFilter);
             merged.push({
               name: tempFilter,
               label: getDimensionDisplayName(dimensionIdMap.get(tempFilter)),
               selectedValues: [],
               isInclude: true,
+              metricsViewNames,
             });
           }
           return merged.sort(filterItemsSortFunction);
@@ -244,11 +246,13 @@ export class CanvasFilters {
           const dim = dimensionIdMap.get(ident);
           if (!dim) return;
           addedDimension.add(ident);
+          const metricsViewNames = spec.getMetricsViewNamesForDimension(ident);
           filteredDimensions.push({
             name: ident,
             label: getDimensionDisplayName(dim),
             selectedValues: getValuesInExpression(e),
             isInclude: e.cond?.op === V1Operation.OPERATION_IN,
+            metricsViewNames,
           });
         });
         return filteredDimensions.sort(filterItemsSortFunction);

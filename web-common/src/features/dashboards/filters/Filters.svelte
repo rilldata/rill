@@ -156,7 +156,7 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
-                metricsViewName={$metricsViewName}
+                metricsViewNames={[$metricsViewName]}
                 {readOnly}
                 {name}
                 {label}
