@@ -1,20 +1,20 @@
 <script lang="ts">
+  import type { OnboardingState } from "@rilldata/web-common/features/welcome/wizard/onboarding-state";
   import "./wizard.css";
 
-  export let managementType: "rill-managed" | "self-managed";
-  export let onSelectManagementType: (
-    managementType: "rill-managed" | "self-managed",
-  ) => void;
+  export let onboardingState: OnboardingState;
 
-  const managementTypeOptions = ["rill-managed", "self-managed"];
+  const { managementType } = onboardingState;
+
+  const managementTypeOptions = ["rill-managed", "self-managed"] as const;
 </script>
 
 <div class="management-toggle">
   {#each managementTypeOptions as option (option)}
     <button
       class="option"
-      class:selected={managementType === option}
-      on:click={() => onSelectManagementType(option)}
+      class:selected={$managementType === option}
+      on:click={() => onboardingState.selectManagementType(option)}
     >
       {option.charAt(0).toUpperCase() + option.slice(1)}
     </button>

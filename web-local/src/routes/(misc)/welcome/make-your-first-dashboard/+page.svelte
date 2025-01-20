@@ -1,12 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
   import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/connector-explorer-store";
-  import { Button } from "../../../../components/button";
-  import { BehaviourEventMedium } from "../../../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../../../metrics/service/MetricsTypes";
-  import { runtime } from "../../../../runtime-client/runtime-store";
-  import ConnectorExplorer from "../../../connectors/ConnectorExplorer.svelte";
-  import { useCreateMetricsViewFromTableUIAction } from "../../../metrics-views/ai-generation/generateMetricsView";
+  import ConnectorExplorer from "@rilldata/web-common/features/connectors/ConnectorExplorer.svelte";
+  import { useCreateMetricsViewFromTableUIAction } from "@rilldata/web-common/features/metrics-views/ai-generation/generateMetricsView";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
+  export let data: PageData;
+  const { onboardingState } = data;
 
   const store = connectorExplorerStore.duplicateStore();
 
@@ -15,12 +18,12 @@
 
   async function createDashboard() {
     await createMetricsViewFromTable();
-    clearWelcomeStateFromLocalStorage();
+    onboardingState.complete();
   }
 
   async function skip() {
     await goto("/");
-    clearWelcomeStateFromLocalStorage();
+    onboardingState.complete();
   }
 
   let createMetricsViewFromTable: () => Promise<void>;
@@ -37,12 +40,6 @@
         MetricsEventSpace.Workspace,
       );
     }
-  }
-
-  function clearWelcomeStateFromLocalStorage() {
-    localStorage.removeItem("welcomeStep");
-    localStorage.removeItem("welcomeManagementType");
-    localStorage.removeItem("welcomeOlapDriver");
   }
 </script>
 

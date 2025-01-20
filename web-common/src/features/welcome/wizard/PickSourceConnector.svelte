@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { Button } from "../../../../components/button";
+  import { Button } from "../../../components/button";
   import {
     CLICKHOUSE_SOURCE_CONNECTORS,
     DUCKDB_SOURCE_CONNECTORS,
-  } from "../../../connectors/connector-availability";
-  import { logoIconMapping } from "../../../connectors/connector-icon-mapping";
-  import type { OlapDriver } from "../../../connectors/olap/olap-config";
+  } from "../../connectors/connector-availability";
+  import { logoIconMapping } from "../../connectors/connector-icon-mapping";
+  import type { OnboardingState } from "./onboarding-state";
 
-  export let olapDriver: OlapDriver;
-  export let firstDataSource: string | undefined;
-  export let onSelectFirstDataSource: (dataSource: string) => void;
-  export let onContinue: () => void;
-  export let onSkip: () => void;
+  export let onboardingState: OnboardingState;
+  export let continueHref: string;
+  export let skipHref: string;
+
+  const { olapDriver, firstDataSource } = onboardingState;
 
   $: dataSources =
-    olapDriver === "duckdb"
+    $olapDriver === "duckdb"
       ? DUCKDB_SOURCE_CONNECTORS
       : CLICKHOUSE_SOURCE_CONNECTORS;
 </script>
@@ -25,8 +25,8 @@
     {#each dataSources as source (source)}
       <button
         class="source-button"
-        class:active={firstDataSource === source}
-        on:click={() => onSelectFirstDataSource(source)}
+        class:active={$firstDataSource === source}
+        on:click={() => onboardingState.toggleFirstDataSource(source)}
       >
         <svelte:component this={logoIconMapping[source]} />
       </button>
@@ -34,10 +34,10 @@
   </div>
 </div>
 
-{#if firstDataSource}
-  <Button wide type="primary" on:click={onContinue}>Continue</Button>
+{#if $firstDataSource}
+  <Button wide type="primary" href={continueHref}>Continue</Button>
 {:else}
-  <Button wide type="secondary" on:click={onSkip}>Skip</Button>
+  <Button wide type="secondary" href={skipHref}>Skip</Button>
 {/if}
 
 <!-- <div class="help-text">

@@ -1,16 +1,17 @@
 export const ssr = false;
 
-import { redirect } from "@sveltejs/kit";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import { getOnboardingState } from "@rilldata/web-common/features/welcome/wizard/onboarding-state";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
-import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { redirect } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
+// TODO: Move initilization logic to the OnboardingState class
 export async function load({ url, depends, untrack }) {
   depends("init");
 
@@ -27,7 +28,7 @@ export async function load({ url, depends, untrack }) {
     file.path?.startsWith("/dashboards/"),
   );
 
-  let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
+  const initialized = getOnboardingState().isInitialized();
 
   const redirectPath = untrack(() => {
     return (
@@ -38,7 +39,7 @@ export async function load({ url, depends, untrack }) {
   });
 
   if (!initialized) {
-    initialized = await handleUninitializedProject(instanceId);
+    // initialized = await handleUninitializedProject(instanceId);
   } else if (redirectPath) {
     throw redirect(303, redirectPath);
   }
