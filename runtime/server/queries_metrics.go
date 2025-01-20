@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -413,17 +415,49 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 	}
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	q := &queries.MetricsViewTimeRanges{
-		MetricsViewName: req.MetricsViewName,
-		Expressions:     req.Expressions,
-		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
-	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
 	}
 
-	return q.Result, nil
+	ts, err := queries.ResolveTimestampResult(ctx, s.runtime, req.InstanceId, req.MetricsViewName, auth.GetClaims(ctx).SecurityClaims(), int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	// to keep results consistent
+	now := time.Now()
+
+	timeRanges := make([]*runtimev1.TimeRange, len(req.Expressions))
+	for i, tr := range req.Expressions {
+		rillTime, err := rilltime.Parse(tr, rilltime.ParseOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("error parsing time range %s: %w", tr, err)
+		}
+
+		start, end, err := rillTime.Eval(rilltime.EvalOptions{
+			Now:        now,
+			MinTime:    ts.Min,
+			MaxTime:    ts.Max,
+			Watermark:  ts.Watermark,
+			FirstDay:   int(mv.ValidSpec.FirstDayOfWeek),
+			FirstMonth: int(mv.ValidSpec.FirstMonthOfYear),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		timeRanges[i] = &runtimev1.TimeRange{
+			Start: timestamppb.New(start),
+			End:   timestamppb.New(end),
+			// for a reference
+			Expression: tr,
+		}
+	}
+
+	return &runtimev1.MetricsViewTimeRangesResponse{
+		TimeRanges: timeRanges,
+	}, nil
 }
 
 func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewState, *runtime.ResolvedSecurity, error) {
