@@ -105,8 +105,8 @@ type Grain struct {
 }
 
 type AtModifiers struct {
-	Offset   *TimeAnchor `parser:"@@?"`
-	TimeZone *string     `parser:"@TimeZone?"`
+	Offset   *Grain  `parser:"@@?"`
+	TimeZone *string `parser:"@TimeZone?"`
 }
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
@@ -208,18 +208,18 @@ func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
 	}
 
 	if e.Start != nil {
-		start = e.Modify(evalOpts, e.Start, start, true)
+		start = e.modify(evalOpts, e.Start, start)
 	}
 
 	end := evalOpts.Watermark
 	if e.End != nil {
-		end = e.Modify(evalOpts, e.End, end, true)
+		end = e.modify(evalOpts, e.End, end)
 	}
 
 	return start, end, nil
 }
 
-func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, addOffset bool) time.Time {
+func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) time.Time {
 	isTruncate := true
 	truncateGrain := e.truncateGrain
 	isBoundary := false
@@ -265,9 +265,6 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 	if ta.Offset != nil {
 		tm = ta.Offset.offset(tm)
 	}
-	if addOffset && e.AtModifiers != nil && e.AtModifiers.Offset != nil {
-		tm = e.Modify(evalOpts, e.AtModifiers.Offset, tm, false)
-	}
 
 	if ta.Trunc != nil {
 		truncateGrain = grainMap[*ta.Trunc]
@@ -279,6 +276,11 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 		modifiedTime = timeutil.TruncateTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	} else {
 		modifiedTime = timeutil.CeilTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
+	}
+
+	// Add offset after truncate
+	if e.AtModifiers != nil && e.AtModifiers.Offset != nil {
+		modifiedTime = e.AtModifiers.Offset.offset(modifiedTime)
 	}
 
 	if isBoundary && modifiedTime.Equal(timeBeforeOffset) && (e.Modifiers == nil || e.Modifiers.CompleteGrain == nil) {
