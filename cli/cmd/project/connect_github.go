@@ -272,7 +272,7 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
-		} else {
+		} else if len(vars) > 0 {
 			c, err := ch.Client()
 			if err != nil {
 				return err

@@ -396,13 +396,15 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env: %w", err)
 	}
-	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-		Organization: r.Msg.Org,
-		Project:      r.Msg.ProjectName,
-		Variables:    dotenv,
-	})
-	if err != nil {
-		return nil, err
+	if len(dotenv) > 0 {
+		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: r.Msg.Org,
+			Project:      r.Msg.ProjectName,
+			Variables:    dotenv,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return connect.NewResponse(&localv1.DeployProjectResponse{
@@ -457,13 +459,15 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .env: %w", err)
 	}
-	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-		Organization: projResp.Project.OrgName,
-		Project:      projResp.Project.Name,
-		Variables:    dotenv,
-	})
-	if err != nil {
-		return nil, err
+	if len(dotenv) > 0 {
+		_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+			Organization: projResp.Project.OrgName,
+			Project:      projResp.Project.Name,
+			Variables:    dotenv,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// TODO : Add other update project fields

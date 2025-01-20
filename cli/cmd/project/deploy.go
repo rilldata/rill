@@ -197,7 +197,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 		vars, err := local.ParseDotenv(ctx, localProjectPath)
 		if err != nil {
 			ch.PrintfWarn("Failed to parse .env: %v\n", err)
-		} else {
+		} else if len(vars) > 0 {
 			_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				Organization: ch.Org,
 				Project:      opts.Name,
@@ -256,7 +256,7 @@ func DeployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployO
 	vars, err := local.ParseDotenv(ctx, localProjectPath)
 	if err != nil {
 		ch.PrintfWarn("Failed to parse .env: %v\n", err)
-	} else {
+	} else if len(vars) > 0 {
 		_, err = adminClient.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 			Organization: ch.Org,
 			Project:      opts.Name,
