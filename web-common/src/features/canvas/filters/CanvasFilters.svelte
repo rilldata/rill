@@ -16,6 +16,11 @@
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
   import CanvasSuperPill from "./CanvasSuperPill.svelte";
 
+  export let readOnly = false;
+  export let metricsViewName = "bids";
+
+  /** the height of a row of chips */
+  const ROW_HEIGHT = "26px";
   const {
     canvasEntity: {
       filters: {
@@ -41,7 +46,6 @@
         getDimensionsForMetricView,
         getMeasuresForMetricView,
         getAllSimpleMeasures,
-        getSimpleMeasuresForMetricView,
       },
       timeControls: {
         selectedTimeRange,
@@ -51,15 +55,9 @@
       },
     },
   } = getCanvasStateManagers();
-  export let readOnly = false;
-  export let metricsViewName = "bids";
-
-  /** the height of a row of chips */
-  const ROW_HEIGHT = "26px";
 
   $: dimensions = getDimensionsForMetricView(metricsViewName);
   $: measures = getMeasuresForMetricView(metricsViewName);
-  $: simpleMeasures = getSimpleMeasuresForMetricView(metricsViewName);
 
   $: dimensionIdMap = getMapFromArray(
     $dimensions,
@@ -159,10 +157,10 @@
             {/if}
           </div>
         {/each}
-        {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
+        {#each allMeasureFilters as { name, label, dimensionName, filter, dimensions: dimensionsForMeasure } (name)}
           <div animate:flip={{ duration: 200 }}>
             <MeasureFilter
-              allDimensions={$dimensions}
+              allDimensions={dimensionsForMeasure || $dimensions}
               {name}
               {label}
               {dimensionName}

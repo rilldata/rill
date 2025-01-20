@@ -1,3 +1,4 @@
+import type { CanvasResolvedSpec } from "@rilldata/web-common/features/canvas/stores/canvas-spec";
 import {
   getDimensionDisplayName,
   getMeasureDisplayName,
@@ -35,6 +36,7 @@ import {
 } from "svelte/store";
 
 export class CanvasFilters {
+  private spec: CanvasResolvedSpec;
   // -------------------
   // STORES (writable)
   // -------------------
@@ -82,10 +84,11 @@ export class CanvasFilters {
   includedDimensionValues: Readable<(dimensionName: string) => unknown[]>;
   hasAtLeastOneDimensionFilter: Readable<() => boolean>;
 
-  constructor() {
+  constructor(spec: CanvasResolvedSpec) {
     // -----------------------------
     // Initialize writable stores
     // -----------------------------
+    this.spec = spec;
     this.dimensionFilterExcludeMode = writable(new Map<string, boolean>());
     this.temporaryFilterName = writable(null);
     this.whereFilter = writable({
@@ -119,13 +122,14 @@ export class CanvasFilters {
         ) => {
           const itemsCopy = [...measureFilterItems];
           if (tempFilter && measureIdMap.has(tempFilter)) {
-            // const metricsView = spec.getMetricViewFromMeasure(tempFilter);
+            const dimensions = spec.getDimensionsFromMeasure(tempFilter);
+
+            console.log(tempFilter, "dimensions", dimensions);
             itemsCopy.push({
               dimensionName: "",
               name: tempFilter,
               label: getMeasureDisplayName(measureIdMap.get(tempFilter)),
-              // metricsView,
-              // dimensions: [],
+              dimensions: dimensions,
             });
           }
           return itemsCopy;

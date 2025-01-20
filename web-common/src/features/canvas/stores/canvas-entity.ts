@@ -47,7 +47,7 @@ export class CanvasEntity {
     this.selectedComponentIndex = writable(null);
     this.spec = new CanvasResolvedSpec(validSpecStore);
     this.timeControls = new CanvasTimeControls(validSpecStore);
-    this.filters = new CanvasFilters();
+    this.filters = new CanvasFilters(this.spec);
   }
 
   setSelectedComponentIndex(index: number | null) {
