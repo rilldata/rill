@@ -123,8 +123,6 @@ export class CanvasFilters {
           const itemsCopy = [...measureFilterItems];
           if (tempFilter && measureIdMap.has(tempFilter)) {
             const dimensions = spec.getDimensionsFromMeasure(tempFilter);
-
-            console.log(tempFilter, "dimensions", dimensions);
             itemsCopy.push({
               dimensionName: "",
               name: tempFilter,
@@ -328,12 +326,14 @@ export class CanvasFilters {
       if (addedMeasure.has(filter.measure)) return;
       const measure = measureIdMap.get(filter.measure);
       if (!measure) return;
+      const dimensions = this.spec.getDimensionsFromMeasure(filter.measure);
       addedMeasure.add(filter.measure);
       filteredMeasures.push({
         dimensionName: name,
         name: filter.measure,
         label: measure.displayName || measure.expression || filter.measure,
         filter,
+        dimensions,
       });
     });
     return filteredMeasures;

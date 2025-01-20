@@ -40,13 +40,7 @@
         getAllMeasureFilterItems,
         measureHasFilter,
       },
-      spec: {
-        getMetricsViewDimensionsMap,
-        getMetricsViewMeasureMap,
-        getDimensionsForMetricView,
-        getMeasuresForMetricView,
-        getAllSimpleMeasures,
-      },
+      spec: { getDimensionsForMetricView, getAllSimpleMeasures },
       timeControls: {
         selectedTimeRange,
         selectedComparisonTimeRange,
@@ -57,14 +51,16 @@
   } = getCanvasStateManagers();
 
   $: dimensions = getDimensionsForMetricView(metricsViewName);
-  $: measures = getMeasuresForMetricView(metricsViewName);
 
   $: dimensionIdMap = getMapFromArray(
     $dimensions,
     (dimension) => (dimension.name || dimension.column) as string,
   );
 
-  $: measureIdMap = getMapFromArray($measures, (m) => m.name as string);
+  $: measureIdMap = getMapFromArray(
+    $getAllSimpleMeasures,
+    (m) => m.name as string,
+  );
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
   $: allDimensionFilters = $getAllDimensionFilterItems(
