@@ -8,10 +8,7 @@
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
-  import {
-    canvasResolvedQueryKey,
-    useDefaultMetrics,
-  } from "@rilldata/web-common/features/canvas/selector";
+  import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -41,7 +38,6 @@
   const componentRegistry = getComponentRegistry();
 
   $: ({
-    saveLocalContent: updateComponentFile,
     autoSave,
     path: filePath,
     fileName,
@@ -119,9 +115,6 @@
     }
 
     updateEditorContent(parsedDocument.toString(), false, true);
-    queryClient.invalidateQueries(
-      canvasResolvedQueryKey(instanceId, canvasName),
-    );
   }
 </script>
 
