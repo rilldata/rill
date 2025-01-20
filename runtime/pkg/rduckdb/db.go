@@ -233,7 +233,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 	}
 
 	// migrate db from old storage structure to new
-	err = db.migrateDB(ctx)
+	err = db.migrateDB()
 	if err != nil && !errors.Is(err, context.Canceled) {
 		// do not return error just truncate the directory and start fresh
 		db.logger.Error("failed to migrate db", slog.String("error", err.Error()))
@@ -247,11 +247,12 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		}
 	}
 
-	// By setting a backup signal we can check if the db is backed up to cloud storage
-	// The signal is a file __rill_backup.txt with true/false as content
+	// By adding a _duckdb_on_gcs_.txt we can check if the db files are synced to cloud storage.
+	// If db files are present on cloud storage, the source of truth is cloud storage else local storage.
+	// The file _duckdb_on_gcs_.txt with true/false as content
 	// This is a temporary solution and will be removed in future when we enable cloud storage completely
-	isBackedUp, _ := db.isBackedUp()
-	if !isBackedUp && db.remote != nil {
+	duckdbONGCS, _ := db.duckdbOnGCS()
+	if !duckdbONGCS && db.remote != nil {
 		// switched on remote storage
 		// push local data to remote
 		err := db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
@@ -261,7 +262,7 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 			return nil, fmt.Errorf("unable to write local data to remote: %w", err)
 		}
 	}
-	err = os.WriteFile(filepath.Join(db.localPath, "__rill_backup.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
+	err = os.WriteFile(filepath.Join(db.localPath, "_duckdb_on_gcs_.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
 	if err != nil {
 		return nil, err
 	}
@@ -1104,7 +1105,9 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	return err
 }
 
-func (d *db) migrateDB(ctx context.Context) error {
+func (d *db) migrateDB() error {
+	// does not accept context by choice so that migration is not interrupted by context cancel
+	// The queries are expected to be fast
 	entries, err := os.ReadDir(d.opts.LocalPath)
 	if err != nil {
 		return err
@@ -1155,7 +1158,7 @@ func (d *db) migrateDB(ctx context.Context) error {
 			return err
 		}
 		_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name(), "version.txt"))
-		err = renameTable(ctx, filepath.Join(d.localPath, entry.Name(), version, "data.db"), "default", entry.Name())
+		err = renameTable(context.Background(), filepath.Join(d.localPath, entry.Name(), version, "data.db"), "default", entry.Name())
 		if err != nil {
 			return err
 		}
@@ -1171,7 +1174,6 @@ func (d *db) migrateDB(ctx context.Context) error {
 			return err
 		}
 		tables[entry.Name()] = meta
-		// TODO :: also delete any left version.db files
 	}
 
 	// handle views
@@ -1186,8 +1188,6 @@ func (d *db) migrateDB(ctx context.Context) error {
 }
 
 func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
-	// does not take context by choice so that migration is not interrupted by context cancel
-	// The queries are expected to be fast
 	db, err := sql.Open("duckdb", filepath.Join(d.localPath, "main.db"))
 	if err != nil {
 		return err
@@ -1229,8 +1229,8 @@ func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
 	return rows.Err()
 }
 
-func (d *db) isBackedUp() (bool, error) {
-	contents, err := os.ReadFile(filepath.Join(d.localPath, "__rill_backup.txt"))
+func (d *db) duckdbOnGCS() (bool, error) {
+	contents, err := os.ReadFile(filepath.Join(d.localPath, "_duckdb_on_gcs_.txt"))
 	if err != nil {
 		return false, err
 	}
