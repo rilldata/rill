@@ -1,5 +1,6 @@
 <script lang="ts">
   import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
+  import TwoTieredBreadCrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadCrumbItem.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type {
@@ -9,11 +10,14 @@
   import { createEventDispatcher } from "svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   const dispatch = createEventDispatcher();
 
   export let instanceId: string;
   export let activeResource: V1ResourceName;
+
+  const { twoTieredNavigation } = featureFlags;
 
   $: onProjectPage = !activeResource;
   $: onMetricsExplorerPage =
@@ -70,13 +74,22 @@
         {/if}
 
         {#if currentResource}
-          <BreadcrumbItem
-            options={breadcrumbOptions}
-            current={currentResourceName}
-            onSelect={onSelectResource}
-            isCurrentPage
-            isEmbedded
-          />
+          {#if !twoTieredNavigation}
+            <BreadcrumbItem
+              options={breadcrumbOptions}
+              current={currentResourceName}
+              onSelect={onSelectResource}
+              isCurrentPage
+              isEmbedded
+            />
+          {:else}
+            <TwoTieredBreadCrumbItem
+              options={breadcrumbOptions}
+              current={currentResourceName}
+              onSelect={onSelectResource}
+              isCurrentPage
+            />
+          {/if}
         {/if}
       </ol>
     </nav>
