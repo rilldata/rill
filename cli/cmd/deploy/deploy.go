@@ -24,6 +24,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
+
 			if !upload && !github {
 				confirmed, err := cmdutil.ConfirmPrompt("Enable automatic deploys to Rill Cloud from GitHub?", "", false)
 				if err != nil {
