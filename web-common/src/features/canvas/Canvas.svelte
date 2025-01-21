@@ -8,7 +8,8 @@
 
   export let fileArtifact: FileArtifact;
 
-  const { canvasEntity, validSpecStore } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasSpec } = canvasEntity.spec;
   $: selectedIndex = canvasEntity?.selectedComponentIndex;
 
   let showGrid = true;
@@ -29,7 +30,7 @@
     remoteContent,
   } = fileArtifact);
 
-  $: spec = structuredClone($validSpecStore?.data ?? spec);
+  $: spec = structuredClone($canvasSpec ?? spec);
 
   $: ({ items = [] } = spec);
 

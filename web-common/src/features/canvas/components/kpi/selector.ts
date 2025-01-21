@@ -1,6 +1,8 @@
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -181,11 +183,14 @@ export function useKPISparkline(
         {
           query: {
             enabled: !!startTime && !!endTime && !!maxTime,
-            select: (data) =>
-              data.data?.map((d) => ({
-                ts: new Date(d.ts as string),
-                [measure]: d?.records?.[measure],
-              })) ?? [],
+            select: (data) => {
+              return prepareTimeSeries(
+                data.data || [],
+                [],
+                TIME_GRAIN[defaultGrain]?.duration,
+                timeZone,
+              );
+            },
             queryClient: ctx.queryClient,
           },
         },

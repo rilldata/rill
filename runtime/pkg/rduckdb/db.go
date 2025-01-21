@@ -232,6 +232,41 @@ func NewDB(ctx context.Context, opts *DBOptions) (DB, error) {
 		return nil, fmt.Errorf("unable to create local path: %w", err)
 	}
 
+	// migrate db from old storage structure to new
+	err = db.migrateDB()
+	if err != nil && !errors.Is(err, context.Canceled) {
+		// do not return error just truncate the directory and start fresh
+		db.logger.Error("failed to migrate db", slog.String("error", err.Error()))
+		err = os.RemoveAll(db.localPath)
+		if err != nil {
+			return nil, err
+		}
+		err = os.MkdirAll(db.localPath, fs.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// By adding a _duckdb_on_gcs_.txt we can check if the db files are synced to cloud storage.
+	// If db files are present on cloud storage, the source of truth is cloud storage else local storage.
+	// The file _duckdb_on_gcs_.txt with true/false as content
+	// This is a temporary solution and will be removed in future when we enable cloud storage completely
+	duckdbONGCS, _ := db.duckdbOnGCS()
+	if !duckdbONGCS && db.remote != nil {
+		// switched on remote storage
+		// push local data to remote
+		err := db.iterateLocalTables(false, func(name string, meta *tableMeta) error {
+			return db.pushToRemote(ctx, name, nil, meta)
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to write local data to remote: %w", err)
+		}
+	}
+	err = os.WriteFile(filepath.Join(db.localPath, "_duckdb_on_gcs_.txt"), []byte(strconv.FormatBool(db.remote != nil)), fs.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
 	// sync local data
 	err = db.pullFromRemote(ctx, false)
 	if err != nil {
@@ -578,6 +613,11 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		return fmt.Errorf("rename: unable to get table meta: %w", err)
 	}
 
+	newTableOldMeta, err := d.catalog.tableMeta(newName)
+	if err != nil && !errors.Is(err, errNotFound) {
+		return fmt.Errorf("rename: unable to get table meta for new table: %w", err)
+	}
+
 	// copy the old table to new table
 	newVersion := newVersion()
 	if oldMeta.Type == "TABLE" {
@@ -606,7 +646,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		Type:           oldMeta.Type,
 		SQL:            oldMeta.SQL,
 	}
-	if err := d.pushToRemote(ctx, newName, oldMeta, meta); err != nil {
+	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -644,11 +684,9 @@ func (d *db) localDBMonitor() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			err := d.writeSem.Acquire(d.ctx, 1)
-			if err != nil {
-				if !errors.Is(err, context.Canceled) {
-					d.logger.Error("localDBMonitor: error in acquiring write sem", slog.String("error", err.Error()))
-				}
+			// We do not want the localDBMonitor to compete with write operations so we return early if writeSem is not available.
+			// Anyways if a write operation is in progress it will sync the local db
+			if !d.writeSem.TryAcquire(1) {
 				continue
 			}
 			if !d.localDirty {
@@ -656,7 +694,7 @@ func (d *db) localDBMonitor() {
 				// all good
 				continue
 			}
-			err = d.pullFromRemote(d.ctx, true)
+			err := d.pullFromRemote(d.ctx, true)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				d.logger.Error("localDBMonitor: error in pulling from remote", slog.String("error", err.Error()))
 			}
@@ -739,13 +777,6 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, read 
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
 				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
-			if err != nil {
-				return err
-			}
-		}
-		if !read {
-			// disable any more configuration changes on the write handle via init queries
-			_, err = execer.ExecContext(ctx, "SET lock_configuration TO true", nil)
 			if err != nil {
 				return err
 			}
@@ -1072,6 +1103,138 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 
 	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
+}
+
+func (d *db) migrateDB() error {
+	// does not accept context by choice so that migration is not interrupted by context cancel
+	// The queries are expected to be fast
+	entries, err := os.ReadDir(d.opts.LocalPath)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+
+	// presence of meta.json indicates that the db is already migrated
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		_, err := os.Stat(filepath.Join(d.localPath, entry.Name(), "meta.json"))
+		if err == nil {
+			// already migrated
+			return nil
+		}
+	}
+
+	// files are in old structure
+	// Table migration requires following things:
+	// 1. Move the db file named <version>.db to the version folder
+	// 2. Rename the table from "default" to the table name
+	// 3. Create meta.json
+	//
+	// Views are directly present in main.db and are not versioned in old structure
+	tables := make(map[string]*tableMeta)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		contents, err := os.ReadFile(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		if err != nil {
+			// version.txt not found, skip this directory, also safe to delete this directory
+			_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name()))
+			continue
+		}
+		// get version
+		version := strings.TrimSpace(string(contents))
+		err = d.initLocalTable(entry.Name(), version)
+		if err != nil {
+			return err
+		}
+
+		err = os.Rename(filepath.Join(d.localPath, entry.Name(), fmt.Sprintf("%v.db", version)), filepath.Join(d.localPath, entry.Name(), version, "data.db"))
+		if err != nil {
+			return err
+		}
+		_ = os.RemoveAll(filepath.Join(d.localPath, entry.Name(), "version.txt"))
+		err = renameTable(context.Background(), filepath.Join(d.localPath, entry.Name(), version, "data.db"), "default", entry.Name())
+		if err != nil {
+			return err
+		}
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           entry.Name(),
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "TABLE",
+		}
+		err = d.writeTableMeta(entry.Name(), meta)
+		if err != nil {
+			return err
+		}
+		tables[entry.Name()] = meta
+	}
+
+	// handle views
+	// present directly in main.db file
+	if err := d.migrateViews(tables); err != nil {
+		return err
+	}
+	// drop the old db files
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db"))
+	_ = os.RemoveAll(filepath.Join(d.localPath, "main.db.wal"))
+	return err
+}
+
+func (d *db) migrateViews(existingTables map[string]*tableMeta) error {
+	db, err := sql.Open("duckdb", filepath.Join(d.localPath, "main.db"))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT view_name, sql FROM duckdb_views() WHERE database_name = current_database() AND schema_name = current_schema() AND internal = false")
+	if err != nil {
+		return err
+	}
+	var viewName, viewSQL string
+	for rows.Next() {
+		err = rows.Scan(&viewName, &viewSQL)
+		if err != nil {
+			return err
+		}
+		if _, ok := existingTables[viewName]; ok {
+			// view on a table, skip
+			continue
+		}
+		err := d.initLocalTable(viewName, "")
+		if err != nil {
+			return err
+		}
+		version := newVersion()
+		// create meta.json file
+		meta := &tableMeta{
+			Name:           viewName,
+			Version:        version,
+			CreatedVersion: version,
+			Type:           "VIEW",
+			SQL:            viewSQL,
+		}
+		err = d.writeTableMeta(viewName, meta)
+		if err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func (d *db) duckdbOnGCS() (bool, error) {
+	contents, err := os.ReadFile(filepath.Join(d.localPath, "_duckdb_on_gcs_.txt"))
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(contents)) == "true", nil
 }
 
 type tableMeta struct {

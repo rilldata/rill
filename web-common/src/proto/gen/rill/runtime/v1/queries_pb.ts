@@ -2033,6 +2033,14 @@ export class TimeRange extends Message<TimeRange> {
    */
   timeZone = "";
 
+  /**
+   * Optional. Rill format time range. Should only be used for alerts and reports.
+   * For dashboard call ResolveTimeRanges.
+   *
+   * @generated from field: string expression = 7;
+   */
+  expression = "";
+
   constructor(data?: PartialMessage<TimeRange>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2047,6 +2055,7 @@ export class TimeRange extends Message<TimeRange> {
     { no: 4, name: "iso_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "round_to_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 6, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRange {
@@ -3363,6 +3372,98 @@ export class MetricsViewSearchResponse_SearchResult extends Message<MetricsViewS
 
   static equals(a: MetricsViewSearchResponse_SearchResult | PlainMessage<MetricsViewSearchResponse_SearchResult> | undefined, b: MetricsViewSearchResponse_SearchResult | PlainMessage<MetricsViewSearchResponse_SearchResult> | undefined): boolean {
     return proto3.util.equals(MetricsViewSearchResponse_SearchResult, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTimeRangesRequest
+ */
+export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: repeated string expressions = 3;
+   */
+  expressions: string[] = [];
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expressions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {
+    return new MetricsViewTimeRangesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTimeRangesRequest {
+    return new MetricsViewTimeRangesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTimeRangesRequest {
+    return new MetricsViewTimeRangesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTimeRangesRequest | PlainMessage<MetricsViewTimeRangesRequest> | undefined, b: MetricsViewTimeRangesRequest | PlainMessage<MetricsViewTimeRangesRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTimeRangesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTimeRangesResponse
+ */
+export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRangesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.TimeRange time_ranges = 1;
+   */
+  timeRanges: TimeRange[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewTimeRangesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesResponse {
+    return new MetricsViewTimeRangesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTimeRangesResponse {
+    return new MetricsViewTimeRangesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTimeRangesResponse {
+    return new MetricsViewTimeRangesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined, b: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTimeRangesResponse, a, b);
   }
 }
 
@@ -5003,9 +5104,9 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
   /**
    * Not optional, not null
    *
-   * @generated from field: rill.runtime.v1.TimeRangeSummary.Interval interval = 3;
+   * @generated from field: google.protobuf.Timestamp watermark = 4;
    */
-  interval?: TimeRangeSummary_Interval;
+  watermark?: Timestamp;
 
   constructor(data?: PartialMessage<TimeRangeSummary>) {
     super();
@@ -5017,7 +5118,7 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "min", kind: "message", T: Timestamp },
     { no: 2, name: "max", kind: "message", T: Timestamp },
-    { no: 3, name: "interval", kind: "message", T: TimeRangeSummary_Interval },
+    { no: 4, name: "watermark", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRangeSummary {
@@ -5034,55 +5135,6 @@ export class TimeRangeSummary extends Message<TimeRangeSummary> {
 
   static equals(a: TimeRangeSummary | PlainMessage<TimeRangeSummary> | undefined, b: TimeRangeSummary | PlainMessage<TimeRangeSummary> | undefined): boolean {
     return proto3.util.equals(TimeRangeSummary, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.TimeRangeSummary.Interval
- */
-export class TimeRangeSummary_Interval extends Message<TimeRangeSummary_Interval> {
-  /**
-   * @generated from field: int32 months = 1;
-   */
-  months = 0;
-
-  /**
-   * @generated from field: int32 days = 2;
-   */
-  days = 0;
-
-  /**
-   * @generated from field: int64 micros = 3;
-   */
-  micros = protoInt64.zero;
-
-  constructor(data?: PartialMessage<TimeRangeSummary_Interval>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.TimeRangeSummary.Interval";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "months", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 2, name: "days", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "micros", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TimeRangeSummary_Interval {
-    return new TimeRangeSummary_Interval().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: TimeRangeSummary_Interval | PlainMessage<TimeRangeSummary_Interval> | undefined, b: TimeRangeSummary_Interval | PlainMessage<TimeRangeSummary_Interval> | undefined): boolean {
-    return proto3.util.equals(TimeRangeSummary_Interval, a, b);
   }
 }
 

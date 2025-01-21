@@ -240,6 +240,11 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type QueryServiceMetricsViewTimeRangesBody = {
+  expressions?: string[];
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
@@ -611,7 +616,7 @@ export interface V1TimeSeriesResponse {
 export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
-  interval?: TimeRangeSummaryInterval;
+  watermark?: string;
 }
 
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
@@ -643,6 +648,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+For dashboard call ResolveTimeRanges. */
+  expression?: string;
 }
 
 export interface V1ThemeState {
@@ -1332,6 +1340,10 @@ export interface V1MetricsViewTimeSeriesRequest {
   filter?: V1MetricsViewFilter;
 }
 
+export interface V1MetricsViewTimeRangesResponse {
+  timeRanges?: V1TimeRange[];
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1394,6 +1406,10 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -1877,6 +1893,11 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
 
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
+}
+
 export interface V1ExploreSpec {
   displayName?: string;
   description?: string;
@@ -1927,11 +1948,6 @@ export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string for the duration of the comparison time range.
 If not specified, it should fallback to the range of the base time range. */
   range?: string;
-}
-
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
 export type V1ExploreComparisonMode =
@@ -2551,6 +2567,14 @@ export interface V1API {
   state?: V1APIState;
 }
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -2612,23 +2636,9 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 export interface TopKEntry {
   value?: unknown;
   count?: number;
-}
-
-export interface TimeRangeSummaryInterval {
-  months?: number;
-  days?: number;
-  micros?: string;
 }
 
 export interface StructTypeField {
@@ -2740,10 +2750,6 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {
