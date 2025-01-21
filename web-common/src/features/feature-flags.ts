@@ -37,6 +37,7 @@ class FeatureFlags {
   customDashboards = new FeatureFlag("user", false);
   dimensionSearch = new FeatureFlag("user", false);
   clickhouseModeling = new FeatureFlag("user", false);
+  twoTieredNavigation = new FeatureFlag("user", false);
 
   constructor() {
     const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
