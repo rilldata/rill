@@ -177,7 +177,7 @@
     }
     updateEditorContent(parsedDocument.toString(), true);
 
-    await updateComponentFile();
+    await saveLocalContent();
     scrollToComponent(itemsToPosition.length);
   }
 

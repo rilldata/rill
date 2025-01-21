@@ -29,7 +29,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
-  import { getCanvasStateManagers } from "../canvas/state-managers/state-managers";
   import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
 
   export let fileArtifact: FileArtifact;
