@@ -19,8 +19,6 @@
   export let selectedIndex: number | null = null;
   export let showFilterBar = true;
 
-  $: console.log("[CanvasDashboardPreview] items", items);
-
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let draggedComponent: {
     index: number;
@@ -187,7 +185,6 @@
       return;
     }
     hoveredIndex = e.detail.index;
-    // console.log("[CanvasDashboardPreview] Component hovered:", hoveredIndex);
   }
 
   function handleMouseLeave(e: CustomEvent<{ index: number }>) {
@@ -197,7 +194,6 @@
     }
     if (hoveredIndex === e.detail.index) {
       hoveredIndex = null;
-      // console.log("[CanvasDashboardPreview] Component unhovered");
     }
   }
 
