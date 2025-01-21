@@ -3,6 +3,7 @@ package rillv1
 import (
 	"fmt"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
@@ -10,8 +11,10 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
-	DataYAML `yaml:",inline" mapstructure:",squash"`
-	OpenAPI  *OpenAPIYAML `yaml:"openapi"`
+	DataYAML             `yaml:",inline" mapstructure:",squash"`
+	OpenAPI              *OpenAPIYAML        `yaml:"openapi"`
+	Security             *SecurityPolicyYAML `yaml:"security"`
+	SkipResolverSecurity bool                `yaml:"skip_nested_security"`
 }
 
 type OpenAPIYAML struct {
@@ -37,6 +40,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	var openapiSummary string
 	var openapiParams []*structpb.Struct
 	var openapiSchema *structpb.Struct
+	var securityRules []*runtimev1.SecurityRule
 	if tmp.OpenAPI != nil {
 		openapiSummary = tmp.OpenAPI.Summary
 
@@ -77,13 +81,23 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
 
-	securityRules, err := tmp.Security.Proto()
+	securityRules, err = tmp.Security.Proto()
 	if err != nil {
 		return fmt.Errorf("failed to parse security rules: %w", err)
 	}
 	for _, rule := range securityRules {
 		if rule.GetAccess() == nil {
 			return fmt.Errorf("the 'custom api' resource type only supports 'access' security rules")
+		}
+	}
+
+	if tmp.SkipResolverSecurity {
+		// Skip security rules for nested resolvers
+		propsMap := resolverProps.AsMap()
+		propsMap["skip_nested_security"] = tmp.SkipResolverSecurity
+		resolverProps, err = structpb.NewStruct(propsMap)
+		if err != nil {
+			return fmt.Errorf("failed to update resolver properties: %w", err)
 		}
 	}
 
@@ -106,15 +120,13 @@ func (p *Parser) parseAPI(node *Node) error {
 // DataYAML is the raw YAML structure of a sub-property for defining a data resolver and properties.
 // It is used across multiple resources, usually under "data:", but inlined for APIs.
 type DataYAML struct {
-	Connector            string             `yaml:"connector"`
-	SQL                  string             `yaml:"sql"`
-	MetricsSQL           string             `yaml:"metrics_sql"`
-	API                  string             `yaml:"api"`
-	Args                 map[string]any     `yaml:"args"`
-	Glob                 yaml.Node          `yaml:"glob"` // Path (string) or properties (map[string]any)
-	ResourceStatus       map[string]any     `yaml:"resource_status"`
-	Security             SecurityPolicyYAML `yaml:"security"`
-	SkipResolverSecurity bool               `yaml:"skip_nested_security"`
+	Connector      string         `yaml:"connector"`
+	SQL            string         `yaml:"sql"`
+	MetricsSQL     string         `yaml:"metrics_sql"`
+	API            string         `yaml:"api"`
+	Args           map[string]any `yaml:"args"`
+	Glob           yaml.Node      `yaml:"glob"` // Path (string) or properties (map[string]any)
+	ResourceStatus map[string]any `yaml:"resource_status"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -126,10 +138,6 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 	var resolver string
 	var refs []ResourceName
 	resolverProps := make(map[string]any)
-
-	if raw.SkipResolverSecurity {
-		resolverProps["skip_nested_security"] = raw.SkipResolverSecurity
-	}
 
 	// Handle basic SQL resolver
 	if raw.SQL != "" {

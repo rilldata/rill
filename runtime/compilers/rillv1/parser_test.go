@@ -1818,6 +1818,14 @@ metrics_sql: select * from m1
 security:
   access: '{{ .user.admin }}'
 `,
+		// api a5
+		`apis/a5.yaml`: `
+type: api
+metrics_sql: select * from m1
+skip_nested_security: true
+security:
+  access: '{{ .user.admin }}'
+`,
 	})
 
 	resources := []*Resource{
@@ -1837,9 +1845,6 @@ security:
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
-				},
 			},
 		},
 		{
@@ -1848,9 +1853,6 @@ security:
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "metrics_sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
-				},
 			},
 		},
 		{
@@ -1881,8 +1883,21 @@ security:
 				},
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
+			Paths: []string{"/apis/a5.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1", "skip_nested_security": true})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
 	}
-
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
