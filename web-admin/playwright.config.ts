@@ -24,7 +24,7 @@ const config: PlaywrightTestConfig = {
             // Whenever the GitHub auth cookies expire, run this project manually to renew them.
             // Commit the resultant `playwright/.auth/github.json` file to the repo.
             name: "save-github-cookies",
-            testMatch: "auth.github.ts",
+            testMatch: "auth-github.ts",
           },
         ]),
     {
