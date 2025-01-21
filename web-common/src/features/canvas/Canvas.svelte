@@ -65,9 +65,7 @@
     const updatedItems = [...items.slice(0, index), ...items.slice(index + 1)];
 
     // Update document
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
+    const parsedDocument = parseDocument($editorContent ?? "");
     const rawItems = parsedDocument.get("items") as any;
 
     console.log("[Canvas] rawItems", rawItems);
@@ -93,8 +91,8 @@
     // Save changes
     updateEditorContent(parsedDocument.toString(), true);
     items = updatedItems;
-    canvasEntity.setSelectedComponentIndex(null);
-    if ($autoSave) await updateComponentFile();
+    // canvasEntity.setSelectedComponentIndex(null);
+    await saveLocalContent();
   }
 
   async function handleDelete(
@@ -151,9 +149,7 @@
 
     const { width, height } = componentRegistry[componentType].defaultSize;
 
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
+    const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
 
     const itemsToPosition =

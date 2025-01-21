@@ -38,7 +38,6 @@
   let selectedView: "split" | "code" | "viz";
 
   const componentRegistry = getComponentRegistry();
-  const { canvasEntity } = getCanvasStateManagers();
 
   $: ({
     autoSave,
