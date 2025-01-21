@@ -6,19 +6,18 @@
 
 <button
   type="button"
-  class="row-resizer"
+  class="row-resizer bg-primary-300"
   on:mousedown|preventDefault={(e) => {
     dispatch("resize", e);
   }}
 />
 
-<style>
+<style lang="postcss">
   .row-resizer {
     position: absolute;
     left: 0;
     right: 0;
     height: 4px;
-    background: var(--color-primary-500);
     cursor: row-resize;
     z-index: 20;
     top: 50%;
