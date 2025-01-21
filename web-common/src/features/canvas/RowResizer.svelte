@@ -6,14 +6,27 @@
 
 <button
   type="button"
-  aria-label="Resize row"
-  class="row-resize-handle w-full h-[3px] cursor-row-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 hover:opacity-100 pointer-events-auto"
-  on:mousedown|stopPropagation={(e) => dispatch("resize", e)}
+  class="row-resizer"
+  on:mousedown|preventDefault={(e) => {
+    dispatch("resize", e);
+  }}
 />
 
 <style>
-  .row-resize-handle {
-    position: relative;
-    transition: opacity 0.2s;
+  .row-resizer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--color-primary-500);
+    cursor: row-resize;
+    z-index: 20;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: auto;
+  }
+
+  .row-resizer:hover {
+    height: 6px; /* Slightly increase height on hover for better visual feedback */
   }
 </style>

@@ -557,10 +557,12 @@
         {/each}
       </div>
 
-      <RowResizer
-        on:resize={(e) =>
-          handleRowResizeStart(e.detail, index, row.height * gridCell)}
-      />
+      <div class="row-resize-container">
+        <RowResizer
+          on:resize={(e) =>
+            handleRowResizeStart(e.detail, index, row.height * gridCell)}
+        />
+      </div>
     {/each}
   </div>
 
@@ -619,9 +621,28 @@
   .row {
     position: relative;
     min-height: 0;
+    z-index: 1;
   }
 
   :global(body.resizing-col) {
     cursor: col-resize !important;
+  }
+
+  .row-resize-container {
+    position: relative;
+    height: 16px;
+    margin: -8px 0;
+    z-index: 10;
+    pointer-events: auto;
+  }
+
+  .row-resize-container :global(.row-resizer) {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+  }
+
+  .row-resize-container:hover :global(.row-resizer) {
+    opacity: 1;
   }
 </style>
