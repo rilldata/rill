@@ -24,6 +24,8 @@
     canvasEntity: {
       selectedComponentIndex: selectedIndex,
       spec: { canvasSpec },
+      // FIXME
+      setSelectedComponentIndex,
     },
   } = ctx;
 
@@ -68,12 +70,8 @@
     const parsedDocument = parseDocument($editorContent ?? "");
     const rawItems = parsedDocument.get("items") as any;
 
-    console.log("[Canvas] rawItems", rawItems);
-
-    // Remove deleted item
     rawItems.delete(index);
 
-    // Update positions and dimensions of remaining items
     updatedItems.forEach((item, idx) => {
       const node = rawItems.get(idx);
       if (!node) return;
@@ -88,10 +86,9 @@
       Object.entries(updates).forEach(([key, value]) => node.set(key, value));
     });
 
-    // Save changes
     updateEditorContent(parsedDocument.toString(), true);
     items = updatedItems;
-    // canvasEntity.setSelectedComponentIndex(null);
+    setSelectedComponentIndex(null);
     await saveLocalContent();
   }
 
@@ -136,8 +133,6 @@
   }
 
   async function addComponent(componentType: CanvasComponentType) {
-    console.log("[Canvas] adding component: ", componentType);
-
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
@@ -176,8 +171,8 @@
       items.add(newComponent);
     }
     updateEditorContent(parsedDocument.toString(), true);
-
     await saveLocalContent();
+    setSelectedComponentIndex(itemsToPosition.length);
     scrollToComponent(itemsToPosition.length);
   }
 
