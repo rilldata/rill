@@ -11,18 +11,29 @@
 
 <button
   type="button"
-  aria-label="Resize column"
-  class="col-resize-handle absolute w-[3px] cursor-col-resize bg-transparent hover:bg-primary-300 z-[50] opacity-0 pointer-events-auto"
-  class:opacity-100={clicked || resizing}
-  class:bg-primary-300={clicked || resizing}
+  class="col-resizer bg-primary-300"
+  class:clicked={clicked || resizing}
   style="left: {left}px; height: {height}px;"
   on:mousedown|stopPropagation={(e) => dispatch("resize", e)}
   on:click|stopPropagation={(e) => dispatch("click", e)}
 />
 
-<style>
-  .col-resize-handle {
+<style lang="postcss">
+  .col-resizer {
     position: absolute;
-    transition: opacity 0.2s;
+    width: 3px;
+    cursor: col-resize;
+    z-index: 20;
+    pointer-events: auto;
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      width 0.2s;
+  }
+
+  .col-resizer:hover,
+  .col-resizer.clicked {
+    opacity: 1;
+    width: 4px;
   }
 </style>
