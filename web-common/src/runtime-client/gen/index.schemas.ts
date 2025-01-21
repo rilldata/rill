@@ -240,6 +240,11 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type QueryServiceMetricsViewTimeRangesBody = {
+  expressions?: string[];
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
@@ -643,6 +648,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+For dashboard call ResolveTimeRanges. */
+  expression?: string;
 }
 
 export interface V1ThemeState {
@@ -903,13 +911,6 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -936,6 +937,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1330,6 +1338,10 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+}
+
+export interface V1MetricsViewTimeRangesResponse {
+  timeRanges?: V1TimeRange[];
 }
 
 export interface V1MetricsViewTimeRangeResponse {

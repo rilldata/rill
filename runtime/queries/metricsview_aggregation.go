@@ -310,6 +310,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.TimeRange.End != nil {
 			res.End = q.TimeRange.End.AsTime()
 		}
+		res.Expression = q.TimeRange.Expression
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
@@ -324,6 +325,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		if q.ComparisonTimeRange.End != nil {
 			res.End = q.ComparisonTimeRange.End.AsTime()
 		}
+		res.Expression = q.ComparisonTimeRange.Expression
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)

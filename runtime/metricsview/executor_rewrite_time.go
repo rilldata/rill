@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
@@ -30,17 +31,22 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
+	maxTime := ts.Max
 	watermark := ts.Watermark
+	now := time.Now()
 	if executionTime != nil {
+		// all end anchors should use execution time when provided
+		maxTime = *executionTime
 		watermark = *executionTime
+		now = *executionTime
 	}
 
-	err = e.resolveTimeRange(qry.TimeRange, tz, watermark)
+	err = e.resolveTimeRange(qry.TimeRange, tz, ts.Min, maxTime, watermark, now)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, watermark)
+	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, ts.Min, maxTime, watermark, now)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -49,11 +55,46 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(tr *TimeRange, tz *time.Location, watermark time.Time) error {
+func (e *Executor) resolveTimeRange(tr *TimeRange, tz *time.Location, minTime, maxTime, watermark, now time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
 
+	if tr.Expression == "" {
+		return e.resolveISOTimeRange(tr, tz, watermark)
+	}
+	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
+		return errors.New("other fields are not supported when expression is provided")
+	}
+
+	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{})
+	if err != nil {
+		return err
+	}
+
+	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
+		Now:        now,
+		MinTime:    minTime,
+		MaxTime:    maxTime,
+		Watermark:  watermark,
+		FirstDay:   int(e.metricsView.FirstDayOfWeek),
+		FirstMonth: int(e.metricsView.FirstMonthOfYear),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Clear all other fields than Start and End
+	tr.Expression = ""
+	tr.IsoDuration = ""
+	tr.IsoOffset = ""
+	tr.RoundToGrain = TimeGrainUnspecified
+
+	return nil
+}
+
+// resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
+func (e *Executor) resolveISOTimeRange(tr *TimeRange, tz *time.Location, watermark time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
 		tr.End = watermark
 	}

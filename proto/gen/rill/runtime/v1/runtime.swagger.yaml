@@ -1685,6 +1685,42 @@ paths:
                 format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-ranges:
+    post:
+      operationId: QueryService_MetricsViewTimeRanges
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTimeRangesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              expressions:
+                type: array
+                items:
+                  type: string
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
       summary: |-
@@ -5285,6 +5321,14 @@ definitions:
       timeRangeSummary:
         $ref: '#/definitions/v1TimeRangeSummary'
         title: Not optional, not null
+  v1MetricsViewTimeRangesResponse:
+    type: object
+    properties:
+      timeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TimeRange'
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -6426,6 +6470,11 @@ definitions:
       timeZone:
         type: string
         title: Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
+      expression:
+        type: string
+        description: |-
+          Optional. Rill format time range. Should only be used for alerts and reports.
+          For dashboard call ResolveTimeRanges.
     title: 2 of the (start, end, iso_duration) should be set
   v1TimeRangeSummary:
     type: object
