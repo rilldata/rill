@@ -31,7 +31,7 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 			// org got deleted, ignore
 			return nil
 		}
-		w.logger.Error("failed to find organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
+		w.logger.Warn("failed to find organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
 		return err
 	}
 
@@ -39,7 +39,7 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 		// rare case but if its retried, we should repair the billing as it might be in some inconsistent state
 		_, _, err = w.admin.RepairOrganizationBilling(ctx, org, false)
 		if err != nil {
-			w.logger.Error("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+			w.logger.Warn("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 			return err
 		}
 		return nil
@@ -47,7 +47,7 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 
 	_, err = w.admin.InitOrganizationBilling(ctx, org)
 	if err != nil {
-		w.logger.Error("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		w.logger.Warn("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 		return err
 	}
 	return nil
@@ -73,13 +73,13 @@ func (w *RepairOrgBillingWorker) Work(ctx context.Context, job *river.Job[Repair
 			// org got deleted, ignore
 			return nil
 		}
-		w.logger.Error("failed to find organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
+		w.logger.Warn("failed to find organization", zap.String("org_id", job.Args.OrgID), zap.Error(err))
 		return err
 	}
 
 	_, _, err = w.admin.RepairOrganizationBilling(ctx, org, true)
 	if err != nil {
-		w.logger.Error("failed to repair billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		w.logger.Warn("failed to repair billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 		return err
 	}
 	return nil
@@ -110,7 +110,7 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 
 	trialOrg, sub, err := w.admin.StartTrial(ctx, org)
 	if err != nil {
-		w.logger.Error("failed to start trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		w.logger.Warn("failed to start trial for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 		TrialEndDate: sub.TrialEndDate,
 	})
 	if err != nil {
-		w.logger.Error("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
+		w.logger.Warn("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
 		return err
 	}
 
