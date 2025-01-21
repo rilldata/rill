@@ -524,7 +524,7 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 		if err := result.Scan(valuePtrs...); err != nil {
 			return "", nil, nil, fmt.Errorf("select inline: failed to scan value: %w", err)
 		}
-		if d == DialectDruid {
+		if d == DialectDruid || d == DialectDuckDB {
 			// format - select * from (values (1, 2), (3, 4)) t(a, b)
 			if rows == 0 {
 				prefix = "SELECT * FROM (VALUES "
@@ -532,6 +532,15 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 			if rows > 0 {
 				prefix += ", "
+			}
+		} else if d == DialectClickHouse {
+			// format - SELECT c1 AS a, c2 AS b FROM VALUES((1, 2), (3, 4))
+			if rows == 0 {
+				prefix = "SELECT "
+				suffix = " FROM VALUES ("
+			}
+			if rows > 0 {
+				suffix += ", "
 			}
 		} else {
 			// format - select 1 as a, 2 as b union all select 3 as a, 4 as b
@@ -543,9 +552,11 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 
 		dimVals = append(dimVals, values[0])
 		for i, v := range values {
-			if d == DialectDruid {
+			if d == DialectDruid || d == DialectDuckDB {
 				if i == 0 {
 					prefix += "("
+				} else {
+					prefix += ", "
 				}
 				if rows == 0 {
 					suffix += d.EscapeIdentifier(result.Schema.Fields[i].Name)
@@ -553,12 +564,27 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 						suffix += ", "
 					}
 				}
-			}
-			if i > 0 {
-				prefix += ", "
+			} else if d == DialectClickHouse {
+				if i == 0 {
+					suffix += "("
+				} else {
+					suffix += ", "
+				}
+				if rows == 0 {
+					prefix += fmt.Sprintf("c%d AS %s", i+1, d.EscapeIdentifier(result.Schema.Fields[i].Name))
+					if i != len(result.Schema.Fields)-1 {
+						prefix += ", "
+					}
+				}
 			}
 
-			if d == DialectDruid {
+			if d == DialectDuckDB {
+				prefix += "?"
+				args = append(args, v)
+			} else if d == DialectClickHouse {
+				suffix += "?"
+				args = append(args, v)
+			} else if d == DialectDruid {
 				ok, expr, err := d.GetValExpr(v, result.Schema.Fields[i].Type.Code)
 				if err != nil {
 					return "", nil, nil, fmt.Errorf("select inline: failed to get value expression: %w", err)
@@ -573,18 +599,22 @@ func (d Dialect) SelectInlineResults(result *Result) (string, []any, []any, erro
 			}
 		}
 
-		if d == DialectDruid {
+		if d == DialectDruid || d == DialectDuckDB {
 			prefix += ")"
 			if rows == 0 {
 				suffix += ")"
 			}
+		} else if d == DialectClickHouse {
+			suffix += ")"
 		}
 
 		rows++
 	}
 
-	if d == DialectDruid {
+	if d == DialectDruid || d == DialectDuckDB {
 		prefix += ") "
+	} else if d == DialectClickHouse {
+		suffix += ")"
 	}
 
 	return prefix + suffix, args, dimVals, nil
