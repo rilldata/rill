@@ -39,7 +39,7 @@
     <ContextMenuTrigger>
       <button
         type="button"
-        class="flex flex-col items-center gap-2 p-8 rounded-[6px] border border-slate-200 w-full"
+        class="blank-canvas-button flex flex-col items-center gap-2 p-8 rounded-[6px] border border-slate-200 w-full"
       >
         <PlusCircleIcon class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add a component</span>
@@ -60,3 +60,14 @@
     </ContextMenuContent>
   </ContextMenu>
 </div>
+
+<style lang="postcss">
+  .blank-canvas-button:hover {
+    /* card-hover */
+    box-shadow:
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09);
+  }
+</style>
