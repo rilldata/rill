@@ -1953,9 +1953,6 @@ select 3
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "sql",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select 1"})),
-				SecurityRules: []*runtimev1.SecurityRule{
-					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{}}},
-				},
 			},
 		},
 		// m1
