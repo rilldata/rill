@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -24,8 +25,9 @@ import (
 )
 
 func init() {
-	drivers.Register("clickhouse", driver{})
-	drivers.RegisterAsConnector("clickhouse", driver{})
+	d := &driver{}
+	drivers.Register("clickhouse", d)
+	drivers.RegisterAsConnector("clickhouse", d)
 }
 
 var spec = drivers.Spec{
@@ -94,7 +96,63 @@ var spec = drivers.Spec{
 
 var maxOpenConnections = 20
 
-type driver struct{}
+type driver struct {
+	// following fields are set if clickhouse is run in embedded mode.
+	//
+	// It is not possible to run multiple clickhouse instances in parallel by setting different/same ports(leads to file lock issues).
+	// The coordination between different connections is maintained by the driver which is only initialized once in init function.
+	embed     *embedClickHouse
+	embedOpts *clickhouse.Options
+	embedPort int
+	// number of calls to startEmbeddedClickhouse. The server is stopped when the count reaches 0.
+	refs    int
+	embedMu sync.Mutex
+}
+
+func (d *driver) startEmbeddedClickhouse(port int, dataDir, tempDir string, logger *zap.Logger) (*clickhouse.Options, func() error, error) {
+	d.embedMu.Lock()
+	defer d.embedMu.Unlock()
+	if d.embed != nil {
+		if d.embedPort == port {
+			d.refs++
+			return d.embedOpts, func() error { return d.stopEmbeddedClickhouse(port) }, nil
+		}
+		return nil, nil, fmt.Errorf("embed port changed not allowed, please restart rill")
+	}
+	embed := newEmbedClickHouse(port, dataDir, tempDir, logger)
+	opts, err := embed.start()
+	if err != nil {
+		return nil, nil, err
+	}
+	d.embed = embed
+	d.embedOpts = opts
+	d.embedPort = port
+	return d.embedOpts, func() error { return d.stopEmbeddedClickhouse(port) }, nil
+}
+
+func (d *driver) stopEmbeddedClickhouse(port int) error {
+	d.embedMu.Lock()
+	defer d.embedMu.Unlock()
+	if d.embed == nil || d.refs < 0 {
+		// should never happen
+		return nil
+	}
+	if d.embedPort != port {
+		return fmt.Errorf("embed port mismatch, expected %d, got %d", d.embedPort, port)
+	}
+	d.refs--
+	if d.refs > 0 {
+		return nil
+	}
+	err := d.embed.stop()
+	d.embed = nil
+	d.embedOpts = nil
+	d.embedPort = 0
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 type configProperties struct {
 	// Managed is set internally if the connector has `managed: true`.
@@ -118,14 +176,14 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
-	// EmbedPort is the port to run Clickhouse locally (0 is random port).
+	// EmbedPort is the port to run Clickhouse locally (0 is random port). Change is not allowed.
 	EmbedPort      int  `mapstructure:"embed_port"`
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 }
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d *driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -141,6 +199,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
+	var stopEmbed func() error
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -185,8 +244,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 
-		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
-		opts, err = embed.start()
+		opts, stopEmbed, err = d.startEmbeddedClickhouse(conf.EmbedPort, dataDir, tempDir, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -251,6 +309,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		olapSem:    priorityqueue.NewSemaphore(maxOpenConnections - 1),
 		opts:       opts,
 		embed:      embed,
+		stopEmbed:  stopEmbed,
 	}
 
 	c.used()
@@ -259,15 +318,15 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	return c, nil
 }
 
-func (d driver) Spec() drivers.Spec {
+func (d *driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+func (d *driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
-func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -300,6 +359,8 @@ type connection struct {
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
 	embed *embedClickHouse
+	// stopEmbed should be called stop the embedded clickhouse server
+	stopEmbed func() error
 }
 
 // Ping implements drivers.Handle.
@@ -328,8 +389,8 @@ func (c *connection) Close() error {
 	errDB := c.db.Close()
 
 	var errEmbed error
-	if c.embed != nil {
-		errEmbed = c.embed.stop()
+	if c.config.EmbedPort != 0 {
+		errEmbed = c.stopEmbed()
 	}
 
 	return errors.Join(errDB, errEmbed)
