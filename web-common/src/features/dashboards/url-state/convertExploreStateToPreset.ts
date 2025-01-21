@@ -95,7 +95,6 @@ function getTimeRangeFields(
   ) {
     preset.selectTimeRange = toTimeRangeParam(exploreState.selectedScrubRange);
   }
-  console.log(preset);
 
   return preset;
 }
