@@ -8,19 +8,15 @@
   import { parseDocument } from "yaml";
 
   export let fileArtifact: FileArtifact;
+  export let autoSave: boolean;
 
   const { canvasEntity } = getCanvasStateManagers();
   const { canvasSpec } = canvasEntity.spec;
 
-  $: ({
-    editorContent,
-    remoteContent,
-    updateEditorContent,
-    saveLocalContent,
-    path,
-  } = fileArtifact);
+  $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
+    fileArtifact);
 
-  $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? "");
   $: selectedComponentIndex = canvasEntity.selectedComponentIndex;
 
   $: selectedComponentName =
@@ -55,7 +51,7 @@
     }
 
     killState();
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false, autoSave);
     await saveLocalContent();
   }
 

@@ -1,7 +1,6 @@
 <script lang="ts">
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { navigationOpen } from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
@@ -34,8 +33,6 @@
   let positionChange: [0 | 1, 0 | 1] = [0, 0];
 
   $: ({ instanceId } = $runtime);
-
-  $: extraLeftPadding = !$navigationOpen;
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
@@ -82,6 +79,7 @@
     items[selectedIndex].width = Math.max(1, Math.abs(dimensions[0]));
     items[selectedIndex].height = Math.max(1, Math.abs(dimensions[1]));
 
+    // TODO: Do not update if there is no change
     dispatch("update", {
       index: selectedIndex,
       position: [items[selectedIndex].x, items[selectedIndex].y],
@@ -176,7 +174,6 @@
 <div
   id="header"
   class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
-  class:left-shift={extraLeftPadding}
 >
   <CanvasFilters />
 </div>

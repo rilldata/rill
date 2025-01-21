@@ -18,7 +18,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import type { KPISpec } from ".";
-  import { useMetricsViewSpecMeasure } from "../selectors";
   import {
     useKPIComparisonTotal,
     useKPISparkline,
@@ -28,6 +27,7 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const ctx = getCanvasStateManagers();
+  const { spec } = ctx.canvasEntity;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -43,13 +43,7 @@
     comparison_range: comparisonTimeRange,
   } = kpiProperties);
 
-  $: measureQuery = useMetricsViewSpecMeasure(
-    instanceId,
-    metricsViewName,
-    measureName,
-  );
-
-  $: measure = $measureQuery?.data;
+  $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
 
   $: measureValue = useKPITotals(
     ctx,
@@ -73,10 +67,10 @@
     metricsViewName,
     measureName,
     timeRange,
-    undefined,
   );
 
   $: sparkData = $sparkline?.data || [];
+  $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
@@ -86,8 +80,8 @@
   $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
   $: [xMin, xMax] = extent(sparkData, (d) => d["ts_position"]);
 
-  $: measureValueFormatter = measure
-    ? createMeasureValueFormatter<null>(measure, "big-number")
+  $: measureValueFormatter = $measure
+    ? createMeasureValueFormatter<null>($measure, "big-number")
     : () => "no data";
 
   $: measureValueFormatted = $measureValue.data
@@ -101,7 +95,7 @@
       ? ($measureValue.data - $comparisonValue.data) / $comparisonValue.data
       : undefined;
 
-  $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = $measure?.formatPreset === FormatPreset.PERCENTAGE;
 
   $: sparklineHeight =
     containerHeight -
@@ -120,7 +114,7 @@
     bind:clientHeight={containerHeight}
     class="flex flex-col h-full w-full bg-white pt-4 items-center gap-y-1"
   >
-    <div class="measure-label">{measure?.displayName || measureName}</div>
+    <div class="measure-label">{$measure?.displayName || measureName}</div>
     <div class="measure-value">{measureValueFormatted}</div>
     <div class="flex items-center">
       {#if $comparisonValue.data}
@@ -164,7 +158,7 @@
       {/if}
     </div>
 
-    {#if containerHeight && containerWidth && showSparkline && sparkData.length}
+    {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
       <SimpleDataGraphic
         height={sparklineHeight}
         width={containerWidth + 10}

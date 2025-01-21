@@ -8,9 +8,14 @@
 
   export let fileArtifact: FileArtifact;
 
-  const { canvasEntity } = getCanvasStateManagers();
-  const { canvasSpec } = canvasEntity.spec;
-  $: selectedIndex = canvasEntity?.selectedComponentIndex;
+  const ctx = getCanvasStateManagers();
+
+  const {
+    canvasEntity: {
+      selectedComponentIndex: selectedIndex,
+      spec: { canvasSpec },
+    },
+  } = ctx;
 
   let showGrid = true;
 
@@ -22,13 +27,7 @@
     items: [],
   };
 
-  $: ({
-    saveLocalContent: updateComponentFile,
-    autoSave,
-    updateEditorContent,
-    editorContent,
-    remoteContent,
-  } = fileArtifact);
+  $: ({ saveLocalContent, updateEditorContent, editorContent } = fileArtifact);
 
   $: spec = structuredClone($canvasSpec ?? spec);
 
@@ -44,15 +43,13 @@
   }
 
   async function deleteComponent(index: number) {
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
+    const parsedDocument = parseDocument($editorContent ?? "");
 
     const items = parsedDocument.get("items") as any;
     if (!items) return;
     items.delete(index);
-    updateEditorContent(parsedDocument.toString(), true);
-    if ($autoSave) await updateComponentFile();
+    updateEditorContent(parsedDocument.toString(), false, true);
+    await saveLocalContent();
   }
 
   async function handlePreviewUpdate(
@@ -62,9 +59,7 @@
       dimensions: Vector;
     }>,
   ) {
-    const parsedDocument = parseDocument(
-      $editorContent ?? $remoteContent ?? "",
-    );
+    const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
 
     const node = items.get(e.detail.index);
@@ -74,9 +69,8 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    updateEditorContent(parsedDocument.toString(), true);
-
-    if ($autoSave) await updateComponentFile();
+    updateEditorContent(parsedDocument.toString(), false, true);
+    await saveLocalContent();
   }
 </script>
 
