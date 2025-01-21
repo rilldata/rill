@@ -87,7 +87,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	for _, rule := range securityRules {
 		if rule.GetAccess() == nil {
-			return fmt.Errorf("the 'custom api' resource type only supports 'access' security rules")
+			return fmt.Errorf("the 'api' resource type only supports 'access' security rules")
 		}
 	}
 
