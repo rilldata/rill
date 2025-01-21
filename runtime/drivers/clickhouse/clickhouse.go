@@ -115,9 +115,9 @@ func (d *driver) startEmbeddedClickhouse(port int, dataDir, tempDir string, logg
 	if d.embed != nil {
 		if d.embedPort == port {
 			d.refs++
-			return d.embedOpts, func() error { return d.stopEmbeddedClickhouse(port) }, nil
+			return d.embedOpts, d.stopEmbeddedClickhouse, nil
 		}
-		return nil, nil, fmt.Errorf("embed port changed not allowed, please restart rill")
+		return nil, nil, fmt.Errorf("change of `embed_port` is not allowed while application is running, please restart rill")
 	}
 	embed := newEmbedClickHouse(port, dataDir, tempDir, logger)
 	opts, err := embed.start()
@@ -127,18 +127,15 @@ func (d *driver) startEmbeddedClickhouse(port int, dataDir, tempDir string, logg
 	d.embed = embed
 	d.embedOpts = opts
 	d.embedPort = port
-	return d.embedOpts, func() error { return d.stopEmbeddedClickhouse(port) }, nil
+	return d.embedOpts, d.stopEmbeddedClickhouse, nil
 }
 
-func (d *driver) stopEmbeddedClickhouse(port int) error {
+func (d *driver) stopEmbeddedClickhouse() error {
 	d.embedMu.Lock()
 	defer d.embedMu.Unlock()
 	if d.embed == nil || d.refs < 0 {
 		// should never happen
 		return nil
-	}
-	if d.embedPort != port {
-		return fmt.Errorf("embed port mismatch, expected %d, got %d", d.embedPort, port)
 	}
 	d.refs--
 	if d.refs > 0 {
@@ -148,10 +145,7 @@ func (d *driver) stopEmbeddedClickhouse(port int) error {
 	d.embed = nil
 	d.embedOpts = nil
 	d.embedPort = 0
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type configProperties struct {
@@ -176,7 +170,7 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
 	SettingsOverride string `mapstructure:"settings_override"`
-	// EmbedPort is the port to run Clickhouse locally (0 is random port). Change is not allowed.
+	// EmbedPort is the port to run Clickhouse locally (0 is random port). Change is not allowed while application is running.
 	EmbedPort      int  `mapstructure:"embed_port"`
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
 }
@@ -389,7 +383,7 @@ func (c *connection) Close() error {
 	errDB := c.db.Close()
 
 	var errEmbed error
-	if c.config.EmbedPort != 0 {
+	if c.stopEmbed != nil {
 		errEmbed = c.stopEmbed()
 	}
 
