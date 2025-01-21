@@ -65,7 +65,7 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	resolverProps := api.Spec.ResolverProperties.AsMap()
-	skipResolverSecurity := resolverProps["skip_resolver_security"]
+	skipResolverSecurity := resolverProps["skip_nested_security"]
 	claims := auth.GetClaims(ctx).SecurityClaims()
 	// for each claim skip checks
 	if skipResolverSecurity != nil && skipResolverSecurity.(bool) {

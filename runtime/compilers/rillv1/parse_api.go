@@ -114,7 +114,7 @@ type DataYAML struct {
 	Glob                 yaml.Node          `yaml:"glob"` // Path (string) or properties (map[string]any)
 	ResourceStatus       map[string]any     `yaml:"resource_status"`
 	Security             SecurityPolicyYAML `yaml:"security"`
-	SkipResolverSecurity bool               `yaml:"skip_resolver_security"`
+	SkipResolverSecurity bool               `yaml:"skip_nested_security"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -128,7 +128,7 @@ func (p *Parser) parseDataYAML(raw *DataYAML, contextualConnector string) (strin
 	resolverProps := make(map[string]any)
 
 	if raw.SkipResolverSecurity {
-		resolverProps["skip_resolver_security"] = raw.SkipResolverSecurity
+		resolverProps["skip_nested_security"] = raw.SkipResolverSecurity
 	}
 
 	// Handle basic SQL resolver
