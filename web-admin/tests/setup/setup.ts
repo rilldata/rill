@@ -133,7 +133,6 @@ setup(
         "--project",
         "openrtb",
         "--github",
-        "true",
       ],
       /https?:\/\/[^\s]+/,
     );
