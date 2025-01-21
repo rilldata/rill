@@ -14,7 +14,6 @@
   export let builders: Builder[] = [];
   export let left: number;
   export let top: number;
-  export let padding: number;
   export let embed = false;
   export let radius: number;
   export let selected = false;
@@ -103,7 +102,6 @@
   class={componentClasses}
   draggable={isDragging}
   style:z-index={renderer === "select" ? 100 : "auto"}
-  style:padding="{padding}px"
   style:left="{left}px"
   style:top="{top}px"
   style:width="{width}px"

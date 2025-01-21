@@ -74,7 +74,6 @@
     data-component-index={i}
     style:width="{finalWidth}px"
     style:height="{finalHeight}px"
-    style:padding="{padding}px"
     style:transform
     style:will-change="transform"
     on:dragstart={handleDragStart}
@@ -89,7 +88,6 @@
       {instanceId}
       {i}
       {componentName}
-      {padding}
       {radius}
       {selected}
       {rowIndex}
@@ -123,7 +121,6 @@
       {instanceId}
       {i}
       {componentName}
-      {padding}
       {radius}
       {selected}
       {rowIndex}
