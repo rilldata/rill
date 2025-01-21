@@ -64,7 +64,6 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// TODO: Should it resolve security and check access here?
 	resolverProps := api.Spec.ResolverProperties.AsMap()
 	skipResolverSecurity := resolverProps["skip_resolver_security"]
 	claims := auth.GetClaims(ctx).SecurityClaims()
