@@ -129,10 +129,35 @@ export class Grid {
 
   public moveItem(
     draggedItem: V1CanvasItem,
-    targetItem: V1CanvasItem,
+    targetItem: V1CanvasItem | undefined,
     position: DropPosition,
     dragIndex: number,
   ): { items: V1CanvasItem[]; insertIndex: number } {
+    // Special handling for drops into empty space (when there's no target item)
+    if (!targetItem) {
+      const newItems = [...this.items];
+      // Remove the dragged item from its current position
+      const [removedItem] = newItems.splice(dragIndex, 1);
+
+      if (Grid.isValidItem(removedItem)) {
+        // When dropping into empty space:
+        // 1. Place item at x=0 (left-aligned)
+        // 2. Place below all existing items (using getMaxY)
+        // 3. Make it full-width
+        removedItem.x = 0;
+        removedItem.y =
+          this.getMaxY() + (removedItem.height ?? defaults.COMPONENT_HEIGHT);
+        removedItem.width = defaults.COLUMN_COUNT;
+      }
+
+      newItems.push(removedItem);
+      this.items = this.preventCollisions(newItems);
+      return {
+        items: this.items,
+        insertIndex: this.items.length - 1, // Item is always added at the end
+      };
+    }
+
     if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(draggedItem)) {
       throw new Error("Invalid items provided to moveItem");
     }
@@ -255,6 +280,18 @@ export class Grid {
         item.y = (item.y ?? 0) + removedItem.height;
       }
     });
+  }
+
+  /**
+   * Gets the maximum Y coordinate (bottom) of all items in the canvas
+   * This is used to determine where to place new items when dropping into empty space
+   * @returns The Y coordinate of the bottom-most point of any item, or 0 if canvas is empty
+   */
+  private getMaxY(): number {
+    return Math.max(
+      0,
+      ...this.items.map((item) => (item.y ?? 0) + (item.height ?? 0)),
+    );
   }
 }
 

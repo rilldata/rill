@@ -3,6 +3,7 @@ import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import * as defaults from "./constants";
 import { beforeEach, describe, expect, it } from "vitest";
 
+// FIXME: re-enable this test
 describe.skip("Grid", () => {
   let items: V1CanvasItem[];
 
