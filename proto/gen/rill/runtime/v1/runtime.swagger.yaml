@@ -3265,6 +3265,13 @@ definitions:
           type: object
       openapiResponseSchema:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+      skipNestedSecurity:
+        type: boolean
   v1APIState:
     type: object
   v1Alert:
