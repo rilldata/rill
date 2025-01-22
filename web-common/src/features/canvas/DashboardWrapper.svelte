@@ -13,10 +13,9 @@
 >
   <div
     bind:contentRect
-    class="dashboard-wrapper {bgColor}"
-    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
+    class="dashboard-wrapper {bgColor} min-h-full"
+    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px "
     style:height="{height}px"
-    style:min-height="full"
   >
     <div role="presentation" class="size-full relative" on:click|self>
       <div
