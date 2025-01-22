@@ -23,7 +23,7 @@ var ignoreFileList = []string{
 	"/.git",
 }
 
-func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean bool) error {
+func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean, ignorePaths bool) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	}
 
 	// untar to the project path
-	err = untar(downloadDst, filepath.Clean(projPath))
+	err = untar(downloadDst, filepath.Clean(projPath), ignorePaths)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 	return nil
 }
 
-func untar(src, dest string) error {
+func untar(src, dest string, ignorePaths bool) error {
 	file, err := os.Open(src)
 	if err != nil {
 		return err
@@ -172,11 +172,16 @@ func untar(src, dest string) error {
 			return err
 		}
 
+		if ignorePaths && drivers.IsIgnored(filepath.Join("/", header.Name), nil) {
+			continue
+		}
+
 		// Determine the proper path for the item
 		target, err := sanitizeArchivePath(dest, header.Name)
 		if err != nil {
 			return err
 		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			// Handle directory
