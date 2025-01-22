@@ -22,7 +22,7 @@ export class CanvasResolvedSpec {
   ) => Readable<MetricsViewSpecMeasureV2[]>;
 
   getMeasureForMetricView: (
-    measureName: string,
+    measureName: string | undefined,
     metricViewName: string,
   ) => Readable<MetricsViewSpecMeasureV2 | undefined>;
 
@@ -115,10 +115,11 @@ export class CanvasResolvedSpec {
       });
 
     this.getMeasureForMetricView = (
-      measureName: string,
+      measureName: string | undefined,
       metricViewName: string,
     ) =>
       derived(this.getMeasuresForMetricView(metricViewName), (measures) => {
+        if (!measureName) return;
         return measures?.find((measure) => measure.name === measureName);
       });
 

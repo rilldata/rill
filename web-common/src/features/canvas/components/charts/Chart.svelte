@@ -5,8 +5,11 @@
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type {
+    MetricsViewSpecMeasureV2,
+    V1ComponentSpecRendererProperties,
+  } from "@rilldata/web-common/runtime-client";
   import type { View } from "svelte-vega";
   import { getChartData } from "./selector";
   import type { ChartType } from "./types";
@@ -15,16 +18,33 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
 
-  let stateManagers = getCanvasStateManagers();
+  const {
+    canvasEntity: {
+      spec: { getMeasureForMetricView },
+    },
+  } = getCanvasStateManagers();
 
-  const instanceId = $runtime.instanceId;
+  let stateManagers = getCanvasStateManagers();
+  let viewVL: View;
+
   $: chartConfig = rendererProperties as ChartSpec;
   $: chartType = renderer as ChartType;
 
-  let viewVL: View;
-
   $: data = getChartData(stateManagers, chartConfig);
   $: spec = generateSpec(chartType, chartConfig, $data);
+
+  $: measure = getMeasureForMetricView(
+    chartConfig.y?.field,
+    chartConfig.metrics_view,
+  );
+
+  $: measureFormatter = createMeasureValueFormatter<null | undefined>(
+    $measure as MetricsViewSpecMeasureV2,
+  );
+
+  const expressionFunctions = {
+    measureFormatter: { fn: (val) => measureFormatter(val) },
+  };
 
   $: config = chartConfig.vl_config
     ? mergedVlConfig(chartConfig.vl_config)
@@ -49,6 +69,7 @@
       canvasDashboard
       data={{ "metrics-view": $data.data }}
       {spec}
+      {expressionFunctions}
       {config}
     />
   {/if}

@@ -1,5 +1,9 @@
 import type { ChartDataResult } from "@rilldata/web-common/features/canvas/components/charts/selector";
-import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import type {
+  ChartConfig,
+  TooltipValue,
+} from "@rilldata/web-common/features/canvas/components/charts/types";
+import type { VisualizationSpec } from "svelte-vega";
 import type {
   ColorDef,
   Field,
@@ -7,6 +11,17 @@ import type {
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
+
+export function createMultiLayerBaseSpec() {
+  const baseSpec: VisualizationSpec = {
+    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+    width: "container",
+    data: { name: "metrics-view" },
+    autosize: { type: "fit" },
+    layer: [],
+  };
+  return baseSpec;
+}
 
 export function createSingleLayerBaseSpec(
   mark: "line" | "bar" | "point",
@@ -21,7 +36,7 @@ export function createSingleLayerBaseSpec(
   };
 }
 
-function createXEncoding(
+export function createXEncoding(
   config: ChartConfig,
   data: ChartDataResult,
 ): PositionDef<Field> {
@@ -35,7 +50,7 @@ function createXEncoding(
   };
 }
 
-function createYEncoding(
+export function createYEncoding(
   config: ChartConfig,
   data: ChartDataResult,
 ): PositionDef<Field> {
@@ -49,7 +64,7 @@ function createYEncoding(
   };
 }
 
-function createColorEncoding(
+export function createColorEncoding(
   config: ChartConfig,
   data: ChartDataResult,
 ): ColorDef<Field> {
@@ -68,6 +83,43 @@ function createColorEncoding(
   return {};
 }
 
+export function createDefaultTooltipEncoding(
+  config: ChartConfig,
+  data: ChartDataResult,
+) {
+  const tooltip: TooltipValue[] = [];
+
+  if (config.x) {
+    tooltip.push({
+      field: config.x.field,
+      title: data.fields[config.x.field]?.displayName || config.x.field,
+      type: config.x.type,
+      ...(config.x.type === "quantitative" && {
+        formatType: "measureFormatter",
+      }),
+    });
+  }
+  if (config.y) {
+    tooltip.push({
+      field: config.y.field,
+      title: data.fields[config.y.field]?.displayName || config.y.field,
+      type: config.y.type,
+      ...(config.y.type === "quantitative" && {
+        formatType: "measureFormatter",
+      }),
+    });
+  }
+  if (typeof config.color === "object" && config.color.field) {
+    tooltip.push({
+      field: config.color.field,
+      title: data.fields[config.color.field]?.displayName || config.color.field,
+      type: config.color.type,
+    });
+  }
+
+  return tooltip;
+}
+
 export function createEncoding(
   config: ChartConfig,
   data: ChartDataResult,
@@ -76,5 +128,6 @@ export function createEncoding(
     x: createXEncoding(config, data),
     y: createYEncoding(config, data),
     color: createColorEncoding(config, data),
+    tooltip: createDefaultTooltipEncoding(config, data),
   };
 }

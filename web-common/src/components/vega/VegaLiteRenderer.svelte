@@ -39,7 +39,7 @@
 
   $: options = <EmbedOptions>{
     config: config || getRillTheme(canvasDashboard),
-    renderer: "canvas",
+    renderer: "svg",
     actions: false,
     logLevel: 0, // only show errors
     width: canvasDashboard ? width : undefined,

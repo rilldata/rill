@@ -5,7 +5,7 @@ export interface FieldConfig {
   label?: string;
   format?: string;
   showAxisTitle?: boolean; // Default is false
-  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "geojson";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal";
   timeUnit?: string; // For temporal fields
 }
 
@@ -32,5 +32,5 @@ export interface TooltipValue {
   field: string;
   format?: string;
   formatType?: string;
-  type: "quantitative" | "temporal" | "nominal" | "ordinal";
+  type: "quantitative" | "ordinal" | "temporal" | "nominal";
 }
