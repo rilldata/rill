@@ -42,10 +42,6 @@
     $measure as MetricsViewSpecMeasureV2,
   );
 
-  const expressionFunctions = {
-    measureFormatter: { fn: (val) => measureFormatter(val) },
-  };
-
   $: config = chartConfig.vl_config
     ? mergedVlConfig(chartConfig.vl_config)
     : undefined;
@@ -69,7 +65,9 @@
       canvasDashboard
       data={{ "metrics-view": $data.data }}
       {spec}
-      {expressionFunctions}
+      expressionFunctions={{
+        measureFormatter: { fn: (val) => measureFormatter(val) },
+      }}
       {config}
     />
   {/if}
