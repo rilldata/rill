@@ -4843,6 +4843,11 @@ export class APISpec extends Message<APISpec> {
    */
   securityRules: SecurityRule[] = [];
 
+  /**
+   * @generated from field: bool skip_nested_security = 7;
+   */
+  skipNestedSecurity = false;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4857,6 +4862,7 @@ export class APISpec extends Message<APISpec> {
     { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
     { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 7, name: "skip_nested_security", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

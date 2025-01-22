@@ -2542,6 +2542,7 @@ export interface V1APISpec {
   openapiParameters?: V1APISpecOpenapiParametersItem[];
   openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
   securityRules?: V1SecurityRule[];
+  skipNestedSecurity?: boolean;
 }
 
 /**

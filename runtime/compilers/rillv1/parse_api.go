@@ -3,7 +3,6 @@ package rillv1
 import (
 	"fmt"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
@@ -11,10 +10,10 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
-	DataYAML             `yaml:",inline" mapstructure:",squash"`
-	OpenAPI              *OpenAPIYAML        `yaml:"openapi"`
-	Security             *SecurityPolicyYAML `yaml:"security"`
-	SkipResolverSecurity bool                `yaml:"skip_nested_security"`
+	DataYAML           `yaml:",inline" mapstructure:",squash"`
+	OpenAPI            *OpenAPIYAML        `yaml:"openapi"`
+	Security           *SecurityPolicyYAML `yaml:"security"`
+	SkipNestedSecurity bool                `yaml:"skip_nested_security"`
 }
 
 type OpenAPIYAML struct {
@@ -40,7 +39,6 @@ func (p *Parser) parseAPI(node *Node) error {
 	var openapiSummary string
 	var openapiParams []*structpb.Struct
 	var openapiSchema *structpb.Struct
-	var securityRules []*runtimev1.SecurityRule
 	if tmp.OpenAPI != nil {
 		openapiSummary = tmp.OpenAPI.Summary
 
@@ -81,23 +79,13 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
 
-	securityRules, err = tmp.Security.Proto()
+	securityRules, err := tmp.Security.Proto()
 	if err != nil {
 		return fmt.Errorf("failed to parse security rules: %w", err)
 	}
 	for _, rule := range securityRules {
 		if rule.GetAccess() == nil {
 			return fmt.Errorf("the 'api' resource type only supports 'access' security rules")
-		}
-	}
-
-	if tmp.SkipResolverSecurity {
-		// Skip security rules for nested resolvers
-		propsMap := resolverProps.AsMap()
-		propsMap["skip_nested_security"] = tmp.SkipResolverSecurity
-		resolverProps, err = structpb.NewStruct(propsMap)
-		if err != nil {
-			return fmt.Errorf("failed to update resolver properties: %w", err)
 		}
 	}
 
@@ -113,6 +101,7 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.OpenapiParameters = openapiParams
 	r.APISpec.OpenapiResponseSchema = openapiSchema
 	r.APISpec.SecurityRules = securityRules
+	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
 	return nil
 }

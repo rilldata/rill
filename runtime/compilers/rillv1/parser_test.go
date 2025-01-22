@@ -1888,13 +1888,14 @@ security:
 			Paths: []string{"/apis/a5.yaml"},
 			APISpec: &runtimev1.APISpec{
 				Resolver:           "metrics_sql",
-				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1", "skip_nested_security": true})),
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 				SecurityRules: []*runtimev1.SecurityRule{
 					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
 						Condition: "{{ .user.admin }}",
 						Allow:     true,
 					}}},
 				},
+				SkipNestedSecurity: true,
 			},
 		},
 	}

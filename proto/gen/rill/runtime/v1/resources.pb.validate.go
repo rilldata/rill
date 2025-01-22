@@ -11171,6 +11171,8 @@ func (m *APISpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for SkipNestedSecurity
+
 	if len(errors) > 0 {
 		return APISpecMultiError(errors)
 	}
