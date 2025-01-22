@@ -28,5 +28,5 @@ export function adjustOffsetForZone(
 
   const removedLocalOffsetdate = remove(new Date(ts), grainDuration);
 
-  return addZoneOffset(removedLocalOffsetdate, zone);
+  return addZoneOffset(removedLocalOffsetdate, zone, grainDuration);
 }

@@ -3,6 +3,7 @@ package metricssqlparser_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -146,6 +147,12 @@ func TestCompile(t *testing.T) {
 			advancedMV,
 			nil,
 		},
+		{
+			"select pub, dom from ad_bids_metrics where timestamp > time_range_start('-7d,latest') and timestamp <= time_range_end('-7d,latest')",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\" FROM \"ad_bids\" WHERE (((\"timestamp\") > ?) AND ((\"timestamp\") <= ?)) GROUP BY 1, 2",
+			advancedMV,
+			[]any{parseTestTime(t, "2022-03-23T00:00:00Z"), parseTestTime(t, "2022-03-30T23:59:44.2Z")},
+		},
 	}
 
 	clm, err := rt.ResolveSecurity(instanceID, claims, mv)
@@ -166,4 +173,10 @@ func TestCompile(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, res.Close())
 	}
+}
+
+func parseTestTime(tst *testing.T, t string) time.Time {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return ts
 }

@@ -15,36 +15,36 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import {
-    cleanUpComparisonValue,
-    compareLeaderboardValues,
-    getSort,
-    prepareLeaderboardItemData,
-  } from "./leaderboard-utils";
-  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
+    getComparisonRequestMeasures,
+    getURIRequestMeasure,
+  } from "../dashboard-utils";
+  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
+  import {
+    additionalMeasures,
+    getFiltersForOtherDimensions,
+  } from "../selectors";
+  import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import {
     createAndExpression,
     createOrExpression,
     isExpressionUnsupported,
     sanitiseExpression,
   } from "../stores/filter-utils";
-  import {
-    getComparisonRequestMeasures,
-    getURIRequestMeasure,
-  } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilter } from "../filters/measure-filters/measure-filter-utils";
-  import {
-    additionalMeasures,
-    getFiltersForOtherDimensions,
-  } from "../selectors";
-  import { getIndependentMeasures } from "../state-managers/selectors/measures";
+  import type { DimensionThresholdFilter } from "../stores/metrics-explorer-entity";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LoadingRows from "./LoadingRows.svelte";
   import {
-    valueColumn,
-    deltaColumn,
+    cleanUpComparisonValue,
+    compareLeaderboardValues,
+    getSort,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
+  import {
     DEFAULT_COL_WIDTH,
+    deltaColumn,
+    valueColumn,
   } from "./leaderboard-widths";
 
   const slice = 7;
@@ -350,7 +350,7 @@
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
-  {:else if noAvailableValues}
+  {:else if noAvailableValues && !isFetching}
     <div class="table-message ui-copy-muted">(No available values)</div>
   {/if}
 </div>

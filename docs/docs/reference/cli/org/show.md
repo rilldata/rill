@@ -1,20 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill upgrade
+title: rill org show
 ---
-## rill upgrade
+## rill org show
 
-Upgrade Rill to the latest version
+Show org details
 
 ```
-rill upgrade [flags]
+rill org show [<org-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --nightly          Install the latest nightly build
-      --version string   Install a specific version of Rill
+      --org string   Organization name
 ```
 
 ### Global flags
@@ -28,5 +27,5 @@ rill upgrade [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - A CLI for Rill
+* [rill org](org.md)	 - Manage organisations
 
