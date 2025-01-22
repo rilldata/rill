@@ -1,61 +1,11 @@
 ---
-title: "Organizations and Projects in Rill Cloud"
+title: "Managing Projects in Rill Cloud"
 description: Basic managment from projects 
-sidebar_label: "Organizations and Projects"
-sidebar_position: 19
+sidebar_label: "Project Management"
+sidebar_position: 20
 ---
 
-Once a project is ready to be deployed onto Rill Cloud, as an administrator, you will need to manage your organization, project, and user access. Depending on where you set this access, the permissions can vary. Please see our [Roles and Permission](roles-permissions.md) page for more details.
-
-## Organization
-
-:::tip Deploying for the first time?
-If it is your first time deploying, we will automatically generate an organization for you! To make changes to the name of the organization, navigate to the Settings page.
-:::
-
-![img](/img/manage/project-management/rill-org.png)
-
-An Organization in Rill is the parent management object and encompasses how your team or organization interfaces with Rill Cloud. Organizations are designed to hold the differnet components of your Rill project. Organizations consists of projects that each consist of their own source, models, metrics view, dashboards and more.
-
-### Managing an Organization via Rill Cloud
-
-Once your project has been deployed to Rill Cloud, you will be able to access the Organization's settings page.
-From this page, you can manage users, modify your Billing (if on a `Team Plan`), and see your overall usage. 
-
-
-![img](/img/manage/project-management/rill-org-settings.png)
-
-
-### Managing an Organization from the CLI
-If you'd like to create, edit, modify, or delete an organization from the CLI, run the following command.
-
-```
-rill org
-Manage organisations
-
-Usage:
-  rill org [command]
-
-Available Commands:
-  create      Create organization
-  edit        Edit organization details
-  switch      Switch to other organization
-  list        List all organizations
-  delete      Delete organization
-  rename      Rename organization
-
-Global Flags:
-      --api-token string   Token for authenticating with the cloud API
-      --format string      Output format (options: "human", "json", "csv") (default "human")
-  -h, --help               Print usage
-      --interactive        Prompt for missing required parameters (default true)
-```
-
-:::tip
-
-Access to Rill can be granted on the [organization level](/manage/user-management#how-to-add-an-organization-user), [project level](/manage/user-management#how-to-add-a-project-user), and [user group level](/manage/user-management#how-to-add-a-user-to-a-usergroup).
-
-:::
+Once an organization is created, you can populate it with projects. Each project is connected to a [single Github repository](https://docs.rilldata.com/deploy/deploy-dashboard/#syncing-your-github-repository) and has its own set or sources, models, metric views, and explore dashboards. A defined object in a project cannot be shared to another project. 
 
 ## Project
 
@@ -73,16 +23,34 @@ You can select the `Refresh all sources and models` in the Status page or run a 
 
 ![img](/img/manage/project-management/status.png)
 
-### Managing Project settings
-You can also manage project objects in the settings page. Currently only Public URLS can be modified from the UI but more features coming soon!
+### Connect to GitHub Repository 
 
-![img](/img/explore/publicurl/public-url-settings.png)
+On first deployment your project , if you've deployed via the UI, will not be connected to a GitHub repository. You will need to manually select the `Connect to GitHub` in the Status page and following the steps to `write` your current project to the repository.
+
+![img](/img/deploy/existing-project/select-repo.png)
+
+:::note WRITING ONLY
+If the repository that you select is not empty, Rill will prompt you to `overwrite` the contents of the repository with your project file contents. You will see a commit in your repository as "Auto committed by Rill".
+:::
+### Modifying Github Repository
+
+In some cases, you will need to change the repsitory that your project is synced to. You can do this by selecting the dropdown and disconnecting your Rill project. This action has no effect on your current deployment and will not require a source reingest.
+
+![img](/img/manage/project-management/disconnect-github.png)
+
+From there, you can follow the same steps as [above](#connect-to-github-repository) to re-connect your project to a new repository.
+
 
 ### Deploying from a branch other than `main`
 If you have already [setup your connection to GitHub](/deploy/deploy-dashboard/#syncing-your-github-repository), you can edit the branch from where the project is deployed from.
 
 ![img](/img/manage/project-management/main-branch.png)
 
+
+### Managing Project settings
+You can also manage project objects in the settings page including public URLs (created in an explore dashboard) and environmental variables. For more information on managing variables, see [variables and credentials](/manage/project-management/variables-and-credentials).
+
+![img](/img/manage/project-management/project-settings.png)
 
 ## Managing Rill project from CLI
 Managing a project includes the project itself and all components or resources that belong to the project. Via the CLI, you can make changes to the project's properties such as description, GitHub branch, etc using the following:
