@@ -1,10 +1,12 @@
 import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
+import StackedArea from "@rilldata/web-common/components/icons/StackedArea.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
+import { generateVLAreaChartSpec } from "./area/spec";
 import { generateVLBarChartSpec } from "./bar-chart/spec";
 import { generateVLLineChartSpec } from "./line-chart/spec";
 import type { ChartDataResult } from "./selector";
@@ -24,6 +26,8 @@ export function generateSpec(
       return generateVLStackedBarChartSpec(chartConfig, data);
     case "line_chart":
       return generateVLLineChartSpec(chartConfig, data);
+    case "area_chart":
+      return generateVLAreaChartSpec(chartConfig, data);
   }
 }
 
@@ -31,6 +35,7 @@ export const chartMetadata: ChartMetadata[] = [
   { type: "line_chart", title: "Line", icon: LineChart },
   { type: "bar_chart", title: "Bar", icon: BarChart },
   { type: "stacked_bar", title: "Stacked Bar", icon: StackedBar },
+  { type: "area_chart", title: "Stacked Area", icon: StackedArea },
 ];
 
 export function mergedVlConfig(config: string): Config {

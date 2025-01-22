@@ -18,7 +18,11 @@ export interface ChartConfig {
   vl_config?: string;
 }
 
-export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";
+export type ChartType =
+  | "line_chart"
+  | "bar_chart"
+  | "stacked_bar"
+  | "area_chart";
 
 export interface ChartMetadata {
   type: ChartType;
