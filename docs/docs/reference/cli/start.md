@@ -18,7 +18,6 @@ rill start [<path>] [flags]
       --reset                     Clear and re-ingest source data
       --no-open                   Do not open browser
       --verbose                   Sets the log level to debug
-      --readonly                  Show only dashboards in UI
       --port int                  Port for HTTP (default 9009)
       --port-grpc int             Port for gRPC (internal) (default 49009)
       --no-ui                     Serve only the backend
@@ -40,5 +39,5 @@ rill start [<path>] [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill](cli.md)	 - A CLI for Rill
 

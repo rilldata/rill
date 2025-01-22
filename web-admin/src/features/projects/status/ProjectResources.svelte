@@ -72,7 +72,7 @@
   }
 </script>
 
-<section class="flex flex-col gap-y-4">
+<section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
@@ -89,6 +89,7 @@
       {/if}
     </Button>
   </div>
+
   {#if $resources.isLoading}
     <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
   {:else if $resources.isError}

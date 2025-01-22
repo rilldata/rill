@@ -105,8 +105,13 @@ type Grain struct {
 }
 
 type AtModifiers struct {
-	Offset   *TimeAnchor `parser:"@@?"`
-	TimeZone *string     `parser:"@TimeZone?"`
+	Offset   *Grain  `parser:"@@?"`
+	TimeZone *string `parser:"@TimeZone?"`
+}
+
+// ParseOptions allows for additional options that could probably not be added to the time range itself
+type ParseOptions struct {
+	DefaultTimeZone *time.Location
 }
 
 type EvalOptions struct {
@@ -118,11 +123,11 @@ type EvalOptions struct {
 	FirstMonth int
 }
 
-func Parse(from string) (*Expression, error) {
+func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 	var rt *Expression
 	var err error
 
-	rt, err = ParseISO(from, false)
+	rt, err = parseISO(from, parseOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +141,9 @@ func Parse(from string) (*Expression, error) {
 	}
 
 	rt.timeZone = time.UTC
+	if parseOpts.DefaultTimeZone != nil {
+		rt.timeZone = parseOpts.DefaultTimeZone
+	}
 	if rt.Modifiers != nil {
 		if rt.Modifiers.Grain != nil {
 			rt.truncateGrain = grainMap[rt.Modifiers.Grain.Grain]
@@ -158,64 +166,7 @@ func Parse(from string) (*Expression, error) {
 
 	if rt.End == nil {
 		rt.End = &TimeAnchor{
-			Now: true,
-		}
-	}
-
-	return rt, nil
-}
-
-func ParseISO(from string, strict bool) (*Expression, error) {
-	// Try parsing for "inf"
-	if infPattern.MatchString(from) {
-		return &Expression{
-			Start: &TimeAnchor{Earliest: true},
-			End:   &TimeAnchor{Latest: true},
-		}, nil
-	}
-
-	if strings.HasPrefix(from, "rill-") {
-		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
-		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
-		rillDur := strings.Replace(from, "rill-", "", 1)
-		if t, ok := daxNotations[rillDur]; ok {
-			return Parse(t)
-		}
-	}
-
-	// Parse as a regular ISO8601 duration
-	if !durationPattern.MatchString(from) {
-		if !strict {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("string %q is not a valid ISO 8601 duration", from)
-	}
-
-	rt := &Expression{
-		Start: &TimeAnchor{},
-		End:   &TimeAnchor{Latest: true},
-		// mirrors old UI behaviour
-		isComplete: false,
-	}
-	d, err := duration.ParseISO8601(from)
-	if err != nil {
-		if !strict {
-			return nil, nil
-		}
-		return nil, err
-	}
-	sd, ok := d.(duration.StandardDuration)
-	if !ok {
-		if !strict {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("duration %q is invalid iso format", from)
-	}
-	rt.Start.isoDuration = &sd
-	minGrain := getMinGrain(sd)
-	if minGrain != "" {
-		rt.grain = &Grain{
-			Grain: minGrain,
+			Watermark: true,
 		}
 	}
 
@@ -225,7 +176,9 @@ func ParseISO(from string, strict bool) (*Expression, error) {
 func ParseCompatibility(timeRange, offset string) error {
 	isNewFormat := false
 	if timeRange != "" {
-		rt, err := Parse(timeRange)
+		// ParseCompatibility is called for time ranges.
+		// All parse options should be part of the time range syntax there.
+		rt, err := Parse(timeRange, ParseOptions{})
 		if err != nil {
 			return fmt.Errorf("invalid comparison range %q: %w", timeRange, err)
 		}
@@ -243,25 +196,30 @@ func ParseCompatibility(timeRange, offset string) error {
 }
 
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
-	start := evalOpts.Now
-	if e.End != nil && e.End.Latest {
-		// if end has latest mentioned then start also should be relative to latest.
-		start = evalOpts.MaxTime
+	start := evalOpts.Watermark
+	if e.End != nil {
+		if e.End.Latest {
+			// if end has latest mentioned then start also should be relative to latest.
+			start = evalOpts.MaxTime
+		} else if e.End.Now {
+			// if end has now mentioned then start also should be relative to latest.
+			start = evalOpts.Now
+		}
 	}
 
 	if e.Start != nil {
-		start = e.Modify(evalOpts, e.Start, start, true)
+		start = e.modify(evalOpts, e.Start, start)
 	}
 
-	end := evalOpts.Now
+	end := evalOpts.Watermark
 	if e.End != nil {
-		end = e.Modify(evalOpts, e.End, end, true)
+		end = e.modify(evalOpts, e.End, end)
 	}
 
 	return start, end, nil
 }
 
-func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, addOffset bool) time.Time {
+func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) time.Time {
 	isTruncate := true
 	truncateGrain := e.truncateGrain
 	isBoundary := false
@@ -307,9 +265,6 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 	if ta.Offset != nil {
 		tm = ta.Offset.offset(tm)
 	}
-	if addOffset && e.AtModifiers != nil && e.AtModifiers.Offset != nil {
-		tm = e.Modify(evalOpts, e.AtModifiers.Offset, tm, false)
-	}
 
 	if ta.Trunc != nil {
 		truncateGrain = grainMap[*ta.Trunc]
@@ -323,7 +278,12 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 		modifiedTime = timeutil.CeilTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
-	if isBoundary && modifiedTime.Equal(timeBeforeOffset) {
+	// Add offset after truncate
+	if e.AtModifiers != nil && e.AtModifiers.Offset != nil {
+		modifiedTime = e.AtModifiers.Offset.offset(modifiedTime)
+	}
+
+	if isBoundary && modifiedTime.Equal(timeBeforeOffset) && (e.Modifiers == nil || e.Modifiers.CompleteGrain == nil) {
 		// edge case where the end time falls on a boundary. add +1grain to make sure the last data point is included
 		n := 1
 		g := &Grain{
@@ -337,6 +297,54 @@ func (e *Expression) Modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time, 
 	}
 
 	return modifiedTime
+}
+
+func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
+	// Try parsing for "inf"
+	if infPattern.MatchString(from) {
+		return &Expression{
+			Start: &TimeAnchor{Earliest: true},
+			End:   &TimeAnchor{Latest: true},
+		}, nil
+	}
+
+	if strings.HasPrefix(from, "rill-") {
+		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
+		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
+		rillDur := strings.Replace(from, "rill-", "", 1)
+		if t, ok := daxNotations[rillDur]; ok {
+			return Parse(t, parseOpts)
+		}
+	}
+
+	// Parse as a regular ISO8601 duration
+	if !durationPattern.MatchString(from) {
+		return nil, nil
+	}
+
+	rt := &Expression{
+		Start: &TimeAnchor{},
+		End:   &TimeAnchor{Latest: true},
+		// mirrors old UI behaviour
+		isComplete: false,
+	}
+	d, err := duration.ParseISO8601(from)
+	if err != nil {
+		return nil, nil
+	}
+	sd, ok := d.(duration.StandardDuration)
+	if !ok {
+		return nil, nil
+	}
+	rt.Start.isoDuration = &sd
+	minGrain := getMinGrain(sd)
+	if minGrain != "" {
+		rt.grain = &Grain{
+			Grain: minGrain,
+		}
+	}
+
+	return rt, nil
 }
 
 func (g *Grain) offset(tm time.Time) time.Time {

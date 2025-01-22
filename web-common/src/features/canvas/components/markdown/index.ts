@@ -1,5 +1,4 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-import { commonOptions } from "@rilldata/web-common/features/canvas/components/util";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { type ComponentCommonProperties } from "../types";
@@ -15,7 +14,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   defaultSize = { width: 6, height: 2 };
 
   constructor(
-    fileArtifact: FileArtifact,
+    fileArtifact: FileArtifact | undefined = undefined,
     path: (string | number)[] = [],
     initialSpec: Partial<MarkdownSpec> = {},
   ) {
@@ -35,7 +34,6 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
     return {
       options: {
         content: { type: "textArea" },
-        ...commonOptions,
       },
       filter: {},
     };

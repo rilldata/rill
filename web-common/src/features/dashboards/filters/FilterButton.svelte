@@ -6,19 +6,17 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import { getStateManagers } from "../state-managers/state-managers";
+  import type {
+    MetricsViewSpecDimensionV2,
+    MetricsViewSpecMeasureV2,
+  } from "@rilldata/web-common/runtime-client";
   import { getMeasureDisplayName } from "./getDisplayName";
-  const {
-    selectors: {
-      dimensions: { allDimensions },
-      dimensionFilters: { dimensionHasFilter },
-      measures: { filteredSimpleMeasures },
-      measureFilters: { measureHasFilter },
-    },
-    actions: {
-      filters: { setTemporaryFilterName },
-    },
-  } = getStateManagers();
+
+  export let allDimensions: MetricsViewSpecDimensionV2[];
+  export let filteredSimpleMeasures: MetricsViewSpecMeasureV2[];
+  export let dimensionHasFilter: (dimensionName: string) => boolean;
+  export let measureHasFilter: (measureName: string) => boolean;
+  export let setTemporaryFilterName: (name: string) => void;
 
   let open = false;
 
@@ -26,22 +24,22 @@
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
-        $filteredSimpleMeasures()
+        filteredSimpleMeasures
           ?.map((m) => ({
             name: m.name as string,
             label: getMeasureDisplayName(m),
           }))
-          .filter((m) => !$measureHasFilter(m.name)) ?? [],
+          .filter((m) => !measureHasFilter(m.name)) ?? [],
     },
     <SearchableFilterSelectableGroup>{
       name: "DIMENSIONS",
       items:
-        $allDimensions
+        allDimensions
           ?.map((d) => ({
             name: (d.name || d.column) as string,
             label: getDimensionDisplayName(d),
           }))
-          .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
+          .filter((d) => !dimensionHasFilter(d.name)) ?? [],
     },
   ];
 </script>

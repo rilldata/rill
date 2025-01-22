@@ -58,12 +58,12 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 		case *adminv1.GetAlertMetaRequest_QueryForUserId:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		case *adminv1.GetAlertMetaRequest_QueryForUserEmail:
 			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
 			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+				return nil, err
 			}
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")

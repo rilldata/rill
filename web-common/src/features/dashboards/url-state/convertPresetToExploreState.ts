@@ -152,12 +152,14 @@ function fromTimeRangesParams(
     partialExploreState.selectedTimezone = preset.timezone;
   }
 
+  let setCompareTimeRange = false;
   if (preset.compareTimeRange) {
     partialExploreState.selectedComparisonTimeRange = fromTimeRangeUrlParam(
       preset.compareTimeRange,
       timeRanges,
     );
     partialExploreState.showTimeComparison = true;
+    setCompareTimeRange = true;
     if (
       preset.comparisonMode ===
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
@@ -178,7 +180,9 @@ function fromTimeRangesParams(
         preset.comparisonDimension;
       if (
         preset.comparisonMode ===
-        V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_DIMENSION &&
+        // since we are setting partial explore state we need to unset time compare settings
+        !setCompareTimeRange
       ) {
         // unset compare time ranges
         partialExploreState.selectedComparisonTimeRange = undefined;

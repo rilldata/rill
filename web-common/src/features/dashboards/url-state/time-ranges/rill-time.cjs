@@ -140,6 +140,8 @@ let ParserRules = [
     {"name": "time_anchor_offset", "symbols": ["time_anchor_offset$string$2"], "postprocess": () => RillTimeAnchor.earliest()},
     {"name": "time_anchor_offset$string$3", "symbols": [{"literal":"l"}, {"literal":"a"}, {"literal":"t"}, {"literal":"e"}, {"literal":"s"}, {"literal":"t"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "time_anchor_offset", "symbols": ["time_anchor_offset$string$3"], "postprocess": () => RillTimeAnchor.latest()},
+    {"name": "time_anchor_offset$string$4", "symbols": [{"literal":"w"}, {"literal":"a"}, {"literal":"t"}, {"literal":"e"}, {"literal":"r"}, {"literal":"m"}, {"literal":"a"}, {"literal":"r"}, {"literal":"k"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "time_anchor_offset", "symbols": ["time_anchor_offset$string$4"], "postprocess": () => RillTimeAnchor.latest()},
     {"name": "time_anchor_offset", "symbols": ["abs_time"], "postprocess": ([absTime]) => RillTimeAnchor.absolute(absTime)},
     {"name": "time_anchor_offset", "symbols": ["grain_modifier"], "postprocess": ([grain]) => RillTimeAnchor.relative(grain)},
     {"name": "grain_and_at_part", "symbols": [{"literal":":"}, "_", "range_grain_modifier", "_", {"literal":"@"}, "_", "at_modifiers"], "postprocess": ([, , grain, , , , modifier]) => ({ grain, modifier })},

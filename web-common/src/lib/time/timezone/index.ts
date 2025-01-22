@@ -23,9 +23,12 @@ export function removeLocalTimezoneOffset(dt: Date, grainDuration = "PT0S") {
   return new Date(dt.getTime() + (dt.getTimezoneOffset() + dstOffset) * 60000);
 }
 
-export function addZoneOffset(dt: Date, iana: string) {
+export function addZoneOffset(dt: Date, iana: string, grainDuration = "PT0S") {
+  const endTime = getOffset(dt, grainDuration, TimeOffsetType.ADD);
+  const dstOffset = getDSToffset(dt, endTime);
+
   const offset = DateTime.fromJSDate(dt).setZone(iana).offset;
-  return new Date(dt.getTime() + offset * 60000);
+  return new Date(dt.getTime() + (offset - dstOffset) * 60000);
 }
 
 export function removeZoneOffset(dt: Date, iana: string) {

@@ -23,7 +23,7 @@ Manage public URLs
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill public-url create](create.md)	 - Create a public URL
 * [rill public-url delete](delete.md)	 - Delete a public URL
 * [rill public-url list](list.md)	 - List all public URLs

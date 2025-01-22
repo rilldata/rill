@@ -25,6 +25,7 @@ time_anchor => time_anchor_offset _ time_anchor_offset _ "/" _ grain        {% (
 time_anchor_offset => "now"          {% () => RillTimeAnchor.now() %}
                     | "earliest"     {% () => RillTimeAnchor.earliest() %}
                     | "latest"       {% () => RillTimeAnchor.latest() %}
+                    | "watermark"    {% () => RillTimeAnchor.latest() %}
                     | abs_time       {% ([absTime]) => RillTimeAnchor.absolute(absTime) %}
                     | grain_modifier {% ([grain]) => RillTimeAnchor.relative(grain) %}
 

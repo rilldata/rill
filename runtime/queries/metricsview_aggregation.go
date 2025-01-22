@@ -3,10 +3,12 @@ package queries
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -130,6 +132,18 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
+	if mv.ValidSpec.TimeDimension != "" {
+		tsRes, err := ResolveTimestampResult(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims, opts.Priority)
+		if err != nil {
+			return err
+		}
+
+		err = e.BindQuery(ctx, qry, tsRes)
+		if err != nil {
+			return err
+		}
+	}
+
 	var format drivers.FileFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
@@ -165,6 +179,49 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	return nil
+}
+
+func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {
+	res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID: instanceID,
+		Resolver:   "metrics_time_range",
+		ResolverProperties: map[string]any{
+			"metrics_view": metricsViewName,
+		},
+		Args: map[string]any{
+			"priority": priority,
+		},
+		Claims: security,
+	})
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer res.Close()
+
+	row, err := res.Next()
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return metricsview.TimestampsResult{}, errors.New("time range query returned no results")
+		}
+		return metricsview.TimestampsResult{}, err
+	}
+
+	tsRes := metricsview.TimestampsResult{}
+
+	tsRes.Min, err = anyToTime(row["min"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Max, err = anyToTime(row["max"])
+	if err != nil {
+		return tsRes, err
+	}
+	tsRes.Watermark, err = anyToTime(row["watermark"])
+	if err != nil {
+		return tsRes, err
+	}
+
+	return tsRes, nil
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
@@ -356,4 +413,16 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricssqlparser.ParseSQLFilter(sql)
 	}
 	return nil, nil
+}
+
+func anyToTime(tm any) (time.Time, error) {
+	tmStr, ok := tm.(string)
+	if !ok {
+		t, ok := tm.(time.Time)
+		if !ok {
+			return time.Time{}, errors.New("invalid type")
+		}
+		return t, nil
+	}
+	return time.Parse(time.RFC3339Nano, tmStr)
 }

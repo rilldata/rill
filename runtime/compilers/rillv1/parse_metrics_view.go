@@ -17,18 +17,18 @@ import (
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML        `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	DisplayName       string           `yaml:"display_name"`
-	Title             string           `yaml:"title"` // Deprecated: use display_name
-	Description       string           `yaml:"description"`
-	Model             string           `yaml:"model"`
-	Database          string           `yaml:"database"`
-	DatabaseSchema    string           `yaml:"database_schema"`
-	Table             string           `yaml:"table"`
-	TimeDimension     string           `yaml:"timeseries"`
-	Watermark         string           `yaml:"watermark"`
-	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
-	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
+	DisplayName       string `yaml:"display_name"`
+	Title             string `yaml:"title"` // Deprecated: use display_name
+	Description       string `yaml:"description"`
+	Model             string `yaml:"model"`
+	Database          string `yaml:"database"`
+	DatabaseSchema    string `yaml:"database_schema"`
+	Table             string `yaml:"table"`
+	TimeDimension     string `yaml:"timeseries"`
+	Watermark         string `yaml:"watermark"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	FirstDayOfWeek    uint32 `yaml:"first_day_of_week"`
+	FirstMonthOfYear  uint32 `yaml:"first_month_of_year"`
 	Dimensions        []*struct {
 		Name        string
 		DisplayName string `yaml:"display_name"`
@@ -495,7 +495,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := rilltime.Parse(tmp.DefaultTimeRange)
+		_, err := rilltime.Parse(tmp.DefaultTimeRange, rilltime.ParseOptions{})
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -742,7 +742,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := rilltime.Parse(r.Range)
+			_, err := rilltime.Parse(r.Range, rilltime.ParseOptions{})
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}

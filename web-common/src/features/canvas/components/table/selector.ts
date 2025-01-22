@@ -1,4 +1,3 @@
-import { useStartEndTime } from "@rilldata/web-common/features/canvas/components/kpi/selector";
 import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -18,6 +17,7 @@ import {
   validateMetricsView,
 } from "@rilldata/web-common/features/templates/utils";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import { type Readable, derived } from "svelte/store";
 
 export function useComparisonStartEndTime(
@@ -44,6 +44,31 @@ export function useComparisonStartEndTime(
     }
     return { start: comparisonStartTime, end: comparisonEndTime };
   });
+}
+
+export function useStartEndTime(
+  instanceId: string,
+  metricsViewName: string,
+  timeRange: string,
+) {
+  return createQueryServiceMetricsViewTimeRange(
+    instanceId,
+    metricsViewName,
+    {},
+    {
+      query: {
+        select: (data) => {
+          const maxTime = new Date(data?.timeRangeSummary?.max ?? 0);
+          const { startTime, endTime } = isoDurationToTimeRange(
+            timeRange,
+            maxTime,
+          );
+
+          return { start: startTime, end: endTime };
+        },
+      },
+    },
+  );
 }
 
 export function getTableConfig(

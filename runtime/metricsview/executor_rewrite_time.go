@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -14,6 +13,15 @@ import (
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
 func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, executionTime *time.Time) error {
+	if e.metricsView.TimeDimension == "" {
+		return nil
+	}
+
+	ts, err := e.Timestamps(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch timestamps: %w", err)
+	}
+
 	tz := time.UTC
 	if qry.TimeZone != "" {
 		var err error
@@ -23,12 +31,22 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 		}
 	}
 
-	err := e.resolveTimeRange(ctx, qry.TimeRange, tz, executionTime)
+	maxTime := ts.Max
+	watermark := ts.Watermark
+	now := time.Now()
+	if executionTime != nil {
+		// all end anchors should use execution time when provided
+		maxTime = *executionTime
+		watermark = *executionTime
+		now = *executionTime
+	}
+
+	err = e.resolveTimeRange(qry.TimeRange, tz, ts.Min, maxTime, watermark, now)
 	if err != nil {
 		return fmt.Errorf("failed to resolve time range: %w", err)
 	}
 
-	err = e.resolveTimeRange(ctx, qry.ComparisonTimeRange, tz, executionTime)
+	err = e.resolveTimeRange(qry.ComparisonTimeRange, tz, ts.Min, maxTime, watermark, now)
 	if err != nil {
 		return fmt.Errorf("failed to resolve comparison time range: %w", err)
 	}
@@ -37,40 +55,25 @@ func (e *Executor) rewriteQueryTimeRanges(ctx context.Context, qry *Query, execu
 }
 
 // resolveTimeRange resolves the given time range, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveTimeRange(tr *TimeRange, tz *time.Location, minTime, maxTime, watermark, now time.Time) error {
 	if tr == nil || tr.IsZero() {
 		return nil
 	}
 
 	if tr.Expression == "" {
-		return e.resolveISOTimeRange(ctx, tr, tz, executionTime)
+		return e.resolveISOTimeRange(tr, tz, watermark)
 	}
 	if !tr.Start.IsZero() || !tr.End.IsZero() || tr.IsoDuration != "" || tr.IsoOffset != "" || tr.RoundToGrain != TimeGrainUnspecified {
 		return errors.New("other fields are not supported when expression is provided")
 	}
 
-	rillTime, err := rilltime.Parse(tr.Expression)
-	if err != nil {
-		return err
-	}
-
-	watermark, err := e.loadWatermark(ctx, executionTime)
-	if err != nil {
-		return err
-	}
-
-	minTime, err := e.MinTime(ctx, e.metricsView.TimeDimension)
-	if err != nil {
-		return err
-	}
-
-	maxTime, err := e.MaxTime(ctx, e.metricsView.TimeDimension)
+	rillTime, err := rilltime.Parse(tr.Expression, rilltime.ParseOptions{})
 	if err != nil {
 		return err
 	}
 
 	tr.Start, tr.End, err = rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
+		Now:        now,
 		MinTime:    minTime,
 		MaxTime:    maxTime,
 		Watermark:  watermark,
@@ -91,13 +94,9 @@ func (e *Executor) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 }
 
 // resolveISOTimeRange resolves the given time range where either only start/end is specified along with ISO duration/offset, ensuring only its Start and End properties are populated.
-func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location, executionTime *time.Time) error {
+func (e *Executor) resolveISOTimeRange(tr *TimeRange, tz *time.Location, watermark time.Time) error {
 	if tr.Start.IsZero() && tr.End.IsZero() {
-		t, err := e.loadWatermark(ctx, executionTime)
-		if err != nil {
-			return err
-		}
-		tr.End = t
+		tr.End = watermark
 	}
 
 	var isISO bool
@@ -167,53 +166,4 @@ func (e *Executor) resolveISOTimeRange(ctx context.Context, tr *TimeRange, tz *t
 	tr.RoundToGrain = TimeGrainUnspecified
 
 	return nil
-}
-
-// resolveWatermark resolves the metric view's watermark expression.
-// If the resolved time is zero, it defaults to the current time.
-func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) (time.Time, error) {
-	if executionTime != nil {
-		return *executionTime, nil
-	}
-
-	if !e.watermark.IsZero() {
-		return e.watermark, nil
-	}
-
-	dialect := e.olap.Dialect()
-
-	var expr string
-	if e.metricsView.WatermarkExpression != "" {
-		expr = e.metricsView.WatermarkExpression
-	} else if e.metricsView.TimeDimension != "" {
-		expr = fmt.Sprintf("MAX(%s)", dialect.EscapeIdentifier(e.metricsView.TimeDimension))
-	} else {
-		return time.Time{}, errors.New("cannot determine time anchor for relative time range")
-	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s", expr, dialect.EscapeTable(e.metricsView.Database, e.metricsView.DatabaseSchema, e.metricsView.Table))
-
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultInteractiveTimeout,
-	})
-	if err != nil {
-		return time.Time{}, err
-	}
-	defer res.Close()
-
-	var t time.Time
-	if res.Next() {
-		if err := res.Scan(&t); err != nil {
-			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
-		}
-	}
-
-	if t.IsZero() {
-		t = time.Now()
-	}
-
-	e.watermark = t
-	return t, nil
 }

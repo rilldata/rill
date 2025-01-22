@@ -9,6 +9,7 @@
   const voidFunction = () => {};
 
   export let value: number | string | undefined;
+  export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
   export let description = "";
@@ -60,7 +61,6 @@
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
-  export let inputType: "text" | "number" = "text";
   export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
@@ -98,6 +98,7 @@
     },
   ) {
     if (e.key === "Enter") {
+      if (e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
       onEnter(e);
@@ -168,10 +169,18 @@
           name={id}
           class={size}
           {disabled}
-          value={value ?? ""}
+          value={value ?? (inputType === "number" ? 0 : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
+            if (inputType === "number") {
+              if (e.currentTarget.value === "") {
+                value = "";
+              } else {
+                value = e.currentTarget.valueAsNumber;
+              }
+              return;
+            }
             value = e.currentTarget.value;
             onInput(value, e);
           }}
@@ -270,6 +279,9 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input {
     @apply truncate;
   }
 

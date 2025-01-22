@@ -8,23 +8,20 @@
   import { parseDocument } from "yaml";
 
   export let fileArtifact: FileArtifact;
+  export let autoSave: boolean;
 
-  const { validSpecStore, canvasEntity } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
+  const { canvasSpec } = canvasEntity.spec;
 
-  $: ({
-    editorContent,
-    remoteContent,
-    updateEditorContent,
-    saveLocalContent,
-    path,
-  } = fileArtifact);
+  $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
+    fileArtifact);
 
-  $: parsedDocument = parseDocument($editorContent ?? $remoteContent ?? "");
+  $: parsedDocument = parseDocument($editorContent ?? "");
   $: selectedComponentIndex = canvasEntity.selectedComponentIndex;
 
   $: selectedComponentName =
     $selectedComponentIndex !== null
-      ? $validSpecStore?.data?.items?.[$selectedComponentIndex]?.component
+      ? $canvasSpec?.items?.[$selectedComponentIndex]?.component
       : null;
 
   async function updateProperties(
@@ -54,7 +51,7 @@
     }
 
     killState();
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false, autoSave);
     await saveLocalContent();
   }
 
@@ -63,7 +60,7 @@
   }
 </script>
 
-<Inspector minWidth={280} filePath={path}>
+<Inspector minWidth={320} filePath={path}>
   {#if selectedComponentName}
     <ComponentsEditor {fileArtifact} {selectedComponentName} />
   {:else}

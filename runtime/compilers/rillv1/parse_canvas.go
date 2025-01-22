@@ -14,7 +14,7 @@ import (
 )
 
 type CanvasYAML struct {
-	commonYAML  `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML  `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	DisplayName string                 `yaml:"display_name"`
 	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	MaxWidth    uint32                 `yaml:"max_width"`
@@ -73,7 +73,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Build and validate time ranges
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.TimeRanges {
-		if _, err := rilltime.Parse(tr.Range); err != nil {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
 			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
 		}
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
@@ -145,7 +145,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	var defaultPreset *runtimev1.CanvasPreset
 	if tmp.Defaults != nil {
 		if tmp.Defaults.TimeRange != "" {
-			if _, err := rilltime.Parse(tmp.Defaults.TimeRange); err != nil {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}

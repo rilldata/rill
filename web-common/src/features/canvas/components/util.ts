@@ -20,9 +20,8 @@ export const commonOptions: Record<
     type: "text",
     optional: true,
     showInUI: true,
-    label: "Description",
+    label: "Caption",
   },
-  // position: { type: "text", showInUI: false },
 };
 
 export function getFilterOptions(
@@ -92,17 +91,18 @@ export function isChartComponentType(
   );
 }
 
-export function getComponentRegistry(
-  fileArtifact: FileArtifact,
-): Record<CanvasComponentType, CanvasComponentObj> {
+export function getComponentRegistry(): Record<
+  CanvasComponentType,
+  CanvasComponentObj
+> {
   return {
-    kpi: new KPIComponent(fileArtifact),
-    markdown: new MarkdownCanvasComponent(fileArtifact),
-    table: new TableCanvasComponent(fileArtifact),
-    image: new ImageComponent(fileArtifact),
-    bar_chart: new ChartComponent(fileArtifact),
-    line_chart: new ChartComponent(fileArtifact),
-    stacked_bar: new ChartComponent(fileArtifact),
+    kpi: new KPIComponent(),
+    markdown: new MarkdownCanvasComponent(),
+    table: new TableCanvasComponent(),
+    image: new ImageComponent(),
+    bar_chart: new ChartComponent(),
+    line_chart: new ChartComponent(),
+    stacked_bar: new ChartComponent(),
   };
 }
 

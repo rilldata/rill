@@ -220,7 +220,7 @@ function calculateTimeRangePartial(
   if (!selectedTimeRange) return undefined;
 
   selectedTimeRange.interval = getTimeGrain(
-    metricsExplorer,
+    metricsExplorer.selectedTimeRange,
     selectedTimeRange,
     minTimeGrain,
   );
@@ -336,21 +336,21 @@ function getTimeRange(
   return findTimeRange(metricsExplorer.selectedTimeRange?.name, timeRanges);
 }
 
-function getTimeGrain(
-  metricsExplorer: MetricsExplorerEntity,
+export function getTimeGrain(
+  selectedTimeRange: DashboardTimeControls | undefined,
   timeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ) {
   const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
   const isValidTimeGrain = checkValidTimeGrain(
-    metricsExplorer.selectedTimeRange?.interval,
+    selectedTimeRange?.interval,
     timeGrainOptions,
     minTimeGrain,
   );
 
   let timeGrain: V1TimeGrain | undefined;
   if (isValidTimeGrain) {
-    timeGrain = metricsExplorer.selectedTimeRange?.interval;
+    timeGrain = selectedTimeRange?.interval;
   } else {
     const defaultTimeGrain = getDefaultTimeGrain(
       timeRange.start,

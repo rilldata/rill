@@ -126,7 +126,9 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) er
 		return err
 	}
 
-	res, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	res, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{
+		PageSize: 1000,
+	})
 	if err != nil {
 		return err
 	}
