@@ -116,10 +116,10 @@
     });
 
     const parsedDocument = parseDocument($editorContent ?? "");
-    const rawItems = parsedDocument.get("items") as any;
+    const items = parsedDocument.get("items") as any;
 
     e.detail.items.forEach((item, idx) => {
-      const node = rawItems.get(idx);
+      const node = items.get(idx);
       if (node) {
         node.set("width", item.width);
         node.set("height", item.height);

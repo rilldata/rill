@@ -49,7 +49,7 @@
       ".component",
     ) as HTMLElement;
 
-    // console.log("[Component] handleDragHandleMouseDown: ", componentEl);
+    console.log("[Component] handleDragHandleMouseDown: ", componentEl);
 
     if (componentEl) {
       isDragging = true;
@@ -117,17 +117,17 @@
   on:mouseleave={handleMouseLeave}
 >
   <!-- FIXME: clear the DragHandle when handleDragEnd -->
-  {#if !embed && showDragHandle}
-    <div
-      class="drag-handle"
-      role="button"
-      tabindex="0"
-      aria-label="Drag to move"
-      on:mousedown={handleDragHandleMouseDown}
-    >
-      <DragHandle size="20" className="text-slate-600" />
-    </div>
-  {/if}
+  <!-- {#if !embed && showDragHandle} -->
+  <div
+    class="drag-handle"
+    role="button"
+    tabindex="0"
+    aria-label="Drag to move"
+    on:mousedown={handleDragHandleMouseDown}
+  >
+    <DragHandle size="20" className="text-slate-600" />
+  </div>
+  <!-- {/if} -->
   <div class="size-full relative {showDragHandle ? 'touch-none' : ''}">
     <!-- class:shadow-md={isHovered} -->
     <div
