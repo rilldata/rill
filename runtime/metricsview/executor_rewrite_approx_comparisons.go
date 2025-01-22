@@ -2,7 +2,6 @@ package metricsview
 
 import (
 	"fmt"
-
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -49,7 +48,8 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 	}
 	sortField := a.Root.OrderBy[0]
 
-	if e.olap.Dialect() == drivers.DialectDruid {
+	cteRewrite := e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase
+	if e.olap.Dialect() == drivers.DialectDruid && cteRewrite {
 		// if there are unnests in the query, we can't rewrite the query for Druid
 		// it fails with join on cte having multi value dimension, issue - https://github.com/apache/druid/issues/16896
 		for _, dim := range n.FromSelect.DimFields {
@@ -113,7 +113,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+		if cteRewrite {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
@@ -134,7 +134,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+		if cteRewrite {
 			// rewrite comparison query as CTE and use results from CTE in the base query
 			// make JoinComparisonSelect a CTE
 			a.convertToCTE(n.JoinComparisonSelect)
@@ -154,7 +154,7 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode, isMultiPha
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 
-		if e.instanceCfg.MetricsApproximateComparisonsCTE && !isMultiPhase {
+		if cteRewrite {
 			// rewrite base query as CTE and use results from CTE in the comparison query
 			// make FromSelect a CTE
 			a.convertToCTE(n.FromSelect)
