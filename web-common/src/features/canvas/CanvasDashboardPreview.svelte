@@ -9,7 +9,7 @@
   import PreviewElement from "./PreviewElement.svelte";
   import DropIndicator from "./DropIndicator.svelte";
   import { getRowIndex, getColumnIndex, redistributeRowColumns } from "./util";
-  import { Grid, groupItemsByRow, isValidItem } from "./grid";
+  import { GridEngine, groupItemsByRow, isValidItem } from "./grid-engine";
   import type { DropPosition } from "./types";
   import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
   import RowResizer from "./RowResizer.svelte";
@@ -63,7 +63,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const grid = new Grid(items);
+  const grid = new GridEngine(items);
 
   function handleChange(
     e: CustomEvent<{

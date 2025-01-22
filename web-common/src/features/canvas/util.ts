@@ -1,5 +1,5 @@
 import * as defaults from "./constants";
-import { groupItemsByRow } from "./grid";
+import { groupItemsByRow } from "./grid-engine";
 import type { PositionedItem, RowGroup, Vector } from "./types";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 

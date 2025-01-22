@@ -1,4 +1,4 @@
-import { Grid } from "./grid";
+import { GridEngine } from "./grid-engine";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import * as defaults from "./constants";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -18,7 +18,7 @@ describe.skip("Grid", () => {
 
   describe("moveItem", () => {
     it("should handle right drop correctly", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const result = grid.moveItem(
         items[2], // Moving the bottom item
         items[0], // Target is first item
@@ -37,7 +37,7 @@ describe.skip("Grid", () => {
     });
 
     it("should handle left drop correctly", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const result = grid.moveItem(
         items[1], // Moving second item
         items[0], // Target is first item
@@ -56,7 +56,7 @@ describe.skip("Grid", () => {
     });
 
     it("should handle bottom drop correctly", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const result = grid.moveItem(
         items[1], // Moving second item
         items[0], // Target is first item
@@ -75,7 +75,7 @@ describe.skip("Grid", () => {
     });
 
     it("should handle row drop correctly", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const result = grid.moveItem(
         items[2], // Moving bottom item
         items[0], // Target is first item
@@ -95,7 +95,7 @@ describe.skip("Grid", () => {
 
   describe("getDropPosition", () => {
     it("should detect bottom drop zone", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const rect = new DOMRect(0, 0, 100, 100);
       const position = grid.getDropPosition(50, 90, rect);
 
@@ -103,7 +103,7 @@ describe.skip("Grid", () => {
     });
 
     it("should detect row drop zone", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const rect = new DOMRect(0, 0, 100, 100);
       const position = grid.getDropPosition(50, 10, rect);
 
@@ -111,7 +111,7 @@ describe.skip("Grid", () => {
     });
 
     it("should detect left drop zone", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const rect = new DOMRect(0, 0, 100, 100);
       const position = grid.getDropPosition(20, 50, rect);
 
@@ -119,7 +119,7 @@ describe.skip("Grid", () => {
     });
 
     it("should detect right drop zone", () => {
-      const grid = new Grid(items);
+      const grid = new GridEngine(items);
       const rect = new DOMRect(0, 0, 100, 100);
       const position = grid.getDropPosition(80, 50, rect);
 

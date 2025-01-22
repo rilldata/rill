@@ -2,7 +2,7 @@ import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import * as defaults from "./constants";
 import type { DropPosition, RowGroup } from "./types";
 
-export class Grid {
+export class GridEngine {
   private items: V1CanvasItem[];
 
   constructor(items: V1CanvasItem[]) {
@@ -33,7 +33,7 @@ export class Grid {
     });
 
     // Process each row
-    const rows = Grid.groupItemsByRow(newItems);
+    const rows = GridEngine.groupItemsByRow(newItems);
     rows.forEach((row) => {
       let currentX = 0;
 
@@ -41,7 +41,7 @@ export class Grid {
       row.items
         .sort((a, b) => (a.x ?? 0) - (b.x ?? 0))
         .forEach((item) => {
-          if (!Grid.isValidItem(item)) return;
+          if (!GridEngine.isValidItem(item)) return;
 
           // Place item at currentX
           item.x = currentX;
@@ -93,8 +93,8 @@ export class Grid {
   }
 
   private validateItemPositions(items: V1CanvasItem[]): void {
-    const rows = Grid.groupItemsByRow(items);
-    rows.forEach((row) => Grid.leftAlignRow(row));
+    const rows = GridEngine.groupItemsByRow(items);
+    rows.forEach((row) => GridEngine.leftAlignRow(row));
 
     items.forEach((item) => {
       if (item.x !== undefined && item.width !== undefined) {
@@ -139,7 +139,7 @@ export class Grid {
       // Remove the dragged item from its current position
       const [removedItem] = newItems.splice(dragIndex, 1);
 
-      if (Grid.isValidItem(removedItem)) {
+      if (GridEngine.isValidItem(removedItem)) {
         // When dropping into empty space:
         // 1. Place item at x=0 (left-aligned)
         // 2. Place below all existing items (using getMaxY)
@@ -158,7 +158,10 @@ export class Grid {
       };
     }
 
-    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(draggedItem)) {
+    if (
+      !GridEngine.isValidItem(targetItem) ||
+      !GridEngine.isValidItem(draggedItem)
+    ) {
       throw new Error("Invalid items provided to moveItem");
     }
 
@@ -208,7 +211,11 @@ export class Grid {
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
   ): void {
-    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
+    if (
+      !GridEngine.isValidItem(targetItem) ||
+      !GridEngine.isValidItem(removedItem)
+    )
+      return;
 
     // Initialize removedItem properties if undefined
     removedItem.x = targetItem.x + targetItem.width;
@@ -227,7 +234,11 @@ export class Grid {
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
   ): void {
-    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
+    if (
+      !GridEngine.isValidItem(targetItem) ||
+      !GridEngine.isValidItem(removedItem)
+    )
+      return;
 
     // Initialize removedItem properties if undefined
     removedItem.x = targetItem.x;
@@ -244,7 +255,11 @@ export class Grid {
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
   ): void {
-    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
+    if (
+      !GridEngine.isValidItem(targetItem) ||
+      !GridEngine.isValidItem(removedItem)
+    )
+      return;
 
     // Initialize removedItem properties if undefined
     removedItem.x = 0;
@@ -265,7 +280,11 @@ export class Grid {
     removedItem: V1CanvasItem,
     targetItem: V1CanvasItem,
   ): void {
-    if (!Grid.isValidItem(targetItem) || !Grid.isValidItem(removedItem)) return;
+    if (
+      !GridEngine.isValidItem(targetItem) ||
+      !GridEngine.isValidItem(removedItem)
+    )
+      return;
 
     // Initialize removedItem properties if undefined
     removedItem.x = 0;
@@ -295,5 +314,5 @@ export class Grid {
   }
 }
 
-export const isValidItem = Grid.isValidItem;
-export const groupItemsByRow = Grid.groupItemsByRow;
+export const isValidItem = GridEngine.isValidItem;
+export const groupItemsByRow = GridEngine.groupItemsByRow;
