@@ -1,7 +1,8 @@
 <script lang="ts">
+  import * as defaults from "./constants";
+
   export let width: number;
   export let height: number;
-  export let scale: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let bgColor = "bg-white";
 </script>
@@ -12,8 +13,10 @@
 >
   <div
     bind:contentRect
-    class="dashboard-wrapper {bgColor} max-w-[1440px] min-h-full"
+    class="dashboard-wrapper {bgColor}"
+    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
     style:height="{height}px"
+    style:min-height="full"
   >
     <div role="presentation" class="size-full relative" on:click|self>
       <div
@@ -21,7 +24,6 @@
         role="presentation"
         style:width="{width}px"
         style:height="{height}px"
-        style:transform="scale({scale})"
       >
         <slot />
       </div>
@@ -40,7 +42,6 @@
   }
 
   .dash {
-    transform-origin: top left;
     position: absolute;
     touch-action: none;
   }

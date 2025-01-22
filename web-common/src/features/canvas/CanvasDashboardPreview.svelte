@@ -47,10 +47,9 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: gridWidth = contentRect.width;
-  $: scale = gridWidth / defaults.DEFAULT_DASHBOARD_WIDTH;
-
+  $: gridWidth = defaults.DEFAULT_DASHBOARD_WIDTH;
   $: gridCell = defaults.DEFAULT_DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
+
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: maxBottom = items.reduce((max, el) => {
@@ -465,8 +464,7 @@
 
 <DashboardWrapper
   bind:contentRect
-  {scale}
-  height={maxBottom * gridCell * scale}
+  height={maxBottom * gridCell}
   width={defaults.DEFAULT_DASHBOARD_WIDTH}
   on:click={handleDeselect}
   on:dragover={(e) => {
