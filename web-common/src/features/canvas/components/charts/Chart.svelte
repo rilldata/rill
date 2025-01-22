@@ -38,6 +38,8 @@
     chartConfig.metrics_view,
   );
 
+  $: measureName = $measure?.name || "measure";
+
   $: measureFormatter = createMeasureValueFormatter<null | undefined>(
     $measure as MetricsViewSpecMeasureV2,
   );
@@ -66,7 +68,7 @@
       data={{ "metrics-view": $data.data }}
       {spec}
       expressionFunctions={{
-        measureFormatter: { fn: (val) => measureFormatter(val) },
+        [measureName]: { fn: (val) => measureFormatter(val) },
       }}
       {config}
     />

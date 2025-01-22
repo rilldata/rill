@@ -31,7 +31,7 @@ export function generateVLLineChartSpec(
     multiValueTooltipChannel = data.data?.map((value) => ({
       field: sanitizeValueForVega(value?.[colorField]),
       type: "quantitative",
-      formatType: "measureFormatter",
+      formatType: yField,
     }));
   }
 

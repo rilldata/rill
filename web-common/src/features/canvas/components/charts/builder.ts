@@ -48,7 +48,7 @@ export function createXEncoding(
     ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
     axis: {
       ...(config.x.type === "quantitative" && {
-        formatType: "measureFormatter",
+        formatType: config.x.field,
       }),
       ...(!config.x.showAxisTitle && { title: null }),
     },
@@ -66,7 +66,7 @@ export function createYEncoding(
     type: config.y.type,
     axis: {
       ...(config.y.type === "quantitative" && {
-        formatType: "measureFormatter",
+        formatType: config.y.field,
       }),
       ...(!config.y.showAxisTitle && { title: null }),
     },
@@ -105,7 +105,7 @@ export function createDefaultTooltipEncoding(
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x.type,
       ...(config.x.type === "quantitative" && {
-        formatType: "measureFormatter",
+        formatType: config.x.field,
       }),
     });
   }
@@ -115,7 +115,7 @@ export function createDefaultTooltipEncoding(
       title: data.fields[config.y.field]?.displayName || config.y.field,
       type: config.y.type,
       ...(config.y.type === "quantitative" && {
-        formatType: "measureFormatter",
+        formatType: config.y.field,
       }),
     });
   }
