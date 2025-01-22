@@ -172,7 +172,7 @@ func untar(src, dest string, ignorePaths bool) error {
 			return err
 		}
 
-		if ignorePaths && drivers.IsIgnored(filepath.Join("/", header.Name), nil) {
+		if ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil) {
 			continue
 		}
 
