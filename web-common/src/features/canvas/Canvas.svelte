@@ -24,10 +24,10 @@
     canvasEntity: {
       selectedComponentIndex: selectedIndex,
       spec: { canvasSpec },
-      // FIXME
-      setSelectedComponentIndex,
     },
   } = ctx;
+
+  const { canvasEntity } = getCanvasStateManagers();
 
   $: workspaceLayout = workspaces.get(fileArtifact.path);
   // Open inspector when a canvas item is selected
@@ -88,7 +88,7 @@
 
     updateEditorContent(parsedDocument.toString(), true);
     items = updatedItems;
-    setSelectedComponentIndex(null);
+    canvasEntity.setSelectedComponentIndex(null);
     await saveLocalContent();
   }
 
@@ -172,7 +172,7 @@
     }
     updateEditorContent(parsedDocument.toString(), true);
     await saveLocalContent();
-    setSelectedComponentIndex(itemsToPosition.length);
+    canvasEntity.setSelectedComponentIndex(itemsToPosition.length);
     scrollToComponent(itemsToPosition.length);
   }
 
