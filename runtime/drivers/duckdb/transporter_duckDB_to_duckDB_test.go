@@ -30,7 +30,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	to, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	tr := newDuckDBToDuckDB(to.(*connection), "duckdb", zap.NewNop())
+	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
 
 	// transfer once
 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})
