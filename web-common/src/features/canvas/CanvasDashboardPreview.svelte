@@ -502,11 +502,6 @@
               defaults.COLUMN_COUNT -
                 (component.width ?? defaults.COMPONENT_WIDTH),
             ) * gridCell}
-            onDragOver={(e) =>
-              handleDragOver(e instanceof CustomEvent ? e.detail : e, i)}
-            onDrop={(e) => handleDrop(e instanceof CustomEvent ? e.detail : e)}
-            on:dragstart={handleDragStart}
-            on:dragend={handleDragEnd}
             on:change={handleChange}
             on:mouseenter={handleMouseEnter}
             on:mouseleave={handleMouseLeave}
@@ -566,7 +561,8 @@
     {/each}
   </div>
 
-  {#if dropTarget && draggedComponent}
+  <!-- TODO: re-add drop indicator -->
+  <!-- {#if dropTarget && draggedComponent}
     {@const targetItem = items[dropTarget.index]}
     {#if targetItem && targetItem.x !== undefined && targetItem.y !== undefined && targetItem.width !== undefined && targetItem.height !== undefined}
       <DropIndicator
@@ -593,7 +589,7 @@
           : "vertical"}
       />
     {/if}
-  {/if}
+  {/if} -->
 </DashboardWrapper>
 
 <svelte:window

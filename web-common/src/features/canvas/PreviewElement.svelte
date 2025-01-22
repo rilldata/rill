@@ -15,8 +15,7 @@
   export let left: number;
   export let radius: number;
   export let instanceId: string;
-  export let onDragOver: (e: CustomEvent<DragEvent> | DragEvent) => void;
-  export let onDrop: (e: CustomEvent<DragEvent> | DragEvent) => void;
+
   export let rowIndex: number;
   export let columnIndex: number;
 
@@ -76,10 +75,6 @@
     style:height="{finalHeight}px"
     style:transform
     style:will-change="transform"
-    on:dragstart={handleDragStart}
-    on:dragend={handleDragEnd}
-    on:dragover={onDragOver}
-    on:drop={onDrop}
     on:mousedown={handleMouseDown}
     on:mouseenter={handleMouseEnter}
     on:mouseleave={handleMouseLeave}
@@ -109,10 +104,6 @@
     style:padding="{padding}px"
     style:transform
     style:will-change="transform"
-    on:dragstart={handleDragStart}
-    on:dragend={handleDragEnd}
-    on:dragover={onDragOver}
-    on:drop={onDrop}
     on:mousedown={handleMouseDown}
     on:mouseenter={handleMouseEnter}
     on:mouseleave={handleMouseLeave}

@@ -116,7 +116,6 @@
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
 >
-  <!-- FIXME: clear the DragHandle when handleDragEnd -->
   {#if !embed && showDragHandle}
     <div
       class="drag-handle"
