@@ -8,6 +8,7 @@ teardown("should stop all services", async () => {
   // 1. Get the process ID from the file
   // 2. Get the process group ID
   // 3. Kill the whole process group
+  // 4. Delete the process ID file
   const processID = fs.readFileSync(
     RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
     "utf8",
@@ -16,6 +17,7 @@ teardown("should stop all services", async () => {
     `ps -o pgid= -p ${processID}`,
   );
   await execAsync(`kill -TERM -${processGroupID}`);
+  await execAsync(`rm ${RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE}`);
 
   // Stop the cloud services
   await execAsync(
