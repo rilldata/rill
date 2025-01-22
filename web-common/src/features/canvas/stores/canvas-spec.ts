@@ -40,6 +40,10 @@ export class CanvasResolvedSpec {
     metricViewName: string,
   ) => Readable<MetricsViewSpecDimensionV2 | undefined>;
 
+  getTimeDimensionForMetricView: (
+    metricViewName: string,
+  ) => Readable<string | undefined>;
+
   allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
@@ -131,6 +135,14 @@ export class CanvasResolvedSpec {
         return dimensions?.find(
           (d) => d.name === dimensionName || d.column === dimensionName,
         );
+      });
+
+    this.getTimeDimensionForMetricView = (metricViewName: string) =>
+      derived(validSpecStore, ($validSpecStore) => {
+        if (!$validSpecStore.data) return undefined;
+        const metricsViewData =
+          $validSpecStore.data?.metricsViews[metricViewName];
+        return metricsViewData?.state?.validSpec?.timeDimension;
       });
 
     this.metricsViewMeasureMap = derived(validSpecStore, ($validSpecStore) => {

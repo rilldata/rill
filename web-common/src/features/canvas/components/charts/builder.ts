@@ -41,15 +41,17 @@ export function createXEncoding(
   data: ChartDataResult,
 ): PositionDef<Field> {
   if (!config.x) return {};
+  const metaData = data.fields[config.x.field];
   return {
     field: config.x.field,
-    title: data.fields[config.x.field]?.displayName || config.x.field,
+    title: metaData?.displayName || config.x.field,
     type: config.x.type,
-    ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
+    ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     axis: {
       ...(config.x.type === "quantitative" && {
         formatType: config.x.field,
       }),
+      ...(metaData && "format" in metaData && { format: metaData.format }),
       ...(!config.x.showAxisTitle && { title: null }),
     },
   };
@@ -60,17 +62,19 @@ export function createYEncoding(
   data: ChartDataResult,
 ): PositionDef<Field> {
   if (!config.y) return {};
+  const metaData = data.fields[config.y.field];
   return {
     field: config.y.field,
-    title: data.fields[config.y.field]?.displayName || config.y.field,
+    title: metaData?.displayName || config.y.field,
     type: config.y.type,
     axis: {
       ...(config.y.type === "quantitative" && {
         formatType: config.y.field,
       }),
       ...(!config.y.showAxisTitle && { title: null }),
+      ...(metaData && "format" in metaData && { format: metaData.format }),
     },
-    ...(config.y.timeUnit && { timeUnit: config.y.timeUnit }),
+    ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
   };
 }
 
@@ -80,11 +84,14 @@ export function createColorEncoding(
 ): ColorDef<Field> {
   if (!config.color) return {};
   if (typeof config.color === "object") {
+    const metaData = data.fields[config.color.field];
+
     return {
       field: config.color.field,
-      title: data.fields[config.color.field]?.displayName || config.color.field,
+      title: metaData?.displayName || config.color.field,
       type: config.color.type,
-      ...(config.color.timeUnit && { timeUnit: config.color.timeUnit }),
+      ...(metaData &&
+        "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
     };
   }
   if (typeof config.color === "string") {
@@ -107,6 +114,7 @@ export function createDefaultTooltipEncoding(
       ...(config.x.type === "quantitative" && {
         formatType: config.x.field,
       }),
+      ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
   }
   if (config.y) {
@@ -117,6 +125,7 @@ export function createDefaultTooltipEncoding(
       ...(config.y.type === "quantitative" && {
         formatType: config.y.field,
       }),
+      ...(config.y.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
     });
   }
   if (typeof config.color === "object" && config.color.field) {

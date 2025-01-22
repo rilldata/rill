@@ -2,6 +2,7 @@ import BarChart from "@rilldata/web-common/components/icons/BarChart.svelte";
 import LineChart from "@rilldata/web-common/components/icons/LineChart.svelte";
 import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import merge from "deepmerge";
 import type { Config } from "vega-lite";
 import { generateVLBarChartSpec } from "./bar-chart/spec";
@@ -62,3 +63,16 @@ export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
   }
   return `${yLabel} vs ${xLabel}`;
 }
+
+export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
+  [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",
+  [V1TimeGrain.TIME_GRAIN_HOUR]: "yearmonthdatehours",
+  [V1TimeGrain.TIME_GRAIN_DAY]: "yearmonthdate",
+  [V1TimeGrain.TIME_GRAIN_WEEK]: "yearweek",
+  [V1TimeGrain.TIME_GRAIN_MONTH]: "yearmonth",
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: "yearquarter",
+  [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "yearmonthdate",
+};

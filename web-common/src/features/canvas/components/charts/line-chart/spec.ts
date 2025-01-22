@@ -27,12 +27,19 @@ export function generateVLLineChartSpec(
   const defaultTooltipChannel = createDefaultTooltipEncoding(config, data);
   let multiValueTooltipChannel: TooltipValue[] | undefined;
 
-  if (colorField && xField && yField) {
+  if (colorField && config.x && yField) {
     multiValueTooltipChannel = data.data?.map((value) => ({
       field: sanitizeValueForVega(value?.[colorField]),
       type: "quantitative",
       formatType: yField,
     }));
+
+    multiValueTooltipChannel.unshift({
+      field: sanitizeValueForVega(config.x.field),
+      title: data.fields[config.x.field]?.displayName || config.x.field,
+      type: config.x?.type,
+      ...(config.x.type === "temporal" && { format: "%b %d, %Y %H:%M" }),
+    });
   }
 
   spec.encoding = { x: createXEncoding(config, data) };

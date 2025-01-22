@@ -1,6 +1,8 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   createQueryServiceMetricsViewAggregation,
   type MetricsViewSpecDimensionV2,
@@ -20,10 +22,20 @@ export type ChartDataResult = {
   isFetching: boolean;
   fields: Record<
     string,
-    MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
+    | MetricsViewSpecMeasureV2
+    | MetricsViewSpecDimensionV2
+    | TimeDimensionDefinition
+    | undefined
   >;
   error?: HTTPError | null;
 };
+
+export interface TimeDimensionDefinition {
+  field: string;
+  displayName: string;
+  timeUnit?: string;
+  format?: string;
+}
 
 export function getChartData(
   ctx: StateManagers,
@@ -32,9 +44,13 @@ export function getChartData(
   const chartDataQuery = createChartDataQuery(ctx, config);
   const { spec } = ctx.canvasEntity;
 
-  const fields: { name: string; type: "measure" | "dimension" }[] = [];
+  const fields: { name: string; type: "measure" | "dimension" | "time" }[] = [];
   if (config.y?.field) fields.push({ name: config.y.field, type: "measure" });
-  if (config.x?.field) fields.push({ name: config.x.field, type: "dimension" });
+  if (config.x?.field)
+    fields.push({
+      name: config.x.field,
+      type: config.x.type === "temporal" ? "time" : "dimension",
+    });
   if (typeof config.color === "object" && config.color?.field) {
     fields.push({ name: config.color.field, type: "dimension" });
   }
@@ -43,8 +59,10 @@ export function getChartData(
   const fieldReadableMap = fields.map((field) => {
     if (field.type === "measure") {
       return spec.getMeasureForMetricView(field.name, config.metrics_view);
-    } else {
+    } else if (field.type === "dimension") {
       return spec.getDimensionForMetricView(field.name, config.metrics_view);
+    } else {
+      return getTimeDimensionDefinition(ctx, field.name);
     }
   });
 
@@ -58,7 +76,10 @@ export function getChartData(
         },
         {} as Record<
           string,
-          MetricsViewSpecMeasureV2 | MetricsViewSpecDimensionV2 | undefined
+          | MetricsViewSpecMeasureV2
+          | MetricsViewSpecDimensionV2
+          | TimeDimensionDefinition
+          | undefined
         >,
       );
       return {
@@ -77,32 +98,41 @@ export function createChartDataQuery(
   limit = "500",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+  const {
+    timeControls: { selectedTimeRange },
+  } = ctx.canvasEntity;
+
   let measures: V1MetricsViewAggregationMeasure[] = [];
-  if (config.y?.field) {
+  let dimensions: V1MetricsViewAggregationDimension[] = [];
+
+  if (config.y?.type === "quantitative" && config.y?.field) {
     measures = [{ name: config.y?.field }];
   }
 
-  let dimensions: V1MetricsViewAggregationDimension[] = [];
-
-  if (config.x?.field) {
-    dimensions = [{ name: config.x?.field }];
-  }
-  if (typeof config.color === "object" && config.color?.field) {
-    dimensions = [...dimensions, { name: config.color.field }];
-  }
-
-  const { timeControls } = ctx.canvasEntity;
   return derived(
-    [ctx.runtime, timeControls.selectedTimeRange],
-    ([runtime, selectedTimeRange], set) => {
+    [ctx.runtime, selectedTimeRange],
+    ([runtime, $selectedTimeRange], set) => {
       let timeRange: V1TimeRange = {
-        start: selectedTimeRange?.start?.toISOString(),
-        end: selectedTimeRange?.end?.toISOString(),
+        start: $selectedTimeRange?.start?.toISOString(),
+        end: $selectedTimeRange?.end?.toISOString(),
       };
+
+      const timeGrain = $selectedTimeRange?.interval;
+
+      if (config.x?.type === "nominal" && config.x?.field) {
+        dimensions = [{ name: config.x?.field }];
+      } else if (config.x?.type === "temporal" && timeGrain) {
+        dimensions = [{ name: config.x?.field, timeGrain }];
+      }
+
+      if (typeof config.color === "object" && config.color?.field) {
+        dimensions = [...dimensions, { name: config.color.field }];
+      }
 
       if (config.time_range) {
         timeRange = { isoDuration: config.time_range };
       }
+
       return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         config.metrics_view,
@@ -116,7 +146,7 @@ export function createChartDataQuery(
         },
         {
           query: {
-            enabled: !!selectedTimeRange?.start && !!selectedTimeRange?.end,
+            enabled: !!$selectedTimeRange?.start && !!$selectedTimeRange?.end,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
@@ -124,4 +154,32 @@ export function createChartDataQuery(
       ).subscribe(set);
     },
   );
+}
+
+export function getTimeDimensionDefinition(
+  ctx: StateManagers,
+  field: string,
+): Readable<TimeDimensionDefinition> {
+  const {
+    timeControls: { selectedTimeRange },
+  } = ctx.canvasEntity;
+  return derived([selectedTimeRange], ([$selectedTimeRange]) => {
+    const grain = $selectedTimeRange?.interval;
+    const displayName = "Time";
+
+    if (grain) {
+      const timeUnit = timeGrainToVegaTimeUnitMap[grain];
+      const format = TIME_GRAIN[grain]?.d3format as string;
+      return {
+        field,
+        timeUnit,
+        displayName,
+        format,
+      };
+    }
+    return {
+      field,
+      displayName,
+    };
+  });
 }
