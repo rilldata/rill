@@ -1,12 +1,16 @@
 ---
 title: Deployment Credentials
 description: Configuring credentials for your deployed project on Rill Cloud
-sidebar_label: Deployment Credentials
-sidebar_position: 11
+sidebar_label: Configure Deployment Credentials
+sidebar_position: 10
 ---
 ## Overview
 
-When deploying a project to Rill Cloud, credentials will need to be **separately** specified and passed in for Rill Cloud to connect to and ingest data from [remote sources](/reference/connectors/connectors.md). [Local credentials](/build/credentials/#setting-credentials-for-rill-developer) will be used by Rill Developer to connect to sources from your local machine, typically for local devlopment and modeling, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud) are what is used by Rill Cloud for production workloads. For more details about using and setting deployment credentials, please see our [configuring credentials](../build/credentials/credentials.md) page and the respective [connectors](/reference/connectors/connectors.md) or [OLAP engine](/reference/olap-engines/olap-engines.md) page.
+
+When deploying a project, credentials that have been defined in your `.env` file will but automatically passed into your Rill Cloud project. However, for [remote sources](/reference/connectors/connectors.md) that are dynamically retrieving your credentials via the CLI, such as S3 and GCS, you will need to ensure that these are [defined in the .env file](/manage/project-management/variables-and-credentials#credentials-naming-schema). 
+
+
+[Local credentials](/build/credentials/#setting-credentials-for-rill-developer) are used by Rill Developer to connect to sources from your local machine, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) are what is used by Rill Cloud for production workloads. There are a [few ways to setup credentials in Rill Developer](../build/credentials/#setting-credentials-for-rill-developer), however you will need to ensure that they are set up in your `.env` file for a seemless experience.
 
 :::info Separating development and production credentials
 
@@ -14,9 +18,14 @@ As a general best practice, it is strongly recommended to use service accounts a
 
 :::
 
-## Configure Environmental Variables and Credentials on Rill Cloud 
 
-Once you are ready to deploy or have already deployed and are experiencing issues connecting to your source, you will need to run the following command, `rill env configure`. When running this command, Rill will detect any connectors that are being used by the project and prompt you to fill in the required fields. When completed, this will be pushed to your Rill Cloud Deployment and automatically refresh the required objects. 
+## Configure Environmental Variables and Credentials for Rill Cloud 
+
+If you have defined your connector's credentials in your `.env` file, these will be deployed along with your project. You should see the credentials in [your project's settings page.](/manage/project-management/variables-and-credentials#modifying-variables-and-credentials-via-the-settings-page)
+
+![img](/img/tutorials/admin/env-var-ui.png)
+
+If not, after deploying to Rill Cloud, you can run the following in the CLI to configure all of your required credentials: `rill env configure`. When running this command, Rill will detect any connectors that are being used by the project and prompt you to fill in the required fields. When completed, this will be pushed to your Rill Cloud Deployment and automatically refresh the required objects. Once completed, you will see these in your project's environmental variables settings page. 
 
 
 ```bash
