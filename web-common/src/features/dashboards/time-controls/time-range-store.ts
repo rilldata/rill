@@ -24,6 +24,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExploreSpec,
+  type V1ExploreTimeRange,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -255,4 +256,56 @@ export function getValidComparisonOption(
   }
 
   return timeRange.comparisonTimeRanges[0].offset as TimeComparisonOption;
+}
+
+export function bucketTimeRanges(
+  ranges: V1ExploreTimeRange[],
+  defaultTimeRange: string,
+) {
+  const latestWindowTimeRanges: V1ExploreTimeRange[] = [];
+  const periodToDateRanges: V1ExploreTimeRange[] = [];
+  const previousCompleteDateRanges: V1ExploreTimeRange[] = [];
+  const customTimeRanges: V1ExploreTimeRange[] = [];
+  let hasDefaultInRanges = false;
+
+  // const defaultTimeRange = explore?.defaultPreset?.timeRange;
+  if (ranges.length) {
+    for (const range of ranges) {
+      if (!range.range) continue;
+
+      // default time range is part of availableTimeRanges.
+      // this is used to not show a separate selection for the default
+      if (defaultTimeRange === range.range) {
+        hasDefaultInRanges = true;
+      }
+      if (range.range in LATEST_WINDOW_TIME_RANGES) {
+        latestWindowTimeRanges.push(range);
+      } else if (range.range in PERIOD_TO_DATE_RANGES) {
+        periodToDateRanges.push(range);
+      } else if (range.range in PREVIOUS_COMPLETE_DATE_RANGES) {
+        previousCompleteDateRanges.push(range);
+      } else {
+        customTimeRanges.push(range);
+      }
+    }
+  } else {
+    // latestWindowTimeRanges = LATEST_WINDOW_TIME_RANGES;
+    // periodToDateRanges = PERIOD_TO_DATE_RANGES;
+    // previousCompleteDateRanges = PREVIOUS_COMPLETE_DATE_RANGES;
+    // hasDefaultInRanges =
+    //   !!defaultTimeRange &&
+    //   (defaultTimeRange in LATEST_WINDOW_TIME_RANGES ||
+    //     defaultTimeRange in PERIOD_TO_DATE_RANGES ||
+    //     defaultTimeRange in PREVIOUS_COMPLETE_DATE_RANGES);
+  }
+
+  return {
+    ranges: [
+      latestWindowTimeRanges,
+      periodToDateRanges,
+      previousCompleteDateRanges,
+    ],
+    customTimeRanges,
+    showDefaultItem: !!defaultTimeRange && !hasDefaultInRanges,
+  };
 }

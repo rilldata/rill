@@ -10,7 +10,10 @@ import {
   Duration,
   IANAZone,
 } from "luxon";
-import type { MetricsViewSpecAvailableTimeRange } from "@rilldata/web-common/runtime-client";
+import {
+  queryServiceMetricsViewTimeRanges,
+  type MetricsViewSpecAvailableTimeRange,
+} from "@rilldata/web-common/runtime-client";
 
 // CONSTANTS -> time-control-constants.ts
 
@@ -273,10 +276,13 @@ export function isRillPeriodToDate(value: string): value is RillPeriodToDate {
   return RILL_PERIOD_TO_DATE.includes(value as RillPeriodToDate);
 }
 
-export function deriveInterval(
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
+export async function deriveInterval(
   name: RillPeriodToDate | RillPreviousPeriod | ISODurationString,
   anchor: DateTime,
-) {
+  metricsViewName: string,
+): Promise<Interval> {
   if (name === ALL_TIME_RANGE_ALIAS || name === CUSTOM_TIME_RANGE_ALIAS) {
     throw new Error("Cannot derive interval for all time or custom range");
   }
@@ -293,7 +299,28 @@ export function deriveInterval(
 
   const duration = isValidISODuration(name);
 
-  if (duration) return getInterval(duration, anchor);
+  if (duration) {
+    return getInterval(duration, anchor);
+  } else {
+    const response = await queryServiceMetricsViewTimeRanges(
+      get(runtime).instanceId,
+      metricsViewName,
+      { expressions: [name] },
+    );
+
+    const timeRange = response.timeRanges?.pop();
+
+    console.log({ timeRange });
+
+    if (!timeRange?.start || !timeRange?.end) {
+      return Interval.invalid("Invalid time range");
+    }
+
+    return Interval.fromDateTimes(
+      DateTime.fromISO(timeRange.start),
+      DateTime.fromISO(timeRange.end),
+    );
+  }
 }
 
 export function getPeriodToDate(date: DateTime, period: DateTimeUnit) {
@@ -362,7 +389,7 @@ export function getDurationLabel(isoDuration: string): string {
   return `Last ${humaniseISODuration(isoDuration)}`;
 }
 
-export function getRangeLabel(range: NamedRange | ISODurationString): string {
+export function getRangeLabel(range: string): string {
   if (isRillPeriodToDate(range) || isRillPreviousPeriod(range)) {
     return RILL_TO_LABEL[range];
   }

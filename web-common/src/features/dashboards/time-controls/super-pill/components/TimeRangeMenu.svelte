@@ -8,6 +8,7 @@
   } from "../../new-time-controls";
   import type { CustomEventHandler } from "bits-ui";
   import { RILL_TO_LABEL, ALL_TIME_RANGE_ALIAS } from "../../new-time-controls";
+  import SyntaxElement from "./SyntaxElement.svelte";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -25,59 +26,3 @@
     onSelectRange(range);
   }
 </script>
-
-<DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
-  <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
-    {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-  </span>
-</DropdownMenu.Item>
-
-{#if showDefaultItem && defaultTimeRange}
-  <DropdownMenu.Item data-range={defaultTimeRange} on:click={handleClick}>
-    <div class:font-bold={selected === defaultTimeRange}>
-      Last {humaniseISODuration(defaultTimeRange)}
-    </div>
-  </DropdownMenu.Item>
-{/if}
-
-{#if ranges.latest.length}
-  <DropdownMenu.Separator />
-{/if}
-
-{#each ranges.latest as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
-    </span>
-  </DropdownMenu.Item>
-{/each}
-
-{#if ranges.periodToDate.length}
-  <DropdownMenu.Separator />
-{/if}
-
-{#each ranges.periodToDate as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
-    </span>
-  </DropdownMenu.Item>
-{/each}
-
-{#if ranges.previous.length}
-  <DropdownMenu.Separator />
-{/if}
-
-{#each ranges.previous as { range, label } (range)}
-  <DropdownMenu.Item on:click={handleClick} data-range={range}>
-    <span class:font-bold={selected === range}>
-      {label}
-    </span>
-  </DropdownMenu.Item>
-{/each}
-
-<DropdownMenu.Separator />
-
-<DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
-  <span class:font-bold={selected === "CUSTOM"}> Custom </span>
-</DropdownMenu.Item>
