@@ -148,6 +148,26 @@ You can check your data usage in your organization setting usage page. The graph
 
 ## Enterprise Plan
 
+### What is an Enterprise Plan? 
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](../contact.md). Transparent usage-based billing means you only pay for what you need. Flexible pricing based on storage, compute, and network units start at the rates below:
+
+**Storage:**
+
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/home/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/home/FAQ#what-are-the-compute-requirements-for-data-processing).
+
+Data can be also offloaded to an archival tier where it does not consume any compute
+
+`$0.0005 / GB per hour`
+
+
+**Compute:**
+
+[Rill Compute Units (RCU)](/home/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
+
+RCU scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
+
+`$0.09 RCU per hour`
+
 ### What is a Rill Compute Unit? (RCU)
 A Rill Compute Unit (RCU) is a usage metering unit that tracks, by the minute, the amount of resources consumed by your Rill cloud service, including compute, memory, disk storage, batch or streaming data ingested.
 
