@@ -72,6 +72,7 @@
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
+  export let suppressTooltip = false;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -301,6 +302,7 @@
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
+            {suppressTooltip}
             {tableWidth}
             {firstColumnWidth}
             {isSummableMeasure}
@@ -319,6 +321,7 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
+          {suppressTooltip}
           {itemData}
           {firstColumnWidth}
           {isSummableMeasure}
