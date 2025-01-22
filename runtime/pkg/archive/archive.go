@@ -172,7 +172,9 @@ func untar(src, dest string, ignorePaths bool) error {
 			return err
 		}
 
-		if ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil) {
+		// nolint:gosec // adding the '..' check here is still triggering gosec for GSC-G305
+		if strings.Contains(header.Name, "..") ||
+			(ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil)) {
 			continue
 		}
 
