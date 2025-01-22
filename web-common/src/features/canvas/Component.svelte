@@ -49,7 +49,7 @@
       ".component",
     ) as HTMLElement;
 
-    console.log("[Component] handleDragHandleMouseDown: ", componentEl);
+    // console.log("[Component] handleDragHandleMouseDown: ", componentEl);
 
     if (componentEl) {
       isDragging = true;
