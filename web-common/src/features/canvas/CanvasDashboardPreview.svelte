@@ -512,7 +512,8 @@
             on:mouseleave={handleMouseLeave}
           />
 
-          {#if itemIndex < row.items.length - 1}
+          <!-- FIXME: re-enable resizer -->
+          <!-- {#if itemIndex < row.items.length - 1}
             <div
               class="col-resize-group relative"
               role="presentation"
@@ -551,16 +552,17 @@
                 }}
               />
             </div>
-          {/if}
+          {/if} -->
         {/each}
       </div>
 
-      <div class="row-resize-container">
+      <!-- FIXME: re-enable resizer -->
+      <!-- <div class="row-resize-container">
         <RowResizer
           on:resize={(e) =>
             handleRowResizeStart(e.detail, index, row.height * gridCell)}
         />
-      </div>
+      </div> -->
     {/each}
   </div>
 
