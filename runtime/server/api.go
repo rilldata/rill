@@ -64,12 +64,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	resolverProps := api.Spec.ResolverProperties.AsMap()
-	skipResolverSecurity := resolverProps["skip_nested_security"]
+	// Rewrite the claims before passing them to the resolver
 	claims := auth.GetClaims(ctx).SecurityClaims()
-	// for each claim skip checks
-	if skipResolverSecurity != nil && skipResolverSecurity.(bool) {
-		// SkipChecks
+	if api.Spec.SkipNestedSecurity {
 		claims.SkipChecks = true
 	}
 
