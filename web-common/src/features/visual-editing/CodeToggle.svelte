@@ -46,7 +46,7 @@
         />
       </button>
       <TooltipContent slot="tooltip-content">
-        {view === "code" ? "Code view" : "Leave code view"}
+        {view === "code" ? "Code view" : "No-code view"}
       </TooltipContent>
     </Tooltip>
   {/each}
