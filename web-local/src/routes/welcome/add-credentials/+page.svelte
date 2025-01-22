@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import AddDataForm from "@rilldata/web-common/features/sources/modal/AddDataForm.svelte";
   import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
@@ -17,16 +18,26 @@
   );
 
   function onContinue(filePath: string) {
-    console.log("onContinue", filePath);
+    // TODO: rather than exiting the wizard, go to the "create a dashboard" page
+    onboardingState.cleanUp();
+    goto(`/files/${filePath}`);
   }
 
   function onBack() {
-    onboardingState.cleanUp();
+    try {
+      onboardingState.cleanUp();
+    } catch (e) {
+      console.error(e);
+    }
   }
 </script>
 
 {#if $firstDataSource === "local_file"}
-  <LocalSourceUpload on:close={onContinue} on:back={onBack} />
+  <LocalSourceUpload
+    on:close={onContinue}
+    on:back={onBack}
+    backHref="/welcome/select-connectors"
+  />
 {:else if connectorDriver}
   <div class="w-[544px] p-6">
     <h2 class="text-lead">Connect to {connectorDriver.displayName}</h2>

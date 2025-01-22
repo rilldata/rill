@@ -16,6 +16,8 @@
   import { compileLocalFileSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
 
+  export let backHref: string = "";
+
   const dispatch = createEventDispatcher();
 
   $: ({ instanceId } = $runtime);
@@ -70,5 +72,7 @@
 </div>
 <div class="flex">
   <div class="grow" />
-  <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
+  <Button on:click={() => dispatch("back")} type="secondary" href={backHref}>
+    Back
+  </Button>
 </div>

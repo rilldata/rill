@@ -5,12 +5,16 @@ import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
+  runtimeServiceListFiles,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
+  type V1ListFilesResponse,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { OlapDriver } from "../../connectors/olap/olap-config";
 import { EMPTY_PROJECT_TITLE } from "../constants";
+
+const ONBOARDING_STATE_FILE_PATH = "/tmp/onboarding-state.json";
 
 export class OnboardingState {
   managementType: Writable<"rill-managed" | "self-managed">;
@@ -25,14 +29,38 @@ export class OnboardingState {
     this.runtimeInstanceId = get(runtime).instanceId;
   }
 
+  async isInitialized() {
+    const filesResponse = await queryClient.fetchQuery<V1ListFilesResponse>({
+      queryKey: getRuntimeServiceGetFileQueryKey(
+        this.runtimeInstanceId,
+        undefined,
+      ),
+      queryFn: ({ signal }) => {
+        return runtimeServiceListFiles(
+          this.runtimeInstanceId,
+          undefined,
+          signal,
+        );
+      },
+    });
+
+    const rillYaml = filesResponse.files?.find(
+      (file) => file.path === "/rill.yaml",
+    );
+
+    const hasRillYAML = rillYaml !== undefined;
+
+    return hasRillYAML;
+  }
+
   async fetch() {
     const response = await queryClient.fetchQuery({
       queryKey: getRuntimeServiceGetFileQueryKey(this.runtimeInstanceId, {
-        path: "tmp/onboarding-state.json",
+        path: ONBOARDING_STATE_FILE_PATH,
       }),
       queryFn: () =>
         runtimeServiceGetFile(this.runtimeInstanceId, {
-          path: "tmp/onboarding-state.json",
+          path: ONBOARDING_STATE_FILE_PATH,
         }),
     });
 
@@ -63,16 +91,35 @@ export class OnboardingState {
     const jsonState = JSON.stringify(state);
 
     await runtimeServicePutFile(this.runtimeInstanceId, {
-      path: "tmp/onboarding-state.json",
+      path: ONBOARDING_STATE_FILE_PATH,
       blob: jsonState,
     });
   }
 
-  async complete() {
-    await runtimeServiceDeleteFile(this.runtimeInstanceId, {
-      path: "tmp/onboarding-state.json",
+  getNumberOfSteps = () => {
+    return derived(this.managementType, (managementType) =>
+      managementType === "rill-managed" ? 2 : 3,
+    );
+  };
+
+  getCurrentStep = () => {
+    // /welcome/select-connectors => 1
+    // /welcome/add-credentials => 2
+    // /welcome/make-your-first-dashboard => 3
+    return derived(page, (page) => {
+      if (page.url.pathname.includes("select-connectors")) {
+        return 1;
+      }
+      if (page.url.pathname.includes("add-credentials")) {
+        return 2;
+      }
+      if (page.url.pathname.includes("make-your-first-dashboard")) {
+        return 3;
+      }
+
+      return 0;
     });
-  }
+  };
 
   selectManagementType(type: "rill-managed" | "self-managed") {
     this.managementType.set(type);
@@ -145,35 +192,11 @@ driver: ${get(this.olapDriver)}`,
     });
   }
 
-  // TODO: Implement this
-  isInitialized() {
-    return false;
-  }
-
-  getNumberOfSteps = () => {
-    return derived(this.managementType, (managementType) =>
-      managementType === "rill-managed" ? 2 : 3,
-    );
-  };
-
-  getCurrentStep = () => {
-    // /welcome/select-connectors => 1
-    // /welcome/add-credentials => 2
-    // /welcome/make-your-first-dashboard => 3
-    return derived(page, (page) => {
-      if (page.url.pathname.includes("select-connectors")) {
-        return 1;
-      }
-      if (page.url.pathname.includes("add-credentials")) {
-        return 2;
-      }
-      if (page.url.pathname.includes("make-your-first-dashboard")) {
-        return 3;
-      }
-
-      return 0;
+  async complete() {
+    await runtimeServiceDeleteFile(this.runtimeInstanceId, {
+      path: ONBOARDING_STATE_FILE_PATH,
     });
-  };
+  }
 }
 
 export function getOnboardingState() {
