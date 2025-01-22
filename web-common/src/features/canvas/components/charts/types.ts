@@ -25,3 +25,12 @@ export interface ChartMetadata {
   icon: ComponentType<SvelteComponent>;
   title: string;
 }
+
+/** Temporary solution for the lack of vega lite type exports */
+export interface TooltipValue {
+  title?: string;
+  field: string;
+  format?: string;
+  formatType?: string;
+  type: "quantitative" | "temporal" | "nominal" | "ordinal";
+}

@@ -27,7 +27,6 @@ export type ChartDataResult = {
 
 export function getChartData(
   ctx: StateManagers,
-  instanceId: string,
   config: ChartConfig,
 ): Readable<ChartDataResult> {
   const chartDataQuery = createChartDataQuery(ctx, config);

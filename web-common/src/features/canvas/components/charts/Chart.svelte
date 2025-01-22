@@ -23,7 +23,7 @@
 
   let viewVL: View;
 
-  $: data = getChartData(stateManagers, instanceId, chartConfig);
+  $: data = getChartData(stateManagers, chartConfig);
   $: spec = generateSpec(chartType, chartConfig, $data);
 
   $: config = chartConfig.vl_config
