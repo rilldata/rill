@@ -11,38 +11,39 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
-// TODO: Move initilization logic to the OnboardingState class
-export async function load({ url, depends, untrack }) {
+export async function load({ url, depends }) {
   depends("init");
 
   const instanceId = get(runtime).instanceId;
 
-  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
-    queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(instanceId, undefined, signal);
-    },
-  });
+  // Redirect to the welcome page if the project is not initialized
+  const onboardingState = getOnboardingState(); // TODO: Make sure this doesn't trigger an unnecessary fetch of `onboarding-state.json`
+  const initialized = await onboardingState.isInitialized();
+  const inOnboardingFlow = url.pathname.startsWith("/welcome");
 
-  const firstDashboardFile = files.files?.find((file) =>
-    file.path?.startsWith("/dashboards/"),
-  );
-
-  const initialized = getOnboardingState().isInitialized();
-
-  const redirectPath = untrack(() => {
-    return (
-      !!url.searchParams.get("redirect") &&
-      url.pathname !== `/files${firstDashboardFile?.path}` &&
-      `/files${firstDashboardFile?.path}`
-    );
-  });
-
-  if (!initialized) {
-    // initialized = await handleUninitializedProject(instanceId);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+  if (!initialized && !inOnboardingFlow) {
+    throw redirect(303, "/welcome");
   }
 
-  return { initialized };
+  // If the user has clicked on an example project, redirect to the project's first dashboard
+  const shouldRedirectToFirstDashboard = !!url.searchParams.get("redirect");
+
+  if (shouldRedirectToFirstDashboard) {
+    const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+      queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+      queryFn: ({ signal }) => {
+        return runtimeServiceListFiles(instanceId, undefined, signal);
+      },
+    });
+
+    const firstDashboardFile = files.files?.find((file) =>
+      file.path?.startsWith("/dashboards/"),
+    );
+
+    if (url.pathname !== `/files${firstDashboardFile?.path}`) {
+      throw redirect(303, `/files${firstDashboardFile?.path}`);
+    }
+  }
+
+  return { onboardingState };
 }
