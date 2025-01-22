@@ -1053,7 +1053,20 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	}
 
 	if empty {
-		// we need to add a remote if the repo was completely empty
+		remote, err := ghRepo.Remote("origin")
+		if err != nil && !errors.Is(err, git.ErrRemoteNotFound) {
+			return err
+		}
+		// remove the remote if it already exists
+		// this could happen when previously connected to another repo and .git got added to assets
+		if remote != nil {
+			err = ghRepo.DeleteRemote("origin")
+			if err != nil {
+				return err
+			}
+		}
+
+		// we need to add a remote as the new repo if the repo was completely empty
 		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
 		if err != nil {
 			return fmt.Errorf("failed to create remote: %w", err)
