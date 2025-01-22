@@ -78,46 +78,46 @@
     canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
-  function handleDragStart(e: CustomEvent) {
-    const { componentIndex, width, height } = e.detail;
-    console.log("[CanvasDashboardPreview] DragStart: ", {
-      componentIndex,
-      width,
-      height,
-    });
-    hoveredIndex = null;
-    draggedComponent = {
-      index: componentIndex,
-      width,
-      height,
-    };
-  }
+  // function handleDragStart(e: CustomEvent) {
+  //   const { componentIndex, width, height } = e.detail;
+  //   console.log("[CanvasDashboardPreview] DragStart: ", {
+  //     componentIndex,
+  //     width,
+  //     height,
+  //   });
+  //   hoveredIndex = null;
+  //   draggedComponent = {
+  //     index: componentIndex,
+  //     width,
+  //     height,
+  //   };
+  // }
 
-  function handleDragOver(e: DragEvent, targetIndex: number) {
-    e.preventDefault();
-    e.stopPropagation();
+  // function handleDragOver(e: DragEvent, targetIndex: number) {
+  //   e.preventDefault();
+  //   e.stopPropagation();
 
-    // Don't show drop target line if dragging over self
-    if (draggedComponent?.index === targetIndex) {
-      dropTarget = null;
-      return;
-    }
+  //   // Don't show drop target line if dragging over self
+  //   if (draggedComponent?.index === targetIndex) {
+  //     dropTarget = null;
+  //     return;
+  //   }
 
-    const position = getDropPosition(e, targetIndex);
-    console.log("[CanvasDashboardPreview] handleDragOver", {
-      targetIndex,
-      position,
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-    });
+  //   const position = getDropPosition(e, targetIndex);
+  //   console.log("[CanvasDashboardPreview] handleDragOver", {
+  //     targetIndex,
+  //     position,
+  //     mouseX: e.clientX,
+  //     mouseY: e.clientY,
+  //   });
 
-    dropTarget = { index: targetIndex, position };
-  }
+  //   dropTarget = { index: targetIndex, position };
+  // }
 
-  function handleDragEnd() {
-    draggedComponent = null;
-    dropTarget = null;
-  }
+  // function handleDragEnd() {
+  //   draggedComponent = null;
+  //   dropTarget = null;
+  // }
 
   function handleDeselect() {
     selectedIndex = null;
@@ -196,261 +196,260 @@
     }
   }
 
-  function handleRowResizeStart(
-    e: MouseEvent,
-    rowIndex: number,
-    currentHeight: number,
-  ) {
-    e.preventDefault();
-    document.body.classList.add("resizing-row");
-    resizingRow = {
-      index: rowIndex,
-      startY: e.clientY,
-      initialHeight: currentHeight,
-    };
-    console.log("[CanvasDashboardPreview] Starting resize of row:", {
-      rowIndex,
-      currentHeight,
-      totalRows: itemsByRow.length,
-      affectedRows: itemsByRow.slice(rowIndex + 1), // Rows that will move
-    });
-  }
+  // function handleRowResizeStart(
+  //   e: MouseEvent,
+  //   rowIndex: number,
+  //   currentHeight: number,
+  // ) {
+  //   e.preventDefault();
+  //   document.body.classList.add("resizing-row");
+  //   resizingRow = {
+  //     index: rowIndex,
+  //     startY: e.clientY,
+  //     initialHeight: currentHeight,
+  //   };
+  //   console.log("[CanvasDashboardPreview] Starting resize of row:", {
+  //     rowIndex,
+  //     currentHeight,
+  //     totalRows: itemsByRow.length,
+  //     affectedRows: itemsByRow.slice(rowIndex + 1), // Rows that will move
+  //   });
+  // }
 
-  function handleRowResize(e: MouseEvent) {
-    if (!resizingRow) return;
+  // function handleRowResize(e: MouseEvent) {
+  //   if (!resizingRow) return;
 
-    const deltaY = e.clientY - resizingRow.startY;
-    const newHeight = Math.round(
-      Math.max(defaults.MIN_ROW_HEIGHT, resizingRow.initialHeight + deltaY),
-    );
+  //   const deltaY = e.clientY - resizingRow.startY;
+  //   const newHeight = Math.round(
+  //     Math.max(defaults.MIN_ROW_HEIGHT, resizingRow.initialHeight + deltaY),
+  //   );
 
-    const row = itemsByRow[resizingRow.index];
-    if (!row) return;
+  //   const row = itemsByRow[resizingRow.index];
+  //   if (!row) return;
 
-    // Create a copy of items for DOM updates
-    const updatedItems = [...items];
-    const rowItems = updatedItems.filter((item) => item.y === row.y);
+  //   // Create a copy of items for DOM updates
+  //   const updatedItems = [...items];
+  //   const rowItems = updatedItems.filter((item) => item.y === row.y);
 
-    // Update height for all items in the row
-    rowItems.forEach((item) => {
-      item.height = Math.round(newHeight / defaults.GRID_CELL_SIZE);
-    });
+  //   // Update height for all items in the row
+  //   rowItems.forEach((item) => {
+  //     item.height = Math.round(newHeight / defaults.GRID_CELL_SIZE);
+  //   });
 
-    // Update positions of all rows below
-    let currentY = 0;
-    const updatedRows = groupItemsByRow(updatedItems);
-    updatedRows.forEach((currentRow, idx) => {
-      if (!resizingRow) return;
-      currentRow.items.forEach((item) => {
-        item.y = Math.round(currentY / defaults.GRID_CELL_SIZE);
-      });
-      // Use the height from the current row being processed
-      const rowHeight =
-        idx === resizingRow.index
-          ? newHeight
-          : currentRow.height * defaults.GRID_CELL_SIZE;
-      currentY += rowHeight;
-    });
+  //   // Update positions of all rows below
+  //   let currentY = 0;
+  //   const updatedRows = groupItemsByRow(updatedItems);
+  //   updatedRows.forEach((currentRow, idx) => {
+  //     if (!resizingRow) return;
+  //     currentRow.items.forEach((item) => {
+  //       item.y = Math.round(currentY / defaults.GRID_CELL_SIZE);
+  //     });
+  //     // Use the height from the current row being processed
+  //     const rowHeight =
+  //       idx === resizingRow.index
+  //         ? newHeight
+  //         : currentRow.height * defaults.GRID_CELL_SIZE;
+  //     currentY += rowHeight;
+  //   });
 
-    // Update the DOM immediately
-    items = updatedItems;
-  }
+  //   // Update the DOM immediately
+  //   items = updatedItems;
+  // }
 
-  function handleRowResizeEnd() {
-    if (resizingRow) {
-      // Only dispatch update to save YAML when resize ends
-      dispatch("update", {
-        index: -1,
-        items,
-        position: [0, 0],
-        dimensions: [0, 0],
-      });
-    }
-    document.body.classList.remove("resizing-row");
-    resizingRow = null;
-  }
+  // function handleRowResizeEnd() {
+  //   if (resizingRow) {
+  //     // Only dispatch update to save YAML when resize ends
+  //     dispatch("update", {
+  //       index: -1,
+  //       items,
+  //       position: [0, 0],
+  //       dimensions: [0, 0],
+  //     });
+  //   }
+  //   document.body.classList.remove("resizing-row");
+  //   resizingRow = null;
+  // }
 
-  function handleColResize(e: MouseEvent) {
-    if (!resizingCol) return;
+  // function handleColResize(e: MouseEvent) {
+  //   if (!resizingCol) return;
 
-    const deltaX = e.clientX - resizingCol.startX;
-    console.log("[CanvasDashboardPreview] handleColResize", {
-      deltaX,
-      resizingCol,
-    });
-    const currentRow = itemsByRow.find((row) =>
-      row.items.some((item) => items.indexOf(item) === resizingCol?.index),
-    );
-    if (!resizingCol || !currentRow) return;
+  //   const deltaX = e.clientX - resizingCol.startX;
+  //   console.log("[CanvasDashboardPreview] handleColResize", {
+  //     deltaX,
+  //     resizingCol,
+  //   });
+  //   const currentRow = itemsByRow.find((row) =>
+  //     row.items.some((item) => items.indexOf(item) === resizingCol?.index),
+  //   );
+  //   if (!resizingCol || !currentRow) return;
 
-    // Sort items by x position for consistent resizing
-    const sortedRowItems = [...currentRow.items].sort(
-      (a, b) => (a.x ?? 0) - (b.x ?? 0),
-    );
-    const resizingItemIndex = sortedRowItems.findIndex(
-      (item) => items.indexOf(item) === resizingCol?.index,
-    );
+  //   // Sort items by x position for consistent resizing
+  //   const sortedRowItems = [...currentRow.items].sort(
+  //     (a, b) => (a.x ?? 0) - (b.x ?? 0),
+  //   );
+  //   const resizingItemIndex = sortedRowItems.findIndex(
+  //     (item) => items.indexOf(item) === resizingCol?.index,
+  //   );
 
-    // Get next item to determine maximum resize width
-    const nextItem = sortedRowItems[resizingItemIndex + 1];
-    if (!nextItem) return;
+  //   // Get next item to determine maximum resize width
+  //   const nextItem = sortedRowItems[resizingItemIndex + 1];
+  //   if (!nextItem) return;
 
-    const newWidth = Math.round(
-      Math.max(defaults.GRID_CELL_SIZE, resizingCol.initialWidth + deltaX),
-    );
+  //   const newWidth = Math.round(
+  //     Math.max(defaults.GRID_CELL_SIZE, resizingCol.initialWidth + deltaX),
+  //   );
 
-    const updatedItems = [...items];
-    const item = updatedItems[resizingCol.index];
-    if (!item) return;
+  //   const updatedItems = [...items];
+  //   const item = updatedItems[resizingCol.index];
+  //   if (!item) return;
 
-    // Calculate new widths ensuring they stay within bounds
-    const currentItemWidth = item.width ?? defaults.COMPONENT_WIDTH;
-    const currentX = item.x ?? 0;
+  //   // Calculate new widths ensuring they stay within bounds
+  //   const currentItemWidth = item.width ?? defaults.COMPONENT_WIDTH;
+  //   const currentX = item.x ?? 0;
 
-    // Get next item's current width
-    const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
-    const nextItemX = nextItem.x ?? 0;
+  //   // Get next item's current width
+  //   const nextItemWidth = nextItem.width ?? defaults.COMPONENT_WIDTH;
+  //   const nextItemX = nextItem.x ?? 0;
 
-    // Calculate maximum allowed width to prevent collision
-    const maxAllowedWidth = Math.min(
-      // Don't exceed grid width
-      defaults.COLUMN_COUNT - currentX,
-      // Allow resizing considering combined width of current and next item
-      nextItemX - currentX + nextItemWidth,
-    );
+  //   // Calculate maximum allowed width to prevent collision
+  //   const maxAllowedWidth = Math.min(
+  //     // Don't exceed grid width
+  //     defaults.COLUMN_COUNT - currentX,
+  //     // Allow resizing considering combined width of current and next item
+  //     nextItemX - currentX + nextItemWidth,
+  //   );
 
-    // Ensure new width doesn't exceed available space
-    const finalWidth = Math.min(
-      Math.round(newWidth / defaults.GRID_CELL_SIZE),
-      maxAllowedWidth,
-    );
+  //   // Ensure new width doesn't exceed available space
+  //   const finalWidth = Math.min(
+  //     Math.round(newWidth / defaults.GRID_CELL_SIZE),
+  //     maxAllowedWidth,
+  //   );
 
-    const widthDiff = finalWidth - currentItemWidth;
+  //   const widthDiff = finalWidth - currentItemWidth;
 
-    // Only proceed if we have space to resize
-    if (widthDiff === 0) return;
+  //   // Only proceed if we have space to resize
+  //   if (widthDiff === 0) return;
 
-    // Check if resize is possible while maintaining minimum widths
-    const canResize =
-      finalWidth >= defaults.COMPONENT_MIN_WIDTH && // Minimum 2 columns for current item
-      nextItemWidth - widthDiff >= defaults.COMPONENT_MIN_WIDTH; // Minimum 2 columns for next item
+  //   // Check if resize is possible while maintaining minimum widths
+  //   const canResize =
+  //     finalWidth >= defaults.COMPONENT_MIN_WIDTH && // Minimum 2 columns for current item
+  //     nextItemWidth - widthDiff >= defaults.COMPONENT_MIN_WIDTH; // Minimum 2 columns for next item
 
-    if (canResize) {
-      item.width = finalWidth;
+  //   if (canResize) {
+  //     item.width = finalWidth;
 
-      // Only adjust the next item's width
-      const nextUpdatedItem = updatedItems[items.indexOf(nextItem)];
-      if (nextUpdatedItem) {
-        // Maintain next item's minimum width
-        nextUpdatedItem.width = nextItemWidth - widthDiff;
-        // Update x position of next item to be right after current item
-        nextUpdatedItem.x = currentX + finalWidth;
-      }
+  //     // Only adjust the next item's width
+  //     const nextUpdatedItem = updatedItems[items.indexOf(nextItem)];
+  //     if (nextUpdatedItem) {
+  //       // Maintain next item's minimum width
+  //       nextUpdatedItem.width = nextItemWidth - widthDiff;
+  //       // Update x position of next item to be right after current item
+  //       nextUpdatedItem.x = currentX + finalWidth;
+  //     }
 
-      // Update the UI immediately
-      items = updatedItems;
-    }
-  }
+  //     // Update the UI immediately
+  //     items = updatedItems;
+  //   }
+  // }
 
-  function handleColResizeEnd() {
-    if (resizingCol) {
-      const item = items[resizingCol.index];
-      if (item) {
-        dispatch("update", {
-          index: resizingCol.index,
-          items,
-          position: [item.x, item.y],
-          dimensions: [item.width, item.height],
-        });
-      }
-    }
-    document.body.classList.remove("resizing-col");
-    resizingCol = null;
-  }
+  // function handleColResizeEnd() {
+  //   if (resizingCol) {
+  //     const item = items[resizingCol.index];
+  //     if (item) {
+  //       dispatch("update", {
+  //         index: resizingCol.index,
+  //         items,
+  //         position: [item.x, item.y],
+  //         dimensions: [item.width, item.height],
+  //       });
+  //     }
+  //   }
+  //   document.body.classList.remove("resizing-col");
+  //   resizingCol = null;
+  // }
 
-  function handleColumnResizeStart(
-    e: MouseEvent,
-    index: number,
-    initialWidth: number,
-    columnIndex: number,
-  ) {
-    e.preventDefault();
-    resizingCol = {
-      index,
-      startX: e.clientX,
-      initialWidth,
-      maxWidth: (defaults.COLUMN_COUNT - columnIndex) * gridCell,
-    };
-    document.body.classList.add("resizing-col");
-  }
+  // function handleColumnResizeStart(
+  //   e: MouseEvent,
+  //   index: number,
+  //   initialWidth: number,
+  //   columnIndex: number,
+  // ) {
+  //   e.preventDefault();
+  //   resizingCol = {
+  //     index,
+  //     startX: e.clientX,
+  //     initialWidth,
+  //     maxWidth: (defaults.COLUMN_COUNT - columnIndex) * gridCell,
+  //   };
+  //   document.body.classList.add("resizing-col");
+  // }
 
-  function handleSpreadEvenly(index: number) {
-    console.log("[CanvasDashboardPreview] handleSpreadEvenly", {
-      index,
-    });
-    // Get the item at the resize handle
-    const selectedItem = items[index];
-    if (!selectedItem) return;
+  // function handleSpreadEvenly(index: number) {
+  //   console.log("[CanvasDashboardPreview] handleSpreadEvenly", {
+  //     index,
+  //   });
+  //   // Get the item at the resize handle
+  //   const selectedItem = items[index];
+  //   if (!selectedItem) return;
 
-    // Get all items in the same row
-    const rowItems = items.filter((item) => item.y === selectedItem.y);
-    if (!rowItems.length) return;
+  //   // Get all items in the same row
+  //   const rowItems = items.filter((item) => item.y === selectedItem.y);
+  //   if (!rowItems.length) return;
 
-    // Create a row group for redistribution
-    const row = {
-      y: selectedItem.y,
-      height: selectedItem.height,
-      items: rowItems,
-    };
+  //   // Create a row group for redistribution
+  //   const row = {
+  //     y: selectedItem.y,
+  //     height: selectedItem.height,
+  //     items: rowItems,
+  //   };
 
-    // Get redistributed items
-    const redistributedItems = redistributeRowColumns(row);
-    if (!redistributedItems) return;
+  //   // Get redistributed items
+  //   const redistributedItems = redistributeRowColumns(row);
+  //   if (!redistributedItems) return;
 
-    // Update items with new widths and positions
-    items = items.map((item) => {
-      const redistributedItem = redistributedItems.find(
-        (ri) => ri.x === item.x && ri.y === item.y,
-      );
-      return redistributedItem || item;
-    });
+  //   // Update items with new widths and positions
+  //   items = items.map((item) => {
+  //     const redistributedItem = redistributedItems.find(
+  //       (ri) => ri.x === item.x && ri.y === item.y,
+  //     );
+  //     return redistributedItem || item;
+  //   });
 
-    // Notify parent of update
-    dispatch("update", {
-      index: -1,
-      items,
-      position: [0, 0],
-      dimensions: [0, 0],
-    });
-  }
+  //   // Notify parent of update
+  //   dispatch("update", {
+  //     index: -1,
+  //     items,
+  //     position: [0, 0],
+  //     dimensions: [0, 0],
+  //   });
+  // }
 
-  function handleResizeGroupEnter(index: number) {
-    clearTimeout(hideTimeout);
-    activeResizeGroup = index;
-  }
+  // function handleResizeGroupEnter(index: number) {
+  //   clearTimeout(hideTimeout);
+  //   activeResizeGroup = index;
+  // }
 
-  function handleResizeGroupLeave(index: number) {
-    hideTimeout = setTimeout(() => {
-      if (activeResizeGroup === index) {
-        activeResizeGroup = null;
-      }
-    }, 300);
-  }
+  // function handleResizeGroupLeave(index: number) {
+  //   hideTimeout = setTimeout(() => {
+  //     if (activeResizeGroup === index) {
+  //       activeResizeGroup = null;
+  //     }
+  //   }, 300);
+  // }
 
-  function handleResizeHandleClick(index: number, e: MouseEvent) {
-    e.stopPropagation();
-    clickedResizeHandle = clickedResizeHandle === index ? null : index;
-  }
+  // function handleResizeHandleClick(index: number, e: MouseEvent) {
+  //   e.stopPropagation();
+  //   clickedResizeHandle = clickedResizeHandle === index ? null : index;
+  // }
 
-  // Add click handler to document to close when clicking outside
-  function handleDocumentClick(e: MouseEvent) {
-    if (clickedResizeHandle !== null) {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".floating-buttons")) {
-        clickedResizeHandle = null;
-      }
-    }
-  }
+  // function handleCanvasClick(e: MouseEvent) {
+  //   if (clickedResizeHandle !== null) {
+  //     const target = e.target as HTMLElement;
+  //     if (!target.closest(".floating-buttons")) {
+  //       clickedResizeHandle = null;
+  //     }
+  //   }
+  // }
 </script>
 
 {#if showFilterBar}
@@ -592,7 +591,7 @@
   {/if} -->
 </DashboardWrapper>
 
-<svelte:window
+<!-- <svelte:window
   on:mousemove={(e) => {
     handleRowResize(e);
     handleColResize(e);
@@ -601,8 +600,8 @@
     handleRowResizeEnd();
     handleColResizeEnd();
   }}
-  on:click={handleDocumentClick}
-/>
+  on:click={handleCanvasClick}
+/> -->
 
 <style lang="postcss">
   :global(body.resizing-row) {
@@ -624,7 +623,7 @@
     cursor: col-resize !important;
   }
 
-  .row-resize-container {
+  /* .row-resize-container {
     position: relative;
     height: 16px;
     margin: -8px 0;
@@ -640,5 +639,5 @@
 
   .row-resize-container:hover :global(.row-resizer) {
     opacity: 1;
-  }
+  } */
 </style>

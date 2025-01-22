@@ -42,20 +42,20 @@
     });
   }
 
-  function handleDragStart(e: DragEvent) {
-    console.log("[PreviewElement] handleDragStart", { i, width, height, e });
+  // function handleDragStart(e: DragEvent) {
+  //   console.log("[PreviewElement] handleDragStart", { i, width, height, e });
 
-    dispatch("dragstart", {
-      componentIndex: i,
-      width,
-      height,
-    });
-  }
+  //   dispatch("dragstart", {
+  //     componentIndex: i,
+  //     width,
+  //     height,
+  //   });
+  // }
 
-  function handleDragEnd() {
-    console.log("[PreviewElement] handleDragEnd");
-    dispatch("dragend");
-  }
+  // function handleDragEnd() {
+  //   console.log("[PreviewElement] handleDragEnd");
+  //   dispatch("dragend");
+  // }
 
   function handleMouseEnter() {
     dispatch("mouseenter", { index: i });
