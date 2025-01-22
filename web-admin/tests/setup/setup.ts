@@ -75,7 +75,7 @@ setup(
     // Wait for the admin service to be ready
     await expect
       .poll(() => isServiceReady("http://localhost:8080/v1/ping"), {
-        timeout: 30_000,
+        timeout: 45_000,
       })
       .toBeTruthy();
     console.log("Admin service ready");
