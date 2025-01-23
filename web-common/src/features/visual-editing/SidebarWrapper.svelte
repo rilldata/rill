@@ -13,9 +13,10 @@
   </div>
 
   <div
-    class="{disableHorizontalPadding
-      ? ''
-      : 'px-5'} flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
+    class="flex flex-col w-full h-full overflow-y-auto overflow-x-visible"
+    class:px-5={!disableHorizontalPadding}
+    class:gap-y-1={type === "secondary"}
+    class:gap-y-3={type === "primary"}
   >
     <slot />
   </div>

@@ -10,6 +10,7 @@
   export let items: V1CanvasItem[];
   export let gap = 1;
   export let chartView = false;
+  export let showFilterBar = true;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   $: ({ instanceId } = $runtime);
@@ -30,12 +31,14 @@
   }, 0);
 </script>
 
-<div
-  id="header"
-  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
->
-  <CanvasFilters />
-</div>
+{#if showFilterBar}
+  <div
+    id="header"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  >
+    <CanvasFilters />
+  </div>
+{/if}
 
 <DashboardWrapper
   bind:contentRect

@@ -25,13 +25,14 @@
 
   let spec: V1CanvasSpec = {
     items: [],
+    filtersEnabled: true,
   };
 
   $: ({ saveLocalContent, updateEditorContent, editorContent } = fileArtifact);
 
   $: spec = structuredClone($canvasSpec ?? spec);
 
-  $: ({ items = [] } = spec);
+  $: ({ items = [], filtersEnabled } = spec);
 
   async function handleDeleteEvent(
     e: CustomEvent<{
@@ -79,6 +80,7 @@
   {items}
   {columns}
   {showGrid}
+  showFilterBar={filtersEnabled}
   selectedIndex={$selectedIndex}
   on:update={handlePreviewUpdate}
   on:delete={handleDeleteEvent}

@@ -14,6 +14,7 @@
 <StateManagersProvider {canvasName}>
   <CanvasThemeProvider>
     <CanvasDashboardEmbed
+      showFilterBar={data.dashboard.spec?.filtersEnabled}
       items={data.dashboard.spec?.items || []}
       {columns}
       {gap}
