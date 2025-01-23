@@ -175,6 +175,16 @@ export const getIndependentMeasures = (
   return [...measures];
 };
 
+export const getSimpleMeasures = (measures: MetricsViewSpecMeasureV2[]) => {
+  return (
+    measures?.filter(
+      (m) =>
+        !m.window &&
+        m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+    ) ?? []
+  );
+};
+
 export const measureSelectors = {
   /**
    * Get all measures in the dashboard.

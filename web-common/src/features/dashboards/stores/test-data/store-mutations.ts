@@ -147,10 +147,19 @@ export const AD_BIDS_SORT_DESC_BY_IMPRESSIONS: TestDashboardMutation = (
   setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
   setSortDescending(mut);
 };
+export const AD_BIDS_SORT_ASC_BY_IMPRESSIONS: TestDashboardMutation = (mut) => {
+  setLeaderboardMeasureName(mut, AD_BIDS_IMPRESSIONS_MEASURE);
+  setSortDescending(mut);
+  toggleSort(mut, mut.dashboard.dashboardSortType);
+};
 export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
+};
+export const AD_BIDS_SORT_DESC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
+  setLeaderboardMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
+  setSortDescending(mut);
 };
 export const AD_BIDS_SORT_BY_VALUE: TestDashboardMutation = (mut) => {
   toggleSort(mut, DashboardState_LeaderboardSortType.VALUE);
