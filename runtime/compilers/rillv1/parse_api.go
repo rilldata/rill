@@ -10,8 +10,10 @@ import (
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
-	DataYAML `yaml:",inline" mapstructure:",squash"`
-	OpenAPI  *OpenAPIYAML `yaml:"openapi"`
+	DataYAML           `yaml:",inline" mapstructure:",squash"`
+	OpenAPI            *OpenAPIYAML        `yaml:"openapi"`
+	Security           *SecurityPolicyYAML `yaml:"security"`
+	SkipNestedSecurity bool                `yaml:"skip_nested_security"`
 }
 
 type OpenAPIYAML struct {
@@ -77,6 +79,16 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
 
+	securityRules, err := tmp.Security.Proto()
+	if err != nil {
+		return fmt.Errorf("failed to parse security rules: %w", err)
+	}
+	for _, rule := range securityRules {
+		if rule.GetAccess() == nil {
+			return fmt.Errorf("the 'api' resource type only supports 'access' security rules")
+		}
+	}
+
 	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
@@ -88,6 +100,8 @@ func (p *Parser) parseAPI(node *Node) error {
 	r.APISpec.OpenapiSummary = openapiSummary
 	r.APISpec.OpenapiParameters = openapiParams
 	r.APISpec.OpenapiResponseSchema = openapiSchema
+	r.APISpec.SecurityRules = securityRules
+	r.APISpec.SkipNestedSecurity = tmp.SkipNestedSecurity
 
 	return nil
 }

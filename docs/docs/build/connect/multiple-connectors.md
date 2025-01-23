@@ -51,7 +51,7 @@ sql: "select * from table_B"
 
 ## Setting credentials for each connector when deploying to Rill Cloud
 
-Finally, when deploying the project to Rill Cloud, you will want to follow the same steps to [set the credentials](/build/credentials/#setting-credentials-for-a-rill-cloud-project) for each connector.
+Finally, when deploying the project to Rill Cloud, you will want to follow the same steps to [set the credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud) for each connector.
 
 If using `rill env configure`, you should be prompted to input the correct `connector.<connector_name>.dsn` connection strings.
 
@@ -64,4 +64,4 @@ connector.snowflake-a.dsn="<input_connectionA_dsn>"
 connector.snowflake-b.dsn="<input_connectionB_dsn>"
 ```
 
-Then, you can use `rill env push` and `rill env pull` as necessary to [push and pull your credentials](/build/credentials/#pushing-and-pulling-credentials-to--from-rill-cloud) respectively for a deployed project on Rill Cloud.
+Then, you can use `rill env push` and `rill env pull` as necessary to [push and pull your credentials](/build/credentials/#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) respectively for a deployed project on Rill Cloud.

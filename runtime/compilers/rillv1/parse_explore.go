@@ -7,6 +7,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
@@ -165,18 +166,14 @@ func (p *Parser) parseExplore(node *Node) error {
 	// Build and validate time ranges
 	var timeRanges []*runtimev1.ExploreTimeRange
 	for _, tr := range tmp.TimeRanges {
-		if err := validateISO8601(tr.Range, false, false); err != nil {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
 			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
 		}
 		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
 		for _, ctr := range tr.ComparisonTimeRanges {
-			if err := validateISO8601(ctr.Offset, false, false); err != nil {
-				return fmt.Errorf("invalid comparison offset %q: %w", ctr.Offset, err)
-			}
-			if ctr.Range != "" {
-				if err := validateISO8601(ctr.Range, false, false); err != nil {
-					return fmt.Errorf("invalid comparison range %q: %w", ctr.Range, err)
-				}
+			err = rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
+			if err != nil {
+				return err
 			}
 			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
 				Offset: ctr.Offset,
@@ -198,7 +195,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	var defaultPreset *runtimev1.ExplorePreset
 	if tmp.Defaults != nil {
 		if tmp.Defaults.TimeRange != "" {
-			if err := validateISO8601(tmp.Defaults.TimeRange, false, false); err != nil {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
 				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
 			}
 		}

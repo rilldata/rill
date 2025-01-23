@@ -39,6 +39,7 @@
     hint="Selection of {type} from the underlying metrics view for inclusion on the dashboard"
   />
   <FieldSwitcher
+    expand
     {fields}
     {selected}
     onClick={(_, field) => {

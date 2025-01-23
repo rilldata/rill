@@ -3,14 +3,12 @@
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
-  import {
-    getResourceKindTagColor,
-    prettyReconcileStatus,
-  } from "./display-utils";
+  import { getResourceKindTagColor } from "./display-utils";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/svelte-table";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
-  import { formatDate } from "@rilldata/web-common/components/table/utils";
+  import RefreshCell from "./RefreshCell.svelte";
+  import NameCell from "./NameCell.svelte";
 
   export let data: V1Resource[];
 
@@ -18,7 +16,7 @@
     {
       accessorKey: "title",
       header: "Type",
-      enableSorting: false,
+      accessorFn: (row) => row.meta.name.kind,
       cell: ({ row }) => {
         const prettyKind = prettyResourceKind(row.original.meta.name.kind);
         const color = getResourceKindTagColor(row.original.meta.name.kind);
@@ -31,40 +29,44 @@
     {
       accessorFn: (row) => row.meta.name.name,
       header: "Name",
-    },
-    {
-      accessorFn: (row) => row.meta.reconcileStatus,
-      header: "Execution status",
-      cell: ({ row }) =>
-        prettyReconcileStatus(row.original.meta.reconcileStatus),
+      cell: ({ getValue }) =>
+        flexRender(NameCell, {
+          name: getValue() as string,
+        }),
     },
     {
       accessorFn: (row) => row.meta.reconcileError,
-      header: "Error",
+      header: "Status",
       cell: ({ row }) =>
         flexRender(ResourceErrorMessage, {
           message: row.original.meta.reconcileError,
+          status: row.original.meta.reconcileStatus,
         }),
+      meta: {
+        marginLeft: "1",
+      },
     },
     {
       accessorFn: (row) => row.meta.stateUpdatedOn,
       header: "Last refresh",
-      cell: (info) => {
-        if (!info.getValue()) return "-";
-        const date = formatDate(info.getValue() as string);
-        return date;
-      },
+      cell: (info) =>
+        flexRender(RefreshCell, {
+          date: info.getValue() as string,
+        }),
     },
     {
       accessorFn: (row) => row.meta.reconcileOn,
       header: "Next refresh",
-      cell: (info) => {
-        if (!info.getValue()) return "-";
-        const date = formatDate(info.getValue() as string);
-        return date;
-      },
+      cell: (info) =>
+        flexRender(RefreshCell, {
+          date: info.getValue() as string,
+        }),
     },
   ];
 </script>
 
-<BasicTable {data} {columns} />
+<BasicTable
+  {data}
+  {columns}
+  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) "
+/>

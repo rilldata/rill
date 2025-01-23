@@ -2,8 +2,8 @@
   import ColorInput from "@rilldata/web-common/components/color-picker/ColorInput.svelte";
   import FieldSwitcher from "@rilldata/web-common/components/forms/FieldSwitcher.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
   import type { FieldConfig } from "../components/charts/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
   export let key: string;
   export let label: string;
@@ -30,10 +30,10 @@
 
   <FieldSwitcher
     small
-    fields={["value", "Split by"]}
+    fields={["One color", "Split by"]}
     {selected}
     onClick={(_, field) => {
-      if (field === "value") {
+      if (field === "One color") {
         selected = 0;
         onChange(color);
       } else if (field === "Split by") {
@@ -52,7 +52,7 @@
       }}
     />
   {:else if selected === 1}
-    <FieldSelectorDropdown
+    <SingleFieldInput
       metricName={metricsView}
       id={`${key}-field`}
       type="dimension"

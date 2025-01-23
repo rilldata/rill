@@ -1,10 +1,10 @@
 ---
 title: "Let's get back to our project"
 description:  Further build on project
-sidebar_label: "Advanced SQL modeling"
+sidebar_label: "SQL modeling continued"
 sidebar_position: 16
 ---
-## Advanced SQL modeling
+##  SQL modeling continued
 
 In order to prepare for some further topics to be discussed, let's revisit our SQL model.
 

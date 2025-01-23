@@ -21,13 +21,17 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	configureCommand := &cobra.Command{
-		Use:   "configure",
+		Use:   "configure [<project-name>]",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {
 				return err
+			}
+
+			if len(args) > 0 {
+				projectName = args[0]
 			}
 
 			// If projectPath is provided, normalize it

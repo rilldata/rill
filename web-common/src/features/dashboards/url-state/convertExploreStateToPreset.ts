@@ -71,7 +71,7 @@ function getTimeRangeFields(
     timeControlsState.selectedComparisonTimeRange?.name
   ) {
     preset.compareTimeRange = toTimeRangeParam(
-      exploreState.selectedComparisonTimeRange,
+      timeControlsState.selectedComparisonTimeRange,
     );
     preset.comparisonMode =
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;

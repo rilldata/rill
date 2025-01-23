@@ -1,16 +1,11 @@
 name: Build and Test docs
 on:
-  push:
-    tags:
-      - "*"
-    paths:
-      - ".github/workflows/docs-check.yml"
-      - "docs/**"
   workflow_dispatch:
   pull_request:
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
+      - "cli/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
@@ -26,6 +21,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      # - name: Filter modified codepaths
+      #   uses: dorny/paths-filter@v3
+      #   id: filter
+      #   with:
+      #     filters: |
+      #       cli:
+      #         - "cli/**"
+
+      # - name: Check if new files were created
+      #   if: ${{ steps.filter.outputs.cli == 'true' }}
+      #   run: |
+      #     make docs.generate
+      #     git diff --exit-code || (echo "New files were created, please run 'make docs.generate' locally and commit the changes" && exit 0)
 
       - name: Build docs
         run: |-

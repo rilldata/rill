@@ -20,9 +20,8 @@ export const commonOptions: Record<
     type: "text",
     optional: true,
     showInUI: true,
-    label: "Description",
+    label: "Caption",
   },
-  // position: { type: "text", showInUI: false },
 };
 
 export function getFilterOptions(
@@ -74,6 +73,7 @@ export function isCanvasComponentType(
   if (!value) return false;
   return [
     "line_chart",
+    "area_chart",
     "bar_chart",
     "stacked_bar",
     "markdown",
@@ -87,22 +87,24 @@ export function isChartComponentType(
   value: string | undefined,
 ): value is CanvasComponentType {
   if (!value) return false;
-  return ["line_chart", "bar_chart", "stacked_bar"].includes(
+  return ["line_chart", "bar_chart", "stacked_bar", "area_chart"].includes(
     value as CanvasComponentType,
   );
 }
 
-export function getComponentRegistry(
-  fileArtifact: FileArtifact,
-): Record<CanvasComponentType, CanvasComponentObj> {
+export function getComponentRegistry(): Record<
+  CanvasComponentType,
+  CanvasComponentObj
+> {
   return {
-    kpi: new KPIComponent(fileArtifact),
-    markdown: new MarkdownCanvasComponent(fileArtifact),
-    table: new TableCanvasComponent(fileArtifact),
-    image: new ImageComponent(fileArtifact),
-    bar_chart: new ChartComponent(fileArtifact),
-    line_chart: new ChartComponent(fileArtifact),
-    stacked_bar: new ChartComponent(fileArtifact),
+    kpi: new KPIComponent(),
+    markdown: new MarkdownCanvasComponent(),
+    table: new TableCanvasComponent(),
+    image: new ImageComponent(),
+    bar_chart: new ChartComponent(),
+    line_chart: new ChartComponent(),
+    stacked_bar: new ChartComponent(),
+    area_chart: new ChartComponent(),
   };
 }
 
@@ -115,6 +117,7 @@ const displayMap: Record<CanvasComponentType, string> = {
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  area_chart: "Chart",
 };
 
 export function getHeaderForComponent(componentType: string | undefined) {

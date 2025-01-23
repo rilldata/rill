@@ -6,14 +6,13 @@
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog/index.js";
   import { Button } from "@rilldata/web-common/components/button/index.js";
 
   export let open = false;
   export let onRefresh: () => void;
 
-  async function handleRefresh() {
+  function handleRefresh() {
     try {
       onRefresh();
       open = false;
@@ -24,9 +23,6 @@
 </script>
 
 <AlertDialog bind:open>
-  <AlertDialogTrigger asChild>
-    <div class="hidden"></div>
-  </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>Refresh all sources and models?</AlertDialogTitle>

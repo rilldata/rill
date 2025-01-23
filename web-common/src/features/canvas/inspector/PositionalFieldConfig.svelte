@@ -1,32 +1,88 @@
 <script lang="ts">
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FieldConfig } from "../components/charts/types";
-  import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
   export let key: string;
   export let config: { label?: string };
   export let metricsView: string;
-  export let value: FieldConfig;
+  export let fieldConfig: FieldConfig;
   export let onChange: (updatedConfig: FieldConfig) => void;
 
-  $: isDimension = key === "x";
+  const {
+    canvasEntity: {
+      spec: { getTimeDimensionForMetricView },
+    },
+  } = getCanvasStateManagers();
 
-  function updateFieldConfig(field: string) {
-    const updatedConfig: FieldConfig = {
-      ...value,
-      field,
-      type: isDimension ? "nominal" : "quantitative",
-    };
+  $: isDimension = key === "x";
+  $: timeDimension = getTimeDimensionForMetricView(metricsView);
+
+  function updateFieldConfig(fieldName: string) {
+    const isTime = fieldName === "__time";
+
+    let updatedConfig: FieldConfig;
+    if (isTime && $timeDimension) {
+      updatedConfig = {
+        ...fieldConfig,
+        field: $timeDimension,
+        type: "temporal",
+      };
+    } else {
+      updatedConfig = {
+        ...fieldConfig,
+        field: fieldName,
+        type: isTime ? "temporal" : isDimension ? "nominal" : "quantitative",
+      };
+    }
+
     onChange(updatedConfig);
   }
+
+  function updateFieldProperty(property: keyof FieldConfig, value: any) {
+    const updatedConfig: FieldConfig = {
+      ...fieldConfig,
+      [property]: value,
+    };
+
+    onChange(updatedConfig);
+  }
+
+  let isDropdownOpen = false;
 </script>
 
-<div class="space-y-2">
-  <FieldSelectorDropdown
-    label={config.label || key}
+<div class="gap-y-1">
+  <div class="flex justify-between items-center">
+    <InputLabel small label={config.label ?? key} id={key} />
+    <DropdownMenu.Root bind:open={isDropdownOpen}>
+      <DropdownMenu.Trigger class="flex-none">
+        <IconButton rounded active={isDropdownOpen}>
+          <ThreeDot size="16px" />
+        </IconButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align="start" class="w-[250px]">
+        <DropdownMenu.CheckboxItem
+          checked={fieldConfig?.showAxisTitle}
+          on:click={async () => {
+            updateFieldProperty("showAxisTitle", !fieldConfig?.showAxisTitle);
+          }}
+        >
+          <span class="ml-2">Show axis title</span>
+        </DropdownMenu.CheckboxItem>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </div>
+
+  <SingleFieldInput
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}
-    selectedItem={value?.field}
+    includeTime
+    selectedItem={fieldConfig?.field}
     onSelect={async (field) => {
       updateFieldConfig(field);
     }}

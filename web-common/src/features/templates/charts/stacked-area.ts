@@ -1,19 +1,12 @@
+import type { TooltipValue } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 import type { ChartField } from "./build-template";
 import {
   multiLayerBaseSpec,
   sanitizeValueForVega,
   sanitizeValuesForSpec,
 } from "./utils";
-import { ScrubBoxColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
 
-/** Temporary solution for the lack of vega lite type exports */
-interface TooltipValue {
-  title?: string;
-  field: string;
-  format?: string;
-  formatType?: string;
-  type: "quantitative" | "temporal" | "nominal" | "ordinal";
-}
 export function buildStackedArea(
   timeField: ChartField,
   quantitativeField: ChartField,

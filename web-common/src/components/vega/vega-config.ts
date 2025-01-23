@@ -51,7 +51,15 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
   shape: { stroke: defaultMarkColor },
   symbol: { fill: defaultMarkColor },
 
-  legend: { orient: "top" },
+  legend: {
+    orient: "top",
+    labelFontSize: 11,
+    labelColor: axisLabelColor,
+    titleColor: axisLabelColor,
+    labelFontWeight: 400,
+    titleFontWeight: 500,
+    titleFontSize: 12,
+  },
   axisY: {
     orient: "right",
     gridColor: gridColor,
@@ -67,7 +75,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
-    titleFontWeight: "bold",
+    titleFontWeight: 500,
     titlePadding: 10,
     labelOverlap: false,
   },
@@ -87,7 +95,7 @@ export const getRillTheme: (isCustomDashboard: boolean) => Config = (
     titleColor: axisLabelColor,
     titleFont: "Inter, sans-serif",
     titleFontSize: 12,
-    titleFontWeight: "bold",
+    titleFontWeight: 500,
     titlePadding: 10,
   },
   view: {

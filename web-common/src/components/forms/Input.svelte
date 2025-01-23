@@ -9,6 +9,7 @@
   const voidFunction = () => {};
 
   export let value: number | string | undefined;
+  export let inputType: "text" | "number" = "text";
   export let id = "";
   export let label = "";
   export let description = "";
@@ -36,6 +37,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
+  export let leftPadding = 8;
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -60,7 +62,6 @@
     },
   ) => void = voidFunction;
   export let onEscape: () => void = voidFunction;
-  export let inputType: "text" | "number" = "text";
   export let onFieldSwitch: (i: number, value: string) => void = voidFunction;
 
   let hitEnter = false;
@@ -98,6 +99,7 @@
     },
   ) {
     if (e.key === "Enter") {
+      if (e.shiftKey) return;
       hitEnter = true;
       inputElement?.blur();
       onEnter(e);
@@ -134,6 +136,7 @@
   {#if !options}
     <div
       class="input-wrapper {textClass}"
+      style:padding-left="{leftPadding}px"
       style:width
       style:font-family={fontFamily}
     >
@@ -168,10 +171,18 @@
           name={id}
           class={size}
           {disabled}
-          value={value ?? ""}
+          value={value ?? (inputType === "number" ? 0 : "")}
           autocomplete={autocomplete ? "on" : "off"}
           bind:this={inputElement}
           on:input={(e) => {
+            if (inputType === "number") {
+              if (e.currentTarget.value === "") {
+                value = "";
+              } else {
+                value = e.currentTarget.valueAsNumber;
+              }
+              return;
+            }
             value = e.currentTarget.value;
             onInput(value, e);
           }}
@@ -256,7 +267,7 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-2 pr-0.5;
+    @apply flex justify-center items-center pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
@@ -270,6 +281,9 @@
     @apply outline-none border-0;
     @apply cursor-text;
     vertical-align: middle;
+  }
+
+  input {
     @apply truncate;
   }
 

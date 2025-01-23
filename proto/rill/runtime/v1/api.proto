@@ -532,16 +532,31 @@ message UnpackEmptyResponse {}
 // Request message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // Model to base the metrics view on.
+  // If you set this, do NOT set connector, database, database_schema or table.
+  string model = 8;
+  // Connector for the table.
+  // See "table" for more details.
   string connector = 2;
+  // Database for the table.
+  // See "table" for more details.
   string database = 6;
+  // Database schema for the table.
+  // See "table" for more details.
   string database_schema = 7;
+  // Table to base the metrics view on.
+  // If you set this, do NOT set model.
   string table = 3;
+  // Path to save the metrics view file to.
   string path = 4;
+  // If true, the AI will be used to generate the metrics view file.
+  // Otherwise, it falls back to a simpler heuristic approach.
   bool use_ai = 5;
 }
 
 // Response message for RuntimeService.GenerateMetricsViewFile
 message GenerateMetricsViewFileResponse {
+  // Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
   bool ai_succeeded = 1;
 }
 
