@@ -346,7 +346,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			defer os.RemoveAll(downloadDir)
 			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
-			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
+			return archive.Download(ctx, downloadURL, downloadDst, projPath, false, true)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -1053,7 +1053,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	}
 
 	if empty {
-		// we need to add a remote if the repo was completely empty
+		// we need to add a remote as the new repo if the repo was completely empty
 		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
 		if err != nil {
 			return fmt.Errorf("failed to create remote: %w", err)

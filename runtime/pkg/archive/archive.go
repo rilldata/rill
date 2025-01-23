@@ -23,7 +23,7 @@ var ignoreFileList = []string{
 	"/.git",
 }
 
-func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean bool) error {
+func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean, ignorePaths bool) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func Download(ctx context.Context, downloadURL, downloadDst, projPath string, cl
 	}
 
 	// untar to the project path
-	err = untar(downloadDst, filepath.Clean(projPath))
+	err = untar(downloadDst, filepath.Clean(projPath), ignorePaths)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func createTar(writer io.Writer, files []drivers.DirEntry, root string) error {
 	return nil
 }
 
-func untar(src, dest string) error {
+func untar(src, dest string, ignorePaths bool) error {
 	file, err := os.Open(src)
 	if err != nil {
 		return err
@@ -177,6 +177,12 @@ func untar(src, dest string) error {
 		if err != nil {
 			return err
 		}
+
+		// nolint:gosec // sanitizeArchivePath checks for GSC-G305 and throws error but linter cannot know this
+		if ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil) {
+			continue
+		}
+
 		switch header.Typeflag {
 		case tar.TypeDir:
 			// Handle directory
