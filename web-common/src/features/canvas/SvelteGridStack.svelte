@@ -42,18 +42,22 @@
 
   let gridEl: HTMLDivElement;
 
-  $: options = {
-    column: 12,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: false,
-    float: true,
-    staticGrid: embed,
-    // Note: There is no gap property in gridstack.js, so we use margin to set the gap
-    // TODO: might need to half the gap for the top and bottom, require special handling
-    margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
-  } as GridStackOptions;
+  let columnCount = 12; // Default column count
+  let resizeObserver: ResizeObserver;
+
+  function updateColumnCount(width: number) {
+    if (width < 398) {
+      // Small screens/mobile
+      columnCount = 1;
+    } else {
+      // Large screens
+      columnCount = 12;
+    }
+    if (grid) {
+      console.log("[SvelteGridStack] Updating columns to:", columnCount);
+      grid.column(columnCount);
+    }
+  }
 
   function handleMouseDown(event: MouseEvent) {
     const target = event.target as HTMLElement;
@@ -113,6 +117,19 @@
 
     grid.commit();
   }
+
+  onMount(() => {
+    // Initialize ResizeObserver to watch container width
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        updateColumnCount(entry.contentRect.width);
+      }
+    });
+
+    if (gridEl) {
+      resizeObserver.observe(gridEl);
+    }
+  });
 
   onMount(async () => {
     const { GridStack } = await import("gridstack");
@@ -198,7 +215,23 @@
       grid.removeAll(true);
       grid.destroy(true);
     }
+
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+    }
   });
+
+  // Update options with dynamic column count
+  $: options = {
+    column: columnCount,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: false,
+    float: true,
+    staticGrid: embed,
+    margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
+  } as GridStackOptions;
 </script>
 
 <div bind:this={gridEl} class="grid-stack">

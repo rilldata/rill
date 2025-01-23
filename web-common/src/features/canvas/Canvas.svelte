@@ -205,7 +205,18 @@
   }
 </script>
 
-{#if items.length > 0}
+<!-- This is based on figma, we need a `disabled` prop on the filters -->
+<!-- FIXME: blocked by platform support -->
+<div
+  id="header"
+  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+>
+  <CanvasFilters />
+</div>
+
+{#if items.length === 0}
+  <BlankCanvas on:add={handleAdd} />
+{:else}
   <CanvasDashboardPreview
     {items}
     showFilterBar={filtersEnabled}
@@ -214,8 +225,6 @@
     on:update={handleUpdate}
     on:delete={handleDelete}
   />
-{:else}
-  <BlankCanvas />
 {/if}
 
 <svelte:window
