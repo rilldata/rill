@@ -12,7 +12,6 @@
   import { fly } from "svelte/transition";
   import { useModelHasTimeSeries } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
-  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
