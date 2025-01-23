@@ -14,7 +14,7 @@
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentTabs from "./ComponentTabs.svelte";
-  import FiltersMapper from "./FiltersMapper.svelte";
+  import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
 
   export let selectedComponentName: string;
@@ -69,7 +69,11 @@
           paramValues={rendererProperties}
         />
       {:else if currentTab === "filters"}
-        <FiltersMapper {component} paramValues={rendererProperties} />
+        <FiltersMapper
+          {selectedComponentName}
+          {component}
+          paramValues={rendererProperties}
+        />
       {:else if currentTab === "config"}
         <VegaConfigInput {component} paramValues={rendererProperties} />
       {/if}

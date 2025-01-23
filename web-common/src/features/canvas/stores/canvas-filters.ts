@@ -4,7 +4,10 @@ import {
   getMeasureDisplayName,
 } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import {
+  mergeDimensionAndMeasureFilter,
+  splitWhereFilter,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { DimensionFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import type { MeasureFilterItem } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
@@ -17,8 +20,10 @@ import {
   isExpressionUnsupported,
   matchExpressionByName,
   negateExpression,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
   MetricsViewSpecDimensionV2,
   V1Expression,
@@ -83,6 +88,7 @@ export class CanvasFilters {
   >;
   includedDimensionValues: Readable<(dimensionName: string) => unknown[]>;
   hasAtLeastOneDimensionFilter: Readable<() => boolean>;
+  filterText: Readable<string>;
 
   constructor(spec: CanvasResolvedSpec) {
     // -----------------------------
@@ -295,6 +301,22 @@ export class CanvasFilters {
             $whereFilter.cond.exprs.length > 0
           );
         };
+      },
+    );
+
+    this.filterText = derived(
+      [this.whereFilter, this.dimensionThresholdFilters],
+      ([$whereFilter, $dtf]) => {
+        const mergedFilters =
+          sanitiseExpression(
+            mergeDimensionAndMeasureFilter(
+              $whereFilter ?? createAndExpression([]),
+              $dtf,
+            ),
+            undefined,
+          ) ?? createAndExpression([]);
+
+        return convertExpressionToFilterParam(mergedFilters);
       },
     );
   }

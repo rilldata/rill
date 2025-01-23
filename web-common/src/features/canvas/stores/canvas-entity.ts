@@ -9,12 +9,16 @@ import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types"
 import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, writable, type Writable } from "svelte/store";
+import { CanvasComponentState } from "./canvas-component";
 import { CanvasFilters } from "./canvas-filters";
 import { CanvasResolvedSpec } from "./canvas-spec";
 import { CanvasTimeControls } from "./canvas-time-control";
 
 export class CanvasEntity {
   name: string;
+
+  /** Local state store for canvas components */
+  components: Map<string, CanvasComponentState>;
 
   /**
    * Time controls for the canvas entity containing various
@@ -44,21 +48,32 @@ export class CanvasEntity {
 
     this.name = name;
 
+    this.components = new Map();
     this.selectedComponentIndex = writable(null);
     this.spec = new CanvasResolvedSpec(validSpecStore);
     this.timeControls = new CanvasTimeControls(validSpecStore);
     this.filters = new CanvasFilters(this.spec);
   }
 
-  setSelectedComponentIndex(index: number | null) {
+  setSelectedComponentIndex = (index: number | null) => {
     this.selectedComponentIndex.set(index);
-  }
+  };
+
+  useComponent = (componentName: string) => {
+    let componentEntity = this.components.get(componentName);
+
+    if (!componentEntity) {
+      componentEntity = new CanvasComponentState(this.spec);
+      this.components.set(componentName, componentEntity);
+    }
+    return componentEntity;
+  };
 
   /**
    * Helper method to get the time range and where clause for a given metrics view
    * with the ability to override the time range and filter
    */
-  createTimeAndFilterStore(
+  createTimeAndFilterStore = (
     metricsViewName: string,
     {
       timeRangeStore,
@@ -67,7 +82,7 @@ export class CanvasEntity {
       timeRangeStore: Writable<DashboardTimeControls | undefined>;
       overrideTimeRange?: string;
     },
-  ) {
+  ) => {
     const { timeControls, filters, spec } = this;
 
     const dimensionsStore = spec.getDimensionsForMetricView(metricsViewName);
@@ -99,5 +114,5 @@ export class CanvasEntity {
         return { timeRange, where };
       },
     );
-  }
+  };
 }
