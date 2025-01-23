@@ -104,15 +104,21 @@
   async function handleUpdate(
     e: CustomEvent<{
       index: number;
-      position: Vector;
-      dimensions: Vector;
-      items: V1CanvasItem[];
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      // position: Vector;
+      // dimensions: Vector;
+      // items: V1CanvasItem[];
     }>,
   ) {
     console.log("[Canvas] Handling update:", {
       index: e.detail.index,
-      position: e.detail.position,
-      dimensions: e.detail.dimensions,
+      x: e.detail.x,
+      y: e.detail.y,
+      w: e.detail.w,
+      h: e.detail.h,
     });
 
     const parsedDocument = parseDocument($editorContent ?? "");
@@ -123,15 +129,13 @@
       return;
     }
 
-    e.detail.items.forEach((item, idx) => {
-      const node = items.get(idx);
-      if (node) {
-        node.set("width", item.width);
-        node.set("height", item.height);
-        node.set("x", item.x);
-        node.set("y", item.y);
-      }
-    });
+    const node = items.get(e.detail.index);
+    if (node) {
+      node.set("width", e.detail.w);
+      node.set("height", e.detail.h);
+      node.set("x", e.detail.x);
+      node.set("y", e.detail.y);
+    }
 
     updateEditorContent(parsedDocument.toString(), true);
     await saveLocalContent();

@@ -10,7 +10,7 @@
     GridStackNode,
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { CanvasFilters } from "./stores/canvas-filters";
 
   export let items: V1CanvasItem[];
@@ -119,7 +119,7 @@
   </div>
 {/if}
 
-<DashboardWrapper bind:contentRect height={maxBottom}>
+<CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <SvelteGridStack
     bind:grid
     {items}
@@ -139,4 +139,4 @@
       on:delete={handleDelete}
     />
   </SvelteGridStack>
-</DashboardWrapper>
+</CanvasDashboardWrapper>
