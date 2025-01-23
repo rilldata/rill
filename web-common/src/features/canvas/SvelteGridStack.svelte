@@ -286,6 +286,16 @@
 
   :global(.canvas-component) {
     border: 2px solid transparent;
+    cursor: grab;
+  }
+
+  :global(.canvas-component:hover) {
+    cursor: pointer !important;
+  }
+
+  :global(.canvas-component:active),
+  :global(.canvas-component.ui-draggable-dragging) {
+    cursor: grabbing !important;
   }
 
   :global(.canvas-component[data-selected="true"]) {

@@ -1,7 +1,5 @@
 import * as defaults from "./constants";
-import { groupItemsByRow } from "./grid-engine";
 import type { PositionedItem, RowGroup, Vector } from "./types";
-import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 
 export const vector = {
   add: (add: Vector, initial: Vector): Vector => {
@@ -114,68 +112,4 @@ export function findNextAvailablePosition(
   );
   const newY = lastRowY; // Place the new row below the tallest existing item
   return [0, newY];
-}
-
-export function flattenRowGroups(rows: RowGroup[]): V1CanvasItem[] {
-  return rows.flatMap((row) => row.items);
-}
-
-export function getRowIndex(item: V1CanvasItem, items: V1CanvasItem[]): number {
-  const rows = groupItemsByRow(items);
-  return rows.findIndex((row) =>
-    row.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
-  );
-}
-
-export function getColumnIndex(
-  item: V1CanvasItem,
-  items: V1CanvasItem[],
-): number {
-  const rows = groupItemsByRow(items);
-  const row = rows.find((r) =>
-    r.items.some((rowItem) => rowItem.x === item.x && rowItem.y === item.y),
-  );
-
-  if (!row) return 0;
-
-  // Sort items in the row by x position and find index
-  const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-  return sortedItems.findIndex(
-    (rowItem) => rowItem.x === item.x && rowItem.y === item.y,
-  );
-}
-
-export function redistributeRowColumns(row: { items: V1CanvasItem[] }) {
-  const totalItems = row.items.length;
-  if (totalItems === 0) return;
-
-  // Total available columns
-  const totalColumns = defaults.COLUMN_COUNT; // Should be 12
-
-  // Distribute columns evenly among items
-  const baseWidth = Math.floor(totalColumns / totalItems); // Minimum width per item
-  const extraColumns = totalColumns % totalItems; // Remainder columns to distribute
-
-  // Sort items by x position to maintain visual order
-  const sortedItems = [...row.items].sort((a, b) => (a.x ?? 0) - (b.x ?? 0));
-
-  // Update widths and x positions
-  let currentX = 0;
-  sortedItems.forEach((item, index) => {
-    // Assign base width to each item
-    item.width = baseWidth;
-
-    // Distribute any leftover columns to the first few items
-    if (index < extraColumns) {
-      item.width += 1;
-    }
-
-    // Update the x position
-    item.x = currentX;
-
-    // Increment currentX for the next item
-    currentX += item.width;
-  });
-
-  return sortedItems;
 }

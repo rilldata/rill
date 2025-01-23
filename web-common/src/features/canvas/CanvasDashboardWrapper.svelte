@@ -2,7 +2,7 @@
   import * as defaults from "./constants";
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-transparent";
+  export let bgColor = "bg-white";
 </script>
 
 <div
@@ -11,7 +11,7 @@
 >
   <div
     bind:contentRect
-    class="canvas {color} min-h-full"
+    class="canvas {bgColor} min-h-full"
     style:height="{height}px"
     style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
   >
