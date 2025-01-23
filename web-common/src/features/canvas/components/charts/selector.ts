@@ -11,7 +11,6 @@ import {
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   type V1MetricsViewAggregationResponseDataItem,
-  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -98,9 +97,15 @@ export function createChartDataQuery(
   limit = "500",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
-  const {
-    timeControls: { selectedTimeRange },
-  } = ctx.canvasEntity;
+  const { canvasEntity } = ctx;
+
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    config.metrics_view,
+    {
+      componentTimeRange: config.time_range,
+      componentFilter: config.dimension_filters,
+    },
+  );
 
   let measures: V1MetricsViewAggregationMeasure[] = [];
   let dimensions: V1MetricsViewAggregationDimension[] = [];
@@ -110,14 +115,9 @@ export function createChartDataQuery(
   }
 
   return derived(
-    [ctx.runtime, selectedTimeRange],
-    ([runtime, $selectedTimeRange], set) => {
-      let timeRange: V1TimeRange = {
-        start: $selectedTimeRange?.start?.toISOString(),
-        end: $selectedTimeRange?.end?.toISOString(),
-      };
-
-      const timeGrain = $selectedTimeRange?.interval;
+    [ctx.runtime, timeAndFilterStore],
+    ([runtime, $timeAndFilterStore], set) => {
+      const { timeRange, where, timeGrain } = $timeAndFilterStore;
 
       if (config.x?.type === "nominal" && config.x?.field) {
         dimensions = [{ name: config.x?.field }];
@@ -129,24 +129,21 @@ export function createChartDataQuery(
         dimensions = [...dimensions, { name: config.color.field }];
       }
 
-      if (config.time_range) {
-        timeRange = { isoDuration: config.time_range };
-      }
-
       return createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         config.metrics_view,
         {
           measures,
           dimensions,
-          where: undefined,
+          where,
           timeRange,
           limit,
           offset,
         },
         {
           query: {
-            enabled: !!$selectedTimeRange?.start && !!$selectedTimeRange?.end,
+            enabled:
+              !!config.time_range || (!!timeRange?.start && !!timeRange?.end),
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },

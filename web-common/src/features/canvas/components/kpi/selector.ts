@@ -18,16 +18,16 @@ export function useKPITotals(
   instanceId: string,
   metricsViewName: string,
   measure: string,
-  overrideTimeRange: string | undefined,
+  componentTimeRange: string | undefined,
+  componentFilter: string | undefined,
 ): CreateQueryResult<number | null, HTTPError> {
   const { canvasEntity } = ctx;
-  const { selectedTimeRange } = canvasEntity.timeControls;
 
   const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
     metricsViewName,
     {
-      timeRangeStore: selectedTimeRange,
-      overrideTimeRange: overrideTimeRange,
+      componentTimeRange,
+      componentFilter,
     },
   );
 
@@ -43,7 +43,7 @@ export function useKPITotals(
       {
         query: {
           enabled:
-            !!overrideTimeRange || (!!timeRange?.start && !!timeRange?.end),
+            !!componentTimeRange || (!!timeRange?.start && !!timeRange?.end),
           select: (data) => {
             return data.data?.[0]?.[measure] ?? null;
           },
@@ -60,6 +60,7 @@ export function useKPIComparisonTotal(
   metricsViewName: string,
   measure: string,
   overrideComparisonRange: string | undefined,
+  componentFilter: string | undefined,
 ): CreateQueryResult<number | null, HTTPError> {
   const { canvasEntity } = ctx;
   const { showTimeComparison, selectedComparisonTimeRange } =
@@ -70,7 +71,8 @@ export function useKPIComparisonTotal(
     metricsViewName,
     {
       timeRangeStore: selectedComparisonTimeRange,
-      overrideTimeRange: overrideComparisonRange,
+      componentTimeRange: overrideComparisonRange,
+      componentFilter,
     },
   );
 
@@ -108,7 +110,8 @@ export function useKPISparkline(
   instanceId: string,
   metricsViewName: string,
   measure: string,
-  overrideTimeRange: string | undefined,
+  componentTimeRange: string | undefined,
+  componentFilter: string | undefined,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
   const allTimeRangeQuery = useMetricsViewTimeRange(
     instanceId,
@@ -121,8 +124,8 @@ export function useKPISparkline(
   const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
     metricsViewName,
     {
-      timeRangeStore: selectedTimeRange,
-      overrideTimeRange: overrideTimeRange,
+      componentTimeRange: componentTimeRange,
+      componentFilter,
     },
   );
 
@@ -137,9 +140,9 @@ export function useKPISparkline(
 
       let defaultGrain = selectedRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
 
-      if (overrideTimeRange) {
+      if (componentTimeRange) {
         const overrideRange = isoDurationToTimeRange(
-          overrideTimeRange,
+          componentTimeRange,
           maxTimeDate,
         );
 
