@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as defaults from "./constants";
   export let height: number;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
   export let color = "bg-transparent";
@@ -10,8 +11,9 @@
 >
   <div
     bind:contentRect
-    class="canvas {color} max-w-[1440px] min-h-full"
+    class="canvas {color} min-h-full"
     style:height="{height}px"
+    style:max-width="{defaults.DEFAULT_DASHBOARD_WIDTH}px"
   >
     <slot />
   </div>
