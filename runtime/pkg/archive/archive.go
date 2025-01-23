@@ -172,16 +172,15 @@ func untar(src, dest string, ignorePaths bool) error {
 			return err
 		}
 
-		// nolint:gosec // adding the '..' check here is still triggering gosec for GSC-G305
-		if strings.Contains(header.Name, "..") ||
-			(ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil)) {
-			continue
-		}
-
 		// Determine the proper path for the item
 		target, err := sanitizeArchivePath(dest, header.Name)
 		if err != nil {
 			return err
+		}
+
+		// nolint:gosec // sanitizeArchivePath checks for GSC-G305 and throws error but linter cannot know this
+		if ignorePaths && drivers.IsIgnored(filepath.Join(string(filepath.Separator), header.Name), nil) {
+			continue
 		}
 
 		switch header.Typeflag {
