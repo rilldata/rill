@@ -560,7 +560,13 @@ export class CanvasFilters {
   };
 
   setFiltersFromText = (filterText: string) => {
-    const filter = convertFilterParamToExpression(filterText);
-    this.setFilters(filter);
+    let expr = convertFilterParamToExpression(filterText);
+    if (
+      expr?.cond?.op !== V1Operation.OPERATION_AND &&
+      expr?.cond?.op !== V1Operation.OPERATION_OR
+    ) {
+      expr = createAndExpression([expr]);
+    }
+    this.setFilters(expr);
   };
 }
