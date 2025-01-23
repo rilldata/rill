@@ -18,7 +18,9 @@
     <Subheading twColor="text-slate-600">
       Build fast operational dashboards that your team will actually use.
     </Subheading>
-    <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
+    <Subheading twColor="text-slate-600">Let's get started.</Subheading>
   </div>
-  <Button type="primary" large href="/welcome">Connect your data</Button>
+  <Button type="primary" large href="/welcome/select-connectors">
+    Connect your data
+  </Button>
 </section>

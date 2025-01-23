@@ -11,15 +11,14 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { redirect } from "@sveltejs/kit";
 import { get } from "svelte/store";
 
-export async function load({ url, depends }) {
-  depends("init");
-
+export async function load({ url }) {
+  // depends("init"); // Removing for now, but reconsider later.
   const instanceId = get(runtime).instanceId;
 
   // Redirect to the welcome page if the project is not initialized
   const onboardingState = getOnboardingState(); // TODO: Make sure this doesn't trigger an unnecessary fetch of `onboarding-state.json`
   const initialized = await onboardingState.isInitialized();
-  const inOnboardingFlow = url.pathname.startsWith("/welcome");
+  const inOnboardingFlow = url.pathname.startsWith("/welcome/"); // The trailing slash ensures this does not pick up the base `/welcome` page, which includes the example projects
 
   if (!initialized && !inOnboardingFlow) {
     throw redirect(303, "/welcome");

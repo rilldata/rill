@@ -4,6 +4,7 @@
   import AddDataForm from "@rilldata/web-common/features/sources/modal/AddDataForm.svelte";
   import LocalSourceUpload from "@rilldata/web-common/features/sources/modal/LocalSourceUpload.svelte";
   import { createRuntimeServiceListConnectorDrivers } from "@rilldata/web-common/runtime-client";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
   const { onboardingState } = data;
@@ -17,10 +18,15 @@
     (c) => c.name === firstConnectorName,
   );
 
-  function onContinue(filePath: string) {
-    // TODO: rather than exiting the wizard, go to the "create a dashboard" page
-    onboardingState.cleanUp();
-    goto(`/files/${filePath}`);
+  async function onContinue(filePath: string) {
+    if ($managementType === "rill-managed") {
+      onboardingState.complete();
+      // Navigate to the new source (whether there's an error or not)
+      goto(`/files/${filePath}`);
+    } else {
+      // Continue in the onboarding wizard to create a dashboard
+      goto(`/welcome/make-your-first-dashboard`);
+    }
   }
 
   function onBack() {
@@ -39,13 +45,14 @@
     backHref="/welcome/select-connectors"
   />
 {:else if connectorDriver}
-  <div class="w-[544px] p-6">
+  <div class="w-[544px] p-6 overflow-visible">
     <h2 class="text-lead">Connect to {connectorDriver.displayName}</h2>
     <AddDataForm
       formType={$managementType === "self-managed" ? "connector" : "source"}
       connector={connectorDriver}
       olapDriver={$olapDriver}
-      onSubmit={onContinue}
+      onSuccess={onContinue}
+      reconcileAndCheckForError={true}
     >
       <svelte:fragment slot="actions" let:submitting>
         <div class="flex flex-col gap-y-2">

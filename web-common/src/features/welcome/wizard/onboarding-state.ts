@@ -1,3 +1,4 @@
+import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
@@ -11,6 +12,7 @@ import {
   type V1ListFilesResponse,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
+import { updateRillYAMLWithOlapConnector } from "../../connectors/code-utils";
 import type { OlapDriver } from "../../connectors/olap/olap-config";
 import { EMPTY_PROJECT_TITLE } from "../constants";
 
@@ -23,13 +25,11 @@ export class OnboardingState {
   runtimeInstanceId: string;
 
   constructor() {
-    this.managementType = writable("rill-managed");
-    this.olapDriver = writable("duckdb");
-    this.firstDataSource = writable(undefined);
     this.runtimeInstanceId = get(runtime).instanceId;
   }
 
   async isInitialized() {
+    // Optimization: we LIST all files (which we'll have to do anyway), rather than GET specifically the `rill.yaml` file.
     const filesResponse = await queryClient.fetchQuery<V1ListFilesResponse>({
       queryKey: getRuntimeServiceGetFileQueryKey(
         this.runtimeInstanceId,
@@ -53,32 +53,61 @@ export class OnboardingState {
     return hasRillYAML;
   }
 
-  async fetch() {
-    const response = await queryClient.fetchQuery({
-      queryKey: getRuntimeServiceGetFileQueryKey(this.runtimeInstanceId, {
-        path: ONBOARDING_STATE_FILE_PATH,
-      }),
-      queryFn: () =>
-        runtimeServiceGetFile(this.runtimeInstanceId, {
+  async isOnboardingStateFilePresent() {
+    try {
+      await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(this.runtimeInstanceId, {
           path: ONBOARDING_STATE_FILE_PATH,
         }),
-    });
-
-    // if the file doesn't exist, set the state to default
-    if (!response.blob) {
-      this.managementType.set("rill-managed");
-      this.olapDriver.set("duckdb");
-      this.firstDataSource.set(undefined);
-      return;
+        queryFn: () =>
+          runtimeServiceGetFile(this.runtimeInstanceId, {
+            path: ONBOARDING_STATE_FILE_PATH,
+          }),
+      });
+      return true;
+    } catch {
+      return false;
     }
+  }
 
-    // parse the state
-    const state = JSON.parse(response.blob);
+  async initializeOnboardingState() {
+    // Initialize the state
+    this.managementType = writable("rill-managed");
+    this.olapDriver = writable("duckdb");
+    this.firstDataSource = writable(undefined);
 
-    // set the state
-    this.managementType.set(state.managementType);
-    this.olapDriver.set(state.olapDriver);
-    this.firstDataSource.set(state.firstDataSource);
+    // Create the onboarding state file
+    await this.save();
+  }
+
+  async fetch() {
+    try {
+      const response = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetFileQueryKey(this.runtimeInstanceId, {
+          path: ONBOARDING_STATE_FILE_PATH,
+        }),
+        queryFn: () =>
+          runtimeServiceGetFile(this.runtimeInstanceId, {
+            path: ONBOARDING_STATE_FILE_PATH,
+          }),
+      });
+
+      // parse the state
+      const state = JSON.parse(response.blob);
+
+      // set the state
+      this.managementType = writable(state.managementType);
+      this.olapDriver = writable(state.olapDriver);
+      this.firstDataSource = writable(state.firstDataSource);
+      return;
+    } catch (error) {
+      if (error?.response?.data?.message?.includes("no such file")) {
+        await this.initializeOnboardingState();
+      } else {
+        console.error("throwing error", error);
+        throw error;
+      }
+    }
   }
 
   async save() {
@@ -90,6 +119,7 @@ export class OnboardingState {
 
     const jsonState = JSON.stringify(state);
 
+    console.log("Saving onboarding state", jsonState);
     await runtimeServicePutFile(this.runtimeInstanceId, {
       path: ONBOARDING_STATE_FILE_PATH,
       blob: jsonState,
@@ -156,20 +186,45 @@ export class OnboardingState {
   }
 
   async skipFirstSource() {
-    // unpack the empty project
+    // Unpack an empty project
+    console.log("Unpacking empty project");
     await runtimeServiceUnpackEmpty(this.runtimeInstanceId, {
       displayName: EMPTY_PROJECT_TITLE,
+      force: true,
     });
 
-    // create an OLAP connector file
+    // Create a managed OLAP connector file
+    console.log("Creating managed OLAP connector file");
+    await runtimeServicePutFile(this.runtimeInstanceId, {
+      path: `connectors/${get(this.olapDriver)}.yaml`,
+      blob: `type: connector
+
+driver: ${get(this.olapDriver)}
+managed: true`,
+    });
+
+    // Add the chosen OLAP connector to the rill.yaml file
+    console.log("Updating rill.yaml file");
     await runtimeServicePutFile(this.runtimeInstanceId, {
       path: "rill.yaml",
-      blob: `type: connector
-driver: ${get(this.olapDriver)}`,
+      blob: await updateRillYAMLWithOlapConnector(
+        queryClient,
+        get(this.olapDriver),
+      ),
     });
 
-    // Edit the rill.yaml file
-    // TODO
+    // Delete the onboarding state file
+    console.log("Deleting onboarding state file");
+    try {
+      await runtimeServiceDeleteFile(this.runtimeInstanceId, {
+        path: ONBOARDING_STATE_FILE_PATH,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+
+    // Exit the onboarding wizard, and go to the home page
+    await goto(`/`);
   }
 
   // Clean up all files created by the Add Data form
@@ -193,6 +248,30 @@ driver: ${get(this.olapDriver)}`,
   }
 
   async complete() {
+    // Create a managed connector file
+    if (get(this.managementType) === "rill-managed") {
+      await runtimeServicePutFile(this.runtimeInstanceId, {
+        path: `connectors/${get(this.olapDriver)}.yaml`,
+        blob: `type: connector
+driver: ${get(this.olapDriver)}
+managed: true`,
+        create: true,
+        createOnly: false,
+      });
+    }
+
+    // Update the `rill.yaml` file
+    await runtimeServicePutFile(this.runtimeInstanceId, {
+      path: "rill.yaml",
+      blob: await updateRillYAMLWithOlapConnector(
+        queryClient,
+        get(this.olapDriver),
+      ),
+      create: true,
+      createOnly: false,
+    });
+
+    // Delete the onboarding state file
     await runtimeServiceDeleteFile(this.runtimeInstanceId, {
       path: ONBOARDING_STATE_FILE_PATH,
     });
