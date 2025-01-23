@@ -68,19 +68,24 @@
     }
   }
 
-  // Only update grid after initial load
+  // Reactive grid to handle changes in items
   $: if (grid) {
     console.log("[SvelteGridStack] Updating grid");
 
-    // grid.batchUpdate();
+    grid.batchUpdate();
 
     const currentItems = grid.getGridItems();
     const currentCount = currentItems.length;
     const newCount = items.length;
 
-    // Update existing items
+    console.log("[SvelteGridStack] currentItems", currentItems);
+    console.log("[SvelteGridStack] currentCount", currentCount);
+    console.log("[SvelteGridStack] newCount", newCount);
+
+    // Update existing items and add new ones
     items.forEach((item, i) => {
       if (i < currentCount) {
+        // Update existing widgets
         grid.update(currentItems[i], {
           x: item.x,
           y: item.y,
@@ -88,14 +93,19 @@
           h: item.height,
         });
       } else {
+        // Add new widget
+        console.log("[SvelteGridStack] adding new widget at index", i);
         grid.addWidget({
-          ...item,
-          autoPosition: false,
+          x: item.x,
+          y: item.y,
+          w: item.width,
+          h: item.height,
+          autoPosition: true,
         });
       }
     });
 
-    // Remove extra widgets if we have fewer items now
+    // Explicitly remove widgets that are no longer in the items array
     if (currentCount > newCount) {
       currentItems.slice(newCount).forEach((el) => {
         grid.removeWidget(el, true);
