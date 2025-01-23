@@ -61,6 +61,10 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
+	// Check if the requester is an admin
+	claims := auth.GetClaims(ctx)
+	isAdmin := claims.SecurityClaims().Admin()
+
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
@@ -68,10 +72,10 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		if !access {
+		// Admins can see all resources, even if they don't have access.
+		if !isAdmin && !access {
 			// Remove from the slice
 			rs[i] = rs[len(rs)-1]
-			rs[len(rs)-1] = nil
 			rs = rs[:len(rs)-1]
 			continue
 		}
