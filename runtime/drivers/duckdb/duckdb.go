@@ -417,15 +417,15 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
-			return newDuckDBToDuckDB(c, "duckdb", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		}
 		switch from.Driver() {
 		case "motherduck":
-			return newMotherduckToDuckDB(from, olap, c.logger), true
+			return newMotherduckToDuckDB(from, c, c.logger), true
 		case "postgres":
-			return newDuckDBToDuckDB(c, "postgres", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		case "mysql":
-			return newDuckDBToDuckDB(c, "mysql", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		}
 		if store, ok := from.AsWarehouse(); ok {
 			return NewWarehouseToDuckDB(store, olap, c.logger), true
