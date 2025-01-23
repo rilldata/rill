@@ -89,24 +89,4 @@
     font-size: 12px;
     font-weight: 400;
   }
-
-  /* .canvas-component {
-    border: 2px solid transparent;
-    box-shadow:
-      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
-      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.06);
-  }
-
-  .canvas-component[data-hovered="true"] {
-    box-shadow:
-      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
-      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
-      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
-      0px 4px 6px 0px rgba(15, 23, 42, 0.09);
-  } */
-
-  /* .canvas-component[data-selected="true"] {
-    border-color: var(--color-primary-300);
-  } */
 </style>

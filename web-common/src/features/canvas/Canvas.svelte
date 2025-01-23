@@ -28,8 +28,6 @@
 
   const { canvasEntity } = getCanvasStateManagers();
 
-  $: console.log("[Canvas] selectedIndex", $selectedIndex);
-
   $: workspaceLayout = workspaces.get(fileArtifact.path);
   // Open inspector when a canvas item is selected
   $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
