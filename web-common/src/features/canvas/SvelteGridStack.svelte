@@ -2,7 +2,7 @@
 <!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc -->
 <script lang="ts">
   import type { GridStack, GridStackNode, GridStackOptions } from "gridstack";
-  import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
 
   import "gridstack/dist/gridstack-extra.min.css";
   import "gridstack/dist/gridstack.min.css";
@@ -95,7 +95,7 @@
       } else {
         // Add new widget
         console.log("[SvelteGridStack] adding new widget at index", i);
-        grid.addWidget({
+        const widget = grid.addWidget({
           x: item.x,
           y: item.y,
           w: item.width,
@@ -120,12 +120,22 @@
 
     grid = GridStack.init(options);
 
-    grid.on("added", (_: Event, items: Array<GridStackNode>) => {
-      items.forEach((item, index) => {
+    grid.on("added", async (_: Event, nodes: Array<GridStackNode>) => {
+      console.log("[SvelteGridStack] added event, nodes:", nodes);
+
+      await tick(); // Wait for Svelte to update the DOM
+
+      nodes.forEach((node) => {
+        // Find the correct index by counting existing grid items
+        const gridItems = grid.getGridItems();
+        const index = gridItems.findIndex((item) => item === node.el);
+
+        console.log("[SvelteGridStack] adding content for index:", index);
+
         const element = gridEl.querySelector(
           `#grid-id-${index}`,
         ) as HTMLDivElement;
-        const child = item.el?.firstElementChild;
+        const child = node.el?.firstElementChild;
 
         if (!child || !element) {
           console.error("Cannot append element to GridStack", {
@@ -135,13 +145,18 @@
           });
           return;
         }
+
         child.appendChild(element);
         element.style.display = "block";
         element.style.width = "100%";
         element.style.height = "100%";
 
-        // FOR TESTING
-        // element.style.border = "1px solid red";
+        console.log("[SvelteGridStack] appended element for widget", {
+          index,
+          nodeId: node.id,
+          element,
+          child,
+        });
       });
     });
 
