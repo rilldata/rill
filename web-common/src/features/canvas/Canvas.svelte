@@ -2,10 +2,7 @@
   import CanvasDashboardPreview from "./CanvasDashboardPreview.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import type {
-    V1CanvasItem,
-    V1CanvasSpec,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import type { Vector } from "./types";

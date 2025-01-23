@@ -14,7 +14,6 @@
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;
@@ -135,8 +134,13 @@
 
   function handleSelect(e: CustomEvent<{ index: number }>) {
     console.log("[CanvasDashboardPreview] handleSelect", e.detail.index);
-
     activeIndex = e.detail.index;
+    canvasEntity.setSelectedComponentIndex(activeIndex);
+  }
+
+  function handleDeselect() {
+    console.log("[CanvasDashboardPreview] handleDeselect from grid");
+    activeIndex = null;
     canvasEntity.setSelectedComponentIndex(activeIndex);
   }
 </script>
@@ -158,6 +162,7 @@
     let:index
     let:item
     on:select={handleSelect}
+    on:deselect={handleDeselect}
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
