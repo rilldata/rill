@@ -453,8 +453,10 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 
 	// create new version directory
 	newVersion := newVersion()
-	err = copyDir(d.localTableDir(name, newVersion), d.localTableDir(name, oldMeta.Version))
+	newDir := d.localTableDir(name, newVersion)
+	err = copyDir(newDir, d.localTableDir(name, oldMeta.Version))
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		return fmt.Errorf("mutate: copy table failed: %w", err)
 	}
 
@@ -462,11 +464,13 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	// need to ignore attaching table since it is already present in the db file
 	conn, release, err := d.acquireWriteConn(ctx, d.localDBPath(name, newVersion), name, false)
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		return err
 	}
 
 	err = mutateFn(ctx, conn)
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		_ = release()
 		return fmt.Errorf("mutate: mutate failed: %w", err)
 	}
@@ -474,6 +478,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	// push to remote
 	err = release()
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		return fmt.Errorf("mutate: failed to close connection: %w", err)
 	}
 	meta := &tableMeta{
@@ -485,6 +490,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 	}
 	err = d.pushToRemote(ctx, name, oldMeta, meta)
 	if err != nil {
+		_ = os.RemoveAll(newDir)
 		return fmt.Errorf("mutate: replicate failed: %w", err)
 	}
 	// no errors after this point since background goroutine will eventually sync the local db
@@ -570,15 +576,19 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 
 	// copy the old table to new table
 	newVersion := newVersion()
+	var newDir string
 	if oldMeta.Type == "TABLE" {
+		newDir = d.localTableDir(newName, newVersion)
 		err = copyDir(d.localTableDir(newName, newVersion), d.localTableDir(oldName, oldMeta.Version))
 		if err != nil {
+			_ = os.RemoveAll(newDir)
 			return fmt.Errorf("rename: copy table failed: %w", err)
 		}
 
 		// rename the underlying table
 		err = renameTable(ctx, d.localDBPath(newName, newVersion), oldName, newName)
 		if err != nil {
+			_ = os.RemoveAll(newDir)
 			return fmt.Errorf("rename: rename table failed: %w", err)
 		}
 	} else {
@@ -597,6 +607,9 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 		SQL:            oldMeta.SQL,
 	}
 	if err := d.pushToRemote(ctx, newName, newTableOldMeta, meta); err != nil {
+		if newDir != "" {
+			_ = os.RemoveAll(newDir)
+		}
 		return fmt.Errorf("rename: unable to replicate new table: %w", err)
 	}
 
@@ -607,6 +620,9 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 	// drop the old table in remote
 	err = d.deleteRemote(ctx, oldName, "")
 	if err != nil {
+		if newDir != "" {
+			_ = os.RemoveAll(newDir)
+		}
 		return fmt.Errorf("rename: unable to delete old table %q from remote: %w", oldName, err)
 	}
 
