@@ -81,6 +81,9 @@ type DBOptions struct {
 }
 
 func (d *DBOptions) ValidateSettings() error {
+	if d.ReadWriteRatio < 0 || d.ReadWriteRatio > 1 {
+		return fmt.Errorf("read_write_ratio should be between 0 and 1")
+	}
 	if d.ReadSettings == nil {
 		d.ReadSettings = make(map[string]string)
 	}
