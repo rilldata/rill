@@ -34,7 +34,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 		}
 
 		group, cctx := errgroup.WithContext(ctx)
-		group.SetLimit(8)
+		group.SetLimit(32)
 		for _, d := range deployments {
 			d := d
 			if d.Status != database.DeploymentStatusOK {
