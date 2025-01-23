@@ -8,7 +8,7 @@
   import DashboardWrapper from "./DashboardWrapperOld.svelte";
   import PreviewElement from "./PreviewElementOld.svelte";
   // import DropIndicator from "./DropIndicator.svelte";
-  import { getRowIndex, getColumnIndex, redistributeRowColumns } from "./util";
+  import { getRowIndex, getColumnIndex } from "./util";
   import { GridEngine, groupItemsByRow, isValidItem } from "./grid-engine";
   import type { DropPosition } from "./types";
   // import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
@@ -475,7 +475,7 @@
         data-row-index={index}
         style="height: {row.height * gridCell}px;"
       >
-        {#each row.items as component, itemIndex}
+        {#each row.items as component}
           {@const i = items.indexOf(component)}
           <PreviewElement
             {instanceId}
