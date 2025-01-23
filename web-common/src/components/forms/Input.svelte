@@ -268,7 +268,7 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-0.5;
-    @apply bg-background justify-center;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
     @apply h-fit w-fit truncate;
