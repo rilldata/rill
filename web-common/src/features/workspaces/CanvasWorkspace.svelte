@@ -104,8 +104,8 @@
 
     const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
-    const docJson = parsedDocument.toJSON();
-    const existingItems = docJson?.items || [];
+    const itemsJson = parsedDocument.toJSON();
+    const existingItems = itemsJson?.items || [];
 
     const [x, y] = findNextAvailablePosition(existingItems, width, height);
 
@@ -117,10 +117,8 @@
       y,
     };
 
-    const updatedItems = [...existingItems, newComponent];
-
-    if (!docJson.items) {
-      parsedDocument.set("items", updatedItems);
+    if (!items) {
+      parsedDocument.set("items", [newComponent]);
     } else {
       items.add(newComponent);
     }
