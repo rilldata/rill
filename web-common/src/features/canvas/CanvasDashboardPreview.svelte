@@ -14,7 +14,11 @@
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+<<<<<<< HEAD
   import { CanvasFilters } from "./stores/canvas-filters";
+=======
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+>>>>>>> b63b710e8 (readd filters to preview)
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -51,7 +55,7 @@
   // }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
-    console.log("CanvasDashboardPreview handleDelete");
+    console.log("[CanvasDashboardPreview] handleDelete", e.detail.index);
     items.splice(e.detail.index, 1);
   }
 
