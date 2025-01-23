@@ -32,6 +32,15 @@
     console.log("[BlankCanvas] handleAddComponent", componentType);
     dispatch("add", { type: componentType });
   }
+
+  function handleButtonClick(event: MouseEvent) {
+    const contextMenuEvent = new MouseEvent("contextmenu", {
+      bubbles: true,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+    event.target?.dispatchEvent(contextMenuEvent);
+  }
 </script>
 
 <div class="size-full p-2 bg-white">
@@ -40,6 +49,7 @@
       <button
         type="button"
         class="blank-canvas-button flex flex-col items-center gap-2 p-8 rounded-[6px] border border-slate-200 w-full"
+        on:click={handleButtonClick}
       >
         <PlusCircleIcon class="w-6 h-6 text-slate-500" />
         <span class="text-sm font-medium text-slate-500">Add a component</span>
