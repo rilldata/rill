@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,7 +22,6 @@ import (
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
-	"github.com/mitchellh/mapstructure"
 	"go.opentelemetry.io/otel/attribute"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/semaphore"
@@ -63,7 +63,12 @@ type DBOptions struct {
 	// Remote is the blob storage bucket where the database files will be stored. This is the source of truth.
 	// The local db will be eventually synced with the remote.
 	Remote *blob.Bucket
-
+	// CPU cores available for the DB. If no ratio is set then this is split evenly between read and write.
+	CPU int `mapstructure:"cpu"`
+	// MemoryLimitGB is the amount of memory available for the DB. If no ratio is set then this is split evenly between read and write.
+	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
+	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
+	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
 	// ReadSettings are settings applied the read duckDB handle.
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
@@ -76,27 +81,21 @@ type DBOptions struct {
 }
 
 func (d *DBOptions) ValidateSettings() error {
-	read := &settings{}
-	err := mapstructure.Decode(d.ReadSettings, read)
-	if err != nil {
-		return fmt.Errorf("read settings: %w", err)
+	if d.ReadWriteRatio < 0 || d.ReadWriteRatio > 1 {
+		return fmt.Errorf("read_write_ratio should be between 0 and 1")
 	}
-
-	write := &settings{}
-	err = mapstructure.Decode(d.WriteSettings, write)
-	if err != nil {
-		return fmt.Errorf("write settings: %w", err)
+	if d.ReadSettings == nil {
+		d.ReadSettings = make(map[string]string)
 	}
-
-	// no memory limits defined
-	// divide memory equally between read and write
-	if read.MaxMemory == "" && write.MaxMemory == "" {
-		connector, err := duckdb.NewConnector("", nil)
+	if d.WriteSettings == nil {
+		d.WriteSettings = make(map[string]string)
+	}
+	memoryLimitBytes := int64(d.MemoryLimitGB * 1000 * 1000 * 1000)
+	if memoryLimitBytes == 0 {
+		db, err := sql.Open("duckdb", "")
 		if err != nil {
-			return fmt.Errorf("unable to create duckdb connector: %w", err)
+			return err
 		}
-		defer connector.Close()
-		db := sql.OpenDB(connector)
 		defer db.Close()
 
 		row := db.QueryRow("SELECT value FROM duckdb_settings() WHERE name = 'max_memory'")
@@ -111,87 +110,38 @@ func (d *DBOptions) ValidateSettings() error {
 			return fmt.Errorf("unable to parse max_memory: %w", err)
 		}
 
-		read.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-		write.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
+		memoryLimitBytes = int64(bytes)
 	}
 
-	if read.MaxMemory == "" != (write.MaxMemory == "") {
-		// only one is defined
-		var mem string
-		if read.MaxMemory != "" {
-			mem = read.MaxMemory
-		} else {
-			mem = write.MaxMemory
-		}
-
-		bytes, err := humanReadableSizeToBytes(mem)
+	threads := d.CPU
+	if threads == 0 {
+		db, err := sql.Open("duckdb", "")
 		if err != nil {
-			return fmt.Errorf("unable to parse max_memory: %w", err)
+			return err
 		}
-
-		read.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-		write.MaxMemory = fmt.Sprintf("%d bytes", int64(bytes)/2)
-	}
-
-	var readThread, writeThread int
-	if read.Threads != "" {
-		readThread, err = strconv.Atoi(read.Threads)
-		if err != nil {
-			return fmt.Errorf("unable to parse read threads: %w", err)
-		}
-	}
-	if write.Threads != "" {
-		writeThread, err = strconv.Atoi(write.Threads)
-		if err != nil {
-			return fmt.Errorf("unable to parse write threads: %w", err)
-		}
-	}
-
-	if readThread == 0 && writeThread == 0 {
-		connector, err := duckdb.NewConnector("", nil)
-		if err != nil {
-			return fmt.Errorf("unable to create duckdb connector: %w", err)
-		}
-		defer connector.Close()
-		db := sql.OpenDB(connector)
 		defer db.Close()
 
 		row := db.QueryRow("SELECT value FROM duckdb_settings() WHERE name = 'threads'")
-		var threads int
 		err = row.Scan(&threads)
 		if err != nil {
 			return fmt.Errorf("unable to get threads: %w", err)
 		}
-
-		read.Threads = strconv.Itoa((threads + 1) / 2)
-		write.Threads = strconv.Itoa(threads / 2)
 	}
 
-	if readThread == 0 != (writeThread == 0) {
-		// only one is defined
-		var threads int
-		if readThread != 0 {
-			threads = readThread
-		} else {
-			threads = writeThread
-		}
+	d.ReadSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*d.ReadWriteRatio))
+	d.WriteSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*(1-d.ReadWriteRatio)))
 
-		read.Threads = strconv.Itoa((threads + 1) / 2)
-		if threads <= 3 {
-			write.Threads = "1"
-		} else {
-			write.Threads = strconv.Itoa(threads / 2)
-		}
+	readThreads := math.Floor(float64(threads) * d.ReadWriteRatio)
+	if readThreads <= 1 {
+		d.ReadSettings["threads"] = "1"
+	} else {
+		d.ReadSettings["threads"] = strconv.Itoa(int(readThreads))
 	}
-
-	err = mapstructure.WeakDecode(read, &d.ReadSettings)
-	if err != nil {
-		return fmt.Errorf("failed to update read settings: %w", err)
-	}
-
-	err = mapstructure.WeakDecode(write, &d.WriteSettings)
-	if err != nil {
-		return fmt.Errorf("failed to update write settings: %w", err)
+	writeThreads := threads - int(readThreads)
+	if writeThreads <= 1 {
+		d.WriteSettings["threads"] = "1"
+	} else {
+		d.WriteSettings["threads"] = strconv.Itoa(writeThreads)
 	}
 	return nil
 }
@@ -1269,12 +1219,6 @@ func newVersion() string {
 
 func dbName(table, version string) string {
 	return fmt.Sprintf("%s__%s__db", table, version)
-}
-
-type settings struct {
-	MaxMemory string `mapstructure:"max_memory"`
-	Threads   string `mapstructure:"threads"`
-	// Can be more settings
 }
 
 // Regex to parse human-readable size returned by DuckDB
