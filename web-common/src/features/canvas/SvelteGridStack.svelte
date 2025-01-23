@@ -48,6 +48,12 @@
   let columnCount = 12; // Default column count
   let resizeObserver: ResizeObserver;
 
+  // FYI:
+  // There could be a race condition where the grid is updated while dragging
+  // so we need to avoid updating the grid while dragging
+  // Only update the grid when user finishes dragging
+  let isDragging = false;
+
   function updateColumnCount(width: number) {
     if (width < 398) {
       // Small screens/mobile
@@ -84,7 +90,7 @@
   }
 
   // Reactive grid to handle changes in items
-  $: if (grid) {
+  $: if (grid && !isDragging) {
     console.log("[SvelteGridStack] Updating grid");
 
     grid.batchUpdate();
@@ -144,37 +150,46 @@
 
     grid = GridStack.init(options);
 
+    grid.on("dragstart", () => {
+      isDragging = true;
+    });
+
+    grid.on("dragstop", () => {
+      isDragging = false;
+    });
+
     grid.on("added", async (_: Event, nodes: Array<GridStackNode>) => {
-      console.log("[SvelteGridStack] added event, nodes:", nodes);
+      grid.batchUpdate();
 
-      await tick(); // Wait for Svelte to update the DOM
+      // Avoid racy, wait for el to be ready for the visible content
+      setTimeout(() => {
+        nodes.forEach((node) => {
+          // Find the correct index by counting existing grid items
+          const gridItems = grid.getGridItems();
+          const index = gridItems.findIndex((item) => item === node.el);
 
-      nodes.forEach((node) => {
-        // Find the correct index by counting existing grid items
-        const gridItems = grid.getGridItems();
-        const index = gridItems.findIndex((item) => item === node.el);
+          const element = gridEl.querySelector(
+            `#grid-id-${index}`,
+          ) as HTMLDivElement;
+          const child = node.el?.firstElementChild;
 
-        // console.log("[SvelteGridStack] adding content for index:", index);
+          if (!child || !element) {
+            console.error("Cannot append element to GridStack", {
+              index,
+              element,
+              child,
+            });
+            return;
+          }
 
-        const element = gridEl.querySelector(
-          `#grid-id-${index}`,
-        ) as HTMLDivElement;
-        const child = node.el?.firstElementChild;
+          child.appendChild(element);
+          element.style.display = "block";
+          element.style.width = "100%";
+          element.style.height = "100%";
+        });
 
-        if (!child || !element) {
-          console.error("Cannot append element to GridStack", {
-            index,
-            element,
-            child,
-          });
-          return;
-        }
-
-        child.appendChild(element);
-        element.style.display = "block";
-        element.style.width = "100%";
-        element.style.height = "100%";
-      });
+        grid.commit();
+      }, 0);
     });
 
     gridEl.addEventListener("pointerover", (event) => {
