@@ -14,6 +14,7 @@
     <CanvasDashboardEmbed
       showFilterBar={data.dashboard.spec?.filtersEnabled}
       items={data.dashboard.spec?.items || []}
+      spec={data.dashboard.spec || {}}
     />
   </CanvasThemeProvider>
 </StateManagersProvider>

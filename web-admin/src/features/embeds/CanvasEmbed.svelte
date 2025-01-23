@@ -18,4 +18,8 @@
   });
 </script>
 
+<<<<<<< HEAD
 <CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} />
+=======
+<CanvasDashboardEmbed {items} spec={canvas} />
+>>>>>>> bde218eb9 (pass spec to embed)

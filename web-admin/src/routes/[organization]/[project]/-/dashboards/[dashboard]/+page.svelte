@@ -20,4 +20,4 @@
   });
 </script>
 
-<CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} />
+<CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} spec={canvas} />

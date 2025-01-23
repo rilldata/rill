@@ -21,7 +21,7 @@
   export let showFilterBar = true;
   export let spec: V1CanvasSpec;
 
-  const { canvasName, canvasEntity } = getCanvasStateManagers();
+  const { canvasEntity } = getCanvasStateManagers();
   const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);

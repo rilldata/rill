@@ -1,13 +1,18 @@
 <script lang="ts">
-  import { type V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import {
+    type V1CanvasItem,
+    type V1CanvasSpec,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CanvasComponent from "./CanvasComponent.svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type { GridStack } from "gridstack";
+  import { CanvasFilters } from "./stores/canvas-filters";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;
+  export let spec: V1CanvasSpec;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let grid: GridStack;
@@ -45,7 +50,7 @@
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   {#each items as component, i (i)}
     {@const componentName = component.component}
-    <SvelteGridStack bind:grid {items} let:index let:item embed>
+    <SvelteGridStack bind:grid {items} {spec} let:index let:item embed>
       {@const componentName = item.component}
       {#if componentName}
         <CanvasComponent embed i={index} {instanceId} {componentName} />
