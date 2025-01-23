@@ -98,7 +98,7 @@
       } else {
         // Add new widget
         console.log("[SvelteGridStack] adding new widget at index", i);
-        const widget = grid.addWidget({
+        grid.addWidget({
           x: item.x,
           y: item.y,
           w: item.width,
@@ -221,7 +221,6 @@
     }
   });
 
-  // Update options with dynamic column count
   $: options = {
     column: columnCount,
     resizable: {

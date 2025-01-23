@@ -7,13 +7,13 @@
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapperOld.svelte";
   import PreviewElement from "./PreviewElementOld.svelte";
-  import DropIndicator from "./DropIndicator.svelte";
+  // import DropIndicator from "./DropIndicator.svelte";
   import { getRowIndex, getColumnIndex, redistributeRowColumns } from "./util";
   import { GridEngine, groupItemsByRow, isValidItem } from "./grid-engine";
   import type { DropPosition } from "./types";
-  import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
-  import RowResizer from "./RowResizer.svelte";
-  import ColumnResizer from "./ColumnResizer.svelte";
+  // import FloatingButtonGroup from "./FloatingButtonGroup.svelte";
+  // import RowResizer from "./RowResizer.svelte";
+  // import ColumnResizer from "./ColumnResizer.svelte";
 
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
@@ -29,24 +29,24 @@
     position: DropPosition;
   } | null = null;
   let hoveredIndex: number | null = null;
-  let resizingRow: {
-    index: number;
-    startY: number;
-    initialHeight: number;
-  } | null = null;
-  let resizingCol: {
-    index: number;
-    startX: number;
-    initialWidth: number;
-    maxWidth: number;
-  } | null = null;
-  let hideTimeout: ReturnType<typeof setTimeout>;
-  let activeResizeGroup: number | null = null;
-  let clickedResizeHandle: number | null = null;
+  // let resizingRow: {
+  //   index: number;
+  //   startY: number;
+  //   initialHeight: number;
+  // } | null = null;
+  // let resizingCol: {
+  //   index: number;
+  //   startX: number;
+  //   initialWidth: number;
+  //   maxWidth: number;
+  // } | null = null;
+  // let hideTimeout: ReturnType<typeof setTimeout>;
+  // let activeResizeGroup: number | null = null;
+  // let clickedResizeHandle: number | null = null;
 
   $: ({ instanceId } = $runtime);
 
-  $: gridWidth = defaults.DEFAULT_DASHBOARD_WIDTH;
+  // $: gridWidth = defaults.DEFAULT_DASHBOARD_WIDTH;
   $: gridCell = defaults.DEFAULT_DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
 
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
@@ -123,15 +123,15 @@
     canvasEntity.setSelectedComponentIndex(selectedIndex);
   }
 
-  function getDropPosition(e: DragEvent, targetIndex: number): DropPosition {
-    const targetElement = document.querySelector(
-      `[data-component-index="${targetIndex}"]`,
-    );
-    if (!targetElement) return "left";
+  // function getDropPosition(e: DragEvent, targetIndex: number): DropPosition {
+  //   const targetElement = document.querySelector(
+  //     `[data-component-index="${targetIndex}"]`,
+  //   );
+  //   if (!targetElement) return "left";
 
-    const rect = targetElement.getBoundingClientRect();
-    return grid.getDropPosition(e.clientX, e.clientY, rect);
-  }
+  //   const rect = targetElement.getBoundingClientRect();
+  //   return grid.getDropPosition(e.clientX, e.clientY, rect);
+  // }
 
   function handleDrop(e: DragEvent | CustomEvent<DragEvent>) {
     e.preventDefault();

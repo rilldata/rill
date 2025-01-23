@@ -134,7 +134,7 @@
   }
 
   function handleSelect(e: CustomEvent<{ index: number }>) {
-    console.log("CanvasDashboardPreview handleSelect", e.detail.index);
+    console.log("[CanvasDashboardPreview] handleSelect", e.detail.index);
 
     activeIndex = e.detail.index;
     canvasEntity.setSelectedComponentIndex(activeIndex);
