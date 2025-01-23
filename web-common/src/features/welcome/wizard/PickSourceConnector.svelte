@@ -9,7 +9,6 @@
 
   export let onboardingState: OnboardingState;
   export let continueHref: string;
-  export let skipHref: string;
 
   const { olapDriver, firstDataSource } = onboardingState;
 
@@ -17,10 +16,20 @@
     $olapDriver === "duckdb"
       ? DUCKDB_SOURCE_CONNECTORS
       : CLICKHOUSE_SOURCE_CONNECTORS;
+
+  let isLoading = false;
+
+  async function onSkip() {
+    isLoading = true;
+    await onboardingState.skipFirstSource();
+    isLoading = false;
+  }
 </script>
 
 <div class="data-sources">
-  <h2 class="text-subheading">Choose a first data source to add.</h2>
+  <h2 class="text-subheading text-gray-500">
+    Choose a first data source to add.
+  </h2>
   <div class="source-grid">
     {#each dataSources as source (source)}
       <button
@@ -37,7 +46,9 @@
 {#if $firstDataSource}
   <Button wide type="primary" href={continueHref}>Continue</Button>
 {:else}
-  <Button wide type="secondary" href={skipHref}>Skip</Button>
+  <Button wide type="secondary" on:click={onSkip} disabled={isLoading}>
+    Skip
+  </Button>
 {/if}
 
 <!-- <div class="help-text">
@@ -51,11 +62,9 @@
   }
 
   .source-grid {
-    @apply grid;
-    @apply grid-cols-[repeat(5,160px)];
-    @apply gap-2;
-    @apply my-8;
-    @apply justify-center;
+    @apply grid grid-cols-[repeat(5,160px)];
+    @apply gap-2 justify-center;
+    @apply my-2;
   }
 
   .source-button {

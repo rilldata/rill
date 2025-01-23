@@ -23,9 +23,7 @@
 
 <style lang="postcss">
   .management-toggle {
-    @apply flex flex-row gap-x-4;
-    justify-content: center;
-    margin-bottom: 1rem;
+    @apply flex flex-row gap-x-4 justify-center;
   }
 
   button {
