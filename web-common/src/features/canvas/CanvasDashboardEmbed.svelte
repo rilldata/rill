@@ -19,7 +19,6 @@
 
   $: gridWidth = contentRect.width;
   $: scale = gridWidth / dashboardWidth;
-  $: gapSize = dashboardWidth * (defaults.GAP_SIZE / 1000);
   $: gridCell = dashboardWidth / defaults.COLUMN_COUNT;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
@@ -40,7 +39,6 @@
 
 <DashboardWrapper
   bind:contentRect
-  {scale}
   height={maxBottom * gridCell * scale}
   width={dashboardWidth}
 >
@@ -54,7 +52,6 @@
         {chartView}
         {radius}
         embed={true}
-        padding={gapSize}
         width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
           gridCell}

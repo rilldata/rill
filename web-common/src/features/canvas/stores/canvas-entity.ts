@@ -19,6 +19,7 @@ import { CanvasComponentState } from "./canvas-component";
 import { CanvasFilters } from "./canvas-filters";
 import { CanvasResolvedSpec } from "./canvas-spec";
 import { CanvasTimeControls } from "./canvas-time-control";
+import type { GridStack } from "gridstack";
 
 export class CanvasEntity {
   name: string;
@@ -41,6 +42,8 @@ export class CanvasEntity {
    * Spec store containing selectors derived from ResolveCanvas query
    */
   spec: CanvasResolvedSpec;
+
+  gridstack?: GridStack | null;
 
   /**
    * Index of the component higlighted or selected in the canvas
@@ -74,6 +77,10 @@ export class CanvasEntity {
     }
     return componentEntity;
   };
+
+  setGridstack(gridstack: GridStack | null) {
+    this.gridstack = gridstack;
+  }
 
   /**
    * Helper method to get the time range and where clause for a given metrics view

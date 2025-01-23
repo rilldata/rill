@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CanvasDashboardPreview from "@rilldata/web-common/features/canvas/CanvasDashboardPreview.svelte";
+  import CanvasDashboardPreview from "./CanvasDashboardPreview.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import type {
@@ -117,6 +117,11 @@
 
     const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
+
+    if (!items) {
+      console.warn("[Canvas] No items found in document");
+      return;
+    }
 
     e.detail.items.forEach((item, idx) => {
       const node = items.get(idx);

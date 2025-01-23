@@ -1,135 +1,78 @@
 <script context="module" lang="ts">
+  import { goto } from "$app/navigation";
+  import * as ContextMenu from "@rilldata/web-common/components/context-menu";
   import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import Component from "./Component.svelte";
+  import CanvasComponent from "./CanvasComponent.svelte";
 </script>
 
 <script lang="ts">
   export let i: number;
-  export let padding: number;
   export let component: V1CanvasItem;
-  export let selected: boolean;
-  export let width: number;
-  export let height: number;
-  export let top: number;
-  export let left: number;
-  export let radius: number;
+  // export let selected: boolean;
+  export let interacting: boolean;
+  // export let width: number;
+  // export let height: number;
+  // export let top: number;
+  // export let left: number;
   export let instanceId: string;
-
-  export let rowIndex: number;
-  export let columnIndex: number;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
 
-  $: finalLeft = width < 0 ? left + width : left;
-  $: finalTop = height < 0 ? top + height : top;
-  $: finalWidth = Math.abs(width);
-  $: finalHeight = Math.abs(height);
-
-  $: transform = `translate(${finalLeft}px, ${finalTop}px)`;
-
   const dispatch = createEventDispatcher();
 
-  function handleMouseDown(e: MouseEvent) {
-    // if (e.button !== 0) return;
-    dispatch("change", {
-      e,
-      dimensions: [width, height],
-      position: [finalLeft, finalTop],
-      changeDimensions: [0, 0],
-      changePosition: [1, 1],
-    });
-  }
-
-  // function handleDragStart(e: DragEvent) {
-  //   console.log("[PreviewElement] handleDragStart", { i, width, height, e });
-
-  //   dispatch("dragstart", {
-  //     componentIndex: i,
-  //     width,
-  //     height,
-  //   });
-  // }
-
-  // function handleDragEnd() {
-  //   console.log("[PreviewElement] handleDragEnd");
-  //   dispatch("dragend");
-  // }
-
-  function handleMouseEnter() {
-    dispatch("mouseenter", { index: i });
-  }
-
-  function handleMouseLeave() {
-    dispatch("mouseleave", { index: i });
-  }
+  // $: finalLeft = width < 0 ? left + width : left;
+  // $: finalTop = height < 0 ? top + height : top;
+  // $: finalWidth = Math.abs(width);
+  // $: finalHeight = Math.abs(height);
 </script>
 
 {#if componentName && !inlineComponent}
-  <div
-    class="component absolute"
-    role="presentation"
-    data-component-index={i}
-    style:width="{finalWidth}px"
-    style:height="{finalHeight}px"
-    style:transform
-    style:will-change="transform"
-    on:mousedown={handleMouseDown}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    <Component
-      {instanceId}
-      {i}
-      {componentName}
-      {radius}
-      {selected}
-      {rowIndex}
-      {columnIndex}
-      builders={undefined}
-      height={finalHeight}
-      left={0}
-      top={0}
-      width={finalWidth}
-    />
-  </div>
-{:else if componentName}
-  <div
-    class="component absolute"
-    role="presentation"
-    data-component-index={i}
-    style:width="{finalWidth}px"
-    style:height="{finalHeight}px"
-    style:padding="{padding}px"
-    style:transform
-    style:will-change="transform"
-    on:mousedown={handleMouseDown}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    <Component
-      {instanceId}
-      {i}
-      {componentName}
-      {radius}
-      {selected}
-      {rowIndex}
-      {columnIndex}
-      builders={undefined}
-      height={finalHeight}
-      left={0}
-      top={0}
-      width={finalWidth}
-    />
-  </div>
-{/if}
+  <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder>
+      <CanvasComponent
+        {instanceId}
+        {i}
+        {interacting}
+        {componentName}
+        builders={[builder]}
+        on:change
+        on:contextmenu
+      />
+    </ContextMenu.Trigger>
 
-<style lang="postcss">
-  .component {
-    touch-action: none;
-    transform-origin: 0 0;
-    left: 0;
-    top: 0;
-  }
-</style>
+    <ContextMenu.Content class="z-[100]">
+      <ContextMenu.Item
+        on:click={async () => {
+          await goto(`/files/charts/${componentName}.yaml`);
+        }}
+      >
+        Go to {componentName}.yaml
+      </ContextMenu.Item>
+      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
+        >Delete from dashboard</ContextMenu.Item
+      >
+    </ContextMenu.Content>
+  </ContextMenu.Root>
+{:else if componentName}
+  <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder>
+      <CanvasComponent
+        {instanceId}
+        {i}
+        {interacting}
+        {componentName}
+        builders={[builder]}
+        on:change
+        on:contextmenu
+      />
+    </ContextMenu.Trigger>
+
+    <ContextMenu.Content class="z-[100]">
+      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
+        >Delete from dashboard</ContextMenu.Item
+      >
+    </ContextMenu.Content>
+  </ContextMenu.Root>
+{/if}
