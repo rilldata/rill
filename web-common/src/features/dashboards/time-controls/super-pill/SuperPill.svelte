@@ -70,7 +70,7 @@
 
   {#if availableTimeZones.length}
     <Elements.Zone
-      watermark={allTimeRange?.end ?? new Date()}
+      watermark={interval.end?.toJSDate() ?? new Date()}
       {activeTimeZone}
       {availableTimeZones}
       {onSelectTimeZone}

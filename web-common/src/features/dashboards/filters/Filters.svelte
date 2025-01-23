@@ -36,12 +36,9 @@
     useExploreState,
   } from "../stores/dashboard-stores";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
-
-  // import Interval from "@rilldata/web-common/components/data-types/Interval.svelte";
   import { DateTime, Interval } from "luxon";
   import { initLocalUserPreferenceStore } from "../user-preferences";
   import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-
   import { getValidComparisonOption } from "../time-controls/time-range-store";
 
   export let readOnly = false;
@@ -203,8 +200,18 @@
       return;
     }
 
+    const includesTimeZoneOffset = name.includes("@");
+
+    if (includesTimeZoneOffset) {
+      const timeZone = name.match(/@ {(.*)}/)?.[1];
+
+      if (timeZone) metricsExplorerStore.setTimeZone($exploreName, timeZone);
+    }
+
     const interval = await deriveInterval(
-      name,
+      syntax && !includesTimeZoneOffset
+        ? name + ` @ {${activeTimeZone}}`
+        : name,
       DateTime.fromJSDate(allTimeRange.end),
       metricsViewName,
     );
@@ -335,9 +342,6 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
-        <!-- {#if !$showPivot && minTimeGrain}
-          <TimeGrainSelector exploreName={$exploreName} />
-        {/if} -->
       {/if}
     </div>
   {/if}

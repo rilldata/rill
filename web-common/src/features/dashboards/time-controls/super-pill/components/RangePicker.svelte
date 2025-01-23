@@ -21,7 +21,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { DateTime, Duration, Interval } from "luxon";
+  import { DateTime, Interval } from "luxon";
   import type { ISODurationString, NamedRange } from "../../new-time-controls";
   import {
     ALL_TIME_RANGE_ALIAS,
@@ -37,13 +37,12 @@
   import TimeRangeMenuItem from "./TimeRangeMenuItem.svelte";
   import Switch from "@rilldata/web-common/components/button/Switch.svelte";
   import { Clock } from "lucide-svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
     PREVIOUS_COMPLETE_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
+  import Timestamp from "./Timestamp.svelte";
 
   export let timeRanges: V1ExploreTimeRange[];
   export let selected: string | undefined;
@@ -120,8 +119,6 @@
   }
 
   $: includesCurrentPeriod = interval.end.diff(maxDate).milliseconds > 0;
-
-  $: console.log(interval.end.diff(maxDate));
 </script>
 
 <DropdownMenu.Root
@@ -147,7 +144,6 @@
       {/if}
       {#if interval.isValid}
         <RangeDisplay {interval} {grain} />
-        <!-- {interval.end.diff(maxDate)?.[getColloquialGrain(selected)]} -->
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
@@ -241,10 +237,9 @@
             checked={includesCurrentPeriod}
             on:click={() => {
               if (includesCurrentPeriod) {
-                onSelectRange(
-                  meta.rillSyntax + ", " + "latest/" + colloquialGrain,
-                  true,
-                );
+                const updatedString = `${meta.rillSyntax}, latest/${colloquialGrain}`;
+                console.log({ updatedString });
+                onSelectRange(updatedString, true);
               } else {
                 onSelectRange(meta.rillSyntax, true);
               }
@@ -293,56 +288,21 @@
                 {#if minDate}
                   <div class="flex justify-between items-center">
                     <SyntaxElement range="earliest" onClick={updateSearch} />
-                    <Tooltip>
-                      <span class="text-gray-500 text-xs">
-                        {minDate
-                          .setZone(zone)
-                          .toLocaleString(DateTime.DATETIME_MED)}
-                      </span>
-                      <TooltipContent slot="tooltip-content">
-                        {Duration.fromObject(
-                          Object.fromEntries(
-                            Object.entries(
-                              DateTime.now().diff(minDate).rescale().toObject(),
-                            )
-                              .filter(([, value]) => value !== 0)
-                              .slice(0, 2),
-                          ),
-                        ).toHuman({
-                          listStyle: "narrow",
-                          maximumFractionDigits: 0,
-                        })} ago
-                      </TooltipContent>
-                    </Tooltip>
+                    <Timestamp date={minDate} {zone} />
                   </div>
                 {/if}
 
                 {#if maxDate}
                   <div class="flex justify-between items-center">
                     <SyntaxElement range="latest" onClick={updateSearch} />
-                    <Tooltip>
-                      <span class="text-gray-500 text-xs">
-                        {maxDate
-                          .setZone(zone)
-                          .toLocaleString(DateTime.DATETIME_MED)}
-                      </span>
-                      <TooltipContent slot="tooltip-content">
-                        {Duration.fromObject(
-                          Object.fromEntries(
-                            Object.entries(
-                              DateTime.now().diff(maxDate).rescale().toObject(),
-                            )
-                              .filter(([, value]) => value !== 0)
-                              .slice(0, 2),
-                          ),
-                        ).toHuman({
-                          listStyle: "narrow",
-                          maximumFractionDigits: 0,
-                        })} ago
-                      </TooltipContent>
-                    </Tooltip>
+                    <Timestamp date={maxDate} {zone} />
                   </div>
                 {/if}
+
+                <div class="flex justify-between items-center">
+                  <SyntaxElement range="now" onClick={updateSearch} />
+                  <Timestamp {zone} />
+                </div>
               </div>
             </div>
             <a href="https://www.rilldata.com" class="mt-auto">
