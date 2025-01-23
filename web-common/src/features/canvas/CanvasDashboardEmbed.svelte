@@ -19,23 +19,10 @@
 
   $: instanceId = $runtime.instanceId;
 
-  // const dashboardWidth = chartView
-  //   ? defaults.DASHBOARD_WIDTH / 2
-  //   : defaults.DASHBOARD_WIDTH;
-
-  // $: gridWidth = contentRect.width;
-  // $: scale = gridWidth / dashboardWidth;
-  // $: gridCell = dashboardWidth / columns;
-  // $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
-
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
-
-  // $: if (variables.length && canvasName) {
-  //   canvasVariablesStore.init(canvasName, variables);
-  // }
 </script>
 
 {#if showFilterBar}
