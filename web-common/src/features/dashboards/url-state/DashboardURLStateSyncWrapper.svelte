@@ -61,15 +61,13 @@
   $: parseUrl($page.url, defaultExplorePreset);
 </script>
 
-{#if !$validSpecStore.isLoading && !$metricsViewTimeRange.isLoading}
-  <DashboardURLStateSync
-    metricsViewName={$metricsViewName}
-    exploreName={$exploreName}
-    {defaultExplorePreset}
-    {exploreStateFromYAMLConfig}
-    {partialExploreStateFromUrl}
-    {exploreStateFromSessionStorage}
-  >
-    <slot />
-  </DashboardURLStateSync>
-{/if}
+<DashboardURLStateSync
+  metricsViewName={$metricsViewName}
+  exploreName={$exploreName}
+  {defaultExplorePreset}
+  {exploreStateFromYAMLConfig}
+  {partialExploreStateFromUrl}
+  {exploreStateFromSessionStorage}
+>
+  <slot />
+</DashboardURLStateSync>
