@@ -1618,8 +1618,9 @@ theme:
 			Paths: []string{"/canvases/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				DisplayName: "C1",
-				Theme:       "t1",
+				DisplayName:    "C1",
+				Theme:          "t1",
+				FiltersEnabled: true,
 			},
 		},
 		{
@@ -1636,6 +1637,7 @@ theme:
 					},
 					PrimaryColorRaw: "red",
 				},
+				FiltersEnabled: true,
 			},
 		},
 	}
@@ -1694,6 +1696,10 @@ time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+
+filters:
+  enable: false
+
 defaults:
   time_range: P4W
 
@@ -1770,6 +1776,7 @@ items:
 						},
 					},
 				},
+				FiltersEnabled: false,
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
