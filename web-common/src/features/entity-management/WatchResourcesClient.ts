@@ -221,8 +221,6 @@ export class WatchResourcesClient {
           }
 
           case ResourceKind.Explore: {
-            console.log("logggExplore");
-
             const failed = !!res.resource.meta?.reconcileError;
             if (res.resource.explore?.state?.validSpec?.metricsView) {
               void invalidateMetricsViewData(
