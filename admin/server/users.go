@@ -316,7 +316,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 	}
 
 	// If the org has no other members, it should tear down the org and all its projects.
-	memberCount, err := s.admin.DB.CountMemberByOrganization(ctx, req.Organization)
+	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization)
 	if err != nil {
 		return nil, err
 	}

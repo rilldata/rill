@@ -1401,7 +1401,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, aft
 	return res, nil
 }
 
-func (c *connection) CountMemberByOrganization(ctx context.Context, orgID string) (int, error) {
+func (c *connection) CountMembersByOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM users_orgs_roles WHERE org_id=$1", orgID).Scan(&count)
 	if err != nil {
