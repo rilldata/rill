@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/mail"
 
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -16,7 +17,7 @@ func valid(email string) bool {
 
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "remove email",
+		Use:   "remove <email>",
 		Short: "Remove a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -34,8 +35,16 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return errors.New("invalid email format")
 			}
 
+			if ch.Org == "" {
+				err = auth.SelectOrgFlow(ctx, ch, true)
+				if err != nil {
+					return err
+				}
+			}
+
 			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{
-				Email: email,
+				Email:        email,
+				Organization: ch.Org,
 			})
 			if err != nil {
 				return err

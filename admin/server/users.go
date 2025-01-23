@@ -119,50 +119,6 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}, nil
 }
 
-func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
-
-	// Get the current user and leverage the existing permission checks
-	currentUser, err := s.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	claims := auth.GetClaims(ctx)
-
-	isCurrentUser := currentUser.User.Email == req.Email
-	isSuperuser := claims.Superuser(ctx)
-
-	if !isCurrentUser && !isSuperuser {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can delete other users")
-	}
-
-	// TODO: Handle the case where the user being deleted is the only remaining admin of an org.
-	// It should error if the org has other members.
-	// If the org has no other members, it should tear down the org and all its projects.
-
-	// Delete the current user if the email matches
-	if isCurrentUser {
-		err = s.admin.DB.DeleteUser(ctx, currentUser.User.Id)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Delete the user by email
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.admin.DB.DeleteUser(ctx, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &adminv1.DeleteUserResponse{}, nil
-}
-
 func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
 	claims := auth.GetClaims(ctx)
 
@@ -326,6 +282,69 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	}
 
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+}
+
+func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
+	observability.AddRequestAttributes(
+		ctx,
+		attribute.String("args.email", req.Email),
+		attribute.String("args.org", req.Organization),
+	)
+
+	currentUser, err := s.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+
+	isCurrentUser := currentUser.User.Email == req.Email
+	isSuperuser := claims.Superuser(ctx)
+
+	if !isCurrentUser && !isSuperuser {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can delete other users")
+	}
+
+	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, req.Organization, "admin")
+	if err != nil {
+		return nil, err
+	}
+
+	// It should error if the user being deleted is the last admin of the org.
+	if len(orgAdminUsers) == 1 && orgAdminUsers[0].Email == req.Email {
+		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please transfer ownership first")
+	}
+
+	// If the org has no other members, it should tear down the org and all its projects.
+	memberCount, err := s.admin.DB.CountMemberByOrganization(ctx, req.Organization)
+	if err != nil {
+		return nil, err
+	}
+	if memberCount == 1 {
+		// TODO: Tear down the org and all its projects
+		return nil, status.Error(codes.PermissionDenied, "cannot delete the only member of an organization")
+	}
+
+	// Delete the current user if the email matches the caller
+	if isCurrentUser {
+		err = s.admin.DB.DeleteUser(ctx, currentUser.User.Id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Delete the user by email
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.admin.DB.DeleteUser(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.DeleteUserResponse{}, nil
 }
 
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {

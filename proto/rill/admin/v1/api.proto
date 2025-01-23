@@ -1646,6 +1646,7 @@ message UpdateUserPreferencesResponse {
 
 message DeleteUserRequest {
   string email = 1 [(validate.rules).string.email = true];
+  string organization = 2 [(validate.rules).string.min_len = 1];
 }
 
 message DeleteUserResponse {}

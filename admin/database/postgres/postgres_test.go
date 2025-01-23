@@ -389,6 +389,11 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
 
+	// CountMemberByOrganization
+	count, err := db.CountMemberByOrganization(ctx, org.ID)
+	require.NoError(t, err)
+	require.Equal(t, count, 2)
+
 	// fetch invites without name filter
 	invites, err := db.FindOrganizationInvites(ctx, org.ID, "", 1)
 	require.NoError(t, err)

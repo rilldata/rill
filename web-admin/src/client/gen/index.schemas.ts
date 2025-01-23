@@ -16,6 +16,8 @@ export type AdminServiceListBookmarksParams = {
   resourceName?: string;
 };
 
+export type AdminServiceDeleteUserParams = { organization?: string };
+
 export type AdminServiceGetUserParams = { email?: string };
 
 export type AdminServiceSudoGetResourceParams = {

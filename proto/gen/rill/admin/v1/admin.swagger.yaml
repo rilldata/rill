@@ -3471,6 +3471,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: organization
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/users/bookmarks:
