@@ -113,7 +113,7 @@
       {#if isComplexFilter}
         <AdvancedFilter advancedFilter={$whereFilter} />
       {:else if allDimensionFilters.length || allMeasureFilters.length}
-        {#each allDimensionFilters as { name, label, selectedValues, metricsViewNames } (name)}
+        {#each allDimensionFilters as { name, label, selectedValues } (name)}
           {@const dimension = $allDimensions.find(
             (d) => d.name === name || d.column === name,
           )}
