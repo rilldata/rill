@@ -38,7 +38,10 @@
 
   const dispatchGridstackEvent =
     createEventDispatcher<GridstackDispatchEvents>();
-  const dispatchEvent = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    select: { index: number };
+    deselect: void;
+  }>();
 
   let gridEl: HTMLDivElement;
 
@@ -59,15 +62,23 @@
     }
   }
 
-  function handleMouseDown(event: MouseEvent) {
+  function handlePointerDown(event: PointerEvent) {
     const target = event.target as HTMLElement;
+
+    // Selecting whitespace in the canvas
+    if (target.classList.contains("grid-stack")) {
+      dispatch("deselect");
+      return;
+    }
+
+    // Handle component selection
     const contentEl = target.closest(".grid-stack-item-content");
     const itemEl = contentEl?.querySelector(".grid-stack-item-content-item");
 
     if (itemEl) {
       const index = itemEl.getAttribute("data-index");
       if (index !== null) {
-        dispatchEvent("select", { index: parseInt(index, 10) });
+        dispatch("select", { index: parseInt(index, 10) });
       }
     }
   }
@@ -202,14 +213,14 @@
       });
     });
 
-    gridEl.addEventListener("mousedown", handleMouseDown);
+    gridEl.addEventListener("pointerdown", handlePointerDown);
 
     grid.load(items);
   });
 
   onDestroy(() => {
     gridStackEvents.forEach((event) => grid?.off(event));
-    gridEl?.removeEventListener("mousedown", handleMouseDown);
+    gridEl?.removeEventListener("pointerdown", handlePointerDown);
 
     if (grid) {
       grid.removeAll(true);
