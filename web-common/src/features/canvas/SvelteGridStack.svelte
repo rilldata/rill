@@ -7,11 +7,18 @@
   import "gridstack/dist/gridstack-extra.min.css";
   import "gridstack/dist/gridstack.min.css";
   import type { GridstackDispatchEvents } from "./types.ts";
-  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1CanvasItem,
+    V1CanvasSpec,
+  } from "@rilldata/web-common/runtime-client";
+  import * as defaults from "./constants";
 
   export let items: Array<V1CanvasItem>;
   export let grid: GridStack;
   export let embed = false;
+  export let spec: V1CanvasSpec;
+
+  $: console.log("[SvelteGridStack] spec", spec);
 
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
@@ -43,6 +50,9 @@
     animate: false,
     float: true,
     staticGrid: embed,
+    // Note: There is no gap property in gridstack.js, so we use margin to set the gap
+    // TODO: might need to half the gap for the top and bottom, require special handling
+    margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
   } as GridStackOptions;
 
   function handleMouseDown(event: MouseEvent) {

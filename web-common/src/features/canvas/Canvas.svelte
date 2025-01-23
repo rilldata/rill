@@ -204,7 +204,11 @@
 {#if items.length > 0}
   <CanvasDashboardPreview
     {items}
+<<<<<<< HEAD
     showFilterBar={filtersEnabled}
+=======
+    {spec}
+>>>>>>> 2135df828 (workaround for spec gapx and gapy in gridstack margin)
     selectedIndex={$selectedIndex}
     on:update={handleUpdate}
     on:delete={handleDelete}

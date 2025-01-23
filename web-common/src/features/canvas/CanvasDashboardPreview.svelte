@@ -1,6 +1,9 @@
 <script lang="ts">
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
+  import type {
+    V1CanvasItem,
+    V1CanvasSpec,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import PreviewElement from "./PreviewElement.svelte";
   import SvelteGridStack from "./SvelteGridStack.svelte";
@@ -16,6 +19,7 @@
   export let items: V1CanvasItem[];
   export let selectedIndex: number | null = null;
   export let showFilterBar = true;
+  export let spec: V1CanvasSpec;
 
   const { canvasName, canvasEntity } = getCanvasStateManagers();
   const dispatch = createEventDispatcher();
@@ -123,6 +127,7 @@
   <SvelteGridStack
     bind:grid
     {items}
+    {spec}
     let:index
     let:item
     on:select={handleSelect}
