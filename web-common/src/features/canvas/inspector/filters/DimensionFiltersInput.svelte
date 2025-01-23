@@ -123,6 +123,7 @@
               <DimensionFilter
                 metricsViewNames={[metricsView]}
                 readOnly={false}
+                smallChip
                 {name}
                 {label}
                 {selectedValues}
