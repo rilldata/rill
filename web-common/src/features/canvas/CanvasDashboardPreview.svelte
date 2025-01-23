@@ -25,44 +25,19 @@
   const dispatch = createEventDispatcher();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  // let scrollOffset = 0;
-  let changing = false;
-
-  $: instanceId = $runtime.instanceId;
-
-  // $: gridWidth = contentRect.width;
-  // $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
-  // $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
-
   let grid: GridStack;
   let gridContainer: HTMLElement;
+
+  $: instanceId = $runtime.instanceId;
 
   $: if (grid) {
     canvasEntity.setGridstack(grid);
   }
 
-  // function handleMousedown(
-  //   e: CustomEvent<{
-  //     e: MouseEvent & { currentTarget: HTMLButtonElement };
-  //   }>,
-  // ) {
-  //   console.log("CanvasDashboardPreview handleMousedown");
-  //   e.preventDefault();
-  //   changing = true;
-  // }
-
   function handleDelete(e: CustomEvent<{ index: number }>) {
     console.log("[CanvasDashboardPreview] handleDelete", e.detail.index);
     items.splice(e.detail.index, 1);
   }
-
-  // function handleScroll(
-  //   e: UIEvent & {
-  //     currentTarget: EventTarget & HTMLDivElement;
-  //   },
-  // ) {
-  //   scrollOffset = e.currentTarget.scrollTop;
-  // }
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
@@ -182,12 +157,11 @@
       on:dragstop={handleDragStop}
     >
       {@const selected = index === activeIndex}
-      {@const interacting = selected && changing}
       <PreviewElement
         {instanceId}
         i={index}
+        {selected}
         component={item}
-        {interacting}
         on:delete={handleDelete}
       />
     </SvelteGridStack>

@@ -11,15 +11,12 @@
   export let i: number;
   export let builders: Builder[] = [];
   export let embed = false;
-  // export let selected = false;
-  export let interacting = false;
-  // export let width: number;
-  // export let height: number;
-  // export let top: number;
-  // export let left: number;
+  export let selected = false;
   export let localZIndex = 0;
   export let componentName: string;
   export let instanceId: string;
+
+  let isHovered = false;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -33,6 +30,16 @@
 
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
+
+  function handleMouseEnter() {
+    if (embed) return;
+    isHovered = true;
+  }
+
+  function handleMouseLeave() {
+    if (embed) return;
+    isHovered = false;
+  }
 </script>
 
 <div
@@ -41,17 +48,18 @@
   role="presentation"
   data-index={i}
   class="canvas-component hover:cursor-pointer active:cursor-grab pointer-events-auto size-full"
+  data-selected={selected}
+  data-hovered={isHovered}
   class:!cursor-default={embed}
   style:z-index={renderer === "select" ? 100 : localZIndex}
   on:contextmenu
   on:pointerenter
   on:pointerleave
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
 >
   <div class="size-full relative">
-    <div
-      class="size-full overflow-hidden flex flex-col flex-none"
-      class:shadow-lg={interacting}
-    >
+    <div class="size-full overflow-hidden flex flex-col flex-none">
       <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
         {#if title || description}
           <div class="w-full h-fit flex flex-col border-b bg-white p-2">
@@ -81,4 +89,24 @@
     font-size: 12px;
     font-weight: 400;
   }
+
+  /* .canvas-component {
+    border: 2px solid transparent;
+    box-shadow:
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06);
+  }
+
+  .canvas-component[data-hovered="true"] {
+    box-shadow:
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09);
+  } */
+
+  /* .canvas-component[data-selected="true"] {
+    border-color: var(--color-primary-300);
+  } */
 </style>

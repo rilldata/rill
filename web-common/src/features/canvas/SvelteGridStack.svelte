@@ -93,9 +93,6 @@
     const currentCount = currentItems.length;
     const newCount = items.length;
 
-    // console.log("[SvelteGridStack] currentCount", currentCount);
-    // console.log("[SvelteGridStack] newCount", newCount);
-
     // Update existing items and add new ones
     items.forEach((item, i) => {
       if (i < currentCount) {
@@ -177,13 +174,6 @@
         element.style.display = "block";
         element.style.width = "100%";
         element.style.height = "100%";
-
-        // console.log("[SvelteGridStack] appended element for widget", {
-        //   index,
-        //   // nodeId: node.id,
-        //   element,
-        //   child,
-        // });
       });
     });
 
@@ -264,15 +254,19 @@
 
   :global(.grid-stack-item-content) {
     @apply rounded-sm bg-white;
+    @apply border border-gray-200;
+    box-shadow:
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06);
   }
 
-  :global(.grid-stack-item-content) {
-    /* @apply flex flex-col items-center justify-center; */
-    @apply bg-white border border-gray-200 rounded-md shadow-sm;
-  }
-
-  :global(.grid-stack-item-content[data-highlight="true"]),
-  :global(.ui-draggable-dragging) {
-    @apply border-primary-300;
+  /* :global(.ui-draggable-dragging) */
+  :global(.grid-stack-item-content[data-highlight="true"]) {
+    box-shadow:
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09);
   }
 </style>

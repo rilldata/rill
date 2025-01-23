@@ -43,7 +43,7 @@
   }
 </script>
 
-<div class="size-full p-2 bg-white">
+<div class="size-full p-4 bg-white">
   <ContextMenu>
     <ContextMenuTrigger>
       <button
