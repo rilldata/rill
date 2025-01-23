@@ -14,6 +14,7 @@
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;
@@ -34,6 +35,7 @@
   // $: gridCell = defaults.DASHBOARD_WIDTH / defaults.COLUMN_COUNT;
 
   let grid: GridStack;
+  let gridContainer: HTMLElement;
 
   $: if (grid) {
     canvasEntity.setGridstack(grid);
@@ -143,6 +145,18 @@
     activeIndex = null;
     canvasEntity.setSelectedComponentIndex(activeIndex);
   }
+
+  function handleClickOutside(event: Event) {
+    const target = event.target as HTMLElement;
+    const canvas = target.closest(".canvas");
+    const gridStack = target.closest(".grid-stack");
+
+    // Only deselect if click is inside canvas but outside grid-stack
+    if (canvas && !gridStack) {
+      activeIndex = null;
+      canvasEntity.setSelectedComponentIndex(activeIndex);
+    }
+  }
 </script>
 
 {#if showFilterBar}
@@ -155,25 +169,27 @@
 {/if}
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
-  <SvelteGridStack
-    bind:grid
-    {items}
-    {spec}
-    let:index
-    let:item
-    on:select={handleSelect}
-    on:deselect={handleDeselect}
-    on:resizestop={handleResizeStop}
-    on:dragstop={handleDragStop}
-  >
-    {@const selected = index === activeIndex}
-    {@const interacting = selected && changing}
-    <PreviewElement
-      {instanceId}
-      i={index}
-      component={item}
-      {interacting}
-      on:delete={handleDelete}
-    />
-  </SvelteGridStack>
+  <div bind:this={gridContainer} use:clickOutside={[null, handleClickOutside]}>
+    <SvelteGridStack
+      bind:grid
+      {items}
+      {spec}
+      let:index
+      let:item
+      on:select={handleSelect}
+      on:deselect={handleDeselect}
+      on:resizestop={handleResizeStop}
+      on:dragstop={handleDragStop}
+    >
+      {@const selected = index === activeIndex}
+      {@const interacting = selected && changing}
+      <PreviewElement
+        {instanceId}
+        i={index}
+        component={item}
+        {interacting}
+        on:delete={handleDelete}
+      />
+    </SvelteGridStack>
+  </div>
 </CanvasDashboardWrapper>
