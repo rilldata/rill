@@ -37,6 +37,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
+  export let leftPadding = 8;
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -135,6 +136,7 @@
   {#if !options}
     <div
       class="input-wrapper {textClass}"
+      style:padding-left="{leftPadding}px"
       style:width
       style:font-family={fontFamily}
     >
@@ -265,7 +267,7 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-2 pr-0.5;
+    @apply flex justify-center items-center pr-0.5;
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;

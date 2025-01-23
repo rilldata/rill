@@ -3265,6 +3265,13 @@ definitions:
           type: object
       openapiResponseSchema:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+      skipNestedSecurity:
+        type: boolean
   v1APIState:
     type: object
   v1Alert:
@@ -3610,6 +3617,9 @@ definitions:
           List of selectable time zones.
           If the list is empty, a default list should be shown.
           The values should be valid IANA location identifiers.
+      filtersEnabled:
+        type: boolean
+        description: Indicates if filters should be enabled for the canvas.
       defaultPreset:
         $ref: '#/definitions/v1CanvasPreset'
         description: Preset UI state to show by default.

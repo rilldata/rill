@@ -39,11 +39,15 @@ interface LineChart {
   line_chart: ChartConfig;
 }
 
+interface AreaChart {
+  area_chart: ChartConfig;
+}
+
 interface BarChart {
   bar_chart: ChartConfig;
 }
 
-export type ChartTemplates = LineChart | BarChart;
+export type ChartTemplates = LineChart | BarChart | AreaChart;
 export interface KPITemplateT {
   kpi: KPISpec;
 }

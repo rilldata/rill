@@ -64,15 +64,18 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// TODO: Should it resolve security and check access here?
+	// Rewrite the claims before passing them to the resolver
+	claims := auth.GetClaims(ctx).SecurityClaims()
+	if api.Spec.SkipNestedSecurity {
+		claims.SkipChecks = true
+	}
 
 	// Resolve the API to JSON data
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         instanceID,
-		Resolver:           api.Spec.Resolver,
-		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
-		Args:               args,
-		Claims:             auth.GetClaims(ctx).SecurityClaims(),
+		InstanceID: instanceID,
+		Resolver:   api.Spec.Resolver,
+		Args:       args,
+		Claims:     claims,
 	})
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)

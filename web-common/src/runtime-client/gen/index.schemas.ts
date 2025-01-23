@@ -2369,6 +2369,8 @@ TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-exp
 If the list is empty, a default list should be shown.
 The values should be valid IANA location identifiers. */
   timeZones?: string[];
+  /** Indicates if filters should be enabled for the canvas. */
+  filtersEnabled?: boolean;
   defaultPreset?: V1CanvasPreset;
   /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
@@ -2557,6 +2559,8 @@ export interface V1APISpec {
   openapiSummary?: string;
   openapiParameters?: V1APISpecOpenapiParametersItem[];
   openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
+  securityRules?: V1SecurityRule[];
+  skipNestedSecurity?: boolean;
 }
 
 /**

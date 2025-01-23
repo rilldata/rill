@@ -10300,6 +10300,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for FiltersEnabled
+
 	if all {
 		switch v := interface{}(m.GetDefaultPreset()).(type) {
 		case interface{ ValidateAll() error }:
@@ -11136,6 +11138,42 @@ func (m *APISpec) validate(all bool) error {
 			}
 		}
 	}
+
+	for idx, item := range m.GetSecurityRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return APISpecValidationError{
+					field:  fmt.Sprintf("SecurityRules[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for SkipNestedSecurity
 
 	if len(errors) > 0 {
 		return APISpecMultiError(errors)

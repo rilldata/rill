@@ -49,10 +49,10 @@ see more button
     <TooltipShortcutContainer>
       <div>
         <StackingWord key="shift">Copy</StackingWord>
-        this dimension value to clipboard
+        value to clipboard
       </div>
       <Shortcut>
-        <span style="font-family: var(--system);">⇧</span> + Click
+        <span style="font-family: var(--system);">⇧</span> + Click on cell
       </Shortcut>
     </TooltipShortcutContainer>
   {/if}

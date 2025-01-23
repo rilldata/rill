@@ -5,7 +5,7 @@ export interface FieldConfig {
   label?: string;
   format?: string;
   showAxisTitle?: boolean; // Default is false
-  type: "quantitative" | "ordinal" | "nominal" | "temporal" | "geojson";
+  type: "quantitative" | "ordinal" | "nominal" | "temporal";
   timeUnit?: string; // For temporal fields
 }
 
@@ -18,10 +18,23 @@ export interface ChartConfig {
   vl_config?: string;
 }
 
-export type ChartType = "line_chart" | "bar_chart" | "stacked_bar";
+export type ChartType =
+  | "line_chart"
+  | "bar_chart"
+  | "stacked_bar"
+  | "area_chart";
 
 export interface ChartMetadata {
   type: ChartType;
   icon: ComponentType<SvelteComponent>;
   title: string;
+}
+
+/** Temporary solution for the lack of vega lite type exports */
+export interface TooltipValue {
+  title?: string;
+  field: string;
+  format?: string;
+  formatType?: string;
+  type: "quantitative" | "ordinal" | "temporal" | "nominal";
 }

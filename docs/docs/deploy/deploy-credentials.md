@@ -6,7 +6,7 @@ sidebar_position: 11
 ---
 ## Overview
 
-When deploying a project to Rill Cloud, credentials will need to be **separately** specified and passed in for Rill Cloud to connect to and ingest data from [remote sources](/reference/connectors/connectors.md). [Local credentials](../build/credentials/credentials.md#setting-credentials-for-rill-developer) will be used by Rill Developer to connect to sources from your local machine, typically for local devlopment and modeling, while [deployment credentials](../build/credentials/credentials.md#setting-credentials-for-a-rill-cloud-project) are what is used by Rill Cloud for production workloads. For more details about using and setting deployment credentials, please see our [configuring credentials](../build/credentials/credentials.md) page and the respective [connectors](/reference/connectors/connectors.md) or [OLAP engine](/reference/olap-engines/olap-engines.md) page.
+When deploying a project to Rill Cloud, credentials will need to be **separately** specified and passed in for Rill Cloud to connect to and ingest data from [remote sources](/reference/connectors/connectors.md). [Local credentials](/build/credentials/#setting-credentials-for-rill-developer) will be used by Rill Developer to connect to sources from your local machine, typically for local devlopment and modeling, while [deployment credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud) are what is used by Rill Cloud for production workloads. For more details about using and setting deployment credentials, please see our [configuring credentials](../build/credentials/credentials.md) page and the respective [connectors](/reference/connectors/connectors.md) or [OLAP engine](/reference/olap-engines/olap-engines.md) page.
 
 :::info Separating development and production credentials
 
@@ -58,6 +58,6 @@ Using service accounts for production workflows and pipelines is a general best 
 
 :::warning Be careful of overriding local credentials and/or pushing the wrong credentials to Rill Cloud
 
-When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e. Rill Developer). Therefore, it is worth double checking that the correct credentials are being used or set before [syncing credentials](../build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](../build/connect/connect.md#rill-developer-vs-rill-cloud) using the `rill env push` and `rill env pull` commands respectively
+When using service accounts, it is very likely that different or even personal credentials are being used in local development (i.e. Rill Developer). Therefore, it is worth double checking that the correct credentials are being used or set before [syncing credentials](../build/credentials/credentials.md#pulling-credentials-and-variables-from-a-deployed-project-on-rill-cloud) between your local instance of [Rill Developer and Rill Cloud](../build/connect/connect.md#rill-developer-vs-rill-cloud) using the `rill env push` and `rill env pull` commands respectively
 
 :::
