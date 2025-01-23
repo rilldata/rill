@@ -512,13 +512,16 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		AddSource: true,
 	}))
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
-		LocalPath:      dataDir,
-		Remote:         c.remote,
-		ReadSettings:   c.config.readSettings(),
-		WriteSettings:  c.config.writeSettings(),
-		InitQueries:    bootQueries,
-		Logger:         logger,
-		OtelAttributes: []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
+		LocalPath:                   dataDir,
+		Remote:                      c.remote,
+		CPU:                         c.config.CPU,
+		MemoryLimitGB:               c.config.MemoryLimitGB,
+		ReadWriteResourceSplitRatio: c.config.ReadWriteResourceSplitRatio,
+		ReadSettings:                c.config.readSettings(),
+		WriteSettings:               c.config.writeSettings(),
+		InitQueries:                 bootQueries,
+		Logger:                      logger,
+		OtelAttributes:              []attribute.KeyValue{attribute.String("instance_id", c.instanceID)},
 	})
 	return err
 }

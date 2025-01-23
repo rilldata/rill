@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -18,14 +17,12 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
-	// CPU cores available for the read DB. If no CPUWrite is set then this is split evenly between read and write.
+	// CPU cores available for the DB. If no ratio is set then this is split evenly between read and write.
 	CPU int `mapstructure:"cpu"`
-	// MemoryLimitGB is the amount of memory available for the read DB. If no MemoryLimitGBWrite is set then this is split evenly between read and write.
+	// MemoryLimitGB is the amount of memory available for the DB. If no ratio is set then this is split evenly between read and write.
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// CPUWrite is CPU available for the DB when writing data.
-	CPUWrite int `mapstructure:"cpu_write"`
-	// MemoryLimitGBWrite is the amount of memory available for the DB when writing data.
-	MemoryLimitGBWrite int `mapstructure:"memory_limit_gb_write"`
+	// ReadWriteResourceSplitRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
+	ReadWriteResourceSplitRatio float64 `mapstructure:"read_write_resource_split_ratio"`
 	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
 	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.
@@ -53,23 +50,11 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 func (c *config) readSettings() map[string]string {
 	readSettings := make(map[string]string)
-	if c.MemoryLimitGB > 0 {
-		readSettings["max_memory"] = fmt.Sprintf("%dGB", c.MemoryLimitGB)
-	}
-	if c.CPU > 0 {
-		readSettings["threads"] = strconv.Itoa(c.CPU)
-	}
 	return readSettings
 }
 
 func (c *config) writeSettings() map[string]string {
 	writeSettings := make(map[string]string)
-	if c.MemoryLimitGBWrite > 0 {
-		writeSettings["max_memory"] = fmt.Sprintf("%dGB", c.MemoryLimitGBWrite)
-	}
-	if c.CPUWrite > 0 {
-		writeSettings["threads"] = strconv.Itoa(c.CPUWrite)
-	}
 	// useful for motherduck but safe to pass at initial connect
 	writeSettings["custom_user_agent"] = "rill"
 	return writeSettings
