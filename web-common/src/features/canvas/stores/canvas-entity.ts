@@ -63,7 +63,7 @@ export class CanvasEntity {
     let componentEntity = this.components.get(componentName);
 
     if (!componentEntity) {
-      componentEntity = new CanvasComponentState(this.spec);
+      componentEntity = new CanvasComponentState(componentName, this.spec);
       this.components.set(componentName, componentEntity);
     }
     return componentEntity;

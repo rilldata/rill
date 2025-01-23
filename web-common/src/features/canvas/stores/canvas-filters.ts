@@ -23,7 +23,10 @@ import {
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
+import {
+  convertExpressionToFilterParam,
+  convertFilterParamToExpression,
+} from "@rilldata/web-common/features/dashboards/url-state/filters/converters";
 import type {
   MetricsViewSpecDimensionV2,
   V1Expression,
@@ -554,5 +557,10 @@ export class CanvasFilters {
 
   setTemporaryFilterName = (name: string) => {
     this.temporaryFilterName.set(name);
+  };
+
+  setFiltersFromText = (filterText: string) => {
+    const filter = convertFilterParamToExpression(filterText);
+    this.setFilters(filter);
   };
 }

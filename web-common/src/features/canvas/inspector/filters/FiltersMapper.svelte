@@ -57,7 +57,6 @@
           id={key}
           filter={localParamValues[key]}
           onChange={(filter) => {
-            console.log("before", localParamValues[key], "filter", filter);
             localParamValues[key] = filter;
             component.updateProperty(key, filter);
           }}
