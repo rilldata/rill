@@ -8,5 +8,5 @@ export const GAP_SIZE = 4;
 export const MIN_ROW_HEIGHT = 50;
 export const GRID_CELL_SIZE = 50;
 export const COMPONENT_MIN_WIDTH = 2;
-export const DEFAULT_TOP_BOTTOM_GAP = 8;
-export const DEFAULT_LEFT_RIGHT_GAP = 16;
+export const DEFAULT_TOP_BOTTOM_GAP = 10;
+export const DEFAULT_LEFT_RIGHT_GAP = 10;
