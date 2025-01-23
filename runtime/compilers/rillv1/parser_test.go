@@ -1694,6 +1694,10 @@ time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+
+filters:
+  enable: true
+
 defaults:
   time_range: P4W
 
@@ -1770,6 +1774,7 @@ items:
 						},
 					},
 				},
+				FiltersEnabled: true,
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
