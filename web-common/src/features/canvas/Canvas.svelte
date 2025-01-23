@@ -29,6 +29,8 @@
 
   const { canvasEntity } = getCanvasStateManagers();
 
+  $: console.log("[Canvas] selectedIndex", $selectedIndex);
+
   $: workspaceLayout = workspaces.get(fileArtifact.path);
   // Open inspector when a canvas item is selected
   $: if ($selectedIndex !== null && $selectedIndex !== undefined) {
@@ -208,8 +210,12 @@
     showFilterBar={filtersEnabled}
 =======
     {spec}
+<<<<<<< HEAD
 >>>>>>> 2135df828 (workaround for spec gapx and gapy in gridstack margin)
     selectedIndex={$selectedIndex}
+=======
+    activeIndex={$selectedIndex}
+>>>>>>> d2fad8e9e (use data-index when dragging/resizing)
     on:update={handleUpdate}
     on:delete={handleDelete}
   />

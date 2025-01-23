@@ -78,9 +78,8 @@
     const currentCount = currentItems.length;
     const newCount = items.length;
 
-    console.log("[SvelteGridStack] currentItems", currentItems);
-    console.log("[SvelteGridStack] currentCount", currentCount);
-    console.log("[SvelteGridStack] newCount", newCount);
+    // console.log("[SvelteGridStack] currentCount", currentCount);
+    // console.log("[SvelteGridStack] newCount", newCount);
 
     // Update existing items and add new ones
     items.forEach((item, i) => {
@@ -130,7 +129,7 @@
         const gridItems = grid.getGridItems();
         const index = gridItems.findIndex((item) => item === node.el);
 
-        console.log("[SvelteGridStack] adding content for index:", index);
+        // console.log("[SvelteGridStack] adding content for index:", index);
 
         const element = gridEl.querySelector(
           `#grid-id-${index}`,
@@ -151,12 +150,12 @@
         element.style.width = "100%";
         element.style.height = "100%";
 
-        console.log("[SvelteGridStack] appended element for widget", {
-          index,
-          nodeId: node.id,
-          element,
-          child,
-        });
+        // console.log("[SvelteGridStack] appended element for widget", {
+        //   index,
+        //   // nodeId: node.id,
+        //   element,
+        //   child,
+        // });
       });
     });
 

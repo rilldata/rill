@@ -14,15 +14,11 @@
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-<<<<<<< HEAD
-  import { CanvasFilters } from "./stores/canvas-filters";
-=======
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
->>>>>>> b63b710e8 (readd filters to preview)
 
   export let items: V1CanvasItem[];
-  export let selectedIndex: number | null = null;
   export let showFilterBar = true;
+  export let activeIndex: number | null = null;
   export let spec: V1CanvasSpec;
 
   const { canvasEntity } = getCanvasStateManagers();
@@ -79,11 +75,28 @@
       target: GridItemHTMLElement;
     }>,
   ) {
+    // Get index from the resized element's data attribute
+    const contentEl = e.detail.target?.querySelector(
+      ".grid-stack-item-content-item",
+    );
+    const index = contentEl?.getAttribute("data-index");
+
+    console.log("[CanvasDashboardPreview] handleResizeStop", {
+      index: Number(index),
+      contentEl,
+      target: e.detail.target,
+    });
+
+    if (index === null) {
+      console.error("No index found for resized widget");
+      return;
+    }
+
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
-      index: selectedIndex,
+      index: Number(index), // Use the data-index from the element
       x: Number(x),
       y: Number(y),
       w: Number(w),
@@ -98,11 +111,21 @@
       target: GridItemHTMLElement;
     }>,
   ) {
+    const contentEl = e.detail.target?.querySelector(
+      ".grid-stack-item-content-item",
+    );
+    const index = contentEl?.getAttribute("data-index");
+
+    if (index === null) {
+      console.error("No index found for dragged widget");
+      return;
+    }
+
     const { w, h, x, y } =
       (e.detail.target?.gridstackNode as GridStackNode) || {};
 
     dispatch("update", {
-      index: selectedIndex,
+      index: Number(index),
       x: Number(x),
       y: Number(y),
       w: Number(w),
@@ -113,8 +136,8 @@
   function handleSelect(e: CustomEvent<{ index: number }>) {
     console.log("CanvasDashboardPreview handleSelect", e.detail.index);
 
-    selectedIndex = e.detail.index;
-    canvasEntity.setSelectedComponentIndex(selectedIndex);
+    activeIndex = e.detail.index;
+    canvasEntity.setSelectedComponentIndex(activeIndex);
   }
 </script>
 
@@ -138,7 +161,7 @@
     on:resizestop={handleResizeStop}
     on:dragstop={handleDragStop}
   >
-    {@const selected = index === selectedIndex}
+    {@const selected = index === activeIndex}
     {@const interacting = selected && changing}
     <PreviewElement
       {instanceId}
