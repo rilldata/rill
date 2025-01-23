@@ -175,9 +175,7 @@ export const getIndependentMeasures = (
   return [...measures];
 };
 
-export const getFilteredSimpleMeasures = (
-  measures: MetricsViewSpecMeasureV2[],
-) => {
+export const getSimpleMeasures = (measures: MetricsViewSpecMeasureV2[]) => {
   return (
     measures?.filter(
       (m) =>
