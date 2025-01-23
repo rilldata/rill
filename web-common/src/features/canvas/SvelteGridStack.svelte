@@ -2,7 +2,7 @@
 <!-- Docs: https://github.com/gridstack/gridstack.js/tree/master/doc -->
 <script lang="ts">
   import type { GridStack, GridStackNode, GridStackOptions } from "gridstack";
-  import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount } from "svelte";
 
   import "gridstack/dist/gridstack-extra.min.css";
   import "gridstack/dist/gridstack.min.css";
