@@ -19,6 +19,7 @@
   let gap = 1;
   $: ({ items = [], filtersEnabled } = canvas || {
     items: [],
+    filtersEnabled: true,
     columns: 24,
     gap: 2,
   });

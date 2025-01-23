@@ -19,6 +19,7 @@
     items: [],
     columns: 24,
     gap: 2,
+    filtersEnabled: true,
   });
 </script>
 
