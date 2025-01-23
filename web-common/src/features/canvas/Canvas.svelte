@@ -15,6 +15,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { findNextAvailablePosition } from "./util";
   import type { CanvasComponentType } from "./components/types";
+  import BlankCanvas from "./BlankCanvas.svelte";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -206,16 +208,9 @@
 {#if items.length > 0}
   <CanvasDashboardPreview
     {items}
-<<<<<<< HEAD
     showFilterBar={filtersEnabled}
-=======
     {spec}
-<<<<<<< HEAD
->>>>>>> 2135df828 (workaround for spec gapx and gapy in gridstack margin)
-    selectedIndex={$selectedIndex}
-=======
     activeIndex={$selectedIndex}
->>>>>>> d2fad8e9e (use data-index when dragging/resizing)
     on:update={handleUpdate}
     on:delete={handleDelete}
   />
