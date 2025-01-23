@@ -2,7 +2,6 @@
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -18,6 +17,7 @@
     deltaColumn,
     valueColumn,
   } from "./leaderboard-widths";
+  import FloatingElement from "@rilldata/web-common/components/floating-element/FloatingElement.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -40,10 +40,12 @@
     | ((_value: number | undefined) => undefined)
     | ((value: string | number) => string);
   export let firstColumnWidth: number;
+  export let suppressTooltip: boolean;
 
   let hovered = false;
   let valueRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
   let deltaRect = new DOMRect(0, 0, DEFAULT_COL_WIDTH);
+  let parent: HTMLTableRowElement;
 
   $: ({
     dimensionValue,
@@ -163,21 +165,21 @@
 </script>
 
 <tr
+  bind:this={parent}
   class:border-b={borderBottom}
   class:border-t={borderTop}
+  class="relative"
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
-  on:click={modified({
-    shift: () => shiftClickHandler(dimensionValue),
-    click: (e) =>
-      toggleDimensionValueSelection(
-        dimensionName,
-        dimensionValue,
-        false,
-        e.ctrlKey || e.metaKey,
-      ),
-  })}
-  class="relative"
+  on:click={(e) => {
+    if (e.shiftKey) return;
+    toggleDimensionValueSelection(
+      dimensionName,
+      dimensionValue,
+      false,
+      e.ctrlKey || e.metaKey,
+    );
+  }}
 >
   <td>
     <LeaderboardItemFilterIcon
@@ -191,44 +193,41 @@
     class:ui-copy={!atLeastOneActive}
     class:ui-copy-disabled={excluded}
     class:ui-copy-strong={!excluded && selected}
+    on:click={modified({
+      shift: () => shiftClickHandler(dimensionValue),
+    })}
     class="relative size-full flex flex-none justify-between items-center leaderboard-label"
   >
-    <Tooltip location="left" distance={20}>
-      <FormattedDataType value={dimensionValue} truncate />
+    <FormattedDataType value={dimensionValue} truncate />
 
-      {#if previousValueString && hovered}
-        <span
-          class="opacity-50 whitespace-nowrap font-normal"
-          transition:slide={{ axis: "x", duration: 200 }}
-        >
-          {previousValueString} →
-        </span>
-      {/if}
+    {#if previousValueString && hovered}
+      <span
+        class="opacity-50 whitespace-nowrap font-normal"
+        transition:slide={{ axis: "x", duration: 200 }}
+      >
+        {previousValueString} →
+      </span>
+    {/if}
 
-      {#if hovered && href}
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          {href}
-          title={href}
-          on:click|stopPropagation
-        >
-          <ExternalLink className="fill-primary-600" />
-        </a>
-      {/if}
-
-      <LeaderboardTooltipContent
-        slot="tooltip-content"
-        {atLeastOneActive}
-        {excluded}
-        {filterExcludeMode}
-        label={dimensionValue}
-        {selected}
-      />
-    </Tooltip>
+    {#if hovered && href}
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        {href}
+        title={href}
+        on:click|stopPropagation
+      >
+        <ExternalLink className="fill-primary-600" />
+      </a>
+    {/if}
   </td>
 
-  <td style:background={secondCellGradient}>
+  <td
+    style:background={secondCellGradient}
+    on:click={modified({
+      shift: () => shiftClickHandler(value?.toString() || ""),
+    })}
+  >
     <div class="w-fit ml-auto bg-transparent" bind:contentRect={valueRect}>
       <FormattedDataType type="INTEGER" value={formattedValue} />
     </div>
@@ -239,7 +238,12 @@
   </td>
 
   {#if isTimeComparisonActive || isValidPercentOfTotal}
-    <td style:background={thirdCellGradient}>
+    <td
+      style:background={thirdCellGradient}
+      on:click={modified({
+        shift: () => shiftClickHandler(deltaAbs?.toString() || ""),
+      })}
+    >
       {#if isTimeComparisonActive}
         <div class="w-fit ml-auto" bind:contentRect={deltaRect}>
           <FormattedDataType
@@ -258,7 +262,12 @@
   {/if}
 
   {#if isTimeComparisonActive}
-    <td style:background={fourthCellGradient}>
+    <td
+      style:background={fourthCellGradient}
+      on:click={modified({
+        shift: () => shiftClickHandler(deltaRel?.toString() || ""),
+      })}
+    >
       <PercentageChange value={formattedDeltaRel} />
       {#if showZigZag}
         <LongBarZigZag />
@@ -266,6 +275,26 @@
     </td>
   {/if}
 </tr>
+
+{#if hovered && !suppressTooltip}
+  {#await new Promise((r) => setTimeout(r, 600)) then}
+    <FloatingElement
+      target={parent}
+      location="left"
+      alignment="middle"
+      distance={0}
+      pad={0}
+    >
+      <LeaderboardTooltipContent
+        {atLeastOneActive}
+        {excluded}
+        {filterExcludeMode}
+        label={dimensionValue}
+        {selected}
+      />
+    </FloatingElement>
+  {/await}
+{/if}
 
 <style lang="postcss">
   td {

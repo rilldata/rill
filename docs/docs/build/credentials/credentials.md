@@ -8,7 +8,7 @@ Rill requires credentials to connect to remote data sources such as private buck
 
 At a high level, configuring credentials and credentials management in Rill can be broken down into three categories:
 - Setting credentials for Rill Developer
-- [Setting credentials for a Rill Cloud project](/manage/variables-and-credentials)
+- [Setting credentials for a Rill Cloud project](/manage/project-management/variables-and-credentials)
 - Pushing and pulling credentials to / from Rill Cloud
 
 ## Setting credentials for Rill Developer

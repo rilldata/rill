@@ -185,7 +185,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 
-		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		if err != nil {
+			return nil, err
+		}
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err
