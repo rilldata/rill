@@ -73,6 +73,7 @@ export function isCanvasComponentType(
   if (!value) return false;
   return [
     "line_chart",
+    "area_chart",
     "bar_chart",
     "stacked_bar",
     "markdown",
@@ -86,7 +87,7 @@ export function isChartComponentType(
   value: string | undefined,
 ): value is CanvasComponentType {
   if (!value) return false;
-  return ["line_chart", "bar_chart", "stacked_bar"].includes(
+  return ["line_chart", "bar_chart", "stacked_bar", "area_chart"].includes(
     value as CanvasComponentType,
   );
 }
@@ -103,6 +104,7 @@ export function getComponentRegistry(): Record<
     bar_chart: new ChartComponent(),
     line_chart: new ChartComponent(),
     stacked_bar: new ChartComponent(),
+    area_chart: new ChartComponent(),
   };
 }
 
@@ -115,6 +117,7 @@ const displayMap: Record<CanvasComponentType, string> = {
   bar_chart: "Chart",
   line_chart: "Chart",
   stacked_bar: "Chart",
+  area_chart: "Chart",
 };
 
 export function getHeaderForComponent(componentType: string | undefined) {

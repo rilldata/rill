@@ -1,63 +1,22 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
+import { createEncoding, createSingleLayerBaseSpec } from "../builder";
 import type { ChartDataResult } from "../selector";
 
 export function generateVLBarChartSpec(
   config: ChartConfig,
   data: ChartDataResult,
 ): VisualizationSpec {
-  return {
-    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
-    mark: "bar",
-    width: "container",
-    autosize: { type: "fit" },
-    data: { name: "metrics-view" },
-    encoding: {
-      ...(config.x && {
-        x: {
-          field: config.x.field,
-          title: data.fields[config.x.field]?.displayName || config.x.field,
-          type: config.x.type,
-          ...(config.x.timeUnit && { timeUnit: config.x.timeUnit }),
-          ...(!config.x.showAxisTitle && { axis: { title: null } }),
-        },
-      }),
-      ...(config.y && {
-        y: {
-          field: config.y.field,
-          title: data.fields[config.y.field]?.displayName || config.y.field,
-          type: config.y.type,
-          ...(config.y.timeUnit && { timeUnit: config.y.timeUnit }),
-          ...(!config.y.showAxisTitle && { axis: { title: null } }),
-        },
-      }),
-      ...(config.color &&
-        typeof config.color === "object" && {
-          color: {
-            field: config.color.field,
-            title:
-              data.fields[config.color.field]?.displayName ||
-              config.color.field,
-            type: config.color.type,
-            ...(config.color.timeUnit && {
-              timeUnit: config.color.timeUnit,
-            }),
-          },
-        }),
-      ...(config.color &&
-        typeof config.color === "string" && {
-          color: { value: config.color },
-        }),
-      ...(config.color &&
-        typeof config.color === "object" &&
-        config.x && {
-          xOffset: {
-            field: config.color.field,
-            title:
-              data.fields[config.color.field]?.displayName ||
-              config.color.field,
-          },
-        }),
-    },
-  };
+  const spec = createSingleLayerBaseSpec("bar");
+  const baseEncoding = createEncoding(config, data);
+
+  if (config.color && typeof config.color === "object" && config.x) {
+    baseEncoding.xOffset = {
+      field: config.color.field,
+      title: data.fields[config.color.field]?.displayName || config.color.field,
+    };
+  }
+
+  spec.encoding = baseEncoding;
+  return spec;
 }

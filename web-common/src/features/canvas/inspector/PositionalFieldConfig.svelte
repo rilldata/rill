@@ -4,6 +4,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FieldConfig } from "../components/charts/types";
 
   export let key: string;
@@ -12,16 +13,33 @@
   export let fieldConfig: FieldConfig;
   export let onChange: (updatedConfig: FieldConfig) => void;
 
+  const {
+    canvasEntity: {
+      spec: { getTimeDimensionForMetricView },
+    },
+  } = getCanvasStateManagers();
+
   $: isDimension = key === "x";
+  $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
   function updateFieldConfig(fieldName: string) {
-    const updatedConfig: FieldConfig = {
-      ...fieldConfig,
-      field: fieldName,
-      type: isDimension ? "nominal" : "quantitative",
-    };
+    const isTime = fieldName === "__time";
 
-    // TODO: Add displayName to title
+    let updatedConfig: FieldConfig;
+    if (isTime && $timeDimension) {
+      updatedConfig = {
+        ...fieldConfig,
+        field: $timeDimension,
+        type: "temporal",
+      };
+    } else {
+      updatedConfig = {
+        ...fieldConfig,
+        field: fieldName,
+        type: isTime ? "temporal" : isDimension ? "nominal" : "quantitative",
+      };
+    }
+
     onChange(updatedConfig);
   }
 
@@ -63,6 +81,7 @@
     metricName={metricsView}
     id={`${key}-field`}
     type={isDimension ? "dimension" : "measure"}
+    includeTime
     selectedItem={fieldConfig?.field}
     onSelect={async (field) => {
       updateFieldConfig(field);

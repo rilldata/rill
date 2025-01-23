@@ -13,7 +13,7 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../selector";
 
-export function generateVLLineChartSpec(
+export function generateVLAreaChartSpec(
   config: ChartConfig,
   data: ChartDataResult,
 ): VisualizationSpec {
@@ -47,11 +47,11 @@ export function generateVLLineChartSpec(
   spec.layer = [
     {
       encoding: {
-        y: createYEncoding(config, data),
+        y: { ...createYEncoding(config, data), stack: "zero" },
         color: createColorEncoding(config, data),
       },
       layer: [
-        { mark: "line" },
+        { mark: "area" },
         {
           transform: [{ filter: { param: "hover", empty: false } }],
           mark: {
@@ -64,6 +64,7 @@ export function generateVLLineChartSpec(
             strokeWidth: 1,
           },
         },
+        { mark: { type: "line", opacity: 0.5 } },
       ],
     },
     {
