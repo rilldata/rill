@@ -67,8 +67,8 @@ type DBOptions struct {
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB. If no ratio is set then this is split evenly between read and write.
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// ReadWriteResourceSplitRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
-	ReadWriteResourceSplitRatio float64 `mapstructure:"read_write_resource_split_ratio"`
+	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
+	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
 	// ReadSettings are settings applied the read duckDB handle.
 	ReadSettings map[string]string
 	// WriteSettings are settings applied the write duckDB handle.
@@ -81,10 +81,6 @@ type DBOptions struct {
 }
 
 func (d *DBOptions) ValidateSettings() error {
-	if d.ReadWriteResourceSplitRatio < 0 || d.ReadWriteResourceSplitRatio >= 1 {
-		return errors.New("invalid `resource_split_ratio`. Must be between 0 and 1")
-	}
-
 	if d.ReadSettings == nil {
 		d.ReadSettings = make(map[string]string)
 	}
@@ -129,31 +125,20 @@ func (d *DBOptions) ValidateSettings() error {
 		}
 	}
 
-	if d.ReadWriteResourceSplitRatio == 0 {
-		d.ReadSettings["memory_limit"] = fmt.Sprintf("%d bytes", memoryLimitBytes/2)
-		d.WriteSettings["memory_limit"] = fmt.Sprintf("%d bytes", memoryLimitBytes/2)
-		if threads < 2 {
-			d.ReadSettings["threads"] = "1"
-		} else {
-			d.ReadSettings["threads"] = strconv.Itoa(threads / 2)
-		}
-		d.WriteSettings["threads"] = strconv.Itoa((threads + 1) / 2)
-	} else {
-		d.ReadSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*d.ReadWriteResourceSplitRatio))
-		d.WriteSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*(1-d.ReadWriteResourceSplitRatio)))
+	d.ReadSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*d.ReadWriteRatio))
+	d.WriteSettings["memory_limit"] = fmt.Sprintf("%d bytes", int64(float64(memoryLimitBytes)*(1-d.ReadWriteRatio)))
 
-		readThreads := math.Floor(float64(threads) * d.ReadWriteResourceSplitRatio)
-		if readThreads <= 1 {
-			d.ReadSettings["threads"] = "1"
-		} else {
-			d.ReadSettings["threads"] = strconv.Itoa(int(readThreads))
-		}
-		writeThreads := threads - int(readThreads)
-		if writeThreads <= 1 {
-			d.WriteSettings["threads"] = "1"
-		} else {
-			d.WriteSettings["threads"] = strconv.Itoa(writeThreads)
-		}
+	readThreads := math.Floor(float64(threads) * d.ReadWriteRatio)
+	if readThreads <= 1 {
+		d.ReadSettings["threads"] = "1"
+	} else {
+		d.ReadSettings["threads"] = strconv.Itoa(int(readThreads))
+	}
+	writeThreads := threads - int(readThreads)
+	if writeThreads <= 1 {
+		d.WriteSettings["threads"] = "1"
+	} else {
+		d.WriteSettings["threads"] = strconv.Itoa(writeThreads)
 	}
 	return nil
 }

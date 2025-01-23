@@ -21,8 +21,8 @@ type config struct {
 	CPU int `mapstructure:"cpu"`
 	// MemoryLimitGB is the amount of memory available for the DB. If no ratio is set then this is split evenly between read and write.
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// ReadWriteResourceSplitRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
-	ReadWriteResourceSplitRatio float64 `mapstructure:"read_write_resource_split_ratio"`
+	// ReadWriteRatio is the ratio of resources to allocate to the read DB. If set, CPU and MemoryLimitGB are distributed based on this ratio.
+	ReadWriteRatio float64 `mapstructure:"read_write_ratio"`
 	// BootQueries is SQL to execute when initializing a new connection. It runs before any extensions are loaded or default settings are set.
 	BootQueries string `mapstructure:"boot_queries"`
 	// InitSQL is SQL to execute when initializing a new connection. It runs after extensions are loaded and and default settings are set.
@@ -32,7 +32,9 @@ type config struct {
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
-	cfg := &config{}
+	cfg := &config{
+		ReadWriteRatio: 0.5,
+	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
