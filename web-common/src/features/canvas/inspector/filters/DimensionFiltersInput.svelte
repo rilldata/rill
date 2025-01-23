@@ -25,7 +25,7 @@
     },
   } = getCanvasStateManagers();
 
-  const componentStore = useComponent(selectedComponentName);
+  $: componentStore = useComponent(selectedComponentName);
 
   $: allDimensions = getDimensionsForMetricView(metricsView);
   $: allSimpleMeasures = getSimpleMeasuresForMetricView(metricsView);
@@ -59,7 +59,7 @@
     (m) => m.name as string,
   );
 
-  $: if (filter !== $filterText && !(!filter && !$filterText)) {
+  $: if ((filter ?? "") !== ($filterText ?? "")) {
     onChange($filterText);
   }
 

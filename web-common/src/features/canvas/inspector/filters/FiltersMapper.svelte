@@ -56,9 +56,9 @@
           label={config.label ?? key}
           id={key}
           filter={localParamValues[key]}
-          onChange={(filter) => {
+          onChange={async (filter) => {
             localParamValues[key] = filter;
-            component.updateProperty(key, filter);
+            component.updateProperty(key, localParamValues[key]);
           }}
         />
       {/if}
