@@ -276,7 +276,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	c.mu.RUnlock()
 
 	// Allow 10 seconds for closing invocations and reconcilers
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Need to consume all the cancelled invocation completions (otherwise, they will hang on sending to c.completed)
