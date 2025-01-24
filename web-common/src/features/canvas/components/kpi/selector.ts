@@ -63,22 +63,20 @@ export function useKPIComparisonTotal(
   componentFilter: string | undefined,
 ): CreateQueryResult<number | null, HTTPError> {
   const { canvasEntity } = ctx;
-  const { showTimeComparison, selectedComparisonTimeRange } =
-    canvasEntity.timeControls;
+  const { showTimeComparison } = canvasEntity.timeControls;
 
   // Build the store that yields { finalTimeRange, where }
   const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
     metricsViewName,
     {
-      timeRangeStore: selectedComparisonTimeRange,
-      componentTimeRange: overrideComparisonRange,
+      componentComparisonRange: overrideComparisonRange,
       componentFilter,
     },
   );
 
   return derived(
     [timeAndFilterStore, showTimeComparison],
-    ([{ timeRange, where }, showComparison], set) => {
+    ([{ comparisonRange, where }, showComparison], set) => {
       // TODO: Use all time range and then calculate the comparison range
 
       return createQueryServiceMetricsViewAggregation(
@@ -86,14 +84,16 @@ export function useKPIComparisonTotal(
         metricsViewName,
         {
           measures: [{ name: measure }],
-          timeRange,
+          timeRange: comparisonRange,
           where,
         },
         {
           query: {
             enabled:
               !!overrideComparisonRange ||
-              (showComparison && !!timeRange?.start && !!timeRange?.end),
+              (showComparison &&
+                !!comparisonRange?.start &&
+                !!comparisonRange?.end),
             select: (data) => {
               return data.data?.[0]?.[measure] ?? null;
             },

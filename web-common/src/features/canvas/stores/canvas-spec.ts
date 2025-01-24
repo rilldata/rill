@@ -5,6 +5,7 @@ import {
   type MetricsViewSpecMeasureV2,
   type V1CanvasSpec,
   type V1ComponentSpec,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -13,6 +14,9 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
+  getMetricsViewFromName: (
+    metricViewName: string,
+  ) => Readable<V1MetricsViewSpec | undefined>;
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
@@ -65,6 +69,13 @@ export class CanvasResolvedSpec {
     this.metricViewNames = derived(validSpecStore, ($validSpecStore) =>
       Object.keys($validSpecStore?.data?.metricsViews || {}),
     );
+
+    this.getMetricsViewFromName = (metricViewName: string) =>
+      derived(validSpecStore, ($validSpecStore) => {
+        const metricsView = $validSpecStore.data?.metricsViews[metricViewName];
+        if (!metricsView) return;
+        return metricsView.state?.validSpec;
+      });
 
     this.getMeasuresForMetricView = (metricViewName: string) =>
       derived(validSpecStore, ($validSpecStore) => {

@@ -1,5 +1,4 @@
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
   createInExpression,
@@ -34,6 +33,7 @@ import {
   mergeTimeStrings,
 } from "./pivot-utils";
 import type {
+  PivotDashboardContext,
   PivotDataRow,
   PivotDataStoreConfig,
   PivotQueryError,
@@ -83,7 +83,7 @@ export function getValuesForExpandedKey(
  * rows optimally.
  */
 export function createSubTableCellQuery(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
@@ -172,7 +172,7 @@ export function getExpandedErrorState(
  * and the row dimension values
  */
 export function queryExpandedRowMeasureValues(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   columnDimensionAxesData: Record<string, string[]> | undefined,
