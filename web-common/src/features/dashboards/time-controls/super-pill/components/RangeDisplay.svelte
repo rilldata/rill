@@ -17,7 +17,7 @@
   });
 
   // temp while developinng
-  $: displayedInterval = true ? interval : inclusiveInterval;
+  $: displayedInterval = showTime ? interval : inclusiveInterval;
 
   // temp display while developing
   $: date = displayedInterval.toLocaleString(DateTime.DATETIME_FULL);
@@ -28,11 +28,11 @@
 <div class="flex gap-x-1 whitespace-nowrap" title="{date} {time}">
   <span class="line-clamp-1 text-left">
     {date}
-    <!-- {#if showTime}
+    {#if showTime}
       ({time})
-    {/if} -->
-    <!-- {#if abbreviation}
+    {/if}
+    {#if abbreviation}
       {abbreviation}
-    {/if} -->
+    {/if}
   </span>
 </div>

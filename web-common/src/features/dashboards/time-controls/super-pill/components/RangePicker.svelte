@@ -1,13 +1,6 @@
 <script lang="ts" context="module">
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 
-  export const latestNSearches = localStorageStore("latestNSearches", [
-    "-45M",
-    "-32D",
-    "-1Y",
-    "-2Q, latest/Q",
-  ]);
-
   const exampleSearches = [
     "-45M",
     "-30D",
@@ -50,17 +43,26 @@
   export let zone: string;
   export let showDefaultItem: boolean;
   export let grain: string;
+  export let context: string;
   export let minDate: DateTime<true>;
   export let maxDate: DateTime<true>;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: string, syntax?: boolean) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
+  const latestNSearches = localStorageStore(`${context}-recent-searches`, [
+    "-45M",
+    "-32D",
+    "-1Y",
+    "-2Q, latest/Q",
+  ]);
+
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
   let searchValue = "";
   let searchElement: HTMLInputElement;
+  let allTimeAllowed = true;
 
   $: rangeBuckets = bucketTimeRanges(timeRanges, "rill-TD");
 
@@ -209,17 +211,19 @@
           {/if}
         {/each}
 
-        <DropdownMenu.Item
-          on:click={() => {
-            handleRangeSelect(ALL_TIME_RANGE_ALIAS);
-          }}
-        >
-          <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
-            {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-          </span>
-        </DropdownMenu.Item>
+        {#if allTimeAllowed}
+          <DropdownMenu.Item
+            on:click={() => {
+              handleRangeSelect(ALL_TIME_RANGE_ALIAS);
+            }}
+          >
+            <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
+              {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
+            </span>
+          </DropdownMenu.Item>
 
-        <DropdownMenu.Separator />
+          <DropdownMenu.Separator />
+        {/if}
 
         <DropdownMenu.Item
           on:click={() => (showSelector = !showSelector)}

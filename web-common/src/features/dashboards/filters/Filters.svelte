@@ -52,7 +52,6 @@
   const {
     exploreName,
     validSpecStore,
-
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
@@ -312,6 +311,7 @@
       <Calendar size="16px" />
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
+          context={$exploreName}
           {allTimeRange}
           {selectedRangeAlias}
           showPivot={$showPivot}

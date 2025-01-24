@@ -29,6 +29,7 @@
   export let interval: Interval;
   export let showPan = false;
   export let complete: boolean;
+  export let context: string;
   export let activeTimeZone: string;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
@@ -48,6 +49,7 @@
 
   {#if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
+      {context}
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       maxDate={DateTime.fromJSDate(allTimeRange.end)}
       {timeRanges}
