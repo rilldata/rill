@@ -1,12 +1,21 @@
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-import { type ComponentCommonProperties } from "../types";
+import {
+  type ComponentAlignment,
+  type ComponentCommonProperties,
+} from "../types";
 
 export { default as Markdown } from "./Markdown.svelte";
 
+export const defaultAlignment: ComponentAlignment = {
+  vertical: "middle",
+  horizontal: "left",
+};
+
 export interface MarkdownSpec extends ComponentCommonProperties {
   content: string;
+  alignment?: ComponentAlignment;
 }
 
 export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
@@ -22,6 +31,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
       title: "",
       description: "",
       content: "Your text",
+      alignment: defaultAlignment,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -33,7 +43,8 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   inputParams(): InputParams<MarkdownSpec> {
     return {
       options: {
-        content: { type: "textArea" },
+        content: { type: "textArea", label: "Markdown" },
+        alignment: { type: "alignment", label: "Alignment" },
       },
       filter: {},
     };
@@ -42,6 +53,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   newComponentSpec(): MarkdownSpec {
     return {
       content: "Markdown Text",
+      alignment: defaultAlignment,
     };
   }
 }

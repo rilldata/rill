@@ -6,6 +6,7 @@
     isChartComponentType,
     type CanvasComponentObj,
   } from "@rilldata/web-common/features/canvas/components/util";
+  import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
   import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
   import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
@@ -110,17 +111,36 @@
 
           <!-- TEXT AREA -->
         {:else if config.type === "textArea"}
-          <InputLabel small label={config.label ?? key} id={key} />
-          <textarea
-            class="w-full p-2 border border-gray-300 rounded-sm"
-            rows="4"
-            bind:value={localParamValues[key]}
-            on:blur={async () => {
-              component.updateProperty(key, localParamValues[key]);
-            }}
-            placeholder={config.label ?? key}
-          />
+          <div class="flex flex-col gap-y-2">
+            <InputLabel
+              hint="View documentation"
+              link="https://www.markdown.org"
+              small
+              label={config.label ?? key}
+              id={key}
+            />
+            <textarea
+              class="w-full p-2 border border-gray-300 rounded-sm"
+              rows="8"
+              bind:value={localParamValues[key]}
+              on:blur={async () => {
+                component.updateProperty(key, localParamValues[key]);
+              }}
+              placeholder={config.label ?? key}
+            />
+          </div>
 
+          <!-- TEXT AREA -->
+        {:else if config.type === "alignment"}
+          <AlignmentInput
+            {key}
+            label={config.label ?? key}
+            position={localParamValues[key]}
+            onChange={(updatedPosition) => {
+              localParamValues[key] = updatedPosition;
+              component.updateProperty(key, updatedPosition);
+            }}
+          />
           <!-- POSITIONAL CONFIG -->
         {:else if metricsView && config.type === "positional"}
           <PositionalFieldConfig
