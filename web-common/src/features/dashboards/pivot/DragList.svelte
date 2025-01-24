@@ -11,6 +11,8 @@
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -207,24 +209,32 @@
 
       <div class="icons">
         {#if zone === "Time" || zone === "Dimensions"}
-          <button
-            class="icon-wrapper"
-            on:click={() => handleRowClick(item)}
-            aria-label="Add Row"
-            type="button"
-          >
-            <Row size="16px" />
-          </button>
+          <Tooltip distance={8} location="top" alignment="start">
+            <button
+              class="icon-wrapper"
+              on:click={() => handleRowClick(item)}
+              aria-label="Add Row"
+              type="button"
+            >
+              <Row size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content">Add to rows</TooltipContent>
+          </Tooltip>
         {/if}
         {#if zone === "Time" || zone === "Measures" || zone === "Dimensions"}
-          <button
-            class="icon-wrapper"
-            on:click={() => handleColumnClick(item)}
-            aria-label="Add Column"
-            type="button"
-          >
-            <Column size="16px" />
-          </button>
+          <Tooltip distance={8} location="top" alignment="start">
+            <button
+              class="icon-wrapper"
+              on:click={() => handleColumnClick(item)}
+              aria-label="Add Column"
+              type="button"
+            >
+              <Column size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content"
+              >Add to columns</TooltipContent
+            >
+          </Tooltip>
         {/if}
       </div>
     </div>
