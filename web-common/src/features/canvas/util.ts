@@ -57,7 +57,7 @@ export function findNextAvailablePosition(
     }
 
     // Check if there's space at the end of the row
-    if (x + newWidth <= defaults.COLUMN_COUNT) {
+    if (x + newWidth <= defaults.DEFAULT_COLUMN_COUNT) {
       const hasOverlap = existingItems.some(
         (other) =>
           other.y !== row.y &&
