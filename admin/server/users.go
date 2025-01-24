@@ -291,6 +291,16 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		attribute.String("args.org", req.Organization),
 	)
 
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	currentUser, err := s.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
@@ -305,17 +315,15 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "only superusers can delete other users")
 	}
 
-	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, req.Organization, "admin")
+	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// It should error if the user being deleted is the last admin of the org.
 	if len(orgAdminUsers) == 1 && orgAdminUsers[0].Email == req.Email {
 		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please transfer ownership first")
 	}
 
-	// If the org has no other members, it should tear down the org and all its projects.
 	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization)
 	if err != nil {
 		return nil, err
@@ -325,7 +333,6 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "cannot delete the only member of an organization")
 	}
 
-	// Delete the current user if the email matches the caller
 	if isCurrentUser {
 		err = s.admin.DB.DeleteUser(ctx, currentUser.User.Id)
 		if err != nil {
@@ -333,7 +340,6 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		}
 	}
 
-	// Delete the user by email
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
