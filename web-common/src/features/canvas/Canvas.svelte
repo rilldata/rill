@@ -107,9 +107,6 @@
       y: number;
       w: number;
       h: number;
-      // position: Vector;
-      // dimensions: Vector;
-      // items: V1CanvasItem[];
     }>,
   ) {
     console.log("[Canvas] Handling update:", {

@@ -5,8 +5,6 @@ import type { Readable } from "svelte/store";
 import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import type { GridItemHTMLElement, GridStackNode } from "gridstack";
 
-export type Vector = [number, number];
-
 export type CanvasSpecResponseStore = Readable<
   QueryObserverResult<CanvasResponse, RpcStatus>
 >;
