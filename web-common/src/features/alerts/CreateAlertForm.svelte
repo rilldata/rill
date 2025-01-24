@@ -59,11 +59,16 @@
   }
 
   // TODO: get metrics view spec
-  const timeRange = mapTimeRange(timeControls, {});
+  const timeRange = mapTimeRange(
+    timeControls,
+    $dashboardStore.selectedTimezone,
+    {},
+  );
   const comparisonTimeRange = mapComparisonTimeRange(
     $dashboardStore,
     timeControls,
     timeRange,
+    true,
   );
 
   const formState = createForm<AlertFormValues>({
