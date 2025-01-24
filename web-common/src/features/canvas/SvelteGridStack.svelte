@@ -45,28 +45,11 @@
 
   let gridEl: HTMLDivElement;
 
-  let columnCount = defaults.DEFAULT_COLUMN_COUNT;
-  let resizeObserver: ResizeObserver;
-
   // FYI:
   // There could be a race condition where the grid is updated while dragging
   // so we need to avoid updating the grid while dragging
   // Only update the grid when user finishes dragging
   let isDragging = false;
-
-  function updateColumnCount(width: number) {
-    if (width < 398) {
-      // Small screens/mobile
-      columnCount = 1;
-    } else {
-      // Large screens
-      columnCount = 12;
-    }
-    if (grid) {
-      console.log("[SvelteGridStack] Updating columns to:", columnCount);
-      grid.column(columnCount);
-    }
-  }
 
   function handlePointerDown(event: PointerEvent) {
     const target = event.target as HTMLElement;
@@ -111,7 +94,6 @@
         });
       } else {
         // Add new widget
-        console.log("[SvelteGridStack] adding new widget at index", i);
         grid.addWidget({
           x: item.x,
           y: item.y,
@@ -131,19 +113,6 @@
 
     grid.commit();
   }
-
-  onMount(() => {
-    // Initialize ResizeObserver to watch container width
-    resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        updateColumnCount(entry.contentRect.width);
-      }
-    });
-
-    if (gridEl) {
-      resizeObserver.observe(gridEl);
-    }
-  });
 
   onMount(async () => {
     const { GridStack } = await import("gridstack");
@@ -231,14 +200,10 @@
       grid.removeAll(true);
       grid.destroy(true);
     }
-
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-    }
   });
 
   $: options = {
-    column: columnCount,
+    column: defaults.DEFAULT_COLUMN_COUNT,
     resizable: {
       handles: "e,se,s,sw,w",
     },
@@ -246,6 +211,10 @@
     float: true,
     staticGrid: embed,
     margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
+    columnOpts: {
+      breakpointForWindow: true,
+      breakpoints: [{ w: 912, c: 1 }],
+    },
   } as GridStackOptions;
 </script>
 
