@@ -1076,6 +1076,7 @@ export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
   currentCommitSha?: string;
   watching?: boolean;
+  currentCommitOn?: string;
 }
 
 export interface V1ProjectParserSpec {

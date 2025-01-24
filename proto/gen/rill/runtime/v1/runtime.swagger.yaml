@@ -5783,6 +5783,9 @@ definitions:
         type: string
       watching:
         type: boolean
+      currentCommitOn:
+        type: string
+        format: date-time
   v1PullTrigger:
     type: object
     properties:

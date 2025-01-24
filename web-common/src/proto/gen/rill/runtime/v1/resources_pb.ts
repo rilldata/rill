@@ -608,6 +608,11 @@ export class ProjectParserState extends Message<ProjectParserState> {
    */
   watching = false;
 
+  /**
+   * @generated from field: google.protobuf.Timestamp current_commit_on = 4;
+   */
+  currentCommitOn?: Timestamp;
+
   constructor(data?: PartialMessage<ProjectParserState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -619,6 +624,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "current_commit_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserState {

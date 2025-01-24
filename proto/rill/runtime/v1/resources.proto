@@ -74,6 +74,7 @@ message ProjectParserState {
   repeated ParseError parse_errors = 1;
   string current_commit_sha = 2;
   bool watching = 3;
+  google.protobuf.Timestamp current_commit_on = 4;
 }
 
 message SourceV2 {
