@@ -11,7 +11,6 @@
   import { findNextAvailablePosition } from "./util";
   import type { CanvasComponentType } from "./components/types";
   import BlankCanvas from "./BlankCanvas.svelte";
-  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let fileArtifact: FileArtifact;
 
