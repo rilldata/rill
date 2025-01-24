@@ -219,7 +219,7 @@
 
     // Combine the errors
     formDuplicates.forEach((index: number) => {
-      inputErrors[index] = { type: "internal" };
+      inputErrors[index] = { type: "draft" };
     });
     existingDuplicates.forEach((index: number) => {
       inputErrors[index] = { type: "existing" };
@@ -362,7 +362,7 @@
                   id={`key-${index}`}
                   label=""
                   textClass={inputErrors[index] &&
-                  inputErrors[index].type === "internal"
+                  inputErrors[index].type === "draft"
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
@@ -413,7 +413,7 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  {#if Object.values(inputErrors).every((err) => err.type === "internal")}
+                  {#if Object.values(inputErrors).every((err) => err.type === "draft")}
                     {Object.keys(inputErrors).length > 1
                       ? "Duplicate keys are not allowed"
                       : "This key is duplicated"}
