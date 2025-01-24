@@ -9,21 +9,6 @@ export type CanvasSpecResponseStore = Readable<
   QueryObserverResult<CanvasResponse, RpcStatus>
 >;
 
-export interface PositionedItem {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface RowGroup {
-  y: number;
-  height: number;
-  items: V1CanvasItem[];
-}
-
-export type DropPosition = "left" | "right" | "bottom" | "top";
-
 export type GridstackDispatchEvents = {
   added: { event: Event; nodes: GridStackNode[] };
   change: { event: Event; nodes: GridStackNode[] };

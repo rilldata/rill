@@ -121,7 +121,7 @@
     updateEditorContent(parsedDocument.toString(), false, true);
   }
 
-  async function addComponent(componentType: CanvasComponentType) {
+  function addComponent(componentType: CanvasComponentType) {
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
@@ -159,8 +159,8 @@
     } else {
       items.add(newComponent);
     }
-    updateEditorContent(parsedDocument.toString(), true);
-    await saveLocalContent();
+
+    updateEditorContent(parsedDocument.toString(), false, true);
     canvasEntity.setSelectedComponentIndex(itemsToPosition.length);
     scrollToComponent(itemsToPosition.length);
   }

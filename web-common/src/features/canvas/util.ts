@@ -1,5 +1,4 @@
 import * as defaults from "./constants";
-import type { PositionedItem } from "./types";
 
 export function isString(value: unknown): value is string {
   return typeof value === "string";
@@ -9,6 +8,13 @@ type GridRow = {
   y: number;
   items: PositionedItem[];
 };
+
+interface PositionedItem {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * Finds the next available position for a new component in the grid
@@ -20,7 +26,6 @@ export function findNextAvailablePosition(
 ): [number, number] {
   if (!existingItems?.length) return [0, 0];
 
-  // Create a map of rows with their items
   const rows = existingItems.reduce((acc, item) => {
     if (!acc.has(item.y)) {
       acc.set(item.y, { y: item.y, items: [] });
@@ -29,19 +34,14 @@ export function findNextAvailablePosition(
     return acc;
   }, new Map<number, GridRow>());
 
-  // Sort rows by y coordinate
   const sortedRows = Array.from(rows.values()).sort((a, b) => a.y - b.y);
 
   for (const row of sortedRows) {
-    // Sort items in row by x coordinate
     const sortedItems = row.items.sort((a, b) => a.x - b.x);
 
-    // Check for gaps at the start and between items
     let x = 0;
     for (const item of sortedItems) {
-      // Check if there's enough space before this item
       if (item.x - x >= newWidth) {
-        // Check if this position overlaps with items in other rows
         const hasOverlap = existingItems.some(
           (other) =>
             other.y !== row.y && // Different row
