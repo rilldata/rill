@@ -20,7 +20,6 @@
 
   $: inputParams = component.inputParams().filter;
 
-  // Enable this when adding support for dimension filters
   $: metricsView =
     "metrics_view" in paramValues ? paramValues.metrics_view : null;
 
