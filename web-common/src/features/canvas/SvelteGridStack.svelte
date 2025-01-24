@@ -18,8 +18,6 @@
   export let embed = false;
   export let spec: V1CanvasSpec;
 
-  $: console.log("[SvelteGridStack] spec", spec);
-
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
     "added",
