@@ -40,12 +40,7 @@
   let offset = { x: 0, y: 0 };
   let dragStart = { left: 0, top: 0 };
 
-  const {
-    selectors: {
-      pivot: { dimensions, measures },
-    },
-    exploreName,
-  } = getStateManagers();
+  const { exploreName } = getStateManagers();
 
   $: dragData = $dragDataStore;
   $: source = dragData?.source;
@@ -212,14 +207,24 @@
 
       <div class="icons">
         {#if zone === "Time" || zone === "Dimensions"}
-          <div class="icon-wrapper" on:click={() => handleRowClick(item)}>
+          <button
+            class="icon-wrapper"
+            on:click={() => handleRowClick(item)}
+            aria-label="Add Row"
+            type="button"
+          >
             <Row size="16px" />
-          </div>
+          </button>
         {/if}
         {#if zone === "Time" || zone === "Measures" || zone === "Dimensions"}
-          <div class="icon-wrapper" on:click={() => handleColumnClick(item)}>
+          <button
+            class="icon-wrapper"
+            on:click={() => handleColumnClick(item)}
+            aria-label="Add Column"
+            type="button"
+          >
             <Column size="16px" />
-          </div>
+          </button>
         {/if}
       </div>
     </div>
