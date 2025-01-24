@@ -15,7 +15,6 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import type { KPISpec } from ".";
   import {
@@ -33,16 +32,13 @@
   let containerWidth: number;
   let containerHeight: number;
 
-  $: instanceId = $runtime?.instanceId;
   $: kpiProperties = rendererProperties as KPISpec;
 
   $: ({
     metrics_view: metricsViewName,
     measure: measureName,
-    time_range: timeRange,
     sparkline: showSparkline,
     comparison_range: comparisonTimeRange,
-    dimension_filters: dimensionFilters,
   } = kpiProperties);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
