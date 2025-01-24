@@ -34,6 +34,21 @@
     "resizestop",
   ] as const;
 
+  const options = {
+    column: defaults.DEFAULT_COLUMN_COUNT,
+    resizable: {
+      handles: "e,se,s,sw,w",
+    },
+    animate: false,
+    float: true,
+    staticGrid: embed,
+    margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
+    columnOpts: {
+      breakpointForWindow: true,
+      breakpoints: [{ w: 912, c: 1 }],
+    },
+  } as GridStackOptions;
+
   const dispatchGridstackEvent =
     createEventDispatcher<GridstackDispatchEvents>();
   const dispatch = createEventDispatcher<{
@@ -188,21 +203,6 @@
       grid.removeAll(true);
     }
   });
-
-  $: options = {
-    column: defaults.DEFAULT_COLUMN_COUNT,
-    resizable: {
-      handles: "e,se,s,sw,w",
-    },
-    animate: false,
-    float: true,
-    staticGrid: embed,
-    margin: `${spec?.gapX || defaults.DEFAULT_TOP_BOTTOM_GAP}px ${spec?.gapY || defaults.DEFAULT_LEFT_RIGHT_GAP}px`,
-    columnOpts: {
-      breakpointForWindow: true,
-      breakpoints: [{ w: 912, c: 1 }],
-    },
-  } as GridStackOptions;
 </script>
 
 <div bind:this={gridEl} class="grid-stack">
