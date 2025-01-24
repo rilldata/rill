@@ -161,7 +161,7 @@
   }
 
   function handleColumnClick(item: PivotChipData) {
-    metricsExplorerStore.addPivotField($exploreName, item, true);
+    metricsExplorerStore.addPivotField($exploreName, item, false);
   }
 </script>
 
