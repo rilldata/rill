@@ -324,7 +324,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please transfer ownership first")
 	}
 
-	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization)
+	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -338,6 +338,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		if err != nil {
 			return nil, err
 		}
+		return &adminv1.DeleteUserResponse{}, nil
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
