@@ -48,32 +48,15 @@
   $: schema = validateKPISchema(ctx, kpiProperties);
   $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
 
-  $: measureValue = useKPITotals(
-    ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    timeRange,
-    dimensionFilters,
-  );
+  $: measureValue = useKPITotals(ctx, kpiProperties, $schema.isValid);
 
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    comparisonTimeRange,
-    dimensionFilters,
+    kpiProperties,
+    $schema.isValid,
   );
 
-  $: sparkline = useKPISparkline(
-    ctx,
-    instanceId,
-    metricsViewName,
-    measureName,
-    timeRange,
-    dimensionFilters,
-  );
+  $: sparkline = useKPISparkline(ctx, kpiProperties, $schema.isValid);
 
   $: sparkData = $sparkline?.data || [];
   $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
