@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var ErrParserHasParseErrors = errors.New("encountered parse errors")
@@ -114,6 +115,22 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = repo.Sync(ctx)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
+	}
+
+	// Update the commit timestamp
+	ts, err := repo.CommitTimestamp(ctx)
+	if err != nil {
+		r.C.Logger.Error("failed to get commit timestamp", zap.String("error", err.Error()))
+	}
+	timeStamp := timestamppb.New(ts)
+
+	// Update the commit timestamp
+	if pp.State.CurrentCommitOn != timeStamp {
+		pp.State.CurrentCommitOn = timeStamp
+		err = r.C.UpdateState(ctx, n, self)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
 	}
 
 	// Update commit sha
