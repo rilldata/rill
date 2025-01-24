@@ -21,6 +21,7 @@
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let timeControlsReady: boolean | undefined;
+  export let smallChip = false;
   export let onRemove: () => void;
   export let onSelect: (value: string) => void;
   export let onToggleFilterMode: () => void;
@@ -96,6 +97,7 @@
           slot="body"
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
+          {smallChip}
           values={selectedValues}
         />
       </Chip>

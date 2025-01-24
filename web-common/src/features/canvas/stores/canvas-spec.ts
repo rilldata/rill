@@ -4,6 +4,7 @@ import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   type V1CanvasSpec,
+  type V1ComponentSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -46,6 +47,11 @@ export class CanvasResolvedSpec {
 
   allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
+
+  /** Component Selectors */
+  getComponentResource: (
+    componentName: string,
+  ) => Readable<V1ComponentSpec | undefined>;
 
   constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
@@ -175,6 +181,13 @@ export class CanvasResolvedSpec {
         return metricsViewDimensionMap;
       },
     );
+
+    this.getComponentResource = (componentName: string) => {
+      return derived(validSpecStore, ($validSpecStore) => {
+        return $validSpecStore?.data?.components?.[componentName]?.component
+          ?.spec;
+      });
+    };
   }
 
   getDimensionsFromMeasure(measureName: string): MetricsViewSpecDimensionV2[] {

@@ -17,6 +17,7 @@
   export let dimensionHasFilter: (dimensionName: string) => boolean;
   export let measureHasFilter: (measureName: string) => boolean;
   export let setTemporaryFilterName: (name: string) => void;
+  export let addBorder = true;
 
   let open = false;
 
@@ -47,7 +48,12 @@
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
     <Tooltip distance={8} suppress={open}>
-      <button class:active={open} use:builder.action {...builder}>
+      <button
+        class:addBorder
+        class:active={open}
+        use:builder.action
+        {...builder}
+      >
         <Add size="17px" />
       </button>
       <TooltipContent slot="tooltip-content">Add filter</TooltipContent>
@@ -68,8 +74,12 @@
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
-    @apply border border-dashed border-slate-300;
+
     @apply bg-white;
+  }
+
+  button.addBorder {
+    @apply border border-dashed border-slate-300;
   }
 
   button:hover {

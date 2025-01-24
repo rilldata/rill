@@ -66,6 +66,8 @@
   let pivotDataStore: PivotDataStore | undefined = undefined;
   let pivotConfig: Readable<PivotDataStoreConfig> | undefined = undefined;
   $: if (isValidSchema) {
+    // TODO: Rewrite this replace ctx across pivot to
+    // a subset of necessary entities
     const stateManagerContext = createStateManagers({
       queryClient,
       exploreName: "TODO", // Historically, State Managers have only been used for Explore, not Canvas.

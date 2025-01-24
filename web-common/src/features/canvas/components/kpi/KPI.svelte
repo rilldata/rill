@@ -41,6 +41,7 @@
     time_range: timeRange,
     sparkline: showSparkline,
     comparison_range: comparisonTimeRange,
+    dimension_filters: dimensionFilters,
   } = kpiProperties);
 
   $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
@@ -51,6 +52,7 @@
     metricsViewName,
     measureName,
     timeRange,
+    dimensionFilters,
   );
 
   $: comparisonValue = useKPIComparisonTotal(
@@ -59,6 +61,7 @@
     metricsViewName,
     measureName,
     comparisonTimeRange,
+    dimensionFilters,
   );
 
   $: sparkline = useKPISparkline(
@@ -67,6 +70,7 @@
     metricsViewName,
     measureName,
     timeRange,
+    dimensionFilters,
   );
 
   $: sparkData = $sparkline?.data || [];
