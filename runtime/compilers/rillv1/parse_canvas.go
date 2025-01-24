@@ -23,7 +23,10 @@ type CanvasYAML struct {
 	Theme       yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
 	TimeRanges  []ExploreTimeRangeYAML `yaml:"time_ranges"`
 	TimeZones   []string               `yaml:"time_zones"`
-	Defaults    *struct {
+	Filters     struct {
+		Enable *bool `yaml:"enable"`
+	}
+	Defaults *struct {
 		TimeRange           string `yaml:"time_range"`
 		ComparisonMode      string `yaml:"comparison_mode"`
 		ComparisonDimension string `yaml:"comparison_dimension"`
@@ -197,6 +200,10 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.Theme = themeName
 	r.CanvasSpec.TimeRanges = timeRanges
 	r.CanvasSpec.TimeZones = tmp.TimeZones
+	r.CanvasSpec.FiltersEnabled = true
+	if tmp.Filters.Enable != nil {
+		r.CanvasSpec.FiltersEnabled = *tmp.Filters.Enable
+	}
 	r.CanvasSpec.DefaultPreset = defaultPreset
 	r.CanvasSpec.EmbeddedTheme = themeSpec
 	r.CanvasSpec.Variables = variables

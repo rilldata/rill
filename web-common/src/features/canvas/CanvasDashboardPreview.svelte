@@ -19,6 +19,7 @@
   export let showGrid = false;
   export let snap = true;
   export let selectedIndex: number | null = null;
+  export let showFilterBar = true;
 
   const { canvasEntity } = getCanvasStateManagers();
 
@@ -171,12 +172,14 @@
 
 <svelte:window on:mousemove={handleMouseMove} on:mouseup={handleMouseUp} />
 
-<div
-  id="header"
-  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
->
-  <CanvasFilters />
-</div>
+{#if showFilterBar}
+  <div
+    id="header"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  >
+    <CanvasFilters />
+  </div>
+{/if}
 
 <DashboardWrapper
   bind:contentRect

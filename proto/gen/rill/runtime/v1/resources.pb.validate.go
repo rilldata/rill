@@ -10300,6 +10300,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for FiltersEnabled
+
 	if all {
 		switch v := interface{}(m.GetDefaultPreset()).(type) {
 		case interface{ ValidateAll() error }:

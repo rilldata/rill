@@ -4536,6 +4536,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   timeZones: string[] = [];
 
   /**
+   * Indicates if filters should be enabled for the canvas.
+   *
+   * @generated from field: bool filters_enabled = 13;
+   */
+  filtersEnabled = false;
+
+  /**
    * Preset UI state to show by default.
    *
    * @generated from field: rill.runtime.v1.CanvasPreset default_preset = 15;
@@ -4579,6 +4586,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 8, name: "embedded_theme", kind: "message", T: ThemeSpec },
     { no: 11, name: "time_ranges", kind: "message", T: ExploreTimeRange, repeated: true },
     { no: 12, name: "time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "filters_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
