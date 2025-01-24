@@ -1,6 +1,6 @@
 <script lang="ts">
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { usePivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
+  import { usePivotForExplore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -47,7 +47,7 @@
   $: ({ instanceId } = $runtime);
 
   $: exploreState = useExploreState(exploreName);
-  $: pivotDataStore = usePivotDataStore(stateManagers);
+  $: pivotDataStore = usePivotForExplore(stateManagers);
   $: showPivot = $exploreState.pivot.active;
   $: activeCellFilters = $pivotDataStore.activeCellFilters;
 

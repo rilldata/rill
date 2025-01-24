@@ -82,12 +82,13 @@ export class CanvasEntity {
   createTimeAndFilterStore = (
     metricsViewName: string,
     {
-      timeRangeStore = this.timeControls.selectedTimeRange,
       componentTimeRange,
+      componentComparisonRange,
       componentFilter,
     }: {
       timeRangeStore?: Writable<DashboardTimeControls | undefined>;
       componentTimeRange?: string;
+      componentComparisonRange?: string;
       componentFilter?: string;
     },
   ) => {
@@ -98,25 +99,47 @@ export class CanvasEntity {
 
     return derived(
       [
-        timeRangeStore,
+        timeControls.selectedTimeRange,
         timeControls.selectedTimezone,
+        timeControls.selectedComparisonTimeRange,
         filters.whereFilter,
         filters.dimensionThresholdFilters,
         dimensionsStore,
         measuresStore,
       ],
-      ([timeRangeVal, timeZone, whereFilter, dtf, dimensions, measures]) => {
+      ([
+        globalTimeRange,
+        timeZone,
+        globalComparisonRange,
+        whereFilter,
+        dtf,
+        dimensions,
+        measures,
+      ]) => {
+        // Time Range
         let timeRange: V1TimeRange = {
-          start: timeRangeVal?.start?.toISOString(),
-          end: timeRangeVal?.end?.toISOString(),
+          start: globalTimeRange?.start?.toISOString(),
+          end: globalTimeRange?.end?.toISOString(),
           timeZone,
         };
         if (componentTimeRange) {
+          // TODO: update logic
           timeRange = { isoDuration: componentTimeRange, timeZone };
         }
+        const timeGrain = globalTimeRange?.interval;
 
-        const timeGrain = timeRangeVal?.interval;
+        // Comparison Range
+        let comparisonRange: V1TimeRange = {
+          start: globalComparisonRange?.start?.toISOString(),
+          end: globalComparisonRange?.end?.toISOString(),
+          timeZone,
+        };
+        if (componentComparisonRange) {
+          // TODO: update logic
+          comparisonRange = { isoDuration: componentComparisonRange, timeZone };
+        }
 
+        // Dimension Filters
         const globalWhere =
           buildValidMetricsViewFilter(whereFilter, dtf, dimensions, measures) ??
           createAndExpression([]);
@@ -134,7 +157,7 @@ export class CanvasEntity {
           where = mergeFilters(globalWhere, expr);
         }
 
-        return { timeRange, where, timeGrain };
+        return { timeRange, comparisonRange, where, timeGrain };
       },
     );
   };

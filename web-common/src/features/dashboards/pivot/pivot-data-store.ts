@@ -51,6 +51,7 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  type PivotDashboardContext,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
@@ -65,7 +66,7 @@ import {
  * table.
  */
 export function createTableCellQuery(
-  ctx: StateManagers,
+  ctx: PivotDashboardContext,
   config: PivotDataStoreConfig,
   anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
@@ -173,14 +174,13 @@ let expandedTableMap: Record<string, PivotDataRow[]> = {};
  * Table data and column definitions
  */
 export function createPivotDataStore(
-  ctx: StateManagers,
-  configStore: Readable<PivotDataStoreConfig> | undefined = undefined,
+  ctx: PivotDashboardContext,
+  configStore: Readable<PivotDataStoreConfig>,
 ): PivotDataStore {
   /**
    * Derive a store using pivot config
    */
 
-  if (!configStore) configStore = getPivotConfig(ctx);
   return derived(configStore, (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
     if (
@@ -575,6 +575,18 @@ export function createPivotDataStore(
 /**
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
-export const usePivotDataStore = memoizeMetricsStore<PivotDataStore>(
-  (ctx: StateManagers) => createPivotDataStore(ctx),
+// export const usePivotDataStore = memoizeMetricsStore<PivotDataStore>(
+//   (ctx: StateManagers) => createPivotDataStore(ctx),
+// );
+
+export const usePivotForExplore = memoizeMetricsStore<PivotDataStore>(
+  (ctx: StateManagers) => {
+    const pivotConfig = getPivotConfig(ctx);
+    const pivotDashboardContext: PivotDashboardContext = {
+      metricsViewName: ctx.metricsViewName,
+      queryClient: ctx.queryClient,
+      enabled: !!ctx.dashboardStore,
+    };
+    return createPivotDataStore(pivotDashboardContext, pivotConfig);
+  },
 );
