@@ -15,10 +15,8 @@
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
-  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let items: V1CanvasItem[];
-  export let showFilterBar = true;
   export let activeIndex: number | null = null;
   export let spec: V1CanvasSpec;
 
@@ -129,14 +127,14 @@
   }
 </script>
 
-{#if showFilterBar}
+<!-- {#if showFilterBar}
   <div
     id="header"
     class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
   >
     <CanvasFilters />
   </div>
-{/if}
+{/if} -->
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <div bind:this={gridContainer} use:clickOutside={[null, handleClickOutside]}>

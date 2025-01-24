@@ -70,20 +70,15 @@
     }
   }
 
-  // Reactive grid to handle changes in items
-  $: if (grid && !isDragging) {
-    console.log("[SvelteGridStack] Updating grid");
-
+  $: if (grid && !isDragging && items) {
     grid.batchUpdate();
 
     const currentItems = grid.getGridItems();
-    const currentCount = currentItems.length;
     const newCount = items.length;
 
-    // Update existing items and add new ones
+    // Only modify items that need changes
     items.forEach((item, i) => {
-      if (i < currentCount) {
-        // Update existing widgets
+      if (currentItems[i]) {
         grid.update(currentItems[i], {
           x: item.x,
           y: item.y,
@@ -91,7 +86,6 @@
           h: item.height,
         });
       } else {
-        // Add new widget
         grid.addWidget({
           x: item.x,
           y: item.y,
@@ -102,11 +96,9 @@
       }
     });
 
-    // Explicitly remove widgets that are no longer in the items array
-    if (currentCount > newCount) {
-      currentItems.slice(newCount).forEach((el) => {
-        grid.removeWidget(el, true);
-      });
+    // Remove extra widgets if necessary
+    if (currentItems.length > newCount) {
+      currentItems.slice(newCount).forEach((el) => grid.removeWidget(el, true));
     }
 
     grid.commit();
@@ -128,35 +120,34 @@
     grid.on("added", async (_: Event, nodes: Array<GridStackNode>) => {
       grid.batchUpdate();
 
-      // Avoid racy, wait for el to be ready for the visible content
-      setTimeout(() => {
-        nodes.forEach((node) => {
-          // Find the correct index by counting existing grid items
-          const gridItems = grid.getGridItems();
-          const index = gridItems.findIndex((item) => item === node.el);
+      nodes.forEach((node) => {
+        const gridItems = grid.getGridItems();
+        const index = gridItems.findIndex((item) => item === node.el);
 
-          const element = gridEl.querySelector(
-            `#grid-id-${index}`,
-          ) as HTMLDivElement;
-          const child = node.el?.firstElementChild;
+        const element = gridEl.querySelector(
+          `#grid-id-${index}`,
+        ) as HTMLDivElement;
+        const child = node.el?.firstElementChild;
 
-          if (!child || !element) {
-            console.error("Cannot append element to GridStack", {
-              index,
-              element,
-              child,
-            });
-            return;
-          }
+        if (!child || !element) {
+          console.error("Cannot append element to GridStack", {
+            index,
+            element,
+            child,
+          });
+          return;
+        }
 
+        element.style.display = "block";
+        element.style.width = "100%";
+        element.style.height = "100%";
+
+        if (!child.contains(element)) {
           child.appendChild(element);
-          element.style.display = "block";
-          element.style.width = "100%";
-          element.style.height = "100%";
-        });
+        }
+      });
 
-        grid.commit();
-      }, 0);
+      grid.commit();
     });
 
     gridEl.addEventListener("pointerover", (event) => {
@@ -196,7 +187,6 @@
 
     if (grid) {
       grid.removeAll(true);
-      grid.destroy(true);
     }
   });
 

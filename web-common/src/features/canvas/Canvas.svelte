@@ -11,6 +11,7 @@
   import { findNextAvailablePosition } from "./util";
   import type { CanvasComponentType } from "./components/types";
   import BlankCanvas from "./BlankCanvas.svelte";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -101,14 +102,6 @@
       h: number;
     }>,
   ) {
-    console.log("[Canvas] Handling update:", {
-      index: e.detail.index,
-      x: e.detail.x,
-      y: e.detail.y,
-      w: e.detail.w,
-      h: e.detail.h,
-    });
-
     const parsedDocument = parseDocument($editorContent ?? "");
     const items = parsedDocument.get("items") as any;
 
@@ -125,7 +118,7 @@
       node.set("y", e.detail.y);
     }
 
-    updateEditorContent(parsedDocument.toString(), true);
+    updateEditorContent(parsedDocument.toString(), false, true);
     await saveLocalContent();
   }
 
@@ -189,21 +182,20 @@
   }
 </script>
 
-<!-- This is based on figma, we need a `disabled` prop on the filters -->
-<!-- FIXME: blocked by platform support -->
-<!-- <div
-  id="header"
-  class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
->
-  <CanvasFilters />
-</div> -->
+{#if filtersEnabled}
+  <div
+    id="header"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  >
+    <CanvasFilters />
+  </div>
+{/if}
 
 {#if items.length === 0}
   <BlankCanvas on:add={handleAdd} />
 {:else}
   <CanvasDashboardPreview
     {items}
-    showFilterBar={filtersEnabled}
     {spec}
     activeIndex={$selectedIndex}
     on:update={handleUpdate}

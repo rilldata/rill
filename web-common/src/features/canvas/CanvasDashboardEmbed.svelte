@@ -35,8 +35,7 @@
 {/if}
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
-  {#each items as component, i (i)}
-    {@const componentName = component.component}
+  {#each items as _, i (i)}
     <SvelteGridStack bind:grid {items} {spec} let:index let:item embed>
       {@const componentName = item.component}
       {#if componentName}
