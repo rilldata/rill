@@ -43,7 +43,11 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
   inputParams(): InputParams<MarkdownSpec> {
     return {
       options: {
-        content: { type: "textArea", label: "Markdown" },
+        content: {
+          type: "textArea",
+          label: "Markdown",
+          description: "Write text using the markdown syntax",
+        },
         alignment: { type: "alignment", label: "Alignment" },
       },
       filter: {},

@@ -113,8 +113,7 @@
         {:else if config.type === "textArea"}
           <div class="flex flex-col gap-y-2">
             <InputLabel
-              hint="View documentation"
-              link="https://www.markdown.org"
+              hint={config?.description}
               small
               label={config.label ?? key}
               id={key}
