@@ -106,7 +106,6 @@
           y: item.y,
           w: item.width,
           h: item.height,
-          autoPosition: true,
         });
       }
     });
