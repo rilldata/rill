@@ -32,7 +32,7 @@
   export let open = false;
   export let variableNames: VariableNames = [];
 
-  let inputErrors: { [key: number]: boolean } = {};
+  let inputErrors: { [key: number]: { type: string } } = {};
   let isKeyAlreadyExists = false;
   let isDevelopment = true;
   let isProduction = true;
@@ -42,7 +42,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: hasExistingKeys = Object.values(inputErrors).some((error) => error);
+  $: hasExistingKeys = Object.keys(inputErrors).length > 0;
   $: hasNewChanges = $form.variables.some(
     (variable) => variable.key !== "" || variable.value !== "",
   );
@@ -171,7 +171,30 @@
   function checkForExistingKeys() {
     inputErrors = {};
     isKeyAlreadyExists = false;
+    let isDuplicateWithinForm = false;
+    let isDuplicateWithExisting = false;
 
+    // First check for duplicates within the form
+    const formKeys = $form.variables
+      .filter((variable) => variable.key.trim() !== "")
+      .map((variable) => variable.key);
+
+    const formDuplicates = new Set();
+    // Check for duplicates using Set
+    if (new Set(formKeys).size !== formKeys.length) {
+      // Find indices of duplicate keys
+      formKeys.forEach((key, index) => {
+        if (formKeys.indexOf(key) !== index) {
+          // Mark both the original and duplicate entries as errors
+          formDuplicates.add(formKeys.indexOf(key));
+          formDuplicates.add(index);
+          isDuplicateWithinForm = true;
+        }
+      });
+    }
+
+    // Then check against existing variables
+    const existingDuplicates = new Set();
     const existingKeys = $form.variables
       .filter((variable) => variable.key.trim() !== "")
       .map((variable) => {
@@ -181,8 +204,7 @@
         };
       });
 
-    let duplicateCount = 0;
-    existingKeys.forEach((key, _idx) => {
+    existingKeys.forEach((key, idx) => {
       const variableEnvironment = key.environment;
       const variableKey = key.name;
 
@@ -190,13 +212,22 @@
         const originalIndex = $form.variables.findIndex(
           (v) => v.key === variableKey,
         );
-        inputErrors[originalIndex] = true;
-        isKeyAlreadyExists = true;
-        duplicateCount++;
+        existingDuplicates.add(originalIndex);
+        isDuplicateWithExisting = true;
       }
     });
 
-    return duplicateCount;
+    // Combine the errors
+    formDuplicates.forEach((index: number) => {
+      inputErrors[index] = { type: "internal" };
+    });
+    existingDuplicates.forEach((index: number) => {
+      inputErrors[index] = { type: "existing" };
+    });
+
+    isKeyAlreadyExists = isDuplicateWithinForm || isDuplicateWithExisting;
+
+    return formDuplicates.size + existingDuplicates.size;
   }
 
   function handleFileUpload(event: Event) {
@@ -330,10 +361,8 @@
                   bind:value={variable.key}
                   id={`key-${index}`}
                   label=""
-                  textClass={inputErrors[index] ||
-                  ($errors.variables &&
-                    $errors.variables[index] &&
-                    $errors.variables[index].key)
+                  textClass={inputErrors[index] &&
+                  inputErrors[index].type === "internal"
                     ? "error-input-wrapper"
                     : ""}
                   placeholder="Key"
@@ -384,9 +413,18 @@
             {#if isKeyAlreadyExists}
               <div class="mt-1">
                 <p class="text-xs text-red-600 font-normal">
-                  {Object.keys(inputErrors).length > 1
-                    ? "These keys already exist for your target environment(s)"
-                    : "This key already exists for your target environment(s)"}
+                  {#if Object.values(inputErrors).every((err) => err.type === "internal")}
+                    {Object.keys(inputErrors).length > 1
+                      ? "Duplicate keys are not allowed"
+                      : "This key is duplicated"}
+                  {:else if Object.values(inputErrors).every((err) => err.type === "existing")}
+                    {Object.keys(inputErrors).length > 1
+                      ? "These keys already exist for your target environment(s)"
+                      : "This key already exists for your target environment(s)"}
+                  {:else}
+                    Some keys are duplicated or already exist in target
+                    environment(s)
+                  {/if}
                 </p>
               </div>
             {/if}
