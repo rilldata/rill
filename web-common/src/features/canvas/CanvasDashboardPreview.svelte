@@ -115,11 +115,14 @@
 
   function handleClickOutside(event: Event) {
     const target = event.target as HTMLElement;
-    const gridStackItemEl = target.closest(".grid-stack-item");
-    const inspectorWrapperEl = target.closest(".inspector-wrapper");
+    const canvasEl = target.closest(".canvas");
+    const dashboardThemeBoundaryEl = target.closest(
+      ".dashboard-theme-boundary",
+    );
+    const gridStackEl = target.closest(".grid-stack");
 
-    // Deselect if click is outside of both grid-stack-item and inspector-wrapper
-    if (!gridStackItemEl && !inspectorWrapperEl) {
+    // Only deselect if click is inside canvas or dashboard-theme-boundary but outside grid-stack
+    if ((canvasEl || dashboardThemeBoundaryEl) && !gridStackEl) {
       activeIndex = null;
       canvasEntity.setSelectedComponentIndex(activeIndex);
     }
