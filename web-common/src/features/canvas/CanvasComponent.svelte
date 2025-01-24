@@ -12,7 +12,6 @@
   export let builders: Builder[] = [];
   export let embed = false;
   export let selected = false;
-  export let localZIndex = 0;
   export let componentName: string;
   export let instanceId: string;
 
@@ -51,7 +50,7 @@
   data-selected={selected}
   data-hovered={isHovered}
   class:!cursor-default={embed}
-  style:z-index={renderer === "select" ? 100 : localZIndex}
+  style:z-index={renderer === "select" ? 100 : 0}
   on:contextmenu
   on:pointerenter
   on:pointerleave

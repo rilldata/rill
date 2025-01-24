@@ -52,23 +52,18 @@
   const componentRegistry = getComponentRegistry();
 
   async function deleteComponent(index: number) {
-    // Validate input
     if (index === undefined || index === null) {
       console.error("[Canvas] Invalid index for deletion:", index);
       return;
     }
 
-    // Get item to delete
     const itemToDelete = items[index];
     if (!itemToDelete) return;
 
-    // Create updated items array and redistribute row items
     const updatedItems = [...items.slice(0, index), ...items.slice(index + 1)];
 
-    // Update document
     const parsedDocument = parseDocument($editorContent ?? "");
     const rawItems = parsedDocument.get("items") as any;
-
     rawItems.delete(index);
 
     updatedItems.forEach((item, idx) => {
@@ -223,7 +218,6 @@
   on:keydown={async (e) => {
     if (e.target !== document.body || $selectedIndex === null) return;
     if (e.key === "Delete" || e.key === "Backspace") {
-      console.log("[Canvas] Fired `delete` key");
       await deleteComponent($selectedIndex);
     }
   }}

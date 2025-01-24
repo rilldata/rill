@@ -45,7 +45,7 @@
 
   let gridEl: HTMLDivElement;
 
-  let columnCount = 12; // Default column count
+  let columnCount = defaults.DEFAULT_COLUMN_COUNT;
   let resizeObserver: ResizeObserver;
 
   // FYI:

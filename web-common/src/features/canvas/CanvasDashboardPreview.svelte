@@ -35,7 +35,6 @@
   }
 
   function handleDelete(e: CustomEvent<{ index: number }>) {
-    console.log("[CanvasDashboardPreview] handleDelete", e.detail.index);
     items.splice(e.detail.index, 1);
   }
 
@@ -56,12 +55,6 @@
       ".grid-stack-item-content-item",
     );
     const index = contentEl?.getAttribute("data-index");
-
-    console.log("[CanvasDashboardPreview] handleResizeStop", {
-      index: Number(index),
-      contentEl,
-      target: e.detail.target,
-    });
 
     if (index === null) {
       console.error("No index found for resized widget");
@@ -110,13 +103,11 @@
   }
 
   function handleSelect(e: CustomEvent<{ index: number }>) {
-    console.log("[CanvasDashboardPreview] handleSelect", e.detail.index);
     activeIndex = e.detail.index;
     canvasEntity.setSelectedComponentIndex(activeIndex);
   }
 
   function handleDeselect() {
-    console.log("[CanvasDashboardPreview] handleDeselect from grid");
     activeIndex = null;
     canvasEntity.setSelectedComponentIndex(activeIndex);
   }
