@@ -149,8 +149,6 @@ export function useKPISparkline(
 
       const defaultGrain = timeGrain || V1TimeGrain.TIME_GRAIN_HOUR;
 
-      console.log(timeRange, defaultGrain);
-
       return createQueryServiceMetricsViewTimeSeries(
         $runtime.instanceId,
         metricsViewName,
