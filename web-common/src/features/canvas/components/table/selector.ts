@@ -1,4 +1,8 @@
 import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
+import {
+  validateDimensions,
+  validateMeasures,
+} from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
@@ -7,16 +11,8 @@ import {
   type PivotDataStoreConfig,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import {
-  useMetricsViewTimeRange,
-  useMetricsViewValidSpec,
-} from "@rilldata/web-common/features/dashboards/selectors";
+import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  validateDimensions,
-  validateMeasures,
-  validateMetricsView,
-} from "@rilldata/web-common/features/templates/utils";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import { type Readable, derived } from "svelte/store";
@@ -136,20 +132,25 @@ export function getTableConfig(
   );
 }
 
-export function hasValidTableSchema(instanceId: string, tableSpec: TableSpec) {
+export function validateTableSchema(
+  ctx: StateManagers,
+  tableSpec: TableSpec,
+): Readable<{
+  isValid: boolean;
+  error?: string;
+}> {
+  const { metrics_view } = tableSpec;
   return derived(
-    [useMetricsViewValidSpec(instanceId, tableSpec.metrics_view)],
-    ([metricsView]) => {
+    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    (metricsView) => {
       const measures = tableSpec.measures;
       const rowDimensions = tableSpec.row_dimensions || [];
       const colDimensions = tableSpec.col_dimensions || [];
 
-      const validateMetricsViewRes = validateMetricsView(metricsView);
-
-      if (!validateMetricsViewRes.isValid) {
+      if (!metricsView) {
         return {
           isValid: false,
-          error: validateMetricsViewRes.error,
+          error: `Metrics view ${metrics_view} not found`,
         };
       }
       const validateMeasuresRes = validateMeasures(metricsView, measures);

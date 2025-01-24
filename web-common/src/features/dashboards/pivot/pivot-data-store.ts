@@ -575,10 +575,6 @@ export function createPivotDataStore(
 /**
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
-// export const usePivotDataStore = memoizeMetricsStore<PivotDataStore>(
-//   (ctx: StateManagers) => createPivotDataStore(ctx),
-// );
-
 export const usePivotForExplore = memoizeMetricsStore<PivotDataStore>(
   (ctx: StateManagers) => {
     const pivotConfig = getPivotConfig(ctx);

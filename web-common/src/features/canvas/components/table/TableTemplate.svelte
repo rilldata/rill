@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { readable, type Readable, writable } from "svelte/store";
-  import { getTableConfig } from "./selector";
+  import { getTableConfig, validateTableSchema } from "./selector";
   import TableRenderer from "./TableRenderer.svelte";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
@@ -22,6 +22,8 @@
 
   $: colDimensions = tableSpec.col_dimensions || [];
   $: rowDimensions = tableSpec.row_dimensions || [];
+
+  $: schema = validateTableSchema(ctx, tableSpec);
 
   // TODO: Should we move this to canvas entity store?
   $: pivotState = writable<PivotState>({
@@ -56,7 +58,9 @@
 
   let pivotDataStore: PivotDataStore | undefined = undefined;
   let pivotConfig: Readable<PivotDataStoreConfig> | undefined = undefined;
-  $: {
+
+  // TODO: Consider moving to a memoized store
+  $: if ($schema.isValid) {
     const pivotDashboardContext: PivotDashboardContext = {
       metricsViewName: readable(tableSpec.metrics_view),
       queryClient: ctx.queryClient,
@@ -67,8 +71,14 @@
   }
 </script>
 
-<div class="overflow-y-auto">
-  {#if pivotDataStore && pivotConfig && $pivotConfig}
+<div class="overflow-y-auto h-full">
+  {#if !$schema.isValid}
+    <div
+      class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
+    >
+      {$schema.error}
+    </div>
+  {:else if pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
       {pivotDataStore}
       config={$pivotConfig}
