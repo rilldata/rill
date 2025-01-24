@@ -22,7 +22,6 @@ export const CLICKHOUSE_SOURCE_CONNECTORS = [
   "gcs",
   "s3",
   "azure",
-  // "local_file",
-] as const;
+];
 
 export const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
