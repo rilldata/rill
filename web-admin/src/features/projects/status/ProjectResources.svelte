@@ -49,7 +49,7 @@
   );
 
   $: isAnySourceOrModelReconciling = Boolean(
-    $allResources?.data?.some(
+    $resources?.data?.some(
       (resource) =>
         resource.meta.reconcileStatus ===
           V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
@@ -59,7 +59,7 @@
   );
 
   $: hasReconcileError = Boolean(
-    $allResources?.data?.some((resource) => !!resource.meta.reconcileError),
+    $resources?.data?.some((resource) => !!resource.meta.reconcileError),
   );
 
   function startPolling() {
@@ -71,7 +71,7 @@
 
       if (individualRefresh && hasReconcileError) {
         // Check if any resources are still reconciling
-        const stillReconciling = $allResources.data.some(
+        const stillReconciling = $resources.data.some(
           (resource) =>
             resource.meta.reconcileStatus !==
             V1ReconcileStatus.RECONCILE_STATUS_IDLE,
@@ -82,7 +82,7 @@
         }
 
         // Refetch resources for latest reconcile status
-        void $allResources.refetch();
+        void $resources.refetch();
 
         individualRefresh = false;
         return;
@@ -93,7 +93,7 @@
         return;
       }
 
-      void $allResources.refetch();
+      void $resources.refetch();
     }, 500);
   }
 
