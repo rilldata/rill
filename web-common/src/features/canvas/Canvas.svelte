@@ -5,8 +5,6 @@
   import type { V1CanvasSpec } from "@rilldata/web-common/runtime-client";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import type { Vector } from "./types";
-  import BlankCanvas from "./BlankCanvas.svelte";
   import { useDefaultMetrics } from "./selector";
   import { getComponentRegistry } from "./components/util";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -194,12 +192,12 @@
 
 <!-- This is based on figma, we need a `disabled` prop on the filters -->
 <!-- FIXME: blocked by platform support -->
-<div
+<!-- <div
   id="header"
   class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
 >
   <CanvasFilters />
-</div>
+</div> -->
 
 {#if items.length === 0}
   <BlankCanvas on:add={handleAdd} />

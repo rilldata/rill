@@ -15,6 +15,7 @@
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;

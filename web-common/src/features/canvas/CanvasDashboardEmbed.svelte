@@ -8,7 +8,7 @@
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import SvelteGridStack from "./SvelteGridStack.svelte";
   import type { GridStack } from "gridstack";
-  import { CanvasFilters } from "./stores/canvas-filters";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
   export let items: V1CanvasItem[];
   export let showFilterBar = true;
