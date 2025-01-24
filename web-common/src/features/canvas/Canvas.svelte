@@ -93,7 +93,7 @@
     await deleteComponent(e.detail.index);
   }
 
-  async function handleUpdate(
+  function handleUpdate(
     e: CustomEvent<{
       index: number;
       x: number;
@@ -119,7 +119,6 @@
     }
 
     updateEditorContent(parsedDocument.toString(), false, true);
-    await saveLocalContent();
   }
 
   async function addComponent(componentType: CanvasComponentType) {

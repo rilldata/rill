@@ -120,34 +120,33 @@
     grid.on("added", async (_: Event, nodes: Array<GridStackNode>) => {
       grid.batchUpdate();
 
-      nodes.forEach((node) => {
-        const gridItems = grid.getGridItems();
-        const index = gridItems.findIndex((item) => item === node.el);
+      setTimeout(() => {
+        nodes.forEach((node) => {
+          const gridItems = grid.getGridItems();
+          const index = gridItems.findIndex((item) => item === node.el);
 
-        const element = gridEl.querySelector(
-          `#grid-id-${index}`,
-        ) as HTMLDivElement;
-        const child = node.el?.firstElementChild;
+          const element = gridEl.querySelector(
+            `#grid-id-${index}`,
+          ) as HTMLDivElement;
+          const child = node.el?.firstElementChild;
 
-        if (!child || !element) {
-          console.error("Cannot append element to GridStack", {
-            index,
-            element,
-            child,
-          });
-          return;
-        }
+          if (!child || !element) {
+            console.error("Cannot append element to GridStack", {
+              index,
+              element,
+              child,
+            });
+            return;
+          }
 
-        element.style.display = "block";
-        element.style.width = "100%";
-        element.style.height = "100%";
-
-        if (!child.contains(element)) {
           child.appendChild(element);
-        }
-      });
+          element.style.display = "block";
+          element.style.width = "100%";
+          element.style.height = "100%";
+        });
 
-      grid.commit();
+        grid.commit();
+      }, 0);
     });
 
     gridEl.addEventListener("pointerover", (event) => {
