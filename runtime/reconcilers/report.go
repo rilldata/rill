@@ -360,7 +360,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 		} else {
 			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
 		}
-		reportErr = fmt.Errorf("Last report run failed with error: %v", reportErr.Error())
+		reportErr = fmt.Errorf("last report run failed with error: %v", reportErr.Error())
 	}
 
 	// Log it
