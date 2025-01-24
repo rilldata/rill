@@ -1,3 +1,5 @@
+import type { KPISpec } from "@rilldata/web-common/features/canvas/components/kpi";
+import { validateMeasures } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
@@ -11,7 +13,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
 export function useKPITotals(
   ctx: StateManagers,
@@ -180,6 +182,40 @@ export function useKPISparkline(
           },
         },
       ).subscribe(set);
+    },
+  );
+}
+
+export function validateKPISchema(
+  ctx: StateManagers,
+  kpiSpec: KPISpec,
+): Readable<{
+  isValid: boolean;
+  error?: string;
+}> {
+  const { metrics_view } = kpiSpec;
+  return derived(
+    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    (metricsView) => {
+      const measure = kpiSpec.measure;
+      if (!metricsView) {
+        return {
+          isValid: false,
+          error: `Metrics view ${metrics_view} not found`,
+        };
+      }
+      const validateMeasuresRes = validateMeasures(metricsView, [measure]);
+      if (!validateMeasuresRes.isValid) {
+        const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
+        return {
+          isValid: false,
+          error: `Invalid measure "${invalidMeasures}" selected`,
+        };
+      }
+      return {
+        isValid: true,
+        error: undefined,
+      };
     },
   );
 }
