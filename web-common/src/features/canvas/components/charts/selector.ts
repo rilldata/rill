@@ -1,6 +1,11 @@
+import type { ChartSpec } from "@rilldata/web-common/features/canvas/components/charts";
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/features/canvas/components/charts/util";
 import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
+import {
+  validateDimensions,
+  validateMeasures,
+} from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -179,4 +184,57 @@ export function getTimeDimensionDefinition(
       displayName,
     };
   });
+}
+
+export function validateChartSchema(
+  ctx: StateManagers,
+  chartSpec: ChartSpec,
+): Readable<{
+  isValid: boolean;
+  error?: string;
+}> {
+  const { metrics_view, x, y, color } = chartSpec;
+  let measures: string[] = [];
+  let dimensions: string[] = [];
+
+  if (y?.field) measures = [y.field];
+  if (x?.field && x.field !== "__time") dimensions = [x.field];
+  if (typeof color === "object" && color?.field)
+    dimensions = [...dimensions, color.field];
+
+  return derived(
+    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    (metricsView) => {
+      if (!metricsView) {
+        return {
+          isValid: false,
+          error: `Metrics view ${metrics_view} not found`,
+        };
+      }
+      const validateMeasuresRes = validateMeasures(metricsView, measures);
+      if (!validateMeasuresRes.isValid) {
+        const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
+        return {
+          isValid: false,
+          error: `Invalid measure ${invalidMeasures} selected`,
+        };
+      }
+
+      const validateDimensionsRes = validateDimensions(metricsView, dimensions);
+
+      if (!validateDimensionsRes.isValid) {
+        const invalidDimensions =
+          validateDimensionsRes.invalidDimensions.join(", ");
+
+        return {
+          isValid: false,
+          error: `Invalid dimension(s) ${invalidDimensions} selected`,
+        };
+      }
+      return {
+        isValid: true,
+        error: undefined,
+      };
+    },
+  );
 }
