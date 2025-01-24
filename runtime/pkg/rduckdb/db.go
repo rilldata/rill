@@ -318,7 +318,7 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 	return conn, release, nil
 }
 
-func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) error {
+func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *CreateTableOptions) (createErr error) {
 	d.logger.Debug("create: create table", slog.String("name", name), slog.Bool("view", opts.View))
 	err := d.writeSem.Acquire(ctx, 1)
 	if err != nil {
@@ -359,6 +359,11 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 			return fmt.Errorf("create: unable to create dir %q: %w", name, err)
 		}
 		dsn = d.localDBPath(name, newVersion)
+		defer func() {
+			if createErr != nil {
+				_ = d.deleteLocalTableFiles(name, newVersion)
+			}
+		}()
 	}
 
 	// need to attach existing table so that any views dependent on this table are correctly attached
