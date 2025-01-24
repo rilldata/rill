@@ -11,62 +11,8 @@ import {
   type PivotDataStoreConfig,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { createQueryServiceMetricsViewTimeRange } from "@rilldata/web-common/runtime-client";
 import { type Readable, derived } from "svelte/store";
-
-export function useComparisonStartEndTime(
-  instanceId: string,
-  metricsViewName: string,
-  timeRange: string,
-  comparisonRange: string | undefined,
-) {
-  const allTimeRangeQuery = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-  );
-  return derived(allTimeRangeQuery, (allTimeRange) => {
-    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
-    const maxTimeDate = new Date(maxTime ?? 0);
-    const { startTime } = isoDurationToTimeRange(timeRange, maxTimeDate);
-
-    let comparisonStartTime: Date | undefined = undefined;
-    let comparisonEndTime: Date | undefined = undefined;
-
-    if (comparisonRange) {
-      ({ startTime: comparisonStartTime, endTime: comparisonEndTime } =
-        isoDurationToTimeRange(comparisonRange, startTime));
-    }
-    return { start: comparisonStartTime, end: comparisonEndTime };
-  });
-}
-
-export function useStartEndTime(
-  instanceId: string,
-  metricsViewName: string,
-  timeRange: string,
-) {
-  return createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-    {
-      query: {
-        select: (data) => {
-          const maxTime = new Date(data?.timeRangeSummary?.max ?? 0);
-          const { startTime, endTime } = isoDurationToTimeRange(
-            timeRange,
-            maxTime,
-          );
-
-          return { start: startTime, end: endTime };
-        },
-      },
-    },
-  );
-}
 
 export function getTableConfig(
   ctx: StateManagers,
