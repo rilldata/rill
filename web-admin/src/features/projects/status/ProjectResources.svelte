@@ -13,15 +13,20 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { onDestroy } from "svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
+  const POLLING_INTERVAL = 500;
+  const MAX_POLLING_TIME = 30000; // 30 seconds
+
   let isConfirmDialogOpen = false;
-  let maxRefetchAttempts = 60; // 30 seconds maximum
   let refetchAttempts = 0;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
   let individualRefresh = false;
+  let currentResourceName: string | undefined;
+  let hasStartedReconciling = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -58,43 +63,71 @@
     ),
   );
 
-  $: hasReconcileError = Boolean(
-    $resources?.data?.some((resource) => !!resource.meta.reconcileError),
-  );
+  $: if (isAnySourceOrModelReconciling && individualRefresh) {
+    hasStartedReconciling = true;
+  }
 
-  function startPolling() {
+  $: if (
+    !isAnySourceOrModelReconciling &&
+    individualRefresh &&
+    hasStartedReconciling
+  ) {
+    const failedResource = $resources.data?.find((r) => r.meta.reconcileError)
+      ?.meta.name.name;
+    if (failedResource) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to refresh ${failedResource}`,
+        options: {
+          persisted: true,
+        },
+      });
+    } else if (currentResourceName) {
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Successfully refreshed ${currentResourceName}`,
+        options: {
+          persisted: false,
+        },
+      });
+    }
+    individualRefresh = false;
+    currentResourceName = undefined;
+    hasStartedReconciling = false;
     stopPolling();
-    refetchAttempts = 0;
+  }
 
+  function startPolling(resourceName?: string) {
+    stopPolling();
+    currentResourceName = resourceName;
+    hasStartedReconciling = false;
+
+    if (individualRefresh) {
+      eventBus.emit("notification", {
+        type: "loading",
+        message: `Refreshing ${resourceName}...`,
+        options: {
+          persisted: true,
+        },
+      });
+    }
+
+    const startTime = Date.now();
     pollInterval = setInterval(() => {
-      refetchAttempts++;
-
-      if (individualRefresh && hasReconcileError) {
-        // Check if any resources are still reconciling
-        const stillReconciling = $resources.data.some(
-          (resource) =>
-            resource.meta.reconcileStatus !==
-            V1ReconcileStatus.RECONCILE_STATUS_IDLE,
-        );
-
-        if (!stillReconciling) {
-          stopPolling();
+      if (Date.now() - startTime > MAX_POLLING_TIME) {
+        if (individualRefresh && resourceName) {
+          eventBus.emit("notification", {
+            type: "error",
+            message: `Failed to refresh ${resourceName} (timeout)`,
+          });
+          individualRefresh = false;
         }
-
-        // Refetch resources for latest reconcile status
-        void $resources.refetch();
-
-        individualRefresh = false;
-        return;
-      }
-
-      if (refetchAttempts >= maxRefetchAttempts) {
         stopPolling();
         return;
       }
 
       void $resources.refetch();
-    }, 500);
+    }, POLLING_INTERVAL);
   }
 
   function stopPolling() {
@@ -128,13 +161,12 @@
     );
   }
 
-  function refreshResource() {
+  function refreshResource(resourceName: string) {
     individualRefresh = true;
-    startPolling();
+    startPolling(resourceName);
     void $resources.refetch();
   }
 
-  // Cleanup on component destroy
   onDestroy(() => {
     stopPolling();
   });

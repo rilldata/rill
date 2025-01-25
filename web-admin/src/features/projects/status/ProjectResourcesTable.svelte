@@ -15,7 +15,7 @@
   import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
-  export let triggerRefresh: () => void;
+  export let triggerRefresh: (resourceName: string) => void;
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {

@@ -5,14 +5,12 @@
   import { createRuntimeServiceCreateTrigger } from "@rilldata/web-common/runtime-client";
   import { RefreshCcwIcon } from "lucide-svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
-  export let triggerRefresh: () => void;
+  export let triggerRefresh: (resourceName: string) => void;
 
   let isConfirmDialogOpen = false;
   let isDropdownOpen = false;
@@ -32,7 +30,7 @@
       },
     });
 
-    triggerRefresh();
+    triggerRefresh(resourceName);
   }
 </script>
 
