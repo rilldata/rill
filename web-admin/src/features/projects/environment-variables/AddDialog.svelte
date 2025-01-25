@@ -74,7 +74,7 @@
     }),
   );
 
-  const { form, enhance, submit, submitting, errors, allErrors } = superForm(
+  const { form, enhance, submit, submitting, allErrors } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
@@ -204,7 +204,7 @@
         };
       });
 
-    existingKeys.forEach((key, idx) => {
+    existingKeys.forEach((key, _) => {
       const variableEnvironment = key.environment;
       const variableKey = key.name;
 
