@@ -10,14 +10,14 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { onDestroy } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  let isRefreshConfirmDialogOpen = false;
+  let isConfirmDialogOpen = false;
   let maxRefetchAttempts = 60; // 30 seconds maximum
   let refetchAttempts = 0;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -146,7 +146,7 @@
     <Button
       type="secondary"
       on:click={() => {
-        isRefreshConfirmDialogOpen = true;
+        isConfirmDialogOpen = true;
       }}
       disabled={Boolean(pollInterval)}
     >
@@ -172,7 +172,7 @@
   {/if}
 </section>
 
-<RefreshConfirmDialog
-  bind:open={isRefreshConfirmDialogOpen}
+<RefreshAllSourcesAndModelsConfirmDialog
+  bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />

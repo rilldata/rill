@@ -7,12 +7,14 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
 
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
   export let triggerRefresh: () => void;
 
+  let isConfirmDialogOpen = false;
   let isDropdownOpen = false;
 
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -44,18 +46,24 @@
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item
         class="font-normal flex items-center"
-        on:click={() => refresh(resourceKind, resourceName)}
+        on:click={() => {
+          isConfirmDialogOpen = true;
+        }}
       >
-        <Tooltip location="left" alignment="middle" distance={16}>
-          <div class="flex items-center">
-            <RefreshCcwIcon size="12px" />
-            <span class="ml-2">Refresh</span>
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            Refreshing this resource will update all dependent resources.
-          </TooltipContent>
-        </Tooltip>
+        <div class="flex items-center">
+          <RefreshCcwIcon size="12px" />
+          <span class="ml-2">Refresh</span>
+        </div>
       </DropdownMenu.Item>
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
+
+<RefreshResourceConfirmDialog
+  bind:open={isConfirmDialogOpen}
+  name={resourceName}
+  onRefresh={() => {
+    refresh(resourceKind, resourceName);
+    isConfirmDialogOpen = false;
+  }}
+/>
