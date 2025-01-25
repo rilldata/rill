@@ -7,6 +7,7 @@
   import Button from "../button/Button.svelte";
   import { onMount } from "svelte";
   import WarningIcon from "../icons/WarningIcon.svelte";
+  import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
   const NOTIFICATION_TIMEOUT = 3500;
 
@@ -33,6 +34,8 @@
     <div class="message-container" class:font-medium={detail}>
       {#if type === "success"}
         <Check size="18px" className="text-white" />
+      {:else if type === "loading"}
+        <LoadingSpinner size="18px" />
       {:else if type == "error"}
         <WarningIcon />
       {/if}
