@@ -2,7 +2,6 @@ import type { QueryObserverResult } from "@rilldata/svelte-query";
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { RpcStatus } from "@rilldata/web-common/runtime-client";
 import type { Readable } from "svelte/store";
-import type { V1CanvasItem } from "@rilldata/web-common/runtime-client";
 import type { GridItemHTMLElement, GridStackNode } from "gridstack";
 
 export type CanvasSpecResponseStore = Readable<
