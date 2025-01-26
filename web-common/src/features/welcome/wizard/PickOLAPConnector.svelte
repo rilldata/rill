@@ -63,32 +63,33 @@
       : SELF_MANAGED_OLAP_OPTIONS;
 </script>
 
-<section class="flex flex-col gap-y-4 items-center">
-  <div class="olap-cards">
-    {#each olapOptions as option (option.name)}
-      <button
-        class="option"
-        class:selected={$olapDriver === option.name}
-        on:click={() => onboardingState.selectOLAP(option.name)}
-      >
-        <div
-          class="absolute"
-          style="width: {option.iconPosition.width}px; height: {option
-            .iconPosition.height}px; top: {option.iconPosition.top}px;"
+<!-- For now, Rill-managed OLAP will always be DuckDB, so we don't need to show the options -->
+{#if $managementType === "self-managed"}
+  <section class="flex flex-col gap-y-4 items-center">
+    <div class="olap-cards">
+      {#each olapOptions as option (option.name)}
+        <button
+          class="option"
+          class:selected={$olapDriver === option.name}
+          on:click={() => onboardingState.selectOLAP(option.name)}
         >
-          <svelte:component this={option.icon} />
-        </div>
-        <small class="description">{option.copy}</small>
-      </button>
-    {/each}
-  </div>
+          <div
+            class="absolute"
+            style="width: {option.iconPosition.width}px; height: {option
+              .iconPosition.height}px; top: {option.iconPosition.top}px;"
+          >
+            <svelte:component this={option.icon} />
+          </div>
+          <small class="description">{option.copy}</small>
+        </button>
+      {/each}
+    </div>
 
-  {#if $managementType === "self-managed"}
     <Button wide type="primary" disabled={!$olapDriver} href={continueHref}>
       Continue
     </Button>
-  {/if}
-</section>
+  </section>
+{/if}
 
 <style lang="postcss">
   .olap-cards {
