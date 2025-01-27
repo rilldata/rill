@@ -39,13 +39,22 @@
 </script>
 
 {#if $firstDataSource === "local_file"}
-  <LocalSourceUpload
-    on:close={onContinue}
-    on:back={onBack}
-    backHref="/welcome/select-connectors"
-  />
+  <div class="flex flex-col gap-y-4">
+    <LocalSourceUpload onSuccess={onContinue}>
+      <svelte:fragment slot="actions">
+        <Button
+          href="/welcome/select-connectors"
+          on:click={onBack}
+          type="link"
+          large
+        >
+          Back
+        </Button>
+      </svelte:fragment>
+    </LocalSourceUpload>
+  </div>
 {:else if connectorDriver}
-  <div class="w-[544px] p-6 overflow-visible">
+  <div class="w-[496px]">
     <h2 class="text-lead pb-2">Connect to {connectorDriver.displayName}</h2>
     <AddDataForm
       formType={$managementType === "self-managed" ? "connector" : "source"}

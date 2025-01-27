@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidate } from "$app/navigation";
+  import { invalidate } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -12,15 +12,12 @@
     createRuntimeServiceUnpackEmpty,
     runtimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { isProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileLocalFileSourceYAML } from "../sourceUtils";
 
-  export let backHref: string = "";
-
-  const dispatch = createEventDispatcher();
+  export let onSuccess: (newFilePath: string) => Promise<void>;
 
   $: ({ instanceId } = $runtime);
 
@@ -49,7 +46,6 @@
           // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
           await invalidate("init");
         }
-
         const newFilePath = getFileAPIPathFromNameAndType(
           tableName,
           EntityType.Table,
@@ -59,25 +55,27 @@
           blob: compileLocalFileSourceYAML(filePath),
           createOnly: false,
         });
-        await goto(`/files/${newFilePath}`);
+
+        await onSuccess(newFilePath);
       } catch (err) {
         console.error(err);
+        overlay.set(null);
       }
-
-      overlay.set(null);
-      dispatch("close");
     }
   }
 </script>
 
-<div class="grid place-items-center h-44">
+<div class="local-source-upload">
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
 </div>
-<div class="flex">
-  <div class="grow" />
-  <Button on:click={() => dispatch("back")} type="secondary" href={backHref}>
-    Back
-  </Button>
-</div>
+<slot name="actions" />
+
+<style lang="postcss">
+  .local-source-upload {
+    @apply h-44 w-96 grid place-items-center mx-auto my-6;
+    @apply border border-gray-300 rounded;
+    @apply bg-gray-50;
+  }
+</style>

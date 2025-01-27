@@ -19,7 +19,7 @@
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
   export let olapDriver: OlapDriver;
-  export let onSuccess: (newFilePath: string) => void;
+  export let onSuccess: (newFilePath: string) => Promise<void>;
 
   const formId = `add-data-form`;
 
@@ -50,7 +50,7 @@
             values,
             olapDriver,
           );
-          onSuccess(newFilePath);
+          await onSuccess(newFilePath);
         } catch (e) {
           // Check that e?.response?.data conforms to the `RpcStatus` interface
           if (e?.response?.data?.code && e?.response?.data?.message) {

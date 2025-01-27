@@ -6,6 +6,7 @@
   import { type V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
+  import { overlay } from "../../../layout/overlay-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
@@ -66,8 +67,8 @@
     window.history.back();
   }
 
-  function onSuccess(newFilePath: string) {
-    void goto(`/files/${newFilePath}`);
+  async function onSuccess(newFilePath: string) {
+    await goto(`/files/${newFilePath}`);
     resetModal();
   }
 
@@ -142,7 +143,20 @@
           {/if}
         {:else if step === 2 && olapConnectorType && selectedConnector}
           {#if selectedConnector.name === "local_file"}
-            <LocalSourceUpload on:close={resetModal} on:back={back} />
+            <LocalSourceUpload
+              onSuccess={async (newFilePath) => {
+                await goto(`/files/${newFilePath}`);
+                resetModal();
+                overlay.set(null);
+              }}
+            >
+              <svelte:fragment slot="actions">
+                <div class="flex">
+                  <div class="grow" />
+                  <Button on:click={back} type="secondary">Back</Button>
+                </div>
+              </svelte:fragment>
+            </LocalSourceUpload>
           {:else if selectedConnector && selectedConnector.name}
             <AddDataForm
               connector={selectedConnector}
