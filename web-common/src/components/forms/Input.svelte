@@ -308,7 +308,7 @@
   }
 
   .error {
-    @apply text-red-500 text-xs;
+    @apply text-red-500 text-xs text-left;
   }
 
   .toggle {
