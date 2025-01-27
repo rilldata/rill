@@ -1,5 +1,4 @@
 <script lang="ts">
-  import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
@@ -10,15 +9,11 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceUnpackEmpty,
-    createRuntimeServiceUnpackExample,
-  } from "../../runtime-client";
+  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "./constants";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
   const EXAMPLES = [
     {
@@ -46,7 +41,6 @@
   $: ({ instanceId } = $runtime);
 
   $: ({ mutateAsync: unpackExample } = $unpackExampleProject);
-  $: ({ mutateAsync: unpackEmpty } = $unpackEmptyProject);
 
   async function unpackProject(example?: (typeof EXAMPLES)[number]) {
     selectedProjectName = example ? example.name : EMPTY_PROJECT_TITLE;
@@ -84,16 +78,7 @@
 
 <section class="flex flex-col items-center gap-y-5">
   <Subheading>Or jump right into a project.</Subheading>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <Card
-      disabled={!!selectedProjectName}
-      isLoading={selectedProjectName === EMPTY_PROJECT_TITLE}
-      on:click={() => unpackProject()}
-    >
-      <AddCircleOutline size="2em" className="text-slate-600" />
-      <CardTitle position="middle">Start with an empty project</CardTitle>
-    </Card>
-
+  <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     {#each EXAMPLES as example (example.name)}
       <Card
         redirect

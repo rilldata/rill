@@ -1,3 +1,4 @@
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1ListFilesResponse,
   getRuntimeServiceListFilesQueryKey,
@@ -5,7 +6,6 @@ import {
   runtimeServiceListFiles,
   runtimeServiceUnpackEmpty,
 } from "@rilldata/web-common/runtime-client";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { EMPTY_PROJECT_TITLE } from "./constants";
 
 export async function isProjectInitialized(instanceId: string) {

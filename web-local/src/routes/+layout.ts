@@ -1,47 +1,48 @@
 export const ssr = false;
 
-import { redirect } from "@sveltejs/kit";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import { getOnboardingState } from "@rilldata/web-common/features/welcome/wizard/onboarding-state";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   type V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client/index.js";
-import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized.js";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { redirect } from "@sveltejs/kit";
+import { get } from "svelte/store";
 
-export async function load({ url, depends, untrack }) {
-  depends("init");
-
+export async function load({ url }) {
+  // depends("init"); // Removing for now, but reconsider later.
   const instanceId = get(runtime).instanceId;
 
-  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
-    queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(instanceId, undefined, signal);
-    },
-  });
+  // Redirect to the welcome page if the project is not initialized
+  const onboardingState = getOnboardingState(); // TODO: Make sure this doesn't trigger an unnecessary fetch of `onboarding-state.json`
+  const initialized = await onboardingState.isInitialized();
+  const inOnboardingFlow = url.pathname.startsWith("/welcome/"); // The trailing slash ensures this does not pick up the base `/welcome` page, which includes the example projects
 
-  const firstDashboardFile = files.files?.find((file) =>
-    file.path?.startsWith("/dashboards/"),
-  );
-
-  let initialized = !!files.files?.some(({ path }) => path === "/rill.yaml");
-
-  const redirectPath = untrack(() => {
-    return (
-      !!url.searchParams.get("redirect") &&
-      url.pathname !== `/files${firstDashboardFile?.path}` &&
-      `/files${firstDashboardFile?.path}`
-    );
-  });
-
-  if (!initialized) {
-    initialized = await handleUninitializedProject(instanceId);
-  } else if (redirectPath) {
-    throw redirect(303, redirectPath);
+  if (!initialized && !inOnboardingFlow) {
+    throw redirect(303, "/welcome");
   }
 
-  return { initialized };
+  // If the user has clicked on an example project, redirect to the project's first dashboard
+  const shouldRedirectToFirstDashboard = !!url.searchParams.get("redirect");
+
+  if (shouldRedirectToFirstDashboard) {
+    const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+      queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+      queryFn: ({ signal }) => {
+        return runtimeServiceListFiles(instanceId, undefined, signal);
+      },
+    });
+
+    const firstDashboardFile = files.files?.find((file) =>
+      file.path?.startsWith("/dashboards/"),
+    );
+
+    if (url.pathname !== `/files${firstDashboardFile?.path}`) {
+      throw redirect(303, `/files${firstDashboardFile?.path}`);
+    }
+  }
+
+  return { onboardingState };
 }
