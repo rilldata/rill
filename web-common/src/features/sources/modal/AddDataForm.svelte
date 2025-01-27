@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import {
     ConnectorDriverPropertyType,
-    type RpcStatus,
     type V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { defaults, superForm } from "sveltekit-superforms";
@@ -21,7 +19,7 @@
   export let connector: V1ConnectorDriver;
   export let formType: AddDataFormType;
   export let olapDriver: OlapDriver;
-  export let onSubmit: (newFilePath: string) => void;
+  export let onSuccess: (newFilePath: string) => void;
 
   const formId = `add-data-form`;
 
@@ -31,7 +29,7 @@
     ? (connector.configProperties ?? [])
     : (connector.sourceProperties ?? []);
 
-  let rpcError: RpcStatus | null = null;
+  let error: string | null = null;
 
   const schema = yup(getYupSchema[connector.name as keyof typeof getYupSchema]);
 
@@ -44,35 +42,26 @@
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
-        if (isSourceForm) {
-          try {
-            const newSourceFilePath = await submitAddDataForm(
-              queryClient,
-              formType,
-              connector,
-              values,
-              olapDriver,
-            );
-            await goto(`/files/${newSourceFilePath}`);
-            onSubmit(newSourceFilePath);
-          } catch (e) {
-            rpcError = e?.response?.data;
-          }
-          return;
-        }
-
-        // Connectors
         try {
-          // submitNewOLAPConnectorForm
-          const newConnectorFilePath = await submitAddDataForm(
+          const newFilePath = await submitAddDataForm(
             queryClient,
             formType,
             connector,
             values,
+            olapDriver,
           );
-          onSubmit(newConnectorFilePath);
+          onSuccess(newFilePath);
         } catch (e) {
-          rpcError = e?.response?.data;
+          // Check that e?.response?.data conforms to the `RpcStatus` interface
+          if (e?.response?.data?.code && e?.response?.data?.message) {
+            error = humanReadableErrorMessage(
+              connector.name,
+              e?.response?.data?.code,
+              e?.response?.data?.message,
+            );
+          } else {
+            error = e;
+          }
         }
       },
     },
@@ -97,29 +86,27 @@
   }
 </script>
 
-<div class="h-full w-full flex flex-col">
+<div class="h-full w-full flex flex-col gap-y-4">
   <form
-    class="pb-5 flex-grow overflow-y-auto"
+    class="overflow-y-auto"
     id={formId}
     use:enhance
     on:submit|preventDefault={submit}
   >
-    <div class="pb-2 text-slate-500">
-      Need help? Refer to our
-      <a
-        href="https://docs.rilldata.com/build/connect"
-        rel="noreferrer noopener"
-        target="_blank">docs</a
-      > for more information.
-    </div>
-    {#if rpcError}
-      <SubmissionError
-        message={humanReadableErrorMessage(
-          connector.name,
-          rpcError.code,
-          rpcError.message,
-        )}
-      />
+    {#if isSourceForm}
+      <div class="pb-2 text-slate-500">
+        Need help? Refer to our
+        <a
+          href="https://docs.rilldata.com/build/connect"
+          rel="noreferrer noopener"
+          target="_blank">docs</a
+        > for more information.
+      </div>
+    {/if}
+    {#if error}
+      <div class="pb-0.5">
+        <SubmissionError message={error} />
+      </div>
     {/if}
 
     {#each properties as property (property.key)}

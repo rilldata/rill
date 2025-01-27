@@ -1,4 +1,4 @@
-import { goto, invalidate } from "$app/navigation";
+import { invalidate } from "$app/navigation";
 import { page } from "$app/stores";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
@@ -14,6 +14,7 @@ import {
   type V1ConnectorDriver,
   connectorServiceOLAPListTables,
   getConnectorServiceOLAPListTablesQueryKey,
+  runtimeServiceDeleteFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -124,11 +125,10 @@ export async function submitAddDataForm(
           createOnly: false,
         });
 
-        await goto(`/files/${newSourceFilePath}`);
-
         // Return the path to the new source file
         return newSourceFilePath;
       }
+
       case "clickhouse": {
         const newModelFilePath = getFileAPIPathFromNameAndType(
           values.name as string,
@@ -197,6 +197,60 @@ export async function submitAddDataForm(
     createOnly: false,
   });
 
+  const reconcileAndCheckForError = isOnboardingFlow; // Later, we'll enable `reconcileAndCheckForError` for Sources & we'll enable it in the `Add Data` dialog
+  if (reconcileAndCheckForError) {
+    // Wait a sec
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Wait for the file to reconcile
+    const fileArtifact = fileArtifacts.getFileArtifact(newConnectorFilePath);
+    await waitUntil(() => !get(fileArtifact.reconciling), 500);
+
+    // Check for errors
+    const hasErrorsStore = fileArtifact.getHasErrors(queryClient, instanceId);
+    const hasErrors = get(hasErrorsStore);
+    if (hasErrors) {
+      // Clean-up the files
+      await runtimeServiceDeleteFile(instanceId, {
+        path: newConnectorFilePath,
+      });
+      await runtimeServiceDeleteFile(instanceId, {
+        path: ".env",
+      });
+
+      // Throw the the first error
+      const firstError = get(
+        fileArtifact.getAllErrors(queryClient, instanceId),
+      )[0].message; // TODO: return the full error object
+      throw firstError;
+    }
+
+    // Test the connection by calling `GetTables`
+    const queryKey = getConnectorServiceOLAPListTablesQueryKey({
+      instanceId,
+      connector: newConnectorName,
+    });
+    const queryFn = () =>
+      connectorServiceOLAPListTables({
+        instanceId,
+        connector: newConnectorName,
+      });
+    try {
+      await queryClient.fetchQuery({ queryKey, queryFn });
+    } catch (e) {
+      // Clean-up the files
+      await runtimeServiceDeleteFile(instanceId, {
+        path: newConnectorFilePath,
+      });
+      await runtimeServiceDeleteFile(instanceId, {
+        path: ".env",
+      });
+
+      // Throw the error
+      throw e;
+    }
+  }
+
   // Update the `rill.yaml` file
   await runtimeServicePutFile(instanceId, {
     path: "rill.yaml",
@@ -204,28 +258,6 @@ export async function submitAddDataForm(
     create: true,
     createOnly: false,
   });
-
-  // Check for a reconcile error
-  const fileArtifact = fileArtifacts.getFileArtifact(newConnectorFilePath);
-  if (fileArtifact.reconciling) {
-    await waitUntil(() => !fileArtifact.reconciling, 500);
-  }
-  const hasErrorsStore = fileArtifact.getHasErrors(queryClient, instanceId);
-  if (get(hasErrorsStore)) {
-    throw fileArtifact.getAllErrors(queryClient, instanceId);
-  }
-
-  // Test the connection by calling `GetTables`
-  const queryKey = getConnectorServiceOLAPListTablesQueryKey({
-    instanceId,
-    connector: newConnectorName,
-  });
-  const queryFn = () =>
-    connectorServiceOLAPListTables({
-      instanceId,
-      connector: newConnectorName,
-    });
-  await queryClient.fetchQuery({ queryKey, queryFn });
 
   // Return the path to the new connector file
   return newConnectorFilePath;

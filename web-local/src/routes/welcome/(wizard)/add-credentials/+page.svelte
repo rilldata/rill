@@ -22,10 +22,10 @@
     if ($managementType === "rill-managed") {
       onboardingState.complete();
       // Navigate to the new source (whether there's an error or not)
-      goto(`/files/${filePath}`);
+      await goto(`/files/${filePath}`);
     } else {
       // Continue in the onboarding wizard to create a dashboard
-      goto(`/welcome/make-your-first-dashboard`);
+      await goto(`/welcome/make-your-first-dashboard`);
     }
   }
 
@@ -46,13 +46,12 @@
   />
 {:else if connectorDriver}
   <div class="w-[544px] p-6 overflow-visible">
-    <h2 class="text-lead">Connect to {connectorDriver.displayName}</h2>
+    <h2 class="text-lead pb-2">Connect to {connectorDriver.displayName}</h2>
     <AddDataForm
       formType={$managementType === "self-managed" ? "connector" : "source"}
       connector={connectorDriver}
       olapDriver={$olapDriver}
       onSuccess={onContinue}
-      reconcileAndCheckForError={true}
     >
       <svelte:fragment slot="actions" let:submitting>
         <div class="flex flex-col gap-y-2">

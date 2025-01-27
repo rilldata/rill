@@ -66,7 +66,7 @@
     window.history.back();
   }
 
-  function onSubmit(newFilePath: string) {
+  function onSuccess(newFilePath: string) {
     void goto(`/files/${newFilePath}`);
     resetModal();
   }
@@ -148,7 +148,7 @@
               connector={selectedConnector}
               formType="source"
               olapDriver={olapConnectorType}
-              {onSubmit}
+              {onSuccess}
             >
               <svelte:fragment slot="actions" let:submitting>
                 <div class="flex items-center gap-x-2 ml-auto">
