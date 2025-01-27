@@ -11,6 +11,7 @@
 
 <style lang="postcss">
   .progress-dots {
+    @apply mt-2;
     @apply flex justify-center gap-x-1;
   }
 

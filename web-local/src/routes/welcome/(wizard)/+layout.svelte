@@ -12,21 +12,24 @@
   const currentStep = getCurrentStep();
 </script>
 
-<div class="container">
+<main>
   <slot />
-  <span class="absolute bottom-10">
-    <ProgressDots
-      numberOfDots={$numberOfSteps}
-      activeDotIndex={$currentStep - 1}
-    />
-  </span>
-</div>
+</main>
+<footer>
+  <ProgressDots
+    numberOfDots={$numberOfSteps}
+    activeDotIndex={$currentStep - 1}
+  />
+</footer>
 
 <style lang="postcss">
-  .container {
-    @apply max-w-screen-xl mx-auto h-screen;
-    @apply mt-12 px-4 pt-6 pb-4;
-    @apply flex flex-col gap-y-4 justify-start items-center text-center;
-    @apply relative;
+  main {
+    @apply w-full pt-[100px];
+    @apply flex-grow flex flex-col;
+    @apply justify-start items-center text-center overflow-auto;
+  }
+
+  footer {
+    @apply h-14;
   }
 </style>
