@@ -35,14 +35,11 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 		return err
 	}
 
-	if job.Attempt > 1 {
-		// rare case but if its retried, we should repair the billing as it might be in some inconsistent state
-		_, _, err = w.admin.RepairOrganizationBilling(ctx, org, false)
-		if err != nil {
-			w.logger.Warn("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
-			return err
-		}
-		return nil
+	// rare case but if its retried, we should repair the billing as it might be in some inconsistent state
+	_, _, err = w.admin.RepairOrganizationBilling(ctx, org, false)
+	if err != nil {
+		w.logger.Warn("failed to init billing for organization", zap.String("org_name", org.Name), zap.String("org_id", org.ID), zap.Error(err))
+		return err
 	}
 
 	_, err = w.admin.InitOrganizationBilling(ctx, org)
