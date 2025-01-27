@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"net/mail"
 
 	"github.com/rilldata/rill/cli/cmd/auth"

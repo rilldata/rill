@@ -324,7 +324,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please add another admin first")
 	}
 
-	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID)
+	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID, 2)
 	if err != nil {
 		return nil, err
 	}
