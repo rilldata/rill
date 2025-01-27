@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^4.5.0",
-    "@playwright/test": "^1.33.0",
+    "@playwright/test": "^1.49.1",
     "@rilldata/svelte-query": "^4.29.20-0.0.3",
     "@sveltejs/adapter-static": "^3.0.5",
     "@sveltejs/kit": "^2.7.1",

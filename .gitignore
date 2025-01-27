@@ -21,7 +21,9 @@ node_modules
 /dev-project*
 /dev-cloud-state*
 /e2e-cloud-state*
-/playwright-report
+**/playwright-report
+**/playwright
+**/test-results
 
 # data files
 *.duckdb
