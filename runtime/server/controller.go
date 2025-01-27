@@ -33,6 +33,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.kind", req.Kind),
+		attribute.Bool("args.skip_checks", req.SkipChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
@@ -61,10 +62,6 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
-	// Check if the requester is an admin
-	claims := auth.GetClaims(ctx)
-	isAdmin := claims.SecurityClaims().Admin()
-
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
@@ -72,10 +69,11 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		// Admins can see all resources, even if they don't have access.
-		if !isAdmin && !access {
+		// Check of the request is to skip security checks
+		if !req.SkipChecks && !access {
 			// Remove from the slice
 			rs[i] = rs[len(rs)-1]
+			rs[len(rs)-1] = nil
 			rs = rs[:len(rs)-1]
 			continue
 		}
@@ -159,6 +157,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name.kind", req.Name.Kind),
 		attribute.String("args.name.name", req.Name.Name),
+		attribute.Bool("args.skip_checks", req.SkipChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
@@ -182,7 +181,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if !access {
+	if !req.SkipChecks && !access {
 		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
