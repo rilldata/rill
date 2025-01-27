@@ -111,7 +111,11 @@ export function getPivotExportArgs(ctx: StateManagers) {
 
       const metricsViewSpec = validSpecStore.data?.metricsView ?? {};
       const exploreSpec = validSpecStore.data?.explore ?? {};
-      const timeRange = mapTimeRange(timeControlState, exploreSpec);
+      const timeRange = mapTimeRange(
+        timeControlState,
+        exploreSpec,
+        dashboardState,
+      );
       if (!timeRange) return undefined;
 
       return getPivotAggregationRequest(
