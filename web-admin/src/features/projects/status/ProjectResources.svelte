@@ -19,7 +19,7 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   const POLLING_INTERVAL = 500;
-  const MAX_POLLING_TIME = 30000; // 30 seconds
+  const MAX_POLLING_TIME = 30_000;
 
   let isConfirmDialogOpen = false;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -45,9 +45,6 @@
         },
         refetchOnMount: true,
         keepPreviousData: true,
-        onError: () => {
-          stopPolling();
-        },
       },
     },
   );
@@ -86,13 +83,26 @@
         type: "success",
         message: `Successfully refreshed ${currentResourceName}`,
         options: {
-          persisted: false,
+          persisted: true,
         },
       });
     }
     individualRefresh = false;
     currentResourceName = undefined;
     hasStartedReconciling = false;
+    stopPolling();
+  }
+
+  $: if ($resources.isError && individualRefresh && currentResourceName) {
+    eventBus.emit("notification", {
+      type: "error",
+      message: `Failed to refresh ${currentResourceName} - ${$resources.error?.message}`,
+      options: {
+        persisted: true,
+      },
+    });
+    individualRefresh = false;
+    currentResourceName = undefined;
     stopPolling();
   }
 
@@ -118,6 +128,9 @@
           eventBus.emit("notification", {
             type: "error",
             message: `Failed to refresh ${resourceName} (timeout)`,
+            options: {
+              persisted: true,
+            },
           });
           individualRefresh = false;
         }
