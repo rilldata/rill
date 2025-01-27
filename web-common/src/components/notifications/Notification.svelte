@@ -9,7 +9,7 @@
   import WarningIcon from "../icons/WarningIcon.svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
-  const NOTIFICATION_TIMEOUT = 3500;
+  const DEFAULT_NOTIFICATION_TIMEOUT = 3500;
 
   export let location: "top" | "bottom" | "middle" = "bottom";
   export let justify: "left" | "right" | "center" = "center";
@@ -20,7 +20,8 @@
 
   onMount(() => {
     if (!options?.persisted && !link) {
-      setTimeout(onClose, NOTIFICATION_TIMEOUT);
+      const timeout = options?.timeout ?? DEFAULT_NOTIFICATION_TIMEOUT;
+      setTimeout(onClose, timeout);
     }
   });
 </script>

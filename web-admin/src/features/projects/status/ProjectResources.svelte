@@ -83,7 +83,7 @@
         type: "success",
         message: `Successfully refreshed ${currentResourceName}`,
         options: {
-          persisted: true,
+          timeout: 8_000,
         },
       });
     }
@@ -116,7 +116,7 @@
         type: "loading",
         message: `Refreshing ${resourceName}...`,
         options: {
-          persisted: true,
+          timeout: 8_000,
         },
       });
     }

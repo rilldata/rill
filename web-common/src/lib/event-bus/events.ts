@@ -13,6 +13,7 @@ export interface NotificationMessage {
 
 interface NotificationOptions {
   persisted?: boolean;
+  timeout?: number;
 }
 
 export interface BannerMessage {
