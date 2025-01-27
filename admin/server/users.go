@@ -301,14 +301,13 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	currentUser, err := s.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
-
-	isCurrentUser := currentUser.User.Email == req.Email
+	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
 	isSuperuser := claims.Superuser(ctx)
 
 	if !isCurrentUser && !isSuperuser {
@@ -334,16 +333,11 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 	}
 
 	if isCurrentUser {
-		err = s.admin.DB.DeleteUser(ctx, currentUser.User.Id)
+		err = s.admin.DB.DeleteUser(ctx, user.ID)
 		if err != nil {
 			return nil, err
 		}
 		return &adminv1.DeleteUserResponse{}, nil
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
 	}
 
 	err = s.admin.DB.DeleteUser(ctx, user.ID)
