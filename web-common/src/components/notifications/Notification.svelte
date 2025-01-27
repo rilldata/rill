@@ -9,7 +9,7 @@
   import WarningIcon from "../icons/WarningIcon.svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
 
-  const DEFAULT_NOTIFICATION_TIMEOUT = 3500;
+  const DEFAULT_NOTIFICATION_TIMEOUT = 3_500;
 
   export let location: "top" | "bottom" | "middle" = "bottom";
   export let justify: "left" | "right" | "center" = "center";
@@ -19,7 +19,7 @@
   $: ({ message, link, type, detail, options } = notification);
 
   onMount(() => {
-    if (!options?.persisted && !link) {
+    if (!options?.persisted && !link && type !== "loading") {
       const timeout = options?.timeout ?? DEFAULT_NOTIFICATION_TIMEOUT;
       setTimeout(onClose, timeout);
     }
@@ -52,7 +52,7 @@
       </div>
     {/if}
 
-    {#if options?.persisted}
+    {#if options?.persisted && type !== "loading"}
       <div class="px-2 py-2 border-l">
         <Button on:click={onClose} square>
           <Close size="18px" color="#fff" />

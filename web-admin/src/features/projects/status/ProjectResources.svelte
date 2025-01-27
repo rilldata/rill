@@ -82,9 +82,6 @@
       eventBus.emit("notification", {
         type: "success",
         message: `Successfully refreshed ${currentResourceName}`,
-        options: {
-          timeout: 8_000,
-        },
       });
     }
     individualRefresh = false;
@@ -116,7 +113,7 @@
         type: "loading",
         message: `Refreshing ${resourceName}...`,
         options: {
-          timeout: 8_000,
+          persisted: true,
         },
       });
     }
