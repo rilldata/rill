@@ -259,7 +259,7 @@
 
   th {
     @apply text-left;
-    @apply pl-4 text-slate-500 bg-background;
+    @apply pl-4 text-slate-500 bg-surface;
     @apply border-b text-sm font-semibold;
     @apply truncate;
   }

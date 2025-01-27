@@ -125,7 +125,7 @@
     @apply h-full border-r z-0 w-60;
     transition-property: width;
     will-change: width;
-    @apply select-none;
+    @apply select-none bg-surface;
   }
 
   .input-wrapper {

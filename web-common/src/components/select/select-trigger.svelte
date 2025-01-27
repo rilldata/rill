@@ -41,7 +41,7 @@
         on:click={() => {
           locked = false;
         }}
-        class="group active:bg-gray-50 grid bg-background place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
+        class="group active:bg-gray-50 grid bg-surface place-content-center h-full absolute right-0 w-[40px] border-l pointer-events-auto cursor-pointer"
       >
         <Lock size="14px" class="text-gray-600 group-hover:hidden" />
         <UnlockIcon

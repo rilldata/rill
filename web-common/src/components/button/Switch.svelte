@@ -12,8 +12,7 @@
     {checked}
     class="
       m-0
-      dark:transparent
-      checked:bg-gray-700 dark:checked:bg-gray-400
+      checked:bg-gray-700
       cursor-pointer
     "
     {id}

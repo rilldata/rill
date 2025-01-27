@@ -15,11 +15,11 @@
   export let showX = true;
   export let showY = true;
 
-  export let xColor = "stroke-gray-300 dark:stroke-gray-600";
+  export let xColor = "stroke-gray-300 ";
   export let xAlpha = 1;
   export let xDashArray = "1,1";
   export let xThickness = 1;
-  export let yColor = "stroke-gray-300 dark:stroke-gray-600";
+  export let yColor = "stroke-gray-300";
   export let yAlpha = 1;
   export let yDashArray = "1,1";
   export let yThickness = 1;

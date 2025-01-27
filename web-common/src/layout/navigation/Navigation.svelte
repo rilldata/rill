@@ -173,7 +173,7 @@
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply flex flex-col flex-none relative overflow-hidden bg-surface;
     @apply h-full border-r z-0;
     @apply select-none;
     transition-property: width;
@@ -191,7 +191,7 @@
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply transition-colors h-full bg-white;
+    @apply h-full bg-surface;
   }
 
   .sidebar:not(.resizing) {

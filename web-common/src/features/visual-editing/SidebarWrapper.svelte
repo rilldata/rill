@@ -5,7 +5,7 @@
 </script>
 
 <div
-  class="size-full bg-background flex-none flex flex-col select-none rounded-[2px] w-full"
+  class="size-full bg-surface flex-none flex flex-col select-none rounded-[2px] w-full"
 >
   <div class={type}>
     <h1 class:pb-2={type == "secondary" && !$$slots.header}>{title}</h1>
@@ -13,9 +13,8 @@
   </div>
 
   <div
-    class="{disableHorizontalPadding
-      ? ''
-      : 'px-5'} flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible"
+    class:px-5={!disableHorizontalPadding}
+    class="flex flex-col gap-y-3 w-full h-full overflow-y-auto overflow-x-visible pb-8"
   >
     <slot />
   </div>

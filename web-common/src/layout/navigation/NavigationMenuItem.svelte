@@ -8,14 +8,14 @@
 {#key disabled}
   <DropdownMenu.Item
     {href}
-    class="data-[highlighted]:bg-gray-600 dark gap-2"
+    class="gap-2"
     aria-disabled={disabled}
     {disabled}
     on:click
   >
     {#if $$slots.icon}
       <div
-        class="grid place-content-center opacity-80 ui-copy-icon dark:text-white"
+        class="grid place-content-center opacity-80 ui-copy-icon"
         style:height="18px"
       >
         <slot name="icon" />

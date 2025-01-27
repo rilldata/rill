@@ -312,12 +312,12 @@
   }
 
   td:first-of-type {
-    @apply p-0 bg-background;
+    @apply p-0 bg-surface;
   }
 
   a {
     @apply absolute right-0 z-50 h-[22px] w-[32px];
-    @apply bg-white flex items-center justify-center shadow-md rounded-sm;
+    @apply bg-surface flex items-center justify-center shadow-md rounded-sm;
   }
 
   a:hover {

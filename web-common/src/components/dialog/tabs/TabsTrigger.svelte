@@ -14,7 +14,7 @@
 
 <TabsPrimitive.Trigger
   class={cn(
-    "flex gap-x-2 p-2 items-center justify-center whitespace-nowrap w-[200px] h-[34px] text-sm text-gray-500 font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=active]:bg-background data-[state=active]:text-foreground",
+    "flex gap-x-2 p-2 items-center justify-center whitespace-nowrap w-[200px] h-[34px] text-sm text-gray-500 font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none data-[state=active]:bg-red-400 data-[state=active]:text-foreground",
     className,
   )}
   {value}

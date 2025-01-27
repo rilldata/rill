@@ -136,10 +136,10 @@ interface ColorTokens {
 }
 
 export const CATEGORICAL_TOKENS: ColorTokens = {
-  textClass: "text-sky-800 dark:text-sky-200",
-  bgClass: "bg-sky-200 dark:bg-sky-600",
-  vizFillClass: "fill-sky-800 dark:fill-sky-200",
-  vizStrokeClass: "stroke-sky-800 dark:stroke-sky-200",
+  textClass: "text-sky-800",
+  bgClass: "bg-sky-200",
+  vizFillClass: "fill-sky-800 ",
+  vizStrokeClass: "stroke-sky-800",
 };
 
 export const NUMERIC_TOKENS: ColorTokens = {
@@ -157,10 +157,10 @@ export const TIMESTAMP_TOKENS: ColorTokens = {
 };
 
 export const NESTED_TOKENS: ColorTokens = {
-  textClass: "text-gray-800 dark:text-gray-200",
-  bgClass: "bg-gray-200 dark:bg-gray-600",
-  vizFillClass: "fill-gray-800 dark:fill-gray-200",
-  vizStrokeClass: "stroke-gray-800 dark:stroke-gray-200",
+  textClass: "text-gray-800",
+  bgClass: "bg-gray-200",
+  vizFillClass: "fill-gray-800",
+  vizStrokeClass: "stroke-gray-800",
 };
 
 export const INTERVAL_TOKENS: ColorTokens = TIMESTAMP_TOKENS;
