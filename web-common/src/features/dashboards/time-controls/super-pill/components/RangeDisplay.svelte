@@ -6,15 +6,21 @@
   export let abbreviation: string | undefined = undefined;
 
   $: showTime = grain === "TIME_GRAIN_HOUR" || grain === "TIME_GRAIN_MINUTE";
-  $: timeFormat = grain === "TIME_GRAIN_MINUTE" ? "h:mm a" : "h a";
+
+  $: intervalStartsAndEndsOnHour =
+    interval.start.minute === 0 && interval.end.minute === 0;
+
+  $: timeFormat = intervalStartsAndEndsOnHour ? "h a" : "h:mm a";
 
   $: inclusiveInterval = interval.set({
     end: interval.end.minus({ millisecond: 1 }),
   });
 
+  // temp while developinng
   $: displayedInterval = showTime ? interval : inclusiveInterval;
 
-  $: date = displayedInterval.toLocaleString(DateTime.DATE_MED);
+  // temp display while developing
+  $: date = displayedInterval.toLocaleString(DateTime.DATETIME_FULL);
 
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
