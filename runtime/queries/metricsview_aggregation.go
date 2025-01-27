@@ -314,6 +314,9 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		if q.TimeRange.TimeZone != "" {
+			qry.TimeZone = q.TimeRange.TimeZone
+		}
 		qry.TimeRange = res
 	}
 
@@ -329,6 +332,9 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		if q.ComparisonTimeRange.TimeZone != "" && qry.TimeZone == "qry.TimeZone" {
+			qry.TimeZone = q.ComparisonTimeRange.TimeZone
+		}
 		qry.ComparisonTimeRange = res
 	}
 

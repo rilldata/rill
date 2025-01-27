@@ -42,6 +42,7 @@ export const PreviousCompleteRangeMap: Partial<
  */
 export function mapTimeRange(
   timeControlState: TimeControlState,
+  timeZone: string,
   explore: V1ExploreSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
@@ -72,6 +73,8 @@ export function mapTimeRange(
       break;
   }
 
+  timeRange.timeZone = timeZone;
+
   return timeRange;
 }
 
@@ -82,10 +85,11 @@ export function mapComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined,
+  forceTimeComparison: boolean,
 ) {
   if (
     !timeRange ||
-    dashboardState.selectedComparisonDimension ||
+    (!forceTimeComparison && dashboardState.selectedComparisonDimension) ||
     !timeControlState.showTimeComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {

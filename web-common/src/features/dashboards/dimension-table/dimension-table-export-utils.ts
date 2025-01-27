@@ -39,6 +39,7 @@ export function getDimensionTableExportArgs(
 
       const timeRange = mapTimeRange(
         timeControlState,
+        dashboardState.selectedTimezone,
         validSpecStore.data.explore,
       );
       if (!timeRange) return undefined;
@@ -47,6 +48,7 @@ export function getDimensionTableExportArgs(
         dashboardState,
         timeControlState,
         timeRange,
+        false,
       );
 
       return getDimensionTableAggregationRequestForTime(
