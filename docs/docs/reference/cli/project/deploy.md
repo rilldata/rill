@@ -7,7 +7,7 @@ title: rill project deploy
 Deploy project to Rill Cloud by uploading the project files
 
 ```
-rill project deploy [flags]
+rill project deploy [<path>] [flags]
 ```
 
 ### Flags

@@ -284,6 +284,80 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
+func (s *Server) ListOrganizationsByUser(ctx context.Context, req *adminv1.ListOrganizationsByUserRequest) (*adminv1.ListOrganizationsByUserResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+
+	orgs, err := s.admin.DB.ListOrganizationsByUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	dtos := make([]*adminv1.Organization, len(orgs))
+	for i, org := range orgs {
+		dtos[i] = s.organizationToDTO(org, false)
+	}
+
+	return &adminv1.ListOrganizationsByUserResponse{Organizations: dtos}, nil
+}
+
+func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
+	observability.AddRequestAttributes(
+		ctx,
+		attribute.String("args.email", req.Email),
+		attribute.String("args.org", req.Organization),
+	)
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user by email: %v", err)
+	}
+
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization role: %v", err)
+	}
+
+	claims := auth.GetClaims(ctx)
+	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	isSuperuser := claims.Superuser(ctx)
+
+	if !isCurrentUser && !isSuperuser {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can delete other users")
+	}
+
+	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, req.Organization, role.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find organization member users by role: %v", err)
+	}
+
+	if len(orgAdminUsers) == 1 && orgAdminUsers[0].Email == req.Email {
+		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please add another admin first")
+	}
+
+	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization, 2)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to count members by organization: %v", err)
+	}
+	if memberCount == 1 {
+		err = s.admin.DB.DeleteOrganization(ctx, req.Organization)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to delete organization: %v", err)
+		}
+	}
+
+	err = s.admin.DB.DeleteUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+	}
+
+	return &adminv1.DeleteUserResponse{}, nil
+}
+
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
 	if req.SingleuserOrgs != nil {

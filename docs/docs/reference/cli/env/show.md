@@ -7,7 +7,7 @@ title: rill env show
 Show credentials and other variables
 
 ```
-rill env show [flags]
+rill env show [<project-name>] [flags]
 ```
 
 ### Flags
@@ -25,6 +25,7 @@ rill env show [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

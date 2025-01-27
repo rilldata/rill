@@ -195,6 +195,9 @@ import type {
   V1IssueRepresentativeAuthTokenRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
+  V1DeleteUserResponse,
+  AdminServiceDeleteUserParams,
+  V1ListOrganizationsByUserResponse,
   V1ListBookmarksResponse,
   AdminServiceListBookmarksParams,
   V1CreateBookmarkResponse,
@@ -7370,6 +7373,117 @@ export const createAdminServiceGetUser = <
     TData,
     TError
   > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary DeleteUser deletes the user from the organization by email
+ */
+export const adminServiceDeleteUser = (
+  email: string,
+  params?: AdminServiceDeleteUserParams,
+) => {
+  return httpClient<V1DeleteUserResponse>({
+    url: `/v1/users/${email}`,
+    method: "delete",
+    params,
+  });
+};
+
+export type AdminServiceDeleteUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteUser>>
+>;
+
+export type AdminServiceDeleteUserMutationError = RpcStatus;
+
+export const createAdminServiceDeleteUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string; params?: AdminServiceDeleteUserParams },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    { email: string; params?: AdminServiceDeleteUserParams }
+  > = (props) => {
+    const { email, params } = props ?? {};
+
+    return adminServiceDeleteUser(email, params);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDeleteUser>>,
+    TError,
+    { email: string; params?: AdminServiceDeleteUserParams },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ListOrganizationsByUser lists all the organizations for the user
+ */
+export const adminServiceListOrganizationsByUser = (
+  email: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListOrganizationsByUserResponse>({
+    url: `/v1/users/${email}/organizations`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListOrganizationsByUserQueryKey = (
+  email: string,
+) => [`/v1/users/${email}/organizations`];
+
+export type AdminServiceListOrganizationsByUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizationsByUser>>
+>;
+export type AdminServiceListOrganizationsByUserQueryError = RpcStatus;
+
+export const createAdminServiceListOrganizationsByUser = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationsByUser>>,
+  TError = RpcStatus,
+>(
+  email: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationsByUser>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationsByUserQueryKey(email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationsByUser>>
+  > = ({ signal }) => adminServiceListOrganizationsByUser(email, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationsByUser>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryKey;
 

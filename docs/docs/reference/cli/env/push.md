@@ -7,7 +7,7 @@ title: rill env push
 Push local .env contents to cloud
 
 ```
-rill env push [flags]
+rill env push [<project-name>] [flags]
 ```
 
 ### Flags
@@ -25,6 +25,7 @@ rill env push [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO
