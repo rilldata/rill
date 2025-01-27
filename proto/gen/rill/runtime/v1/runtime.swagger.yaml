@@ -2542,6 +2542,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipChecks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources:
@@ -2573,6 +2577,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipChecks
+          description: Skip security checks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
