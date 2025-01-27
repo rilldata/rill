@@ -79,7 +79,7 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col min-h-screen h-screen">
+    <main class="flex flex-col min-h-screen h-screen bg-surface">
       <BannerCenter />
       {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
