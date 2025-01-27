@@ -70,6 +70,7 @@ const (
 	AdminService_ListUsergroupMemberUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListUsergroupMemberUsers"
 	AdminService_RemoveUsergroupMemberUser_FullMethodName             = "/rill.admin.v1.AdminService/RemoveUsergroupMemberUser"
 	AdminService_GetCurrentUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_ListOrganizationsByUser_FullMethodName               = "/rill.admin.v1.AdminService/ListOrganizationsByUser"
 	AdminService_DeleteUser_FullMethodName                            = "/rill.admin.v1.AdminService/DeleteUser"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
@@ -263,6 +264,8 @@ type AdminServiceClient interface {
 	RemoveUsergroupMemberUser(ctx context.Context, in *RemoveUsergroupMemberUserRequest, opts ...grpc.CallOption) (*RemoveUsergroupMemberUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// ListOrganizationsByUser lists all the organizations for the user
+	ListOrganizationsByUser(ctx context.Context, in *ListOrganizationsByUserRequest, opts ...grpc.CallOption) (*ListOrganizationsByUserResponse, error)
 	// DeleteUser deletes the user from the organization by email
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
@@ -932,6 +935,16 @@ func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCurrentUserResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetCurrentUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListOrganizationsByUser(ctx context.Context, in *ListOrganizationsByUserRequest, opts ...grpc.CallOption) (*ListOrganizationsByUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOrganizationsByUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListOrganizationsByUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1822,6 +1835,8 @@ type AdminServiceServer interface {
 	RemoveUsergroupMemberUser(context.Context, *RemoveUsergroupMemberUserRequest) (*RemoveUsergroupMemberUserResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// ListOrganizationsByUser lists all the organizations for the user
+	ListOrganizationsByUser(context.Context, *ListOrganizationsByUserRequest) (*ListOrganizationsByUserResponse, error)
 	// DeleteUser deletes the user from the organization by email
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
@@ -2139,6 +2154,9 @@ func (UnimplementedAdminServiceServer) RemoveUsergroupMemberUser(context.Context
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) ListOrganizationsByUser(context.Context, *ListOrganizationsByUserRequest) (*ListOrganizationsByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationsByUser not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
@@ -3306,6 +3324,24 @@ func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListOrganizationsByUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationsByUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListOrganizationsByUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListOrganizationsByUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListOrganizationsByUser(ctx, req.(*ListOrganizationsByUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4906,6 +4942,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "ListOrganizationsByUser",
+			Handler:    _AdminService_ListOrganizationsByUser_Handler,
 		},
 		{
 			MethodName: "DeleteUser",

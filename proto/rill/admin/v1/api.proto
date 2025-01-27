@@ -342,6 +342,11 @@ service AdminService {
     };
   }
 
+  // ListOrganizationsByUser lists all the organizations for the user
+  rpc ListOrganizationsByUser(ListOrganizationsByUserRequest) returns (ListOrganizationsByUserResponse) {
+    option (google.api.http) = {get: "/v1/users/{email}/organizations"};
+  }
+
   // DeleteUser deletes the user from the organization by email
   rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
     option (google.api.http) = {delete: "/v1/users/{email}"};
@@ -1642,6 +1647,14 @@ message UpdateUserPreferencesRequest {
 
 message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
+}
+
+message ListOrganizationsByUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message ListOrganizationsByUserResponse {
+  repeated Organization organizations = 1;
 }
 
 message DeleteUserRequest {

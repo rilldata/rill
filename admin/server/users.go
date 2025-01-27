@@ -284,6 +284,27 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
+func (s *Server) ListOrganizationsByUser(ctx context.Context, req *adminv1.ListOrganizationsByUserRequest) (*adminv1.ListOrganizationsByUserResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "user not found")
+	}
+
+	orgs, err := s.admin.DB.ListOrganizationsByUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	dtos := make([]*adminv1.Organization, len(orgs))
+	for i, org := range orgs {
+		dtos[i] = s.organizationToDTO(org, false)
+	}
+
+	return &adminv1.ListOrganizationsByUserResponse{Organizations: dtos}, nil
+}
+
 func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
 	observability.AddRequestAttributes(
 		ctx,
@@ -291,19 +312,14 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		attribute.String("args.org", req.Organization),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, err
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -314,7 +330,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "only superusers can delete other users")
 	}
 
-	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
+	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, req.Organization, role.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +339,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please add another admin first")
 	}
 
-	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID, 2)
+	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization, 2)
 	if err != nil {
 		return nil, err
 	}

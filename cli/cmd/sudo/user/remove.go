@@ -5,16 +5,10 @@ import (
 	"fmt"
 	"net/mail"
 
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
-
-func valid(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil
-}
 
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
@@ -36,22 +30,21 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("invalid email: %w", err)
 			}
 
-			if ch.Org == "" {
-				err = auth.SelectOrgFlow(ctx, ch, true)
+			orgs, err := client.ListOrganizationsByUser(ctx, &adminv1.ListOrganizationsByUserRequest{
+				Email: email,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to list organizations for user %q: %w", email, err)
+			}
+
+			for _, org := range orgs.Organizations {
+				_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email, Organization: org.Id})
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to remove user %q from organization %q: %w", email, org.Id, err)
 				}
 			}
 
-			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{
-				Email:        email,
-				Organization: ch.Org,
-			})
-			if err != nil {
-				return err
-			}
-
-			cmd.Printf("User %q has been removed\n", email)
+			cmd.Printf("User %q removed from all organizations\n", email)
 
 			return nil
 		},

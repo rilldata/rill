@@ -6777,6 +6777,80 @@ export class UpdateUserPreferencesResponse extends Message<UpdateUserPreferences
 }
 
 /**
+ * @generated from message rill.admin.v1.ListOrganizationsByUserRequest
+ */
+export class ListOrganizationsByUserRequest extends Message<ListOrganizationsByUserRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<ListOrganizationsByUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationsByUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationsByUserRequest {
+    return new ListOrganizationsByUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationsByUserRequest {
+    return new ListOrganizationsByUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationsByUserRequest {
+    return new ListOrganizationsByUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationsByUserRequest | PlainMessage<ListOrganizationsByUserRequest> | undefined, b: ListOrganizationsByUserRequest | PlainMessage<ListOrganizationsByUserRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationsByUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListOrganizationsByUserResponse
+ */
+export class ListOrganizationsByUserResponse extends Message<ListOrganizationsByUserResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Organization organizations = 1;
+   */
+  organizations: Organization[] = [];
+
+  constructor(data?: PartialMessage<ListOrganizationsByUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListOrganizationsByUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organizations", kind: "message", T: Organization, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationsByUserResponse {
+    return new ListOrganizationsByUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationsByUserResponse {
+    return new ListOrganizationsByUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationsByUserResponse {
+    return new ListOrganizationsByUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListOrganizationsByUserResponse | PlainMessage<ListOrganizationsByUserResponse> | undefined, b: ListOrganizationsByUserResponse | PlainMessage<ListOrganizationsByUserResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationsByUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.DeleteUserRequest
  */
 export class DeleteUserRequest extends Message<DeleteUserRequest> {

@@ -1410,6 +1410,15 @@ func (c *connection) CountMembersByOrganization(ctx context.Context, orgID strin
 	return count, nil
 }
 
+func (c *connection) ListOrganizationsByUser(ctx context.Context, userID string) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT o.* FROM orgs o WHERE o.id IN (SELECT org_id FROM users_orgs_roles WHERE user_id=$1)`, userID)
+	if err != nil {
+		return nil, parseErr("orgs", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(
