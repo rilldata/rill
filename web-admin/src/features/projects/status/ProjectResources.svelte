@@ -22,7 +22,6 @@
   const MAX_POLLING_TIME = 30000; // 30 seconds
 
   let isConfirmDialogOpen = false;
-  let refetchAttempts = 0;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
   let individualRefresh = false;
   let currentResourceName: string | undefined;
@@ -135,7 +134,6 @@
       clearInterval(pollInterval);
       pollInterval = null;
     }
-    refetchAttempts = 0;
   }
 
   $: if (!isAnySourceOrModelReconciling) {
