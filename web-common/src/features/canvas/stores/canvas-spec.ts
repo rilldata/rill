@@ -4,6 +4,8 @@ import {
   type MetricsViewSpecDimensionV2,
   type MetricsViewSpecMeasureV2,
   type V1CanvasSpec,
+  type V1ComponentSpec,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, type Readable } from "svelte/store";
 
@@ -12,6 +14,9 @@ export class CanvasResolvedSpec {
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
+  getMetricsViewFromName: (
+    metricViewName: string,
+  ) => Readable<V1MetricsViewSpec | undefined>;
   /** Measure Selectors */
   getMeasuresForMetricView: (
     metricViewName: string,
@@ -47,6 +52,11 @@ export class CanvasResolvedSpec {
   allDimensions: Readable<MetricsViewSpecDimensionV2[]>;
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
+  /** Component Selectors */
+  getComponentResource: (
+    componentName: string,
+  ) => Readable<V1ComponentSpec | undefined>;
+
   constructor(validSpecStore: CanvasSpecResponseStore) {
     this.canvasSpec = derived(validSpecStore, ($validSpecStore) => {
       return $validSpecStore.data?.canvas;
@@ -59,6 +69,13 @@ export class CanvasResolvedSpec {
     this.metricViewNames = derived(validSpecStore, ($validSpecStore) =>
       Object.keys($validSpecStore?.data?.metricsViews || {}),
     );
+
+    this.getMetricsViewFromName = (metricViewName: string) =>
+      derived(validSpecStore, ($validSpecStore) => {
+        const metricsView = $validSpecStore.data?.metricsViews[metricViewName];
+        if (!metricsView) return;
+        return metricsView.state?.validSpec;
+      });
 
     this.getMeasuresForMetricView = (metricViewName: string) =>
       derived(validSpecStore, ($validSpecStore) => {
@@ -175,6 +192,13 @@ export class CanvasResolvedSpec {
         return metricsViewDimensionMap;
       },
     );
+
+    this.getComponentResource = (componentName: string) => {
+      return derived(validSpecStore, ($validSpecStore) => {
+        return $validSpecStore?.data?.components?.[componentName]?.component
+          ?.spec;
+      });
+    };
   }
 
   getDimensionsFromMeasure(measureName: string): MetricsViewSpecDimensionV2[] {

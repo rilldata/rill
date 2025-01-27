@@ -39,7 +39,7 @@ export function getFilterOptions(
       : {}),
     dimension_filters: {
       type: "dimension_filters",
-      label: "Dimension Filters",
+      label: "Filters",
     },
   };
 }
