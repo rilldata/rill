@@ -17,6 +17,10 @@ export function getTodaysDayOfWeek(): string {
   return DateTime.now().toLocaleString({ weekday: "long" });
 }
 
+export function getTodaysDayOfMonth(): number {
+  return DateTime.now().day;
+}
+
 export function getNextQuarterHour(): DateTime {
   const now = DateTime.local();
   const nextQuarter = now.plus({ minutes: 15 - (now.minute % 15) });

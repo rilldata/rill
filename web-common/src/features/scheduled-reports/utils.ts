@@ -6,6 +6,7 @@ import {
   getNextQuarterHour,
   getTimeIn24FormatFromDateTime,
   getTimeOfDayFromCronExpression,
+  getTodaysDayOfMonth,
   getTodaysDayOfWeek,
   ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
@@ -36,7 +37,7 @@ export function getInitialValues(
       ? getDayOfMonthFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
         )
-      : 1,
+      : getTodaysDayOfMonth(),
     timeOfDay: reportSpec
       ? getTimeOfDayFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,

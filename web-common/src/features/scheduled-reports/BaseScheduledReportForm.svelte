@@ -81,7 +81,7 @@
         label="Day"
         inputType="number"
         width="64px"
-        labelGap="2"
+        labelGap={2}
       />
     {/if}
     <TimePicker bind:value={$data["timeOfDay"]} id="timeOfDay" label="Time" />

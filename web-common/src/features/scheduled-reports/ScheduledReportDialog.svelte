@@ -56,7 +56,6 @@
     object({
       title: string().required("Required"),
       // There isnt enough space so just say "Invalid"
-      // TODO: value of 0 is not being validated
       dayOfMonth: number().min(1, "Invalid").max(31, "Invalid"),
       emailRecipients: array().of(string().email("Invalid email")),
       slackChannels: array().of(string()),
@@ -151,8 +150,6 @@
       invalidateAll: false,
     },
   );
-
-  $: console.log($form);
 </script>
 
 <Dialog.Root bind:open>
