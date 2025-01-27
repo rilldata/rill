@@ -392,6 +392,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		case "https":
 			return &httpsToSelfExecutor{c}, true
 		}
+		if _, ok := opts.InputHandle.AsObjectStore(); ok {
+			return &objectStoreToSelfExecutor{c}, true
+		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {

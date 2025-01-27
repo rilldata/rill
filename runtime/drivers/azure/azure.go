@@ -74,7 +74,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-type configProperties struct {
+type ConfigProperties struct {
 	Account          string `mapstructure:"azure_storage_account"`
 	Key              string `mapstructure:"azure_storage_key"`
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
@@ -87,7 +87,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, errors.New("azure driver can't be shared")
 	}
 
-	conf := &configProperties{}
+	conf := &ConfigProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 	}
 
 	conn := &Connection{
-		config: &configProperties{},
+		config: &ConfigProperties{},
 		logger: logger,
 	}
 
@@ -130,7 +130,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Connection struct {
-	config  *configProperties
+	config  *ConfigProperties
 	storage *storage.Client
 	logger  *zap.Logger
 }
