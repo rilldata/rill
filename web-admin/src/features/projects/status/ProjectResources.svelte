@@ -127,7 +127,7 @@
         if (individualRefresh && resourceName) {
           eventBus.emit("notification", {
             type: "error",
-            message: `Failed to refresh ${resourceName} (timeout)`,
+            message: `Failed to refresh ${resourceName}`,
             options: {
               persisted: true,
             },
