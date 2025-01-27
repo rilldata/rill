@@ -86,6 +86,13 @@ export function humanReadableErrorMessage(
       // Fallback to raw server error
       return serverError;
     }
+    // DeadlineExceeded
+    case 4: {
+      if (connectorName === "clickhouse") {
+        return "The request timed out. This can happen if your ClickHouse instance has been idle. Please ensure your instance is running and try again.";
+      }
+      return "The request timed out. Please ensure your service is running and try again.";
+    }
     default:
       return unknownErrorStr;
   }
