@@ -314,12 +314,12 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to find user by email: %v", err)
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to find organization role: %v", err)
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -332,7 +332,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	orgAdminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, req.Organization, role.ID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to find organization member users by role: %v", err)
 	}
 
 	if len(orgAdminUsers) == 1 && orgAdminUsers[0].Email == req.Email {
@@ -341,24 +341,18 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 
 	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, req.Organization, 2)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to count members by organization: %v", err)
 	}
 	if memberCount == 1 {
-		// TODO: Tear down the org and all its projects
-		return nil, status.Error(codes.PermissionDenied, "cannot delete the only member of an organization")
-	}
-
-	if isCurrentUser {
-		err = s.admin.DB.DeleteUser(ctx, user.ID)
+		err = s.admin.DB.DeleteOrganization(ctx, req.Organization)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to delete organization: %v", err)
 		}
-		return &adminv1.DeleteUserResponse{}, nil
 	}
 
 	err = s.admin.DB.DeleteUser(ctx, user.ID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
 	}
 
 	return &adminv1.DeleteUserResponse{}, nil
