@@ -1,11 +1,13 @@
 import { getExploreName } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import {
+  getDayOfMonthFromCronExpression,
   getDayOfWeekFromCronExpression,
   getFrequencyFromCronExpression,
   getNextQuarterHour,
   getTimeIn24FormatFromDateTime,
   getTimeOfDayFromCronExpression,
   getTodaysDayOfWeek,
+  ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
@@ -24,12 +26,17 @@ export function getInitialValues(
       ? getFrequencyFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
         )
-      : "Weekly",
+      : ReportFrequency.Weekly,
     dayOfWeek: reportSpec
       ? getDayOfWeekFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,
         )
       : getTodaysDayOfWeek(),
+    dayOfMonth: reportSpec
+      ? getDayOfMonthFromCronExpression(
+          reportSpec.refreshSchedule?.cron as string,
+        )
+      : 1,
     timeOfDay: reportSpec
       ? getTimeOfDayFromCronExpression(
           reportSpec.refreshSchedule?.cron as string,

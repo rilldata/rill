@@ -5,6 +5,14 @@ import {
   getUTCIANA,
 } from "../../lib/time/timezone";
 
+export enum ReportFrequency {
+  Daily = "Daily",
+  Weekdays = "Weekdays",
+  Weekly = "Weekly",
+  Monthly = "Monthly",
+  Custom = "Custom",
+}
+
 export function getTodaysDayOfWeek(): string {
   return DateTime.now().toLocaleString({ weekday: "long" });
 }
@@ -20,21 +28,22 @@ export function getTimeIn24FormatFromDateTime(dateTime: DateTime): string {
 }
 
 export function convertFormValuesToCronExpression(
-  frequency: string,
+  frequency: ReportFrequency,
   dayOfWeek: string,
   timeOfDay: string,
+  dayOfMonth: number,
 ): string {
   const [hour, minute] = timeOfDay.split(":").map(Number);
   let cronExpr = `${minute} ${hour} `;
 
   switch (frequency) {
-    case "Daily":
+    case ReportFrequency.Daily:
       cronExpr += "* * *";
       break;
-    case "Weekdays":
+    case ReportFrequency.Weekdays:
       cronExpr += "* * 1-5";
       break;
-    case "Weekly": {
+    case ReportFrequency.Weekly: {
       const weekDayMap: Record<string, number> = {
         Sunday: 0,
         Monday: 1,
@@ -47,25 +56,33 @@ export function convertFormValuesToCronExpression(
       cronExpr += `* * ${weekDayMap[dayOfWeek]}`;
       break;
     }
+    case ReportFrequency.Monthly:
+      cronExpr += `${dayOfMonth} * *`;
+      break;
   }
 
   return cronExpr;
 }
 
-export function getFrequencyFromCronExpression(cronExpr: string): string {
+export function getFrequencyFromCronExpression(
+  cronExpr: string,
+): ReportFrequency {
   const [, , dayOfMonth, month, dayOfWeek] = cronExpr.split(" ");
 
   if (dayOfMonth === "*" && month === "*") {
     if (dayOfWeek === "*") {
-      return "Daily";
+      return ReportFrequency.Daily;
     } else if (dayOfWeek === "1-5") {
-      return "Weekdays";
+      return ReportFrequency.Weekdays;
     } else {
-      return "Weekly";
+      return ReportFrequency.Weekly;
     }
   }
+  if (month === "*" && dayOfWeek === "*") {
+    return ReportFrequency.Monthly;
+  }
 
-  return "Custom";
+  return ReportFrequency.Custom;
 }
 
 export function getDayOfWeekFromCronExpression(cronExpr: string): string {
@@ -94,6 +111,11 @@ export function getDayOfWeekFromCronExpression(cronExpr: string): string {
 export function getTimeOfDayFromCronExpression(cronExpr: string): string {
   const [minute, hour, , ,] = cronExpr.split(" ");
   return `${hour}:${minute === "0" ? "00" : minute}`;
+}
+
+export function getDayOfMonthFromCronExpression(cronExpr: string): number {
+  const [, , dayOfMonth] = cronExpr.split(" ");
+  return Number(dayOfMonth);
 }
 
 export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {

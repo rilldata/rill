@@ -11,7 +11,7 @@
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { defaults, superForm } from "sveltekit-superforms";
-  import { array, object, string } from "yup";
+  import { array, object, string, number } from "yup";
   import { type ValidationAdapter, yup } from "sveltekit-superforms/adapters";
   import { Button } from "../../components/button";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
@@ -55,6 +55,9 @@
   const schema = yup(
     object({
       title: string().required("Required"),
+      // There isnt enough space so just say "Invalid"
+      // TODO: value of 0 is not being validated
+      dayOfMonth: number().min(1, "Invalid").max(31, "Invalid"),
       emailRecipients: array().of(string().email("Invalid email")),
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email("Invalid email")),
@@ -66,6 +69,7 @@
       values.frequency,
       values.dayOfWeek,
       values.timeOfDay,
+      values.dayOfMonth,
     );
 
     try {
@@ -147,6 +151,8 @@
       invalidateAll: false,
     },
   );
+
+  $: console.log($form);
 </script>
 
 <Dialog.Root bind:open>
