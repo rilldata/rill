@@ -59,9 +59,11 @@
 
   // only reactive to url and defaultExplorePreset
   $: parseUrl($page.url, defaultExplorePreset);
+
+  $: validSpec = $validSpecStore.data;
 </script>
 
-{#if !$validSpecStore.isLoading}
+{#if !$validSpecStore.isLoading && (!validSpec?.metricsView?.timeDimension || !$metricsViewTimeRange.isLoading)}
   <DashboardURLStateSync
     metricsViewName={$metricsViewName}
     exploreName={$exploreName}
