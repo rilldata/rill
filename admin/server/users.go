@@ -321,7 +321,7 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 	}
 
 	if len(orgAdminUsers) == 1 && orgAdminUsers[0].Email == req.Email {
-		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please transfer ownership first")
+		return nil, status.Error(codes.PermissionDenied, "cannot delete the last admin of an organization, please add another admin first")
 	}
 
 	memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID)
