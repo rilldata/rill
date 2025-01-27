@@ -7,6 +7,12 @@
   import PivotPortalItem from "./PivotPortalItem.svelte";
   import { swapListener } from "./swapListener";
   import { type PivotChipData, PivotChipType } from "./types";
+  import Column from "@rilldata/web-common/components/icons/Column.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export type Zone = "rows" | "columns" | "Time" | "Measures" | "Dimensions";
 
@@ -35,6 +41,8 @@
   let container: HTMLDivElement;
   let offset = { x: 0, y: 0 };
   let dragStart = { left: 0, top: 0 };
+
+  const { exploreName } = getStateManagers();
 
   $: dragData = $dragDataStore;
   $: source = dragData?.source;
@@ -147,6 +155,14 @@
     $ghostIndex = null;
     swap = false;
   }
+
+  function handleRowClick(item: PivotChipData) {
+    metricsExplorerStore.addPivotField($exploreName, item, true);
+  }
+
+  function handleColumnClick(item: PivotChipData) {
+    metricsExplorerStore.addPivotField($exploreName, item, false);
+  }
 </script>
 
 <div
@@ -166,24 +182,62 @@
   bind:this={container}
 >
   {#each items as item, index (item.id)}
-    {#if index === $ghostIndex}
-      <span
-        class="ghost"
-        class:rounded={dragChip?.type !== PivotChipType.Measure}
-      />
-    {/if}
+    <div
+      class="item-wrapper"
+      class:aligned={zone === "Time" ||
+        zone === "Measures" ||
+        zone === "Dimensions"}
+    >
+      {#if index === $ghostIndex}
+        <span
+          class="ghost"
+          class:rounded={dragChip?.type !== PivotChipType.Measure}
+        />
+      {/if}
 
-    <PivotDragItem
-      {item}
-      {index}
-      removable={isDropLocation}
-      hidden={dragChip?.id === item.id && zoneStartedDrag}
-      on:mousedown={(e) => handleMouseDown(e, item)}
-      on:remove={() => {
-        items = items.filter((i) => i.id !== item.id);
-        dispatch("update", items);
-      }}
-    />
+      <PivotDragItem
+        {item}
+        {index}
+        removable={isDropLocation}
+        hidden={dragChip?.id === item.id && zoneStartedDrag}
+        on:mousedown={(e) => handleMouseDown(e, item)}
+        on:remove={() => {
+          items = items.filter((i) => i.id !== item.id);
+          dispatch("update", items);
+        }}
+      />
+
+      <div class="icons">
+        {#if zone === "Time" || zone === "Dimensions"}
+          <Tooltip distance={8} location="top" alignment="start">
+            <button
+              class="icon-wrapper"
+              on:click={() => handleRowClick(item)}
+              aria-label="Add Row"
+              type="button"
+            >
+              <Row size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content">Add to rows</TooltipContent>
+          </Tooltip>
+        {/if}
+        {#if zone === "Time" || zone === "Measures" || zone === "Dimensions"}
+          <Tooltip distance={8} location="top" alignment="start">
+            <button
+              class="icon-wrapper"
+              on:click={() => handleColumnClick(item)}
+              aria-label="Add Column"
+              type="button"
+            >
+              <Column size="16px" />
+            </button>
+            <TooltipContent slot="tooltip-content"
+              >Add to columns</TooltipContent
+            >
+          </Tooltip>
+        {/if}
+      </div>
+    </div>
   {:else}
     {#if $ghostIndex === null}
       <p>{placeholder}</p>
@@ -250,5 +304,25 @@
 
   .rounded {
     @apply rounded-full;
+  }
+
+  .item-wrapper {
+    @apply flex items-center;
+  }
+
+  .item-wrapper.aligned {
+    @apply justify-between w-full;
+  }
+
+  .icons {
+    @apply flex gap-x-2 opacity-0 transition-opacity duration-200;
+  }
+
+  .item-wrapper:hover .icons {
+    @apply opacity-100;
+  }
+
+  .icon-wrapper {
+    @apply inline-flex items-center justify-center cursor-pointer;
   }
 </style>
