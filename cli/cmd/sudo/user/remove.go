@@ -31,8 +31,8 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return errors.New("email is required")
 			}
 
-			if !valid(email) {
-				return errors.New("invalid email format")
+			if _, err := mail.ParseAddress(email); err != nil {
+				return fmt.Errorf("invalid email: %w", err)
 			}
 
 			if ch.Org == "" {
