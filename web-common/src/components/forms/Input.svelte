@@ -249,7 +249,7 @@
 
 <style lang="postcss">
   .component-wrapper {
-    @apply flex  flex-col h-fit justify-center;
+    @apply flex flex-col h-fit justify-center items-start;
   }
 
   .sm {
