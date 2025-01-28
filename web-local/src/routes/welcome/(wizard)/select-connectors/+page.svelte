@@ -2,7 +2,7 @@
   import PickOlapConnector from "@rilldata/web-common/features/welcome/wizard/PickOLAPConnector.svelte";
   import PickOlapManagement from "@rilldata/web-common/features/welcome/wizard/PickOLAPManagement.svelte";
   import PickSourceConnector from "@rilldata/web-common/features/welcome/wizard/PickSourceConnector.svelte";
-  import type { PageData } from "../$types";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
 
