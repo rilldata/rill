@@ -1203,8 +1203,8 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 }
 
 func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
-	return checkDeleteRow("magic auth token", res, err)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return parseErr("magic auth token", err)
 }
 
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
