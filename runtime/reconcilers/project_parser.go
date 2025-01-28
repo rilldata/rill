@@ -122,6 +122,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil {
 		r.C.Logger.Error("failed to get commit timestamp", zap.String("error", err.Error()))
 	}
+	// Convert to timestamppb.Timestamp
 	timeStamp := timestamppb.New(ts)
 
 	// Update the commit timestamp
