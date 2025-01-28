@@ -7,6 +7,7 @@
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
   const { onboardingState } = data;
