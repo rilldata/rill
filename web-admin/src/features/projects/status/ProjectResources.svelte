@@ -122,6 +122,14 @@
     isPollingEnabled = true;
     currentResourceName = resourceName;
     hasStartedReconciling = false;
+
+    eventBus.emit("notification", {
+      type: "loading",
+      message: `Refreshing ${resourceName}...`,
+      options: {
+        persisted: true,
+      },
+    });
   }
 </script>
 
