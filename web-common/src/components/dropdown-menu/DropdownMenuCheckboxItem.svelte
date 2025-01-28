@@ -49,13 +49,13 @@
     <span
       class="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center"
     >
-      <DropdownMenuPrimitive.CheckboxIndicator>
+      {#if checked}
         <svelte:component
           this={showXForSelected ? X : Check}
           class={checkSize}
           color={iconColor}
         />
-      </DropdownMenuPrimitive.CheckboxIndicator>
+      {/if}
     </span>
     <slot />
   </DropdownMenuPrimitive.CheckboxItem>
