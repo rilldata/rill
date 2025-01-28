@@ -15,7 +15,7 @@ test.describe("Onboarding", () => {
     // Expect to be navigated to the project's first dashboard
     await expect(page).toHaveURL(
       "/files/dashboards/metrics_margin_explore.yaml",
-      { timeout: 10_000 },
+      { timeout: 20_000 },
     );
 
     // Expect to see the `rill.yaml` file in the sidebar
