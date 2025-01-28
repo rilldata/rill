@@ -94,10 +94,11 @@ type rillYAML struct {
 	// A list of mock users to test against dashboard security policies.
 	// This is ignored in this parser because it's consumed directly by the local application.
 	MockUsers []struct {
-		Email  string   `yaml:"email"`
-		Name   string   `yaml:"name"`
-		Admin  bool     `yaml:"admin"`
-		Groups []string `yaml:"groups"`
+		Email      string         `yaml:"email"`
+		Name       string         `yaml:"name"`
+		Admin      bool           `yaml:"admin"`
+		Groups     []string       `yaml:"groups"`
+		Attributes map[string]any `yaml:",inline"`
 	} `yaml:"mock_users"`
 }
 

@@ -4672,6 +4672,11 @@ definitions:
           type: string
       admin:
         type: boolean
+      attributes:
+        type: object
+        description: |-
+          Additional arbitrary attributes to include in the JWT.
+          They take precedence if they collide with name, email, groups or admin.
     title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
