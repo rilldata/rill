@@ -18,7 +18,12 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<Tooltip distance={8} location="right" suppress={!item.description}>
+<Tooltip
+  distance={8}
+  location="right"
+  suppress={!item.description}
+  activeDelay={200}
+>
   <Chip
     type={item.type}
     label={item.title}
