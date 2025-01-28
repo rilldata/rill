@@ -6,13 +6,25 @@ import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 test.describe("Onboarding", () => {
   startRuntimeForEachTest({ includeRillYaml: false });
 
-  test.skip("Example project", async ({ page }) => {
+  test("Example project", async ({ page }) => {
     await page.goto("/");
 
     // Click on "Example projects"
     await page.getByRole("link", { name: "Cost monitoring" }).click();
 
-    // TODO: wait for the project to be unpacked
+    // Expect to be navigated to the project's first dashboard
+    await expect(page).toHaveURL(
+      "/files/dashboards/metrics_margin_explore.yaml",
+      { timeout: 10_000 },
+    );
+
+    // Expect to see the `rill.yaml` file in the sidebar
+    await expect(page.getByText("rill.yaml")).toBeVisible();
+
+    // Expect to see the dashboard's default time range
+    await expect(page.getByText("Last 3 weeks")).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test("Rill-managed OLAP - local file", async ({ page }) => {

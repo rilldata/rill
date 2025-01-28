@@ -8,8 +8,10 @@
   export let imageUrl = "";
 </script>
 
+<!-- `data-sveltekit-preload-data="off"` is used, so that we don't prematurely fire the `+layout.ts` load function. Reconsider how this works. -->
 <a
   href={href + (redirect ? "?redirect=true" : "")}
+  data-sveltekit-preload-data="off"
   class:gradient={!imageUrl}
   on:click
   on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}

@@ -18,7 +18,7 @@ export async function load({ url }) {
   // Redirect to the welcome page if the project is not initialized
   const onboardingState = getOnboardingState(); // TODO: Make sure this doesn't trigger an unnecessary fetch of `onboarding-state.json`
   const initialized = await onboardingState.isInitialized();
-  const inOnboardingFlow = url.pathname.startsWith("/welcome/"); // The trailing slash ensures this does not pick up the base `/welcome` page, which includes the example projects
+  const inOnboardingFlow = url.pathname.startsWith("/welcome");
 
   if (!initialized && !inOnboardingFlow) {
     throw redirect(303, "/welcome");
