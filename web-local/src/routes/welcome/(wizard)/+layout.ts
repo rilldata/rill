@@ -6,7 +6,7 @@ export async function load({ parent }) {
   if (!(await onboardingState.isOnboardingStateFilePresent())) {
     await onboardingState.initializeOnboardingState().catch(console.error);
   } else {
-    await onboardingState.fetch().catch(console.error);
+    await onboardingState.fetchAndParse().catch(console.error);
   }
 
   return { onboardingState };

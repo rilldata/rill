@@ -9,6 +9,7 @@ import {
   runtimeServiceListFiles,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
+  type V1GetFileResponse,
   type V1ListFilesResponse,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
@@ -80,9 +81,11 @@ export class OnboardingState {
     await this.save();
   }
 
-  async fetch() {
+  async fetchAndParse() {
+    let response: V1GetFileResponse;
+
     try {
-      const response = await queryClient.fetchQuery({
+      response = await queryClient.fetchQuery({
         queryKey: getRuntimeServiceGetFileQueryKey(this.runtimeInstanceId, {
           path: ONBOARDING_STATE_FILE_PATH,
         }),
@@ -91,23 +94,27 @@ export class OnboardingState {
             path: ONBOARDING_STATE_FILE_PATH,
           }),
       });
-
-      // parse the state
-      const state = JSON.parse(response.blob);
-
-      // set the state
-      this.managementType = writable(state.managementType);
-      this.olapDriver = writable(state.olapDriver);
-      this.firstDataSource = writable(state.firstDataSource);
-      return;
     } catch (error) {
       if (error?.response?.data?.message?.includes("no such file")) {
         await this.initializeOnboardingState();
+        return;
       } else {
         console.error("throwing error", error);
         throw error;
       }
     }
+
+    if (!response.blob) {
+      throw new Error("No file content found");
+    }
+
+    // parse the state
+    const state = JSON.parse(response.blob);
+
+    // set the state
+    this.managementType = writable(state.managementType);
+    this.olapDriver = writable(state.olapDriver);
+    this.firstDataSource = writable(state.firstDataSource);
   }
 
   async save() {

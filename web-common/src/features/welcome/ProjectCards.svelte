@@ -11,7 +11,6 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { EMPTY_PROJECT_TITLE } from "./constants";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
 
@@ -42,26 +41,21 @@
 
   $: ({ mutateAsync: unpackExample } = $unpackExampleProject);
 
-  async function unpackProject(example?: (typeof EXAMPLES)[number]) {
-    selectedProjectName = example ? example.name : EMPTY_PROJECT_TITLE;
+  async function unpackProject(example: (typeof EXAMPLES)[number]) {
+    selectedProjectName = example.name;
 
     await behaviourEvent?.fireSplashEvent(
-      example
-        ? BehaviourEventAction.ExampleAdd
-        : BehaviourEventAction.ProjectEmpty,
+      BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace,
-      example?.name,
+      selectedProjectName,
     );
 
-    const mutationFunction = example ? unpackExample : unpackEmpty;
-    const key = example ? "name" : "displayName";
-
     try {
-      await mutationFunction({
+      await unpackExample({
         instanceId,
         data: {
-          [key]: selectedProjectName,
+          name: selectedProjectName,
           force: true,
         },
       });

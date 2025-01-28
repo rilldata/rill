@@ -33,12 +33,7 @@
   });
   $: showSchema = $expandedStore;
 
-  const {
-    allowContextMenu,
-    allowNavigateToTable,
-    allowShowSchema,
-    allowSelectTable,
-  } = store;
+  const { allowContextMenu, allowNavigateToTable, allowShowSchema } = store;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     driver,
