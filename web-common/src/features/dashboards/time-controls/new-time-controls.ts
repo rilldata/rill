@@ -87,8 +87,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-export const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM";
+export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -309,8 +309,6 @@ export async function deriveInterval(
     );
 
     const timeRange = response.timeRanges?.pop();
-
-    console.log({ timeRange });
 
     if (!timeRange?.start || !timeRange?.end) {
       return Interval.invalid("Invalid time range");
