@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
   import { DateTime, Interval } from "luxon";
   import type {
     ISODurationString,
@@ -27,6 +28,16 @@
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
+
+  let selectedLabel = "";
+  $: {
+    try {
+      const rt = parseRillTime(selected);
+      selectedLabel = rt.getLabel();
+    } catch {
+      selectedLabel = selected;
+    }
+  }
 </script>
 
 <DropdownMenu.Root
@@ -47,7 +58,7 @@
       class="flex gap-x-1"
       aria-label="Select time range"
     >
-      <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+      <b class="mr-1 line-clamp-1 flex-none">{selectedLabel}</b>
       {#if interval.isValid}
         <RangeDisplay {interval} {grain} />
       {/if}

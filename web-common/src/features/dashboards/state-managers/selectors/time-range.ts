@@ -1,7 +1,4 @@
-import {
-  timeComparisonOptionsSelector,
-  timeRangeSelectionsSelector,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
+import { timeComparisonOptionsSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import {
   TimeComparisonOption,
   TimeRangePreset,
@@ -16,7 +13,7 @@ export const timeControlsState = (dashData: DashboardDataSources) =>
   timeControlStateSelector([
     dashData.validMetricsView,
     dashData.validExplore,
-    dashData.timeRangeSummary,
+    dashData.timeRanges,
     dashData.dashboard,
   ]);
 
@@ -26,14 +23,6 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
 export const isTimeComparisonActive = (
   dashData: DashboardDataSources,
 ): boolean => timeControlsState(dashData).showTimeComparison === true;
-
-export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
-  timeRangeSelectionsSelector([
-    dashData.validMetricsView,
-    dashData.validExplore,
-    dashData.timeRangeSummary,
-    dashData.dashboard,
-  ]);
 
 export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
   timeComparisonOptionsSelector([
@@ -72,11 +61,6 @@ export const timeRangeSelectors = {
    * Is the time comparison active?
    */
   isTimeComparisonActive,
-
-  /**
-   * Selection options for the time range selector
-   */
-  timeRangeSelectorState,
 
   /**
    * Selection options for the time comparison selector

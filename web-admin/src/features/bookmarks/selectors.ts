@@ -5,13 +5,13 @@ import {
   type V1Bookmark,
 } from "@rilldata/web-admin/client";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
 import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getTimeControlState,
   timeControlStateSelector,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { getTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/time-ranges";
 import { convertExploreStateToURLSearchParams } from "@rilldata/web-common/features/dashboards/url-state/convertExploreStateToURLSearchParams";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
@@ -23,7 +23,7 @@ import {
   type V1ExploreSpec,
   type V1MetricsViewSpec,
   type V1StructType,
-  type V1TimeRangeSummary,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { derived, get, type Readable } from "svelte/store";
@@ -65,7 +65,7 @@ export function categorizeBookmarks(
   schema: V1StructType | undefined,
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
+  timeRanges: V1TimeRange[],
 ) {
   const bookmarks: Bookmarks = {
     home: undefined,
@@ -81,7 +81,7 @@ export function categorizeBookmarks(
       schema ?? {},
       exploreState,
       defaultExplorePreset,
-      timeRangeSummary,
+      timeRanges,
     );
     if (isHomeBookmark(bookmarkResource)) {
       bookmarks.home = bookmark;
@@ -119,16 +119,14 @@ export function getPrettySelectedTimeRange(
   return derived(
     [
       useExploreValidSpec(instanceId, exploreName),
-      useMetricsViewTimeRange(instanceId, metricsViewName, {
-        query: { queryClient },
-      }),
+      getTimeRanges(exploreName),
       useExploreState(metricsViewName),
     ],
-    ([validSpec, timeRangeSummary, metricsExplorerEntity]) => {
+    ([validSpec, timeRanges, metricsExplorerEntity]) => {
       const timeRangeState = timeControlStateSelector([
         validSpec.data?.metricsView ?? {},
         validSpec.data?.explore ?? {},
-        timeRangeSummary,
+        timeRanges,
         metricsExplorerEntity,
       ]);
       if (!timeRangeState.ready) return "";
@@ -149,7 +147,7 @@ function parseBookmark(
   schema: V1StructType,
   exploreState: MetricsExplorerEntity,
   defaultExplorePreset: V1ExplorePreset,
-  timeRangeSummary: V1TimeRangeSummary | undefined,
+  timeRanges: V1TimeRange[],
 ): BookmarkEntry {
   const exploreStateFromBookmark = getDashboardStateFromUrl(
     bookmarkResource.data ?? "",
@@ -169,7 +167,7 @@ function parseBookmark(
     getTimeControlState(
       metricsViewSpec,
       exploreSpec,
-      timeRangeSummary,
+      timeRanges,
       finalExploreState,
     ),
     defaultExplorePreset,

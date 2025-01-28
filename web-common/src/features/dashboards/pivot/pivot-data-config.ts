@@ -29,15 +29,15 @@ export function getPivotConfig(
   return derived(
     [
       ctx.validSpecStore,
-      ctx.timeRangeSummaryStore,
+      ctx.timeRanges,
       ctx.dashboardStore,
       dimensionSearchText,
     ],
-    ([validSpec, timeRangeSummary, dashboardStore, searchText]) => {
+    ([validSpec, timeRanges, dashboardStore, searchText]) => {
       if (
         !validSpec?.data?.metricsView ||
         !validSpec?.data?.explore ||
-        timeRangeSummary.isFetching
+        timeRanges.isFetching
       ) {
         return {
           measureNames: [],
@@ -60,7 +60,7 @@ export function getPivotConfig(
       const timeControl = timeControlStateSelector([
         metricsView,
         explore,
-        timeRangeSummary,
+        timeRanges,
         dashboardStore,
       ]);
 

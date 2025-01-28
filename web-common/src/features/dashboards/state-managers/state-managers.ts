@@ -1,7 +1,7 @@
 import {
+  contextColWidthDefaults,
   type ContextColWidths,
   type MetricsExplorerEntity,
-  contextColWidthDefaults,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
@@ -10,34 +10,37 @@ import {
   type ExploreValidSpecResponse,
   useExploreValidSpec,
 } from "@rilldata/web-common/features/explores/selectors";
+import { dedupe } from "@rilldata/web-common/lib/arrayUtils";
 import {
+  createQueryServiceMetricsViewTimeRange,
+  createQueryServiceMetricsViewTimeRanges,
   type RpcStatus,
   type V1ExplorePreset,
   type V1MetricsViewTimeRangeResponse,
-  createQueryServiceMetricsViewTimeRange,
+  type V1MetricsViewTimeRangesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import {
-  type Readable,
-  type Writable,
   derived,
   get,
+  type Readable,
+  type Writable,
   writable,
 } from "svelte/store";
 import {
-  type MetricsExplorerStoreType,
   metricsExplorerStore,
+  type MetricsExplorerStoreType,
   updateMetricsExplorerByName,
   useExploreState,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import { type StateManagerActions, createStateManagerActions } from "./actions";
+import { createStateManagerActions, type StateManagerActions } from "./actions";
 import type { DashboardCallbackExecutor } from "./actions/types";
 import {
-  type StateManagerReadables,
   createStateManagerReadables,
+  type StateManagerReadables,
 } from "./selectors";
 
 export type StateManagers = {
@@ -48,6 +51,9 @@ export type StateManagers = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
+  >;
+  timeRanges: Readable<
+    QueryObserverResult<V1MetricsViewTimeRangesResponse, RpcStatus>
   >;
   validSpecStore: Readable<
     QueryObserverResult<ExploreValidSpecResponse, RpcStatus>
@@ -128,6 +134,31 @@ export function createStateManagers({
       ).subscribe(set),
   );
 
+  const timeRanges: Readable<
+    QueryObserverResult<V1MetricsViewTimeRangesResponse, RpcStatus>
+  > = derived(
+    [runtime, metricsViewNameStore, validSpecStore],
+    ([runtime, mvName, validSpec], set) => {
+      if (!validSpec.data?.explore) {
+        return;
+      }
+
+      const explore = validSpec.data.explore;
+      const defaultPreset = explore.defaultPreset ?? {};
+      const rillTimes = dedupe([
+        "inf",
+        ...(defaultPreset.timeRange ? [defaultPreset.timeRange] : []),
+        ...(explore.timeRanges?.length
+          ? explore.timeRanges.map((t) => t.range!)
+          : []),
+      ]);
+
+      createQueryServiceMetricsViewTimeRanges(runtime.instanceId, mvName, {
+        expressions: rillTimes,
+      }).subscribe(set);
+    },
+  );
+
   const updateDashboard = (
     callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
@@ -164,6 +195,7 @@ export function createStateManagers({
     exploreName: exploreNameStore,
     metricsStore: metricsExplorerStore,
     timeRangeSummaryStore,
+    timeRanges,
     validSpecStore,
     queryClient,
     dashboardStore,
@@ -176,6 +208,7 @@ export function createStateManagers({
       dashboardStore,
       validSpecStore,
       timeRangeSummaryStore,
+      timeRanges,
       queryClient,
     }),
     /**

@@ -1,5 +1,7 @@
 import type {
+  RpcStatus,
   V1ExploreSpec,
+  V1MetricsViewResolveTimeRangesResponse,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -28,6 +30,10 @@ export type DashboardDataSources = {
   timeRangeSummary: QueryObserverResult<
     V1MetricsViewTimeRangeResponse,
     unknown
+  >;
+  timeRanges: QueryObserverResult<
+    V1MetricsViewResolveTimeRangesResponse,
+    RpcStatus
   >;
   queryClient: QueryClient;
 };

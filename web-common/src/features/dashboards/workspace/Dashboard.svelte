@@ -70,8 +70,6 @@
   $: hidePivot = isEmbedded && $explore.data?.explore?.embedsHidePivot;
 
   $: ({
-    timeStart: start,
-    timeEnd: end,
     showTimeComparison,
     comparisonTimeStart,
     comparisonTimeEnd,
@@ -79,8 +77,8 @@
   } = $timeControlsStore);
 
   $: timeRange = {
-    start,
-    end,
+    start: $dashboardStore?.selectedTimeRange?.start?.toISOString(),
+    end: $dashboardStore?.selectedTimeRange?.end?.toISOString(),
   };
 
   $: comparisonTimeRange = showTimeComparison
