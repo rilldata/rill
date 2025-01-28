@@ -33,6 +33,7 @@
   <div class="source-grid">
     {#each dataSources as source (source)}
       <button
+        aria-label={source}
         class="source-button"
         class:active={$firstDataSource === source}
         on:click={() => onboardingState.toggleFirstDataSource(source)}
