@@ -5,9 +5,9 @@ import {
 import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type {
-  V1ListResourcesResponse,
-  RpcStatus,
+import {
+  type V1ListResourcesResponse,
+  type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
 import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 
