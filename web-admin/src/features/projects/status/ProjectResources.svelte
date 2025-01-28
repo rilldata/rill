@@ -18,8 +18,9 @@
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  const POLLING_INTERVAL = 500;
-  const MAX_POLLING_TIME = 30_000;
+  const INITIAL_POLLING_INTERVAL = 500; // Start at 500ms
+  const MAX_POLLING_INTERVAL = 10_000; // Max out at 10s
+  const BACKOFF_FACTOR = 1.5; // Multiply interval by this each time
 
   let isConfirmDialogOpen = false;
   let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -118,25 +119,23 @@
       });
     }
 
-    const startTime = Date.now();
-    pollInterval = setInterval(() => {
-      if (Date.now() - startTime > MAX_POLLING_TIME) {
-        if (individualRefresh && resourceName) {
-          eventBus.emit("notification", {
-            type: "error",
-            message: `Failed to refresh ${resourceName}`,
-            options: {
-              persisted: true,
-            },
-          });
-          individualRefresh = false;
-        }
-        stopPolling();
-        return;
-      }
+    let currentInterval = INITIAL_POLLING_INTERVAL;
 
+    pollInterval = setInterval(function poll() {
       void $resources.refetch();
-    }, POLLING_INTERVAL);
+
+      // Increase interval for next poll, but don't exceed max
+      currentInterval = Math.min(
+        currentInterval * BACKOFF_FACTOR,
+        MAX_POLLING_INTERVAL,
+      );
+
+      // Clear and reset interval with new timing
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      pollInterval = setInterval(poll, currentInterval);
+    }, currentInterval);
   }
 
   function stopPolling() {
