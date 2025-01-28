@@ -5,6 +5,7 @@
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
     type V1Resource,
+    type V1ListResourcesResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -13,6 +14,7 @@
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useResources } from "./selectors";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -31,6 +33,15 @@
   }
 
   $: resources = useResources(instanceId, {
+    select: (data: V1ListResourcesResponse) => ({
+      ...data,
+      // Filter out project parser and refresh triggers
+      resources: data.resources.filter(
+        (resource: V1Resource) =>
+          resource.meta.name.kind !== ResourceKind.ProjectParser &&
+          resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+      ),
+    }),
     refetchInterval: (data) => {
       if (
         !isPollingEnabled ||
