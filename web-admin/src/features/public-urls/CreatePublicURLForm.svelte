@@ -134,7 +134,8 @@
     hasDashboardDimensionThresholdFilter($dashboardStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
-    $form.expiresAt = includingTomorrowDate.toISO();
+    // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
+    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
     popoverOpen = true;
   } else if (!setExpiration) {
     $form.expiresAt = null;
