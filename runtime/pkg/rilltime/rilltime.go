@@ -22,7 +22,7 @@ var (
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
 		// this needs to be after Now and Latest to match to them
-		{"Grain", `[smhdDwWqQMyY]`},
+		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
 		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
@@ -58,8 +58,10 @@ var (
 	)
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
+		"S": timeutil.TimeGrainSecond,
 		"m": timeutil.TimeGrainMinute,
 		"h": timeutil.TimeGrainHour,
+		"H": timeutil.TimeGrainHour,
 		"d": timeutil.TimeGrainDay,
 		"D": timeutil.TimeGrainDay,
 		"w": timeutil.TimeGrainWeek,
@@ -302,7 +304,14 @@ func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TimeAnchor) {
 		if e.AtModifiers.AnchorOverride.Earliest {
 			return evalOpts.MinTime, e.AtModifiers.AnchorOverride
 		}
-		// TODO: absolute date/time
+		if e.AtModifiers.AnchorOverride.AbsDate != nil {
+			absTm, _ := time.Parse(time.DateOnly, *e.AtModifiers.AnchorOverride.AbsDate)
+			return absTm, e.AtModifiers.AnchorOverride
+		}
+		if e.AtModifiers.AnchorOverride.AbsTime != nil {
+			absTm, _ := time.Parse("2006-01-02 15:04", *e.AtModifiers.AnchorOverride.AbsTime)
+			return absTm, e.AtModifiers.AnchorOverride
+		}
 	}
 
 	if e.End == nil {
@@ -377,11 +386,11 @@ func (g *Grain) offset(tm time.Time) time.Time {
 	}
 
 	switch g.Grain {
-	case "s":
+	case "s", "S":
 		tm = tm.Add(time.Duration(n) * time.Second)
 	case "m":
 		tm = tm.Add(time.Duration(n) * time.Minute)
-	case "h":
+	case "h", "H":
 		tm = tm.Add(time.Duration(n) * time.Hour)
 	case "d", "D":
 		tm = tm.AddDate(0, 0, n)
