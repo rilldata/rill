@@ -27,6 +27,7 @@ export enum ResourceKind {
   Component = "rill.runtime.v1.Component",
   Canvas = "rill.runtime.v1.Canvas",
   API = "rill.runtime.v1.API",
+  RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
 }
 
 export type UserFacingResourceKinds = Exclude<

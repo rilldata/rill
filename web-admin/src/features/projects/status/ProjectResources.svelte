@@ -10,13 +10,22 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { onDestroy } from "svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  let isReconciling = false;
-  let isRefreshConfirmDialogOpen = false;
+  const POLLING_INTERVAL = 500;
+  const MAX_POLLING_TIME = 30_000;
+
+  let isConfirmDialogOpen = false;
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let individualRefresh = false;
+  let currentResourceName: string | undefined;
+  let hasStartedReconciling = false;
 
   $: ({ instanceId } = $runtime);
 
@@ -27,29 +36,122 @@
     {
       query: {
         select: (data) => {
-          // Filter out the "ProjectParser" resource
+          // Exclude the "ProjectParser" resource and "RefreshTrigger" resource
           return data.resources.filter(
             (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
+              resource.meta.name.kind !== ResourceKind.ProjectParser &&
+              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
           );
         },
         refetchOnMount: true,
-        refetchOnWindowFocus: true,
-        refetchInterval: isReconciling ? 500 : false,
+        keepPreviousData: true,
       },
     },
   );
 
-  $: isAnySourceOrModelReconciling = $resources?.data?.some(
-    (resource) =>
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
-      resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+  $: isAnySourceOrModelReconciling = Boolean(
+    $resources?.data?.some(
+      (resource) =>
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+        resource.meta.reconcileStatus ===
+          V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+    ),
   );
 
+  $: if (isAnySourceOrModelReconciling && individualRefresh) {
+    hasStartedReconciling = true;
+  }
+
+  $: if (
+    !isAnySourceOrModelReconciling &&
+    individualRefresh &&
+    hasStartedReconciling
+  ) {
+    const failedResource = $resources.data?.find((r) => r.meta.reconcileError)
+      ?.meta.name.name;
+    if (failedResource) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: `Failed to refresh ${failedResource}`,
+        options: {
+          persisted: true,
+        },
+      });
+    } else if (currentResourceName) {
+      eventBus.emit("notification", {
+        type: "success",
+        message: `Successfully refreshed ${currentResourceName}`,
+      });
+    }
+    individualRefresh = false;
+    currentResourceName = undefined;
+    hasStartedReconciling = false;
+    stopPolling();
+  }
+
+  $: if ($resources.isError && individualRefresh && currentResourceName) {
+    eventBus.emit("notification", {
+      type: "error",
+      message: `Failed to refresh ${currentResourceName} - ${$resources.error?.message}`,
+      options: {
+        persisted: true,
+      },
+    });
+    individualRefresh = false;
+    currentResourceName = undefined;
+    stopPolling();
+  }
+
+  function startPolling(resourceName?: string) {
+    stopPolling();
+    currentResourceName = resourceName;
+    hasStartedReconciling = false;
+
+    if (individualRefresh) {
+      eventBus.emit("notification", {
+        type: "loading",
+        message: `Refreshing ${resourceName}...`,
+        options: {
+          persisted: true,
+        },
+      });
+    }
+
+    const startTime = Date.now();
+    pollInterval = setInterval(() => {
+      if (Date.now() - startTime > MAX_POLLING_TIME) {
+        if (individualRefresh && resourceName) {
+          eventBus.emit("notification", {
+            type: "error",
+            message: `Failed to refresh ${resourceName}`,
+            options: {
+              persisted: true,
+            },
+          });
+          individualRefresh = false;
+        }
+        stopPolling();
+        return;
+      }
+
+      void $resources.refetch();
+    }, POLLING_INTERVAL);
+  }
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+
+  $: if (!isAnySourceOrModelReconciling) {
+    stopPolling();
+  }
+
   function refreshAllSourcesAndModels() {
-    isReconciling = true;
+    startPolling();
 
     void $createTrigger.mutateAsync({
       instanceId,
@@ -67,9 +169,15 @@
     );
   }
 
-  $: if (!isAnySourceOrModelReconciling) {
-    isReconciling = false;
+  function refreshResource(resourceName: string) {
+    individualRefresh = true;
+    startPolling(resourceName);
+    void $resources.refetch();
   }
+
+  onDestroy(() => {
+    stopPolling();
+  });
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
@@ -78,11 +186,11 @@
     <Button
       type="secondary"
       on:click={() => {
-        isRefreshConfirmDialogOpen = true;
+        isConfirmDialogOpen = true;
       }}
-      disabled={isReconciling}
+      disabled={Boolean(pollInterval)}
     >
-      {#if isReconciling}
+      {#if pollInterval}
         Refreshing...
       {:else}
         Refresh all sources and models
@@ -96,12 +204,15 @@
     <div class="text-red-500">
       Error loading resources: {$resources.error?.message}
     </div>
-  {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} />
+  {:else if $resources.data}
+    <ProjectResourcesTable
+      data={$resources?.data}
+      triggerRefresh={refreshResource}
+    />
   {/if}
 </section>
 
-<RefreshConfirmDialog
-  bind:open={isRefreshConfirmDialogOpen}
+<RefreshAllSourcesAndModelsConfirmDialog
+  bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />
