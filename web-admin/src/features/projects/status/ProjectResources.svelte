@@ -2,7 +2,6 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTrigger,
-    createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
@@ -11,47 +10,33 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { onDestroy } from "svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { useResources } from "./selectors";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  const INITIAL_POLLING_INTERVAL = 500; // Start at 500ms
-  const MAX_POLLING_INTERVAL = 10_000; // Max out at 10s
-  const BACKOFF_FACTOR = 1.5; // Multiply interval by this each time
-
   let isConfirmDialogOpen = false;
-  let pollInterval: ReturnType<typeof setInterval> | null = null;
   let individualRefresh = false;
   let currentResourceName: string | undefined;
   let hasStartedReconciling = false;
 
   $: ({ instanceId } = $runtime);
 
-  $: resources = createRuntimeServiceListResources(
-    instanceId,
-    // All resource "kinds"
-    undefined,
-    {
-      query: {
-        select: (data) => {
-          // Exclude the "ProjectParser" resource and "RefreshTrigger" resource
-          return data.resources.filter(
-            (resource) =>
-              resource.meta.name.kind !== ResourceKind.ProjectParser &&
-              resource.meta.name.kind !== ResourceKind.RefreshTrigger,
-          );
-        },
-        refetchOnMount: true,
-        keepPreviousData: true,
-      },
+  const POLL_INTERVAL = 1_000;
+
+  $: resources = useResources(instanceId, {
+    refetchInterval: (data) => {
+      if (!individualRefresh) {
+        return false;
+      }
+
+      return POLL_INTERVAL;
     },
-  );
+  });
 
   $: isAnySourceOrModelReconciling = Boolean(
-    $resources?.data?.some(
+    $resources?.data?.resources?.some(
       (resource) =>
         resource.meta.reconcileStatus ===
           V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
@@ -67,10 +52,12 @@
   $: if (
     !isAnySourceOrModelReconciling &&
     individualRefresh &&
-    hasStartedReconciling
+    hasStartedReconciling &&
+    !$resources.isFetching
   ) {
-    const failedResource = $resources.data?.find((r) => r.meta.reconcileError)
-      ?.meta.name.name;
+    const failedResource = $resources?.data?.resources?.find(
+      (r) => r.meta.reconcileError,
+    )?.meta.name.name;
     if (failedResource) {
       eventBus.emit("notification", {
         type: "error",
@@ -88,10 +75,14 @@
     individualRefresh = false;
     currentResourceName = undefined;
     hasStartedReconciling = false;
-    stopPolling();
   }
 
-  $: if ($resources.isError && individualRefresh && currentResourceName) {
+  $: if (
+    $resources?.isError &&
+    individualRefresh &&
+    currentResourceName &&
+    !$resources.isFetching
+  ) {
     eventBus.emit("notification", {
       type: "error",
       message: `Failed to refresh ${currentResourceName} - ${$resources.error?.message}`,
@@ -101,57 +92,9 @@
     });
     individualRefresh = false;
     currentResourceName = undefined;
-    stopPolling();
-  }
-
-  function startPolling(resourceName?: string) {
-    stopPolling();
-    currentResourceName = resourceName;
-    hasStartedReconciling = false;
-
-    if (individualRefresh) {
-      eventBus.emit("notification", {
-        type: "loading",
-        message: `Refreshing ${resourceName}...`,
-        options: {
-          persisted: true,
-        },
-      });
-    }
-
-    let currentInterval = INITIAL_POLLING_INTERVAL;
-
-    pollInterval = setInterval(function poll() {
-      void $resources.refetch();
-
-      // Increase interval for next poll, but don't exceed max
-      currentInterval = Math.min(
-        currentInterval * BACKOFF_FACTOR,
-        MAX_POLLING_INTERVAL,
-      );
-
-      // Clear and reset interval with new timing
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-      pollInterval = setInterval(poll, currentInterval);
-    }, currentInterval);
-  }
-
-  function stopPolling() {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-    }
-  }
-
-  $: if (!isAnySourceOrModelReconciling) {
-    stopPolling();
   }
 
   function refreshAllSourcesAndModels() {
-    startPolling();
-
     void $createTrigger.mutateAsync({
       instanceId,
       data: {
@@ -160,23 +103,15 @@
     });
 
     void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(
-        instanceId,
-        // All resource "kinds"
-        undefined,
-      ),
+      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
     );
   }
 
   function refreshResource(resourceName: string) {
     individualRefresh = true;
-    startPolling(resourceName);
-    void $resources.refetch();
+    currentResourceName = resourceName;
+    hasStartedReconciling = false;
   }
-
-  onDestroy(() => {
-    stopPolling();
-  });
 </script>
 
 <section class="flex flex-col gap-y-4 size-full">
@@ -187,9 +122,9 @@
       on:click={() => {
         isConfirmDialogOpen = true;
       }}
-      disabled={Boolean(pollInterval)}
+      disabled={isAnySourceOrModelReconciling}
     >
-      {#if pollInterval}
+      {#if isAnySourceOrModelReconciling}
         Refreshing...
       {:else}
         Refresh all sources and models
@@ -205,7 +140,7 @@
     </div>
   {:else if $resources.data}
     <ProjectResourcesTable
-      data={$resources?.data}
+      data={$resources?.data?.resources}
       triggerRefresh={refreshResource}
     />
   {/if}
