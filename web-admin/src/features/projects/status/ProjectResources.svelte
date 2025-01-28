@@ -21,9 +21,9 @@
   let currentResourceName: string | undefined;
   let hasStartedReconciling = false;
 
-  $: ({ instanceId } = $runtime);
-
   const POLL_INTERVAL = 1_000;
+
+  $: ({ instanceId } = $runtime);
 
   $: resources = useResources(instanceId, {
     refetchInterval: (data) => {

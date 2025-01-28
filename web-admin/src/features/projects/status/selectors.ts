@@ -27,29 +27,27 @@ export function useProjectDeployment(orgName: string, projName: string) {
   );
 }
 
-type ResourcesResponse = V1ListResourcesResponse & { timestamp: number };
-
 export function useResources(
   instanceId: string,
   queryOptions?: CreateQueryOptions<
     V1ListResourcesResponse,
     ErrorType<RpcStatus>,
-    ResourcesResponse
+    V1ListResourcesResponse
   >,
 ) {
   const defaultOptions: CreateQueryOptions<
     V1ListResourcesResponse,
     ErrorType<RpcStatus>,
-    ResourcesResponse
+    V1ListResourcesResponse
   > = {
     select: (data) => ({
       ...data,
+      // Filter out project parser and refresh triggers
       resources: data.resources.filter(
         (resource) =>
           resource.meta.name.kind !== ResourceKind.ProjectParser &&
           resource.meta.name.kind !== ResourceKind.RefreshTrigger,
       ),
-      timestamp: Date.now(),
     }),
     keepPreviousData: true,
   };
