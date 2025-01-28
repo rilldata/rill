@@ -10,15 +10,18 @@ type MyFixtures = {
   includeRillYaml: boolean;
 };
 
+const BASE_PROJECT_DIRECTORY = "temp/test-project";
+
 export const test = base.extend<MyFixtures>({
   includeRillYaml: [true, { option: true }],
 
   page: async ({ page, includeRillYaml }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
-    const TEST_PROJECT_DIRECTORY = `path-to-project-${TEST_PORT}`;
+    const TEST_PROJECT_DIRECTORY = `${BASE_PROJECT_DIRECTORY}-${TEST_PORT}`;
 
     rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
+
     if (!existsSync(TEST_PROJECT_DIRECTORY)) {
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
