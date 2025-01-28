@@ -11,29 +11,9 @@
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
   import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { EXAMPLES } from "./constants";
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
-
-  const EXAMPLES = [
-    {
-      name: "rill-cost-monitoring",
-      title: "Cost Monitoring",
-      description: "Monitoring cloud infrastructure",
-      image: "/img/welcome-bg-cost-monitoring.png",
-    },
-    {
-      name: "rill-openrtb-prog-ads",
-      title: "OpenRTB Programmatic Ads",
-      description: "Real-time Bidding (RTB) advertising",
-      image: "/img/welcome-bg-openrtb.png",
-    },
-    {
-      name: "rill-github-analytics",
-      title: "Github Analytics",
-      description: "A Git project's commit activity",
-      image: "/img/welcome-bg-github-analytics.png",
-    },
-  ];
 
   let selectedProjectName: string | null = null;
 
