@@ -1,5 +1,6 @@
 // WIP as of 04/19/2024
 
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { writable, type Writable, get } from "svelte/store";
 import {
@@ -398,6 +399,13 @@ export function getRangeLabel(range: string): string {
 
   if (isValidISODuration(range)) {
     return getDurationLabel(range);
+  }
+
+  try {
+    const rt = parseRillTime(range);
+    return rt.getLabel();
+  } catch {
+    // no-op
   }
 
   return range;
