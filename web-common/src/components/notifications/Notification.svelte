@@ -8,8 +8,7 @@
   import { onMount } from "svelte";
   import WarningIcon from "../icons/WarningIcon.svelte";
   import LoadingSpinner from "../icons/LoadingSpinner.svelte";
-
-  const DEFAULT_NOTIFICATION_TIMEOUT = 3_500;
+  import { NOTIFICATION_TIMEOUT } from "./constants";
 
   export let location: "top" | "bottom" | "middle" = "bottom";
   export let justify: "left" | "right" | "center" = "center";
@@ -20,7 +19,7 @@
 
   onMount(() => {
     if (!options?.persisted && !link && type !== "loading") {
-      const timeout = options?.timeout ?? DEFAULT_NOTIFICATION_TIMEOUT;
+      const timeout = options?.timeout ?? NOTIFICATION_TIMEOUT;
       setTimeout(onClose, timeout);
     }
   });

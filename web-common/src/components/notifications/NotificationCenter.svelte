@@ -3,6 +3,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
   import { onMount } from "svelte";
+  import { NOTIFICATION_TIMEOUT } from "./constants";
 
   let notification: NotificationMessage | null = null;
   let currentTimeoutId: number | null = null;
@@ -22,7 +23,8 @@
         !newNotification.options?.persisted &&
         newNotification.type !== "loading"
       ) {
-        const timeout = newNotification.options?.timeout ?? 3500;
+        const timeout =
+          newNotification.options?.timeout ?? NOTIFICATION_TIMEOUT;
         currentTimeoutId = window.setTimeout(clear, timeout);
       }
     });
