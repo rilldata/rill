@@ -35,10 +35,13 @@ func (w *InitOrgBillingWorker) Work(ctx context.Context, job *river.Job[InitOrgB
 		return fmt.Errorf("failed to find organization %s: %w", job.Args.OrgID, err)
 	}
 
-	// rare case but if its retried, we should repair the billing as it might be in some inconsistent state
-	_, _, err = w.admin.RepairOrganizationBilling(ctx, org, false)
-	if err != nil {
-		return fmt.Errorf("failed to repair billing for organization %s: %w", org.Name, err)
+	if job.Attempt > 1 {
+		// rare case but if its retried, we should repair the billing as it might be in some inconsistent state
+		_, _, err = w.admin.RepairOrganizationBilling(ctx, org, false)
+		if err != nil {
+			return fmt.Errorf("failed to repair billing for organization %s: %w", org.Name, err)
+		}
+		return nil
 	}
 
 	_, err = w.admin.InitOrganizationBilling(ctx, org)
@@ -115,7 +118,7 @@ func (w *StartTrialWorker) Work(ctx context.Context, job *river.Job[StartTrialAr
 		TrialEndDate: sub.TrialEndDate,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to send trial started email for organization %s: %w", trialOrg.Name, err)
+		w.logger.Error("failed to send trial started email", zap.String("org_name", trialOrg.Name), zap.String("org_id", trialOrg.ID), zap.String("billing_email", trialOrg.BillingEmail), zap.Error(err))
 	}
 
 	return nil
