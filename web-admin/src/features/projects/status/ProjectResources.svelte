@@ -4,6 +4,7 @@
     createRuntimeServiceCreateTrigger,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
+    type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -17,7 +18,7 @@
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let individualRefresh = false;
+  let isPollingEnabled = false;
   let currentResourceName: string | undefined;
   let hasStartedReconciling = false;
 
@@ -25,12 +26,19 @@
 
   $: ({ instanceId } = $runtime);
 
+  function isResourceErrored(resource: V1Resource) {
+    return resource.meta.reconcileError;
+  }
+
   $: resources = useResources(instanceId, {
     refetchInterval: (data) => {
-      if (!individualRefresh) {
+      if (
+        !isPollingEnabled ||
+        $resources?.isError ||
+        data?.resources?.some(isResourceErrored)
+      ) {
         return false;
       }
-
       return POLL_INTERVAL;
     },
   });
@@ -45,13 +53,13 @@
     ),
   );
 
-  $: if (isAnySourceOrModelReconciling && individualRefresh) {
+  $: if (isAnySourceOrModelReconciling && isPollingEnabled) {
     hasStartedReconciling = true;
   }
 
   $: if (
     !isAnySourceOrModelReconciling &&
-    individualRefresh &&
+    isPollingEnabled &&
     hasStartedReconciling &&
     !$resources.isFetching
   ) {
@@ -72,14 +80,14 @@
         message: `Successfully refreshed ${currentResourceName}`,
       });
     }
-    individualRefresh = false;
+    isPollingEnabled = false;
     currentResourceName = undefined;
     hasStartedReconciling = false;
   }
 
   $: if (
     $resources?.isError &&
-    individualRefresh &&
+    isPollingEnabled &&
     currentResourceName &&
     !$resources.isFetching
   ) {
@@ -90,11 +98,14 @@
         persisted: true,
       },
     });
-    individualRefresh = false;
+    isPollingEnabled = false;
     currentResourceName = undefined;
   }
 
   function refreshAllSourcesAndModels() {
+    isPollingEnabled = true;
+    hasStartedReconciling = false;
+
     void $createTrigger.mutateAsync({
       instanceId,
       data: {
@@ -108,7 +119,7 @@
   }
 
   function refreshResource(resourceName: string) {
-    individualRefresh = true;
+    isPollingEnabled = true;
     currentResourceName = resourceName;
     hasStartedReconciling = false;
   }
