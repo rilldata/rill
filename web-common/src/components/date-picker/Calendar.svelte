@@ -7,7 +7,7 @@
 
   export let selection: MaybeDate | Interval = undefined;
   export let minDate: MaybeDate = undefined;
-  export let maxDate: MaybeDate = DateTime.now().startOf("day");
+  export let maxDate: MaybeDate = undefined;
   export let visibleMonths = 1;
   export let selectingStart = true;
   export let firstVisibleMonth: MaybeDate = isValidDateTime(selection)

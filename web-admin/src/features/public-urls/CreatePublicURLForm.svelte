@@ -134,15 +134,17 @@
     hasDashboardDimensionThresholdFilter($dashboardStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
-    // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
-    $form.expiresAt = DateTime.now().plus({ days: 60 }).toISO();
+    $form.expiresAt = includingTomorrowDate.toISO();
+    popoverOpen = true;
   } else if (!setExpiration) {
     $form.expiresAt = null;
+    popoverOpen = false;
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
 
   $: includingTomorrowDate = DateTime.now().plus({ days: 1 }).startOf("day");
+  $: maxExpirationDate = DateTime.now().plus({ years: 1 }).startOf("day");
 </script>
 
 {#if !url}
@@ -187,6 +189,7 @@
                   selection={DateTime.fromISO($form.expiresAt)}
                   singleDaySelection
                   minDate={includingTomorrowDate}
+                  maxDate={maxExpirationDate}
                   firstVisibleMonth={DateTime.fromISO($form.expiresAt)}
                   onSelectDay={(date) => {
                     $form.expiresAt = date.toISO();
