@@ -1,8 +1,5 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import {
-  getFilteredMeasuresAndDimensions,
-  getIndependentMeasures,
-} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { getFilteredMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -133,16 +130,13 @@ export function createTimeSeriesDataStore(
           : [];
       }
 
-      const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
-        dashboard: dashboardStore,
-      })(metricsView ?? {}, measures);
-      const independentMeasures = getIndependentMeasures(
-        metricsView ?? {},
-        measures,
-      );
+      const { measures: filteredMeasures, nonWindowMeasures } =
+        getFilteredMeasuresAndDimensions({
+          dashboard: dashboardStore,
+        })(metricsView ?? {}, measures);
 
       const primaryTimeSeries =
-        measures.length > 0
+        filteredMeasures.length > 0
           ? createMetricsViewTimeSeries(ctx, filteredMeasures, false)
           : writable({
               isFetching: false,
@@ -152,13 +146,13 @@ export function createTimeSeriesDataStore(
             });
 
       const primaryTotals =
-        measures.length > 0
-          ? createTotalsForMeasure(ctx, independentMeasures, false)
+        nonWindowMeasures.length > 0
+          ? createTotalsForMeasure(ctx, nonWindowMeasures, false)
           : writable({
               isFetching: false,
               isError: false,
-              data: null,
-              error: {},
+              data: {},
+              error: undefined,
             });
 
       let unfilteredTotals:
@@ -168,7 +162,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          independentMeasures,
+          measures,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -184,11 +178,7 @@ export function createTimeSeriesDataStore(
           filteredMeasures,
           true,
         );
-        comparisonTotals = createTotalsForMeasure(
-          ctx,
-          independentMeasures,
-          true,
-        );
+        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
       }
 
       let dimensionTimeSeriesCharts:
@@ -242,9 +232,7 @@ export function createTimeSeriesDataStore(
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = (
-              primaryTotal.error as HTTPError
-            ).response?.data?.message;
+            error["totals"] = primaryTotal.error.response?.data?.message;
           }
 
           return {

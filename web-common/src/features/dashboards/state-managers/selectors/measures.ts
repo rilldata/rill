@@ -93,10 +93,12 @@ export const getFilteredMeasuresAndDimensions = ({
     measureNames: string[],
   ): {
     measures: string[];
+    nonWindowMeasures: string[];
     dimensions: MetricsViewSpecDimensionSelector[];
   } => {
     const dimensions = new Map<string, V1TimeGrain>();
     const measures = new Set<string>();
+    const nonWindowMeasures = new Set<string>();
     measureNames.forEach((measureName) => {
       const measure = metricsViewSpec.measures?.find(
         (m) => m.name === measureName,
@@ -145,36 +147,17 @@ export const getFilteredMeasuresAndDimensions = ({
       });
       if (skipMeasure) return;
       measures.add(measureName);
-      if (!measure.window) return;
-      measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
+      if (!measure.window) nonWindowMeasures.add(measureName);
     });
     return {
       measures: [...measures],
+      nonWindowMeasures: [...nonWindowMeasures],
       dimensions: [...dimensions.entries()].map(([name, timeGrain]) => ({
         name,
         timeGrain,
       })),
     };
   };
-};
-
-export const getIndependentMeasures = (
-  metricsViewSpec: V1MetricsViewSpec,
-  measureNames: string[],
-) => {
-  const measures = new Set<string>();
-  measureNames.forEach((measureName) => {
-    const measure = metricsViewSpec.measures?.find(
-      (m) => m.name === measureName,
-    );
-    // temporary check for window measures until the PR to move to AggregationApi is merged
-    if (!measure || measure.requiredDimensions?.length || !!measure.window)
-      return;
-    measures.add(measureName);
-    if (!measure.window) return;
-    measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
-  });
-  return [...measures];
 };
 
 export const getSimpleMeasures = (measures: MetricsViewSpecMeasureV2[]) => {

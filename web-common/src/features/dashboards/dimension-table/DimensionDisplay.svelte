@@ -102,7 +102,6 @@
   $: measures = getMeasuresForDimensionTable(
     activeMeasureName,
     dimensionThresholdFilters,
-    metricsView,
     visibleMeasureNames,
   )
     .map(

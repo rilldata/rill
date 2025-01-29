@@ -24,7 +24,6 @@
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
-  import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import {
     createAndExpression,
     createOrExpression,
@@ -125,10 +124,7 @@
         undefined,
       );
 
-  $: measures = getIndependentMeasures(
-    metricsView,
-    additionalMeasures(activeMeasureName, dimensionThresholdFilters),
-  )
+  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
     .map(
       (n) =>
         ({
