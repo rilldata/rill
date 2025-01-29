@@ -8,13 +8,13 @@
 
   export let data: PageData;
 
-  $: ({ showUpgradeDialog } = data);
+  $: ({ showUpgradeDialog, organizationLogoUrl } = data);
 
   $: organization = $page.params.organization;
 </script>
 
 <OrgNameSettings {organization} />
-<LogoSettings {organization} />
+<LogoSettings {organization} {organizationLogoUrl} />
 <OrgDomainAllowListSettings {organization} />
 <!-- disabling for now since  there are some open questions around billing -->
 <!--  <DeleteOrg {organization} />-->
