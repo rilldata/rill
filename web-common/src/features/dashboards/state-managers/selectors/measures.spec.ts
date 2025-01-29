@@ -15,6 +15,7 @@ describe("measures selectors", () => {
         timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
         expected: {
           measures: ["mes", "mes_time_no_grain"],
+          nonWindowMeasures: ["mes", "mes_time_no_grain"],
           dimensions: [
             {
               name: "time",
@@ -34,6 +35,7 @@ describe("measures selectors", () => {
         timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
         expected: {
           measures: ["mes", "mes_time_no_grain", "mes_time_day_grain"],
+          nonWindowMeasures: ["mes", "mes_time_no_grain", "mes_time_day_grain"],
           dimensions: [
             {
               name: "time",
@@ -53,6 +55,11 @@ describe("measures selectors", () => {
         timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
         expected: {
           measures: ["mes", "mes_time_no_grain", "mes_time_week_grain"],
+          nonWindowMeasures: [
+            "mes",
+            "mes_time_no_grain",
+            "mes_time_week_grain",
+          ],
           dimensions: [
             {
               name: "time",
@@ -72,6 +79,7 @@ describe("measures selectors", () => {
         timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
         expected: {
           measures: ["mes", "mes_time_no_grain"],
+          nonWindowMeasures: ["mes", "mes_time_no_grain"],
           dimensions: [
             {
               name: "time",

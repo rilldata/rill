@@ -151,7 +151,7 @@ export function createTimeSeriesDataStore(
           : writable({
               isFetching: false,
               isError: false,
-              data: {},
+              data: { data: [] },
               error: undefined,
             });
 
