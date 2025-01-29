@@ -255,22 +255,15 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 	return nil
 }
 
-func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
+func (s *Service) processGithubInstallationRepositoriesEvent(_ context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
 	switch event.GetAction() {
 	case "added":
 		// no handling as of now
 	case "removed":
-		var multiErr error
-		s.Logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
-		for _, repo := range event.RepositoriesRemoved {
-			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
-				multiErr = multierr.Combine(multiErr, err)
-				s.Logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
-			}
-		}
-		s.Logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
-		return multiErr
+		// no handling as of now
+		// previously we were deleting the project for the repo
+		// but that means if there is an accidental removal we delete all projects
 	}
 	return nil
 }
@@ -291,29 +284,4 @@ func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) e
 		}
 	}
 	return multiErr
-}
-
-func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Repository) error {
-	// Find Rill project matching the repo that was pushed to
-	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURLFromRepo(repo))
-	if err != nil {
-		return err
-	}
-
-	var multiErr error
-	for _, p := range projects {
-		err := s.TeardownProject(ctx, p)
-		if err != nil {
-			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
-			continue
-		}
-	}
-	return multiErr
-}
-
-func githubURLFromRepo(repo *github.Repository) string {
-	if repo.HTMLURL != nil {
-		return *repo.HTMLURL
-	}
-	return "https://github.com/" + repo.GetFullName()
 }
