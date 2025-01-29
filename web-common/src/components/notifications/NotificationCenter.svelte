@@ -5,26 +5,27 @@
   import { onMount } from "svelte";
   import { NOTIFICATION_TIMEOUT } from "./constants";
 
-  let notification: NotificationMessage | null = null;
+  let notifications: NotificationMessage[] = [];
   let currentTimeoutId: number | null = null;
 
   onMount(() => {
-    const unsubscribe = eventBus.on("notification", (newNotification) => {
+    const unsubscribe = eventBus.on("notification", (notification) => {
+      // Clear all notifications
+      if (notification.type === "clear-all") {
+        notifications = [];
+        return;
+      }
+      notifications = [...notifications, notification];
+
       // Clear any existing timeout
       if (currentTimeoutId) {
         clearTimeout(currentTimeoutId);
         currentTimeoutId = null;
       }
 
-      notification = newNotification;
-
       // Set up auto-dismiss for non-persisted notifications
-      if (
-        !newNotification.options?.persisted &&
-        newNotification.type !== "loading"
-      ) {
-        const timeout =
-          newNotification.options?.timeout ?? NOTIFICATION_TIMEOUT;
+      if (!notification.options?.persisted && notification.type !== "loading") {
+        const timeout = notification.options?.timeout ?? NOTIFICATION_TIMEOUT;
         currentTimeoutId = window.setTimeout(clear, timeout);
       }
     });
@@ -38,7 +39,7 @@
   });
 
   function clear() {
-    notification = null;
+    notifications = [];
     if (currentTimeoutId) {
       clearTimeout(currentTimeoutId);
       currentTimeoutId = null;
@@ -46,6 +47,6 @@
   }
 </script>
 
-{#if notification}
+{#each notifications as notification}
   <Notification {notification} onClose={clear} />
-{/if}
+{/each}
