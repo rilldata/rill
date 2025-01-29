@@ -261,16 +261,9 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 	case "added":
 		// no handling as of now
 	case "removed":
-		var multiErr error
-		s.Logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
-		for _, repo := range event.RepositoriesRemoved {
-			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
-				multiErr = multierr.Combine(multiErr, err)
-				s.Logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
-			}
-		}
-		s.Logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
-		return multiErr
+		// no handling as of now
+		// previously we were deleting the project for the repo
+		// but that means if there is an accidental removal we delete all projects
 	}
 	return nil
 }
