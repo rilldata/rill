@@ -255,7 +255,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 	return nil
 }
 
-func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
+func (s *Service) processGithubInstallationRepositoriesEvent(_ context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
 	switch event.GetAction() {
 	case "added":
