@@ -12,6 +12,16 @@
   import type { CanvasComponentType } from "./components/types";
   import BlankCanvas from "./BlankCanvas.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+  } from "@rilldata/web-common/components/context-menu";
+  import ChartIcon from "./icons/ChartIcon.svelte";
+  import TableIcon from "./icons/TableIcon.svelte";
+  import TextIcon from "./icons/TextIcon.svelte";
+  import BigNumberIcon from "./icons/BigNumberIcon.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -48,6 +58,18 @@
   $: metricsViewQuery = useDefaultMetrics(instanceId);
 
   const componentRegistry = getComponentRegistry();
+
+  const menuItems: {
+    id: CanvasComponentType;
+    label: string;
+    icon: ComponentType<SvelteComponent>;
+  }[] = [
+    { id: "bar_chart", label: "Chart", icon: ChartIcon },
+    { id: "table", label: "Table", icon: TableIcon },
+    { id: "markdown", label: "Text", icon: TextIcon },
+    { id: "kpi", label: "KPI", icon: BigNumberIcon },
+    { id: "image", label: "Image", icon: ChartIcon },
+  ];
 
   async function deleteComponent(index: number) {
     if (index === undefined || index === null) {
@@ -188,17 +210,35 @@
   </div>
 {/if}
 
-{#if items.length === 0}
-  <BlankCanvas on:add={handleAdd} />
-{:else}
-  <CanvasDashboardPreview
-    {items}
-    {spec}
-    activeIndex={$selectedIndex}
-    on:update={handleUpdate}
-    on:delete={handleDelete}
-  />
-{/if}
+<ContextMenu>
+  <ContextMenuTrigger class="h-full w-full block">
+    {#if items.length === 0}
+      <BlankCanvas on:add={handleAdd} />
+    {:else}
+      <CanvasDashboardPreview
+        {items}
+        {spec}
+        activeIndex={$selectedIndex}
+        on:update={handleUpdate}
+        on:delete={handleDelete}
+      />
+    {/if}
+  </ContextMenuTrigger>
+  <ContextMenuContent>
+    {#each menuItems as item}
+      <ContextMenuItem
+        on:click={() =>
+          handleAdd(new CustomEvent("add", { detail: { type: item.id } }))}
+        class="text-gray-700 text-xs"
+      >
+        <div class="flex flex-row gap-x-2">
+          <svelte:component this={item.icon} />
+          <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+        </div>
+      </ContextMenuItem>
+    {/each}
+  </ContextMenuContent>
+</ContextMenu>
 
 <svelte:window
   on:keydown={async (e) => {
