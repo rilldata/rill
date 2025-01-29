@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
-import path from "node:path";
-import { TestDataPath } from "./utils/sourceHelpers";
+import path from "path";
+import { fileURLToPath } from "url";
 import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 test.describe("Onboarding", () => {
   startRuntimeForEachTest({ includeRillYaml: false });
@@ -55,9 +58,8 @@ test.describe("Onboarding", () => {
       page.waitForEvent("filechooser"),
       page.getByText("Upload a CSV, JSON or Parquet file").click(),
     ]);
-    const fileUploadPromise = fileChooser.setFiles([
-      path.join(TestDataPath, "Adbids.csv"),
-    ]);
+    const adbidsCsvPath = path.join(__dirname, "./data/Adbids.csv");
+    const fileUploadPromise = fileChooser.setFiles([adbidsCsvPath]);
     const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
     await Promise.all([fileUploadPromise, fileRespWaitPromise]);
 
