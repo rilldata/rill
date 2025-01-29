@@ -58,7 +58,7 @@ test.describe("Onboarding", () => {
       page.waitForEvent("filechooser"),
       page.getByText("Upload a CSV, JSON or Parquet file").click(),
     ]);
-    const adbidsCsvPath = path.join(__dirname, "./data/Adbids.csv");
+    const adbidsCsvPath = path.join(__dirname, "./data/AdBids.csv");
     const fileUploadPromise = fileChooser.setFiles([adbidsCsvPath]);
     const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
     await Promise.all([fileUploadPromise, fileRespWaitPromise]);
