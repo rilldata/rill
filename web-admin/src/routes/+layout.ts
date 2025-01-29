@@ -8,7 +8,9 @@ export const ssr = false;
 import { dev } from "$app/environment";
 import {
   adminServiceGetCurrentUser,
+  adminServiceGetOrganization,
   getAdminServiceGetCurrentUserQueryKey,
+  getAdminServiceGetOrganizationQueryKey,
   type V1GetCurrentUserResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
@@ -70,15 +72,22 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
+      organizationLogoUrl: undefined,
     };
   }
 
   // Get organization permissions
   let organizationPermissions: V1OrganizationPermissions = {};
+  let organizationLogoUrl: string | undefined = undefined;
   if (organization && !token) {
     try {
-      organizationPermissions =
-        await fetchOrganizationPermissions(organization);
+      const organizationResp = await queryClient.fetchQuery({
+        queryKey: getAdminServiceGetOrganizationQueryKey(organization),
+        queryFn: () => adminServiceGetOrganization(organization),
+        staleTime: Infinity,
+      });
+      organizationPermissions = organizationResp.permissions;
+      organizationLogoUrl = organizationResp.organization.logoUrl;
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
@@ -91,6 +100,7 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions,
       projectPermissions: <V1ProjectPermissions>{},
+      organizationLogoUrl,
     };
   }
 
@@ -113,6 +123,7 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions,
       projectPermissions,
+      organizationLogoUrl,
       project: proj,
       runtime: runtimeData,
     };
