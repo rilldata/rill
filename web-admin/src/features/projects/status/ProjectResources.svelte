@@ -24,7 +24,9 @@
   let currentResourceName: string | undefined;
   let hasStartedReconciling = false;
 
-  const POLL_INTERVAL = 1_000;
+  const INITIAL_POLL_INTERVAL = 1_000;
+  const MAX_POLL_INTERVAL = 10_000;
+  let pollStartTime: number | null = null;
 
   $: ({ instanceId } = $runtime);
 
@@ -36,7 +38,7 @@
     select: (data: V1ListResourcesResponse) => ({
       ...data,
       // Filter out project parser and refresh triggers
-      resources: data.resources.filter(
+      resources: data?.resources?.filter(
         (resource: V1Resource) =>
           resource.meta.name.kind !== ResourceKind.ProjectParser &&
           resource.meta.name.kind !== ResourceKind.RefreshTrigger,
@@ -48,9 +50,24 @@
         $resources?.isError ||
         data?.resources?.some(isResourceErrored)
       ) {
+        pollStartTime = null;
         return false;
       }
-      return POLL_INTERVAL;
+
+      // Initialize poll start time if not set
+      if (!pollStartTime) {
+        pollStartTime = Date.now();
+      }
+
+      // Calculate time elapsed since polling started
+      const elapsedTime = Date.now() - pollStartTime;
+
+      // After 30 seconds, gradually increase interval to MAX_POLL_INTERVAL
+      if (elapsedTime > 30_000) {
+        return MAX_POLL_INTERVAL;
+      }
+
+      return INITIAL_POLL_INTERVAL;
     },
   });
 
@@ -116,6 +133,7 @@
   function refreshAllSourcesAndModels() {
     isPollingEnabled = true;
     hasStartedReconciling = false;
+    pollStartTime = null; // Reset poll start time
 
     void $createTrigger.mutateAsync({
       instanceId,
@@ -133,10 +151,13 @@
     isPollingEnabled = true;
     currentResourceName = resourceName;
     hasStartedReconciling = false;
+    pollStartTime = null; // Reset poll start time
+  }
 
+  $: if (currentResourceName && $resources.isFetching && isPollingEnabled) {
     eventBus.emit("notification", {
       type: "loading",
-      message: `Refreshing ${resourceName}...`,
+      message: `Refreshing ${currentResourceName}...`,
       options: {
         persisted: true,
       },
