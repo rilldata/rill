@@ -142,6 +142,8 @@ func (c *catalog) listTables() []*tableMeta {
 	return tables
 }
 
+// incrementSnapshotUnsafe increments the current snapshot.
+// It ensures that the currentSnapshotID always has at least one reference.
 func (c *catalog) incrementSnapshotUnsafe() {
 	// Increment snapshot ID
 	c.currentSnapshotID++
