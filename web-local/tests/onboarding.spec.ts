@@ -1,25 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
-import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
+import { test } from "./utils/test";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 test.describe("Onboarding", () => {
-  startRuntimeForEachTest({ includeRillYaml: false });
+  test.use({ includeRillYaml: false });
 
   test("Example project", async ({ page }) => {
-    await page.goto("/");
+    // Should be redirected to the onboarding page
+    await page.waitForURL("**/welcome");
+    await expect(page.getByText("Welcome to Rill")).toBeVisible();
 
     // Click on "Example projects"
     await page.getByRole("link", { name: "Cost monitoring" }).click();
 
     // Expect to be navigated to the project's first dashboard
-    await expect(page).toHaveURL(
-      "/files/dashboards/metrics_margin_explore.yaml",
-      { timeout: 20_000 },
-    );
+    await page.waitForURL("**/files/dashboards/metrics_margin_explore.yaml", {
+      timeout: 20_000,
+    });
 
     // Expect to see the `rill.yaml` file in the sidebar
     await expect(page.getByText("rill.yaml")).toBeVisible();
@@ -32,17 +33,16 @@ test.describe("Onboarding", () => {
 
   test("Rill-managed OLAP - local file", async ({ page }) => {
     test.setTimeout(20_000);
-    await page.goto("/");
 
     // Should be redirected to the onboarding page
-    await expect(page).toHaveURL("/welcome");
+    await page.waitForURL("**/welcome");
     await expect(page.getByText("Welcome to Rill")).toBeVisible();
 
     // Click on "Connect your data"
     await page.getByRole("button", { name: "Connect your data" }).click();
 
     // Should get redirected to the select connectors page
-    await expect(page).toHaveURL("/welcome/select-connectors");
+    await page.waitForURL("**/welcome/select-connectors");
 
     // Click on button with aria-label "Local file"
     await page.getByLabel("local_file").click();
@@ -51,7 +51,7 @@ test.describe("Onboarding", () => {
     await page.getByRole("button", { name: "Continue" }).click();
 
     // Should get redirected to the add credentials page
-    await expect(page).toHaveURL("/welcome/add-credentials");
+    await page.waitForURL("**/welcome/add-credentials");
 
     // Upload a file (Note: this is copied from `sourceHelpers.ts` and should be cleaned-up.)
     const [fileChooser] = await Promise.all([
@@ -64,7 +64,7 @@ test.describe("Onboarding", () => {
     await Promise.all([fileUploadPromise, fileRespWaitPromise]);
 
     // Expect to be navigated to the new source page
-    await expect(page).toHaveURL("/files/sources/Adbids.yaml");
+    await page.waitForURL("**/files/sources/AdBids.yaml");
 
     // Click "view this source"
     await page.getByRole("button", { name: "View this source" }).click();
@@ -86,10 +86,8 @@ test.describe("Onboarding", () => {
 
   // TODO: Spin-up a local ClickHouse instance, so we can test this actually working.
   test("Self-managed OLAP - ClickHouse", async ({ page }) => {
-    await page.goto("/");
-
     // Should be redirected to the onboarding page
-    await expect(page).toHaveURL("/welcome");
+    await page.waitForURL("**/welcome");
     await expect(page.getByText("Welcome to Rill")).toBeVisible();
 
     // Pick a self-managed ClickHouse OLAP
