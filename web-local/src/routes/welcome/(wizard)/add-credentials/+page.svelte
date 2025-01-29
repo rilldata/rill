@@ -20,7 +20,7 @@
 
   async function onContinue(filePath: string) {
     if ($managementType === "rill-managed") {
-      onboardingState.complete();
+      await onboardingState.complete();
       // Navigate to the new source (whether there's an error or not)
       await goto(`/files/${filePath}`);
     } else {
