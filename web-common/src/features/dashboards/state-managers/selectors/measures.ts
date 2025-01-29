@@ -145,6 +145,7 @@ export const getFilteredMeasuresAndDimensions = ({
       });
       if (skipMeasure) return;
       measures.add(measureName);
+      if (!measure.window) return;
       measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
     });
     return {
@@ -170,6 +171,7 @@ export const getIndependentMeasures = (
     if (!measure || measure.requiredDimensions?.length || !!measure.window)
       return;
     measures.add(measureName);
+    if (!measure.window) return;
     measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
   });
   return [...measures];

@@ -33,13 +33,6 @@ export function getExploreFields(
   if (everythingIsVisible) return undefined; // Not specifying any fields means all fields are visible
 
   const filteredDimensions = getAllIdentifiers(dashboardStore.whereFilter);
-  const allMeasureNames = new Set<string>();
-  visibleMeasures.forEach((measure) => {
-    allMeasureNames.add(measure.name);
-    measure.referencedMeasures?.forEach((refMes) =>
-      allMeasureNames.add(refMes),
-    );
-  });
 
   return [
     ...visibleDimensions
@@ -49,7 +42,7 @@ export function getExploreFields(
         // Including `!!dimension` fixes a hidden TS error
         (dimension) => !!dimension && !filteredDimensions.includes(dimension),
       ),
-    ...allMeasureNames,
+    ...visibleMeasures.map((measure) => measure.name),
   ] as string[];
 }
 
