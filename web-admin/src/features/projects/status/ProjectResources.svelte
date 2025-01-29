@@ -24,7 +24,7 @@
   let isConfirmDialogOpen = false;
   let isPollingEnabled = false;
   let currentResourceName: string | undefined;
-  let hasStartedReconciling = false;
+  let isReconciling = false;
   let isLoaded = false;
 
   const INITIAL_POLL_INTERVAL = 1_000;
@@ -92,19 +92,22 @@
     isAnySourceOrModelReconciling || isPollingEnabled;
 
   $: if (isAnySourceOrModelReconciling && isPollingEnabled) {
-    hasStartedReconciling = true;
+    isReconciling = true;
   }
 
   $: if (
     !isAnySourceOrModelReconciling &&
     isPollingEnabled &&
-    hasStartedReconciling &&
+    isReconciling &&
     !$resources.isFetching
   ) {
     const failedResource = $resources?.data?.resources?.find(
       (r) => r.meta.reconcileError,
     )?.meta.name.name;
     if (failedResource) {
+      eventBus.emit("notification", {
+        type: "clear-all",
+      });
       eventBus.emit("notification", {
         type: "error",
         message: `Failed to refresh ${failedResource}`,
@@ -114,13 +117,16 @@
       });
     } else if (currentResourceName) {
       eventBus.emit("notification", {
+        type: "clear-all",
+      });
+      eventBus.emit("notification", {
         type: "success",
         message: `Successfully refreshed ${currentResourceName}`,
       });
     }
     isPollingEnabled = false;
     currentResourceName = undefined;
-    hasStartedReconciling = false;
+    isReconciling = false;
   }
 
   $: if (
@@ -142,7 +148,7 @@
 
   function refreshAllSourcesAndModels() {
     isPollingEnabled = true;
-    hasStartedReconciling = false;
+    isReconciling = false;
     pollStartTime = null;
 
     void $createTrigger.mutateAsync({
@@ -168,7 +174,7 @@
   function refreshResource(resourceName: string) {
     isPollingEnabled = true;
     currentResourceName = resourceName;
-    hasStartedReconciling = false;
+    isReconciling = false;
     pollStartTime = null;
 
     eventBus.emit("notification", {
@@ -194,7 +200,7 @@
 
     if (hasNonIdleResources) {
       isPollingEnabled = true;
-      hasStartedReconciling = true;
+      isReconciling = true;
       pollStartTime = null;
     }
   }
