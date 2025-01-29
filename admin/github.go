@@ -285,28 +285,3 @@ func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) e
 	}
 	return multiErr
 }
-
-func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Repository) error {
-	// Find Rill project matching the repo that was pushed to
-	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURLFromRepo(repo))
-	if err != nil {
-		return err
-	}
-
-	var multiErr error
-	for _, p := range projects {
-		err := s.TeardownProject(ctx, p)
-		if err != nil {
-			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
-			continue
-		}
-	}
-	return multiErr
-}
-
-func githubURLFromRepo(repo *github.Repository) string {
-	if repo.HTMLURL != nil {
-		return *repo.HTMLURL
-	}
-	return "https://github.com/" + repo.GetFullName()
-}
