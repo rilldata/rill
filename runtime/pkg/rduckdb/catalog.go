@@ -148,16 +148,21 @@ func (c *catalog) acquireSnapshot() *snapshot {
 
 func (c *catalog) acquireSnapshotUnsafe() *snapshot {
 	s, ok := c.snapshots[c.currentSnapshotID]
-	if ok {
-		s.referenceCount++
+	if !ok {
+		// first acquire
+		s = &snapshot{
+			id:             c.currentSnapshotID,
+			referenceCount: 0,
+			tables:         make([]*tableMeta, 0),
+		}
+	}
+	s.referenceCount++
+	if s.referenceCount > 1 {
+		// minor optimization : the table versions are already acquired
+		// so we can return the snapshot without incrementing the reference count of each version again
 		return s
 	}
-	// first acquire
-	s = &snapshot{
-		id:             c.currentSnapshotID,
-		referenceCount: 1,
-		tables:         make([]*tableMeta, 0),
-	}
+
 	for _, t := range c.tables {
 		if t.deleted {
 			continue
@@ -183,7 +188,9 @@ func (c *catalog) releaseSnapshot(s *snapshot) {
 
 func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 	s.referenceCount--
-	if s.referenceCount > 0 || s.id == c.currentSnapshotID {
+	if s.referenceCount > 0 {
+		// because we do not increment the reference count of versions for each acquire
+		// so we only decrement the counts when the last reference is released
 		return
 	}
 
@@ -194,6 +201,10 @@ func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 		}
 		c.releaseVersion(t, meta.Version)
 	}
+	if s.referenceCount == c.currentSnapshotID {
+		return
+	}
+	// delete the older snapshot
 	delete(c.snapshots, s.id)
 	c.removeSnapshotFunc(s.id)
 }
@@ -223,9 +234,8 @@ func (c *catalog) releaseVersion(t *table, version string) {
 	if t.deleted && len(t.versionReferenceCounts) == 0 {
 		delete(c.tables, t.name)
 	}
-	if t.currentVersion == version {
-		// do not remove the current version
-		return
+	if t.deleted || t.currentVersion != version {
+		// do not remove the current active version
+		c.removeVersionFunc(t.name, version)
 	}
-	c.removeVersionFunc(t.name, version)
 }
