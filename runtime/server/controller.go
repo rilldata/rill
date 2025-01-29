@@ -62,6 +62,11 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
+	isAdmin := auth.GetClaims(ctx).SecurityClaims().Admin()
+	if isAdmin && req.SkipChecks {
+		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+	}
+
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
@@ -70,7 +75,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		// Check of the request is to skip security checks
-		if !req.SkipChecks && !access {
+		if !access {
 			// Remove from the slice
 			rs[i] = rs[len(rs)-1]
 			rs[len(rs)-1] = nil
@@ -175,6 +180,12 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 			return nil, status.Error(codes.NotFound, "resource not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	isAdmin := auth.GetClaims(ctx).SecurityClaims().Admin()
+
+	if isAdmin && req.SkipChecks {
+		return &runtimev1.GetResourceResponse{Resource: r}, nil
 	}
 
 	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
