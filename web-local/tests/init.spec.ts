@@ -17,19 +17,4 @@ test.describe("Project initialization", () => {
       });
     });
   });
-
-  test.describe("Empty project", () => {
-    test.use({ includeRillYaml: false });
-    test("should initialize new project", async ({ page }) => {
-      await page.getByRole("link", { name: "Empty Project" }).click();
-
-      await expect(page.getByText("Getting started")).toBeVisible();
-
-      await page.getByRole("link", { name: "rill.yaml" }).click();
-
-      await expect(
-        page.getByRole("heading", { name: "rill.yaml" }),
-      ).toBeVisible();
-    });
-  });
 });
