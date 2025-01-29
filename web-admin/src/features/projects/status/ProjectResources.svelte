@@ -198,10 +198,23 @@
       isResourceReconciling,
     );
 
+    // Clear any lingering notifications first
+    eventBus.emit("notification", {
+      type: "clear-all",
+    });
+
     if (hasNonIdleResources) {
       isPollingEnabled = true;
       isReconciling = true;
       pollStartTime = null;
+
+      eventBus.emit("notification", {
+        type: "loading",
+        message: "Refreshing...",
+        options: {
+          persisted: true,
+        },
+      });
     }
   }
 </script>
