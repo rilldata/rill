@@ -161,7 +161,6 @@
     if (isPollingEnabled) {
       eventBus.emit("notification", {
         type: "clear-all",
-        message: "",
       });
     }
   });
