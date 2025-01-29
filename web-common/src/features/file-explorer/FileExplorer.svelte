@@ -19,18 +19,12 @@
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { onMount } from "svelte";
-  import LoadingList from "../../components/skeleton/LoadingList.svelte";
   import { eventBus } from "../../lib/event-bus/event-bus";
   import { fileArtifacts } from "../entity-management/file-artifacts";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
 
   export let hasUnsaved: boolean;
-
-  onMount(() => {
-    console.log("FileExplorer mounted", getCurrentTimetamp());
-  });
 
   $: ({ instanceId } = $runtime);
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
@@ -54,30 +48,16 @@
                 // Check both the top-level directory and subdirectories
                 (file.path?.startsWith(".") || file.path?.includes("/."))
               ),
-          );
+          )
+          // Hide the `tmp` directory
+          .filter((file) => !file.path?.startsWith("/tmp"));
 
-        const fileTree = transformFileList(files);
-
-        return fileTree;
+        return transformFileList(files);
       },
     },
   });
 
-  $: ({
-    data: fileTree,
-    status,
-    fetchStatus,
-    isLoading,
-    isError,
-  } = $getFileTree);
-
-  function getCurrentTimetamp() {
-    return new Date().toISOString();
-  }
-
-  $: console.log("status", status, getCurrentTimetamp());
-  $: console.log("fetchStatus", fetchStatus, getCurrentTimetamp());
-  $: console.log("isLoading", isLoading, getCurrentTimetamp());
+  $: ({ data: fileTree } = $getFileTree);
 
   let showRenameModelModal = false;
   let renameFilePath: string;
@@ -181,17 +161,7 @@
 
 <!-- File tree -->
 <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-  {#if isLoading || (fetchStatus === "fetching" && !fileTree)}
-    <LoadingList rows={7} />
-  {:else if isError}
-    <div class="flex items-center justify-center size-full">
-      <p>Failed to load file tree</p>
-    </div>
-  {:else if !fileTree}
-    <div class="flex items-center justify-center size-full">
-      <p>No files found</p>
-    </div>
-  {:else if fileTree}
+  {#if fileTree}
     <NavDirectory
       directory={fileTree}
       {onRename}
