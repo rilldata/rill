@@ -14,7 +14,7 @@
   // Implementation of it will be upto the caller of this component.
   export let uploadFile: (file: File) => Promise<string>;
 
-  $: values = value ? (multiple ? value : [value]) : [];
+  $: values = value ? (multiple ? (value as string[]) : [value as string]) : [];
   $: errors = error ? (multiple ? error : { 0: error }) : [];
 
   $: uploading = {};
@@ -46,13 +46,14 @@
       if (value === undefined) {
         value = [];
       }
-      value[i] = fileUrl;
+      (value as string[])[i] = fileUrl;
     } else {
       value = fileUrl;
     }
   }
 
   function handleInput() {
+    if (!fileInput.files) return;
     uploadFiles(fileInput.files);
   }
 
