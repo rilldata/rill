@@ -107,8 +107,7 @@
   }
 
   function handleDeselect() {
-    activeIndex = null;
-    canvasEntity.setSelectedComponentIndex(activeIndex);
+    canvasEntity.setSelectedComponentIndex(null);
   }
 
   function handleClickOutside(event: Event) {
@@ -121,20 +120,10 @@
 
     // Only deselect if click is inside canvas or dashboard-theme-boundary but outside grid-stack
     if ((canvasEl || dashboardThemeBoundaryEl) && !gridStackEl) {
-      activeIndex = null;
-      canvasEntity.setSelectedComponentIndex(activeIndex);
+      canvasEntity.setSelectedComponentIndex(null);
     }
   }
 </script>
-
-<!-- {#if showFilterBar}
-  <div
-    id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
-  >
-    <CanvasFilters />
-  </div>
-{/if} -->
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <div bind:this={gridContainer} use:clickOutside={[null, handleClickOutside]}>
