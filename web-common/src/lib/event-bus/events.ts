@@ -5,7 +5,7 @@ interface Link {
 
 export interface NotificationMessage {
   type: "default" | "success" | "loading" | "error" | "clear-all";
-  message?: string;
+  message: string;
   detail?: string;
   link?: Link;
   options?: NotificationOptions;

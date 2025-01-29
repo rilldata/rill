@@ -161,6 +161,7 @@
     if (isPollingEnabled) {
       eventBus.emit("notification", {
         type: "clear-all",
+        message: "",
       });
     }
   });
@@ -180,12 +181,13 @@
     });
   }
 
-  // Flag to track when user revisits the page
+  // Track when user navigates away and revisits the page
   onMount(() => {
     isLoaded = true;
   });
 
-  // Continue polling if user revisits the page and there are non-idle resources
+  // Continue polling if user navigates away and revisits the page
+  // and there are non-idle resources
   $: if (isLoaded && $resources.data && !isPollingEnabled) {
     const hasNonIdleResources = $resources.data.resources?.some(
       isResourceReconciling,
