@@ -1,4 +1,3 @@
-import { invalidate } from "$app/navigation";
 import { page } from "$app/stores";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import type { QueryClient } from "@tanstack/query-core";
@@ -65,11 +64,6 @@ export async function submitAddDataForm(
     await runtimeServiceUnpackEmpty(instanceId, {
       displayName: EMPTY_PROJECT_TITLE,
     });
-
-    // Race condition: invalidate("init") must be called before we navigate to
-    // `/files/${newFilePath}`. invalidate("init") is also called in the
-    // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-    await invalidate("init");
   }
 
   // Convert the form values to Source YAML

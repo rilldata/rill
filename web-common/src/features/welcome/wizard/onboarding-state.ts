@@ -6,11 +6,9 @@ import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceDeleteFile,
   runtimeServiceGetFile,
-  runtimeServiceListFiles,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1GetFileResponse,
-  type V1ListFilesResponse,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import { updateRillYAMLWithOlapConnector } from "../../connectors/code-utils";
@@ -27,31 +25,6 @@ export class OnboardingState {
 
   constructor() {
     this.runtimeInstanceId = get(runtime).instanceId;
-  }
-
-  async isInitialized() {
-    // Optimization: we LIST all files (which we'll have to do anyway), rather than GET specifically the `rill.yaml` file.
-    const filesResponse = await queryClient.fetchQuery<V1ListFilesResponse>({
-      queryKey: getRuntimeServiceGetFileQueryKey(
-        this.runtimeInstanceId,
-        undefined,
-      ),
-      queryFn: ({ signal }) => {
-        return runtimeServiceListFiles(
-          this.runtimeInstanceId,
-          undefined,
-          signal,
-        );
-      },
-    });
-
-    const rillYaml = filesResponse.files?.find(
-      (file) => file.path === "/rill.yaml",
-    );
-
-    const hasRillYAML = rillYaml !== undefined;
-
-    return hasRillYAML;
   }
 
   async isOnboardingStateFilePresent() {
@@ -255,8 +228,10 @@ managed: true`,
   }
 
   async complete() {
-    // Create a managed connector file
-    if (get(this.managementType) === "rill-managed") {
+    const isRillManagedOLAP = get(this.managementType) === "rill-managed";
+
+    if (isRillManagedOLAP) {
+      // Create a managed connector file
       await runtimeServicePutFile(this.runtimeInstanceId, {
         path: `connectors/${get(this.olapDriver)}.yaml`,
         blob: `type: connector

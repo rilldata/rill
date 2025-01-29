@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidate } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -40,11 +40,6 @@
               displayName: EMPTY_PROJECT_TITLE,
             },
           });
-
-          // Race condition: invalidate("init") must be called before we navigate to
-          // `/files/${newFilePath}`. invalidate("init") is also called in the
-          // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-          await invalidate("init");
         }
 
         const newFilePath = getFileAPIPathFromNameAndType(

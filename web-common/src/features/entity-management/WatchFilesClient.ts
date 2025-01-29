@@ -1,4 +1,3 @@
-import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -49,8 +48,6 @@ export class WatchFilesClient {
             void queryClient.invalidateQueries(
               getRuntimeServiceIssueDevJWTQueryKey({}),
             );
-
-            await invalidate("init");
           }
           this.seenFiles.add(res.path);
           break;
@@ -61,10 +58,6 @@ export class WatchFilesClient {
           );
           fileArtifacts.removeFile(res.path);
           this.seenFiles.delete(res.path);
-
-          if (res.path === "/rill.yaml") {
-            await invalidate("init");
-          }
 
           break;
       }

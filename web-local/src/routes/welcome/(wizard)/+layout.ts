@@ -1,5 +1,7 @@
-export async function load({ parent }) {
-  const { onboardingState } = await parent();
+import { getOnboardingState } from "@rilldata/web-common/features/welcome/wizard/onboarding-state.js";
+
+export async function load() {
+  const onboardingState = getOnboardingState();
 
   // Create the onboarding-state.json file, or fetch it
   // TODO: probably push this branching logic into the OnboardingState class

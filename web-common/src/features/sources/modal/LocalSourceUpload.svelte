@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { invalidate } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -40,11 +39,6 @@
               displayName: EMPTY_PROJECT_TITLE,
             },
           });
-
-          // Race condition: invalidate("init") must be called before we navigate to
-          // `/files/${newFilePath}`. invalidate("init") is also called in the
-          // `WatchFilesClient`, but there it's not guaranteed to get invoked before we need it.
-          await invalidate("init");
         }
         const newFilePath = getFileAPIPathFromNameAndType(
           tableName,

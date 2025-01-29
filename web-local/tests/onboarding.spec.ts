@@ -15,7 +15,7 @@ test.describe("Onboarding", () => {
     await expect(page.getByText("Welcome to Rill")).toBeVisible();
 
     // Click on "Example projects"
-    await page.getByRole("link", { name: "Cost monitoring" }).click();
+    await page.getByRole("button", { name: "Cost monitoring" }).click();
 
     // Expect to be navigated to the project's first dashboard
     await page.waitForURL("**/files/dashboards/metrics_margin_explore.yaml", {

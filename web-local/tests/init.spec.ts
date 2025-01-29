@@ -7,7 +7,7 @@ test.describe("Project initialization", () => {
     test.describe(`Example project: ${example.title}`, () => {
       test.use({ includeRillYaml: false });
       test("should initialize new project", async ({ page }) => {
-        await page.getByRole("link", { name: example.title }).click();
+        await page.getByRole("button", { name: example.title }).click();
 
         await page.waitForURL(`**/files/dashboards/${example.firstFile}`);
 
