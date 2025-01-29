@@ -51,15 +51,8 @@ func newCatalog(removeVersionFunc func(string, string), removeSnapshotFunc func(
 		logger:             logger,
 	}
 	for _, meta := range tables {
-		c.tables[meta.Name] = &table{
-			name:                   meta.Name,
-			currentVersion:         meta.Version,
-			versionReferenceCounts: map[string]int{},
-			versionMeta:            map[string]*tableMeta{meta.Version: meta},
-		}
-		c.acquireVersion(c.tables[meta.Name], meta.Version)
+		c.addTableVersion(meta.Name, meta)
 	}
-	_ = c.acquireSnapshotUnsafe()
 	return c
 }
 
@@ -104,10 +97,6 @@ func (c *catalog) addTableVersion(name string, meta *tableMeta) {
 	}
 
 	c.currentSnapshotID++
-	c.acquireSnapshotUnsafe()
-	if c.currentSnapshotID > 1 {
-		c.releaseSnapshotUnsafe(c.snapshots[c.currentSnapshotID-1])
-	}
 }
 
 // removeTable removes a table from the catalog.
@@ -128,11 +117,7 @@ func (c *catalog) removeTable(name string) {
 	t.currentVersion = ""
 
 	c.currentSnapshotID++
-	c.acquireSnapshotUnsafe()
 	c.releaseVersion(t, oldVersion)
-	if c.currentSnapshotID > 1 {
-		c.releaseSnapshotUnsafe(c.snapshots[c.currentSnapshotID-1])
-	}
 }
 
 // listTables returns tableMeta for all active tables present in the catalog.
@@ -198,7 +183,7 @@ func (c *catalog) releaseSnapshot(s *snapshot) {
 
 func (c *catalog) releaseSnapshotUnsafe(s *snapshot) {
 	s.referenceCount--
-	if s.referenceCount > 0 {
+	if s.referenceCount > 0 || s.id == c.currentSnapshotID {
 		return
 	}
 
@@ -237,6 +222,10 @@ func (c *catalog) releaseVersion(t *table, version string) {
 	delete(t.versionReferenceCounts, version)
 	if t.deleted && len(t.versionReferenceCounts) == 0 {
 		delete(c.tables, t.name)
+	}
+	if t.currentVersion == version {
+		// do not remove the current version
+		return
 	}
 	c.removeVersionFunc(t.name, version)
 }
