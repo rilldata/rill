@@ -17,8 +17,9 @@
 
   const createTrigger = createRuntimeServiceCreateTrigger();
 
-  function refresh(resourceKind: string, resourceName: string) {
-    void $createTrigger.mutateAsync({
+  async function refresh(resourceKind: string, resourceName: string) {
+    // First trigger the refresh
+    await $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         resources: [
@@ -30,6 +31,7 @@
       },
     });
 
+    // Then update UI state and invalidate query
     triggerRefresh(resourceName);
   }
 </script>
