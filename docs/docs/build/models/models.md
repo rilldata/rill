@@ -8,8 +8,8 @@ sidebar_position: 00
 <img src = '/img/tutorials/102/Add-model.gif' class='rounded-gif' />
 <br />
 
-
-[Data models](/reference/project-files/models.md) in Rill are composed of SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
+In Rill, [data models](/reference/project-files/models.md) are built using SQL `SELECT` statements applied to your source data.
+They allow you to join, transform, and clean data.
 
 ## SQL transformations
 
@@ -23,7 +23,7 @@ For additional tips on commonly used expressions (either in models or dashboard 
 ## Adding a data model
 
 ### Using the UI
-To add a new data model using the UI, click "+" by Models in the left hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with keystroke-by-keystroke feedback.
+In the UI, add a new data model by clicking the '+' icon next to 'Models' in the left-hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with keystroke-by-keystroke feedback.
 
 ### Using code
 When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder in your Rill project.
