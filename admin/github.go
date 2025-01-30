@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -234,23 +233,15 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	return nil
 }
 
-func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
+func (s *Service) processGithubInstallationEvent(_ context.Context, event *github.InstallationEvent) error {
 	switch event.GetAction() {
 	case "created", "unsuspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
 	case "suspend", "deleted":
+		// no handling as of now
+		// previously we were deleting the project for the repo
+		// but that means if there is an accidental removal we delete all projects
 		// the github installation ID will change if user re-installs the app deleting the project for now
-		installation := event.GetInstallation()
-		if installation == nil {
-			return fmt.Errorf("nil installation")
-		}
-
-		s.Logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
-		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
-			s.Logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
-			return err
-		}
-		s.Logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
 	}
 	return nil
 }
@@ -266,22 +257,4 @@ func (s *Service) processGithubInstallationRepositoriesEvent(_ context.Context, 
 		// but that means if there is an accidental removal we delete all projects
 	}
 	return nil
-}
-
-func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) error {
-	// Find Rill project for installationID
-	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	var multiErr error
-	for _, p := range projects {
-		err := s.TeardownProject(ctx, p)
-		if err != nil {
-			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
-			continue
-		}
-	}
-	return multiErr
 }
