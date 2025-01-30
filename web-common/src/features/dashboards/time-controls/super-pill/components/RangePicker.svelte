@@ -72,8 +72,8 @@
     searchElement.focus();
   }
 
-  function handleRangeSelect(range: string) {
-    onSelectRange(range);
+  function handleRangeSelect(range: string, syntax = false) {
+    onSelectRange(range, syntax);
 
     closeMenu();
   }

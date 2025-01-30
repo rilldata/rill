@@ -11,9 +11,10 @@
     PREVIOUS_COMPLETE_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
 
-  export let onClick: ((range: string) => void) | undefined = undefined;
   export let range: V1ExploreTimeRange;
   export let selected: boolean;
+  export let onClick: ((range: string, syntax: boolean) => void) | undefined =
+    undefined;
 
   $: meta = range.range?.startsWith("P")
     ? LATEST_WINDOW_TIME_RANGES[range.range]
@@ -25,7 +26,8 @@
 
 <DropdownMenu.Item
   on:click={() => {
-    if (onClick) onClick(range.range);
+    console.log(!meta && !range.range?.startsWith("P"));
+    if (onClick) onClick(range.range, !meta && !range.range?.startsWith("P"));
   }}
 >
   <div class="size-full flex justify-between items-center">
