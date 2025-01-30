@@ -1,10 +1,8 @@
 import { expect } from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
+import { ClickHouseTestContainer } from "./utils/clickhouse";
 import { test } from "./utils/test";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 test.describe("Onboarding", () => {
   test.use({ includeRillYaml: false });
@@ -31,7 +29,7 @@ test.describe("Onboarding", () => {
     });
   });
 
-  test("Rill-managed OLAP - local file", async ({ page }) => {
+  test("Rill-managed OLAP > local file", async ({ page }) => {
     test.setTimeout(20_000);
 
     // Should be redirected to the onboarding page
@@ -58,6 +56,8 @@ test.describe("Onboarding", () => {
       page.waitForEvent("filechooser"),
       page.getByText("Upload a CSV, JSON or Parquet file").click(),
     ]);
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
     const adbidsCsvPath = path.join(__dirname, "./data/AdBids.csv");
     const fileUploadPromise = fileChooser.setFiles([adbidsCsvPath]);
     const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
@@ -84,31 +84,77 @@ test.describe("Onboarding", () => {
     ).toBeVisible();
   });
 
-  // TODO: Spin-up a local ClickHouse instance, so we can test this actually working.
-  test("Self-managed OLAP - ClickHouse", async ({ page }) => {
-    // Should be redirected to the onboarding page
-    await page.waitForURL("**/welcome");
-    await expect(page.getByText("Welcome to Rill")).toBeVisible();
+  test.describe("Self-managed OLAP > ClickHouse", () => {
+    const clickhouse = new ClickHouseTestContainer();
 
-    // Pick a self-managed ClickHouse OLAP
-    await page.getByRole("button", { name: "Connect your data" }).click();
-    await page.getByRole("button", { name: "Self-managed" }).click();
-    // "ClickHouse" is the default, so no need to pick it explicitly.
-    await page.getByRole("button", { name: "Continue" }).click();
+    test.beforeAll(async () => {
+      await clickhouse.start();
+      await clickhouse.seed();
+    });
 
-    // Add credentials
-    await page.getByRole("textbox", { name: "Host" }).click();
-    await page.getByRole("textbox", { name: "Host" }).fill("localhost");
-    await page.getByRole("textbox", { name: "Host" }).press("Tab");
-    await page.getByRole("textbox", { name: "Port (optional)" }).fill("9000");
+    test.afterAll(async () => {
+      await clickhouse.stop();
+    });
 
-    // Submit form and expect to see an error connecting to the dummy ClickHouse instance
-    await page.getByRole("button", { name: "Connect" }).click();
-    await expect(
-      page
-        .locator("#add-data-form div")
-        .filter({ hasText: "dial tcp [::1]:9000: connect" })
-        .nth(1),
-    ).toBeVisible();
+    test("should connect to the ClickHouse instance and create a dashboard", async ({
+      page,
+    }) => {
+      // Should be redirected to the onboarding page
+      await page.waitForURL("**/welcome");
+      await expect(page.getByText("Welcome to Rill")).toBeVisible();
+
+      // Pick a self-managed ClickHouse OLAP
+      await page.getByRole("button", { name: "Connect your data" }).click();
+      await page.getByRole("button", { name: "Self-managed" }).click();
+      // "ClickHouse" is the default, so no need to pick it explicitly.
+      await page.getByRole("button", { name: "Continue" }).click();
+
+      // Add credentials that WILL NOT work
+      await page.getByRole("textbox", { name: "Host" }).click();
+      await page.getByRole("textbox", { name: "Host" }).fill("localhost");
+      await page.getByRole("textbox", { name: "Host" }).press("Tab");
+      await page.getByRole("textbox", { name: "Port (optional)" }).fill("9000");
+
+      // Submit form and expect to see an error connecting to the dummy ClickHouse instance
+      await page.getByRole("button", { name: "Connect" }).click();
+      await expect(
+        page
+          .locator("#add-data-form div")
+          .filter({ hasText: "dial tcp [::1]:9000: connect" })
+          .nth(1),
+      ).toBeVisible();
+
+      // Add credentials that WILL work
+      await page.getByRole("textbox", { name: "Host" }).click();
+      await page
+        .getByRole("textbox", { name: "Host" })
+        .fill(clickhouse.getHost());
+      await page
+        .getByRole("textbox", { name: "Port (optional)" })
+        .fill(clickhouse.getPort().toString());
+      await page.getByRole("button", { name: "Connect" }).click();
+
+      // Expect to advance to the next step
+      await page.waitForURL("**/welcome/make-your-first-dashboard");
+      await expect(
+        page.getByText("Pick a table to power your first dashboard"),
+      ).toBeVisible();
+
+      // Select the AdBids table from the ClickHouse explorer
+      await expect(page.getByText("clickhouse")).toBeVisible();
+      await page.getByText("default").click();
+      await page.getByText("ad_bids").click();
+
+      // Create the dashboard
+      await page.getByRole("button", { name: "Create dashboard" }).click();
+
+      // Expect to be navigated to the new dashboard page
+      await page.waitForURL("**/files/dashboards/ad_bids_metrics_explore.yaml");
+
+      // Assert that we see the "Total records" Big Number
+      await expect(
+        page.getByRole("button", { name: "Total records" }),
+      ).toHaveText("Total records 99,999");
+    });
   });
 });
