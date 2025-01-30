@@ -14,6 +14,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
   import { DateTime, Interval } from "luxon";
   import type { ISODurationString, NamedRange } from "../../new-time-controls";
   import {

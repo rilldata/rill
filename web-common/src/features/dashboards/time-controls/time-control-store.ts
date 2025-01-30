@@ -30,6 +30,7 @@ import {
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -344,12 +345,12 @@ export function getTimeRange(
         selectedTimezone,
       );
     } else {
-      timeRange = isoDurationToFullTimeRange(
-        selectedTimeRange?.name,
-        allTimeRange.start,
-        allTimeRange.end,
-        selectedTimezone,
-      );
+      timeRange = {
+        name: selectedTimeRange.name,
+        start: selectedTimeRange.start,
+        end: selectedTimeRange.end,
+        interval: selectedTimeRange.interval,
+      };
     }
   } else {
     /** set the time range to the fixed custom time range */
@@ -483,4 +484,17 @@ export function selectedTimeRangeSelector([
     allTimeRange,
     defaultTimeRange,
   );
+}
+
+export function findTimeRange(
+  name: string,
+  timeRanges: V1TimeRange[],
+): DashboardTimeControls | undefined {
+  const tr = timeRanges.find((tr) => tr.expression === name);
+  if (!tr) return undefined;
+  return {
+    name: name as TimeRangePreset,
+    start: new Date(tr.start ?? ""),
+    end: new Date(tr.end ?? ""),
+  };
 }
