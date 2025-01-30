@@ -82,10 +82,12 @@ export const filteredSimpleMeasures = ({
 };
 
 /**
- * Selects measure valid for current dashboard selections.
- * Also includes additional dimensions needed for any advanced measures.
+ * Selects measure valid for current dashboard selections. We filter out advanced measures that are,
+ * 1. Of type MEASURE_TYPE_TIME_COMPARISON.
+ * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
+ * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
  */
-export const getFilteredMeasures = (
+export const removeSomeAdvancedMeasures = (
   exploreState: MetricsExplorerEntity,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
