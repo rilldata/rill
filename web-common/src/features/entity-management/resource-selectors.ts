@@ -32,7 +32,7 @@ export enum ResourceKind {
 
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
-  ResourceKind.ProjectParser
+  ResourceKind.ProjectParser | ResourceKind.RefreshTrigger
 >;
 
 export const SingletonProjectParserName = "parser";
