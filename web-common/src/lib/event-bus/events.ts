@@ -4,7 +4,7 @@ interface Link {
 }
 
 export interface NotificationMessage {
-  type?: "default" | "success" | "loading" | "error" | "clear-all";
+  type?: "default" | "success" | "loading" | "error";
   message?: string;
   detail?: string;
   link?: Link;

@@ -105,9 +105,7 @@
       (r) => r.meta.reconcileError,
     )?.meta.name.name;
     if (failedResource) {
-      eventBus.emit("notification", {
-        type: "clear-all",
-      });
+      eventBus.emit("clear-all-notifications", undefined);
       eventBus.emit("notification", {
         type: "error",
         message: `Failed to refresh ${failedResource}`,
@@ -116,9 +114,7 @@
         },
       });
     } else if (currentResourceName) {
-      eventBus.emit("notification", {
-        type: "clear-all",
-      });
+      eventBus.emit("clear-all-notifications", undefined);
       eventBus.emit("notification", {
         type: "success",
         message: `Successfully refreshed ${currentResourceName}`,
@@ -165,9 +161,7 @@
 
   onNavigate(() => {
     if (isPollingEnabled) {
-      eventBus.emit("notification", {
-        type: "clear-all",
-      });
+      eventBus.emit("clear-all-notifications", undefined);
     }
   });
 
@@ -199,9 +193,7 @@
     );
 
     // Clear any lingering notifications first
-    eventBus.emit("notification", {
-      type: "clear-all",
-    });
+    eventBus.emit("clear-all-notifications", undefined);
 
     if (hasNonIdleResources) {
       isPollingEnabled = true;

@@ -9,29 +9,35 @@
   let currentTimeoutId: number | null = null;
 
   onMount(() => {
-    const unsubscribe = eventBus.on("notification", (notification) => {
-      // Clear all notifications
-      if (notification.type === "clear-all") {
-        notifications = [];
-        return;
-      }
-      notifications = [...notifications, notification];
+    const unsubscribeNotification = eventBus.on(
+      "notification",
+      (notification) => {
+        notifications = [...notifications, notification];
 
-      // Clear any existing timeout
-      if (currentTimeoutId) {
-        clearTimeout(currentTimeoutId);
-        currentTimeoutId = null;
-      }
+        // Clear any existing timeout
+        if (currentTimeoutId) {
+          clearTimeout(currentTimeoutId);
+          currentTimeoutId = null;
+        }
 
-      // Set up auto-dismiss for non-persisted notifications
-      if (!notification.options?.persisted && notification.type !== "loading") {
-        const timeout = notification.options?.timeout ?? NOTIFICATION_TIMEOUT;
-        currentTimeoutId = window.setTimeout(clear, timeout);
-      }
+        // Set up auto-dismiss for non-persisted notifications
+        if (
+          !notification.options?.persisted &&
+          notification.type !== "loading"
+        ) {
+          const timeout = notification.options?.timeout ?? NOTIFICATION_TIMEOUT;
+          currentTimeoutId = window.setTimeout(clear, timeout);
+        }
+      },
+    );
+
+    const unsubscribeClear = eventBus.on("clear-all-notifications", () => {
+      clear();
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeNotification();
+      unsubscribeClear();
       if (currentTimeoutId) {
         clearTimeout(currentTimeoutId);
       }
