@@ -429,7 +429,7 @@ func (d *db) CreateTableAsSelect(ctx context.Context, name, query string, opts *
 		return nil
 	}
 
-	d.catalog.addTableVersion(name, newMeta)
+	d.catalog.addTableVersion(name, newMeta, true)
 	d.localDirty = false
 	return nil
 }
@@ -507,7 +507,7 @@ func (d *db) MutateTable(ctx context.Context, name string, mutateFn func(ctx con
 		return nil
 	}
 
-	d.catalog.addTableVersion(name, meta)
+	d.catalog.addTableVersion(name, meta, true)
 	d.localDirty = false
 	return nil
 }
@@ -642,7 +642,7 @@ func (d *db) RenameTable(ctx context.Context, oldName, newName string) error {
 
 	// remove old table from local db
 	d.catalog.removeTable(oldName)
-	d.catalog.addTableVersion(newName, meta)
+	d.catalog.addTableVersion(newName, meta, true)
 	d.localDirty = false
 	return nil
 }
@@ -1072,7 +1072,7 @@ func (d *db) removeSnapshot(ctx context.Context, id int) error {
 	}
 	defer d.metaSem.Release(1)
 
-	_, err = d.dbHandle.Exec(fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
+	_, err = d.dbHandle.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", schemaName(id)))
 	return err
 }
 
