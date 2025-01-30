@@ -25,18 +25,3 @@ export function useProjectDeployment(orgName: string, projName: string) {
     },
   );
 }
-
-export function useResources(
-  instanceId: string,
-  queryOptions?: CreateQueryOptions<
-    V1ListResourcesResponse,
-    ErrorType<RpcStatus>,
-    V1ListResourcesResponse
-  >,
-) {
-  return createRuntimeServiceListResources(instanceId, undefined, {
-    query: {
-      ...queryOptions,
-    },
-  });
-}

@@ -6,6 +6,7 @@
     V1ReconcileStatus,
     type V1Resource,
     type V1ListResourcesResponse,
+    createRuntimeServiceListResources,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -13,7 +14,6 @@
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { useResources } from "./selectors";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { onNavigate } from "$app/navigation";
   import { onMount } from "svelte";
@@ -35,7 +35,7 @@
   $: ({ instanceId } = $runtime);
 
   function isResourceErrored(resource: V1Resource) {
-    return resource.meta.reconcileError;
+    return !!resource.meta.reconcileError;
   }
 
   function isResourceReconciling(resource: V1Resource) {
@@ -47,40 +47,42 @@
     );
   }
 
-  $: resources = useResources(instanceId, {
-    select: (data: V1ListResourcesResponse) => ({
-      ...data,
-      // Filter out project parser and refresh triggers
-      resources: data?.resources?.filter(
-        (resource: V1Resource) =>
-          resource.meta.name.kind !== ResourceKind.ProjectParser &&
-          resource.meta.name.kind !== ResourceKind.RefreshTrigger,
-      ),
-    }),
-    refetchInterval: (data) => {
-      if (
-        !isPollingEnabled ||
-        $resources?.isError ||
-        data?.resources?.some(isResourceErrored)
-      ) {
-        pollStartTime = null;
-        return false;
-      }
+  $: resources = createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data: V1ListResourcesResponse) => ({
+        ...data,
+        // Filter out project parser and refresh triggers
+        resources: data?.resources?.filter(
+          (resource: V1Resource) =>
+            resource.meta.name.kind !== ResourceKind.ProjectParser &&
+            resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+        ),
+      }),
+      refetchInterval: (data) => {
+        if (
+          !isPollingEnabled ||
+          $resources?.isError ||
+          data?.resources?.some(isResourceErrored)
+        ) {
+          pollStartTime = null;
+          return false;
+        }
 
-      // Initialize poll start time if not set
-      if (!pollStartTime) {
-        pollStartTime = Date.now();
-      }
+        // Initialize poll start time if not set
+        if (!pollStartTime) {
+          pollStartTime = Date.now();
+        }
 
-      // Calculate time elapsed since polling started
-      const elapsedTime = Date.now() - pollStartTime;
+        // Calculate time elapsed since polling started
+        const elapsedTime = Date.now() - pollStartTime;
 
-      // After threshold, gradually increase interval to MAX_POLL_INTERVAL
-      if (elapsedTime > BACKOFF_THRESHOLD_MS) {
-        return MAX_POLL_INTERVAL;
-      }
+        // After threshold, gradually increase interval to MAX_POLL_INTERVAL
+        if (elapsedTime > BACKOFF_THRESHOLD_MS) {
+          return MAX_POLL_INTERVAL;
+        }
 
-      return INITIAL_POLL_INTERVAL;
+        return INITIAL_POLL_INTERVAL;
+      },
     },
   });
 
