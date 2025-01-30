@@ -13,24 +13,18 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { onNavigate } from "$app/navigation";
   import { onMount } from "svelte";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let isPollingEnabled = false;
   let currentResourceName: string | undefined;
   let isReconciling = false;
   let isLoaded = false;
 
-  const INITIAL_POLL_INTERVAL = 1_000;
-  const MAX_POLL_INTERVAL = 10_000;
-  const BACKOFF_THRESHOLD_MS = 30_000;
-  let pollStartTime: number | null = null;
+  const REFETCH_INTERVAL = 1_000;
 
   $: ({ instanceId } = $runtime);
 
@@ -59,95 +53,32 @@
         ),
       }),
       refetchInterval: (data) => {
+        // polling will occur when resources are reconciling and stop when they're done or if there's an error.
         if (
-          !isPollingEnabled ||
           $resources?.isError ||
-          data?.resources?.some(isResourceErrored)
+          data?.resources?.some(isResourceErrored) ||
+          !data?.resources?.some(isResourceReconciling)
         ) {
-          pollStartTime = null;
           return false;
         }
 
-        // Initialize poll start time if not set
-        if (!pollStartTime) {
-          pollStartTime = Date.now();
-        }
-
-        // Calculate time elapsed since polling started
-        const elapsedTime = Date.now() - pollStartTime;
-
-        // After threshold, gradually increase interval to MAX_POLL_INTERVAL
-        if (elapsedTime > BACKOFF_THRESHOLD_MS) {
-          return MAX_POLL_INTERVAL;
-        }
-
-        return INITIAL_POLL_INTERVAL;
+        return REFETCH_INTERVAL;
       },
     },
   });
 
-  $: isAnySourceOrModelReconciling = Boolean(
-    $resources?.data?.resources?.some(isResourceReconciling),
+  $: hasReconcilingResources = $resources.data?.resources?.some(
+    isResourceReconciling,
   );
 
-  $: isRefreshButtonDisabled =
-    isAnySourceOrModelReconciling || isPollingEnabled;
+  $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  $: if (isAnySourceOrModelReconciling && isPollingEnabled) {
+  $: if (hasReconcilingResources) {
     isReconciling = true;
   }
 
-  $: if (
-    !isAnySourceOrModelReconciling &&
-    isPollingEnabled &&
-    isReconciling &&
-    !$resources.isFetching
-  ) {
-    const failedResource = $resources?.data?.resources?.find(
-      (r) => r.meta.reconcileError,
-    )?.meta.name.name;
-    if (failedResource) {
-      eventBus.emit("clear-all-notifications", undefined);
-      eventBus.emit("notification", {
-        type: "error",
-        message: `Failed to refresh ${failedResource}`,
-        options: {
-          persisted: true,
-        },
-      });
-    } else if (currentResourceName) {
-      eventBus.emit("clear-all-notifications", undefined);
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Successfully refreshed ${currentResourceName}`,
-      });
-    }
-    isPollingEnabled = false;
-    currentResourceName = undefined;
-    isReconciling = false;
-  }
-
-  $: if (
-    $resources?.isError &&
-    isPollingEnabled &&
-    currentResourceName &&
-    !$resources.isFetching
-  ) {
-    eventBus.emit("notification", {
-      type: "error",
-      message: `Failed to refresh ${currentResourceName} - ${$resources.error?.message}`,
-      options: {
-        persisted: true,
-      },
-    });
-    isPollingEnabled = false;
-    currentResourceName = undefined;
-  }
-
   function refreshAllSourcesAndModels() {
-    isPollingEnabled = true;
     isReconciling = false;
-    pollStartTime = null;
 
     void $createTrigger.mutateAsync({
       instanceId,
@@ -161,25 +92,13 @@
     );
   }
 
-  onNavigate(() => {
-    if (isPollingEnabled) {
-      eventBus.emit("clear-all-notifications", undefined);
-    }
-  });
-
   function refreshResource(resourceName: string) {
-    isPollingEnabled = true;
     currentResourceName = resourceName;
     isReconciling = false;
-    pollStartTime = null;
 
-    eventBus.emit("notification", {
-      type: "loading",
-      message: `Refreshing ${currentResourceName}...`,
-      options: {
-        persisted: true,
-      },
-    });
+    void queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+    );
   }
 
   // Track when user navigates away and revisits the page
@@ -189,26 +108,13 @@
 
   // Continue polling if user navigates away and revisits the page
   // and there are non-idle resources
-  $: if (isLoaded && $resources.data && !isPollingEnabled) {
+  $: if (isLoaded && $resources.data) {
     const hasNonIdleResources = $resources.data.resources?.some(
       isResourceReconciling,
     );
 
-    // Clear any lingering notifications first
-    eventBus.emit("clear-all-notifications", undefined);
-
     if (hasNonIdleResources) {
-      isPollingEnabled = true;
       isReconciling = true;
-      pollStartTime = null;
-
-      eventBus.emit("notification", {
-        type: "loading",
-        message: "Refreshing...",
-        options: {
-          persisted: true,
-        },
-      });
     }
   }
 </script>
