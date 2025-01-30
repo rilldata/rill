@@ -1,4 +1,5 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import {
   getAvailableComparisonsForTimeRange,
   getComparisonRange,
@@ -35,6 +36,7 @@ import {
   RILL_PERIOD_TO_DATE,
   RILL_PREVIOUS_PERIOD,
 } from "./new-time-controls";
+import { RillTimeType } from "../url-state/time-ranges/RillTime";
 
 export type TimeRangeControlsState = {
   latestWindowTimeRanges: Array<TimeRangeOption>;
@@ -290,6 +292,18 @@ export function bucketTimeRanges(
       } else if (range.range in PREVIOUS_COMPLETE_DATE_RANGES) {
         previousCompleteDateRanges.push(range);
       } else {
+        const rt = parseRillTime(range.range);
+        switch (rt.type) {
+          case RillTimeType.Latest:
+            latestWindowTimeRanges.push(range);
+            break;
+          case RillTimeType.PreviousPeriod:
+            previousCompleteDateRanges.push(range);
+            break;
+          case RillTimeType.PeriodToDate:
+            periodToDateRanges.push(range);
+            break;
+        }
         customTimeRanges.push(range);
       }
     }

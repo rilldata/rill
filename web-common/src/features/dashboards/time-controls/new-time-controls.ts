@@ -1,5 +1,6 @@
 // WIP as of 04/19/2024
 
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { writable, type Writable, get } from "svelte/store";
 import {
@@ -87,8 +88,8 @@ export type RillPreviousPeriod = RillPreviousPeriodTuple[number];
 type RillLatestTuple = typeof RILL_LATEST;
 export type RillLatest = RillLatestTuple[number];
 
-export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM" as const;
-export const ALL_TIME_RANGE_ALIAS = "inf" as const;
+export const CUSTOM_TIME_RANGE_ALIAS = "CUSTOM";
+export const ALL_TIME_RANGE_ALIAS = "inf";
 export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
@@ -310,8 +311,6 @@ export async function deriveInterval(
 
     const timeRange = response.timeRanges?.pop();
 
-    console.log({ timeRange });
-
     if (!timeRange?.start || !timeRange?.end) {
       return Interval.invalid("Invalid time range");
     }
@@ -400,6 +399,13 @@ export function getRangeLabel(range: string): string {
 
   if (isValidISODuration(range)) {
     return getDurationLabel(range);
+  }
+
+  try {
+    const rt = parseRillTime(range);
+    return rt.getLabel();
+  } catch {
+    // no-op
   }
 
   return range;
