@@ -74,11 +74,17 @@
     },
   );
 
-  $: projectsQuery = listProjects(organization, undefined, {
-    query: {
-      enabled: !!organization,
+  $: projectsQuery = listProjects(
+    organization,
+    {
+      pageSize: 100,
     },
-  });
+    {
+      query: {
+        enabled: !!organization,
+      },
+    },
+  );
 
   $: visualizationsQuery = useDashboardsV2(instanceId);
 
