@@ -14,7 +14,7 @@
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { onMount } from "svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
@@ -22,7 +22,6 @@
   let isConfirmDialogOpen = false;
   let currentResourceName: string | undefined;
   let isReconciling = false;
-  let isLoaded = false;
 
   const REFETCH_INTERVAL = 1_000;
 
@@ -53,7 +52,7 @@
         ),
       }),
       refetchInterval: (data) => {
-        // polling will occur when resources are reconciling and stop when they're done or if there's an error.
+        // Polling will occur when resources are reconciling and stop when they're done or if there's an error.
         if (
           $resources?.isError ||
           data?.resources?.some(isResourceErrored) ||
@@ -71,10 +70,42 @@
     isResourceReconciling,
   );
 
+  $: isReconciling = Boolean(hasReconcilingResources);
+
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  $: if (hasReconcilingResources) {
-    isReconciling = true;
+  let previousHasReconcilingResources = false;
+  $: {
+    if (!previousHasReconcilingResources && hasReconcilingResources) {
+      // Starting reconciliation - show loading notification
+      if (currentResourceName) {
+        eventBus.emit("notification", {
+          type: "loading",
+          message: `Refreshing ${currentResourceName}...`,
+        });
+      }
+    } else if (previousHasReconcilingResources && !hasReconcilingResources) {
+      // Check for errors when reconciliation finishes
+      if (currentResourceName) {
+        const resource = $resources.data?.resources?.find(
+          (r) => r.meta.name.name === currentResourceName,
+        );
+
+        if (resource?.meta.reconcileError) {
+          eventBus.emit("notification", {
+            type: "error",
+            message: `Failed to refresh ${currentResourceName}: ${resource.meta.reconcileError}`,
+          });
+        } else {
+          eventBus.emit("notification", {
+            type: "success",
+            message: `Successfully refreshed ${currentResourceName}`,
+          });
+        }
+        currentResourceName = undefined;
+      }
+    }
+    previousHasReconcilingResources = hasReconcilingResources;
   }
 
   function refreshAllSourcesAndModels() {
@@ -99,23 +130,6 @@
     void queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
     );
-  }
-
-  // Track when user navigates away and revisits the page
-  onMount(() => {
-    isLoaded = true;
-  });
-
-  // Continue polling if user navigates away and revisits the page
-  // and there are non-idle resources
-  $: if (isLoaded && $resources.data) {
-    const hasNonIdleResources = $resources.data.resources?.some(
-      isResourceReconciling,
-    );
-
-    if (hasNonIdleResources) {
-      isReconciling = true;
-    }
   }
 </script>
 
@@ -147,6 +161,7 @@
     <ProjectResourcesTable
       data={$resources?.data?.resources}
       triggerRefresh={refreshResource}
+      {isReconciling}
     />
   {/if}
 </section>
