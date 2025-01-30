@@ -84,8 +84,8 @@ export const load = async ({ params, url, route }) => {
         queryFn: () => adminServiceGetOrganization(organization),
         staleTime: Infinity,
       });
-      organizationPermissions = organizationResp.permissions;
-      organizationLogoUrl = organizationResp.organization.logoUrl;
+      organizationPermissions = organizationResp.permissions ?? {};
+      organizationLogoUrl = organizationResp.organization?.logoUrl;
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
