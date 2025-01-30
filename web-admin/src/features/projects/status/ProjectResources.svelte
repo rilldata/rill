@@ -23,7 +23,10 @@
   let currentResourceName: string | undefined;
   let isReconciling = false;
 
-  const REFETCH_INTERVAL = 1_000;
+  const INITIAL_REFETCH_INTERVAL = 500; // Start at 500ms
+  const MAX_REFETCH_INTERVAL = 10_000; // Cap at 10s
+  const BACKOFF_FACTOR = 2; // Double each time
+  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
 
@@ -52,16 +55,23 @@
         ),
       }),
       refetchInterval: (data) => {
-        // Polling will occur when resources are reconciling and stop when they're done or if there's an error.
         if (
           $resources?.isError ||
           data?.resources?.some(isResourceErrored) ||
           !data?.resources?.some(isResourceReconciling)
         ) {
+          // Reset the interval when polling stops
+          currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
           return false;
         }
 
-        return REFETCH_INTERVAL;
+        // Exponential backoff with a cap
+        currentRefetchInterval = Math.min(
+          currentRefetchInterval * BACKOFF_FACTOR,
+          MAX_REFETCH_INTERVAL,
+        );
+
+        return currentRefetchInterval;
       },
     },
   });
@@ -73,6 +83,52 @@
   $: isReconciling = Boolean(hasReconcilingResources);
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
+
+  $: if ($resources.isError) {
+    eventBus.emit("notification", {
+      type: "error",
+      message: `Error loading resources: ${$resources.error?.message}`,
+    });
+  }
+
+  function refreshAllSourcesAndModels() {
+    isReconciling = false;
+
+    void $createTrigger
+      .mutateAsync({
+        instanceId,
+        data: {
+          allSourcesModels: true,
+        },
+      })
+      .catch((error) => {
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed to refresh all sources and models: ${error.message}`,
+        });
+      });
+
+    void queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+    );
+  }
+
+  function refreshResource(resourceName: string) {
+    currentResourceName = resourceName;
+    isReconciling = false;
+
+    void queryClient
+      .invalidateQueries(
+        getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+      )
+      .catch((error) => {
+        eventBus.emit("notification", {
+          type: "error",
+          message: `Failed to refresh ${resourceName}: ${error.message}`,
+        });
+        currentResourceName = undefined;
+      });
+  }
 
   let previousHasReconcilingResources = false;
   $: {
@@ -106,30 +162,6 @@
       }
     }
     previousHasReconcilingResources = hasReconcilingResources;
-  }
-
-  function refreshAllSourcesAndModels() {
-    isReconciling = false;
-
-    void $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        allSourcesModels: true,
-      },
-    });
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    );
-  }
-
-  function refreshResource(resourceName: string) {
-    currentResourceName = resourceName;
-    isReconciling = false;
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    );
   }
 </script>
 
