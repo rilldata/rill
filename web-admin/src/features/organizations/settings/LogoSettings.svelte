@@ -28,6 +28,7 @@
   const orgUpdater = createAdminServiceUpdateOrganization();
 
   let open = false;
+  let assetId = "";
 
   async function uploadFile(file: File) {
     const ext = extractFileExtension(file.name);
@@ -38,18 +39,17 @@
         name: "logo",
         extension: ext,
         cacheable: true,
-        estimatedSizeBytes: file.size,
+        estimatedSizeBytes: file.size.toString(),
       },
     });
 
-    const formData = new FormData();
-    formData.append("file", file);
-    const resp = await fetch(assetResp.signedUrl, {
+    await fetch(assetResp.signedUrl, {
       method: "PUT",
-      body: formData,
+      body: file,
       headers: assetResp.signingHeaders,
     });
-    console.log(resp.statusText);
+    assetId = assetResp.assetId;
+    return assetResp.signedUrl;
   }
 
   function onCancel() {
@@ -63,6 +63,20 @@
       name: organization,
       data: {
         logoAssetId: "",
+      },
+    });
+    void queryClient.invalidateQueries(
+      getAdminServiceGetOrganizationQueryKey(organization),
+    );
+    void invalidateAll();
+  }
+
+  async function onSave() {
+    onCancel();
+    await $orgUpdater.mutateAsync({
+      name: organization,
+      data: {
+        logoAssetId: assetId,
       },
     });
     void queryClient.invalidateQueries(
@@ -85,13 +99,13 @@
     >
       <PopoverTrigger asChild let:builder>
         <button
-          class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-slate-100"
+          class="flex items-center relative group h-[72px] border border-gray-300 hover:bg-slate-100 w-fit"
           {...getAttrs([builder])}
           use:builderActions={{ builders: [builder] }}
           class:w-24={!organizationLogoUrl}
           class:w-20={!!organizationLogoUrl}
         >
-          <div class="m-auto w-fit h-10">
+          <div class="m-auto px-4 w-fit h-10">
             {#if organizationLogoUrl}
               <img src={organizationLogoUrl} alt="logo" class="h-10" />
             {:else}
@@ -118,7 +132,7 @@
           {#if organizationLogoUrl}
             <Button type="secondary" on:click={removeLogo}>Remove</Button>
           {/if}
-          <Button type="primary">Save</Button>
+          <Button type="primary" on:click={onSave}>Save</Button>
         </div>
       </PopoverContent>
     </Popover>

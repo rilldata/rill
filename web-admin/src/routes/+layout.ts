@@ -17,7 +17,6 @@ import {
   type V1User,
 } from "@rilldata/web-admin/client";
 import { redirectToLoginOrRequestAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
-import { fetchOrganizationPermissions } from "@rilldata/web-admin/features/organizations/selectors";
 import { fetchProjectDeploymentDetails } from "@rilldata/web-admin/features/projects/selectors";
 import { initPosthog } from "@rilldata/web-common/lib/analytics/posthog";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
@@ -86,8 +85,8 @@ export const load = async ({ params, url, route }) => {
         queryFn: () => adminServiceGetOrganization(organization),
         staleTime: Infinity,
       });
-      organizationPermissions = organizationResp.permissions;
-      organizationLogoUrl = organizationResp.organization.logoUrl;
+      organizationPermissions = organizationResp.permissions ?? {};
+      organizationLogoUrl = organizationResp.organization?.logoUrl;
     } catch (e) {
       if (e.response?.status !== 403) {
         throw error(e.response.status, "Error fetching organization");
