@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -107,7 +108,7 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Context) error, every time.Duration) error {
 	for {
 		err := w.runJob(ctx, name, fn)
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			w.logger.Error("Failed to run the job", zap.String("job_name", name), zap.Error(err))
 		}
 		select {
