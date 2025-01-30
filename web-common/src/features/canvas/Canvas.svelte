@@ -217,7 +217,7 @@
     on:contextmenu={handleContextMenu}
   >
     {#if items.length === 0}
-      <BlankCanvas on:add={handleAdd} />
+      <BlankCanvas />
     {:else}
       <CanvasDashboardPreview
         {items}
