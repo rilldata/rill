@@ -4,9 +4,7 @@
   import Canvas from "@rilldata/web-common/features/canvas/Canvas.svelte";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
-  import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
-  import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -32,19 +30,14 @@
   let canvasName: string;
   let selectedView: "split" | "code" | "viz";
 
-  const componentRegistry = getComponentRegistry();
-
   $: ({
     autoSave,
     path: filePath,
     fileName,
-    updateEditorContent,
-    editorContent,
     getResource,
     getAllErrors,
     remoteContent,
     hasUnsavedChanges,
-    saveLocalContent,
   } = fileArtifact);
 
   $: resourceQuery = getResource(queryClient, instanceId);
@@ -62,8 +55,6 @@
 
   $: canvasResource = data?.canvas;
   $: canvasName = getNameFromFile(filePath);
-
-  $: metricsViewQuery = useDefaultMetrics(instanceId);
 
   $: ({ instanceId } = $runtime);
 
