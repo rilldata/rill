@@ -1333,7 +1333,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	delete(c.invocations, nameStr(inv.name))
 
 	// Emit metrics
-	reconcile_time_ms := time.Since(inv.startedOn).Milliseconds()
+	reconcileTimeMs := time.Since(inv.startedOn).Milliseconds()
 	commonDims := []attribute.KeyValue{
 		attribute.String("resource_id", inv.name.Name),
 		attribute.String("resource_type", inv.name.Kind),
@@ -1352,8 +1352,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.cancelledOn.IsZero() {
 		commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
 	} else if inv.result.Err != nil {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Error"))
-		commonDims = append(commonDims, attribute.String("reconcile_error", inv.result.Err.Error()))
+		commonDims = append(commonDims, attribute.String("reconcile_status", "Error"), attribute.String("reconcile_error", inv.result.Err.Error()))
 	} else {
 		commonDims = append(commonDims, attribute.String("reconcile_status", "Succeeded"))
 	}
@@ -1361,7 +1360,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.result.Retrigger.IsZero() {
 		commonDims = append(commonDims, attribute.String("retrigger_time", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	c.Activity.RecordMetric(context.Background(), "reconcile_time_ms", float64(reconcile_time_ms), commonDims...)
+	c.Activity.RecordMetric(context.Background(), "reconcile_time_ms", float64(reconcileTimeMs), commonDims...)
 
 	// Log result
 	logArgs := []zap.Field{
