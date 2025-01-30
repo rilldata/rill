@@ -199,6 +199,22 @@
   async function handleAdd(e: CustomEvent<{ type: CanvasComponentType }>) {
     await addComponent(e.detail.type);
   }
+
+  function handleContextMenu(
+    event: CustomEvent<{ originalEvent: MouseEvent }>,
+  ) {
+    const target = event.detail.originalEvent.target as HTMLElement;
+    const gridStackEl = target.closest(".grid-stack-item");
+
+    // Prevent context menu if clicking on a grid item
+    if (gridStackEl) {
+      event.detail.originalEvent.preventDefault();
+      event.detail.originalEvent.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+  }
 </script>
 
 {#if filtersEnabled}
@@ -211,7 +227,10 @@
 {/if}
 
 <ContextMenu>
-  <ContextMenuTrigger class="h-full w-full block">
+  <ContextMenuTrigger
+    class="h-full w-full block"
+    on:contextmenu={handleContextMenu}
+  >
     {#if items.length === 0}
       <BlankCanvas on:add={handleAdd} />
     {:else}
