@@ -25,7 +25,8 @@
 
   export let data;
 
-  $: ({ projectPermissions, organizationPermissions } = data);
+  $: ({ projectPermissions, organizationPermissions, organizationLogoUrl } =
+    data);
   $: ({
     params: { organization },
     url: { pathname },
@@ -89,6 +90,7 @@
           manageOrganization={organizationPermissions?.manageOrg}
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
+          {organizationLogoUrl}
         />
 
         {#if withinOnlyOrg}

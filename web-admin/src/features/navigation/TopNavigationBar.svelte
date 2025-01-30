@@ -38,6 +38,7 @@
   export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
+  export let organizationLogoUrl: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -185,7 +186,11 @@
     href={rillLogoHref}
     class="hover:bg-gray-200 grid place-content-center rounded p-2"
   >
-    <Rill />
+    {#if organizationLogoUrl}
+      <img src={organizationLogoUrl} alt="logo" class="h-4" />
+    {:else}
+      <Rill />
+    {/if}
   </a>
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />
