@@ -239,9 +239,8 @@ func (s *Service) processGithubInstallationEvent(_ context.Context, event *githu
 		// TODO: Should we do anything for unsuspend?
 	case "suspend", "deleted":
 		// no handling as of now
-		// previously we were deleting the project for the repo
-		// but that means if there is an accidental removal we delete all projects
-		// the github installation ID will change if user re-installs the app deleting the project for now
+		// previously we were deleting the projects
+		// but that means if there is an accidental suspend we delete all projects
 	}
 	return nil
 }
