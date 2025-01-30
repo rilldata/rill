@@ -11,26 +11,28 @@
     V1ComponentSpecRendererProperties,
   } from "@rilldata/web-common/runtime-client";
   import type { View } from "svelte-vega";
-  import { getChartData } from "./selector";
+  import { getChartData, validateChartSchema } from "./selector";
   import type { ChartType } from "./types";
   import { generateSpec, getChartTitle, mergedVlConfig } from "./util";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let renderer: string;
 
+  const ctx = getCanvasStateManagers();
   const {
     canvasEntity: {
       spec: { getMeasureForMetricView },
     },
-  } = getCanvasStateManagers();
+  } = ctx;
 
-  let stateManagers = getCanvasStateManagers();
   let viewVL: View;
 
   $: chartConfig = rendererProperties as ChartSpec;
   $: chartType = renderer as ChartType;
 
-  $: data = getChartData(stateManagers, chartConfig);
+  $: schema = validateChartSchema(ctx, chartConfig);
+
+  $: data = getChartData(ctx, chartConfig);
   $: spec = generateSpec(chartType, chartConfig, $data);
 
   $: measure = getMeasureForMetricView(
@@ -51,7 +53,7 @@
   $: title = getChartTitle(chartConfig, $data);
 </script>
 
-{#if chartConfig?.x}
+{#if $schema.isValid}
   {#if $data.isFetching}
     <div class="flex items-center h-full w-full">
       <Spinner status={EntityStatus.Running} size="16px" />
@@ -73,4 +75,10 @@
       {config}
     />
   {/if}
+{:else}
+  <div
+    class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
+  >
+    {$schema.error}
+  </div>
 {/if}

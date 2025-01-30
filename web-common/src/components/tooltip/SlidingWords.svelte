@@ -9,18 +9,26 @@
   let mounted = false;
   let duration = 0;
   let timer;
-  let element;
+  let element: HTMLElement | null = null;
 
   let thingWidth = tweened(0, { duration: 50 });
 
   onMount(() => {
+    if (!element) return;
+
     const obs = new ResizeObserver(() => {
+      if (!element) return;
       const bbox = element.getBoundingClientRect();
       thingWidth.set(bbox.width);
     });
+
     obs.observe(element);
     thingWidth.set(element.getBoundingClientRect().width, { duration: 0 });
     mounted = true;
+
+    return () => {
+      obs.disconnect();
+    };
   });
 
   function setDuration() {
