@@ -97,6 +97,10 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 		return nil, drivers.ErrNoRows
 	}
 
+	for i := range batches {
+		batches[i] = batches[i].WithContext(ctx)
+	}
+
 	tempDir, err := c.storage.RandomTempDir("snowflake")
 	if err != nil {
 		return nil, err

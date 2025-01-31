@@ -7,7 +7,7 @@ hide_table_of_contents: true
 
 # Welcome to Rill Tutorials!
 
-### Hi! We're excited to have you here!
+### Hey there! We're thrilled you've joined us on this Rill journey!
 
 These tutorials were built to help you get started with Rill and empower you to build your own projects. The journey from data import, SQL transformations, dashboard creation and finally deployment to Cloud. From there, looking at Rill Cloud specific features, pushing local changes to Rill Cloud, then finally developing custom features.
 
