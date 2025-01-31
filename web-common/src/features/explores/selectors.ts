@@ -131,15 +131,16 @@ export async function fetchExploreSpec(
     });
   }
 
-  let timeRanges: V1TimeRange[] = [];
-  if (metricsViewSpec.timeDimension) {
-    timeRanges = await fetchTimeRanges(exploreSpec);
-  }
-
   const defaultExplorePreset = getDefaultExplorePreset(
     exploreSpec,
     fullTimeRange,
   );
+
+  let timeRanges: V1TimeRange[] = [];
+  if (metricsViewSpec.timeDimension) {
+    timeRanges = await fetchTimeRanges(exploreSpec, defaultExplorePreset);
+  }
+
   const { partialExploreState: exploreStateFromYAMLConfig, errors } =
     convertPresetToExploreState(
       metricsViewSpec,

@@ -18,7 +18,7 @@ export class RillTime {
     public readonly start: RillTimeAnchor,
     end: RillTimeAnchor,
     public readonly timeRangeGrain: RillTimeRangeGrain | undefined,
-    public readonly modifier: RillTimeRangeModifier | undefined,
+    public modifier: RillTimeRangeModifier | undefined,
   ) {
     this.type = start.getType();
 
@@ -67,6 +67,11 @@ export class RillTime {
       ToAPIGrain[this.timeRangeGrain.grain] ??
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED
     );
+  }
+
+  public addTimezone(timezone: string) {
+    this.modifier ??= <RillTimeRangeModifier>{};
+    this.modifier.timeZone = timezone;
   }
 
   public toString() {
@@ -237,7 +242,7 @@ export class RillTimeAnchor {
         anchor = "latest";
         break;
       case RillTimeAnchorType.Relative:
-        anchor = this.grain ? grainToString(this.grain) : "";
+        anchor = this.grain ? grainToString(this.grain, true) : "";
         break;
       case RillTimeAnchorType.Custom:
         anchor = this.absolute ?? "";
@@ -245,7 +250,7 @@ export class RillTimeAnchor {
     }
 
     if (this.truncate) {
-      anchor += "/" + grainToString(this.truncate);
+      anchor += "/" + grainToString(this.truncate, false);
     }
 
     if (this.offset) {
