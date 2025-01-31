@@ -5,6 +5,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+  import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
   import {
     getTimeControlState,
     type TimeControlState,
@@ -206,7 +207,14 @@
     // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
     if (metricsSpec.timeDimension) {
       await waitUntil(() => !timeRangeSummaryIsLoading);
+      [initState.selectedTimeRange, initState.selectedComparisonTimeRange] =
+        await resolveTimeRanges(
+          exploreSpec,
+          [initState.selectedTimeRange, initState.selectedComparisonTimeRange],
+          initState.selectedTimezone,
+        );
     }
+    console.log(initState.selectedTimeRange);
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,

@@ -55,7 +55,6 @@
         metricsViewSpec,
         exploreSpec,
         defaultExplorePreset,
-        [], // TODO
       ));
   }
 
