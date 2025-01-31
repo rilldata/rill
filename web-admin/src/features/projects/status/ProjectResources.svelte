@@ -89,25 +89,16 @@
   function refreshAllSourcesAndModels() {
     isReconciling = false;
 
-    void $createTrigger
-      .mutateAsync({
-        instanceId,
-        data: {
-          allSourcesModels: true,
-        },
-      })
-      .catch((error) => {});
+    void $createTrigger.mutateAsync({
+      instanceId,
+      data: {
+        allSourcesModels: true,
+      },
+    });
 
     void queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
     );
-  }
-
-  let previousHasReconcilingResources = false;
-  $: {
-    if (previousHasReconcilingResources && !hasReconcilingResources) {
-    }
-    previousHasReconcilingResources = hasReconcilingResources;
   }
 </script>
 
