@@ -172,7 +172,7 @@
   }
 
   tr {
-    @apply bg-background;
+    @apply bg-surface;
   }
 
   .dragging {

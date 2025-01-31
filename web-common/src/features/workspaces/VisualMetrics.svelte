@@ -876,7 +876,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-background border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

@@ -33,7 +33,7 @@
     class:cursor-auto={disabled}
     class:rounded
     class="{marginClasses} grid place-items-center
-{active ? 'bg-gray-100 dark:bg-gray-800' : ''}
+{active ? 'bg-gray-100' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
 {disableHover || disabled
       ? ''
