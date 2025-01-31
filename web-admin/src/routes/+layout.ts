@@ -8,9 +8,7 @@ export const ssr = false;
 import { dev } from "$app/environment";
 import {
   adminServiceGetCurrentUser,
-  adminServiceGetOrganization,
   getAdminServiceGetCurrentUserQueryKey,
-  getAdminServiceGetOrganizationQueryKey,
   type V1GetCurrentUserResponse,
   type V1OrganizationPermissions,
   type V1ProjectPermissions,
