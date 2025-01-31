@@ -1332,36 +1332,6 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	// Cleanup - must remove it from c.invocations before any error conditions can occur (otherwise, closing the event loop can hang)
 	delete(c.invocations, nameStr(inv.name))
 
-	// Emit metrics
-	reconcileTimeMs := time.Since(inv.startedOn).Milliseconds()
-	commonDims := []attribute.KeyValue{
-		attribute.String("resource_id", inv.name.Name),
-		attribute.String("resource_type", inv.name.Kind),
-	}
-	if inv.isRename && inv.isDelete {
-		// not sure about when this will occur
-		commonDims = append(commonDims, attribute.String("reconcile_operation", "Delete/Rename"))
-	} else if inv.isRename {
-		commonDims = append(commonDims, attribute.String("reconcile_operation", "Rename"))
-	} else if inv.isDelete {
-		commonDims = append(commonDims, attribute.String("reconcile_operation", "Delete"))
-	} else {
-		commonDims = append(commonDims, attribute.String("reconcile_operation", "Normal"))
-	}
-
-	if !inv.cancelledOn.IsZero() {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
-	} else if inv.result.Err != nil {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Error"), attribute.String("reconcile_error", inv.result.Err.Error()))
-	} else {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Succeeded"))
-	}
-
-	if !inv.result.Retrigger.IsZero() {
-		commonDims = append(commonDims, attribute.String("retrigger_time", inv.result.Retrigger.Format(time.RFC3339)))
-	}
-	c.Activity.RecordMetric(context.Background(), "reconcile_time_ms", float64(reconcileTimeMs), commonDims...)
-
 	// Log result
 	logArgs := []zap.Field{
 		zap.String("name", inv.name.Name),
@@ -1388,24 +1358,35 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
-	// Emit event unless it was a cancellation.
-	if inv.cancelledOn.IsZero() {
-		eventArgs := []attribute.KeyValue{
-			attribute.String("name", inv.name.Name),
-			attribute.String("type", PrettifyResourceKind(inv.name.Kind)),
-			attribute.Int64("elapsed_ms", elapsed.Milliseconds()),
-		}
-		if inv.isDelete {
-			eventArgs = append(eventArgs, attribute.Bool("deleted", true))
-		}
-		if inv.isRename {
-			eventArgs = append(eventArgs, attribute.Bool("renamed", true))
-		}
-		if inv.result.Err != nil {
-			eventArgs = append(eventArgs, attribute.String("error", inv.result.Err.Error()))
-		}
-		c.Activity.Record(context.Background(), activity.EventTypeLog, "reconciled_resource", eventArgs...)
+	commonDims := []attribute.KeyValue{
+		attribute.String("resource_id", inv.name.Name),
+		attribute.String("resource_type", PrettifyResourceKind(inv.name.Kind)),
 	}
+	if inv.isDelete {
+		commonDims = append(commonDims, attribute.Bool("is_deleted", true))
+	}
+	if inv.isRename {
+		commonDims = append(commonDims, attribute.Bool("is_renamed", true))
+	}
+
+	if !inv.cancelledOn.IsZero() {
+		commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
+	} else if inv.result.Err != nil {
+		if errors.Is(inv.result.Err, context.Canceled) {
+			commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
+		} else if errors.Is(inv.result.Err, context.DeadlineExceeded) {
+			commonDims = append(commonDims, attribute.String("reconcile_status", "Timeout"))
+		} else {
+			commonDims = append(commonDims, attribute.String("reconcile_status", "Error"), attribute.String("reconcile_error", inv.result.Err.Error()))
+		}
+	} else {
+		commonDims = append(commonDims, attribute.String("reconcile_status", "Succeeded"))
+	}
+
+	if !inv.result.Retrigger.IsZero() {
+		commonDims = append(commonDims, attribute.String("retrigger_time", inv.result.Retrigger.Format(time.RFC3339)))
+	}
+	c.Activity.RecordMetric(context.Background(), "reconcile_elapsed_ms", float64(elapsed.Milliseconds()), commonDims...)
 
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
