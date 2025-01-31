@@ -32,13 +32,14 @@
   </h2>
   <div class="source-grid">
     {#each dataSources as source (source)}
+      {@const { component, width, height } = logoIconMapping[source]}
       <button
         aria-label={source}
         class="source-button"
         class:active={$firstDataSource === source}
         on:click={() => onboardingState.toggleFirstDataSource(source)}
       >
-        <svelte:component this={logoIconMapping[source]} />
+        <svelte:component this={component} {width} {height} />
       </button>
     {/each}
   </div>
@@ -48,7 +49,7 @@
   <Button wide type="primary" href={continueHref}>Continue</Button>
 {:else}
   <Button wide type="secondary" on:click={onSkip} disabled={isLoading}>
-    Skip
+    Or, start with a blank project
   </Button>
 {/if}
 
@@ -58,7 +59,7 @@
 
 <style lang="postcss">
   .data-sources {
-    @apply pt-6;
+    @apply pt-5;
     @apply flex flex-col gap-y-2;
   }
 
@@ -69,13 +70,14 @@
   }
 
   .source-button {
-    @apply p-4;
-    @apply border border-slate-200;
-    @apply rounded-lg;
-    @apply flex flex-col items-center justify-center;
-    @apply gap-2;
-    @apply cursor-pointer;
     @apply w-40 h-20;
+    @apply rounded-lg;
+    @apply flex flex-col gap-2 items-center justify-center;
+    @apply cursor-pointer;
+  }
+
+  .source-button:not(.active) {
+    @apply border border-slate-200;
   }
 
   .source-button:hover {
@@ -83,6 +85,6 @@
   }
 
   .source-button.active {
-    @apply border-2 border-primary-300 bg-slate-50;
+    @apply outline outline-2 outline-primary-300 bg-slate-50;
   }
 </style>

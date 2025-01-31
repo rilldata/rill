@@ -1,8 +1,6 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import ApacheDruid from "@rilldata/web-common/components/icons/connectors/ApacheDruid.svelte";
-  import ClickHouse from "@rilldata/web-common/components/icons/connectors/ClickHouse.svelte";
-  import DuckDb from "@rilldata/web-common/components/icons/connectors/DuckDB.svelte";
+  import { logoIconMapping } from "../../connectors/connector-icon-mapping";
   import type { OnboardingState } from "./onboarding-state";
   import "./wizard.css";
 
@@ -14,22 +12,10 @@
   const RILL_MANAGED_OLAP_OPTIONS = [
     {
       name: "duckdb",
-      icon: DuckDb,
-      iconPosition: {
-        width: 85,
-        height: 24,
-        top: 12,
-      },
       copy: "Ideal for projects up to 10GB",
     },
     {
       name: "clickhouse",
-      icon: ClickHouse,
-      iconPosition: {
-        width: 108,
-        height: 18,
-        top: 14,
-      },
       copy: "Great for projects up to 100GB",
     },
   ];
@@ -37,22 +23,10 @@
   const SELF_MANAGED_OLAP_OPTIONS = [
     {
       name: "clickhouse",
-      icon: ClickHouse,
-      iconPosition: {
-        width: 108,
-        height: 18,
-        top: 14,
-      },
       copy: "Great for projects up to 100GB",
     },
     {
       name: "druid",
-      icon: ApacheDruid,
-      iconPosition: {
-        width: 85,
-        height: 22,
-        top: 12,
-      },
       copy: "Connect to an existing cluster",
     },
   ];
@@ -68,18 +42,18 @@
   <section class="flex flex-col gap-y-4 items-center">
     <div class="olap-cards">
       {#each olapOptions as option (option.name)}
+        {@const { component, width, height } = logoIconMapping[option.name]}
         <button
           class="option"
           class:selected={$olapDriver === option.name}
           on:click={() => onboardingState.selectOLAP(option.name)}
         >
-          <div
-            class="absolute"
-            style="width: {option.iconPosition.width}px; height: {option
-              .iconPosition.height}px; top: {option.iconPosition.top}px;"
-          >
-            <svelte:component this={option.icon} />
-          </div>
+          <svelte:component
+            this={component}
+            {width}
+            {height}
+            className="shrink-0"
+          />
           <small class="description">{option.copy}</small>
         </button>
       {/each}
@@ -97,12 +71,11 @@
   }
 
   button {
-    @apply w-[196px] h-[64px] px-4 py-3;
-    @apply flex flex-col items-center justify-center relative;
+    @apply w-[196px] h-[64px] px-2 py-3;
+    @apply flex flex-col gap-y-1 items-center justify-center;
   }
 
   .description {
-    @apply absolute bottom-3;
     @apply text-slate-500 text-xs;
   }
 </style>

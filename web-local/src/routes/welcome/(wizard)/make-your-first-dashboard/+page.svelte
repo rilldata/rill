@@ -46,14 +46,14 @@
 
 <div class="w-[544px] p-6 flex flex-col gap-y-4">
   <h2 class="text-lead">Pick a table to power your first dashboard</h2>
-  <div class="max-h-[300px] overflow-y-auto">
-    <ConnectorExplorer {store} />
-  </div>
+  <ConnectorExplorer {store} border />
   {#if selectedItem?.table}
     <Button type="primary" large on:click={createDashboard}>
       Create dashboard
     </Button>
   {:else}
-    <Button type="secondary" large on:click={skip}>Skip</Button>
+    <Button type="secondary" large on:click={skip}>
+      Or, start with a blank project
+    </Button>
   {/if}
 </div>

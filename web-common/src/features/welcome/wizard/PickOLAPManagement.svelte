@@ -28,6 +28,11 @@
 
   button {
     @apply w-[196px] h-[40px];
-    @apply border border-slate-300 rounded;
+    @apply rounded;
+    @apply text-base text-slate-800;
+  }
+
+  button:not(.selected) {
+    @apply border border-slate-200;
   }
 </style>

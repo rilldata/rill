@@ -126,15 +126,15 @@
             <div class="connector-grid">
               {#each $sourceConnectors as connector (connector.name)}
                 {#if connector.name}
+                  {@const { component, width, height } =
+                    logoIconMapping[connector.name]}
                   <button
                     id={connector.name}
                     on:click={() => goToConnectorForm(connector)}
                     class="connector-tile-button"
                   >
                     <div class="connector-wrapper">
-                      <svelte:component
-                        this={logoIconMapping[connector.name]}
-                      />
+                      <svelte:component this={component} {width} {height} />
                     </div>
                   </button>
                 {/if}

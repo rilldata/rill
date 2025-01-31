@@ -109,7 +109,13 @@ export class ConnectorExplorerStore {
 
     if (item.table) {
       if (this.allowSelectTable) {
-        this.selectItem(item);
+        const isSelected = get(this.isItemSelected(item));
+
+        if (isSelected) {
+          this.clearSelection();
+        } else {
+          this.selectItem(item);
+        }
       }
       if (!this.allowShowSchema) return;
     }

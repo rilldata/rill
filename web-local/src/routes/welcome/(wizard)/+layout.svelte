@@ -30,6 +30,6 @@
   }
 
   footer {
-    @apply h-14;
+    @apply h-14 shrink-0;
   }
 </style>
