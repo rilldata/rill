@@ -35,6 +35,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	}
 	s.Logger.Info("created billing customer",
 		zap.String("org", org.Name),
+		zap.String("org_id", org.ID),
 		zap.String("billing_customer_id", bc.ID),
 		zap.String("payment_customer_id", pc.ID),
 		zap.String("user_email", org.BillingEmail),
