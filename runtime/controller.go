@@ -49,7 +49,7 @@ type ReconcileResult struct {
 }
 
 // ReconcilerInitializer is a function that initializes a new reconciler for a specific controller
-type ReconcilerInitializer func(*Controller) Reconciler
+type ReconcilerInitializer func(context.Context, *Controller) (Reconciler, error)
 
 // ReconcilerInitializers is a registry of reconciler initializers for different resource kinds.
 // There can be only one reconciler per resource kind.
@@ -118,6 +118,15 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		return nil, fmt.Errorf("failed to create catalog cache: %w", err)
 	}
 	c.catalog = cc
+
+	// Initialize all reconcilers
+	for kind, initializer := range ReconcilerInitializers {
+		reconciler, err := initializer(ctx, c)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize reconciler for %q: %w", kind, err)
+		}
+		c.reconcilers[kind] = reconciler
+	}
 
 	return c, nil
 }
@@ -796,22 +805,12 @@ func (c *Controller) Unlock(ctx context.Context) {
 	c.mu.Unlock()
 }
 
-// reconciler gets or lazily initializes a reconciler.
-// reconciler is not thread-safe and must be called while c.mu is held.
+// reconciler finds the reconciler for a resource kind.
 func (c *Controller) reconciler(resourceKind string) Reconciler {
-	reconciler := c.reconcilers[resourceKind]
-	if reconciler != nil {
-		return reconciler
-	}
-
-	initializer := ReconcilerInitializers[resourceKind]
-	if initializer == nil {
+	reconciler, ok := c.reconcilers[resourceKind]
+	if !ok {
 		panic(fmt.Errorf("no reconciler registered for resource type %q", resourceKind))
 	}
-
-	reconciler = initializer(c)
-	c.reconcilers[resourceKind] = reconciler
-
 	return reconciler
 }
 
@@ -1280,7 +1279,6 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
-	reconciler := c.reconciler(n.Kind) // fetched outside of goroutine to keep access under mutex
 	go func() {
 		defer func() {
 			// Catch panics and set as error
@@ -1301,6 +1299,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		}()
 
 		// Start tracing span
+		reconciler := c.reconciler(n.Kind)
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
 			attribute.String("name", n.Name),

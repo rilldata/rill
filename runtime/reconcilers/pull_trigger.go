@@ -19,8 +19,8 @@ type PullTriggerReconciler struct {
 	C *runtime.Controller
 }
 
-func newPullTriggerReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &PullTriggerReconciler{C: c}
+func newPullTriggerReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &PullTriggerReconciler{C: c}, nil
 }
 
 func (r *PullTriggerReconciler) Close(ctx context.Context) error {
