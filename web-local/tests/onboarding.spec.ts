@@ -30,6 +30,31 @@ test.describe("Onboarding", () => {
   });
 
   test.describe("Rill-managed OLAP", () => {
+    test("Start with a blank project", async ({ page }) => {
+      // Should be redirected to the onboarding page
+      await page.waitForURL("**/welcome");
+      await expect(page.getByText("Welcome to Rill")).toBeVisible();
+
+      // Click on "Connect your data"
+      await page.getByRole("button", { name: "Connect your data" }).click();
+
+      // Click on "Start with a blank project"
+      await page
+        .getByRole("button", { name: "Or, start with a blank project" })
+        .click();
+
+      // Expect to be navigated to the home page
+      await page.waitForURL("**/");
+
+      // Expect to see the "Add data" button
+      await expect(
+        page.getByRole("button", { name: "Add data" }),
+      ).toBeVisible();
+
+      // Expect to see the `rill.yaml` file in the file explorer
+      await expect(page.getByText("rill.yaml")).toBeVisible();
+    });
+
     test("Local file", async ({ page }) => {
       test.setTimeout(20_000);
 
@@ -105,7 +130,7 @@ test.describe("Onboarding", () => {
           query: "SELECT COUNT(*) AS count FROM ad_bids",
           format: "JSONEachRow",
         });
-        const rows = (await response.json()) as { count: string }[];
+        const rows = await response.json();
         expect(rows[0].count).toBe("100000");
       });
 
