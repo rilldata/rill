@@ -130,9 +130,9 @@ let ParserRules = [
     {"name": "rill_time", "symbols": ["time_anchor_part", "_", "grain_and_at_part"], "postprocess": ([{ start, end }, , { grain, modifier }]) => new RillTime(start, end, grain, modifier)},
     {"name": "time_anchor_part", "symbols": ["time_anchor", "_", {"literal":","}, "_", "time_anchor"], "postprocess": ([start, , , , end]) => ({ start, end })},
     {"name": "time_anchor_part", "symbols": ["time_anchor"], "postprocess": ([start]) => ({ start })},
-    {"name": "time_anchor", "symbols": ["time_anchor_offset", "_", {"literal":"/"}, "_", "grain", "_", "time_anchor_offset"], "postprocess": ([mod, , , , truncate, , offset]) => mod.withOffset(offset).withTruncate(truncate)},
+    {"name": "time_anchor", "symbols": ["time_anchor_offset", "_", {"literal":"/"}, "_", "grain_modifier", "_", "time_anchor_offset"], "postprocess": ([mod, , , , truncate, , offset]) => mod.withOffset(offset).withTruncate(truncate)},
     {"name": "time_anchor", "symbols": ["time_anchor_offset", "_", "time_anchor_offset"], "postprocess": ([rillTime, , offset]) => rillTime.withOffset(offset)},
-    {"name": "time_anchor", "symbols": ["time_anchor_offset", "_", {"literal":"/"}, "_", "grain"], "postprocess": ([mod, , , , truncate]) => mod.withTruncate(truncate)},
+    {"name": "time_anchor", "symbols": ["time_anchor_offset", "_", {"literal":"/"}, "_", "grain_modifier"], "postprocess": ([mod, , , , truncate]) => mod.withTruncate(truncate)},
     {"name": "time_anchor", "symbols": ["time_anchor_offset"], "postprocess": id},
     {"name": "time_anchor_offset$string$1", "symbols": [{"literal":"n"}, {"literal":"o"}, {"literal":"w"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "time_anchor_offset", "symbols": ["time_anchor_offset$string$1"], "postprocess": () => RillTimeAnchor.now()},
@@ -159,7 +159,7 @@ let ParserRules = [
     {"name": "timezone_modifier$ebnf$1", "symbols": [/[^}]/]},
     {"name": "timezone_modifier$ebnf$1", "symbols": ["timezone_modifier$ebnf$1", /[^}]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "timezone_modifier", "symbols": [{"literal":"{"}, "_", "timezone_modifier$ebnf$1", "_", {"literal":"}"}], "postprocess": ([, , tz]) => tz.join("")},
-    {"name": "grain", "symbols": [/[smhdDWQMY]/], "postprocess": id}
+    {"name": "grain", "symbols": [/[sSmhHdDwWqQMyY]/], "postprocess": id}
 ];
 let ParserStart = "rill_time";
 export default { Lexer, ParserRules, ParserStart };

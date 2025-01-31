@@ -44,13 +44,13 @@ describe("rill time", () => {
       ],
       [
         "-6d, now : |h|",
-        "Last 7 days, incomplete",
+        "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
         "-6d, now : h",
-        "Last 7 days, incomplete",
+        "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
@@ -109,13 +109,13 @@ describe("rill time", () => {
       ],
       [
         "-6d, latest : |h|",
-        "Last 7 days, incomplete",
+        "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
       [
         "-6d, latest : h",
-        "Last 7 days, incomplete",
+        "Last 6 days, incomplete",
         V1TimeGrain.TIME_GRAIN_DAY,
         V1TimeGrain.TIME_GRAIN_HOUR,
       ],
@@ -177,6 +177,10 @@ describe("rill time", () => {
         expect(rt.getLabel()).toEqual(label);
         expect(rt.getRangeGrain()).toEqual(rangeGrain);
         expect(rt.getBucketGrain()).toEqual(bucketGrain);
+
+        const convertedRillTime = rt.toString();
+        const convertedRillTimeParsed = parseRillTime(convertedRillTime);
+        expect(convertedRillTimeParsed.toString()).toEqual(convertedRillTime);
       });
     }
   });

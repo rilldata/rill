@@ -11,6 +11,16 @@ export function parseRillTime(rillTimeRange: string): RillTime {
   return rt;
 }
 
+export function normaliseRillTime(rillTimeRange: string) {
+  let normalisedRillTime = rillTimeRange;
+  try {
+    normalisedRillTime = parseRillTime(rillTimeRange).toString();
+  } catch {
+    // validation doesnt happen here
+  }
+  return normalisedRillTime;
+}
+
 export function validateRillTime(rillTime: string): Error | undefined {
   try {
     const parser = parseRillTime(rillTime);

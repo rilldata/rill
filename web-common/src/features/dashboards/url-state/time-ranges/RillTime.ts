@@ -22,10 +22,11 @@ export class RillTime {
   ) {
     this.type = start.getType();
 
-    this.end = end ?? RillTimeAnchor.now();
+    this.end = end;
     this.isComplete =
-      this.end.type === RillTimeAnchorType.Relative ||
-      this.end.truncate !== undefined;
+      this.end &&
+      (this.end.type === RillTimeAnchorType.Relative ||
+        this.end.truncate !== undefined);
   }
 
   public getLabel() {
@@ -46,15 +47,16 @@ export class RillTime {
       return this.timeRange;
     }
 
-    const start = capitalizeFirstChar(
-      this.start.getLabel(this.isComplete, this.timeRangeGrain?.grain),
-    );
+    const start = capitalizeFirstChar(this.start.getLabel());
     if (this.isComplete) return start;
     return `${start}, incomplete`;
   }
 
   public getRangeGrain() {
-    return getMinGrain(this.start.getRangeGrain(), this.end.getRangeGrain());
+    return getMinGrain(
+      this.start.getRangeGrain(),
+      this.end?.getRangeGrain() ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+    );
   }
 
   public getBucketGrain() {
@@ -65,6 +67,24 @@ export class RillTime {
       ToAPIGrain[this.timeRangeGrain.grain] ??
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED
     );
+  }
+
+  public toString() {
+    let rillTime = this.start.toString();
+    if (this.end) {
+      rillTime += "," + this.end.toString();
+    }
+
+    if (this.timeRangeGrain) {
+      rillTime += ":" + rangeGrainToString(this.timeRangeGrain);
+    }
+
+    if (this.modifier) {
+      const modifierPart = rangeModifierToString(this.modifier);
+      if (modifierPart) rillTime += "@" + modifierPart;
+    }
+
+    return rillTime;
   }
 }
 
@@ -153,7 +173,7 @@ export class RillTimeAnchor {
     return this;
   }
 
-  public getLabel(isComplete: boolean, rangeGrain: string | undefined) {
+  public getLabel() {
     const grain = this.grain ?? this.truncate;
     if (!grain) {
       return RillTimeAnchorType.Earliest.toString();
@@ -172,11 +192,7 @@ export class RillTimeAnchor {
     if (grain.count === -1) {
       return `previous ${unit}`;
     }
-    let count = -grain.count;
-    if (!isComplete && (!rangeGrain || GrainToUnit[rangeGrain] !== unit)) {
-      count += 1;
-    }
-    return `last ${count} ${unit}s`;
+    return `last ${-grain.count} ${unit}s`;
   }
 
   public getType() {
@@ -207,21 +223,86 @@ export class RillTimeAnchor {
         : V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
     );
   }
+
+  public toString() {
+    let anchor = "";
+    switch (this.type) {
+      case RillTimeAnchorType.Now:
+        anchor = "now";
+        break;
+      case RillTimeAnchorType.Earliest:
+        anchor = "earliest";
+        break;
+      case RillTimeAnchorType.Latest:
+        anchor = "latest";
+        break;
+      case RillTimeAnchorType.Relative:
+        anchor = this.grain ? grainToString(this.grain) : "";
+        break;
+      case RillTimeAnchorType.Custom:
+        anchor = this.absolute ?? "";
+        break;
+    }
+
+    if (this.truncate) {
+      anchor += "/" + grainToString(this.truncate);
+    }
+
+    if (this.offset) {
+      anchor += this.offset.toString();
+    }
+
+    return anchor;
+  }
 }
 
 export type RillTimeGrain = {
   grain: string;
   count: number;
 };
+
+function grainToString(grain: RillTimeGrain, includeZero: boolean) {
+  let grainPart = grain.grain;
+  if (grainPart !== "m" && grainPart !== "M") {
+    grainPart = grainPart.toLowerCase();
+  }
+  const countSign = grain.count > 0 ? "+" : "";
+  const countPart =
+    includeZero || !!grain.count ? `${countSign}${grain.count}` : "";
+  return `${countPart}${grainPart}`;
+}
+
 export type RillTimeRangeGrain = {
   grain: string;
   isComplete: boolean;
 };
 
+function rangeGrainToString(grain: RillTimeRangeGrain) {
+  let grainPart = grain.grain;
+  if (grainPart !== "m" && grainPart !== "M") {
+    grainPart = grainPart.toLowerCase();
+  }
+  if (!grain.isComplete) return grainPart;
+  return `|${grainPart}|`;
+}
+
 export type RillTimeRangeModifier = {
   timeZone: string | undefined;
   at: RillTimeAnchor | undefined;
 };
+
+function rangeModifierToString(grain: RillTimeRangeModifier) {
+  let str = "";
+  if (grain.at) {
+    str += grain.at.toString();
+  }
+
+  if (grain.timeZone) {
+    str += `${str ? " " : ""}{${grain.timeZone}}`;
+  }
+
+  return str;
+}
 
 function capitalizeFirstChar(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
