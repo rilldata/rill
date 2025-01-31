@@ -16,7 +16,6 @@
 
   export let data: V1Resource[];
   export let isReconciling: boolean;
-  export let triggerRefresh: (resourceName: string) => void;
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {
@@ -79,7 +78,6 @@
             canRefresh:
               row.original.meta.name.kind === ResourceKind.Model ||
               row.original.meta.name.kind === ResourceKind.Source,
-            triggerRefresh,
           });
         }
       },

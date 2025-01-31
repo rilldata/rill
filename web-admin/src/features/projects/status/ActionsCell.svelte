@@ -6,33 +6,30 @@
   import { RefreshCcwIcon } from "lucide-svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import RefreshResourceConfirmDialog from "./RefreshResourceConfirmDialog.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
 
   export let resourceKind: string;
   export let resourceName: string;
   export let canRefresh: boolean;
-  export let triggerRefresh: (resourceName: string) => void;
 
   let isConfirmDialogOpen = false;
   let isDropdownOpen = false;
 
   const createTrigger = createRuntimeServiceCreateTrigger();
+  const queryClient = useQueryClient();
 
   async function refresh(resourceKind: string, resourceName: string) {
-    // First trigger the refresh
     await $createTrigger.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
-        resources: [
-          {
-            kind: resourceKind,
-            name: resourceName,
-          },
-        ],
+        resources: [{ kind: resourceKind, name: resourceName }],
       },
     });
 
-    // Then update UI state and invalidate query
-    triggerRefresh(resourceName);
+    await queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId, undefined),
+    );
   }
 </script>
 
@@ -63,7 +60,7 @@
   bind:open={isConfirmDialogOpen}
   name={resourceName}
   onRefresh={() => {
-    refresh(resourceKind, resourceName);
+    void refresh(resourceKind, resourceName);
     isConfirmDialogOpen = false;
   }}
 />

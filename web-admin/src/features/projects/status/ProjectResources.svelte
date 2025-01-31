@@ -14,13 +14,11 @@
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
   import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
   let isConfirmDialogOpen = false;
-  let currentResourceName: string | undefined;
   let isReconciling = false;
 
   const INITIAL_REFETCH_INTERVAL = 500; // Start at 500ms
@@ -88,13 +86,6 @@
 
   $: isRefreshButtonDisabled = hasReconcilingResources;
 
-  $: if ($resources.isError) {
-    eventBus.emit("notification", {
-      type: "error",
-      message: `Error loading resources: ${$resources.error?.message}`,
-    });
-  }
-
   function refreshAllSourcesAndModels() {
     isReconciling = false;
 
@@ -105,65 +96,16 @@
           allSourcesModels: true,
         },
       })
-      .catch((error) => {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to refresh all sources and models: ${error.message}`,
-        });
-      });
+      .catch((error) => {});
 
     void queryClient.invalidateQueries(
       getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
     );
   }
 
-  function refreshResource(resourceName: string) {
-    currentResourceName = resourceName;
-    isReconciling = false;
-
-    void queryClient
-      .invalidateQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-      )
-      .catch((error) => {
-        eventBus.emit("notification", {
-          type: "error",
-          message: `Failed to refresh ${resourceName}: ${error.message}`,
-        });
-        currentResourceName = undefined;
-      });
-  }
-
   let previousHasReconcilingResources = false;
   $: {
-    if (!previousHasReconcilingResources && hasReconcilingResources) {
-      // Starting reconciliation - show loading notification
-      if (currentResourceName) {
-        eventBus.emit("notification", {
-          type: "loading",
-          message: `Refreshing ${currentResourceName}...`,
-        });
-      }
-    } else if (previousHasReconcilingResources && !hasReconcilingResources) {
-      // Check for errors when reconciliation finishes
-      if (currentResourceName) {
-        const resource = $resources.data?.resources?.find(
-          (r) => r.meta.name.name === currentResourceName,
-        );
-
-        if (resource?.meta.reconcileError) {
-          eventBus.emit("notification", {
-            type: "error",
-            message: `Failed to refresh ${currentResourceName}: ${resource.meta.reconcileError}`,
-          });
-        } else {
-          eventBus.emit("notification", {
-            type: "success",
-            message: `Successfully refreshed ${currentResourceName}`,
-          });
-        }
-        currentResourceName = undefined;
-      }
+    if (previousHasReconcilingResources && !hasReconcilingResources) {
     }
     previousHasReconcilingResources = hasReconcilingResources;
   }
@@ -194,11 +136,7 @@
       Error loading resources: {$resources.error?.message}
     </div>
   {:else if $resources.data}
-    <ProjectResourcesTable
-      data={$resources?.data?.resources}
-      triggerRefresh={refreshResource}
-      {isReconciling}
-    />
+    <ProjectResourcesTable data={$resources?.data?.resources} {isReconciling} />
   {/if}
 </section>
 
