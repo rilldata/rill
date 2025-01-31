@@ -22,7 +22,7 @@ var (
 		{"Latest", "latest"},
 		{"Watermark", "watermark"},
 		// this needs to be after Now and Latest to match to them
-		{"Grain", `[smhdDWQMY]`},
+		{"Grain", `[sSmhHdDwWqQMyY]`},
 		// this has to be at the end
 		{"TimeZone", `{.+?}`},
 		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
@@ -58,13 +58,18 @@ var (
 	)
 	grainMap = map[string]timeutil.TimeGrain{
 		"s": timeutil.TimeGrainSecond,
+		"S": timeutil.TimeGrainSecond,
 		"m": timeutil.TimeGrainMinute,
 		"h": timeutil.TimeGrainHour,
+		"H": timeutil.TimeGrainHour,
 		"d": timeutil.TimeGrainDay,
 		"D": timeutil.TimeGrainDay,
+		"w": timeutil.TimeGrainWeek,
 		"W": timeutil.TimeGrainWeek,
+		"q": timeutil.TimeGrainQuarter,
 		"Q": timeutil.TimeGrainQuarter,
 		"M": timeutil.TimeGrainMonth,
+		"y": timeutil.TimeGrainYear,
 		"Y": timeutil.TimeGrainYear,
 	}
 )
@@ -89,8 +94,8 @@ type TimeAnchor struct {
 	Now         bool    `parser:"| @Now"`
 	Latest      bool    `parser:"| @Latest"`
 	Watermark   bool    `parser:"| @Watermark)"`
-	Offset      *Grain  `parser:"@@?"`
 	Trunc       *string `parser:"  ('/' @Grain)?"`
+	Offset      *Grain  `parser:"@@?"`
 	isoDuration *duration.StandardDuration
 }
 
@@ -105,8 +110,8 @@ type Grain struct {
 }
 
 type AtModifiers struct {
-	Offset   *Grain  `parser:"@@?"`
-	TimeZone *string `parser:"@TimeZone?"`
+	AnchorOverride *TimeAnchor `parser:"@@?"`
+	TimeZone       *string     `parser:"@TimeZone?"`
 }
 
 // ParseOptions allows for additional options that could probably not be added to the time range itself
@@ -164,12 +169,6 @@ func Parse(from string, parseOpts ParseOptions) (*Expression, error) {
 		}
 	}
 
-	if rt.End == nil {
-		rt.End = &TimeAnchor{
-			Watermark: true,
-		}
-	}
-
 	return rt, nil
 }
 
@@ -196,25 +195,18 @@ func ParseCompatibility(timeRange, offset string) error {
 }
 
 func (e *Expression) Eval(evalOpts EvalOptions) (time.Time, time.Time, error) {
-	start := evalOpts.Watermark
-	if e.End != nil {
-		if e.End.Latest {
-			// if end has latest mentioned then start also should be relative to latest.
-			start = evalOpts.MaxTime
-		} else if e.End.Now {
-			// if end has now mentioned then start also should be relative to latest.
-			start = evalOpts.Now
-		}
-	}
+	anchor, fallbackEndAnchor := e.getAnchor(evalOpts)
 
+	start := anchor
 	if e.Start != nil {
-		start = e.modify(evalOpts, e.Start, start)
+		start = e.modify(evalOpts, e.Start, anchor)
 	}
 
-	end := evalOpts.Watermark
-	if e.End != nil {
-		end = e.modify(evalOpts, e.End, end)
+	endAnchor := e.End
+	if e.End == nil {
+		endAnchor = fallbackEndAnchor
 	}
+	end := e.modify(evalOpts, endAnchor, anchor)
 
 	return start, end, nil
 }
@@ -261,11 +253,6 @@ func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) 
 		return tm.In(e.timeZone)
 	}
 
-	timeBeforeOffset := tm
-	if ta.Offset != nil {
-		tm = ta.Offset.offset(tm)
-	}
-
 	if ta.Trunc != nil {
 		truncateGrain = grainMap[*ta.Trunc]
 		isTruncate = true
@@ -278,12 +265,19 @@ func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) 
 		modifiedTime = timeutil.CeilTime(tm, truncateGrain, e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
-	// Add offset after truncate
-	if e.AtModifiers != nil && e.AtModifiers.Offset != nil {
-		modifiedTime = e.AtModifiers.Offset.offset(modifiedTime)
+	// Add local offset after truncate. This allows for `0W+1D`
+	if ta.Offset != nil {
+		modifiedTime = ta.Offset.offset(modifiedTime)
+		modifiedTime = timeutil.TruncateTime(modifiedTime, grainMap[ta.Offset.Grain], e.timeZone, evalOpts.FirstDay, evalOpts.FirstMonth)
 	}
 
-	if isBoundary && modifiedTime.Equal(timeBeforeOffset) && (e.Modifiers == nil || e.Modifiers.CompleteGrain == nil) {
+	// Add global offset from AtModifiers after truncate
+	// Only grain offset is applied here. Anchor offsets like `@ now` or `@ latest` are applied to `tm` param
+	if e.AtModifiers != nil && e.AtModifiers.AnchorOverride != nil && e.AtModifiers.AnchorOverride.Grain != nil {
+		modifiedTime = e.AtModifiers.AnchorOverride.Grain.offset(modifiedTime)
+	}
+
+	if isBoundary && modifiedTime.Equal(tm) && (e.Modifiers == nil || e.Modifiers.CompleteGrain == nil) {
 		// edge case where the end time falls on a boundary. add +1grain to make sure the last data point is included
 		n := 1
 		g := &Grain{
@@ -297,6 +291,44 @@ func (e *Expression) modify(evalOpts EvalOptions, ta *TimeAnchor, tm time.Time) 
 	}
 
 	return modifiedTime
+}
+
+func (e *Expression) getAnchor(evalOpts EvalOptions) (time.Time, *TimeAnchor) {
+	if e.AtModifiers != nil && e.AtModifiers.AnchorOverride != nil {
+		if e.AtModifiers.AnchorOverride.Now {
+			return evalOpts.Now, e.AtModifiers.AnchorOverride
+		}
+		if e.AtModifiers.AnchorOverride.Latest {
+			return evalOpts.MaxTime, e.AtModifiers.AnchorOverride
+		}
+		if e.AtModifiers.AnchorOverride.Earliest {
+			return evalOpts.MinTime, e.AtModifiers.AnchorOverride
+		}
+		if e.AtModifiers.AnchorOverride.AbsDate != nil {
+			absTm, _ := time.Parse(time.DateOnly, *e.AtModifiers.AnchorOverride.AbsDate)
+			return absTm, e.AtModifiers.AnchorOverride
+		}
+		if e.AtModifiers.AnchorOverride.AbsTime != nil {
+			absTm, _ := time.Parse("2006-01-02 15:04", *e.AtModifiers.AnchorOverride.AbsTime)
+			return absTm, e.AtModifiers.AnchorOverride
+		}
+	}
+
+	if e.End == nil {
+		return evalOpts.Watermark, &TimeAnchor{
+			Watermark: true,
+		}
+	}
+
+	if e.End.Latest {
+		// if end has latest mentioned then start also should be relative to latest.
+		return evalOpts.MaxTime, e.End
+	}
+	if e.End.Now {
+		// if end has now mentioned then start also should be relative to latest.
+		return evalOpts.Now, e.End
+	}
+	return evalOpts.Watermark, e.End
 }
 
 func parseISO(from string, parseOpts ParseOptions) (*Expression, error) {
@@ -354,23 +386,21 @@ func (g *Grain) offset(tm time.Time) time.Time {
 	}
 
 	switch g.Grain {
-	case "s":
+	case "s", "S":
 		tm = tm.Add(time.Duration(n) * time.Second)
 	case "m":
 		tm = tm.Add(time.Duration(n) * time.Minute)
-	case "h":
+	case "h", "H":
 		tm = tm.Add(time.Duration(n) * time.Hour)
-	case "d":
+	case "d", "D":
 		tm = tm.AddDate(0, 0, n)
-	case "D":
-		tm = tm.AddDate(0, 0, n)
-	case "W":
+	case "W", "w":
 		tm = tm.AddDate(0, 0, n*7)
 	case "M":
 		tm = tm.AddDate(0, n, 0)
-	case "Q":
+	case "Q", "q":
 		tm = tm.AddDate(0, n*3, 0)
-	case "Y":
+	case "Y", "y":
 		tm = tm.AddDate(n, 0, 0)
 	}
 

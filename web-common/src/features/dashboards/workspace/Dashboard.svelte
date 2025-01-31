@@ -90,8 +90,6 @@
       }
     : undefined;
 
-  $: metricsView = $explore.data?.metricsView ?? {};
-
   let metricsWidth = DEFAULT_TIMESERIES_WIDTH;
   let resizing = false;
 </script>
@@ -187,7 +185,6 @@
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
               {timeControlsReady}
-              {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
@@ -201,7 +198,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              {metricsView}
               {timeControlsReady}
             />
           {/if}

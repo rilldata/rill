@@ -17,6 +17,13 @@ export interface ComponentCommonProperties {
   description?: string;
 }
 
+export type VeriticalAlignment = "top" | "middle" | "bottom";
+export type HoritzontalAlignment = "left" | "center" | "right";
+export interface ComponentAlignment {
+  vertical: VeriticalAlignment;
+  horizontal: HoritzontalAlignment;
+}
+
 export interface ComponentFilterProperties {
   time_range?: string;
   comparison_range?: string;

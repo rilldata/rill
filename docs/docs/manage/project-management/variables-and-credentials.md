@@ -4,13 +4,16 @@ sidebar_label: Variables and Credentials
 sidebar_position: 50
 ---
 
-The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud). 
+The credentials in a deployed Rill Cloud projects can be managed on the Settings page or via the CLI. If you have yet to deploy your credentials, please follow the steps in our [deploy credentials page](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud). 
 
 ## Modifying Variables and Credentials via the Settings Page
+Upon deployment via Rill Developer, if you have populated your .env file, the contents will be visible as seen below. If there are no environmantal variables defined, please run `rill env configure` from your local CLI and Rill will automatically detect the sources that are used in your project and request the credentials. Once completed, the variables should be visible and editable from Rill Cloud. If you'd like to manually add the credentals, please see [our naming convention](#credentials-naming-schema) to get started. 
 
 ![img](/img/tutorials/admin/env-var-ui.png)
 
-### Adding / Editing Environmental Variables
+### Adding and Editing Environmental Variables / Importing a `.env` file
+Once your environmantal variables are added to Rill Cloud, they can be modfied as needed.
+
 ![img](/img/manage/var-and-creds/add-variable.png)
 
 :::tip Can't find the .env file?
@@ -20,7 +23,7 @@ Keyboard shortcut: Command + Shift + .
 
 ## Pushing and pulling credentials to / from Rill Cloud via the CLI
 
-If you have a project deployed to Rill Cloud, Rill provides the ability to **sync** the credentials between your local instance of Rill Developer and Rill cloud. This provides the ability to quickly reuse existing credentials, if configured, instead of having to manually input credentials each time. This can be accomplished by leveraging the `rill env push` and `rill env pull` CLI commands respectively.
+If you'd prefer to use the CLI to managed your credentials, this can be done by running the `rill env pull` to pull your deployed Rill Cloud project's variables locally, or `rill env push` to updated Rill Cloud project's variables.
 
 :::tip Avoid committing sensitive information to Git
 
@@ -57,7 +60,8 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema 
 
-Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. 
+Connector credentials are essentially a form of project variable, prefixed using the `connector.<connector_name>.<property>` syntax. For example, `connector.druid.dsn` and `connector.clickhouse.dsn` are both hardcoded project variables (that happen to correspond to the [Druid](/reference/olap-engines/druid.md) and [ClickHouse](/reference/olap-engines/clickhouse.md) OLAP engines respectively). Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](../../contact)! 
+
 
 
 <div

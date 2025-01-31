@@ -581,6 +581,7 @@
             placeholder="Select a model"
             label="Model"
             onChange={async (newModelOrSourceName) => {
+              if (modelOrSourceOrTableName === newModelOrSourceName) return;
               if (!modelOrSourceOrTableName) {
                 updateProperties({ model: newModelOrSourceName }, [
                   "table",

@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -234,86 +233,27 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	return nil
 }
 
-func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
+func (s *Service) processGithubInstallationEvent(_ context.Context, event *github.InstallationEvent) error {
 	switch event.GetAction() {
 	case "created", "unsuspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
 	case "suspend", "deleted":
-		// the github installation ID will change if user re-installs the app deleting the project for now
-		installation := event.GetInstallation()
-		if installation == nil {
-			return fmt.Errorf("nil installation")
-		}
-
-		s.Logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
-		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
-			s.Logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
-			return err
-		}
-		s.Logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
+		// no handling as of now
+		// previously we were deleting the projects
+		// but that means if there is an accidental suspend we delete all projects
 	}
 	return nil
 }
 
-func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
+func (s *Service) processGithubInstallationRepositoriesEvent(_ context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
 	switch event.GetAction() {
 	case "added":
 		// no handling as of now
 	case "removed":
-		var multiErr error
-		s.Logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
-		for _, repo := range event.RepositoriesRemoved {
-			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
-				multiErr = multierr.Combine(multiErr, err)
-				s.Logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
-			}
-		}
-		s.Logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
-		return multiErr
+		// no handling as of now
+		// previously we were deleting the project for the repo
+		// but that means if there is an accidental removal we delete all projects
 	}
 	return nil
-}
-
-func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) error {
-	// Find Rill project for installationID
-	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	var multiErr error
-	for _, p := range projects {
-		err := s.TeardownProject(ctx, p)
-		if err != nil {
-			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
-			continue
-		}
-	}
-	return multiErr
-}
-
-func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Repository) error {
-	// Find Rill project matching the repo that was pushed to
-	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURLFromRepo(repo))
-	if err != nil {
-		return err
-	}
-
-	var multiErr error
-	for _, p := range projects {
-		err := s.TeardownProject(ctx, p)
-		if err != nil {
-			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
-			continue
-		}
-	}
-	return multiErr
-}
-
-func githubURLFromRepo(repo *github.Repository) string {
-	if repo.HTMLURL != nil {
-		return *repo.HTMLURL
-	}
-	return "https://github.com/" + repo.GetFullName()
 }
