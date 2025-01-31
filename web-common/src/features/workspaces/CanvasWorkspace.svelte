@@ -4,6 +4,9 @@
   import Canvas from "@rilldata/web-common/features/canvas/Canvas.svelte";
   import CanvasEditor from "@rilldata/web-common/features/canvas/CanvasEditor.svelte";
   import CanvasThemeProvider from "@rilldata/web-common/features/canvas/CanvasThemeProvider.svelte";
+  import AddComponentMenu from "@rilldata/web-common/features/canvas/components/AddComponentMenu.svelte";
+  import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
+  import { getComponentRegistry } from "@rilldata/web-common/features/canvas/components/util";
   import VisualCanvasEditing from "@rilldata/web-common/features/canvas/inspector/VisualCanvasEditing.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/canvas/state-managers/StateManagersProvider.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -96,6 +99,7 @@
               reconciling={resourceIsReconciling}
             />
 
+            <AddComponentMenu {addComponent} />
             <ViewSelector
               allowSplit={false}
               bind:selectedView={$selectedViewStore}
