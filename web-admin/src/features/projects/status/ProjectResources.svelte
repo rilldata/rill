@@ -43,6 +43,24 @@
     );
   }
 
+  function calculateRefetchInterval(
+    currentInterval: number,
+    data: V1ListResourcesResponse | undefined,
+  ): number | false {
+    if (!data?.resources) {
+      return INITIAL_REFETCH_INTERVAL;
+    }
+
+    const hasErrors = data.resources.some(isResourceErrored);
+    const hasReconcilingResources = data.resources.some(isResourceReconciling);
+
+    if (hasErrors || !hasReconcilingResources) {
+      return false;
+    }
+
+    return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
+  }
+
   $: resources = createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data: V1ListResourcesResponse) => ({
@@ -54,25 +72,11 @@
             resource.meta.name.kind !== ResourceKind.RefreshTrigger,
         ),
       }),
-      refetchInterval: (data) => {
-        if (
-          $resources?.isError ||
-          data?.resources?.some(isResourceErrored) ||
-          !data?.resources?.some(isResourceReconciling)
-        ) {
-          // Reset the interval when polling stops
-          currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
-          return false;
-        }
-
-        // Exponential backoff with a cap
-        currentRefetchInterval = Math.min(
-          currentRefetchInterval * BACKOFF_FACTOR,
-          MAX_REFETCH_INTERVAL,
-        );
-
-        return currentRefetchInterval;
-      },
+      refetchInterval: (data) =>
+        calculateRefetchInterval(
+          $resources?.data ? currentRefetchInterval : INITIAL_REFETCH_INTERVAL,
+          data,
+        ),
     },
   });
 
