@@ -14,10 +14,17 @@ export const allMeasures = ({
   DashboardDataSources,
   "validMetricsView" | "validExplore"
 >): MetricsViewSpecMeasureV2[] => {
+  if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
   return (
-    validMetricsView?.measures?.filter((m) =>
-      validExplore?.measures?.includes(m.name ?? ""),
-    ) ?? []
+    validMetricsView.measures
+      .filter((m) => validExplore.measures!.includes(m.name!))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          validExplore.measures!.indexOf(a.name!) -
+          validExplore.measures!.indexOf(b.name!),
+      )
   );
 };
 
@@ -27,12 +34,20 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
 
 export const visibleMeasures = ({
   validMetricsView,
+  validExplore,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
+  if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
   return (
-    validMetricsView?.measures?.filter(
-      (m) => m.name && dashboard.visibleMeasureKeys.has(m.name),
-    ) ?? []
+    validMetricsView.measures
+      .filter((m) => dashboard.visibleMeasureKeys.has(m.name!))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          validExplore.measures!.indexOf(a.name!) -
+          validExplore.measures!.indexOf(b.name!),
+      )
   );
 };
 
@@ -54,6 +69,7 @@ export const measureLabel = ({
     return measure?.displayName || measureName;
   };
 };
+
 export const isMeasureValidPercentOfTotal = ({
   validMetricsView,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
@@ -70,13 +86,22 @@ export const filteredSimpleMeasures = ({
   validExplore,
 }: DashboardDataSources) => {
   return () => {
+    if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
     return (
-      validMetricsView?.measures?.filter(
-        (m) =>
-          !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
-          validExplore?.measures?.includes(m.name ?? ""),
-      ) ?? []
+      validMetricsView.measures
+        .filter(
+          (m) =>
+            validExplore.measures!.includes(m.name!) &&
+            !m.window &&
+            m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+        )
+        // Sort the filtered measures based on their order in validExplore.measures
+        .sort(
+          (a, b) =>
+            validExplore.measures!.indexOf(a.name!) -
+            validExplore.measures!.indexOf(b.name!),
+        )
     );
   };
 };
