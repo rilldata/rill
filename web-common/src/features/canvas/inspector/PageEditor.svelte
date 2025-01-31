@@ -1,9 +1,11 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { DEFAULT_DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/constants";
   import { getParsedDocument } from "@rilldata/web-common/features/canvas/inspector/selectors";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import ZoneDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneDisplay.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import {
@@ -32,8 +34,12 @@
   ) => Promise<void>;
   export let fileArtifact: FileArtifact;
 
-  const { canvasEntity } = getCanvasStateManagers();
-  const { canvasSpec } = canvasEntity.spec;
+  const {
+    canvasEntity: {
+      spec: { canvasSpec },
+      filters: { setFilters },
+    },
+  } = getCanvasStateManagers();
 
   $: ({ instanceId } = $runtime);
 
@@ -83,6 +89,7 @@
     .map((theme) => theme.meta?.name?.name ?? "")
     .filter((string) => !string.endsWith("--theme"));
 
+  $: showFilterBar = $canvasSpec?.filtersEnabled ?? true;
   $: theme = !rawTheme
     ? undefined
     : typeof rawTheme === "string"
@@ -90,6 +97,18 @@
       : rawTheme instanceof YAMLMap
         ? $canvasSpec?.embeddedTheme
         : undefined;
+
+  async function toggleFilterBar() {
+    const updatedShowFilterBar = !showFilterBar;
+
+    if (!updatedShowFilterBar) {
+      setFilters(createAndExpression([]));
+    }
+
+    await updateProperties({
+      filters: { enable: updatedShowFilterBar },
+    });
+  }
 </script>
 
 <SidebarWrapper type="secondary" disableHorizontalPadding title="Canvas">
@@ -126,57 +145,70 @@
     />
   </div>
   <div class="page-param flex flex-col gap-y-2">
-    <InputLabel id="canvas-filter" small label="Filter" />
-    <div class="flex flex-col gap-y-2">
-      <MultiSelectInput
+    <div
+      class="flex items-center justify-between {showFilterBar ? 'pb-1' : ''}"
+    >
+      <InputLabel
+        capitalize={false}
+        id="canvas-filter"
         small
-        label="Time ranges"
-        id="canvas-time-range"
-        defaultLabel="Default time ranges"
-        showLabel={false}
-        defaultItems={DEFAULT_RANGES}
-        keyNotSet={!rawTimeRanges}
-        selectedItems={timeRanges}
-        onSelectCustomItem={onSelectTimeRangeItem}
-        setItems={async (time_ranges) => {
-          if (time_ranges.length === 0) {
-            await updateProperties({ time_ranges }, [["time_range"]]);
-          } else {
-            await updateProperties({ time_ranges });
-          }
-        }}
-        let:item
-      >
-        {DEFAULT_TIME_RANGES[item]?.label ?? item}
-      </MultiSelectInput>
-
-      <MultiSelectInput
-        small
-        label="Time zones"
-        id="visual-explore-zone"
-        showLabel={false}
-        defaultLabel="Default time zones"
-        searchableItems={Intl.supportedValuesOf("timeZone")}
-        defaultItems={DEFAULT_TIMEZONES}
-        keyNotSet={!rawTimeZones}
-        selectedItems={timeZones}
-        clearKey={async () => {
-          await updateProperties({}, ["time_zones"]);
-        }}
-        onSelectCustomItem={async (item) => {
-          const deleted = timeZones.delete(item);
-          if (!deleted) timeZones.add(item);
-
-          await updateProperties({ time_zones: Array.from(timeZones) });
-        }}
-        setItems={async (time_zones) => {
-          await updateProperties({ time_zones });
-        }}
-        let:item
-      >
-        <ZoneDisplay iana={item} />
-      </MultiSelectInput>
+        label="Filter bar"
+      />
+      <Switch checked={showFilterBar} on:click={toggleFilterBar} small />
     </div>
+
+    {#if showFilterBar}
+      <div class="flex flex-col gap-y-2">
+        <MultiSelectInput
+          small
+          label="Time ranges"
+          id="canvas-time-range"
+          defaultLabel="Default time ranges"
+          showLabel={false}
+          defaultItems={DEFAULT_RANGES}
+          keyNotSet={!rawTimeRanges}
+          selectedItems={timeRanges}
+          onSelectCustomItem={onSelectTimeRangeItem}
+          setItems={async (time_ranges) => {
+            if (time_ranges.length === 0) {
+              await updateProperties({ time_ranges }, [["time_range"]]);
+            } else {
+              await updateProperties({ time_ranges });
+            }
+          }}
+          let:item
+        >
+          {DEFAULT_TIME_RANGES[item]?.label ?? item}
+        </MultiSelectInput>
+
+        <MultiSelectInput
+          small
+          label="Time zones"
+          id="visual-explore-zone"
+          showLabel={false}
+          defaultLabel="Default time zones"
+          searchableItems={Intl.supportedValuesOf("timeZone")}
+          defaultItems={DEFAULT_TIMEZONES}
+          keyNotSet={!rawTimeZones}
+          selectedItems={timeZones}
+          clearKey={async () => {
+            await updateProperties({}, ["time_zones"]);
+          }}
+          onSelectCustomItem={async (item) => {
+            const deleted = timeZones.delete(item);
+            if (!deleted) timeZones.add(item);
+
+            await updateProperties({ time_zones: Array.from(timeZones) });
+          }}
+          setItems={async (time_zones) => {
+            await updateProperties({ time_zones });
+          }}
+          let:item
+        >
+          <ZoneDisplay iana={item} />
+        </MultiSelectInput>
+      </div>
+    {/if}
   </div>
   <div class="page-param">
     <ThemeInput

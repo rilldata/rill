@@ -45,7 +45,7 @@ export const validateMeasures = (
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, HTTPError>,
   measureNames: string[],
 ): { isValid: boolean; invalidMeasures: string[] } => {
-  const invalidMeasures = measureNames.filter(
+  const invalidMeasures = measureNames?.filter(
     (m) => !isMeasureValid(metricsSpecQueryResult, m),
   );
   return {

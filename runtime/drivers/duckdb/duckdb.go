@@ -514,6 +514,9 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:      dataDir,
 		Remote:         c.remote,
+		CPU:            c.config.CPU,
+		MemoryLimitGB:  c.config.MemoryLimitGB,
+		ReadWriteRatio: c.config.ReadWriteRatio,
 		ReadSettings:   c.config.readSettings(),
 		WriteSettings:  c.config.writeSettings(),
 		InitQueries:    bootQueries,

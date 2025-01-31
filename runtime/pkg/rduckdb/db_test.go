@@ -216,12 +216,13 @@ func TestResetLocal(t *testing.T) {
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 
@@ -278,12 +279,13 @@ func TestResetSelectiveLocal(t *testing.T) {
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test2_view", []testData{{ID: 2, Country: "USA"}})
@@ -310,12 +312,13 @@ func TestResetTablesRemote(t *testing.T) {
 	bucket, err := fileblob.OpenBucket(remoteDir, &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	require.ErrorContains(t, db.DropTable(ctx, "test"), "not found")
@@ -356,12 +359,13 @@ func TestResetSelectiveTablesRemote(t *testing.T) {
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	verifyTable(t, db, "SELECT id, country FROM test", []testData{{ID: 1, Country: "India"}})
@@ -494,12 +498,13 @@ func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	bucket, err := fileblob.OpenBucket(remoteDir, nil)
 	require.NoError(t, err)
 	db, err = NewDB(ctx, &DBOptions{
-		LocalPath:     localDir,
-		Remote:        bucket,
-		ReadSettings:  map[string]string{"memory_limit": "2GB", "threads": "1"},
-		WriteSettings: map[string]string{"memory_limit": "2GB", "threads": "1"},
-		InitQueries:   []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
-		Logger:        logger,
+		LocalPath:      localDir,
+		Remote:         bucket,
+		MemoryLimitGB:  2,
+		CPU:            1,
+		ReadWriteRatio: 0.5,
+		InitQueries:    []string{"SET autoinstall_known_extensions=true", "SET autoload_known_extensions=true"},
+		Logger:         logger,
 	})
 	require.NoError(t, err)
 	return
