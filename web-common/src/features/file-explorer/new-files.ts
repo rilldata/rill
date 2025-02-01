@@ -40,10 +40,10 @@ export function getPathForNewResourceFile(
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
       ? // sources and models share the name
-      [
-        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-      ]
+        [
+          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+        ]
       : fileArtifacts.getNamesForKind(newKind);
 
   const { folderName, extension } = ResourceKindMap[newKind];
@@ -165,13 +165,25 @@ measures:
         const metricsViewTitle =
           baseResource.metricsView?.state?.validSpec?.displayName;
 
-        const dimensions = baseResource.metricsView?.spec?.dimensions && baseResource.metricsView?.spec?.dimensions?.length > 4 ? baseResource.metricsView?.spec?.dimensions?.map(dim => {
-          return `\n  - ${dim.name}`
-        }).join("") : "'*'"
+        const dimensions =
+          baseResource.metricsView?.spec?.dimensions &&
+          baseResource.metricsView?.spec?.dimensions?.length > 4
+            ? baseResource.metricsView?.spec?.dimensions
+                ?.map((dim) => {
+                  return `\n  - ${dim.name}`;
+                })
+                .join("")
+            : "'*'";
 
-        const measures = baseResource.metricsView?.spec?.measures && baseResource.metricsView?.spec?.measures?.length > 4 ? baseResource.metricsView?.spec?.measures?.map(measure => {
-          return `\n  - ${measure.name}`
-        }).join("") : "'*'"
+        const measures =
+          baseResource.metricsView?.spec?.measures &&
+          baseResource.metricsView?.spec?.measures?.length > 4
+            ? baseResource.metricsView?.spec?.measures
+                ?.map((measure) => {
+                  return `\n  - ${measure.name}`;
+                })
+                .join("")
+            : "'*'";
 
         return `# Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
