@@ -33,6 +33,11 @@ test.describe("explores", () => {
     await createExploreFromModel(page, true);
     await assertAdBidsDashboard(page);
 
+    // Change the time range
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
+
     // click on publisher=Facebook leaderboard value
     await page.getByRole("row", { name: "Facebook 19.3k" }).click();
     await wrapRetryAssertion(() =>
@@ -63,6 +68,11 @@ test.describe("explores", () => {
 
     await createAdBidsModel(page);
     await createExploreFromModel(page, true);
+
+    // Change the time range
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
 
     // Check the total records are 100k
     await expect(page.getByText("Total records 100k")).toBeVisible();

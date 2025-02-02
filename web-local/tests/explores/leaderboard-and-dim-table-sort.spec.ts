@@ -19,6 +19,9 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.waitForTimeout(1000);
 
+    await openTimeRangeMenu();
+    await page.getByRole("menuitem", { name: "All Time" }).click();
+
     /**
      * LEADERBOARD
      */
