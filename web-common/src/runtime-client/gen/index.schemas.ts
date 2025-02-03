@@ -69,13 +69,13 @@ export type RuntimeServiceWatchResourcesParams = {
 export type RuntimeServiceListResourcesParams = {
   kind?: string;
   path?: string;
-  skipChecks?: boolean;
+  skipSecurityChecks?: boolean;
 };
 
 export type RuntimeServiceGetResourceParams = {
   "name.kind"?: string;
   "name.name"?: string;
-  skipChecks?: boolean;
+  skipSecurityChecks?: boolean;
 };
 
 export type QueryServiceExportReportBody = {

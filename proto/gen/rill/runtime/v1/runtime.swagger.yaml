@@ -2542,7 +2542,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: skipChecks
+        - name: skipSecurityChecks
           in: query
           required: false
           type: boolean
@@ -2577,7 +2577,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: skipChecks
+        - name: skipSecurityChecks
           description: Skip security checks
           in: query
           required: false

@@ -2804,9 +2804,9 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
   /**
    * Skip security checks
    *
-   * @generated from field: bool skip_checks = 4;
+   * @generated from field: bool skip_security_checks = 4;
    */
-  skipChecks = false;
+  skipSecurityChecks = false;
 
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
@@ -2819,7 +2819,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "skip_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2995,9 +2995,9 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
   name?: ResourceName;
 
   /**
-   * @generated from field: bool skip_checks = 3;
+   * @generated from field: bool skip_security_checks = 3;
    */
-  skipChecks = false;
+  skipSecurityChecks = false;
 
   constructor(data?: PartialMessage<GetResourceRequest>) {
     super();
@@ -3009,7 +3009,7 @@ export class GetResourceRequest extends Message<GetResourceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "message", T: ResourceName },
-    { no: 3, name: "skip_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "skip_security_checks", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetResourceRequest {
