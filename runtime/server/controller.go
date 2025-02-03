@@ -62,8 +62,10 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
-	isAdmin := auth.GetClaims(ctx).SecurityClaims().Admin()
-	if isAdmin && req.SkipChecks {
+	if req.SkipChecks {
+		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+			return nil, ErrForbidden
+		}
 		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
 	}
 
@@ -182,9 +184,10 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	isAdmin := auth.GetClaims(ctx).SecurityClaims().Admin()
-
-	if isAdmin && req.SkipChecks {
+	if req.SkipChecks {
+		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+			return nil, ErrForbidden
+		}
 		return &runtimev1.GetResourceResponse{Resource: r}, nil
 	}
 
@@ -192,7 +195,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if !req.SkipChecks && !access {
+	if !access {
 		return nil, status.Error(codes.NotFound, "resource not found")
 	}
 
