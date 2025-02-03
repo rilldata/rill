@@ -124,16 +124,6 @@ test.describe("Onboarding", () => {
         await clickhouse.stop();
       });
 
-      test("should be able to connect to the ClickHouse instance", async () => {
-        const client = clickhouse.getClient();
-        const response = await client.query({
-          query: "SELECT COUNT(*) AS count FROM ad_bids",
-          format: "JSONEachRow",
-        });
-        const rows = await response.json();
-        expect(rows[0].count).toBe("100000");
-      });
-
       test("should connect to the ClickHouse instance and create a dashboard", async ({
         page,
       }) => {
