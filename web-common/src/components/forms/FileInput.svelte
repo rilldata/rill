@@ -150,7 +150,7 @@
   }
 
   .upload-button {
-    @apply flex flex-row gap-x-2.5 items-center justify-center py-5 min-h-10 w-80;
+    @apply flex flex-row gap-x-2.5 items-center justify-center py-5 min-h-10 min-w-80;
     @apply border border-neutral-400;
   }
 
