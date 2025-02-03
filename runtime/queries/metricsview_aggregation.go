@@ -8,13 +8,13 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type MetricsViewAggregation struct {
@@ -208,15 +208,15 @@ func ResolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 
 	tsRes := metricsview.TimestampsResult{}
 
-	tsRes.Min, err = anyToTime(row["min"])
+	tsRes.Min, err = timeutil.AnyToTime(row["min"])
 	if err != nil {
 		return tsRes, err
 	}
-	tsRes.Max, err = anyToTime(row["max"])
+	tsRes.Max, err = timeutil.AnyToTime(row["max"])
 	if err != nil {
 		return tsRes, err
 	}
-	tsRes.Watermark, err = anyToTime(row["watermark"])
+	tsRes.Watermark, err = timeutil.AnyToTime(row["watermark"])
 	if err != nil {
 		return tsRes, err
 	}
@@ -413,16 +413,4 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 		return metricssqlparser.ParseSQLFilter(sql)
 	}
 	return nil, nil
-}
-
-func anyToTime(tm any) (time.Time, error) {
-	tmStr, ok := tm.(string)
-	if !ok {
-		t, ok := tm.(time.Time)
-		if !ok {
-			return time.Time{}, errors.New("invalid type")
-		}
-		return t, nil
-	}
-	return time.Parse(time.RFC3339Nano, tmStr)
 }

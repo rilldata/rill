@@ -1,6 +1,7 @@
 package timeutil
 
 import (
+	"errors"
 	"time"
 
 	// Load IANA time zone data
@@ -127,4 +128,17 @@ func CeilTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstM
 	}
 
 	return TruncateTime(start, tg, tz, firstDay, firstMonth)
+}
+
+// AnyToTime converts any type to time.Time
+func AnyToTime(tm any) (time.Time, error) {
+	tmStr, ok := tm.(string)
+	if !ok {
+		t, ok := tm.(time.Time)
+		if !ok {
+			return time.Time{}, errors.New("unable to convert type to Time")
+		}
+		return t, nil
+	}
+	return time.Parse(time.RFC3339Nano, tmStr)
 }

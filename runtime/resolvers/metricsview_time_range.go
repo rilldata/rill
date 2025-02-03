@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 func init() {
@@ -159,33 +159,18 @@ func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID
 
 	tsRes := metricsview.TimestampsResult{}
 
-	tsRes.Min, err = anyToTime(row["min"])
+	tsRes.Min, err = timeutil.AnyToTime(row["min"])
 	if err != nil {
 		return tsRes, err
 	}
-	tsRes.Max, err = anyToTime(row["max"])
+	tsRes.Max, err = timeutil.AnyToTime(row["max"])
 	if err != nil {
 		return tsRes, err
 	}
-	tsRes.Watermark, err = anyToTime(row["watermark"])
+	tsRes.Watermark, err = timeutil.AnyToTime(row["watermark"])
 	if err != nil {
 		return tsRes, err
 	}
 
 	return tsRes, nil
-}
-
-func anyToTime(tm any) (time.Time, error) {
-	if tm == nil {
-		return time.Time{}, nil
-	}
-	tmStr, ok := tm.(string)
-	if !ok {
-		t, ok := tm.(time.Time)
-		if !ok {
-			return time.Time{}, errors.New("invalid type")
-		}
-		return t, nil
-	}
-	return time.Parse(time.RFC3339Nano, tmStr)
 }
