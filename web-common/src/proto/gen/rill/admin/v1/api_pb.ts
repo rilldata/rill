@@ -9201,6 +9201,11 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitUrl = "";
 
   /**
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
+   */
+  createdOn?: Timestamp;
+
+  /**
    * @generated from field: google.protobuf.Timestamp git_url_expires_on = 2;
    */
   gitUrlExpiresOn?: Timestamp;
@@ -9218,6 +9223,11 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
    */
   archiveDownloadUrl = "";
 
+  /**
+   * @generated from field: string asset_id = 6;
+   */
+  assetId = "";
+
   constructor(data?: PartialMessage<GetRepoMetaResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9227,9 +9237,11 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   static readonly typeName = "rill.admin.v1.GetRepoMetaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {

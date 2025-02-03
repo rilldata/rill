@@ -1071,9 +1071,11 @@ export interface V1GetReportMetaResponse {
 
 export interface V1GetRepoMetaResponse {
   gitUrl?: string;
+  createdOn?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
   archiveDownloadUrl?: string;
+  assetId?: string;
 }
 
 /**

@@ -4299,6 +4299,9 @@ definitions:
     properties:
       gitUrl:
         type: string
+      createdOn:
+        type: string
+        format: date-time
       gitUrlExpiresOn:
         type: string
         format: date-time
@@ -4309,6 +4312,8 @@ definitions:
         title: |-
           archive_download_url is set when repo is managed by Rill
           either archive_download_url or git related details will be set
+      assetId:
+        type: string
   v1GetReportMetaResponse:
     type: object
     properties:
