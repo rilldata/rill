@@ -1359,28 +1359,30 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	}
 
 	commonDims := []attribute.KeyValue{
-		attribute.String("resource_id", inv.name.Name),
+		attribute.String("resource_name", inv.name.Name),
 		attribute.String("resource_type", PrettifyResourceKind(inv.name.Kind)),
 	}
+
 	if inv.isDelete {
-		commonDims = append(commonDims, attribute.Bool("is_deleted", true))
-	}
-	if inv.isRename {
-		commonDims = append(commonDims, attribute.Bool("is_renamed", true))
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "delete"))
+	} else if inv.isRename {
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "rename"))
+	} else {
+		commonDims = append(commonDims, attribute.String("reconcile_operation", "normal"))
 	}
 
 	if !inv.cancelledOn.IsZero() {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
+		commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
 	} else if inv.result.Err != nil {
 		if errors.Is(inv.result.Err, context.Canceled) {
-			commonDims = append(commonDims, attribute.String("reconcile_status", "Cancelled"))
+			commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
 		} else if errors.Is(inv.result.Err, context.DeadlineExceeded) {
-			commonDims = append(commonDims, attribute.String("reconcile_status", "Timeout"))
+			commonDims = append(commonDims, attribute.String("reconcile_result", "timeout"))
 		} else {
-			commonDims = append(commonDims, attribute.String("reconcile_status", "Error"), attribute.String("reconcile_error", inv.result.Err.Error()))
+			commonDims = append(commonDims, attribute.String("reconcile_result", "error"), attribute.String("reconcile_error", inv.result.Err.Error()))
 		}
 	} else {
-		commonDims = append(commonDims, attribute.String("reconcile_status", "Succeeded"))
+		commonDims = append(commonDims, attribute.String("reconcile_result", "success"))
 	}
 
 	if !inv.result.Retrigger.IsZero() {
