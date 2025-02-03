@@ -11,6 +11,7 @@ import { derived, get, type Readable } from "svelte/store";
 
 export class CanvasResolvedSpec {
   canvasSpec: Readable<V1CanvasSpec | undefined>;
+  components: Readable<Record<string, V1ComponentSpec | undefined>>;
   isLoading: Readable<boolean>;
   metricViewNames: Readable<string[]>;
 
@@ -53,7 +54,7 @@ export class CanvasResolvedSpec {
   metricsViewDimensionsMap: Readable<Record<string, Set<string>>>;
 
   /** Component Selectors */
-  getComponentResource: (
+  getComponentResourceFromName: (
     componentName: string,
   ) => Readable<V1ComponentSpec | undefined>;
 
@@ -69,6 +70,19 @@ export class CanvasResolvedSpec {
     this.metricViewNames = derived(validSpecStore, ($validSpecStore) =>
       Object.keys($validSpecStore?.data?.metricsViews || {}),
     );
+
+    this.components = derived(validSpecStore, ($validSpecStore) => {
+      const componentResources = $validSpecStore.data?.components || {};
+      const components: Record<string, V1ComponentSpec | undefined> = {};
+
+      for (const [componentName, resource] of Object.entries(
+        componentResources,
+      )) {
+        components[componentName] = resource.component?.state?.validSpec;
+      }
+
+      return components;
+    });
 
     this.getMetricsViewFromName = (metricViewName: string) =>
       derived(validSpecStore, ($validSpecStore) => {
@@ -193,13 +207,34 @@ export class CanvasResolvedSpec {
       },
     );
 
-    this.getComponentResource = (componentName: string) => {
-      return derived(validSpecStore, ($validSpecStore) => {
-        return $validSpecStore?.data?.components?.[componentName]?.component
-          ?.spec;
+    this.getComponentResourceFromName = (componentName: string) => {
+      return derived(this.components, (components) => {
+        return components[componentName];
       });
     };
   }
+
+  getComponentNameFromIndex = (index: number): Readable<string | undefined> => {
+    return derived(this.canvasSpec, (canvasSpec) => {
+      const componentName = canvasSpec?.items?.[index]?.component;
+      if (!componentName) return undefined;
+      return componentName;
+    });
+  };
+
+  getComponentFromIndex = (
+    index: number,
+  ): Readable<V1ComponentSpec | undefined> => {
+    const componentName = this.getComponentNameFromIndex(index);
+    return derived(
+      [componentName, this.components],
+      ([componentName, components]) => {
+        console.log(componentName, components);
+        if (!componentName) return undefined;
+        return components[componentName];
+      },
+    );
+  };
 
   getDimensionsFromMeasure(measureName: string): MetricsViewSpecDimensionV2[] {
     const metricsMeasureMap = get(this.metricsViewMeasureMap);
