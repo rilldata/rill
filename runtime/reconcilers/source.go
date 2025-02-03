@@ -37,6 +37,7 @@ func newSourceReconciler(ctx context.Context, c *runtime.Controller) (runtime.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
 	}
+	// Re-using the model limit since we are deprecating sources soon (so everything will be a model).
 	if cfg.ModelConcurrentExecutionLimit <= 0 {
 		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
 	}
