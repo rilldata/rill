@@ -16,7 +16,7 @@ func UserCmd(ch *cmdutil.Helper) *cobra.Command {
 	userCmd.AddCommand(AssumeCmd(ch))
 	userCmd.AddCommand(UnassumeCmd(ch))
 	userCmd.AddCommand(OpenCmd(ch))
-	userCmd.AddCommand(RemoveCmd(ch))
+	userCmd.AddCommand(DeleteCmd(ch))
 
 	return userCmd
 }

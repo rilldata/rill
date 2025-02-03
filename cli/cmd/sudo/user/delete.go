@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
+func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "remove <email>",
-		Short: "Remove a user",
+		Use:   "delete <email>",
+		Short: "Delete a user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			client, err := ch.Client()
@@ -30,21 +30,19 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("invalid email: %w", err)
 			}
 
-			orgs, err := client.ListOrganizationsByUser(ctx, &adminv1.ListOrganizationsByUserRequest{
+			_, err = client.GetUser(ctx, &adminv1.GetUserRequest{
 				Email: email,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to list organizations for user %q: %w", email, err)
+				return fmt.Errorf("user %q not found: %w", email, err)
 			}
 
-			for _, org := range orgs.Organizations {
-				_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email, Organization: org.Id})
-				if err != nil {
-					return fmt.Errorf("failed to remove user %q from organization %q: %w", email, org.Id, err)
-				}
+			_, err = client.DeleteUser(ctx, &adminv1.DeleteUserRequest{Email: email})
+			if err != nil {
+				return fmt.Errorf("failed to delete user %q: %w", email, err)
 			}
 
-			cmd.Printf("User %q removed from all organizations\n", email)
+			fmt.Printf("User %q deleted successfully\n", email)
 
 			return nil
 		},
