@@ -106,72 +106,7 @@
       return;
     }
 
-    const isInit =
-      !$dashboardStore || !hasSessionStorageData(exploreName, extraKeyPrefix);
-    if (isInit) {
-      // When a user changes url manually and clears the params the `type` will be "enter"
-      // This signal is used in handleExploreInit to make sure we do not use sessionStorage
-      const isManualUrlChange = type === "enter";
-      void handleExploreInit(isManualUrlChange);
-      return;
-    }
-
-    // Pressing back button and going back to empty url state should not restore from session store
-    const backButtonUsed = type === "popstate";
-    const skipSessionStorage =
-      backButtonUsed && $page.url.searchParams.size === 0;
-
-    let partialExplore = partialExploreStateFromUrl;
-    let shouldUpdateUrl = false;
-    if (exploreStateFromSessionStorage && !skipSessionStorage) {
-      partialExplore = exploreStateFromSessionStorage;
-      shouldUpdateUrl = true;
-    }
-
-    const redirectUrl = new URL(to.url);
-    metricsExplorerStore.mergePartialExplorerEntity(
-      exploreName,
-      partialExplore,
-      metricsSpec,
-    );
-    if (shouldUpdateUrl) {
-      // if we added extra url params from sessionStorage then update the url
-      redirectUrl.search = getUpdatedUrlForExploreState(
-        exploreSpec,
-        timeControlsState,
-        defaultExplorePreset,
-        partialExplore,
-        $page.url.searchParams,
-      );
-    }
-    // update session store when back button was pressed.
-    if (backButtonUsed) {
-      updateExploreSessionStore(
-        exploreName,
-        extraKeyPrefix,
-        $dashboardStore,
-        exploreSpec,
-        timeControlsState,
-      );
-    }
-
-    if (
-      !shouldUpdateUrl ||
-      redirectUrl.search === to.url.toString() ||
-      // redirect loop breaker
-      (prevUrl && prevUrl === redirectUrl.toString())
-    ) {
-      prevUrl = redirectUrl.toString();
-      return;
-    }
-
-    prevUrl = redirectUrl.toString();
-    // using `replaceState` directly messes up the navigation entries,
-    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
-    void goto(redirectUrl, {
-      replaceState: true,
-      state: $page.state,
-    });
+    void handleAfterNavigate(type, to.url);
   });
 
   async function handleExploreInit(isManualUrlChange: boolean) {
@@ -203,10 +138,11 @@
       };
     }
 
-    // time range summary query has `enabled` based on `metricsSpec.timeDimension`
-    // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
     if (metricsSpec.timeDimension) {
+      // time range summary query has `enabled` based on `metricsSpec.timeDimension`
+      // isLoading will never be true when the query is disabled, so we need this check before waiting for it.
       await waitUntil(() => !timeRangeSummaryIsLoading);
+
       [initState.selectedTimeRange, initState.selectedComparisonTimeRange] =
         await resolveTimeRanges(
           exploreSpec,
@@ -214,7 +150,6 @@
           initState.selectedTimezone,
         );
     }
-    console.log(initState.selectedTimeRange);
     metricsExplorerStore.init(exploreName, initState);
     timeControlsState ??= getTimeControlState(
       metricsSpec,
@@ -244,6 +179,92 @@
       return;
     }
 
+    // using `replaceState` directly messes up the navigation entries,
+    // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
+    void goto(redirectUrl, {
+      replaceState: true,
+      state: $page.state,
+    });
+  }
+
+  async function handleAfterNavigate(type, to: URL) {
+    if (!exploreSpec || !metricsSpec) return;
+
+    const isInit =
+      !$dashboardStore || !hasSessionStorageData(exploreName, extraKeyPrefix);
+    if (isInit) {
+      // When a user changes url manually and clears the params the `type` will be "enter"
+      // This signal is used in handleExploreInit to make sure we do not use sessionStorage
+      const isManualUrlChange = type === "enter";
+      void handleExploreInit(isManualUrlChange);
+      return;
+    }
+
+    // Pressing back button and going back to empty url state should not restore from session store
+    const backButtonUsed = type === "popstate";
+    const skipSessionStorage =
+      backButtonUsed && $page.url.searchParams.size === 0;
+
+    let partialExplore = partialExploreStateFromUrl;
+    let shouldUpdateUrl = false;
+    if (exploreStateFromSessionStorage && !skipSessionStorage) {
+      partialExplore = exploreStateFromSessionStorage;
+      shouldUpdateUrl = true;
+    }
+
+    if (metricsSpec.timeDimension) {
+      [
+        partialExplore.selectedTimeRange,
+        partialExplore.selectedComparisonTimeRange,
+      ] = await resolveTimeRanges(
+        exploreSpec,
+        [
+          partialExplore.selectedTimeRange,
+          partialExplore.selectedComparisonTimeRange,
+        ],
+        partialExplore.selectedTimezone ??
+          get(metricsExplorerStore).entities[exploreName].selectedTimezone,
+      );
+    }
+
+    const redirectUrl = new URL(to);
+    metricsExplorerStore.mergePartialExplorerEntity(
+      exploreName,
+      partialExplore,
+      metricsSpec,
+    );
+    if (shouldUpdateUrl) {
+      // if we added extra url params from sessionStorage then update the url
+      redirectUrl.search = getUpdatedUrlForExploreState(
+        exploreSpec,
+        timeControlsState,
+        defaultExplorePreset,
+        partialExplore,
+        $page.url.searchParams,
+      );
+    }
+    // update session store when back button was pressed.
+    if (backButtonUsed) {
+      updateExploreSessionStore(
+        exploreName,
+        extraKeyPrefix,
+        $dashboardStore,
+        exploreSpec,
+        timeControlsState,
+      );
+    }
+
+    if (
+      !shouldUpdateUrl ||
+      redirectUrl.search === to.toString() ||
+      // redirect loop breaker
+      (prevUrl && prevUrl === redirectUrl.toString())
+    ) {
+      prevUrl = redirectUrl.toString();
+      return;
+    }
+
+    prevUrl = redirectUrl.toString();
     // using `replaceState` directly messes up the navigation entries,
     // `from` and `to` have the old url before being replaced in `afterNavigate` calls leading to incorrect handling.
     void goto(redirectUrl, {

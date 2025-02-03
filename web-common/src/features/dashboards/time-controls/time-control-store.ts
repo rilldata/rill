@@ -345,7 +345,7 @@ export function getTimeRange(
         allTimeRange.end,
         selectedTimezone,
       );
-    } else {
+    } else if (selectedTimeRange.start) {
       timeRange = {
         name: selectedTimeRange.name,
         start: selectedTimeRange.start,

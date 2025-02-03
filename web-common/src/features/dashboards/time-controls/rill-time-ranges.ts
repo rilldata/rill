@@ -80,7 +80,7 @@ export async function resolveTimeRanges(
       // already resolved
       tr.start ||
       tr.end ||
-      !validateRillTime(tr.name)
+      !!validateRillTime(tr.name)
     )
       return;
 
