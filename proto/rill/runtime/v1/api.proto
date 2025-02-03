@@ -847,6 +847,9 @@ message IssueDevJWTRequest {
   string email = 2 [(validate.rules).string.min_len = 1];
   repeated string groups = 3;
   bool admin = 4;
+  // Additional arbitrary attributes to include in the JWT.
+  // They take precedence if they collide with name, email, groups or admin.
+  google.protobuf.Struct attributes = 5;
 }
 
 // Response message for RuntimeService.IssueDevJWT
