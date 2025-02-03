@@ -125,6 +125,8 @@ type Handle struct {
 
 	// downloadURL is set when using one-time uploads
 	downloadURL string
+	assetID     string
+	createdOn   time.Time
 }
 
 var _ drivers.Handle = &Handle{}
@@ -403,6 +405,14 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = h.repoPath
 	} else {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
+	}
+
+	if meta.AssetId != "" {
+		h.assetID = meta.AssetId
+	}
+
+	if meta.CreatedOn != nil {
+		h.createdOn = meta.CreatedOn.AsTime()
 	}
 
 	if meta.ArchiveDownloadUrl != "" {

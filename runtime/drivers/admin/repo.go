@@ -38,7 +38,7 @@ func (h *Handle) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	if h.downloadURL != "" {
 		// use downloadURL as a proxy for CommitTimestamp for one-time uploads
 		// It will change when new data is uploaded
-		return time.Now(), nil
+		return h.createdOn, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)
@@ -67,9 +67,7 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	defer h.repoMu.RUnlock()
 
 	if h.downloadURL != "" {
-		// use downloadURL as a proxy for CommitHash for one-time uploads
-		// It will change when new data is uploaded
-		return h.downloadURL, nil
+		return h.assetID, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)
