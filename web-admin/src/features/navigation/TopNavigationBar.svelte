@@ -38,7 +38,7 @@
   export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
-  export let organizationLogoUrl: string | undefined;
+  export let organizationLogoUrl: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 

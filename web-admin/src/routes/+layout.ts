@@ -70,7 +70,6 @@ export const load = async ({ params, url, route }) => {
       user,
       organizationPermissions: <V1OrganizationPermissions>{},
       projectPermissions: <V1ProjectPermissions>{},
-      organizationLogoUrl: undefined,
     };
   }
 
@@ -97,7 +96,6 @@ export const load = async ({ params, url, route }) => {
       organizationPermissions,
       organizationLogoUrl,
       projectPermissions: <V1ProjectPermissions>{},
-      organizationLogoUrl,
     };
   }
 
@@ -121,7 +119,6 @@ export const load = async ({ params, url, route }) => {
       organizationPermissions,
       organizationLogoUrl,
       projectPermissions,
-      organizationLogoUrl,
       project: proj,
       runtime: runtimeData,
     };

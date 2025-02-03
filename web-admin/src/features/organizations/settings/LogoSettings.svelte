@@ -5,6 +5,7 @@
     createAdminServiceUpdateOrganization,
     getAdminServiceGetOrganizationQueryKey,
   } from "@rilldata/web-admin/client";
+  import { CANONICAL_ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
@@ -49,7 +50,7 @@
       headers: assetResp.signingHeaders,
     });
     assetId = assetResp.assetId;
-    return assetResp.signedUrl;
+    return `${CANONICAL_ADMIN_URL}/v1/assets/${assetId}/download`;
   }
 
   function onCancel() {
@@ -124,7 +125,11 @@
           {/if}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" class="flex flex-col gap-y-2 w-[400px] p-4">
+      <PopoverContent
+        align="start"
+        side="bottom"
+        class="flex flex-col gap-y-2 w-[400px] p-4"
+      >
         <div class="text-base font-medium">Upload org logo</div>
         <FileInput bind:value={logoUrl} accept="image/*" {uploadFile} />
         <div class="flex flex-row justify-end gap-x-2">
