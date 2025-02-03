@@ -4,8 +4,8 @@ interface Link {
 }
 
 export interface NotificationMessage {
-  type?: "default" | "success" | "loading" | "error";
-  message?: string;
+  type?: "default" | "success" | "error";
+  message: string;
   detail?: string;
   link?: Link;
   options?: NotificationOptions;
@@ -13,7 +13,6 @@ export interface NotificationMessage {
 
 interface NotificationOptions {
   persisted?: boolean;
-  timeout?: number;
 }
 
 export interface BannerMessage {

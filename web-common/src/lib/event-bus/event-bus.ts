@@ -52,7 +52,6 @@ export const eventBus = new EventBus();
 
 export interface Events {
   notification: NotificationMessage;
-  "clear-all-notifications": void;
   banner: BannerMessage | null;
   highlightSelection: Reference[];
   "shift-click": null;
