@@ -12,6 +12,13 @@
   import type { CanvasComponentType } from "./components/types";
   import BlankCanvas from "./BlankCanvas.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuTrigger,
+  } from "@rilldata/web-common/components/context-menu";
+  import { menuItems } from "./components/menu-items.svelte";
 
   export let fileArtifact: FileArtifact;
 
@@ -177,6 +184,22 @@
   async function handleAdd(e: CustomEvent<{ type: CanvasComponentType }>) {
     await addComponent(e.detail.type);
   }
+
+  function handleContextMenu(
+    event: CustomEvent<{ originalEvent: MouseEvent }>,
+  ) {
+    const target = event.detail.originalEvent.target as HTMLElement;
+    const gridStackEl = target.closest(".grid-stack-item");
+
+    // Prevent context menu if clicking on a grid item
+    if (gridStackEl) {
+      event.detail.originalEvent.preventDefault();
+      event.detail.originalEvent.stopPropagation();
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+  }
 </script>
 
 {#if filtersEnabled}
@@ -188,17 +211,38 @@
   </div>
 {/if}
 
-{#if items.length === 0}
-  <BlankCanvas on:add={handleAdd} />
-{:else}
-  <CanvasDashboardPreview
-    {items}
-    {spec}
-    activeIndex={$selectedIndex}
-    on:update={handleUpdate}
-    on:delete={handleDelete}
-  />
-{/if}
+<ContextMenu>
+  <ContextMenuTrigger
+    class="h-full w-full block"
+    on:contextmenu={handleContextMenu}
+  >
+    {#if items.length === 0}
+      <BlankCanvas />
+    {:else}
+      <CanvasDashboardPreview
+        {items}
+        {spec}
+        activeIndex={$selectedIndex}
+        on:update={handleUpdate}
+        on:delete={handleDelete}
+      />
+    {/if}
+  </ContextMenuTrigger>
+  <ContextMenuContent>
+    {#each menuItems as item}
+      <ContextMenuItem
+        on:click={() =>
+          handleAdd(new CustomEvent("add", { detail: { type: item.id } }))}
+        class="text-gray-700 text-xs"
+      >
+        <div class="flex flex-row gap-x-2">
+          <svelte:component this={item.icon} />
+          <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+        </div>
+      </ContextMenuItem>
+    {/each}
+  </ContextMenuContent>
+</ContextMenu>
 
 <svelte:window
   on:keydown={async (e) => {
