@@ -137,6 +137,10 @@ test.describe("Onboarding", () => {
       test("should connect to the ClickHouse instance and create a dashboard", async ({
         page,
       }) => {
+        page.on("console", (msg) =>
+          console.log(`📢 Console: ${msg.type()}: ${msg.text()}`),
+        );
+
         // Should be redirected to the onboarding page
         await page.waitForURL("**/welcome");
         await expect(page.getByText("Welcome to Rill")).toBeVisible();
