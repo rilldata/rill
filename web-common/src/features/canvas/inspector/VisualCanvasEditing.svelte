@@ -11,7 +11,6 @@
   export let autoSave: boolean;
 
   const { canvasEntity } = getCanvasStateManagers();
-  const { canvasSpec } = canvasEntity.spec;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent, path } =
     fileArtifact);

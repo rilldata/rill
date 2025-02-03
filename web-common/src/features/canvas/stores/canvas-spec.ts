@@ -236,7 +236,9 @@ export class CanvasResolvedSpec {
     );
   };
 
-  getDimensionsFromMeasure(measureName: string): MetricsViewSpecDimensionV2[] {
+  getDimensionsFromMeasure = (
+    measureName: string,
+  ): MetricsViewSpecDimensionV2[] => {
     const metricsMeasureMap = get(this.metricsViewMeasureMap);
     let metricViewName: string | undefined;
     for (const [key, value] of Object.entries(metricsMeasureMap)) {
@@ -246,16 +248,16 @@ export class CanvasResolvedSpec {
     if (metricViewName)
       return get(this.getDimensionsForMetricView(metricViewName));
     return [];
-  }
+  };
 
-  getMetricsViewNamesForDimension(dimensionName: string): string[] {
+  getMetricsViewNamesForDimension = (dimensionName: string): string[] => {
     const metricsDimensionMap = get(this.metricsViewDimensionsMap);
     const metricViewNames: string[] = [];
     for (const [key, value] of Object.entries(metricsDimensionMap)) {
       if (value.has(dimensionName)) metricViewNames.push(key);
     }
     return metricViewNames;
-  }
+  };
 
   private filterSimpleMeasures = (
     measures: MetricsViewSpecMeasureV2[] | undefined,
