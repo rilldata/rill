@@ -1,3 +1,4 @@
+import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -58,6 +59,10 @@ export class WatchFilesClient {
           );
           fileArtifacts.removeFile(res.path);
           this.seenFiles.delete(res.path);
+
+          if (res.path === "/rill.yaml") {
+            await invalidate("init");
+          }
 
           break;
       }
