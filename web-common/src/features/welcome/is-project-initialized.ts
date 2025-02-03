@@ -15,10 +15,19 @@ export async function isProjectInitialized(instanceId: string) {
       queryFn: ({ signal }) => {
         return runtimeServiceListFiles(instanceId, undefined, signal);
       },
+      // Sometimes, after unpacking an example project, this request fails with a "TypeError: Failed to fetch".
+      // So, we retry a handful of times before giving up.
+      retry: (failureCount, error) => {
+        console.error("RuntimeServiceListFiles", error);
+        return failureCount < 10;
+      },
     });
 
-    // Return true if `rill.yaml` exists, else false
-    return !!files.files?.some(({ path }) => path === "/rill.yaml");
+    const hasRillYaml = !!files.files?.some(
+      ({ path }) => path === "/rill.yaml",
+    );
+
+    return hasRillYaml;
   } catch {
     return false;
   }
