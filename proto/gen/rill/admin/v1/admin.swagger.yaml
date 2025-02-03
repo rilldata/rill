@@ -3477,26 +3477,6 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/users/{email}/organizations:
-    get:
-      summary: ListOrganizationsByUser lists all the organizations for the user
-      operationId: AdminService_ListOrganizationsByUser
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListOrganizationsByUserResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/users/bookmarks:
     get:
       summary: ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -4476,14 +4456,6 @@ definitions:
           $ref: '#/definitions/v1MemberUser'
       nextPageToken:
         type: string
-  v1ListOrganizationsByUserResponse:
-    type: object
-    properties:
-      organizations:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Organization'
   v1ListOrganizationsResponse:
     type: object
     properties:

@@ -203,7 +203,6 @@ type DB interface {
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
-	ListOrganizationsByUser(ctx context.Context, email string) ([]*Organization, error)
 	CountMembersByOrganization(ctx context.Context, orgID string, limit int) (int, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error

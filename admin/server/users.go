@@ -284,27 +284,6 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
-func (s *Server) ListOrganizationsByUser(ctx context.Context, req *adminv1.ListOrganizationsByUserRequest) (*adminv1.ListOrganizationsByUserResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, "user not found")
-	}
-
-	orgs, err := s.admin.DB.ListOrganizationsByUser(ctx, user.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	dtos := make([]*adminv1.Organization, len(orgs))
-	for i, org := range orgs {
-		dtos[i] = s.organizationToDTO(org, false)
-	}
-
-	return &adminv1.ListOrganizationsByUserResponse{Organizations: dtos}, nil
-}
-
 func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
 	observability.AddRequestAttributes(
 		ctx,
