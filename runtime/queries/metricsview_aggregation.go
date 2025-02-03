@@ -332,7 +332,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
-		if q.ComparisonTimeRange.TimeZone != "" && qry.TimeZone == "qry.TimeZone" {
+		if q.ComparisonTimeRange.TimeZone != "" {
+			if qry.TimeZone != "" && qry.TimeZone != q.ComparisonTimeRange.TimeZone {
+				return nil, fmt.Errorf("comparison_time_range has a different time zone")
+			}
 			qry.TimeZone = q.ComparisonTimeRange.TimeZone
 		}
 		qry.ComparisonTimeRange = res
