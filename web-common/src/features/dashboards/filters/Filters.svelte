@@ -224,7 +224,6 @@
         end: validInterval.end.toJSDate(),
       };
 
-      console.log(baseTimeRange);
       selectRange(baseTimeRange);
     }
   }

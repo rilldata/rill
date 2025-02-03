@@ -1,6 +1,7 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { normaliseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -344,7 +345,7 @@ export function getTimeRange(
         allTimeRange.end,
         selectedTimezone,
       );
-    } else {
+    } else if (selectedTimeRange.start) {
       timeRange = {
         name: selectedTimeRange.name,
         start: selectedTimeRange.start,
@@ -490,7 +491,8 @@ export function findTimeRange(
   name: string,
   timeRanges: V1TimeRange[],
 ): DashboardTimeControls | undefined {
-  const tr = timeRanges.find((tr) => tr.expression === name);
+  const normalisedName = normaliseRillTime(name);
+  const tr = timeRanges.find((tr) => tr.expression === normalisedName);
   if (!tr) return undefined;
   return {
     name: name as TimeRangePreset,

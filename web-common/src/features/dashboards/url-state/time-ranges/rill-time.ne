@@ -16,10 +16,10 @@ rill_time => time_anchor_part                     {% ([{ start, end }]) => new R
 time_anchor_part => time_anchor _ "," _ time_anchor {% ([start, , , , end]) => ({ start, end }) %}
                   | time_anchor                     {% ([start]) => ({ start }) %}
 
-time_anchor => time_anchor_offset _ "/" _ grain _ time_anchor_offset        {% ([mod, , , , truncate, , offset]) => mod.withOffset(offset).withTruncate(truncate) %}
-             | time_anchor_offset _ time_anchor_offset                      {% ([rillTime, , offset]) => rillTime.withOffset(offset) %}
-             | time_anchor_offset _ "/" _ grain                             {% ([mod, , , , truncate]) => mod.withTruncate(truncate) %}
-             | time_anchor_offset                                           {% id %}
+time_anchor => time_anchor_offset _ "/" _ grain_modifier _ time_anchor_offset {% ([mod, , , , truncate, , offset]) => mod.withOffset(offset).withTruncate(truncate) %}
+             | time_anchor_offset _ time_anchor_offset                        {% ([rillTime, , offset]) => rillTime.withOffset(offset) %}
+             | time_anchor_offset _ "/" _ grain_modifier                      {% ([mod, , , , truncate]) => mod.withTruncate(truncate) %}
+             | time_anchor_offset                                             {% id %}
 
 time_anchor_offset => "now"          {% () => RillTimeAnchor.now() %}
                     | "earliest"     {% () => RillTimeAnchor.earliest() %}
@@ -47,4 +47,4 @@ abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] _ [\d] [\d] [:] [\
 
 timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
 
-grain => [smhdDWQMY] {% id %}
+grain => [sSmhHdDwWqQMyY] {% id %}

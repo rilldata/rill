@@ -1,8 +1,7 @@
 import { getExploreStates } from "@rilldata/web-common/features/explores/selectors";
 
 export const load = async ({ url, parent }) => {
-  const { explore, metricsView, timeRanges, defaultExplorePreset, token } =
-    await parent();
+  const { explore, metricsView, defaultExplorePreset, token } = await parent();
   const exploreName = token?.resourceName;
   const metricsViewSpec = metricsView.metricsView?.state?.validSpec;
   const exploreSpec = explore.explore?.state?.validSpec;
@@ -14,6 +13,5 @@ export const load = async ({ url, parent }) => {
     metricsViewSpec,
     exploreSpec,
     defaultExplorePreset,
-    timeRanges,
   );
 };
