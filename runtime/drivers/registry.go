@@ -141,7 +141,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                         true,
 		ModelDefaultMaterialize:              false,
 		ModelMaterializeDelaySeconds:         0,
-		ModelConcurrentExecutionLimit:        10,
+		ModelConcurrentExecutionLimit:        1,
 		MetricsApproximateComparisons:        true,
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
