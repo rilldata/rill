@@ -18,7 +18,7 @@
   class:bg-gray-200={active}
   class="px-3 py-2 rounded grid gap-x-2 {!disabled
     ? 'hover:bg-gray-200'
-    : ''} {!disabled ? 'hover:dark:bg-gray-600' : ''} items-center"
+    : ''}  items-center"
   style:grid-template-columns="{$$slots['icon'] ? 'max-content' : ''}
   max-content
   {$$slots['context'] ? 'max-content' : ''}

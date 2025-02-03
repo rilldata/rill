@@ -24,8 +24,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-// recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
-const rowGroupBufferSize = int64(datasize.MB) * 512
+// entire data is buffered in memory before its written to disk so keeping it small reduces memory usage
+// but keeping it too small can lead to bad ingestion performance
+// 64MB seems to be a good balance
+const rowGroupBufferSize = int64(datasize.MB) * 64
 
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
