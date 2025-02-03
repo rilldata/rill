@@ -12,13 +12,19 @@
     V1CanvasSpec,
   } from "@rilldata/web-common/runtime-client";
   import * as defaults from "./constants";
-  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
+  import { getComponentRegistry } from "./components/util";
 
-  export let items: Array<V1CanvasItem>;
-  // export let components: Array<BaseCanvasComponent<any>>;
+  export let items: Array<
+    V1CanvasItem & { minSize?: { width: number; height: number } }
+  >;
   export let grid: GridStack;
   export let embed = false;
   export let spec: V1CanvasSpec;
+
+  const componentRegistry = getComponentRegistry();
+
+  $: console.log("items", items);
+  $: console.log("componentRegistry", componentRegistry);
 
   // See: https://github.com/gridstack/gridstack.js/tree/master/doc#events
   const gridStackEvents = [
@@ -59,11 +65,6 @@
   }>();
 
   let gridEl: HTMLDivElement;
-
-  // FYI:
-  // There could be a race condition where the grid is updated while dragging
-  // so we need to avoid updating the grid while dragging
-  // Only update the grid when user finishes dragging
   let isDragging = false;
 
   function handlePointerDown(event: PointerEvent) {
@@ -93,19 +94,15 @@
     const currentItems = grid.getGridItems();
     const newCount = items.length;
 
-    items.forEach((item: V1CanvasItem, i: number) => {
-      // const component = components[i];
-      // const minSize = component?.minSize || { width: 3, height: 3 };
-      const minSize = { width: 3, height: 3 };
-
+    items.forEach((item, i: number) => {
       if (currentItems[i]) {
         grid.update(currentItems[i], {
           x: item.x,
           y: item.y,
           w: item.width,
           h: item.height,
-          minW: minSize.width,
-          minH: minSize.height,
+          minW: item.minSize?.width,
+          minH: item.minSize?.height,
         });
       } else {
         grid.addWidget({
@@ -113,8 +110,8 @@
           y: item.y,
           w: item.width,
           h: item.height,
-          minW: minSize.width,
-          minH: minSize.height,
+          minW: item.minSize?.width,
+          minH: item.minSize?.height,
         });
       }
     });

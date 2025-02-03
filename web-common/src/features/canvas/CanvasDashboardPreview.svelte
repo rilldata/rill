@@ -15,6 +15,7 @@
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
   import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
+  import { getComponentRegistry } from "./components/util";
 
   export let items: V1CanvasItem[];
   export let activeIndex: number | null = null;
@@ -22,12 +23,27 @@
 
   const { canvasEntity } = getCanvasStateManagers();
   const dispatch = createEventDispatcher();
+  const componentRegistry = getComponentRegistry();
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let grid: GridStack;
   let gridContainer: HTMLElement;
 
   $: instanceId = $runtime.instanceId;
+
+  // FIXME:
+  // Get component's minSize from the component registry
+  // Transform items to include minSize
+  $: itemsWithMinSize = items.map((item) => {
+    const componentType = Object.keys(item.component || {})[0];
+    const minSize = componentRegistry[componentType]?.minSize;
+    return {
+      ...item,
+      minSize,
+    };
+  });
+
+  $: console.log("itemsWithMinSize", itemsWithMinSize);
 
   $: if (grid) {
     canvasEntity.setGridstack(grid);
@@ -125,25 +141,13 @@
       canvasEntity.setSelectedComponentIndex(activeIndex);
     }
   }
-
-  $: console.log("canvasEntity: ", canvasEntity);
-  $: console.log("canvasEntity.components: ", canvasEntity.components);
 </script>
-
-<!-- {#if showFilterBar}
-  <div
-    id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
-  >
-    <CanvasFilters />
-  </div>
-{/if} -->
 
 <CanvasDashboardWrapper bind:contentRect height={maxBottom}>
   <div bind:this={gridContainer} use:clickOutside={[null, handleClickOutside]}>
     <SvelteGridStack
       bind:grid
-      {items}
+      items={itemsWithMinSize}
       {spec}
       let:index
       let:item
