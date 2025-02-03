@@ -37,7 +37,9 @@ func newSourceReconciler(ctx context.Context, c *runtime.Controller) (runtime.Re
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
 	}
-
+	if cfg.ModelConcurrentExecutionLimit <= 0 {
+		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
+	}
 	return &SourceReconciler{
 		C:       c,
 		execSem: semaphore.NewWeighted(int64(cfg.ModelConcurrentExecutionLimit)),
@@ -125,7 +127,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 					r.C.Logger.Warn("failed to rename source", zap.String("source", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
 				}
 			}()
-			if ctx.Err() != nil {
+			if ctx.Err() != nil { // Handle if the error was a ctx error
 				return runtime.ReconcileResult{Err: ctx.Err()}
 			}
 		}

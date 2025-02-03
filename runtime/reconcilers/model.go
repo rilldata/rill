@@ -50,7 +50,9 @@ func newModelReconciler(ctx context.Context, c *runtime.Controller) (runtime.Rec
 	if err != nil {
 		return nil, fmt.Errorf("failed to get model execution concurrency limit: %w", err)
 	}
-
+	if cfg.ModelConcurrentExecutionLimit <= 0 {
+		return nil, errors.New("model_concurrent_execution_limit must be greater than zero")
+	}
 	return &ModelReconciler{
 		C:       c,
 		execSem: semaphore.NewWeighted(int64(cfg.ModelConcurrentExecutionLimit)),
@@ -165,7 +167,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 					r.C.Logger.Warn("failed to rename model", zap.String("model", n.Name), zap.String("renamed_from", self.Meta.RenamedFrom.Name), zap.Error(err))
 				}
 			}()
-			if ctx.Err() != nil {
+			if ctx.Err() != nil { // Handle if the error was a ctx error
 				return runtime.ReconcileResult{Err: ctx.Err()}
 			}
 
