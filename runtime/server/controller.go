@@ -76,10 +76,10 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		// Check of the request is to skip security checks
 		if !access {
 			// Remove from the slice
 			rs[i] = rs[len(rs)-1]
+			rs[len(rs)-1] = nil
 			rs = rs[:len(rs)-1]
 			continue
 		}
