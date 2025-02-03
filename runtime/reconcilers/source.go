@@ -119,7 +119,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 				// Rename and update state
 				err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
-				if err != nil {
+				if err == nil {
 					src.State.Table = tableName
 					err = r.C.UpdateState(ctx, self.Meta.Name, self)
 				}
