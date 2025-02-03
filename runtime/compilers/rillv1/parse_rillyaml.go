@@ -50,6 +50,8 @@ type rillYAML struct {
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
 	Title string `yaml:"title"` // Deprecated: use display_name
+	// Title of the project
+	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
@@ -164,6 +166,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	// Display name backwards compatibility
 	if tmp.Title != "" && tmp.DisplayName == "" {
 		tmp.DisplayName = tmp.Title
+	}
+	if tmp.Name != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Name
 	}
 
 	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.
