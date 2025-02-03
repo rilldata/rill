@@ -12,8 +12,10 @@
     V1CanvasSpec,
   } from "@rilldata/web-common/runtime-client";
   import * as defaults from "./constants";
+  import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
 
   export let items: Array<V1CanvasItem>;
+  // export let components: Array<BaseCanvasComponent<any>>;
   export let grid: GridStack;
   export let embed = false;
   export let spec: V1CanvasSpec;
@@ -91,14 +93,19 @@
     const currentItems = grid.getGridItems();
     const newCount = items.length;
 
-    // Only modify items that need changes
-    items.forEach((item, i) => {
+    items.forEach((item: V1CanvasItem, i: number) => {
+      // const component = components[i];
+      // const minSize = component?.minSize || { width: 3, height: 3 };
+      const minSize = { width: 3, height: 3 };
+
       if (currentItems[i]) {
         grid.update(currentItems[i], {
           x: item.x,
           y: item.y,
           w: item.width,
           h: item.height,
+          minW: minSize.width,
+          minH: minSize.height,
         });
       } else {
         grid.addWidget({
@@ -106,6 +113,8 @@
           y: item.y,
           w: item.width,
           h: item.height,
+          minW: minSize.width,
+          minH: minSize.height,
         });
       }
     });

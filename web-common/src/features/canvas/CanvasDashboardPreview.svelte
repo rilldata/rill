@@ -125,6 +125,9 @@
       canvasEntity.setSelectedComponentIndex(activeIndex);
     }
   }
+
+  $: console.log("canvasEntity: ", canvasEntity);
+  $: console.log("canvasEntity.components: ", canvasEntity.components);
 </script>
 
 <!-- {#if showFilterBar}

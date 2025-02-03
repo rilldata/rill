@@ -46,6 +46,7 @@
   use:builderActions={{ builders }}
   role="presentation"
   data-index={i}
+  data-renderer={renderer}
   class="canvas-component pointer-events-auto size-full"
   data-selected={selected}
   data-hovered={isHovered}
