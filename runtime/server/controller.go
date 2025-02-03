@@ -33,6 +33,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.kind", req.Kind),
+		attribute.Bool("args.skip_checks", req.SkipSecurityChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
@@ -61,6 +62,13 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return strings.Compare(an.Name, bn.Name)
 	})
 
+	if req.SkipSecurityChecks {
+		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+			return nil, ErrForbidden
+		}
+		return &runtimev1.ListResourcesResponse{Resources: rs}, nil
+	}
+
 	i := 0
 	for i < len(rs) {
 		r := rs[i]
@@ -68,10 +76,10 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+		// Check of the request is to skip security checks
 		if !access {
 			// Remove from the slice
 			rs[i] = rs[len(rs)-1]
-			rs[len(rs)-1] = nil
 			rs = rs[:len(rs)-1]
 			continue
 		}
@@ -155,6 +163,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name.kind", req.Name.Kind),
 		attribute.String("args.name.name", req.Name.Name),
+		attribute.Bool("args.skip_checks", req.SkipSecurityChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
@@ -172,6 +181,13 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 			return nil, status.Error(codes.NotFound, "resource not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if req.SkipSecurityChecks {
+		if !auth.GetClaims(ctx).SecurityClaims().Admin() {
+			return nil, ErrForbidden
+		}
+		return &runtimev1.GetResourceResponse{Resource: r}, nil
 	}
 
 	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
