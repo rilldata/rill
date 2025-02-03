@@ -24,6 +24,7 @@ export function useMockUsers(instanceId: string) {
             yamlObj?.mock_users?.filter((user: MockUser) => user?.email) || [];
           return mockUsers as Array<MockUser>;
         },
+        refetchOnMount: true,
       },
     },
   );
