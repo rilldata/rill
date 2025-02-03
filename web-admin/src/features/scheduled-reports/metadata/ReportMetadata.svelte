@@ -10,7 +10,6 @@
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import cronstrue from "cronstrue";
   import { createAdminServiceDeleteReport } from "../../../client";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import {
@@ -22,7 +21,11 @@
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
   import RunNowButton from "./RunNowButton.svelte";
-  import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
+  import {
+    exportFormatToPrettyString,
+    formatNextRunOn,
+    formatRefreshSchedule,
+  } from "./utils";
 
   export let organization: string;
   export let project: string;
@@ -39,17 +42,10 @@
   $: dashboardTitle =
     $dashboard.data?.explore?.displayName || $dashboardName.data;
 
-  // Get human-readable frequency
-  $: humanReadableFrequency =
-    $reportQuery.data &&
-    cronstrue.toString(
-      $reportQuery.data.resource.report.spec.refreshSchedule.cron,
-      {
-        verbose: true,
-      },
-    );
-
   $: reportSpec = $reportQuery.data?.resource?.report?.spec;
+
+  // Get human-readable frequency
+  $: humanReadableFrequency = formatRefreshSchedule(reportSpec);
 
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");

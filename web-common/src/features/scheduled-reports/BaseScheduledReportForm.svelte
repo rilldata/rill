@@ -74,14 +74,12 @@
       />
     {/if}
     {#if $data["frequency"] === ReportFrequency.Monthly}
-      <Input
-        bind:value={$data["dayOfMonth"]}
-        errors={$errors["dayOfMonth"]}
+      <Select
+        value={"1"}
         id="dayOfMonth"
         label="Day"
-        inputType="number"
-        width="64px"
-        labelGap={2}
+        options={[{ value: "1", label: "First day" }]}
+        disabled
       />
     {/if}
     <TimePicker bind:value={$data["timeOfDay"]} id="timeOfDay" label="Time" />
