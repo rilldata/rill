@@ -1075,8 +1075,8 @@ export interface V1PullTrigger {
 export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
   currentCommitSha?: string;
-  watching?: boolean;
   currentCommitOn?: string;
+  watching?: boolean;
 }
 
 export interface V1ProjectParserSpec {

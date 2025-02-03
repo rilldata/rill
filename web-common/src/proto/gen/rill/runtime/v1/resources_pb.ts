@@ -604,14 +604,14 @@ export class ProjectParserState extends Message<ProjectParserState> {
   currentCommitSha = "";
 
   /**
-   * @generated from field: bool watching = 3;
-   */
-  watching = false;
-
-  /**
    * @generated from field: google.protobuf.Timestamp current_commit_on = 4;
    */
   currentCommitOn?: Timestamp;
+
+  /**
+   * @generated from field: bool watching = 3;
+   */
+  watching = false;
 
   constructor(data?: PartialMessage<ProjectParserState>) {
     super();
@@ -623,8 +623,8 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "current_commit_on", kind: "message", T: Timestamp },
+    { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserState {

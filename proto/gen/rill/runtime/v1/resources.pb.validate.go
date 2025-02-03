@@ -1634,8 +1634,6 @@ func (m *ProjectParserState) validate(all bool) error {
 
 	// no validation rules for CurrentCommitSha
 
-	// no validation rules for Watching
-
 	if all {
 		switch v := interface{}(m.GetCurrentCommitOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -1664,6 +1662,8 @@ func (m *ProjectParserState) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Watching
 
 	if len(errors) > 0 {
 		return ProjectParserStateMultiError(errors)
