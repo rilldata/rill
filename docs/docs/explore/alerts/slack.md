@@ -39,7 +39,7 @@ The last two scopes are required to find the user's ID by email.
 
 ## Enabling the Slack integration in your project
 
-Once the Slack integration has been set up, the Slack destination will need to be enabled on a per project basis (note - alerts can only be configured on projects deployed to Rill Cloud). This requires the `connector.slack.bot_token` connector variable to be set, which can be configured in Rill through a fashion very similar to [setting credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-on-rill-cloud) for other connectors. Please use one of the available options below.
+Once the Slack integration has been set up, the Slack destination will need to be enabled on a per project basis (note - alerts can only be configured on projects deployed to Rill Cloud). This requires the `connector.slack.bot_token` connector variable to be set, which can be configured in Rill through a fashion very similar to [setting credentials](/deploy/deploy-credentials#configure-environmental-variables-and-credentials-for-rill-cloud) for other connectors. Please use one of the available options below.
 
 ### Updating the `.env` file directly
 

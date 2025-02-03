@@ -29,6 +29,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { parseDocument } from "yaml";
   import PreviewButton from "../explores/PreviewButton.svelte";
+  import { findNextAvailablePosition } from "@rilldata/web-common/features/canvas/util";
 
   export let fileArtifact: FileArtifact;
 
@@ -47,6 +48,7 @@
     getAllErrors,
     remoteContent,
     hasUnsavedChanges,
+    saveLocalContent,
   } = fileArtifact);
 
   $: resourceQuery = getResource(queryClient, instanceId);
@@ -86,27 +88,32 @@
     if (newRoute) await goto(newRoute);
   }
 
-  function addComponent(componentName: CanvasComponentType) {
+  async function addComponent(componentType: CanvasComponentType) {
     const defaultMetrics = $metricsViewQuery?.data;
     if (!defaultMetrics) return;
 
-    const newSpec = componentRegistry[componentName].newComponentSpec(
+    const newSpec = componentRegistry[componentType].newComponentSpec(
       defaultMetrics.metricsView,
       defaultMetrics.measure,
       defaultMetrics.dimension,
     );
 
-    const { width, height } = componentRegistry[componentName].defaultSize;
+    const { width, height } = componentRegistry[componentType].defaultSize;
+
+    const parsedDocument = parseDocument($editorContent ?? "");
+    const items = parsedDocument.get("items") as any;
+    const itemsJson = parsedDocument.toJSON();
+    const existingItems = itemsJson?.items || [];
+
+    const [x, y] = findNextAvailablePosition(existingItems, width, height);
+
     const newComponent = {
-      component: { [componentName]: newSpec },
+      component: { [componentType]: newSpec },
       height,
       width,
-      x: 0,
-      y: 0,
+      x,
+      y,
     };
-    const parsedDocument = parseDocument($editorContent ?? "");
-
-    const items = parsedDocument.get("items") as any;
 
     if (!items) {
       parsedDocument.set("items", [newComponent]);
@@ -114,7 +121,19 @@
       items.add(newComponent);
     }
 
-    updateEditorContent(parsedDocument.toString(), false, true);
+    const newIndex = existingItems.length;
+    updateEditorContent(parsedDocument.toString(), true);
+    await saveLocalContent();
+    scrollToComponent(newIndex);
+  }
+
+  function scrollToComponent(index: number) {
+    setTimeout(() => {
+      const component = document.querySelector(`[data-index="${index}"]`);
+      if (component) {
+        component.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
   }
 </script>
 

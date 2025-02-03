@@ -1,9 +1,11 @@
 <script lang="ts">
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { type CanvasComponentObj } from "@rilldata/web-common/features/canvas/components/util";
+  import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
 
+  export let selectedComponentName: string;
   export let component: CanvasComponentObj;
   export let paramValues: V1ComponentSpecRendererProperties;
 
@@ -18,9 +20,8 @@
 
   $: inputParams = component.inputParams().filter;
 
-  // Enable this when adding support for dimension filters
-  // $: metricsView =
-  //   "metrics_view" in paramValues ? paramValues.metrics_view : null;
+  $: metricsView =
+    "metrics_view" in paramValues ? paramValues.metrics_view : null;
 
   onMount(() => {
     localParamValues = structuredClone(paramValues) || {};
@@ -30,7 +31,7 @@
 <div>
   {#each Object.entries(inputParams) as [key, config]}
     <div class="component-param">
-      {#if config.type === "time_range" || config.type === "comparison_range" || config.type == "dimension_filters"}
+      {#if config.type === "time_range" || config.type === "comparison_range"}
         <Input
           inputType="text"
           capitalizeLabel={false}
@@ -44,6 +45,18 @@
             component.updateProperty(key, localParamValues[key]);
           }}
           onEnter={async () => {
+            component.updateProperty(key, localParamValues[key]);
+          }}
+        />
+      {:else if config.type == "dimension_filters" && metricsView}
+        <DimensionFiltersInput
+          {metricsView}
+          {selectedComponentName}
+          label={config.label ?? key}
+          id={key}
+          filter={localParamValues[key]}
+          onChange={async (filter) => {
+            localParamValues[key] = filter;
             component.updateProperty(key, localParamValues[key]);
           }}
         />

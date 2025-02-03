@@ -7,12 +7,14 @@ type SemanticInputTypes =
   | "multi_dimensions";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
 type CustomInputTypes = "rill_time";
+type PositionalInputTypes = "alignment";
 
 export type InputType =
   | NativeInputTypes
   | SemanticInputTypes
   | ChartInputTypes
-  | CustomInputTypes;
+  | CustomInputTypes
+  | PositionalInputTypes;
 
 export type FilterInputTypes =
   | "time_range"

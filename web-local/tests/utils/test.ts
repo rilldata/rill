@@ -6,28 +6,33 @@ import { getOpenPort } from "./getOpenPort";
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
+type MyFixtures = {
+  includeRillYaml: boolean;
+};
+
 const BASE_PROJECT_DIRECTORY = "temp/test-project";
 
-export const test = base.extend({
-  page: async ({ page }, use) => {
+export const test = base.extend<MyFixtures>({
+  includeRillYaml: [true, { option: true }],
+
+  page: async ({ page, includeRillYaml }, use) => {
     const TEST_PORT = await getOpenPort();
     const TEST_PORT_GRPC = await getOpenPort();
     const TEST_PROJECT_DIRECTORY = `${BASE_PROJECT_DIRECTORY}-${TEST_PORT}`;
 
-    rmSync(TEST_PROJECT_DIRECTORY, {
-      force: true,
-      recursive: true,
-    });
+    rmSync(TEST_PROJECT_DIRECTORY, { force: true, recursive: true });
 
     if (!existsSync(TEST_PROJECT_DIRECTORY)) {
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
 
-    // Add `rill.yaml` file to the project repo
-    writeFileSync(
-      `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-      'compiler: rill-beta\ntitle: "Test Project"',
-    );
+    // Conditionally write the file
+    if (includeRillYaml) {
+      writeFileSync(
+        `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
+        'compiler: rill-beta\ntitle: "Test Project"',
+      );
+    }
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} ${TEST_PROJECT_DIRECTORY}`;
 
