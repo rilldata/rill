@@ -125,15 +125,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Convert to timestamppb.Timestamp
 	timeStamp := timestamppb.New(ts)
 
-	// Update the commit timestamp
-	if pp.State.CurrentCommitOn != timeStamp {
-		pp.State.CurrentCommitOn = timeStamp
-		err = r.C.UpdateState(ctx, n, self)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
-	}
-
 	// Update commit sha
 	hash, err := repo.CommitHash(ctx)
 	if err != nil {
@@ -142,6 +133,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
+		pp.State.CurrentCommitOn = timeStamp
 		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
