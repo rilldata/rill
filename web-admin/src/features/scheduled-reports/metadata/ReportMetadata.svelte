@@ -45,7 +45,9 @@
   $: reportSpec = $reportQuery.data?.resource?.report?.spec;
 
   // Get human-readable frequency
-  $: humanReadableFrequency = formatRefreshSchedule(reportSpec);
+  $: humanReadableFrequency = reportSpec?.refreshSchedule?.cron
+    ? formatRefreshSchedule(reportSpec.refreshSchedule.cron)
+    : "";
 
   $: emailNotifier = extractNotifier(reportSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");

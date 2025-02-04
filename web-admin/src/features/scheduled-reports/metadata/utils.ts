@@ -1,4 +1,4 @@
-import type { V1ReportSpec } from "@rilldata/web-common/runtime-client";
+import { ordinal } from "@rilldata/web-common/lib/ordinal";
 import cronstrue from "cronstrue";
 import { DateTime } from "luxon";
 import { V1ExportFormat } from "../../../client";
@@ -28,25 +28,13 @@ export function formatNextRunOn(nextRunOn: string, timeZone: string): string {
     .toLocaleString(DateTime.DATETIME_FULL);
 }
 
-const suffixMap = {
-  1: "st",
-  2: "nd",
-  3: "rd",
-};
-export function formatRefreshSchedule(reportSpec: V1ReportSpec) {
-  if (!reportSpec.refreshSchedule?.cron) return "";
-  let formattedRefreshSchedule = cronstrue.toString(
-    reportSpec.refreshSchedule.cron,
-    {
-      verbose: true,
-    },
-  );
+export function formatRefreshSchedule(cron: string) {
+  let formattedRefreshSchedule = cronstrue.toString(cron, {
+    verbose: true,
+  });
   formattedRefreshSchedule = formattedRefreshSchedule.replace(
     /on day (\d*) of the month/,
-    (_, day: number) => {
-      const suffix = suffixMap[day % 10] ?? "th";
-      return `on the ${day}${suffix} of each month`;
-    },
+    (_, day: number) => `on the ${ordinal(day)} of each month`,
   );
 
   return formattedRefreshSchedule;

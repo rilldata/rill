@@ -31,6 +31,15 @@ export function getTimeIn24FormatFromDateTime(dateTime: DateTime): string {
   return dateTime.toFormat("HH:mm");
 }
 
+const weekDayMap: Record<string, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
 export function convertFormValuesToCronExpression(
   frequency: ReportFrequency,
   dayOfWeek: string,
@@ -48,15 +57,6 @@ export function convertFormValuesToCronExpression(
       cronExpr += "* * 1-5";
       break;
     case ReportFrequency.Weekly: {
-      const weekDayMap: Record<string, number> = {
-        Sunday: 0,
-        Monday: 1,
-        Tuesday: 2,
-        Wednesday: 3,
-        Thursday: 4,
-        Friday: 5,
-        Saturday: 6,
-      };
       cronExpr += `* * ${weekDayMap[dayOfWeek]}`;
       break;
     }
