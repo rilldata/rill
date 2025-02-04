@@ -35,9 +35,9 @@ grain_and_at_part => ":" _ range_grain_modifier _ "@" _ at_modifiers {% ([, , gr
 range_grain_modifier => grain             {% ([grain]) => ({ grain, isComplete: false }) %}
                       | "|" _ grain _ "|" {% ([, ,grain]) => ({ grain, isComplete: true }) %}
 
-at_modifiers => grain_modifier                     {% ([grain]) => ({ at: RillTimeAnchor.relative(grain) }) %}
-              | timezone_modifier                  {% ([timeZone]) => ({ timeZone }) %}
-              | grain_modifier _ timezone_modifier {% ([grain, , timeZone]) => ({ at: RillTimeAnchor.relative(grain), timeZone }) %}
+at_modifiers => time_anchor_offset                     {% ([grain]) => ({ at: grain }) %}
+              | timezone_modifier                      {% ([timeZone]) => ({ timeZone }) %}
+              | time_anchor_offset _ timezone_modifier {% ([grain, , timeZone]) => ({ at: grain, timeZone }) %}
 
 grain_modifier => grain     {% ([grain]) => ({ count: 0, grain }) %}
                 | int grain {% ([count, grain]) => ({ count, grain }) %}
