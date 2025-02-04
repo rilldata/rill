@@ -184,4 +184,21 @@ describe("rill time", () => {
       });
     }
   });
+
+  describe("Update timezone", () => {
+    const Cases: [rillTime: string, timezone: string, replaced: string][] = [
+      ["-6d, latest : |h|", "UTC", "-6d,latest:|h|@{UTC}"],
+      ["-6d, latest : |h| @ {IST}", "UTC", "-6d,latest:|h|@{UTC}"],
+      ["-6d, latest : |h| @ now", "UTC", "-6d,latest:|h|@now {UTC}"],
+      ["-6d, latest : |h| @ now {IST}", "UTC", "-6d,latest:|h|@now {UTC}"],
+    ];
+
+    for (const [rillTime, timezone, replaced] of Cases) {
+      it(`'${rillTime}'.addTimezone(${timezone})=${replaced}`, () => {
+        const rt = parseRillTime(rillTime);
+        rt.addTimezone(timezone);
+        expect(rt.toString()).toEqual(replaced);
+      });
+    }
+  });
 });
