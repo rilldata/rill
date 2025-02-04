@@ -22,6 +22,24 @@ func newMetricsViewReconciler(ctx context.Context, c *runtime.Controller) (runti
 	return &MetricsViewReconciler{C: c}, nil
 }
 
+func (r *MetricsViewReconciler) clearTrigger(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n, true)
+	if err != nil {
+		return err
+	}
+
+	model := self.GetMetricsView()
+	if model == nil {
+		return fmt.Errorf("not a metrics view")
+	}
+
+	model.Spec.Trigger = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
 func (r *MetricsViewReconciler) Close(ctx context.Context) error {
 	return nil
 }
@@ -117,6 +135,14 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	if validateErr == nil {
 		// If no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
 		mv.State.Streaming = !hasInternalRef
+	}
+
+	// Clear the trigger flag if the metrics view is valid.
+	if mv.Spec.Trigger {
+		err := r.clearTrigger(ctx, n)
+		if err != nil {
+			return runtime.ReconcileResult{Err: fmt.Errorf("failed to clear trigger: %w", err)}
+		}
 	}
 
 	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.

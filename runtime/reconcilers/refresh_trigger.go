@@ -210,6 +210,7 @@ func (r *RefreshTriggerReconciler) UpdateTriggerTrue(ctx context.Context, res *r
 		if metricsView.Spec.Trigger {
 			return nil
 		}
+		metricsView.Spec.Trigger = true
 	default:
 		// Nothing to do
 		r.C.Logger.Warn("Attempted to trigger a resource type that is not triggerable", zap.String("kind", res.Meta.Name.Kind), zap.String("name", res.Meta.Name.Name))
