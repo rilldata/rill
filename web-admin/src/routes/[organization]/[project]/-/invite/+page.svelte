@@ -36,7 +36,7 @@
   $: isPublicDomain = userDomainIsPublic();
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
 
-  $: buttonText = invited || allowDomain ? "Continue" : "Skip";
+  $: buttonText = invited || allowDomain ? "Continue" : "Skip for now";
 
   async function onContinue() {
     if (allowDomain) {
