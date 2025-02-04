@@ -69,7 +69,6 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         type: "quantitative",
         field: measure,
       },
-      time_range: "PT24H",
     };
   }
 }

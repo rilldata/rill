@@ -7,6 +7,8 @@
   import VegaConfigInput from "@rilldata/web-common/features/canvas/inspector/VegaConfigInput.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import ComponentTabs from "./ComponentTabs.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
@@ -67,9 +69,19 @@
         <VegaConfigInput {component} paramValues={rendererProperties} />
       {/if}
     {/key}
+  {:else if !renderer}
+    <div class="inspector-center">
+      <Spinner status={EntityStatus.Running} size="16px" />
+    </div>
   {:else}
-    <div>
+    <div class="inspector-center">
       Unknown Component {renderer}
     </div>
   {/if}
 </SidebarWrapper>
+
+<style lang="postcss">
+  .inspector-center {
+    @apply flex items-center justify-center h-full w-full;
+  }
+</style>

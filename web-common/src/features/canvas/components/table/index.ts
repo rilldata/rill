@@ -76,7 +76,6 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
       metrics_view,
       measures: [measure],
       row_dimensions: [dimension],
-      time_range: "PT24H",
     };
   }
 }
