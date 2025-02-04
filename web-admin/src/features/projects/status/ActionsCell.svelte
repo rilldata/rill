@@ -36,7 +36,7 @@
 {#if canRefresh}
   <DropdownMenu.Root bind:open={isDropdownOpen}>
     <DropdownMenu.Trigger class="flex-none">
-      <IconButton rounded active={isDropdownOpen}>
+      <IconButton rounded active={isDropdownOpen} compact>
         <ThreeDot size="16px" />
       </IconButton>
     </DropdownMenu.Trigger>
