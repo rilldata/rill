@@ -87,6 +87,7 @@ func newMetricsViewTimeRangeResolver(ctx context.Context, opts *runtime.Resolver
 }
 
 func (r *metricsViewTimeRangeResolver) Close() error {
+	r.executor.Close()
 	return nil
 }
 
