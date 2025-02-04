@@ -1,1 +1,0 @@
-{"name":"metrics_margin_model","version":"1738257412118","created_version":"1738257412118","type":"VIEW","sql":"select * from metrics_margin_monitoring ORDER BY 1 DESC"}
