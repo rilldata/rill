@@ -136,7 +136,7 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden w-[490px]">
+  <DropdownMenu.Content align="start" class="p-0 overflow-hidden w-[480px]">
     <TimeRangeSearch
       bind:this={searchComponent}
       {context}
@@ -167,8 +167,8 @@
 
           {#each rangeBuckets.customTimeRanges as range, i (i)}
             <TimeRangeMenuItem
-              selected={selected === range.range}
               {range}
+              selected={selected === range.range}
               onClick={handleRangeSelect}
             />
           {/each}
@@ -180,8 +180,8 @@
           {#each rangeBuckets.ranges as ranges, i (i)}
             {#each ranges as range, i (i)}
               <TimeRangeMenuItem
-                selected={selected === range.range}
                 {range}
+                selected={selected === range.range}
                 onClick={handleRangeSelect}
               />
             {/each}
@@ -264,7 +264,7 @@
               </div>
             </div> -->
 
-        <div class="flex flex-col gap-y-3 border-t p-3">
+        <div class="flex flex-col gap-y-3 border-t p-3 mt-auto">
           <span class="text-gray-500 text-xs">Timeframe</span>
 
           <div class="flex flex-col gap-y-1">

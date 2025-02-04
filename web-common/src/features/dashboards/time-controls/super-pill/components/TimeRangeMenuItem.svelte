@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { getRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
   import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
   import SyntaxElement from "./SyntaxElement.svelte";
 

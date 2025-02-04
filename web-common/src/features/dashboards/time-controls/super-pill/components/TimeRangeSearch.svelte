@@ -41,7 +41,7 @@
     <input
       placeholder="Search"
       type="text"
-      class="h-8 border w-full"
+      class="h-7 border w-full"
       bind:this={searchElement}
       bind:value={searchValue}
     />
@@ -61,7 +61,7 @@
     @apply bg-background justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-8 w-full truncate;
+    @apply h-7 w-full truncate;
   }
 
   form:focus-within {
