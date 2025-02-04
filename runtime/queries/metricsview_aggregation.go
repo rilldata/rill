@@ -416,6 +416,10 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 }
 
 func anyToTime(tm any) (time.Time, error) {
+	if tm == nil {
+		return time.Time{}, nil
+	}
+
 	tmStr, ok := tm.(string)
 	if !ok {
 		t, ok := tm.(time.Time)
