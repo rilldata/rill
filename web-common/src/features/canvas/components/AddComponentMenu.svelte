@@ -3,27 +3,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { ChevronDown, Plus } from "lucide-svelte";
-  import type { ComponentType, SvelteComponent } from "svelte";
-  import ChartIcon from "../icons/ChartIcon.svelte";
-  import TableIcon from "../icons/TableIcon.svelte";
-  import TextIcon from "../icons/TextIcon.svelte";
-  import BigNumberIcon from "../icons/BigNumberIcon.svelte";
+  import { menuItems } from "./menu-items.svelte";
 
   export let addComponent: (componentType: CanvasComponentType) => void;
 
   let open = false;
-
-  const menuItems: {
-    id: CanvasComponentType;
-    label: string;
-    icon: ComponentType<SvelteComponent>;
-  }[] = [
-    { id: "bar_chart", label: "Chart", icon: ChartIcon },
-    { id: "table", label: "Table", icon: TableIcon },
-    { id: "markdown", label: "Text", icon: TextIcon },
-    { id: "kpi", label: "KPI", icon: BigNumberIcon },
-    { id: "image", label: "Image", icon: ChartIcon },
-  ];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>

@@ -90,8 +90,8 @@
   }
 </script>
 
-<div class="flex flex-col gap-y-2 w-full h-20 justify-center ml-2">
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
+<div class="flex flex-col gap-y-2 w-full h-20 justify-center">
+  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
     <Calendar size="16px" />
     <CanvasSuperPill
       allTimeRange={$allTimeRange}
@@ -108,8 +108,7 @@
       selectedComparisonTimeRange={$selectedComparisonTimeRange}
     />
   </div>
-
-  <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
+  <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}

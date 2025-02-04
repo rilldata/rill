@@ -271,7 +271,7 @@
     @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit truncate;
+    @apply h-fit w-fit;
   }
 
   input,
@@ -288,13 +288,10 @@
   }
 
   .multiline-input {
+    @apply h-fit w-full max-h-32 overflow-y-auto;
     @apply py-1;
     line-height: 1.58;
-  }
-
-  .multiline-input {
-    @apply overflow-auto break-words;
-    @apply h-fit min-h-fit;
+    word-wrap: break-word;
   }
 
   .input-wrapper:focus-within {
