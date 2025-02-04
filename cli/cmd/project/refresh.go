@@ -13,7 +13,7 @@ import (
 func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var local bool
-	var models, modelPartitions, sources, alerts, reports []string
+	var models, modelPartitions, sources, alerts, reports, metricViews []string
 	var all, full, erroredPartitions, parser bool
 
 	refreshCmd := &cobra.Command{
@@ -71,6 +71,9 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			for _, r := range reports {
 				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: r})
+			}
+			for _, v := range metricViews {
+				resources = append(resources, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: v})
 			}
 
 			// Build model triggers
@@ -143,6 +146,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&models, "model", nil, "Refresh a model")
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
+	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metric view")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
 	refreshCmd.Flags().StringSliceVar(&reports, "report", nil, "Refresh a report")
