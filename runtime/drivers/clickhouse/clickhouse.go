@@ -126,15 +126,12 @@ type configProperties struct {
 	MaxOpenConns int `mapstructure:"max_open_conns"`
 	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
 	MaxIdleConns int `mapstructure:"max_idle_conns"`
-	// DialTimeout is the timeout for dialing the Clickhouse server. Default is 30s.
-	// key: dial_timeout
-	DialTimeout time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
+	// DialTimeout is the timeout for dialing the Clickhouse server. Defaults to 60s.
+	DialTimeout string `mapstructure:"dial_timeout"`
 	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
-	// key: conn_max_lifetime
-	ConnMaxLifetime time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
-	// key: read_timeout
-	ReadTimeout time.Duration `mapstructure:"-"` // Temporarily exclude Timeout from automatic decoding
+	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -163,18 +160,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	} else if conf.Host != "" {
 		opts = &clickhouse.Options{}
 
-		// Anonymous function to parse duration fields
-		parseDurationField := func(config map[string]interface{}, key string, field *time.Duration) error {
-			if value, ok := config[key].(string); ok {
-				parsedDuration, err := time.ParseDuration(value)
-				if err != nil {
-					return fmt.Errorf("failed to parse '%s': %w", key, err)
-				}
-				*field = parsedDuration
-			}
-			return nil
-		}
-
 		// address
 		host := conf.Host
 		if conf.Port != 0 {
@@ -182,6 +167,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 		opts.Addr = []string{host}
 		opts.Protocol = clickhouse.Native
+		if conf.Port == 8123 || conf.Port == 8443 { // Default HTTP ports
+			opts.Protocol = clickhouse.HTTP
+		}
 		if conf.SSL {
 			opts.TLS = &tls.Config{
 				MinVersion: tls.VersionTLS12,
@@ -212,18 +200,30 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 
 		// dial_timeout
-		if err := parseDurationField(config, "dial_timeout", &conf.DialTimeout); err != nil {
-			return nil, err
+		if conf.DialTimeout != "" {
+			d, err := time.ParseDuration(conf.DialTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
+			}
+			opts.DialTimeout = d
 		}
 
 		// conn_max_lifetime
-		if err := parseDurationField(config, "conn_max_lifetime", &conf.ConnMaxLifetime); err != nil {
-			return nil, err
+		if conf.ConnMaxLifetime != "" {
+			d, err := time.ParseDuration(conf.ConnMaxLifetime)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+			}
+			opts.ConnMaxLifetime = d
 		}
 
 		// read_timeout
-		if err := parseDurationField(config, "read_timeout", &conf.ReadTimeout); err != nil {
-			return nil, err
+		if conf.ReadTimeout != "" {
+			d, err := time.ParseDuration(conf.ReadTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
+			}
+			opts.ReadTimeout = d
 		}
 	} else if conf.Provision {
 		// run clickhouse locally
@@ -243,6 +243,18 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 	} else {
 		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
+	}
+
+	// Apply our own defaults for the options.
+	// We increase timeouts to decrease the chance of dropped connections with scaled-to-zero ClickHouse.
+	if opts.DialTimeout == 0 {
+		opts.DialTimeout = time.Second * 60
+	}
+	if opts.ReadTimeout == 0 {
+		opts.ReadTimeout = time.Second * 300
+	}
+	if opts.ConnMaxLifetime == 0 {
+		opts.ConnMaxLifetime = time.Hour
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
