@@ -138,7 +138,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 				continue
 			}
 		}
-		_, err = r.Resolve(ctx, &ResolveOptions{
+		resolverRes, err := r.Resolve(ctx, &ResolveOptions{
 			InstanceID:         ctrl.InstanceID,
 			Resolver:           "metrics_time_range",
 			ResolverProperties: map[string]any{"metrics_view": mv.Meta.Name.Name},
@@ -152,6 +152,7 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		if err != nil {
 			mvHealth.Err = err.Error()
 		}
+		_ = resolverRes.Close()
 		res.MetricsViews[mv.Meta.Name.Name] = mvHealth
 	}
 
