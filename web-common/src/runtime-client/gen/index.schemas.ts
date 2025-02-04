@@ -2380,6 +2380,8 @@ The values should be valid IANA location identifiers. */
   /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Layout is an untyped object pending a formal definition. */
+  layout?: unknown;
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
 }
