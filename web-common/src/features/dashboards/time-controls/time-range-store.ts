@@ -291,6 +291,8 @@ export function bucketTimeRanges(
 
       if (range.range in LATEST_WINDOW_TIME_RANGES) {
         const meta = LATEST_WINDOW_TIME_RANGES[range.range] as TimeRangeMeta;
+
+        console.log({ meta });
         latestWindowTimeRanges.push({
           ...range,
           meta,
@@ -306,23 +308,40 @@ export function bucketTimeRanges(
           meta: PREVIOUS_COMPLETE_DATE_RANGES[range.range] as TimeRangeMeta,
         });
       } else {
-        customTimeRanges.push(range);
+        if (range.range.startsWith("P")) {
+          const meta = isoDurationToTimeRangeMeta(
+            range.range,
+            range.comparisonTimeRanges?.[0]?.offset as TimeComparisonOption,
+          );
+          latestWindowTimeRanges.push({
+            ...range,
+            meta,
+          });
+        } else {
+          customTimeRanges.push(range);
+        }
       }
     }
   } else {
-    latestWindowTimeRanges = RILL_LATEST.map((range) => ({
+    latestWindowTimeRanges = Object.entries(LATEST_WINDOW_TIME_RANGES).map(
+      ([range, meta]) => ({
+        range,
+        meta,
+        comparisonTimeRanges: [],
+      }),
+    );
+    periodToDateRanges = Object.entries(PERIOD_TO_DATE_RANGES).map(
+      ([range, meta]) => ({
+        range,
+        meta,
+        comparisonTimeRanges: [],
+      }),
+    );
+    previousCompleteDateRanges = Object.entries(
+      PREVIOUS_COMPLETE_DATE_RANGES,
+    ).map(([range, meta]) => ({
       range,
-      meta: LATEST_WINDOW_TIME_RANGES[range] as TimeRangeMeta,
-      comparisonTimeRanges: [],
-    }));
-    periodToDateRanges = RILL_PERIOD_TO_DATE.map((range) => ({
-      range,
-      meta: PERIOD_TO_DATE_RANGES[range] as TimeRangeMeta,
-      comparisonTimeRanges: [],
-    }));
-    previousCompleteDateRanges = RILL_PREVIOUS_PERIOD.map((range) => ({
-      range,
-      meta: PREVIOUS_COMPLETE_DATE_RANGES[range] as TimeRangeMeta,
+      meta,
       comparisonTimeRanges: [],
     }));
     hasDefaultInRanges =
