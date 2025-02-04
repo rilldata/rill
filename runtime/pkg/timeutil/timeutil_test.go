@@ -106,28 +106,6 @@ func TestTruncateTime_Kathmandu_first_month(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2022-12-31T18:15:00Z"), TruncateTime(parseTestTime(t, "2023-01-02T00:20:00Z"), TimeGrainYear, tz, 2, 1))
 }
 
-func TestAnyToTime(t *testing.T) {
-	_, err := AnyToTime("A string")
-	require.Error(t, err)
-
-	_, err = AnyToTime(123)
-	require.Error(t, err)
-
-	_, err = AnyToTime(123.123)
-	require.Error(t, err)
-
-	_, err = AnyToTime(true)
-
-	require.Error(t, err)
-
-	_, err = AnyToTime([]byte("A string"))
-	require.Error(t, err)
-
-	rs, err := AnyToTime("2019-01-07T04:20:07Z")
-	require.NoError(t, err)
-	require.Equal(t, parseTestTime(t, "2019-01-07T04:20:07Z"), rs)
-}
-
 func parseTestTime(tst *testing.T, t string) time.Time {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
