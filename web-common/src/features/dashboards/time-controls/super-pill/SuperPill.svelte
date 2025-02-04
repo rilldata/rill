@@ -14,6 +14,8 @@
   } from "../new-time-controls";
   import * as Elements from "./components";
   import TimeGrainSelector from "../TimeGrainSelector.svelte";
+  import RangePickerV2 from "./new-time-dropdown/RangePickerV2.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let allTimeRange: TimeRange;
   export let selectedRangeAlias: string | undefined;
@@ -31,7 +33,6 @@
   export let complete: boolean;
   export let context: string;
   export let activeTimeZone: string;
-  export let startOfWeek: number;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let toggleComplete: () => void;
@@ -40,6 +41,8 @@
   export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
+
+  const newPicker = featureFlags.rillTime;
 </script>
 
 <div class="wrapper">
@@ -49,27 +52,48 @@
   {/if}
 
   {#if interval.isValid && activeTimeGrain}
-    <Elements.RangePicker
-      {context}
-      minDate={DateTime.fromJSDate(allTimeRange.start)}
-      maxDate={DateTime.fromJSDate(allTimeRange.end)}
-      {startOfWeek}
-      {timeRanges}
-      {showDefaultItem}
-      {defaultTimeRange}
-      selected={selectedRangeAlias}
-      grain={activeTimeGrain}
-      {onSelectRange}
-      {interval}
-      zone={activeTimeZone}
-      applyCustomRange={(interval) => {
-        applyRange({
-          name: TimeRangePreset.CUSTOM,
-          start: interval.start.toJSDate(),
-          end: interval.end.toJSDate(),
-        });
-      }}
-    />
+    {#if $newPicker}
+      <RangePickerV2
+        {context}
+        minDate={DateTime.fromJSDate(allTimeRange.start)}
+        maxDate={DateTime.fromJSDate(allTimeRange.end)}
+        {timeRanges}
+        {showDefaultItem}
+        {defaultTimeRange}
+        selected={selectedRangeAlias}
+        grain={activeTimeGrain}
+        {onSelectRange}
+        {interval}
+        zone={activeTimeZone}
+        applyCustomRange={(interval) => {
+          applyRange({
+            name: TimeRangePreset.CUSTOM,
+            start: interval.start.toJSDate(),
+            end: interval.end.toJSDate(),
+          });
+        }}
+      />
+    {:else}
+      <Elements.RangePicker
+        minDate={DateTime.fromJSDate(allTimeRange.start)}
+        maxDate={DateTime.fromJSDate(allTimeRange.end)}
+        {timeRanges}
+        {showDefaultItem}
+        {defaultTimeRange}
+        selected={selectedRangeAlias ?? ""}
+        grain={activeTimeGrain}
+        {onSelectRange}
+        {interval}
+        zone={activeTimeZone}
+        applyCustomRange={(interval) => {
+          applyRange({
+            name: TimeRangePreset.CUSTOM,
+            start: interval.start.toJSDate(),
+            end: interval.end.toJSDate(),
+          });
+        }}
+      />
+    {/if}
   {/if}
 
   {#if availableTimeZones.length}
@@ -85,11 +109,11 @@
     <TimeGrainSelector
       {activeTimeGrain}
       {minTimeGrain}
-      {onTimeGrainSelect}
       {timeStart}
       {timeEnd}
       {complete}
       {toggleComplete}
+      {onTimeGrainSelect}
     />
   {/if}
 </div>

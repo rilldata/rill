@@ -73,7 +73,7 @@
 <style lang="postcss">
   .day {
     @apply font-medium;
-    @apply w-full aspect-[5/4];
+    @apply w-full aspect-square;
     @apply p-0.5 bg-transparent;
     @apply flex items-center justify-center;
     @apply border border-transparent border-l-0 border-r-0;
@@ -98,11 +98,11 @@
   }
 
   .is-end {
-    @apply rounded-r-full border border-l-0;
+    @apply rounded-r-md border border-l-0;
   }
 
   .in-range {
-    @apply bg-primary-50 border-primary-200;
+    @apply bg-primary-100 border-primary-200;
   }
 
   :not(.in-range).in-potential-range {
@@ -110,12 +110,12 @@
   }
 
   .is-end {
-    @apply bg-primary-100 border-primary-200;
+    @apply bg-primary-600 border-primary-700 text-white;
   }
 
   .is-start {
-    @apply bg-primary-100 border-primary-200;
-    @apply rounded-l-full;
+    @apply bg-primary-600 border-primary-600 text-white;
+    @apply rounded-l-md;
     @apply border-l border-r-0;
   }
 

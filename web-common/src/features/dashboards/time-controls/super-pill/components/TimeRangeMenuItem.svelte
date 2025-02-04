@@ -1,38 +1,24 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { getRangeLabel } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-  import type { V1ExploreTimeRange } from "@rilldata/web-common/runtime-client";
   import SyntaxElement from "./SyntaxElement.svelte";
 
-  import {
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
-    PREVIOUS_COMPLETE_DATE_RANGES,
-  } from "@rilldata/web-common/lib/time/config";
+  import type { UITimeRange } from "../../time-range-store";
 
-  export let range: V1ExploreTimeRange;
+  export let range: UITimeRange;
   export let selected: boolean;
   export let onClick: ((range: string, syntax: boolean) => void) | undefined =
     undefined;
 
-  $: meta = range.range?.startsWith("P")
-    ? LATEST_WINDOW_TIME_RANGES[range.range]
-    : range.range?.startsWith("rill")
-      ? (PERIOD_TO_DATE_RANGES[range.range] ??
-        PREVIOUS_COMPLETE_DATE_RANGES[range.range])
-      : undefined;
-
   $: label = getRangeLabel(range.range ?? "");
+
+  $: finalRange = range?.meta?.rillSyntax ?? range.range;
 </script>
 
 <DropdownMenu.Item
   on:click={() => {
-    console.log(!meta && !range.range?.startsWith("P"));
-    if (onClick)
-      onClick(
-        meta?.rillSyntax ?? range.range,
-        !meta && !range.range?.startsWith("P"),
-      );
+    if (onClick && finalRange)
+      onClick(finalRange, !range.meta && !range.range?.startsWith("P"));
   }}
   class="group h-7"
 >
@@ -46,8 +32,8 @@
       {/if}
     </span>
 
-    {#if meta}
-      <SyntaxElement range={meta?.rillSyntax ?? range.range} />
+    {#if range.meta}
+      <SyntaxElement range={finalRange} />
     {/if}
   </div>
 </DropdownMenu.Item>

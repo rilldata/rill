@@ -16,7 +16,7 @@
       ? (selection.start ?? DateTime.now())
       : DateTime.now();
   export let singleDaySelection = isValidDateTime(selection);
-  export let startOfWeek = 0;
+  export let startOfWeek = 1;
   export let onSelectDay: (date: DateTime<true>) => void;
 
   let potentialEnd: DateTime<true> | undefined;

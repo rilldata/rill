@@ -5,21 +5,28 @@
   export let grain: string;
   export let abbreviation: string | undefined = undefined;
 
-  $: showTime = grain === "TIME_GRAIN_HOUR" || grain === "TIME_GRAIN_MINUTE";
+  $: intervalStartsAndEndsAtMidnight =
+    interval.start.hour === 0 &&
+    interval.start.minute === 0 &&
+    interval.end.hour === 0 &&
+    interval.end.minute === 0;
 
   $: intervalStartsAndEndsOnHour =
     interval.start.minute === 0 && interval.end.minute === 0;
 
   $: timeFormat = intervalStartsAndEndsOnHour ? "h a" : "h:mm a";
 
+  $: showTime =
+    !intervalStartsAndEndsAtMidnight ||
+    grain === "TIME_GRAIN_HOUR" ||
+    grain === "TIME_GRAIN_MINUTE";
+
   $: inclusiveInterval = interval.set({
     end: interval.end.minus({ millisecond: 1 }),
   });
 
-  // temp while developinng
   $: displayedInterval = showTime ? interval : inclusiveInterval;
 
-  // temp display while developing
   $: date = displayedInterval.toLocaleString(DateTime.DATE_MED);
 
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });

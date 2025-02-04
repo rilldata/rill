@@ -1,6 +1,7 @@
 <script lang="ts">
   export let range: string | undefined;
-  export let onClick: ((range: string) => void) | undefined = undefined;
+  export let onClick: ((range: string | undefined) => void) | undefined =
+    undefined;
 </script>
 
 <svelte:element

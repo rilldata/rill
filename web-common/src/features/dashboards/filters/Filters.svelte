@@ -84,6 +84,8 @@
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
+  let showDefaultItem = false;
+
   $: ({
     selectedTimeRange,
     allTimeRange,
@@ -96,11 +98,9 @@
   } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
-  let showDefaultItem = false;
 
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
-  $: startOfWeek = metricsViewSpec.firstDayOfWeek;
 
   $: exploreState = useExploreState($exploreName);
   $: activeTimeZone = $exploreState?.selectedTimezone;
@@ -138,6 +138,26 @@
 
   $: isComplexFilter = isExpressionUnsupported($dashboardStore.whereFilter);
 
+  $: availableTimeZones = exploreSpec.timeZones ?? [];
+
+  $: interval = selectedTimeRange
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
+      )
+    : allTimeRange
+      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
+      : Interval.invalid("Invalid interval");
+
+  $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
+
+  $: baseTimeRange = selectedTimeRange?.start &&
+    selectedTimeRange?.end && {
+      name: selectedTimeRange?.name,
+      start: selectedTimeRange.start,
+      end: selectedTimeRange.end,
+    };
+
   function handleMeasureFilterApply(
     dimension: string,
     measureName: string,
@@ -174,17 +194,6 @@
       metricsViewSpec,
     );
   }
-
-  $: availableTimeZones = exploreSpec.timeZones ?? [];
-
-  $: interval = selectedTimeRange
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedTimeRange.end).setZone(activeTimeZone),
-      )
-    : allTimeRange
-      ? Interval.fromDateTimes(allTimeRange.start, allTimeRange.end)
-      : Interval.invalid("Invalid interval");
 
   async function onSelectRange(name: string, syntax?: boolean) {
     if (!allTimeRange?.end) {
@@ -247,15 +256,6 @@
     );
   }
 
-  $: localUserPreferences = initLocalUserPreferenceStore($exploreName);
-
-  $: baseTimeRange = selectedTimeRange?.start &&
-    selectedTimeRange?.end && {
-      name: selectedTimeRange?.name,
-      start: selectedTimeRange.start,
-      end: selectedTimeRange.end,
-    };
-
   function selectRange(range: TimeRange) {
     const defaultTimeGrain = getDefaultTimeGrain(range.start, range.end).grain;
 
@@ -304,8 +304,6 @@
       );
     }
   }
-
-  $: console.log({ metricsViewSpec });
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
@@ -314,7 +312,6 @@
       <Calendar size="16px" />
       {#if allTimeRange?.start && allTimeRange?.end}
         <SuperPill
-          {startOfWeek}
           context={$exploreName}
           {allTimeRange}
           {selectedRangeAlias}

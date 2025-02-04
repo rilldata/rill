@@ -142,8 +142,10 @@ class MetricsTimeControls {
   private _subrange = new IntervalStore();
   private _comparisonRange = new IntervalStore();
   private _showComparison: Writable<boolean> = writable(false);
+  private _metricsViewName: string;
 
-  constructor(maxStart: DateTime, maxEnd: DateTime) {
+  constructor(maxStart: DateTime, maxEnd: DateTime, metricsViewName: string) {
+    this._metricsViewName = metricsViewName;
     const maxInterval = Interval.fromDateTimes(
       maxStart.setZone("UTC"),
       maxEnd.setZone("UTC"),
@@ -158,10 +160,14 @@ class MetricsTimeControls {
     this._subrange.clear();
   };
 
-  private applyISODuration = (iso: ISODurationString) => {
+  private applyISODuration = async (iso: ISODurationString) => {
     const rightAnchor = get(this._maxRange).end;
     if (rightAnchor) {
-      const interval = deriveInterval(iso, rightAnchor);
+      const interval = await deriveInterval(
+        iso,
+        rightAnchor,
+        this._metricsViewName,
+      );
       if (interval?.isValid) {
         this._visibleRange.updateInterval(interval);
         this._selected.set(iso);
@@ -169,10 +175,14 @@ class MetricsTimeControls {
     }
   };
 
-  private applyNamedRange = (name: NamedRange) => {
+  private applyNamedRange = async (name: NamedRange) => {
     const rightAnchor = get(this._maxRange).end;
     if (rightAnchor) {
-      const interval = deriveInterval(name, rightAnchor);
+      const interval = await deriveInterval(
+        name,
+        rightAnchor,
+        this._metricsViewName,
+      );
       if (interval?.isValid) {
         this._visibleRange.updateInterval(interval);
         this._selected.set(name);
@@ -253,7 +263,7 @@ class TimeControls {
     let store = this._timeControls.get(metricsViewName);
 
     if (!store && maxStart && maxEnd) {
-      store = new MetricsTimeControls(maxStart, maxEnd);
+      store = new MetricsTimeControls(maxStart, maxEnd, metricsViewName);
       this._timeControls.set(metricsViewName, store);
     } else if (!store) {
       throw new Error("TimeControls.get() called without maxStart and maxEnd");
