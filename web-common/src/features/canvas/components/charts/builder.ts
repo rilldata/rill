@@ -5,7 +5,6 @@ import type {
 } from "@rilldata/web-common/features/canvas/components/charts/types";
 import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
-import type { SingleDefUnitChannel } from "vega-lite/build/src/channel";
 import type {
   ColorDef,
   Field,
@@ -178,21 +177,5 @@ export function createEncoding(
     y: createYEncoding(config, data),
     color: createColorEncoding(config, data),
     tooltip: createDefaultTooltipEncoding(config, data),
-  };
-}
-
-export function getHoverParam(
-  encodings: SingleDefUnitChannel[],
-  nearest: boolean = false,
-) {
-  return {
-    name: "hover",
-    select: {
-      type: "point",
-      on: "pointerover",
-      clear: "pointerout",
-      nearest,
-      encodings,
-    },
   };
 }
