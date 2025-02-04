@@ -292,18 +292,18 @@ export function bucketTimeRanges(
       } else if (range.range in PREVIOUS_COMPLETE_DATE_RANGES) {
         previousCompleteDateRanges.push(range);
       } else {
-        const rt = parseRillTime(range.range);
-        switch (rt.type) {
-          case RillTimeType.Latest:
-            latestWindowTimeRanges.push(range);
-            break;
-          case RillTimeType.PreviousPeriod:
-            previousCompleteDateRanges.push(range);
-            break;
-          case RillTimeType.PeriodToDate:
-            periodToDateRanges.push(range);
-            break;
-        }
+        // const rt = parseRillTime(range.range);
+        // switch (rt.type) {
+        //   case RillTimeType.Latest:
+        //     latestWindowTimeRanges.push(range);
+        //     break;
+        //   case RillTimeType.PreviousPeriod:
+        //     previousCompleteDateRanges.push(range);
+        //     break;
+        //   case RillTimeType.PeriodToDate:
+        //     periodToDateRanges.push(range);
+        //     break;
+        // }
         customTimeRanges.push(range);
       }
     }

@@ -1,5 +1,5 @@
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  type MetricsViewSpecDimensionSelector,
   MetricsViewSpecMeasureType,
   type MetricsViewSpecMeasureV2,
   type V1MetricsViewSpec,
@@ -14,10 +14,17 @@ export const allMeasures = ({
   DashboardDataSources,
   "validMetricsView" | "validExplore"
 >): MetricsViewSpecMeasureV2[] => {
+  if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
   return (
-    validMetricsView?.measures?.filter((m) =>
-      validExplore?.measures?.includes(m.name ?? ""),
-    ) ?? []
+    validMetricsView.measures
+      .filter((m) => validExplore.measures!.includes(m.name!))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          validExplore.measures!.indexOf(a.name!) -
+          validExplore.measures!.indexOf(b.name!),
+      )
   );
 };
 
@@ -27,12 +34,20 @@ export const leaderboardMeasureName = ({ dashboard }: DashboardDataSources) => {
 
 export const visibleMeasures = ({
   validMetricsView,
+  validExplore,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
+  if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
   return (
-    validMetricsView?.measures?.filter(
-      (m) => m.name && dashboard.visibleMeasureKeys.has(m.name),
-    ) ?? []
+    validMetricsView.measures
+      .filter((m) => dashboard.visibleMeasureKeys.has(m.name!))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          validExplore.measures!.indexOf(a.name!) -
+          validExplore.measures!.indexOf(b.name!),
+      )
   );
 };
 
@@ -54,6 +69,7 @@ export const measureLabel = ({
     return measure?.displayName || measureName;
   };
 };
+
 export const isMeasureValidPercentOfTotal = ({
   validMetricsView,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
@@ -70,107 +86,70 @@ export const filteredSimpleMeasures = ({
   validExplore,
 }: DashboardDataSources) => {
   return () => {
+    if (!validMetricsView?.measures || !validExplore?.measures) return [];
+
     return (
-      validMetricsView?.measures?.filter(
-        (m) =>
-          !m.window &&
-          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
-          validExplore?.measures?.includes(m.name ?? ""),
-      ) ?? []
+      validMetricsView.measures
+        .filter(
+          (m) =>
+            validExplore.measures!.includes(m.name!) &&
+            !m.window &&
+            m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+        )
+        // Sort the filtered measures based on their order in validExplore.measures
+        .sort(
+          (a, b) =>
+            validExplore.measures!.indexOf(a.name!) -
+            validExplore.measures!.indexOf(b.name!),
+        )
     );
   };
 };
 
 /**
- * Selects measure valid for current dashboard selections.
- * Also includes additional dimensions needed for any advanced measures.
+ * Selects measure valid for current dashboard selections. We filter out advanced measures that are,
+ * 1. Of type MEASURE_TYPE_TIME_COMPARISON.
+ * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
+ * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
  */
-export const getFilteredMeasuresAndDimensions = ({
-  dashboard,
-}: Pick<DashboardDataSources, "dashboard">) => {
-  return (
-    metricsViewSpec: V1MetricsViewSpec,
-    measureNames: string[],
-  ): {
-    measures: string[];
-    dimensions: MetricsViewSpecDimensionSelector[];
-  } => {
-    const dimensions = new Map<string, V1TimeGrain>();
-    const measures = new Set<string>();
-    measureNames.forEach((measureName) => {
-      const measure = metricsViewSpec.measures?.find(
-        (m) => m.name === measureName,
-      );
-      if (
-        !measure ||
-        measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON
-        // TODO: we need to send a single query for this support
-        // (measure.type ===
-        //   MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
-        //   (!dashboard.showTimeComparison ||
-        //     !dashboard.selectedComparisonTimeRange))
-      )
-        return;
-
-      let skipMeasure = false;
-      measure.requiredDimensions?.forEach((reqDim) => {
-        if (
-          reqDim.timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
-          reqDim.timeGrain !== dashboard.selectedTimeRange?.interval
-        ) {
-          // filter out measures with dependant dimensions not matching the selected grain
-          skipMeasure = true;
-          return;
-        }
-        if (!reqDim.name) return;
-
-        const existingEntry = dimensions.get(reqDim.name);
-        if (existingEntry) {
-          if (existingEntry === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
-            dimensions.set(
-              reqDim.name,
-              reqDim.timeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-            );
-          } else {
-            // mismatching measures are requested
-            skipMeasure = true;
-          }
-          return;
-        }
-
-        dimensions.set(
-          reqDim.name,
-          reqDim.timeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-        );
-      });
-      if (skipMeasure) return;
-      measures.add(measureName);
-      measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
-    });
-    return {
-      measures: [...measures],
-      dimensions: [...dimensions.entries()].map(([name, timeGrain]) => ({
-        name,
-        timeGrain,
-      })),
-    };
-  };
-};
-
-export const getIndependentMeasures = (
+export const removeSomeAdvancedMeasures = (
+  exploreState: MetricsExplorerEntity,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
+  includeWindowMeasures: boolean,
 ) => {
   const measures = new Set<string>();
   measureNames.forEach((measureName) => {
     const measure = metricsViewSpec.measures?.find(
       (m) => m.name === measureName,
     );
-    // temporary check for window measures until the PR to move to AggregationApi is merged
-    if (!measure || measure.requiredDimensions?.length || !!measure.window)
+    if (
+      !measure ||
+      measure.type ===
+        MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON ||
+      (!includeWindowMeasures && measure.window)
+      // TODO: we need to send a single query for this support
+      // (measure.type ===
+      //   MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+      //   (!dashboard.showTimeComparison ||
+      //     !dashboard.selectedComparisonTimeRange))
+    )
       return;
+
+    let skipMeasure = false;
+    measure.requiredDimensions?.forEach((reqDim) => {
+      if (
+        reqDim.timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
+        reqDim.timeGrain !== exploreState.selectedTimeRange?.interval
+      ) {
+        // filter out measures with dependant dimensions not matching the selected grain
+        skipMeasure = true;
+        return;
+      }
+    });
+    if (skipMeasure) return;
+
     measures.add(measureName);
-    measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
   });
   return [...measures];
 };
@@ -212,6 +191,5 @@ export const measureSelectors = {
 
   filteredSimpleMeasures,
 
-  getFilteredMeasuresAndDimensions,
   leaderboardMeasureName,
 };

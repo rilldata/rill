@@ -22,18 +22,33 @@
       ? (PERIOD_TO_DATE_RANGES[range.range] ??
         PREVIOUS_COMPLETE_DATE_RANGES[range.range])
       : undefined;
+
+  $: label = getRangeLabel(range.range ?? "");
 </script>
 
 <DropdownMenu.Item
   on:click={() => {
     console.log(!meta && !range.range?.startsWith("P"));
-    if (onClick) onClick(range.range, !meta && !range.range?.startsWith("P"));
+    if (onClick)
+      onClick(
+        meta?.rillSyntax ?? range.range,
+        !meta && !range.range?.startsWith("P"),
+      );
   }}
+  class="group h-7"
 >
-  <div class="size-full flex justify-between items-center">
+  <div class="size-full flex justify-between items-center" title={range.range}>
     <span class:font-bold={selected} class="truncate">
-      {getRangeLabel(range.range ?? "")}
+      {#if label.endsWith(", complete")}
+        {label.replace(", complete", "")}
+        <span class="text-gray-400 text-[11px]">(complete)</span>
+      {:else}
+        {label}
+      {/if}
     </span>
-    <SyntaxElement range={meta?.rillSyntax ?? range.range} />
+
+    {#if meta}
+      <SyntaxElement range={meta?.rillSyntax ?? range.range} />
+    {/if}
   </div>
 </DropdownMenu.Item>

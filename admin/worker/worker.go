@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -107,7 +108,7 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Context) error, every time.Duration) error {
 	for {
 		err := w.runJob(ctx, name, fn)
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			w.logger.Error("Failed to run the job", zap.String("job_name", name), zap.Error(err))
 		}
 		select {
@@ -133,7 +134,7 @@ func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.
 			return nil
 		case <-time.After(waitDuration):
 			err := w.runJob(ctx, name, fn)
-			if err != nil {
+			if err != nil && !errors.Is(err, context.Canceled) {
 				w.logger.Error("Failed to run the cronjob", zap.String("cronjob_name", name), zap.Error(err))
 			}
 		}
@@ -152,7 +153,6 @@ func (w *Worker) runJob(ctx context.Context, name string, fn func(context.Contex
 	err := fn(ctx)
 	jobLatencyHistogram.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attribute.String("name", name), attribute.Bool("failed", err != nil)))
 	if err != nil {
-		w.logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
 		return err
 	}
 	w.logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))

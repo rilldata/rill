@@ -41,10 +41,10 @@ export const RILL_TO_LABEL: Record<
   inf: "All Time",
   CUSTOM: "Custom",
   "rill-PDC": "Yesterday",
-  "rill-PWC": "Previous week complete",
-  "rill-PMC": "Previous month complete",
-  "rill-PQC": "Previous quarter complete",
-  "rill-PYC": "Previous year complete",
+  "rill-PWC": "Previous week",
+  "rill-PMC": "Previous month",
+  "rill-PQC": "Previous quarter",
+  "rill-PYC": "Previous year",
   "rill-TD": "Today",
   "rill-WTD": "Week to date",
   "rill-MTD": "Month to date",
@@ -403,7 +403,12 @@ export function getRangeLabel(range: string): string {
 
   try {
     const rt = parseRillTime(range);
-    return rt.getLabel();
+    const label = rt.getLabel();
+    if (label.endsWith(", incomplete")) {
+      return label.replace(", incomplete", "");
+    } else {
+      return label + ", complete";
+    }
   } catch {
     // no-op
   }

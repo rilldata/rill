@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    CalendarDaysIcon,
+    CalendarIcon,
+    CalendarX2Icon,
+  } from "lucide-svelte";
   import { DateTime } from "luxon";
 
   const formatsWithoutYear = [
@@ -33,7 +38,7 @@
   export let selectingStart: boolean;
   export let date: DateTime;
   export let zone: string;
-  export let boundary: "start" | "end";
+  export let label: "from" | "to";
   export let currentYear: number;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
@@ -42,9 +47,7 @@
   let initialValue: string | null = null;
   let displayError: boolean;
 
-  $: id = boundary + "-date";
-
-  $: label = boundary + " date";
+  $: id = label + "-input";
 
   function validateInput(
     e: FocusEvent & {
@@ -107,37 +110,46 @@
     {label}
   </label>
 
-  <input
-    tabindex="0"
-    {id}
-    aria-label={label}
-    type="text"
-    class:active={(boundary === "start") === selectingStart}
-    class:error={displayError}
-    value={date.toLocaleString({
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })}
-    on:click={(e) => {
-      selectingStart = boundary === "start";
-      initialValue = e.currentTarget.value;
-    }}
-    on:keydown={({ currentTarget, key }) => {
-      if (key === "Enter") {
-        currentTarget.blur();
-      }
-    }}
-    on:blur={validateInput}
-  />
+  <div class="input-wrapper">
+    <input
+      tabindex="0"
+      {id}
+      aria-label={label}
+      type="text"
+      class:active={(label === "from") === selectingStart}
+      class:error={displayError}
+      value={date.toLocaleString({
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })}
+      on:click={(e) => {
+        selectingStart = label === "to";
+        initialValue = e.currentTarget.value;
+      }}
+      on:keydown={({ currentTarget, key }) => {
+        if (key === "Enter") {
+          currentTarget.blur();
+        }
+      }}
+      on:blur={validateInput}
+    />
+
+    <!-- <button
+      class="bg-gray-200/50 hover:bg-gray-200/70 active:bg-gray-200 aspect-square h-full border-l grid place-content-center"
+    >
+      <CalendarDaysIcon size="15px" />
+    </button> -->
+  </div>
 </div>
 
 <style lang="postcss">
   input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #bebebe;
-    border-radius: 0.25rem;
+    @apply p-0 pl-2 bg-transparent;
+    @apply size-full;
+    @apply outline-none border-0;
+    @apply cursor-text;
+    vertical-align: middle;
   }
 
   input.active {
@@ -155,5 +167,19 @@
 
   label {
     @apply font-semibold flex gap-x-1;
+  }
+
+  .input-wrapper {
+    @apply overflow-hidden;
+    @apply flex justify-center items-center;
+    @apply bg-surface justify-center;
+    @apply border border-gray-300 rounded-[2px];
+    @apply cursor-pointer;
+    @apply h-8 w-full truncate;
+  }
+
+  .input-wrapper:focus-within {
+    @apply border-primary-500;
+    @apply ring-2 ring-primary-100;
   }
 </style>

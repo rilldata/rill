@@ -94,8 +94,6 @@
       }
     : undefined;
 
-  $: metricsView = $explore.data?.metricsView ?? {};
-
   $: timeRanges = exploreSpec?.timeRanges ?? [];
 </script>
 
@@ -105,7 +103,7 @@
 >
   <div
     id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-background slide"
     class:left-shift={extraLeftPadding}
   >
     {#if mockUserHasNoAccess}
@@ -133,7 +131,7 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide"
+      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide bg-surface"
       class:flex-col={expandedMeasureName}
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
@@ -190,7 +188,6 @@
               {comparisonTimeRange}
               activeMeasureName={$activeMeasureName}
               {timeControlsReady}
-              {metricsView}
               visibleMeasureNames={$visibleMeasures.map(
                 ({ name }) => name ?? "",
               )}
@@ -204,7 +201,6 @@
               {dimensionThresholdFilters}
               {timeRange}
               {comparisonTimeRange}
-              {metricsView}
               {timeControlsReady}
             />
           {/if}

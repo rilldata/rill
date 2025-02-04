@@ -10,7 +10,9 @@
   $: zonedDate = date.setZone(zone);
   $: isoString = zonedDate.toISO();
 
-  $: formattedString = zonedDate.toLocaleString(DateTime.DATETIME_MED);
+  $: formattedString = zonedDate.toLocaleString(
+    DateTime.DATETIME_MED_WITH_WEEKDAY,
+  );
 
   $: humanReadableTimeOffset = Duration.fromObject(
     Object.fromEntries(

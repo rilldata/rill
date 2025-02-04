@@ -1,13 +1,13 @@
 <script lang="ts">
   export let range: string | undefined;
-  export let onClick: (range: string) => void | undefined = undefined;
+  export let onClick: ((range: string) => void) | undefined = undefined;
 </script>
 
 <svelte:element
   this={onClick ? "button" : "span"}
   role={onClick ? "button" : undefined}
   class="element"
-  on:click={() => onClick(range)}
+  on:click={() => onClick?.(range)}
 >
   {range}
 </svelte:element>

@@ -30,15 +30,19 @@
     text-right grid items-center
     {justify ? `justify-${justify}` : ''} 
     {justify ? `justify-items-${justify}` : ''} relative w-full
-    {showHover ? 'hover:bg-gray-100 hover:dark:bg-gray-600' : undefined}
+    {showHover ? 'hover:bg-gray-100 ' : undefined}
     {customBackgroundColor !== ''
     ? customBackgroundColor
     : showBackground
-      ? 'bg-gray-100 dark:bg-gray-700'
+      ? 'bg-gray-100'
       : 'bg-transparent'}
     "
   style:flex="1"
 >
+  <div
+    class="number-bar {color}"
+    style="--width: {Math.min(1, $valueTween)};"
+  />
   <div
     class:pl-2={!compact}
     class:pr-2={!compact}
@@ -49,10 +53,6 @@
   >
     <slot />
   </div>
-  <div
-    class="number-bar {color} mix-blend-multiply dark:mix-blend-screen"
-    style="--width: {Math.min(1, $valueTween)};"
-  />
 </div>
 
 <style lang="postcss">

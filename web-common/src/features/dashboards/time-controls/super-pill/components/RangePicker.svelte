@@ -1,20 +1,6 @@
-<script lang="ts" context="module">
-  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-
-  const exampleSearches = [
-    "-45M",
-    "-30D",
-    "-1Y",
-    "1/1/2025",
-    "-52W",
-    "0M, latest : |d|",
-  ];
-</script>
-
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
   import { DateTime, Interval } from "luxon";
   import type { ISODurationString, NamedRange } from "../../new-time-controls";
   import {
@@ -30,13 +16,13 @@
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import TimeRangeMenuItem from "./TimeRangeMenuItem.svelte";
   import Switch from "@rilldata/web-common/components/button/Switch.svelte";
-  import { Clock } from "lucide-svelte";
   import {
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
     PREVIOUS_COMPLETE_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
   import Timestamp from "./Timestamp.svelte";
+  import TimeRangeSearch from "./TimeRangeSearch.svelte";
 
   export let timeRanges: V1ExploreTimeRange[];
   export let selected: string | undefined;
@@ -47,30 +33,22 @@
   export let context: string;
   export let minDate: DateTime<true>;
   export let maxDate: DateTime<true>;
+  export let startOfWeek: number;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: string, syntax?: boolean) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
 
-  const latestNSearches = localStorageStore(`${context}-recent-searches`, [
-    "-45M",
-    "-32D",
-    "-1Y",
-    "-2Q, latest/Q",
-  ]);
+  $: console.log({ timeRanges });
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
   let showSelector = false;
-  let searchValue = "";
-  let searchElement: HTMLInputElement;
+
   let allTimeAllowed = true;
 
   $: rangeBuckets = bucketTimeRanges(timeRanges, "rill-TD");
 
-  function updateSearch(value: string) {
-    searchValue = value;
-    searchElement.focus();
-  }
+  $: console.log({ rangeBuckets });
 
   function handleRangeSelect(range: string, syntax = false) {
     onSelectRange(range, syntax);
@@ -122,6 +100,8 @@
   }
 
   $: includesCurrentPeriod = interval.end.diff(maxDate).milliseconds > 0;
+
+  let searchComponent: TimeRangeSearch;
 </script>
 
 <DropdownMenu.Root
@@ -145,97 +125,96 @@
       {#if selected}
         <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
       {/if}
+
       {#if interval.isValid}
         <RangeDisplay {interval} {grain} />
       {/if}
+
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
       </span>
     </button>
   </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="start" class="p-0 overflow-hidden max-w-[480px]">
-    <div class="border-b h-fit pt-2.5 flex p-3 py-0 flex-col w-full">
-      <form
-        on:submit={() => {
-          latestNSearches.update((searches) => {
-            return Array.from(new Set([searchValue, ...searches].slice(0, 20)));
-          });
-          onSelectRange(searchValue, true);
-          open = false;
-          searchValue = "";
-        }}
-      >
-        <span class="mr-1 flex-none">
-          <Clock size={15} />
-        </span>
-        <input
-          placeholder="Search"
-          type="text"
-          class="h-7 border w-full"
-          bind:this={searchElement}
-          bind:value={searchValue}
-        />
-      </form>
 
-      <div class="flex gap-x-2 size-full overflow-x-auto py-2.5">
-        {#each $latestNSearches as search, i (i)}
-          <SyntaxElement range={search} onClick={updateSearch} />
-        {/each}
-      </div>
-    </div>
+  <DropdownMenu.Content align="start" class="p-0 overflow-hidden w-[490px]">
+    <TimeRangeSearch
+      bind:this={searchComponent}
+      {context}
+      onSelectRange={(range, syntax) => {
+        open = false;
+        onSelectRange(range, syntax);
+      }}
+    />
+
     <div class="flex">
-      <div class="flex flex-col w-56 p-1">
-        {#if showDefaultItem && defaultTimeRange}
-          <DropdownMenu.Item
-            on:click={() => {
-              handleRangeSelect(defaultTimeRange);
-            }}
-          >
-            <div class:font-bold={selected === defaultTimeRange}>
-              Last {humaniseISODuration(defaultTimeRange)}
-            </div>
-          </DropdownMenu.Item>
+      <div class="flex flex-col w-[216px] flex-none">
+        <div
+          class="flex-flex-col max-h-[600px] overflow-y-auto overflow-x-hidden p-1"
+        >
+          {#if showDefaultItem && defaultTimeRange}
+            <DropdownMenu.Item
+              on:click={() => {
+                handleRangeSelect(defaultTimeRange);
+              }}
+            >
+              <div class:font-bold={selected === defaultTimeRange}>
+                Last {humaniseISODuration(defaultTimeRange)}
+              </div>
+            </DropdownMenu.Item>
 
-          <DropdownMenu.Separator />
-        {/if}
+            <DropdownMenu.Separator />
+          {/if}
 
-        {#each rangeBuckets.ranges as ranges, i (i)}
-          {#each ranges as range, i (i)}
+          {#each rangeBuckets.customTimeRanges as range, i (i)}
             <TimeRangeMenuItem
               selected={selected === range.range}
               {range}
               onClick={handleRangeSelect}
             />
           {/each}
-          {#if ranges.length}
+
+          {#if rangeBuckets.customTimeRanges.length}
             <DropdownMenu.Separator />
           {/if}
-        {/each}
 
-        {#if allTimeAllowed}
-          <DropdownMenu.Item
-            on:click={() => {
-              handleRangeSelect(ALL_TIME_RANGE_ALIAS);
-            }}
-          >
-            <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
-              {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
-            </span>
-          </DropdownMenu.Item>
+          {#each rangeBuckets.ranges as ranges, i (i)}
+            {#each ranges as range, i (i)}
+              <TimeRangeMenuItem
+                selected={selected === range.range}
+                {range}
+                onClick={handleRangeSelect}
+              />
+            {/each}
+            {#if ranges.length}
+              <DropdownMenu.Separator />
+            {/if}
+          {/each}
 
-          <DropdownMenu.Separator />
-        {/if}
+          {#if allTimeAllowed}
+            <DropdownMenu.Item
+              on:click={() => {
+                handleRangeSelect(ALL_TIME_RANGE_ALIAS);
+              }}
+            >
+              <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
+                {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
+              </span>
+            </DropdownMenu.Item>
+          {/if}
+        </div>
 
-        <DropdownMenu.Item
+        <DropdownMenu.Separator />
+
+        <!-- <DropdownMenu.Item
           on:click={() => (showSelector = !showSelector)}
           data-range="custom"
         >
           <span class:font-bold={selected === "CUSTOM"}> Calendar </span>
-        </DropdownMenu.Item>
+        </DropdownMenu.Item> -->
 
-        <DropdownMenu.Separator />
+        <!-- <DropdownMenu.Separator /> -->
 
-        <div class="flex justify-between items-center py-1 px-2">
+        <div class="flex justify-between items-center py-2 pt-1 px-3">
           <span>Include {grainPhrase}</span>
           <Switch
             id="Show comparison"
@@ -253,29 +232,28 @@
         </div>
       </div>
 
-      <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
-        {#if showSelector}
-          <CalendarPlusDateInput
-            {firstVisibleMonth}
-            {interval}
-            {zone}
-            {maxDate}
-            {minDate}
-            applyRange={applyCustomRange}
-            closeMenu={() => (open = false)}
-          />
-        {:else}
-          <div class="size-full p-2 flex-col gap-y-5 flex">
-            <div class="flex flex-col gap-y-3">
+      <div class="bg-slate-50 border-l flex flex-col w-full gap-y-2">
+        <!-- <div class="size-full flex-col gap-y-5 flex"> -->
+        <CalendarPlusDateInput
+          {firstVisibleMonth}
+          {interval}
+          {zone}
+          {maxDate}
+          {minDate}
+          {startOfWeek}
+          applyRange={applyCustomRange}
+          closeMenu={() => (open = false)}
+        />
+        <!-- <div class="flex flex-col gap-y-3">
               <span class="text-gray-500 text-xs">Example searches</span>
               <div class="flex gap-x-2 flex-wrap gap-y-1">
                 {#each exampleSearches as search, i (i)}
                   <SyntaxElement range={search} onClick={updateSearch} />
                 {/each}
               </div>
-            </div>
+            </div> -->
 
-            <div class="flex flex-col gap-y-3">
+        <!-- <div class="flex flex-col gap-y-3">
               <span class="text-gray-500 text-xs">Custom ranges</span>
               <div class="flex gap-x-2 flex-wrap gap-y-1">
                 {#each rangeBuckets.customTimeRanges as range, i (i)}
@@ -284,37 +262,45 @@
                   <span class="text-gray-500"> No ranges available </span>
                 {/each}
               </div>
-            </div>
+            </div> -->
 
-            <div class="flex flex-col gap-y-3">
-              <span class="text-gray-500 text-xs">Available time range</span>
+        <div class="flex flex-col gap-y-3 border-t p-3">
+          <span class="text-gray-500 text-xs">Timeframe</span>
 
-              <div class="flex flex-col gap-y-1">
-                {#if minDate}
-                  <div class="flex justify-between items-center">
-                    <SyntaxElement range="earliest" onClick={updateSearch} />
-                    <Timestamp date={minDate} {zone} />
-                  </div>
-                {/if}
-
-                {#if maxDate}
-                  <div class="flex justify-between items-center">
-                    <SyntaxElement range="latest" onClick={updateSearch} />
-                    <Timestamp date={maxDate} {zone} />
-                  </div>
-                {/if}
-
-                <div class="flex justify-between items-center">
-                  <SyntaxElement range="now" onClick={updateSearch} />
-                  <Timestamp {zone} />
-                </div>
+          <div class="flex flex-col gap-y-1">
+            {#if minDate}
+              <div class="flex justify-between items-center">
+                <SyntaxElement
+                  range="earliest"
+                  onClick={searchComponent?.updateSearch}
+                />
+                <Timestamp date={minDate} {zone} />
               </div>
+            {/if}
+
+            {#if maxDate}
+              <div class="flex justify-between items-center">
+                <SyntaxElement
+                  range="latest"
+                  onClick={searchComponent?.updateSearch}
+                />
+                <Timestamp date={maxDate} {zone} />
+              </div>
+            {/if}
+
+            <div class="flex justify-between items-center">
+              <SyntaxElement
+                range="now"
+                onClick={searchComponent?.updateSearch}
+              />
+              <Timestamp {zone} />
             </div>
-            <a href="https://www.rilldata.com" class="mt-auto">
-              Syntax documentation
-            </a>
           </div>
-        {/if}
+        </div>
+        <!-- <a href="https://www.rilldata.com" class="mt-auto">
+          Syntax documentation
+        </a> -->
+        <!-- </div> -->
       </div>
     </div>
   </DropdownMenu.Content>
@@ -322,27 +308,5 @@
 
 <style lang="postcss">
   button {
-  }
-
-  form {
-    @apply overflow-hidden;
-    @apply flex justify-center gap-x-1 items-center pl-2 pr-0.5;
-    @apply bg-background justify-center;
-    @apply border border-gray-300 rounded-[2px];
-    @apply cursor-pointer;
-    @apply h-7 w-full truncate;
-  }
-
-  form:focus-within {
-    @apply border-primary-500;
-  }
-
-  input,
-  .multiline-input {
-    @apply p-0 bg-transparent;
-    @apply size-full;
-    @apply outline-none border-0;
-    @apply cursor-text;
-    vertical-align: middle;
   }
 </style>

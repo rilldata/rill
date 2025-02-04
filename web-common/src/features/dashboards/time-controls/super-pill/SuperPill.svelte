@@ -31,6 +31,7 @@
   export let complete: boolean;
   export let context: string;
   export let activeTimeZone: string;
+  export let startOfWeek: number;
   export let timeStart: string | undefined;
   export let timeEnd: string | undefined;
   export let toggleComplete: () => void;
@@ -52,6 +53,7 @@
       {context}
       minDate={DateTime.fromJSDate(allTimeRange.start)}
       maxDate={DateTime.fromJSDate(allTimeRange.end)}
+      {startOfWeek}
       {timeRanges}
       {showDefaultItem}
       {defaultTimeRange}

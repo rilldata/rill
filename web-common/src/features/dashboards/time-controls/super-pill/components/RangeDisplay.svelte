@@ -20,7 +20,7 @@
   $: displayedInterval = showTime ? interval : inclusiveInterval;
 
   // temp display while developing
-  $: date = displayedInterval.toLocaleString(DateTime.DATETIME_FULL);
+  $: date = displayedInterval.toLocaleString(DateTime.DATE_MED);
 
   $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
