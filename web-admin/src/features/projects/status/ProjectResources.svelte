@@ -95,16 +95,17 @@
   function refreshAllSourcesAndModels() {
     isReconciling = false;
 
-    void $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        allSourcesModels: true,
-      },
-    });
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
-    );
+    void $createTrigger
+      .mutateAsync({
+        instanceId,
+        data: { allSourcesModels: true },
+      })
+      .then(() => {
+        currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+        void queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+        );
+      });
   }
 </script>
 
