@@ -1,6 +1,5 @@
 <script lang="ts">
   export let inspector = true;
-  export let bgClass = "bg-slate-50";
   export let width = 0;
   export let height = 0;
 
@@ -10,7 +9,7 @@
 </script>
 
 <main
-  class="flex flex-col size-full overflow-hidden {bgClass}"
+  class="flex flex-col size-full overflow-hidden bg-background"
   bind:contentRect
 >
   {#if $$slots.header}

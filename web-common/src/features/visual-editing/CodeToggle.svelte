@@ -59,7 +59,7 @@
   }
 
   .toggle {
-    @apply bg-white outline outline-slate-200 outline-[1px];
+    @apply bg-surface outline outline-slate-200 outline-[1px];
   }
 
   .radio {

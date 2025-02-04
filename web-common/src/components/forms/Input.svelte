@@ -72,6 +72,8 @@
 
   $: type = secret && !showPassword ? "password" : inputType;
 
+  $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
+
   onMount(() => {
     if (claimFocusOnMount) {
       if (inputElement) {
@@ -228,7 +230,7 @@
     />
   {/if}
 
-  {#if errors && (alwaysShowError || (!focus && value))}
+  {#if errors && (alwaysShowError || (!focus && hasValue))}
     {#if typeof errors === "string"}
       <div in:slide={{ duration: 200 }} class="error">
         {errors}
@@ -268,10 +270,10 @@
   .input-wrapper {
     @apply overflow-hidden;
     @apply flex justify-center items-center pr-0.5;
-    @apply bg-background justify-center;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit truncate;
+    @apply h-fit w-fit;
   }
 
   input,
@@ -288,13 +290,10 @@
   }
 
   .multiline-input {
+    @apply h-fit w-full max-h-32 overflow-y-auto;
     @apply py-1;
     line-height: 1.58;
-  }
-
-  .multiline-input {
-    @apply overflow-auto break-words;
-    @apply h-fit min-h-fit;
+    word-wrap: break-word;
   }
 
   .input-wrapper:focus-within {

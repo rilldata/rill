@@ -36,6 +36,10 @@ connectors:
 
 env:
   foo: bar
+
+mock_users:
+- email: foo@bar.com
+  custom_attribute: yeah
 `,
 	})
 

@@ -17,8 +17,8 @@ type ThemeReconciler struct {
 	C *runtime.Controller
 }
 
-func newThemeReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ThemeReconciler{C: c}
+func newThemeReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ThemeReconciler{C: c}, nil
 }
 
 func (r *ThemeReconciler) Close(ctx context.Context) error {

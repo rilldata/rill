@@ -45,7 +45,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (it
 	} else if c.configProperties.DSN != "" { // get from driver configs
 		dsn = c.configProperties.DSN
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--env connector.snowflake.dsn=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake: configure it in the YAML properties or set the 'connector.snowflake.dsn' environment variable")
 	}
 
 	parallelFetchLimit := 5
