@@ -12,7 +12,7 @@ export class CanvasComponentState {
     this.filters = new CanvasFilters(spec);
     this.spec = spec;
 
-    const componentResourceStore = spec.getComponentResource(name);
+    const componentResourceStore = spec.getComponentResourceFromName(name);
     const componentResource = get(componentResourceStore);
 
     if (

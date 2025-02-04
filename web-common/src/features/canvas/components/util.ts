@@ -120,10 +120,12 @@ const displayMap: Record<CanvasComponentType, string> = {
   area_chart: "Chart",
 };
 
-export function getHeaderForComponent(componentType: string | undefined) {
+export function getHeaderForComponent(
+  componentType: CanvasComponentType | null,
+) {
   if (!componentType) return "Component";
-  if (!displayMap[componentType as CanvasComponentType]) {
+  if (!displayMap[componentType]) {
     return "Component";
   }
-  return displayMap[componentType as CanvasComponentType];
+  return displayMap[componentType];
 }
