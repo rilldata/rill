@@ -21,9 +21,9 @@
   let isConfirmDialogOpen = false;
   let isReconciling = false;
 
-  const INITIAL_REFETCH_INTERVAL = 500; // Start at 500ms
-  const MAX_REFETCH_INTERVAL = 10_000; // Cap at 10s
-  const BACKOFF_FACTOR = 2; // Double each time
+  const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
+  const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
+  const BACKOFF_FACTOR = 1.5;
   let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
@@ -46,6 +46,7 @@
     data: V1ListResourcesResponse | undefined,
   ): number | false {
     if (!data?.resources) {
+      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
       return INITIAL_REFETCH_INTERVAL;
     }
 
@@ -53,10 +54,15 @@
     const hasReconcilingResources = data.resources.some(isResourceReconciling);
 
     if (hasErrors || !hasReconcilingResources) {
+      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
       return false;
     }
 
-    return Math.min(currentInterval * BACKOFF_FACTOR, MAX_REFETCH_INTERVAL);
+    currentRefetchInterval = Math.min(
+      currentInterval * BACKOFF_FACTOR,
+      MAX_REFETCH_INTERVAL,
+    );
+    return currentRefetchInterval;
   }
 
   $: resources = createRuntimeServiceListResources(instanceId, undefined, {
