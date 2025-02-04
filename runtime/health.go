@@ -151,8 +151,9 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		}
 		if err != nil {
 			mvHealth.Err = err.Error()
+		} else {
+			_ = resolverRes.Close()
 		}
-		_ = resolverRes.Close()
 		res.MetricsViews[mv.Meta.Name.Name] = mvHealth
 	}
 
