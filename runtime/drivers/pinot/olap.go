@@ -122,7 +122,7 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 
 func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Table, error) {
 	// query /tables endpoint, for each table name, query /tables/{tableName}/schema
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables", http.NoBody)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/tables", http.NoBody)
 	for k, v := range i.c.headers {
 		req.Header.Set(k, v)
 	}
@@ -183,7 +183,7 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.baseURL+"/tables/"+name+"/schema", http.NoBody)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.c.schemaURL+"/tables/"+name+"/schema", http.NoBody)
 	for k, v := range i.c.headers {
 		req.Header.Set(k, v)
 	}

@@ -21,22 +21,35 @@ import (
 type pinotDriver struct{}
 
 func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
-	address, headers, err := ParseDSN(dsn)
+	broker, controller, headers, err := ParseDSN(dsn)
 	if err != nil {
 		return nil, err
 	}
-	pinotConn, err := pinot.NewWithConfig(&pinot.ClientConfig{
-		ExtraHTTPHeader: headers,
-		ControllerConfig: &pinot.ControllerConfig{
-			ExtraControllerAPIHeaders: headers,
-			ControllerAddress:         address,
-		},
-	})
+	var pinotConn *pinot.Connection
+	if broker != controller {
+		pinotConn, err = pinot.NewWithConfig(&pinot.ClientConfig{
+			ExtraHTTPHeader: headers,
+			ControllerConfig: &pinot.ControllerConfig{
+				ExtraControllerAPIHeaders: headers,
+				ControllerAddress:         controller,
+			},
+			BrokerList:          []string{broker},
+			UseMultistageEngine: true, // We have joins and nested queries which are supported by multistage engine
+		})
+	} else {
+		pinotConn, err = pinot.NewWithConfig(&pinot.ClientConfig{
+			ExtraHTTPHeader: headers,
+			ControllerConfig: &pinot.ControllerConfig{
+				ExtraControllerAPIHeaders: headers,
+				ControllerAddress:         controller,
+			},
+			UseMultistageEngine: true, // We have joins and nested queries which are supported by multistage engine
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
-	// We have joins and nested queries which are supported by multistage engine
-	pinotConn.UseMultistageEngine(true)
+
 	return &conn{pinotConn: pinotConn}, nil
 }
 
@@ -227,11 +240,12 @@ func (r *rows) goValue(rowIdx, coldIdx int, pinotType string) interface{} {
 }
 
 // ParseDSN parses the DSN string to extract the controller address and basic auth credentials
-func ParseDSN(dsn string) (string, map[string]string, error) {
+func ParseDSN(dsn string) (string, string, map[string]string, error) {
+	// DSN format: http(s)://username:password@broker:port?controller=http(s)://controller:port
 	// validate dsn - it should be a valid URL, may contain basic auth credentials
 	u, err := url.Parse(dsn)
 	if err != nil {
-		return "", nil, fmt.Errorf("invalid DSN: %w", err)
+		return "", "", nil, fmt.Errorf("invalid DSN: %w", err)
 	}
 
 	var authHeader map[string]string
@@ -239,7 +253,7 @@ func ParseDSN(dsn string) (string, map[string]string, error) {
 		uname := u.User.Username()
 		pwd, passwordSet := u.User.Password()
 		if uname == "" || !passwordSet {
-			return "", nil, fmt.Errorf("DSN should contain valid basic auth credentials")
+			return "", "", nil, fmt.Errorf("DSN should contain valid basic auth credentials")
 		}
 		// clear user info from URL so that u.String() doesn't include it
 		u.User = nil
@@ -248,7 +262,15 @@ func ParseDSN(dsn string) (string, map[string]string, error) {
 			"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(authString))),
 		}
 	}
-	return u.String(), authHeader, nil
+
+	controllerURL := u.Query().Get("controller")
+	// if explicit controller URL is not provided, then assume base url as controller URL
+	if controllerURL == "" {
+		return u.String(), u.String(), authHeader, nil
+	}
+	u.RawQuery = ""
+
+	return u.String(), controllerURL, authHeader, nil
 }
 
 func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {

@@ -31,24 +31,40 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Connection string",
-			Placeholder: "http(s)://username:password@localhost:9000",
+			Placeholder: "http(s)://username:password@localhost:8000?controller=localhost:9000",
 			Secret:      true,
 			NoPrompt:    true,
 		},
 		{
-			Key:         "host",
+			Key:         "broker_host",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Host",
-			Description: "Hostname or IP address of the Pinot server",
+			DisplayName: "Broker Host",
+			Description: "Hostname or IP address of the Pinot broker server",
 			Placeholder: "localhost",
 		},
 		{
-			Key:         "port",
+			Key:         "broker_port",
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
-			DisplayName: "Port",
-			Description: "Port number of the Pinot server",
+			DisplayName: "Broker Port",
+			Description: "Port number of the broker Pinot broker server",
+			Placeholder: "8000",
+		},
+		{
+			Key:         "controller_host",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Controller Host",
+			Description: "Hostname or IP address of the Pinot controller server",
+			Placeholder: "localhost",
+		},
+		{
+			Key:         "controller_port",
+			Type:        drivers.NumberPropertyType,
+			Required:    false,
+			DisplayName: "Controller Port",
+			Description: "Port number of the Pinot controller server",
 			Placeholder: "9000",
 		},
 		{
@@ -83,11 +99,13 @@ type driver struct{}
 
 type configProperties struct {
 	// DSN is the connection string. Set either DSN or properties below.
-	DSN      string `mapstructure:"dsn"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
+	DSN            string `mapstructure:"dsn"`
+	Username       string `mapstructure:"username"`
+	Password       string `mapstructure:"password"`
+	BrokerHost     string `mapstructure:"broker_host"`
+	BrokerPort     int    `mapstructure:"broker_port"`
+	ControllerHost string `mapstructure:"controller_host"`
+	ControllerPort int    `mapstructure:"controller_port"`
 	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
 	SSL bool `mapstructure:"ssl"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
@@ -109,12 +127,12 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	var dsn string
 	if conf.DSN != "" {
 		dsn = conf.DSN
-	} else if conf.Host != "" {
+	} else if conf.BrokerHost != "" {
 		var dsnURL url.URL
-		dsnURL.Host = conf.Host
+		dsnURL.Host = conf.BrokerHost
 		// set port
-		if conf.Port != 0 {
-			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+		if conf.BrokerPort != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", conf.BrokerHost, conf.BrokerPort)
 		}
 
 		// set scheme
@@ -130,6 +148,22 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		} else if conf.Username != "" {
 			dsnURL.User = url.User(conf.Username)
 		}
+
+		// set controller
+		var controllerURL url.URL
+		if conf.ControllerHost != "" {
+			if conf.ControllerPort == 0 {
+				controllerURL.Host = conf.ControllerHost
+			} else {
+				controllerURL.Host = fmt.Sprintf("%v:%v", conf.ControllerHost, conf.ControllerPort)
+			}
+			if conf.SSL {
+				controllerURL.Scheme = "https"
+			} else {
+				controllerURL.Scheme = "http"
+			}
+		}
+		dsnURL.RawQuery = url.Values{"controller": {controllerURL.String()}}.Encode()
 
 		dsn = dsnURL.String()
 	} else {
@@ -154,16 +188,17 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("pinot: %w", err)
 	}
 
-	controller, headers, err := sqldriver.ParseDSN(dsn)
+	broker, controller, headers, err := sqldriver.ParseDSN(dsn)
 	if err != nil {
 		return nil, err
 	}
 
 	conn := &connection{
-		db:      dbx,
-		config:  config,
-		baseURL: controller,
-		headers: headers,
+		db:        dbx,
+		config:    config,
+		queryURL:  broker,
+		schemaURL: controller,
+		headers:   headers,
 	}
 	return conn, nil
 }
@@ -181,10 +216,11 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db      *sqlx.DB
-	config  map[string]any
-	baseURL string
-	headers map[string]string
+	db        *sqlx.DB
+	config    map[string]any
+	queryURL  string
+	schemaURL string
+	headers   map[string]string
 }
 
 // Ping implements drivers.Handle.
