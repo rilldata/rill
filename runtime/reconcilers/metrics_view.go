@@ -18,8 +18,8 @@ type MetricsViewReconciler struct {
 	C *runtime.Controller
 }
 
-func newMetricsViewReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &MetricsViewReconciler{C: c}
+func newMetricsViewReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &MetricsViewReconciler{C: c}, nil
 }
 
 func (r *MetricsViewReconciler) Close(ctx context.Context) error {

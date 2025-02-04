@@ -19,8 +19,8 @@ type MigrationReconciler struct {
 	C *runtime.Controller
 }
 
-func newMigrationReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &MigrationReconciler{C: c}
+func newMigrationReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &MigrationReconciler{C: c}, nil
 }
 
 func (r *MigrationReconciler) Close(ctx context.Context) error {

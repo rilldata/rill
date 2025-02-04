@@ -23,8 +23,8 @@ type RefreshTriggerReconciler struct {
 	C *runtime.Controller
 }
 
-func newRefreshTriggerReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &RefreshTriggerReconciler{C: c}
+func newRefreshTriggerReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &RefreshTriggerReconciler{C: c}, nil
 }
 
 func (r *RefreshTriggerReconciler) Close(ctx context.Context) error {
