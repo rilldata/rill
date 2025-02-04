@@ -74,9 +74,6 @@ test.describe("explores", () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
     });
 
-    // Turn on comparison
-    await page.getByRole("button", { name: "Comparing" }).click();
-
     // Check the total records are 100k
     await expect(page.getByText("Total records 100k")).toBeVisible();
 
