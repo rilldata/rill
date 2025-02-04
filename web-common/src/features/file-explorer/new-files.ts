@@ -40,10 +40,10 @@ export function getPathForNewResourceFile(
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(newKind);
 
   const { folderName, extension } = ResourceKindMap[newKind];
@@ -165,26 +165,6 @@ measures:
         const metricsViewTitle =
           baseResource.metricsView?.state?.validSpec?.displayName;
 
-        const dimensions =
-          baseResource.metricsView?.spec?.dimensions &&
-          baseResource.metricsView?.spec?.dimensions?.length > 4
-            ? baseResource.metricsView?.spec?.dimensions
-                ?.map((dim) => {
-                  return `\n  - ${dim.name}`;
-                })
-                .join("")
-            : "'*'";
-
-        const measures =
-          baseResource.metricsView?.spec?.measures &&
-          baseResource.metricsView?.spec?.measures?.length > 4
-            ? baseResource.metricsView?.spec?.measures
-                ?.map((measure) => {
-                  return `\n  - ${measure.name}`;
-                })
-                .join("")
-            : "'*'";
-
         return `# Explore YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
 
@@ -197,8 +177,8 @@ defaults:
   time_range: P14D
   comparison_mode: none
 
-dimensions: ${dimensions}
-measures: ${measures}
+dimensions: '*'
+measures: '*'
 
 time_zones:
   - America/Los_Angeles
