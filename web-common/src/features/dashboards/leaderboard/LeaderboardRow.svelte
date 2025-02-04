@@ -138,6 +138,11 @@
       return undefined;
     }
 
+    // temporary fix where uriTemplateOrBoolean is coming in as 0/1 instead of false/true
+    if (typeof uriTemplateOrBoolean === "number") {
+      uriTemplateOrBoolean = Boolean(uriTemplateOrBoolean);
+    }
+
     const uri =
       uriTemplateOrBoolean === true
         ? dimensionValue
