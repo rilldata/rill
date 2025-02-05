@@ -147,7 +147,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd.Flags().StringSliceVar(&modelPartitions, "partition", nil, "Refresh a model partition (must set --model)")
 	refreshCmd.Flags().BoolVar(&erroredPartitions, "errored-partitions", false, "Refresh all model partitions with errors (must set --model)")
 	refreshCmd.Flags().StringSliceVar(&sources, "source", nil, "Refresh a source")
-	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metric view")
+	refreshCmd.Flags().StringSliceVar(&metricViews, "metrics-view", nil, "Refresh a metrics view")
 	refreshCmd.Flags().StringSliceVar(&alerts, "alert", nil, "Refresh an alert")
 	refreshCmd.Flags().StringSliceVar(&reports, "report", nil, "Refresh a report")
 	refreshCmd.Flags().BoolVar(&parser, "parser", false, "Refresh the parser (forces a pull from Github)")

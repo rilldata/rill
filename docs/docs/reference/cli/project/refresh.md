@@ -22,7 +22,7 @@ rill project refresh [<project-name>] [flags]
       --partition strings      Refresh a model partition (must set --model)
       --errored-partitions     Refresh all model partitions with errors (must set --model)
       --source strings         Refresh a source
-      --metrics-view strings   Refresh a metric view
+      --metrics-view strings   Refresh a metrics view
       --alert strings          Refresh an alert
       --report strings         Refresh a report
       --parser                 Refresh the parser (forces a pull from Github)
