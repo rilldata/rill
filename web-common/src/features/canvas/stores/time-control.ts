@@ -36,7 +36,7 @@ type AllTimeRange = TimeRange & { isFetching: boolean };
 
 let lastAllTimeRange: AllTimeRange | undefined;
 
-export class CanvasTimeControls {
+export class TimeControls {
   /**
    * Writables which can be updated by the user
    */

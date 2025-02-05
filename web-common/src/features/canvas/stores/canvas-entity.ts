@@ -17,7 +17,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { GridStack } from "gridstack";
 import { derived, writable, type Writable } from "svelte/store";
 import { CanvasComponentState } from "./canvas-component";
-import { CanvasFilters } from "./canvas-filters";
+import { Filters } from "./filters";
 import { CanvasResolvedSpec } from "./spec";
 import { TimeControls } from "./time-control";
 
@@ -36,7 +36,7 @@ export class CanvasEntity {
   /**
    * Dimension and measure filters for the canvas entity
    */
-  filters: CanvasFilters;
+  filters: Filters;
 
   /**
    * Spec store containing selectors derived from ResolveCanvas query
@@ -51,7 +51,7 @@ export class CanvasEntity {
   selectedComponentIndex: Writable<number | null>;
 
   constructor(name: string) {
-    const validSpecStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
+    const specStore: CanvasSpecResponseStore = derived(runtime, (r, set) =>
       useCanvas(r.instanceId, name, { queryClient }).subscribe(set),
     );
 
@@ -59,9 +59,9 @@ export class CanvasEntity {
 
     this.components = new Map();
     this.selectedComponentIndex = writable(null);
-    this.spec = new CanvasResolvedSpec(validSpecStore);
-    this.timeControls = new TimeControls(validSpecStore);
-    this.filters = new CanvasFilters(this.spec);
+    this.spec = new CanvasResolvedSpec(specStore);
+    this.timeControls = new TimeControls(specStore);
+    this.filters = new Filters(this.spec);
   }
 
   setSelectedComponentIndex = (index: number | null) => {
