@@ -66,6 +66,12 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
+	// Get instance config
+	cfg, err := r.C.Runtime.InstanceConfig(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// If the spec references a model, try resolving it to a table before validating it.
 	// For backwards compatibility, the model may actually be a source or external table.
 	// So if a model is not found, we optimistically use the model name as the table and proceed to validation
@@ -103,27 +109,34 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	if validateErr == nil {
 		validateErr = validateResult.Error()
 	}
-	if ctx.Err() != nil {
-		return runtime.ReconcileResult{Err: errors.Join(validateErr, ctx.Err())}
+	if ctx.Err() != nil { // May not be handled in all validation implementations
+		return runtime.ReconcileResult{Err: ctx.Err()}
 	}
-	if validateErr == nil {
-		mv.State.ValidSpec = mv.Spec
-	} else {
-		mv.State.ValidSpec = nil
+	if validateErr != nil {
+		// When not staging changes, clear the previously valid spec.
+		// Otherwise, we keep serving the previously valid spec.
+		if !cfg.StageChanges {
+			mv.State.ValidSpec = nil
+			mv.State.Streaming = false
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+		}
+
+		// Return the validation error
+		return runtime.ReconcileResult{Err: validateErr}
 	}
 
-	// Set the "streaming" state (see docstring in the proto for details).
-	mv.State.Streaming = false
-	if validateErr == nil {
-		// If no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
-		mv.State.Streaming = !hasInternalRef
-	}
-
-	// Update state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
+	// Capture the spec, which we now know to be valid.
+	mv.State.ValidSpec = mv.Spec
+	// If there's no internal ref, we assume the metrics view is based on an externally managed table and set the streaming state to true.
+	mv.State.Streaming = !hasInternalRef
+	// Update the state. Even if the validation result is unchanged, we always update the state to ensure the state version is incremented.
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	return runtime.ReconcileResult{Err: validateErr}
+	return runtime.ReconcileResult{}
 }
