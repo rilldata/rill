@@ -4,8 +4,8 @@ INSERT DESCRIPTION HERE
 - [ ] Covered by tests
 - [ ] Ran it and it works as intended
 - [ ] Reviewed the diff before requesting a review
-- [ ] Checked for edge cases
+- [ ] Checked for unhandled edge cases
 - [ ] Linked the issues it closes
-- [ ] Updated the relevant docs
+- [ ] Checked if the docs need to be updated
 - [ ] Intend to cherry-pick into the release branch
-- [ ] I'm proud of the work I'm submitting here
+- [ ] I'm proud of this work!
