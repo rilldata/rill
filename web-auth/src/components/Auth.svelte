@@ -24,13 +24,15 @@
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
-  $: errorText = "";
-
   let email = "";
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
 
-  // $: isLegacy = false;
+  $: errorText = "";
+  $: isAllowedClient = false;
+  $: domainDisabled = isDomainDisabled(email);
+  $: headingText = getHeadingText(step);
+  $: subheadingText = getSubheadingText(step, email);
 
   function isDomainDisabled(email: string): boolean {
     return disableForgotPassDomainsArr.some((domain) =>
@@ -38,37 +40,40 @@
     );
   }
 
-  $: domainDisabled = isDomainDisabled(email);
+  function configureDevMode() {
+    if (
+      import.meta.env.DEV &&
+      (!configParams || configParams === "undefined")
+    ) {
+      console.warn(
+        "No auth config provided. In development mode - auth flows will not work.",
+      );
+      errorText = "Authentication is not configured in development mode";
+      isAllowedClient = true;
+      return;
+    }
+  }
 
-  function initConfig() {
+  function init() {
     try {
-      if (
-        import.meta.env.DEV &&
-        (!configParams || configParams === "undefined")
-      ) {
-        console.warn(
-          "No auth config provided. In development mode - auth flows will not work.",
-        );
-        errorText = "Authentication is not configured in development mode";
-        return;
-      }
+      configureDevMode();
 
       const config = JSON.parse(
         decodeURIComponent(escape(window.atob(configParams))),
       ) as Config;
+
+      if (!cloudClientIDsArr.includes(config?.clientID)) {
+        errorText = "Authentication is not available for this client";
+        isAllowedClient = false;
+        return;
+      }
+      isAllowedClient = true;
 
       const isSignup = config?.extraParams?.screen_hint === "signup";
 
       if (isSignup) {
         step = AuthStep.SignUp;
       }
-
-      // UNCOMMENT to use `isLegacy` for rill dash check if needed
-      // NOTE: Check for cloud client ids from auth0 to allow sign up and login
-      // NOTE: Prevent rill dash (legacy) users from signing up
-      // if (cloudClientIDsArr.includes(config?.clientID)) {
-      //   isLegacy = true;
-      // }
 
       const authOptions: AuthOptions = Object.assign(
         {
@@ -139,11 +144,8 @@
   }
 
   onMount(() => {
-    initConfig();
+    init();
   });
-
-  $: headingText = getHeadingText(step);
-  $: subheadingText = getSubheadingText(step, email);
 </script>
 
 <AuthContainer>
@@ -191,6 +193,7 @@
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}
+        disabled={!isAllowedClient}
       />
     {/if}
   </div>
