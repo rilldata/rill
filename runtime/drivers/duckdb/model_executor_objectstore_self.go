@@ -241,6 +241,9 @@ func (e *objectStoreToSelfExecutorNonNative) Execute(ctx context.Context, opts *
 		appendToTable = true
 		executor := &selfToSelfExecutor{c: e.c}
 		res, resErr = executor.Execute(ctx, opts)
+		if resErr != nil {
+			return nil, resErr
+		}
 	}
 	if res == nil && resErr == nil {
 		// the iterator returns an error if no files are found
