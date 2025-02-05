@@ -267,6 +267,7 @@ func (c *cacheImpl) HangingErr() error {
 
 // beginOpen must be called while c.mu is held.
 func (c *cacheImpl) beginOpen(k string, e *entry) {
+	// Check the cases where it's safe to call beginOpen.
 	switch {
 	case e.status == entryStatusUnspecified:
 	case e.status == entryStatusOpen && e.err != nil:
