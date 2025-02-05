@@ -1,6 +1,9 @@
 import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
-import { getTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import {
+  getComparisonTimeRange,
+  getTimeGrain,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -10,6 +13,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
+  V1ExploreComparisonMode,
   V1TimeGrain,
   type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
@@ -61,6 +65,10 @@ export class CanvasTimeControls {
 
   setInitialState(validSpecStore: CanvasSpecResponseStore) {
     this.timeRangeSummaryStore(runtime, validSpecStore);
+
+    const selectedTimezone = get(this.selectedTimezone);
+    const comparisonTimeRange = get(this.selectedComparisonTimeRange);
+
     const store = derived(
       [this.allTimeRange, validSpecStore],
       ([allTimeRange, validSpec]) => {
@@ -68,9 +76,11 @@ export class CanvasTimeControls {
           this.isReady.set(false);
         }
 
-        const selectedTimezone = get(this.selectedTimezone);
+        const { defaultPreset } = validSpec.data?.canvas || {};
+        const timeRanges = validSpec?.data?.canvas?.timeRanges;
+
         const defaultTimeRange = isoDurationToFullTimeRange(
-          validSpec.data?.canvas?.defaultPreset?.timeRange,
+          defaultPreset?.timeRange,
           allTimeRange.start,
           allTimeRange.end,
           selectedTimezone,
@@ -87,6 +97,20 @@ export class CanvasTimeControls {
           newTimeRange,
           V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
         );
+
+        if (
+          defaultPreset?.comparisonMode ===
+          V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+        ) {
+          const newComparisonRange = getComparisonTimeRange(
+            timeRanges,
+            allTimeRange,
+            newTimeRange,
+            comparisonTimeRange,
+          );
+          this.selectedComparisonTimeRange.set(newComparisonRange);
+          this.showTimeComparison.set(true);
+        }
 
         this.selectedTimeRange.set(newTimeRange);
         this.isReady.set(true);
@@ -149,6 +173,10 @@ export class CanvasTimeControls {
               end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
             }
           });
+          if (start.getTime() >= end.getTime()) {
+            start = new Date(0);
+            end = new Date();
+          }
           querySet({ name: TimeRangePreset.ALL_TIME, start, end });
         }).subscribe(set);
       },

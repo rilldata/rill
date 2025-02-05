@@ -27,6 +27,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   type V1ExploreSpec,
+  type V1ExploreTimeRange,
   type V1MetricsViewSpec,
   type V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -264,7 +265,7 @@ function calculateComparisonTimeRangePartial(
   timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
   const selectedComparisonTimeRange = getComparisonTimeRange(
-    explore,
+    explore.timeRanges,
     allTimeRange,
     timeRangeState.selectedTimeRange,
     metricsExplorer.selectedComparisonTimeRange,
@@ -393,19 +394,16 @@ export function getTimeGrain(
   return timeGrain;
 }
 
-function getComparisonTimeRange(
-  explore: V1ExploreSpec,
-  allTimeRange: DashboardTimeControls | undefined,
+export function getComparisonTimeRange(
+  timeRanges: V1ExploreTimeRange[] | undefined,
+  allTimeRange: TimeRange | undefined,
   timeRange: DashboardTimeControls | undefined,
   comparisonTimeRange: DashboardTimeControls | undefined,
 ) {
   if (!timeRange || !timeRange.name || !allTimeRange) return undefined;
 
   if (!comparisonTimeRange?.name) {
-    const comparisonOption = inferCompareTimeRange(
-      explore.timeRanges,
-      timeRange.name,
-    );
+    const comparisonOption = inferCompareTimeRange(timeRanges, timeRange.name);
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
       allTimeRange.start,

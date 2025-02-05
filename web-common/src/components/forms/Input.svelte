@@ -37,6 +37,7 @@
   export let link: string = "";
   export let lockable = false;
   export let capitalizeLabel = true;
+  export let leftPadding = 8;
   export let lockTooltip: string | undefined = undefined;
   export let disabledMessage = "No valid options";
   export let options:
@@ -70,6 +71,8 @@
   let focus = false;
 
   $: type = secret && !showPassword ? "password" : inputType;
+
+  $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
 
   onMount(() => {
     if (claimFocusOnMount) {
@@ -135,6 +138,7 @@
   {#if !options}
     <div
       class="input-wrapper {textClass}"
+      style:padding-left="{leftPadding}px"
       style:width
       style:font-family={fontFamily}
     >
@@ -226,7 +230,7 @@
     />
   {/if}
 
-  {#if errors && (alwaysShowError || (!focus && value))}
+  {#if errors && (alwaysShowError || (!focus && hasValue))}
     {#if typeof errors === "string"}
       <div in:slide={{ duration: 200 }} class="error">
         {errors}
@@ -265,11 +269,11 @@
 
   .input-wrapper {
     @apply overflow-hidden;
-    @apply flex justify-center items-center pl-2 pr-0.5;
-    @apply bg-background justify-center;
+    @apply flex justify-center items-center pr-0.5;
+    @apply bg-surface justify-center;
     @apply border border-gray-300 rounded-[2px];
     @apply cursor-pointer;
-    @apply h-fit w-fit truncate;
+    @apply h-fit w-fit;
   }
 
   input,
@@ -286,13 +290,10 @@
   }
 
   .multiline-input {
+    @apply h-fit w-full max-h-32 overflow-y-auto;
     @apply py-1;
     line-height: 1.58;
-  }
-
-  .multiline-input {
-    @apply overflow-auto break-words;
-    @apply h-fit min-h-fit;
+    word-wrap: break-word;
   }
 
   .input-wrapper:focus-within {

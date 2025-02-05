@@ -17,8 +17,8 @@ type CanvasReconciler struct {
 	C *runtime.Controller
 }
 
-func newCanvasReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &CanvasReconciler{C: c}
+func newCanvasReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &CanvasReconciler{C: c}, nil
 }
 
 func (r *CanvasReconciler) Close(ctx context.Context) error {

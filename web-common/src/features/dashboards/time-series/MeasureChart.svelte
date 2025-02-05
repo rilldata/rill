@@ -310,9 +310,8 @@
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
             <g transition:fly={{ duration: 100, x: -4 }}>
               <text
-                class="fill-gray-600"
+                class="fill-gray-600 stroke-surface"
                 style:paint-order="stroke"
-                stroke="white"
                 stroke-width="3px"
                 x={config.plotLeft + config.bodyBuffer + 6}
                 y={config.plotTop + 10 + config.bodyBuffer}
@@ -322,9 +321,8 @@
               {#if showComparison && point[`comparison.${labelAccessor}`]}
                 <text
                   style:paint-order="stroke"
-                  stroke="white"
                   stroke-width="3px"
-                  class="fill-gray-400"
+                  class="fill-gray-400 stroke-surface"
                   x={config.plotLeft + config.bodyBuffer + 6}
                   y={config.plotTop + 24 + config.bodyBuffer}
                 >

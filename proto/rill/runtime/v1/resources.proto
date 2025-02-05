@@ -718,12 +718,16 @@ message CanvasSpec {
   // If the list is empty, a default list should be shown.
   // The values should be valid IANA location identifiers.
   repeated string time_zones = 12;
+  // Indicates if filters should be enabled for the canvas.
+  bool filters_enabled = 13;
   // Preset UI state to show by default.
   CanvasPreset default_preset = 15;
   // Variables that can be used in the canvas.
   repeated ComponentVariable variables = 5;
   // Items to render on the canvas
   repeated CanvasItem items = 4;
+  // Layout is an untyped object pending a formal definition.
+  google.protobuf.Value layout = 16;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
 }
@@ -765,6 +769,8 @@ message APISpec {
   string openapi_summary = 3;
   repeated google.protobuf.Struct openapi_parameters = 4;
   google.protobuf.Struct openapi_response_schema = 5;
+  repeated SecurityRule security_rules = 6;
+  bool skip_nested_security = 7;
 }
 
 message APIState {}

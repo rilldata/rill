@@ -38,6 +38,7 @@
   export let manageOrganization: boolean;
   export let createMagicAuthTokens: boolean;
   export let manageProjectMembers: boolean;
+  export let organizationLogoUrl: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -74,11 +75,17 @@
     },
   );
 
-  $: projectsQuery = listProjects(organization, undefined, {
-    query: {
-      enabled: !!organization,
+  $: projectsQuery = listProjects(
+    organization,
+    {
+      pageSize: 100,
     },
-  });
+    {
+      query: {
+        enabled: !!organization,
+      },
+    },
+  );
 
   $: visualizationsQuery = useDashboardsV2(instanceId);
 
@@ -183,9 +190,15 @@
   <!-- Left side -->
   <a
     href={rillLogoHref}
-    class="hover:bg-gray-200 grid place-content-center rounded p-2"
+    class="grid place-content-center rounded {organizationLogoUrl
+      ? 'pl-2 pr-2'
+      : 'p-2'}"
   >
-    <Rill />
+    {#if organizationLogoUrl}
+      <img src={organizationLogoUrl} alt="logo" class="h-7" />
+    {:else}
+      <Rill />
+    {/if}
   </a>
   {#if onPublicURLPage}
     <PageTitle title={publicURLDashboardTitle} />

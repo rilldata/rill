@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -22,16 +23,31 @@ import (
 
 const embedVersion = "24.7.4.51"
 
+var (
+	embed *embedClickHouse
+	once  sync.Once
+)
+
 type embedClickHouse struct {
 	tcpPort int
 	dataDir string
 	tempDir string
 	logger  *zap.Logger
 	cmd     *exec.Cmd
+	opts    *clickhouse.Options
+	// number of calls to start. The server is stopped when the count reaches 0.
+	refs int
+	mu   sync.Mutex
 }
 
-func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger) *embedClickHouse {
-	return &embedClickHouse{tcpPort: tcpPort, dataDir: dataDir, tempDir: tempDir, logger: logger}
+func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger) (*embedClickHouse, error) {
+	once.Do(func() {
+		embed = &embedClickHouse{tcpPort: tcpPort, dataDir: dataDir, tempDir: tempDir, logger: logger}
+	})
+	if tcpPort != embed.tcpPort {
+		return nil, fmt.Errorf("change of `embed_port` is not allowed while the application is running, please restart Rill")
+	}
+	return embed, nil
 }
 
 // start installs (depending on OS and platform) and starts ClickHouse server.
@@ -41,6 +57,13 @@ func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger
 // TODO: Since this can be a long-running process, we should accept a `ctx`,
 // but the `drivers.Open` function currently doesn't propagate that.
 func (e *embedClickHouse) start() (*clickhouse.Options, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.opts != nil {
+		e.refs++
+		return e.opts, nil
+	}
+
 	// Store the ClickHouse binary under .rill/clickhouse so that every project can use the same binary
 	destDir, err := dotrill.ResolveFilename("clickhouse", true)
 	if err != nil {
@@ -87,13 +110,25 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
 	e.logger.Info("Running an embedded ClickHouse server", zap.String("addr", addr))
 
-	return &clickhouse.Options{
+	e.opts = &clickhouse.Options{
 		Protocol: clickhouse.Native,
 		Addr:     []string{addr},
-	}, nil
+	}
+	return e.opts, nil
 }
 
 func (e *embedClickHouse) stop() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.opts == nil || e.refs < 0 {
+		// should never happen
+		return nil
+	}
+	e.refs--
+	if e.refs > 0 {
+		return nil
+	}
+
 	addr := net.JoinHostPort("localhost", fmt.Sprintf("%d", e.tcpPort))
 	e.logger.Info("Stopping embedded ClickHouse server", zap.String("addr", addr))
 	if e.cmd == nil || e.cmd.Process == nil {
@@ -104,7 +139,7 @@ func (e *embedClickHouse) stop() error {
 	if err != nil {
 		return err
 	}
-
+	e.opts = nil
 	return nil
 }
 

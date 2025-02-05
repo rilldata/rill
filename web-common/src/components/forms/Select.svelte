@@ -85,6 +85,7 @@
   >
     <Select.Trigger
       {id}
+      {disabled}
       {lockable}
       {lockTooltip}
       bind:el={selectElement}

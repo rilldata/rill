@@ -50,6 +50,7 @@
       kind="report"
       {columns}
       data={$reportQuery.data?.resource.report.state.executionHistory}
+      toolbar={false}
     >
       <ReportHistoryTableHeader slot="header" />
     </Table>

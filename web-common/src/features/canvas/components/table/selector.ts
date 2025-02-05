@@ -1,4 +1,9 @@
-import { useStartEndTime } from "@rilldata/web-common/features/canvas/components/kpi/selector";
+import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
+import {
+  validateDimensions,
+  validateMeasures,
+} from "@rilldata/web-common/features/canvas/components/validators";
+import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -6,71 +11,39 @@ import {
   type PivotDataStoreConfig,
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
-import {
-  useMetricsViewTimeRange,
-  useMetricsViewValidSpec,
-} from "@rilldata/web-common/features/dashboards/selectors";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TableProperties } from "@rilldata/web-common/features/templates/types";
-import {
-  validateDimensions,
-  validateMeasures,
-  validateMetricsView,
-} from "@rilldata/web-common/features/templates/utils";
-import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { type Readable, derived } from "svelte/store";
 
-export function useComparisonStartEndTime(
-  instanceId: string,
-  metricsViewName: string,
-  timeRange: string,
-  comparisonRange: string | undefined,
-) {
-  const allTimeRangeQuery = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-  );
-  return derived(allTimeRangeQuery, (allTimeRange) => {
-    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
-    const maxTimeDate = new Date(maxTime ?? 0);
-    const { startTime } = isoDurationToTimeRange(timeRange, maxTimeDate);
-
-    let comparisonStartTime: Date | undefined = undefined;
-    let comparisonEndTime: Date | undefined = undefined;
-
-    if (comparisonRange) {
-      ({ startTime: comparisonStartTime, endTime: comparisonEndTime } =
-        isoDurationToTimeRange(comparisonRange, startTime));
-    }
-    return { start: comparisonStartTime, end: comparisonEndTime };
-  });
-}
-
 export function getTableConfig(
-  instanceId: string,
-  tableProperties: TableProperties,
+  ctx: StateManagers,
+  tableSpec: TableSpec,
   pivotState: PivotState,
 ): Readable<PivotDataStoreConfig> {
-  const { metrics_view, time_range, comparison_range } = tableProperties;
+  const { metrics_view, time_range, comparison_range, dimension_filters } =
+    tableSpec;
+  const {
+    canvasEntity: {
+      createTimeAndFilterStore,
+      spec: { getMetricsViewFromName },
+    },
+  } = ctx;
+
+  const timeAndFilterStore = createTimeAndFilterStore(metrics_view, {
+    componentTimeRange: time_range,
+    componentComparisonRange: comparison_range,
+    componentFilter: dimension_filters,
+  });
+
   return derived(
-    [
-      useMetricsViewValidSpec(instanceId, tableProperties.metrics_view),
-      useStartEndTime(instanceId, metrics_view, time_range.toUpperCase()),
-      useComparisonStartEndTime(
-        instanceId,
-        metrics_view,
-        time_range.toUpperCase(),
-        comparison_range,
-      ),
-    ],
-    ([metricsView, timeRange, comparisonRange]) => {
+    [getMetricsViewFromName(metrics_view), timeAndFilterStore],
+    ([metricsView, { timeRange, comparisonRange, where }]) => {
       const enableComparison = canEnablePivotComparison(
         pivotState,
         comparisonRange.start,
       );
 
       const config: PivotDataStoreConfig = {
-        measureNames: tableProperties.measures.flatMap((name) => {
+        measureNames: tableSpec.measures.flatMap((name) => {
           const group = [name];
           if (enableComparison) {
             group.push(
@@ -80,23 +53,23 @@ export function getTableConfig(
           }
           return group;
         }),
-        rowDimensionNames: tableProperties.row_dimensions || [],
-        colDimensionNames: tableProperties.col_dimensions || [],
-        allMeasures: metricsView.data?.measures || [],
-        allDimensions: metricsView.data?.dimensions || [],
-        whereFilter: createAndExpression([]),
+        rowDimensionNames: tableSpec.row_dimensions || [],
+        colDimensionNames: tableSpec.col_dimensions || [],
+        allMeasures: metricsView?.measures || [],
+        allDimensions: metricsView?.dimensions || [],
+        whereFilter: where ?? createAndExpression([]),
         searchText: "",
         pivot: pivotState,
         enableComparison,
         comparisonTime: {
-          start: comparisonRange?.start?.toISOString() || undefined,
-          end: comparisonRange?.end?.toISOString() || undefined,
+          start: comparisonRange?.start,
+          end: comparisonRange?.end,
         },
         time: {
-          timeStart: timeRange?.data?.start?.toISOString() || undefined,
-          timeEnd: timeRange?.data?.end?.toISOString() || undefined,
-          timeZone: "UTC",
-          timeDimension: metricsView?.data?.timeDimension || "",
+          timeStart: timeRange?.start,
+          timeEnd: timeRange?.end,
+          timeZone: timeRange.timeZone || "UTC",
+          timeDimension: metricsView?.timeDimension || "",
         },
       };
 
@@ -105,23 +78,25 @@ export function getTableConfig(
   );
 }
 
-export function hasValidTableSchema(
-  instanceId: string,
-  tableProperties: TableProperties,
-) {
+export function validateTableSchema(
+  ctx: StateManagers,
+  tableSpec: TableSpec,
+): Readable<{
+  isValid: boolean;
+  error?: string;
+}> {
+  const { metrics_view } = tableSpec;
   return derived(
-    [useMetricsViewValidSpec(instanceId, tableProperties.metrics_view)],
-    ([metricsView]) => {
-      const measures = tableProperties.measures;
-      const rowDimensions = tableProperties.row_dimensions || [];
-      const colDimensions = tableProperties.col_dimensions || [];
+    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    (metricsView) => {
+      const measures = tableSpec.measures;
+      const rowDimensions = tableSpec.row_dimensions || [];
+      const colDimensions = tableSpec.col_dimensions || [];
 
-      const validateMetricsViewRes = validateMetricsView(metricsView);
-
-      if (!validateMetricsViewRes.isValid) {
+      if (!metricsView) {
         return {
           isValid: false,
-          error: validateMetricsViewRes.error,
+          error: `Metrics view ${metrics_view} not found`,
         };
       }
       const validateMeasuresRes = validateMeasures(metricsView, measures);

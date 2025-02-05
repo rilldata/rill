@@ -3,21 +3,11 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { CanvasComponentType } from "@rilldata/web-common/features/canvas/components/types";
   import { ChevronDown, Plus } from "lucide-svelte";
+  import { menuItems } from "./menu-items.svelte";
 
-  export let addComponent: (componentName: CanvasComponentType) => void;
+  export let addComponent: (componentType: CanvasComponentType) => void;
 
   let open = false;
-
-  const menuItems: {
-    id: CanvasComponentType;
-    label: string;
-  }[] = [
-    { id: "markdown", label: "Text" },
-    { id: "kpi", label: "KPI" },
-    { id: "image", label: "Image" },
-    { id: "bar_chart", label: "Chart" },
-    { id: "table", label: "Table" },
-  ];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
@@ -34,7 +24,10 @@
     <DropdownMenu.Group>
       {#each menuItems as item}
         <DropdownMenu.Item on:click={() => addComponent(item.id)}>
-          {item.label}
+          <div class="flex flex-row gap-x-2">
+            <svelte:component this={item.icon} />
+            <span class="text-gray-700 text-xs font-normal">{item.label}</span>
+          </div>
         </DropdownMenu.Item>
       {/each}
     </DropdownMenu.Group>

@@ -15,7 +15,7 @@ Rill Data does not use a user-based license system. Instead, we calculate your d
 
 ## *Plan Details*
 
-### Trial Plan
+## Trial Plan
 
 Get started with Rill Cloud with our 30 day free trial! Upon deployment of your first project, your trial will automatically start.  On a free trial, you will be allowed 1 project up to 10GB of data storage.  Like all plans in Rill Data, this also comes with unlimited seats. As an admin, you'll notice banners at the top of the UI indicating the remaining time left on your trial. Once your time has run out, your projects in Rill Cloud will hibernate. While your project wont be accessible on Rill Cloud, the files will still be available if your choose to upgrade to a Team plan.
 
@@ -33,7 +33,7 @@ Please add a payment method and billing information that is accepted by Stripe. 
 
 ![img](/img/manage/billing/stripe.png)
 
-### Team Plan
+## Team Plan
 
 Team Plan unlocks unlimited projects with a 50GB data storage limit per project. Like all plans in Rill Data, this also comes with unlimited seats. As an admin, you will have access to your billing and usage page to monitor your project. If you decide to unsubcribe from your subcription, you will have access to Rill Cloud until the end of the month. Afterwards, your project will hibernate.
 Your project will not be accessible while hibernating. You will need to renew your subscription in order to access your project on Rill Cloud. 
@@ -43,6 +43,25 @@ To calculate your current usage and pricing, see our [pricing page](https://www.
 ![img](/img/manage/billing/team-plan2.png)
 
 
-### Enterprise Plan
+## Enterprise Plan
 
-Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or contact us at support@rilldata.com.
+Enterprise plan includes all the features of a Team Plan but also provides further offerings, such as a dedicated Technical Account Manager and less restrictions on data storage. For more information, please visit our price page, [here](https://www.rilldata.com/pricing), or [contact us](../../contact).
+
+### Enterprise usage-based billing
+
+**Storage:**
+
+Storage is the total compressed data in the cluster. It's available in [two performance tiers](/home/FAQ#what-are-the-compute-requirements-for-each-performance-tier), Hot and Cold, which set minimum [compute requirements](/home/FAQ#what-are-the-compute-requirements-for-data-processing).
+
+Data can be also offloaded to an archival tier where it does not consume any compute
+
+`$0.0005 / GB per hour`
+
+
+**Compute:**
+
+[Rill Compute Units (RCU)](/home/FAQ#what-is-a-rill-compute-unit-rcu) are a combination of CPU, memory, and disk used for ingesting and querying data.
+
+RCU scale up elastically for data ingestion & processing with enterprise discounts on RCUs provisioned for querying.
+
+`$0.09 RCU per hour`

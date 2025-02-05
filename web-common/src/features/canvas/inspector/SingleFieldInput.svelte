@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useMetricFieldData } from "./selectors";
 
   export let metricName: string;
@@ -11,16 +11,18 @@
   export let id: string;
   export let selectedItem: string | undefined = undefined;
   export let type: "measure" | "dimension";
+  export let includeTime = false;
   export let searchableItems: string[] | undefined = undefined;
   export let onSelect: (item: string, displayName: string) => void = () => {};
 
   let open = false;
   let searchValue = "";
 
-  const { instanceId } = $runtime;
+  const ctx = getCanvasStateManagers();
 
+  $: isTimeSelected = selectedItem === "__time";
   $: fieldData = useMetricFieldData(
-    instanceId,
+    ctx,
     metricName,
     type,
     searchableItems,
@@ -37,9 +39,16 @@
 
   <DropdownMenu.Root bind:open typeahead={false} closeOnItemClick={false}>
     <DropdownMenu.Trigger asChild let:builder>
-      <Chip fullWidth caret {type} builders={[builder]}>
+      <Chip
+        fullWidth
+        caret
+        type={isTimeSelected ? "time" : type}
+        builders={[builder]}
+      >
         <span class="font-bold truncate" slot="body">
-          {#if selectedItem}
+          {#if isTimeSelected}
+            Time
+          {:else if selectedItem}
             {$fieldData.displayMap[selectedItem] || selectedItem}
           {:else}
             Select a {type} field
@@ -53,6 +62,18 @@
         <Search bind:value={searchValue} autofocus={false} />
       </div>
       <div class="max-h-64 overflow-y-auto">
+        {#if type == "dimension" && includeTime}
+          <DropdownMenu.Item
+            class="pl-8 mx-1"
+            on:click={() => {
+              onSelect("__time", "Time");
+              open = false;
+            }}
+          >
+            Time
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+        {/if}
         {#each $fieldData.filteredItems as item (item)}
           <!-- Hide item if it's the already selected one -->
           {#if item !== selectedItem}

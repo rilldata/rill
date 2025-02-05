@@ -27,7 +27,7 @@
   import { PlusIcon } from "lucide-svelte";
   import { tick } from "svelte";
   import { slide } from "svelte/transition";
-  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
+  import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
   import ConnectorExplorer from "../connectors/ConnectorExplorer.svelte";
   import { connectorExplorerStore } from "../connectors/connector-explorer-store";
   import { OLAP_DRIVERS_WITHOUT_MODELING } from "../connectors/olap/olap-config";
@@ -210,11 +210,9 @@
   $: itemGroups = {
     measures:
       raw.measures instanceof YAMLSeq
-        ? raw.measures.items
-            .map((item) => {
-              if (item instanceof YAMLMap) return new YAMLMeasure(item);
-            })
-            .filter(is<YAMLMeasure>)
+        ? raw.measures.items.map((item) => {
+            return new YAMLMeasure(item instanceof YAMLMap ? item : undefined);
+          })
         : [],
     dimensions:
       raw.dimensions instanceof YAMLSeq
@@ -280,12 +278,12 @@
     rawDimensions: YAMLSeq<YAMLMap<string, string>>,
     metricsViewDimensions: MetricsViewSpecDimensionV2[],
   ) {
-    return rawDimensions.items
-      .map((item, i) => {
-        if (item instanceof YAMLMap)
-          return new YAMLDimension(item, metricsViewDimensions[i]);
-      })
-      .filter(is<YAMLDimension>);
+    return rawDimensions.items.map((item, i) => {
+      return new YAMLDimension(
+        item instanceof YAMLMap ? item : undefined,
+        metricsViewDimensions[i],
+      );
+    });
   }
 
   function stringGuard(value: unknown | undefined): string {
@@ -353,42 +351,41 @@
     };
   }
 
-  function is<T>(value: unknown): value is T {
-    return Boolean(value);
-  }
-
-  async function reorderList(
+  function reorderList(
     initIndexes: number[],
     newIndex: number,
     type: ItemType,
   ) {
-    initIndexes.sort((a, b) => a - b);
-    const editingItemIndex = initIndexes.indexOf($editingItemData?.index ?? -1);
-
     const sequence = raw[type];
 
     if (!(sequence instanceof YAMLSeq)) {
       return;
     }
 
-    let items = sequence.items as Array<YAMLMap | null>;
+    const items = sequence.items as Array<YAMLMap | null | Scalar>;
 
-    const clampedIndex = clamp(0, newIndex, items.length);
+    const itemsCopy = [...items];
+    const sortedIndices = [...initIndexes].sort((a, b) => a - b);
+    const editingItemIndex = sortedIndices.indexOf(
+      $editingItemData?.index ?? -1,
+    );
 
-    const movedItems: Array<YAMLMap | null> = [];
+    const clampedIndex = clamp(0, newIndex, itemsCopy.length);
 
-    initIndexes.forEach((index) => {
-      movedItems.push(items[index]);
-      items[index] = null;
+    const movedItems: Array<YAMLMap | null | Scalar> = [];
+
+    sortedIndices.forEach((index) => {
+      movedItems.push(itemsCopy[index]);
+      itemsCopy[index] = null;
     });
 
-    items.splice(clampedIndex, 0, ...movedItems);
+    itemsCopy.splice(clampedIndex, 0, ...movedItems);
 
-    const countBeforeClamped = initIndexes.filter(
+    const countBeforeClamped = sortedIndices.filter(
       (i) => i < clampedIndex,
     ).length;
 
-    const newIndexes = initIndexes.map((_, dragPosition) => {
+    const newIndexes = sortedIndices.map((_, dragPosition) => {
       return clampedIndex + dragPosition - countBeforeClamped;
     });
 
@@ -400,7 +397,10 @@
       selected[type] = new Set(newIndexes);
     }
 
-    await updateProperties({ [type]: items.filter((i) => i !== null) });
+    // Remove nulls and scalars
+    updateProperties({
+      [type]: itemsCopy.filter((i) => i && i instanceof YAMLMap),
+    });
 
     eventBus.emit("notification", { message: "Item moved", type: "success" });
   }
@@ -467,7 +467,7 @@
       return;
     }
 
-    const items = sequence.items as Array<YAMLMap>;
+    const items = [...sequence.items] as Array<YAMLMap>;
 
     const originalItem = items[index];
     const name = stringGuard(originalItem.get("name"));
@@ -504,7 +504,7 @@
     });
   }
 
-  async function switchTableMode() {
+  function switchTableMode() {
     const mode = tableMode;
 
     const currentProperties = {
@@ -581,6 +581,7 @@
             placeholder="Select a model"
             label="Model"
             onChange={async (newModelOrSourceName) => {
+              if (modelOrSourceOrTableName === newModelOrSourceName) return;
               if (!modelOrSourceOrTableName) {
                 updateProperties({ model: newModelOrSourceName }, [
                   "table",
@@ -875,7 +876,7 @@
   }
 
   .main-area {
-    @apply flex flex-col gap-y-4 size-full p-4 bg-background border;
+    @apply flex flex-col gap-y-4 size-full p-4 bg-surface border;
     @apply flex-shrink overflow-hidden rounded-[2px] relative;
   }
 

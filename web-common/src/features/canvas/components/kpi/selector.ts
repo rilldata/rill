@@ -1,50 +1,56 @@
+import type { KPISpec } from "@rilldata/web-common/features/canvas/components/kpi";
+import { validateMeasures } from "@rilldata/web-common/features/canvas/components/validators";
 import type { StateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors";
-import { getDefaultTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   createQueryServiceMetricsViewAggregation,
-  createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
-  type V1TimeRange,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { type CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 
 export function useKPITotals(
   ctx: StateManagers,
-  instanceId: string,
-  metricsViewName: string,
-  measure: string,
-  overrideTimeRange: string | undefined,
+  kpiSpec: KPISpec,
+  enabled: boolean,
 ): CreateQueryResult<number | null, HTTPError> {
-  const { timeControls } = ctx.canvasEntity;
+  const { canvasEntity } = ctx;
+
+  const {
+    metrics_view: metricsViewName,
+    measure,
+    time_range: componentTimeRange,
+    dimension_filters: componentFilter,
+  } = kpiSpec;
+
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    metricsViewName,
+    {
+      componentTimeRange,
+      componentFilter,
+    },
+  );
 
   return derived(
-    [timeControls.selectedTimeRange, timeControls.selectedTimezone],
-    ([selectedTimeRange, timeZone], set) => {
-      let timeRange: V1TimeRange = {
-        start: selectedTimeRange?.start?.toISOString(),
-        end: selectedTimeRange?.end?.toISOString(),
-        timeZone,
-      };
-
-      if (overrideTimeRange) {
-        timeRange = { isoDuration: overrideTimeRange, timeZone };
-      }
+    [ctx.runtime, timeAndFilterStore],
+    ([$runtime, { timeRange, where }], set) => {
       return createQueryServiceMetricsViewAggregation(
-        instanceId,
+        $runtime.instanceId,
         metricsViewName,
         {
           measures: [{ name: measure }],
           timeRange,
+          where,
         },
         {
           query: {
-            enabled: !!selectedTimeRange?.start && !!selectedTimeRange?.end,
+            enabled:
+              enabled &&
+              (!!componentTimeRange ||
+                (!!timeRange?.start && !!timeRange?.end)),
             select: (data) => {
               return data.data?.[0]?.[measure] ?? null;
             },
@@ -58,44 +64,49 @@ export function useKPITotals(
 
 export function useKPIComparisonTotal(
   ctx: StateManagers,
-  instanceId: string,
-  metricsViewName: string,
-  measure: string,
-  overrideComparisonRange: string | undefined,
+  kpiSpec: KPISpec,
+  enabled: boolean,
 ): CreateQueryResult<number | null, HTTPError> {
-  const { timeControls } = ctx.canvasEntity;
+  const { canvasEntity } = ctx;
+  const { showTimeComparison } = canvasEntity.timeControls;
+
+  const {
+    metrics_view: metricsViewName,
+    measure,
+    comparison_range: componentComparisonRange,
+    dimension_filters: componentFilter,
+  } = kpiSpec;
+
+  // Build the store that yields { finalTimeRange, where }
+  const timeAndFilterStore = canvasEntity.createTimeAndFilterStore(
+    metricsViewName,
+    {
+      componentComparisonRange,
+      componentFilter,
+    },
+  );
 
   return derived(
-    [
-      timeControls.selectedComparisonTimeRange,
-      timeControls.selectedTimezone,
-      timeControls.showTimeComparison,
-    ],
-    ([selectedComparisonTimeRange, timeZone, showComparison], set) => {
-      let timeRange: V1TimeRange = {
-        start: selectedComparisonTimeRange?.start?.toISOString(),
-        end: selectedComparisonTimeRange?.end?.toISOString(),
-        timeZone,
-      };
-
+    [ctx.runtime, timeAndFilterStore, showTimeComparison],
+    ([$runtime, { comparisonRange, where }, showComparison], set) => {
       // TODO: Use all time range and then calculate the comparison range
-      if (overrideComparisonRange) {
-        timeRange = { isoDuration: overrideComparisonRange, timeZone };
-      }
+
       return createQueryServiceMetricsViewAggregation(
-        instanceId,
+        $runtime.instanceId,
         metricsViewName,
         {
           measures: [{ name: measure }],
-          timeRange,
+          timeRange: comparisonRange,
+          where,
         },
         {
           query: {
             enabled:
-              !!overrideComparisonRange ||
-              (showComparison &&
-                !!selectedComparisonTimeRange?.start &&
-                !!selectedComparisonTimeRange?.end),
+              enabled &&
+              (!!componentComparisonRange ||
+                (showComparison &&
+                  !!comparisonRange?.start &&
+                  !!comparisonRange?.end)),
             select: (data) => {
               return data.data?.[0]?.[measure] ?? null;
             },
@@ -107,94 +118,97 @@ export function useKPIComparisonTotal(
   );
 }
 
-export function useStartEndTime(
-  instanceId: string,
-  metricsViewName: string,
-  timeRange: string,
-) {
-  return createQueryServiceMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    {},
-    {
-      query: {
-        select: (data) => {
-          const maxTime = new Date(data?.timeRangeSummary?.max ?? 0);
-          const { startTime, endTime } = isoDurationToTimeRange(
-            timeRange,
-            maxTime,
-          );
-
-          return { start: startTime, end: endTime };
-        },
-      },
-    },
-  );
-}
-
 export function useKPISparkline(
   ctx: StateManagers,
-  instanceId: string,
-  metricsViewName: string,
-  measure: string,
-  overrideTimeRange: string | undefined,
-  whereSql: string | undefined,
+  kpiSpec: KPISpec,
+  enabled: boolean,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(
-    instanceId,
-    metricsViewName,
-    { query: { queryClient: ctx.queryClient } },
-  );
+  const {
+    canvasEntity: { createTimeAndFilterStore },
+  } = ctx;
 
-  const { timeControls } = ctx.canvasEntity;
+  const {
+    metrics_view: metricsViewName,
+    measure,
+    // TODO: Override time range for sparkline when we integrate
+    // time range panel with super pill and in turn can get
+    // start and end time from the super pill instead of ISO
+
+    // time_range: componentTimeRange,
+    dimension_filters: componentFilter,
+  } = kpiSpec;
+
+  const timeAndFilterStore = createTimeAndFilterStore(metricsViewName, {
+    componentFilter,
+  });
+
   return derived(
-    [
-      allTimeRangeQuery,
-      timeControls.selectedTimeRange,
-      timeControls.selectedTimezone,
-    ],
-    ([allTimeRange, selectedTimeRange, timeZone], set) => {
-      const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
-      const maxTimeDate = new Date(maxTime ?? 0);
-      let startTime = selectedTimeRange?.start;
-      let endTime = selectedTimeRange?.end;
+    [ctx.runtime, timeAndFilterStore],
+    ([$runtime, { timeRange, where, timeGrain }], set) => {
+      const { start, end, timeZone } = timeRange;
 
-      if (overrideTimeRange) {
-        const { startTime: start, endTime: end } = isoDurationToTimeRange(
-          overrideTimeRange,
-          maxTimeDate,
-        );
-        startTime = start;
-        endTime = end;
-      }
+      const defaultGrain = timeGrain || V1TimeGrain.TIME_GRAIN_HOUR;
 
-      const defaultGrain = getDefaultTimeGrain(startTime, endTime);
       return createQueryServiceMetricsViewTimeSeries(
-        instanceId,
+        $runtime.instanceId,
         metricsViewName,
         {
           measureNames: [measure],
-          timeStart: startTime.toISOString(),
-          timeEnd: endTime.toISOString(),
+          timeStart: start,
+          timeEnd: end,
           timeGranularity: defaultGrain,
           timeZone,
-          whereSql,
+          where,
         },
         {
           query: {
-            enabled: !!startTime && !!endTime && !!maxTime,
+            enabled: !!start && !!end && enabled,
             select: (data) => {
               return prepareTimeSeries(
                 data.data || [],
                 [],
                 TIME_GRAIN[defaultGrain]?.duration,
-                timeZone,
+                timeZone ?? "UTC",
               );
             },
             queryClient: ctx.queryClient,
           },
         },
       ).subscribe(set);
+    },
+  );
+}
+
+export function validateKPISchema(
+  ctx: StateManagers,
+  kpiSpec: KPISpec,
+): Readable<{
+  isValid: boolean;
+  error?: string;
+}> {
+  const { metrics_view } = kpiSpec;
+  return derived(
+    ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
+    (metricsView) => {
+      const measure = kpiSpec.measure;
+      if (!metricsView) {
+        return {
+          isValid: false,
+          error: `Metrics view ${metrics_view} not found`,
+        };
+      }
+      const validateMeasuresRes = validateMeasures(metricsView, [measure]);
+      if (!validateMeasuresRes.isValid) {
+        const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
+        return {
+          isValid: false,
+          error: `Invalid measure "${invalidMeasures}" selected`,
+        };
+      }
+      return {
+        isValid: true,
+        error: undefined,
+      };
     },
   );
 }

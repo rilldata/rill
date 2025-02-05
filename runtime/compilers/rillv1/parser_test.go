@@ -36,6 +36,10 @@ connectors:
 
 env:
   foo: bar
+
+mock_users:
+- email: foo@bar.com
+  custom_attribute: yeah
 `,
 	})
 
@@ -1618,8 +1622,9 @@ theme:
 			Paths: []string{"/canvases/c1.yaml"},
 			Refs:  []ResourceName{{Kind: ResourceKindTheme, Name: "t1"}},
 			CanvasSpec: &runtimev1.CanvasSpec{
-				DisplayName: "C1",
-				Theme:       "t1",
+				DisplayName:    "C1",
+				Theme:          "t1",
+				FiltersEnabled: true,
 			},
 		},
 		{
@@ -1636,6 +1641,7 @@ theme:
 					},
 					PrimaryColorRaw: "red",
 				},
+				FiltersEnabled: true,
 			},
 		},
 	}
@@ -1694,6 +1700,10 @@ time_ranges:
       - P1M
       - offset: P4M
         range: P2M
+
+filters:
+  enable: false
+
 defaults:
   time_range: P4W
 
@@ -1705,6 +1715,10 @@ items:
 - component:
     markdown:
       content: "Hello world!"
+
+layout:
+- 1, 2, 3
+- 4, 5, 6
 `,
 	})
 
@@ -1770,6 +1784,7 @@ items:
 						},
 					},
 				},
+				FiltersEnabled: false,
 				DefaultPreset: &runtimev1.CanvasPreset{
 					TimeRange:      asPtr("P4W"),
 					ComparisonMode: runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE,
@@ -1779,6 +1794,7 @@ items:
 					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
 					{Component: "d1--component-2", DefinedInCanvas: true},
 				},
+				Layout: must(structpb.NewValue([]any{"1, 2, 3", "4, 5, 6"})),
 			},
 		},
 	}
@@ -1803,6 +1819,28 @@ sql: select * from m1
 		`apis/a2.yaml`: `
 type: api
 metrics_sql: select * from m1
+`,
+		// api a3 with security rules
+		`apis/a3.yaml`: `
+type: api
+sql: select * from m1
+security:
+  access: true
+`,
+		// api a4
+		`apis/a4.yaml`: `
+type: api
+metrics_sql: select * from m1
+security:
+  access: '{{ .user.admin }}'
+`,
+		// api a5
+		`apis/a5.yaml`: `
+type: api
+metrics_sql: select * from m1
+skip_nested_security: true
+security:
+  access: '{{ .user.admin }}'
 `,
 	})
 
@@ -1833,8 +1871,50 @@ metrics_sql: select * from m1
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a3"},
+			Paths: []string{"/apis/a3.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"connector": "duckdb", "sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a4"},
+			Paths: []string{"/apis/a4.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a5"},
+			Paths: []string{"/apis/a5.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "{{ .user.admin }}",
+						Allow:     true,
+					}}},
+				},
+				SkipNestedSecurity: true,
+			},
+		},
 	}
-
 	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)

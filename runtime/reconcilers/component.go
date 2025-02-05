@@ -17,8 +17,8 @@ type ComponentReconciler struct {
 	C *runtime.Controller
 }
 
-func newComponentReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ComponentReconciler{C: c}
+func newComponentReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ComponentReconciler{C: c}, nil
 }
 
 func (r *ComponentReconciler) Close(ctx context.Context) error {

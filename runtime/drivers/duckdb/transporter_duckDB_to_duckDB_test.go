@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	_ "github.com/marcboeker/go-duckdb"
 )
 
 func TestDuckDBToDuckDBTransfer(t *testing.T) {
@@ -27,10 +28,10 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	to, err := Driver{}.Open("default", map[string]any{}, storage.MustNew(tempDir, nil), activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	tr := newDuckDBToDuckDB(to.(*connection), "duckdb", zap.NewNop())
+	tr := newDuckDBToDuckDB(to, to.(*connection), zap.NewNop())
 
 	// transfer once
 	err = tr.Transfer(context.Background(), map[string]any{"sql": "SELECT * FROM foo", "db": dbFile}, map[string]any{"table": "test"}, &drivers.TransferOptions{})

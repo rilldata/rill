@@ -3,8 +3,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { MinusIcon, PlusIcon } from "lucide-svelte";
+  import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "./selectors";
 
   export let metricName: string;
@@ -18,10 +18,10 @@
   let open = false;
   let searchValue = "";
 
-  const { instanceId } = $runtime;
+  const ctx = getCanvasStateManagers();
 
   $: fieldData = useMetricFieldData(
-    instanceId,
+    ctx,
     metricName,
     type,
     searchableItems,
@@ -85,24 +85,19 @@
   {#if selectedItems?.length > 0}
     <div class="flex flex-col gap-1 mt-2">
       {#each selectedItems as item}
-        <div class="flex items-center justify-between gap-x-2">
-          <div class="flex-1">
-            <Chip fullWidth {type}>
-              <span class="font-bold truncate" slot="body">
-                {$fieldData.displayMap[item] || item}
-              </span>
-            </Chip>
-          </div>
-          <button
-            class="px-2 py-1 text-xs"
-            on:click={() => {
-              selectedProxy.delete(item);
-              onMultiSelect(Array.from(selectedProxy));
-            }}
-          >
-            <MinusIcon size="14px" />
-          </button>
-        </div>
+        <Chip
+          removable
+          fullWidth
+          {type}
+          on:remove={() => {
+            selectedProxy.delete(item);
+            onMultiSelect(Array.from(selectedProxy));
+          }}
+        >
+          <span class="font-bold truncate" slot="body">
+            {$fieldData.displayMap[item] || item}
+          </span>
+        </Chip>
       {/each}
     </div>
   {/if}

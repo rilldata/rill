@@ -103,6 +103,15 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
+func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).SelectContext(ctx, &count, "SELECT COUNT(*) FROM projects WHERE org_id=$1", orgID)
+	if err != nil {
+		return 0, parseErr("projects", err)
+	}
+	return count, nil
+}
+
 func (c *connection) FindOrganizationByCustomDomain(ctx context.Context, domain string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(custom_domain)=lower($1)", domain).StructScan(res)
@@ -1203,8 +1212,8 @@ func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error 
 }
 
 func (c *connection) DeleteMagicAuthTokens(ctx context.Context, ids []string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
-	return checkDeleteRow("magic auth token", res, err)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=ANY($1)", ids)
+	return parseErr("magic auth token", err)
 }
 
 func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
@@ -1951,7 +1960,7 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 	// We skip unused assets created in last 6 hours to prevent race condition
 	// where somebody just created an asset but is yet to use it
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT a.* FROM assets a 
+		SELECT a.* FROM assets a
 		WHERE a.created_on < now() - INTERVAL '6 hours'
 		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
@@ -2131,14 +2140,14 @@ func (c *connection) FindProjectVariables(ctx context.Context, projectID string,
 		// Also include variables that are not environment specific and not set for the given environment
 		q += `
 			AND (
-				p.environment = $2 
+				p.environment = $2
 				OR (
-					p.environment = '' 
+					p.environment = ''
 					AND NOT EXISTS (
-						SELECT 1 
-						FROM project_variables p2 
-						WHERE p2.project_id = p.project_id 
-						AND p2.environment = $2 
+						SELECT 1
+						FROM project_variables p2
+						WHERE p2.project_id = p.project_id
+						AND p2.environment = $2
 						AND lower(p2.name) = lower(p.name)
 					)
 				)

@@ -6,7 +6,6 @@
     MetricsViewSpecDimensionV2,
     V1Expression,
     V1MetricsViewAggregationMeasure,
-    V1MetricsViewSpec,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
   import {
@@ -24,7 +23,6 @@
     additionalMeasures,
     getFiltersForOtherDimensions,
   } from "../selectors";
-  import { getIndependentMeasures } from "../state-managers/selectors/measures";
   import {
     createAndExpression,
     createOrExpression,
@@ -60,7 +58,6 @@
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let activeMeasureName: string;
   export let metricsViewName: string;
-  export let metricsView: V1MetricsViewSpec;
   export let sortType: SortType;
   export let tableWidth: number;
   export let sortedAscending: boolean;
@@ -72,6 +69,7 @@
   export let atLeastOneActive: boolean;
   export let isBeingCompared: boolean;
   export let parentElement: HTMLElement;
+  export let suppressTooltip = false;
   export let toggleDimensionValueSelection: (
     dimensionName: string,
     dimensionValue: string,
@@ -124,10 +122,7 @@
         undefined,
       );
 
-  $: measures = getIndependentMeasures(
-    metricsView,
-    additionalMeasures(activeMeasureName, dimensionThresholdFilters),
-  )
+  $: measures = additionalMeasures(activeMeasureName, dimensionThresholdFilters)
     .map(
       (n) =>
         ({
@@ -301,6 +296,7 @@
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardRow
+            {suppressTooltip}
             {tableWidth}
             {firstColumnWidth}
             {isSummableMeasure}
@@ -319,6 +315,7 @@
 
       {#each belowTheFoldRows as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
+          {suppressTooltip}
           {itemData}
           {firstColumnWidth}
           {isSummableMeasure}
