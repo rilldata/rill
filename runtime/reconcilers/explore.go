@@ -18,8 +18,8 @@ type ExploreReconciler struct {
 	C *runtime.Controller
 }
 
-func newExploreReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ExploreReconciler{C: c}
+func newExploreReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ExploreReconciler{C: c}, nil
 }
 
 func (r *ExploreReconciler) Close(ctx context.Context) error {

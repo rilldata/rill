@@ -23,7 +23,7 @@ export interface TableSpec
 
 export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
   minSize = { width: 2, height: 2 };
-  defaultSize = { width: 16, height: 10 };
+  defaultSize = { width: 4, height: 10 };
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -76,7 +76,6 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
       metrics_view,
       measures: [measure],
       row_dimensions: [dimension],
-      time_range: "PT24H",
     };
   }
 }

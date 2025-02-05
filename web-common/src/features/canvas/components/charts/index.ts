@@ -19,7 +19,7 @@ export type ChartSpec = ComponentFilterProperties &
 
 export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
   minSize = { width: 4, height: 4 };
-  defaultSize = { width: 12, height: 8 };
+  defaultSize = { width: 6, height: 4 };
 
   constructor(
     fileArtifact: FileArtifact | undefined = undefined,
@@ -69,7 +69,6 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
         type: "quantitative",
         field: measure,
       },
-      time_range: "PT24H",
     };
   }
 }

@@ -553,7 +553,7 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal;
-    @apply bg-white table-fixed;
+    @apply bg-surface table-fixed;
   }
 
   .table-wrapper {
@@ -564,7 +564,7 @@
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-white;
+    @apply z-30 bg-surface;
   }
 
   tbody .cell {

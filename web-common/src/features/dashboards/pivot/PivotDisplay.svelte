@@ -7,13 +7,13 @@
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
-  import { usePivotDataStore } from "./pivot-data-store";
+  import { usePivotForExplore } from "./pivot-data-store";
 
   const stateManagers = getStateManagers();
 
   let showPanels = true;
 
-  $: pivotDataStore = usePivotDataStore(stateManagers);
+  $: pivotDataStore = usePivotForExplore(stateManagers);
 
   $: ({ isFetching, assembled } = $pivotDataStore);
 

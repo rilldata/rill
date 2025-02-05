@@ -128,17 +128,27 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 
 	// Create callback to shut down globals
 	shutdown := func(ctx context.Context) error {
-		var err1, err2 error
+		var errs []error
 		if meterProvider != nil {
-			err1 = meterProvider.Shutdown(ctx)
+			if err := meterProvider.Shutdown(ctx); err != nil {
+				errs = append(errs, err)
+			}
 		}
 		if tracerProvider != nil {
-			err2 = tracerProvider.Shutdown(ctx)
+			if err := tracerProvider.ForceFlush(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("failed to flush spans: %w", err))
+			}
+			if err := tracerProvider.Shutdown(ctx); err != nil {
+				errs = append(errs, err)
+			}
 		}
-		if err1 != nil {
-			return err1
+		if len(errs) == 1 {
+			return fmt.Errorf("error while shutting down: %w", errs[0])
 		}
-		return err2
+		if len(errs) > 1 {
+			return fmt.Errorf("multiple errors while shutting down: %v", errs)
+		}
+		return nil
 	}
 	return shutdown, nil
 }

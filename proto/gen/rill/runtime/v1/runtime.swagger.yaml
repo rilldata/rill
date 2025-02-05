@@ -3617,6 +3617,9 @@ definitions:
           List of selectable time zones.
           If the list is empty, a default list should be shown.
           The values should be valid IANA location identifiers.
+      filtersEnabled:
+        type: boolean
+        description: Indicates if filters should be enabled for the canvas.
       defaultPreset:
         $ref: '#/definitions/v1CanvasPreset'
         description: Preset UI state to show by default.
@@ -3632,6 +3635,8 @@ definitions:
           type: object
           $ref: '#/definitions/v1CanvasItem'
         title: Items to render on the canvas
+      layout:
+        description: Layout is an untyped object pending a formal definition.
       securityRules:
         type: array
         items:
@@ -4669,6 +4674,11 @@ definitions:
           type: string
       admin:
         type: boolean
+      attributes:
+        type: object
+        description: |-
+          Additional arbitrary attributes to include in the JWT.
+          They take precedence if they collide with name, email, groups or admin.
     title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object

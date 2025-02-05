@@ -10300,6 +10300,8 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for FiltersEnabled
+
 	if all {
 		switch v := interface{}(m.GetDefaultPreset()).(type) {
 		case interface{ ValidateAll() error }:
@@ -10395,6 +10397,35 @@ func (m *CanvasSpec) validate(all bool) error {
 			}
 		}
 
+	}
+
+	if all {
+		switch v := interface{}(m.GetLayout()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "Layout",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "Layout",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetLayout()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasSpecValidationError{
+				field:  "Layout",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	for idx, item := range m.GetSecurityRules() {

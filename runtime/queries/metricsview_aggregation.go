@@ -314,6 +314,9 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		res.IsoDuration = q.TimeRange.IsoDuration
 		res.IsoOffset = q.TimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		if q.TimeRange.TimeZone != "" {
+			qry.TimeZone = q.TimeRange.TimeZone
+		}
 		qry.TimeRange = res
 	}
 
@@ -329,6 +332,12 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
 		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
 		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		if q.ComparisonTimeRange.TimeZone != "" {
+			if qry.TimeZone != "" && qry.TimeZone != q.ComparisonTimeRange.TimeZone {
+				return nil, fmt.Errorf("comparison_time_range has a different time zone")
+			}
+			qry.TimeZone = q.ComparisonTimeRange.TimeZone
+		}
 		qry.ComparisonTimeRange = res
 	}
 
@@ -416,11 +425,15 @@ func metricViewExpression(expr *runtimev1.Expression, sql string) (*metricsview.
 }
 
 func anyToTime(tm any) (time.Time, error) {
+	if tm == nil {
+		return time.Time{}, nil
+	}
+
 	tmStr, ok := tm.(string)
 	if !ok {
 		t, ok := tm.(time.Time)
 		if !ok {
-			return time.Time{}, errors.New("invalid type")
+			return time.Time{}, fmt.Errorf("unable to convert type %T to Time", tm)
 		}
 		return t, nil
 	}

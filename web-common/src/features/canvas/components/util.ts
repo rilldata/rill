@@ -39,7 +39,7 @@ export function getFilterOptions(
       : {}),
     dimension_filters: {
       type: "dimension_filters",
-      label: "Dimension Filters",
+      label: "Filters",
     },
   };
 }
@@ -120,10 +120,12 @@ const displayMap: Record<CanvasComponentType, string> = {
   area_chart: "Chart",
 };
 
-export function getHeaderForComponent(componentType: string | undefined) {
+export function getHeaderForComponent(
+  componentType: CanvasComponentType | null,
+) {
   if (!componentType) return "Component";
-  if (!displayMap[componentType as CanvasComponentType]) {
+  if (!displayMap[componentType]) {
     return "Component";
   }
-  return displayMap[componentType as CanvasComponentType];
+  return displayMap[componentType];
 }

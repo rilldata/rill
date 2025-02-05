@@ -108,8 +108,16 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, multierr.Combine(err, err2, err3)
 	}
 
-	// Log project creation
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.Any("user_id", opts.CreatedByUserID))
+	var createdByID, createdByEmail string
+	if opts.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
+		if err == nil {
+			createdByID = user.ID
+			createdByEmail = user.Email
+		}
+	}
+
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
 
 	return res, nil
 }

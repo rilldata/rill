@@ -6,17 +6,15 @@
 
   export let data: PageData;
 
-  let columns = 20;
-  let gap = 1;
   $: canvasName = data.dashboardName;
 </script>
 
 <StateManagersProvider {canvasName}>
   <CanvasThemeProvider>
     <CanvasDashboardEmbed
+      showFilterBar={data.dashboard.spec?.filtersEnabled}
       items={data.dashboard.spec?.items || []}
-      {columns}
-      {gap}
+      spec={data.dashboard.spec || {}}
     />
   </CanvasThemeProvider>
 </StateManagersProvider>
