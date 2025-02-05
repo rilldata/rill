@@ -92,8 +92,6 @@ var spec = drivers.Spec{
 	ImplementsOLAP: true,
 }
 
-var maxOpenConnections = 20
-
 type driver struct{}
 
 type configProperties struct {
@@ -152,6 +150,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
+	maxOpenConnections := 20 // Very roughly approximating the number of queries required for a typical page load.
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -279,8 +278,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// connection with http protocol is successful
 		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
 	}
-	// very roughly approximating num queries required for a typical page load
-	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
 
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
