@@ -180,11 +180,12 @@ func anyToTime(tm any) (time.Time, error) {
 	if tm == nil {
 		return time.Time{}, nil
 	}
+
 	tmStr, ok := tm.(string)
 	if !ok {
 		t, ok := tm.(time.Time)
 		if !ok {
-			return time.Time{}, errors.New("invalid type")
+			return time.Time{}, fmt.Errorf("unable to convert type %T to Time", tm)
 		}
 		return t, nil
 	}
