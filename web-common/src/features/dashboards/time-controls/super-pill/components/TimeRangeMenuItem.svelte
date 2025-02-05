@@ -32,8 +32,10 @@
       {/if}
     </span>
 
-    {#if range.meta}
+    <!-- {#if range.meta} -->
+    <span class="group-hover:block hidden">
       <SyntaxElement range={finalRange} />
-    {/if}
+    </span>
+    <!-- {/if} -->
   </div>
 </DropdownMenu.Item>

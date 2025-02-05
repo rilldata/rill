@@ -205,7 +205,7 @@
 
         <!-- <DropdownMenu.Separator /> -->
 
-        <div class="flex justify-between items-center py-2 pt-1 px-3">
+        <div class="flex justify-between items-center py-2 px-3">
           <span>Include {grainPhrase}</span>
           <Switch
             id="Show comparison"
@@ -287,9 +287,13 @@
             </div>
           </div>
         </div>
-        <!-- <a href="https://www.rilldata.com" class="mt-auto">
-          Syntax documentation
-        </a> -->
+
+        <div class="h-7">
+          <a href="https://www.rilldata.com" class="mt-auto">
+            Syntax documentation
+          </a>
+        </div>
+
         <!-- </div> -->
       </div>
     </div>

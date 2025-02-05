@@ -43,6 +43,10 @@
           };
         })
     : [];
+
+  import { featureFlags } from "../../feature-flags";
+
+  const { rillTime } = featureFlags;
 </script>
 
 {#if activeTimeGrain && timeGrainOptions.length && minTimeGrain}
@@ -85,13 +89,16 @@
           {option.main}
         </DropdownMenu.CheckboxItem>
       {/each}
-      <!-- <DropdownMenu.Separator /> -->
-      <!-- <div class="flex justify-between px-2 py-1">
-        <label for="complete" class="select-none cursor-pointer">
-          Complete periods
-        </label>
-        <Switch id="complete" checked={complete} on:click={toggleComplete} />
-      </div> -->
+
+      {#if $rillTime}
+        <DropdownMenu.Separator />
+        <div class="flex justify-between px-2 py-1">
+          <label for="complete" class="select-none cursor-pointer">
+            Complete periods
+          </label>
+          <Switch id="complete" checked={complete} on:click={toggleComplete} />
+        </div>
+      {/if}
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {/if}
