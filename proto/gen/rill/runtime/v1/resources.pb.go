@@ -8103,7 +8103,7 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x63, 0x12, 0x32, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x1c, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e,
 	0x76, 0x31, 0x2e, 0x43, 0x61, 0x6e, 0x76, 0x61, 0x73, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05,
-	0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0xdc, 0x04, 0x0a, 0x0a, 0x43, 0x61, 0x6e, 0x76, 0x61, 0x73,
+	0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x8c, 0x05, 0x0a, 0x0a, 0x43, 0x61, 0x6e, 0x76, 0x61, 0x73,
 	0x53, 0x70, 0x65, 0x63, 0x12, 0x21, 0x0a, 0x0c, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79, 0x5f,
 	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x69, 0x73, 0x70,
 	0x6c, 0x61, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x1b, 0x0a, 0x09, 0x6d, 0x61, 0x78, 0x5f, 0x77,
@@ -8136,7 +8136,10 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x31, 0x0a, 0x05, 0x69,
 	0x74, 0x65, 0x6d, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c,
 	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6e,
-	0x76, 0x61, 0x73, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x12, 0x44,
+	0x76, 0x61, 0x73, 0x49, 0x74, 0x65, 0x6d, 0x52, 0x05, 0x69, 0x74, 0x65, 0x6d, 0x73, 0x12, 0x2e,
+	0x0a, 0x06, 0x6c, 0x61, 0x79, 0x6f, 0x75, 0x74, 0x18, 0x10, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x06, 0x6c, 0x61, 0x79, 0x6f, 0x75, 0x74, 0x12, 0x44,
 	0x0a, 0x0e, 0x73, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73,
 	0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
 	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74,
@@ -8612,34 +8615,35 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	70,  // 136: rill.runtime.v1.CanvasSpec.default_preset:type_name -> rill.runtime.v1.CanvasPreset
 	65,  // 137: rill.runtime.v1.CanvasSpec.variables:type_name -> rill.runtime.v1.ComponentVariable
 	69,  // 138: rill.runtime.v1.CanvasSpec.items:type_name -> rill.runtime.v1.CanvasItem
-	22,  // 139: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	67,  // 140: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
-	1,   // 141: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
-	72,  // 142: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
-	73,  // 143: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
-	94,  // 144: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
-	94,  // 145: rill.runtime.v1.APISpec.openapi_parameters:type_name -> google.protobuf.Struct
-	94,  // 146: rill.runtime.v1.APISpec.openapi_response_schema:type_name -> google.protobuf.Struct
-	22,  // 147: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	79,  // 148: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
-	81,  // 149: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
-	82,  // 150: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
-	91,  // 151: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesEntry
-	94,  // 152: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
-	92,  // 153: rill.runtime.v1.ConnectorSpec.properties_from_variables:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesFromVariablesEntry
-	96,  // 154: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	84,  // 155: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	5,   // 156: rill.runtime.v1.MetricsViewSpec.MeasureV2.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
-	85,  // 157: rill.runtime.v1.MetricsViewSpec.MeasureV2.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
-	84,  // 158: rill.runtime.v1.MetricsViewSpec.MeasureV2.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	84,  // 159: rill.runtime.v1.MetricsViewSpec.MeasureV2.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	94,  // 160: rill.runtime.v1.MetricsViewSpec.MeasureV2.format_d3_locale:type_name -> google.protobuf.Struct
-	87,  // 161: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
-	162, // [162:162] is the sub-list for method output_type
-	162, // [162:162] is the sub-list for method input_type
-	162, // [162:162] is the sub-list for extension type_name
-	162, // [162:162] is the sub-list for extension extendee
-	0,   // [0:162] is the sub-list for field type_name
+	100, // 139: rill.runtime.v1.CanvasSpec.layout:type_name -> google.protobuf.Value
+	22,  // 140: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	67,  // 141: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
+	1,   // 142: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
+	72,  // 143: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
+	73,  // 144: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
+	94,  // 145: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
+	94,  // 146: rill.runtime.v1.APISpec.openapi_parameters:type_name -> google.protobuf.Struct
+	94,  // 147: rill.runtime.v1.APISpec.openapi_response_schema:type_name -> google.protobuf.Struct
+	22,  // 148: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	79,  // 149: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
+	81,  // 150: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
+	82,  // 151: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
+	91,  // 152: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesEntry
+	94,  // 153: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
+	92,  // 154: rill.runtime.v1.ConnectorSpec.properties_from_variables:type_name -> rill.runtime.v1.ConnectorSpec.PropertiesFromVariablesEntry
+	96,  // 155: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	84,  // 156: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	5,   // 157: rill.runtime.v1.MetricsViewSpec.MeasureV2.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
+	85,  // 158: rill.runtime.v1.MetricsViewSpec.MeasureV2.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
+	84,  // 159: rill.runtime.v1.MetricsViewSpec.MeasureV2.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	84,  // 160: rill.runtime.v1.MetricsViewSpec.MeasureV2.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	94,  // 161: rill.runtime.v1.MetricsViewSpec.MeasureV2.format_d3_locale:type_name -> google.protobuf.Struct
+	87,  // 162: rill.runtime.v1.MetricsViewSpec.AvailableTimeRange.comparison_offsets:type_name -> rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
+	163, // [163:163] is the sub-list for method output_type
+	163, // [163:163] is the sub-list for method input_type
+	163, // [163:163] is the sub-list for extension type_name
+	163, // [163:163] is the sub-list for extension extendee
+	0,   // [0:163] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_resources_proto_init() }
