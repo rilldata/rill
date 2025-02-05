@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { chromium, expect } from "@playwright/test";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
@@ -6,6 +6,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
+import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
 import {
   ADMIN_STORAGE_STATE,
@@ -15,7 +16,7 @@ import { cliLogin } from "./fixtures/cli";
 
 setup(
   "should start services, log-in a user, and deploy a project",
-  async ({ page }) => {
+  async () => {
     const timeout = 180_000;
     setup.setTimeout(timeout);
 
@@ -43,7 +44,8 @@ setup(
     // The above `rill devtool` command pulls the `.env` file with these values.
     if (
       !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL ||
-      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD
+      !process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_PASSWORD ||
+      !process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON
     ) {
       throw new Error(
         "Missing required environment variables for authentication",
@@ -87,6 +89,15 @@ setup(
       })
       .toBeTruthy();
     console.log("Runtime service ready");
+
+    // Launch a Chromium browser with an authenticated GitHub session
+    const browser = await chromium.launch();
+    const context = await browser.newContext({
+      storageState: JSON.parse(
+        process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
+      ) as StorageState,
+    });
+    const page = await context.newPage();
 
     // Pull the repositories to be used for testing
     const examplesRepoPath = "tests/setup/git/repos/rill-examples";

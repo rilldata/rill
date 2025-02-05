@@ -1,14 +1,5 @@
 import { devices, type PlaywrightTestConfig } from "@playwright/test";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import { ADMIN_STORAGE_STATE } from "./tests/setup/constants";
-import { getGitHubStorageState } from "./tests/utils/github-storage-state";
-
-// Load environment variables from our root `.env` file
-// Note: If you don't have the requisite environment variables, pull the latest `cloud-e2e.env` file.
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const config: PlaywrightTestConfig = {
   webServer: {
@@ -44,11 +35,6 @@ const config: PlaywrightTestConfig = {
       ...(process.env.E2E_NO_TEARDOWN || process.env.CI
         ? undefined
         : { teardown: "teardown" }),
-      use: {
-        storageState: getGitHubStorageState(
-          process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
-        ),
-      },
     },
     ...(process.env.CI
       ? [] // skip in CI, since the GitHub Action uses an ephemeral runner
