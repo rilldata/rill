@@ -60,7 +60,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     return {
       metrics_view,
       measure,
-      time_range: "PT24H",
       sparkline: true,
     };
   }
