@@ -163,7 +163,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name.kind", req.Name.Kind),
 		attribute.String("args.name.name", req.Name.Name),
-		attribute.Bool("args.skip_checks", req.SkipSecurityChecks),
+		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
