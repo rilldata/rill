@@ -41,13 +41,19 @@
       },
       spec: { allDimensions, allSimpleMeasures },
       timeControls: {
-        selectedTimeRange,
-        selectedComparisonTimeRange,
-        selectedTimezone: activeTimeZone,
         allTimeRange,
+        hasTimeSeries,
+        timeRangeStateStore,
+        comparisonRangeStateStore,
+        selectedTimezone,
       },
     },
   } = getCanvasStateManagers();
+
+  $: ({ selectedTimeRange, timeStart, timeEnd } = $timeRangeStateStore || {});
+
+  $: selectedComparisonTimeRange =
+    $comparisonRangeStateStore?.selectedComparisonTimeRange;
 
   $: dimensionIdMap = getMapFromArray(
     $allDimensions,
@@ -91,23 +97,22 @@
 </script>
 
 <div class="flex flex-col gap-y-2 w-full h-20 justify-center">
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
-    <Calendar size="16px" />
-    <CanvasSuperPill
-      allTimeRange={$allTimeRange}
-      selectedTimeRange={$selectedTimeRange}
-      activeTimeZone={$activeTimeZone}
-    />
-    <CanvasComparisonPill
-      allTimeRange={$allTimeRange}
-      selectedTimeRange={$selectedTimeRange}
-      selectedComparisonTimeRange={$selectedComparisonTimeRange}
-    />
-    <CanvasGrainSelector
-      selectedTimeRange={$selectedTimeRange}
-      selectedComparisonTimeRange={$selectedComparisonTimeRange}
-    />
-  </div>
+  {#if $hasTimeSeries}
+    <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
+      <Calendar size="16px" />
+      <CanvasSuperPill
+        allTimeRange={$allTimeRange}
+        {selectedTimeRange}
+        activeTimeZone={$selectedTimezone}
+      />
+      <CanvasComparisonPill
+        allTimeRange={$allTimeRange}
+        {selectedTimeRange}
+        {selectedComparisonTimeRange}
+      />
+      <CanvasGrainSelector {selectedTimeRange} {selectedComparisonTimeRange} />
+    </div>
+  {/if}
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start ml-2">
     {#if !readOnly}
       <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
@@ -137,9 +142,9 @@
                 {name}
                 {label}
                 {selectedValues}
-                timeStart={$selectedTimeRange.start.toISOString()}
-                timeEnd={$selectedTimeRange.end.toISOString()}
-                timeControlsReady
+                {timeStart}
+                {timeEnd}
+                timeControlsReady={!!$timeRangeStateStore}
                 excludeMode={$isFilterExcludeMode(name)}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}

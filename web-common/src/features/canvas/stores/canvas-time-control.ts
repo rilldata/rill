@@ -1,10 +1,14 @@
-import type { CanvasResponse } from "@rilldata/web-common/features/canvas/selector";
 import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
 import {
+  calculateComparisonTimeRangePartial,
+  calculateTimeRangePartial,
   getComparisonTimeRange,
   getTimeGrain,
+  type ComparisonTimeRangeState,
+  type TimeRangeState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   TimeRangePreset,
@@ -15,13 +19,11 @@ import {
   createQueryServiceMetricsViewTimeRange,
   V1ExploreComparisonMode,
   V1TimeGrain,
-  type RpcStatus,
 } from "@rilldata/web-common/runtime-client";
 import {
   runtime,
   type Runtime,
 } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import {
   derived,
   get,
@@ -30,52 +32,144 @@ import {
   type Writable,
 } from "svelte/store";
 
+type AllTimeRange = TimeRange & { isFetching: boolean };
+
+let lastAllTimeRange: AllTimeRange | undefined;
+
 export class CanvasTimeControls {
   /**
-   * Writables
+   * Writables which can be updated by the user
    */
-  selectedTimeRange: Writable<DashboardTimeControls>;
+  selectedTimeRange: Writable<DashboardTimeControls | undefined>;
   selectedComparisonTimeRange: Writable<DashboardTimeControls | undefined>;
   showTimeComparison: Writable<boolean>;
   selectedTimezone: Writable<string>;
-  allTimeRange: Readable<TimeRange>;
-  isReady: Writable<boolean>;
 
-  constructor(validSpecStore: CanvasSpecResponseStore) {
-    // TODO: Refactor this
-    this.allTimeRange = writable({
-      name: TimeRangePreset.ALL_TIME,
-      start: new Date(0),
-      end: new Date(),
-    });
-    this.selectedTimeRange = writable({
-      name: TimeRangePreset.ALL_TIME,
-      start: new Date(0),
-      end: new Date(),
-      interval: V1TimeGrain.TIME_GRAIN_DAY,
-    });
+  /**
+   * Derived stores based on writables and spec
+   */
+  allTimeRange: Readable<AllTimeRange>;
+  isReady: Readable<boolean>;
+  minTimeGrain: Readable<V1TimeGrain>;
+  hasTimeSeries: Readable<boolean>;
+  timeRangeStateStore: Readable<TimeRangeState | undefined>;
+  comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+
+  constructor(specStore: CanvasSpecResponseStore) {
+    this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
+
+    this.selectedTimeRange = writable(undefined);
     this.selectedComparisonTimeRange = writable(undefined);
     this.showTimeComparison = writable(false);
     this.selectedTimezone = writable("UTC");
 
-    this.isReady = writable(true);
+    this.minTimeGrain = derived(specStore, (spec) => {
+      const metricsViews = spec?.data?.metricsViews || {};
+      const minTimeGrain = Object.keys(metricsViews).reduce<V1TimeGrain>(
+        (min: V1TimeGrain, metricView) => {
+          const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+          if (
+            !metricsViewSpec?.smallestTimeGrain ||
+            metricsViewSpec.smallestTimeGrain ===
+              V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+          )
+            return min;
+          const timeGrain = metricsViewSpec.smallestTimeGrain;
+          return isGrainBigger(min, timeGrain) ? timeGrain : min;
+        },
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      );
+      return minTimeGrain;
+    });
 
-    this.setInitialState(validSpecStore);
+    this.hasTimeSeries = derived(specStore, (spec) => {
+      const metricsViews = spec?.data?.metricsViews || {};
+      return Object.keys(metricsViews).some((metricView) => {
+        const metricsViewSpec = metricsViews[metricView]?.state?.validSpec;
+        return Boolean(metricsViewSpec?.timeDimension);
+      });
+    });
+
+    this.timeRangeStateStore = derived(
+      [
+        specStore,
+        this.allTimeRange,
+        this.selectedTimeRange,
+        this.selectedTimezone,
+        this.minTimeGrain,
+      ],
+      ([
+        spec,
+        allTimeRange,
+        selectedTimeRange,
+        selectedTimezone,
+        minTimeGrain,
+      ]) => {
+        if (!spec?.data || !selectedTimeRange) {
+          return undefined;
+        }
+        const { defaultPreset } = spec.data?.canvas || {};
+        const defaultTimeRange = isoDurationToFullTimeRange(
+          defaultPreset?.timeRange,
+          allTimeRange.start,
+          allTimeRange.end,
+          selectedTimezone,
+        );
+
+        const timeRangeState = calculateTimeRangePartial(
+          allTimeRange,
+          selectedTimeRange,
+          undefined, // scrub not present in canvas yet
+          selectedTimezone,
+          defaultTimeRange,
+          minTimeGrain,
+        );
+        if (timeRangeState) return { ...timeRangeState };
+      },
+    );
+
+    this.comparisonRangeStateStore = derived(
+      [
+        specStore,
+        this.allTimeRange,
+        this.selectedComparisonTimeRange,
+        this.selectedTimezone,
+        this.showTimeComparison,
+        this.timeRangeStateStore,
+      ],
+      ([
+        spec,
+        allTimeRange,
+        selectedComparisonTimeRange,
+        selectedTimezone,
+        showTimeComparison,
+        timeRangeState,
+      ]) => {
+        if (!spec?.data || !timeRangeState) return undefined;
+        const timeRanges = spec.data?.canvas?.timeRanges;
+        return calculateComparisonTimeRangePartial(
+          timeRanges,
+          allTimeRange,
+          selectedComparisonTimeRange,
+          selectedTimezone,
+          undefined, // scrub not present in canvas yet
+          showTimeComparison,
+          timeRangeState,
+        );
+      },
+    );
+
+    this.setInitialState(specStore);
   }
 
   setInitialState(validSpecStore: CanvasSpecResponseStore) {
-    this.timeRangeSummaryStore(runtime, validSpecStore);
-
     const selectedTimezone = get(this.selectedTimezone);
     const comparisonTimeRange = get(this.selectedComparisonTimeRange);
 
     const store = derived(
       [this.allTimeRange, validSpecStore],
       ([allTimeRange, validSpec]) => {
-        if (!validSpec.data) {
-          this.isReady.set(false);
-        }
-
+        if (allTimeRange.isFetching) return;
         const { defaultPreset } = validSpec.data?.canvas || {};
         const timeRanges = validSpec?.data?.canvas?.timeRanges;
 
@@ -113,7 +207,6 @@ export class CanvasTimeControls {
         }
 
         this.selectedTimeRange.set(newTimeRange);
-        this.isReady.set(true);
       },
     );
 
@@ -121,66 +214,88 @@ export class CanvasTimeControls {
     store.subscribe(() => {});
   }
 
-  timeRangeSummaryStore = (
+  combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,
-    validSpecStore: Readable<
-      QueryObserverResult<CanvasResponse | undefined, RpcStatus>
-    >,
-  ) => {
-    this.allTimeRange = derived(
-      [runtime, validSpecStore],
-      ([r, validSpec], set) => {
-        const metricsReferred = Object.keys(
-          validSpec?.data?.metricsViews || {},
+    specStore: CanvasSpecResponseStore,
+  ): Readable<AllTimeRange> => {
+    return derived([runtime, specStore], ([r, spec], set) => {
+      const metricsReferred = Object.keys(spec?.data?.metricsViews || {});
+      if (!metricsReferred.length) {
+        return set({
+          name: TimeRangePreset.ALL_TIME,
+          start: new Date(0),
+          end: new Date(),
+          isFetching: false,
+        });
+      }
+
+      const timeRangeQueries = [...metricsReferred].map((metricView) => {
+        return createQueryServiceMetricsViewTimeRange(
+          r.instanceId,
+          metricView,
+          {},
+          {
+            query: {
+              queryClient: queryClient,
+              staleTime: Infinity,
+              cacheTime: Infinity,
+            },
+          },
         );
-        if (!metricsReferred.length) {
-          return set({
-            name: TimeRangePreset.ALL_TIME,
-            start: new Date(0),
-            end: new Date(),
-          });
+      });
+
+      return derived(timeRangeQueries, (timeRanges, querySet) => {
+        const isFetching = timeRanges.some((q) => q.isFetching);
+        let start = new Date();
+        let end = new Date(0);
+        timeRanges.forEach((timeRange) => {
+          const metricsStart = timeRange.data?.timeRangeSummary?.min;
+          const metricsEnd = timeRange.data?.timeRangeSummary?.max;
+          if (metricsStart) {
+            const metricsStartDate = new Date(metricsStart);
+            start = new Date(
+              Math.min(start.getTime(), metricsStartDate.getTime()),
+            );
+          }
+          if (metricsEnd) {
+            const metricsEndDate = new Date(metricsEnd);
+            end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
+          }
+        });
+        if (start.getTime() >= end.getTime()) {
+          start = new Date(0);
+          end = new Date();
+        }
+        let newTimeRange: AllTimeRange = {
+          name: TimeRangePreset.ALL_TIME,
+          start,
+          end,
+          isFetching,
+        };
+        if (isFetching && lastAllTimeRange) {
+          newTimeRange = { ...lastAllTimeRange, isFetching };
+        }
+        const noChange =
+          lastAllTimeRange &&
+          lastAllTimeRange.start.getTime() === newTimeRange.start.getTime() &&
+          lastAllTimeRange.end.getTime() === newTimeRange.end.getTime();
+
+        /**
+         * TODO: We want to avoid updating the store when there is no change
+         * to avoid any downstream updates which depend on allTimeRange
+         * Returning without setting any value leads to undefined value in the store.
+         */
+        if (noChange) {
+          querySet(lastAllTimeRange);
+          return;
         }
 
-        const timeRangeQueries = [...metricsReferred].map((metricView) => {
-          return createQueryServiceMetricsViewTimeRange(
-            r.instanceId,
-            metricView,
-            {},
-            {
-              query: {
-                queryClient: queryClient,
-                staleTime: Infinity,
-                cacheTime: Infinity,
-              },
-            },
-          );
-        });
-
-        return derived(timeRangeQueries, (timeRanges, querySet) => {
-          let start = new Date();
-          let end = new Date(0);
-          timeRanges.forEach((timeRange) => {
-            const metricsStart = timeRange.data?.timeRangeSummary?.min;
-            const metricsEnd = timeRange.data?.timeRangeSummary?.max;
-            if (metricsStart) {
-              const metricsStartDate = new Date(metricsStart);
-              start = new Date(
-                Math.min(start.getTime(), metricsStartDate.getTime()),
-              );
-            }
-            if (metricsEnd) {
-              const metricsEndDate = new Date(metricsEnd);
-              end = new Date(Math.max(end.getTime(), metricsEndDate.getTime()));
-            }
-          });
-          if (start.getTime() >= end.getTime()) {
-            start = new Date(0);
-            end = new Date();
-          }
-          querySet({ name: TimeRangePreset.ALL_TIME, start, end });
-        }).subscribe(set);
-      },
-    );
+        if (!isFetching) {
+          lastAllTimeRange = newTimeRange;
+        }
+        querySet(newTimeRange);
+      }).subscribe(set);
+    });
   };
 
   setTimeZone(timezone: string) {
