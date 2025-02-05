@@ -110,7 +110,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, err
 	}
 
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.Any("user_id", opts.CreatedByUserID), zap.String("user_email", user.Email), zap.String("billing_plan", plan.Name))
 
 	return res, nil
 }
