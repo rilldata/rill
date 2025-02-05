@@ -97,6 +97,11 @@
   }
 
   function authorizeSSO(email: string, connectionName: string) {
+    if (import.meta.env.DEV) {
+      errorText = "SSO authentication is not available in development mode";
+      return;
+    }
+
     webAuth.authorize({
       connection: connectionName,
       login_hint: email,
@@ -105,6 +110,7 @@
   }
 
   async function processEmailSubmission(event) {
+    errorText = "";
     email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
@@ -141,9 +147,15 @@
 
   function backToBaseStep() {
     step = AuthStep.Base;
+    errorText = "";
   }
 
   onMount(() => {
+    if (import.meta.env.DEV) {
+      errorText = "Unable to initialize auth0 client in development mode";
+      return;
+    }
+
     init();
   });
 </script>
@@ -170,6 +182,12 @@
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
           on:click={() => {
+            errorText = "";
+            if (import.meta.env.DEV) {
+              errorText =
+                "OAuth authentication is not available in development mode";
+              return;
+            }
             webAuth.authorize({ connection });
           }}
         >
