@@ -122,7 +122,8 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		if err != nil {
 			return nil, err
 		}
-		if gcsConfig.SecretJSON != "" {
+		// If no credentials are provided we assume that the user wants to use the native credentials
+		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
 			return nil, errObjectStoreUsesNativeCreds
 		}
 		var sb strings.Builder
