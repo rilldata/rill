@@ -302,11 +302,13 @@ func (d *db) AcquireReadConnection(ctx context.Context) (*sqlx.Conn, func() erro
 
 	conn, err := d.dbHandle.Connx(ctx)
 	if err != nil {
+		d.catalog.releaseSnapshot(snapshot)
 		return nil, nil, err
 	}
 
 	err = d.prepareSnapshot(ctx, conn, snapshot)
 	if err != nil {
+		d.catalog.releaseSnapshot(snapshot)
 		_ = conn.Close()
 		return nil, nil, err
 	}
