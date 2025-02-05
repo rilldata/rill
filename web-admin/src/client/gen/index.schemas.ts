@@ -1070,12 +1070,13 @@ export interface V1GetReportMetaResponse {
 }
 
 export interface V1GetRepoMetaResponse {
+  /** If the Git-related fields are set, the archive-related fields will not be set (and vice versa). */
   gitUrl?: string;
-  createdOn?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
   archiveDownloadUrl?: string;
-  assetId?: string;
+  archiveId?: string;
+  archiveCreatedOn?: string;
 }
 
 /**

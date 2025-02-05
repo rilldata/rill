@@ -122,8 +122,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if err != nil {
 		r.C.Logger.Error("failed to get commit timestamp", zap.String("error", err.Error()))
 	}
-	// Convert to timestamppb.Timestamp
-	timeStamp := timestamppb.New(ts)
 
 	// Update commit sha
 	hash, err := repo.CommitHash(ctx)
@@ -133,7 +131,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
-		pp.State.CurrentCommitOn = timeStamp
+		pp.State.CurrentCommitOn = timestamppb.New(ts)
 		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}

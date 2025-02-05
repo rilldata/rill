@@ -48,9 +48,9 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
-			AssetId:            asset.ID,
+			ArchiveId:          asset.ID,
 			ArchiveDownloadUrl: downloadURL,
-			CreatedOn:          timestamppb.New(asset.CreatedOn),
+			ArchiveCreatedOn:   timestamppb.New(asset.CreatedOn),
 		}, nil
 	}
 

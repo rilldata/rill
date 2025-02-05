@@ -1921,14 +1921,13 @@ message GetRepoMetaRequest {
 }
 
 message GetRepoMetaResponse {
-  string git_url = 1;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp git_url_expires_on = 2;
-  string git_subpath = 3;
-  // archive_download_url is set when repo is managed by Rill
-  // either archive_download_url or git related details will be set
-  string archive_download_url = 4;
-  string asset_id = 6;
+    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+    string git_url = 1;
+    google.protobuf.Timestamp git_url_expires_on = 2;
+    string git_subpath = 3;
+    string archive_download_url = 4;
+    string archive_id = 5;
+    google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {

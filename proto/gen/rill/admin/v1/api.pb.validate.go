@@ -25662,35 +25662,6 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 	// no validation rules for GitUrl
 
 	if all {
-		switch v := interface{}(m.GetCreatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, GetRepoMetaResponseValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return GetRepoMetaResponseValidationError{
-				field:  "CreatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
 		switch v := interface{}(m.GetGitUrlExpiresOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -25723,7 +25694,36 @@ func (m *GetRepoMetaResponse) validate(all bool) error {
 
 	// no validation rules for ArchiveDownloadUrl
 
-	// no validation rules for AssetId
+	// no validation rules for ArchiveId
+
+	if all {
+		switch v := interface{}(m.GetArchiveCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetRepoMetaResponseValidationError{
+					field:  "ArchiveCreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetRepoMetaResponseValidationError{
+					field:  "ArchiveCreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetArchiveCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetRepoMetaResponseValidationError{
+				field:  "ArchiveCreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return GetRepoMetaResponseMultiError(errors)

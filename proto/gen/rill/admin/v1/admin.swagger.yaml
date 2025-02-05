@@ -4299,9 +4299,7 @@ definitions:
     properties:
       gitUrl:
         type: string
-      createdOn:
-        type: string
-        format: date-time
+        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
       gitUrlExpiresOn:
         type: string
         format: date-time
@@ -4309,11 +4307,11 @@ definitions:
         type: string
       archiveDownloadUrl:
         type: string
-        title: |-
-          archive_download_url is set when repo is managed by Rill
-          either archive_download_url or git related details will be set
-      assetId:
+      archiveId:
         type: string
+      archiveCreatedOn:
+        type: string
+        format: date-time
   v1GetReportMetaResponse:
     type: object
     properties:
