@@ -1,5 +1,14 @@
 import { devices, type PlaywrightTestConfig } from "@playwright/test";
-import { ADMIN_AUTH_FILE, GITHUB_AUTH_FILE } from "./tests/setup/constants";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import { ADMIN_STORAGE_STATE } from "./tests/setup/constants";
+import { getGitHubStorageState } from "./tests/utils/github-storage-state";
+
+// Load environment variables from our root `.env` file
+// Note: If you don't have the requisite environment variables, pull the latest `cloud-e2e.env` file.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const config: PlaywrightTestConfig = {
   webServer: {
@@ -13,7 +22,7 @@ const config: PlaywrightTestConfig = {
   use: {
     baseURL: "http://localhost:3000",
     ...devices["Desktop Chrome"],
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
     video: "retain-on-failure",
   },
   projects: [
@@ -21,10 +30,12 @@ const config: PlaywrightTestConfig = {
       ? [] // skip in CI
       : [
           {
-            // Whenever the GitHub auth cookies expire, run this project manually to renew them.
-            // Commit the resultant `playwright/.auth/github.json` file to the repo.
-            name: "save-github-cookies",
-            testMatch: "auth-github.ts",
+            // Whenever the GitHub session expires, run this project manually to re-authenticate.
+            // This process captures the browser’s current storage state (i.e. cookies and local storage)
+            // and updates the `RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON` environment variable.
+            // Afterwards, manually deploy the updated `.env` file to GCS.
+            name: "setup-github-session",
+            testMatch: "github-session-setup.ts",
           },
         ]),
     {
@@ -34,7 +45,9 @@ const config: PlaywrightTestConfig = {
         ? undefined
         : { teardown: "teardown" }),
       use: {
-        storageState: GITHUB_AUTH_FILE,
+        storageState: getGitHubStorageState(
+          process.env.RILL_DEVTOOL_E2E_GITHUB_STORAGE_STATE_JSON,
+        ),
       },
     },
     ...(process.env.CI
@@ -44,7 +57,7 @@ const config: PlaywrightTestConfig = {
             name: "teardown",
             testMatch: "teardown.ts",
             use: {
-              storageState: ADMIN_AUTH_FILE,
+              storageState: ADMIN_STORAGE_STATE,
             },
           },
         ]),
@@ -53,7 +66,7 @@ const config: PlaywrightTestConfig = {
       dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
       testIgnore: "/setup",
       use: {
-        storageState: ADMIN_AUTH_FILE,
+        storageState: ADMIN_STORAGE_STATE,
       },
     },
   ],

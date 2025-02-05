@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 import { test as setup } from "./base";
 import {
-  ADMIN_AUTH_FILE,
+  ADMIN_STORAGE_STATE,
   RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
 } from "./constants";
 import { cliLogin } from "./fixtures/cli";
@@ -110,7 +110,7 @@ setup(
 
     // Save auth cookies to file
     // Subsequent tests can seed their browser with these cookies, instead of going through the log-in flow again.
-    await page.context().storageState({ path: ADMIN_AUTH_FILE });
+    await page.context().storageState({ path: ADMIN_STORAGE_STATE });
 
     // Create an organization named "e2e"
     await cliLogin(page);

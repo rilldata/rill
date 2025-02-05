@@ -1,3 +1,2 @@
 /.svelte-kit
 build
-!playwright/.auth/github.json

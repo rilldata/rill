@@ -1,5 +1,5 @@
 import { test as base, type Page } from "@playwright/test";
-import { ADMIN_AUTH_FILE, VIEWER_AUTH_FILE } from "./constants";
+import { ADMIN_STORAGE_STATE, VIEWER_STORAGE_STATE } from "./constants";
 import { cliLogin, cliLogout } from "./fixtures/cli";
 
 type MyFixtures = {
@@ -14,7 +14,7 @@ export const test = base.extend<MyFixtures>({
   // this fixture won't be used often.
   adminPage: async ({ browser }, use) => {
     const context = await browser.newContext({
-      storageState: ADMIN_AUTH_FILE,
+      storageState: ADMIN_STORAGE_STATE,
     });
     const adminPage = await context.newPage();
     await use(adminPage);
@@ -23,7 +23,7 @@ export const test = base.extend<MyFixtures>({
 
   viewerPage: async ({ browser }, use) => {
     const context = await browser.newContext({
-      storageState: VIEWER_AUTH_FILE,
+      storageState: VIEWER_STORAGE_STATE,
     });
     const viewerPage = await context.newPage();
     await use(viewerPage);
