@@ -238,6 +238,7 @@ func TestHanging(t *testing.T) {
 		MaxIdleConnections:   2,
 		OpenTimeout:          100 * time.Millisecond,
 		CloseTimeout:         100 * time.Millisecond,
+		ErrTTL:               100 * time.Second,
 		CheckHangingInterval: 100 * time.Millisecond,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			time.Sleep(time.Second)
