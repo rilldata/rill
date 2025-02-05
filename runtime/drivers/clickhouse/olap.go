@@ -278,7 +278,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			err = c.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("DROP TABLE %s %s", safeSQLName(tempName), onClusterClause),
+				Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempName), onClusterClause),
 				Priority: 1,
 			})
 			if err != nil {
