@@ -20,6 +20,7 @@
 
   $: tableSpec = rendererProperties as TableSpec;
 
+  $: measures = tableSpec.measures || [];
   $: colDimensions = tableSpec.col_dimensions || [];
   $: rowDimensions = tableSpec.row_dimensions || [];
 
@@ -29,7 +30,7 @@
   $: pivotState = writable<PivotState>({
     active: true,
     columns: {
-      measure: tableSpec.measures.map((measure) => ({
+      measure: measures.map((measure) => ({
         id: measure,
         title: measure,
         type: PivotChipType.Measure,
