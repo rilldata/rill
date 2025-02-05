@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,6 +40,7 @@ type CanvasYAML struct {
 		Width     *uint32   `yaml:"width"`
 		Height    *uint32   `yaml:"height"`
 	} `yaml:"items"`
+	Layout   any                 `yaml:"layout"` // Untyped pending a formal definition
 	Security *SecurityPolicyYAML `yaml:"security"`
 }
 
@@ -144,6 +146,15 @@ func (p *Parser) parseCanvas(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
+	// Parse layout (currently untyped pending a formal definition)
+	var layout *structpb.Value
+	if tmp.Layout != nil {
+		layout, err = structpb.NewValue(tmp.Layout)
+		if err != nil {
+			return fmt.Errorf("invalid layout: %w", err)
+		}
+	}
+
 	// Build and validate presets
 	var defaultPreset *runtimev1.CanvasPreset
 	if tmp.Defaults != nil {
@@ -208,6 +219,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.EmbeddedTheme = themeSpec
 	r.CanvasSpec.Variables = variables
 	r.CanvasSpec.Items = items
+	r.CanvasSpec.Layout = layout
 	r.CanvasSpec.SecurityRules = rules
 
 	// Track inline components

@@ -726,6 +726,8 @@ message CanvasSpec {
   repeated ComponentVariable variables = 5;
   // Items to render on the canvas
   repeated CanvasItem items = 4;
+  // Layout is an untyped object pending a formal definition.
+  google.protobuf.Value layout = 16;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
 }
