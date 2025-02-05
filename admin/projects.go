@@ -105,12 +105,16 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, err
 	}
 
-	plan, err := s.Biller.GetDefaultPlan(ctx)
-	if err != nil {
-		return nil, err
+	var createdByID, createdByEmail string
+	if opts.CreatedByUserID != nil {
+		user, err := s.DB.FindUser(ctx, *proj.CreatedByUserID)
+		if err == nil {
+			createdByID = user.ID
+			createdByEmail = user.Email
+		}
 	}
 
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.Any("user_id", opts.CreatedByUserID), zap.String("user_email", user.Email), zap.String("billing_plan", plan.Name))
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", createdByID), zap.String("user_email", createdByEmail))
 
 	return res, nil
 }
