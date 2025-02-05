@@ -196,7 +196,6 @@ import type {
   V1GetUserResponse,
   AdminServiceGetUserParams,
   V1DeleteUserResponse,
-  AdminServiceDeleteUserParams,
   V1ListBookmarksResponse,
   AdminServiceListBookmarksParams,
   V1CreateBookmarkResponse,
@@ -7381,14 +7380,10 @@ export const createAdminServiceGetUser = <
 /**
  * @summary DeleteUser deletes the user from the organization by email
  */
-export const adminServiceDeleteUser = (
-  email: string,
-  params?: AdminServiceDeleteUserParams,
-) => {
+export const adminServiceDeleteUser = (email: string) => {
   return httpClient<V1DeleteUserResponse>({
     url: `/v1/users/${email}`,
     method: "delete",
-    params,
   });
 };
 
@@ -7405,7 +7400,7 @@ export const createAdminServiceDeleteUser = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceDeleteUser>>,
     TError,
-    { email: string; params?: AdminServiceDeleteUserParams },
+    { email: string },
     TContext
   >;
 }) => {
@@ -7413,17 +7408,17 @@ export const createAdminServiceDeleteUser = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceDeleteUser>>,
-    { email: string; params?: AdminServiceDeleteUserParams }
+    { email: string }
   > = (props) => {
-    const { email, params } = props ?? {};
+    const { email } = props ?? {};
 
-    return adminServiceDeleteUser(email, params);
+    return adminServiceDeleteUser(email);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof adminServiceDeleteUser>>,
     TError,
-    { email: string; params?: AdminServiceDeleteUserParams },
+    { email: string },
     TContext
   >(mutationFn, mutationOptions);
 };

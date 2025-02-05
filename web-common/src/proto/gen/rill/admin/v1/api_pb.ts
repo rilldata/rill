@@ -6785,11 +6785,6 @@ export class DeleteUserRequest extends Message<DeleteUserRequest> {
    */
   email = "";
 
-  /**
-   * @generated from field: string organization = 2;
-   */
-  organization = "";
-
   constructor(data?: PartialMessage<DeleteUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6799,7 +6794,6 @@ export class DeleteUserRequest extends Message<DeleteUserRequest> {
   static readonly typeName = "rill.admin.v1.DeleteUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteUserRequest {

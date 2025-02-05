@@ -97,14 +97,14 @@ service AdminService {
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
   }
-  
+
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{project}/variables",
       body: "*"
     };
-  }  
+  }
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
@@ -1646,7 +1646,6 @@ message UpdateUserPreferencesResponse {
 
 message DeleteUserRequest {
   string email = 1 [(validate.rules).string.email = true];
-  string organization = 2 [(validate.rules).string.min_len = 1];
 }
 
 message DeleteUserResponse {}
