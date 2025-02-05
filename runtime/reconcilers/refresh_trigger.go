@@ -70,7 +70,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
-	// For some resource types, it is sufficent to call r.C.Reconcile without updating the spec.
+	// For some resource types, it is sufficient to call r.C.Reconcile without updating the spec.
 	// This applies for resources that run a full reconcile on every invocation (i.e. doesn't cache state).
 	// We handle these resources here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
 	for i, rn := range trigger.Spec.Resources {
