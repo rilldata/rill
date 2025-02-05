@@ -267,7 +267,12 @@ func (c *cacheImpl) HangingErr() error {
 
 // beginOpen must be called while c.mu is held.
 func (c *cacheImpl) beginOpen(k string, e *entry) {
-	if e.status != entryStatusUnspecified && e.status != entryStatusClosed {
+	// Check the cases where it's safe to call beginOpen.
+	switch {
+	case e.status == entryStatusUnspecified:
+	case e.status == entryStatusOpen && e.err != nil:
+	case e.status == entryStatusClosed:
+	default:
 		panic(fmt.Errorf("conncache: beginOpen called on entry with status %v", e.status))
 	}
 
