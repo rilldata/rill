@@ -33,7 +33,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.kind", req.Kind),
-		attribute.Bool("args.skip_checks", req.SkipSecurityChecks),
+		attribute.Bool("args.skip_security_checks", req.SkipSecurityChecks),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
