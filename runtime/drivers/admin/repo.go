@@ -65,7 +65,7 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	defer h.repoMu.RUnlock()
 
 	if h.downloadURL != "" {
-		return h.ArchiveId, nil
+		return h.ArchiveID, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)

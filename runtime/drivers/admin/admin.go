@@ -125,7 +125,7 @@ type Handle struct {
 
 	// downloadURL is set when using one-time uploads
 	downloadURL      string
-	ArchiveId        string
+	ArchiveID        string
 	ArchiveCreatedOn time.Time
 }
 
@@ -408,7 +408,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	}
 
 	if meta.ArchiveId != "" {
-		h.ArchiveId = meta.ArchiveId
+		h.ArchiveID = meta.ArchiveId
 	}
 
 	if meta.ArchiveCreatedOn != nil {
