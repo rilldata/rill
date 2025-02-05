@@ -81,6 +81,7 @@ func (p *Printer) PrintData(v interface{}) {
 	switch p.Format {
 	case FormatHuman:
 		var b strings.Builder
+		tableprinter.Default.RowCharLimit = 120
 		tableprinter.Print(&b, v)
 		fmt.Fprint(out, b.String())
 	case FormatJSON:

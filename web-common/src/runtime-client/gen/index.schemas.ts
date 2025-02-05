@@ -240,6 +240,11 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   filter?: V1MetricsViewFilter;
 };
 
+export type QueryServiceMetricsViewTimeRangesBody = {
+  expressions?: string[];
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
@@ -349,6 +354,12 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type QueryServiceResolveCanvasBodyArgs = { [key: string]: any };
+
+export type QueryServiceResolveCanvasBody = {
+  args?: QueryServiceResolveCanvasBodyArgs;
+};
+
 export type RuntimeServiceGetModelPartitionsParams = {
   pending?: boolean;
   errored?: boolean;
@@ -441,11 +452,25 @@ export type RuntimeServiceRenameFileBody = {
 };
 
 export type RuntimeServiceGenerateMetricsViewFileBody = {
+  /** Model to base the metrics view on.
+If you set this, do NOT set connector, database, database_schema or table. */
+  model?: string;
+  /** Connector for the table.
+See "table" for more details. */
   connector?: string;
+  /** Database for the table.
+See "table" for more details. */
   database?: string;
+  /** Database schema for the table.
+See "table" for more details. */
   databaseSchema?: string;
+  /** Table to base the metrics view on.
+If you set this, do NOT set model. */
   table?: string;
+  /** Path to save the metrics view file to. */
   path?: string;
+  /** If true, the AI will be used to generate the metrics view file.
+Otherwise, it falls back to a simpler heuristic approach. */
   useAi?: boolean;
 };
 
@@ -582,6 +607,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -591,7 +622,7 @@ export interface V1TimeSeriesResponse {
 export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
-  interval?: TimeRangeSummaryInterval;
+  watermark?: string;
 }
 
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
@@ -610,12 +641,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeRange {
   start?: string;
   end?: string;
@@ -623,6 +648,9 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+  /** Optional. Rill format time range. Should only be used for alerts and reports.
+For dashboard call ResolveTimeRanges. */
+  expression?: string;
 }
 
 export interface V1ThemeState {
@@ -833,15 +861,41 @@ export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
 
-export type V1ResolveComponentResponseDataItem = { [key: string]: any };
-
 export interface V1ResolveComponentResponse {
-  /** Show property with templating resolved for the provided args.
-If it resolves to false, the other fields are not set. */
-  show?: boolean;
-  schema?: V1StructType;
-  data?: V1ResolveComponentResponseDataItem[];
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+}
+
+/**
+ * All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
+ */
+export type V1ResolveCanvasResponseReferencedMetricsViews = {
+  [key: string]: V1Resource;
+};
+
+/**
+ * All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec).
+ */
+export type V1ResolveCanvasResponseResolvedComponents = {
+  [key: string]: V1Resource;
+};
+
+export interface V1ResolveCanvasResponse {
+  canvas?: V1Resource;
+  /** All the component resources referenced by the canvas.
+The resources state.valid_spec.renderer_properties will have templating resolved for the provided args.
+(Corresponds to calling the ResolveComponent API for each component referenced in the canvas spec). */
+  resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
+  /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
+  referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -872,29 +926,9 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1RenameFileResponse {
-  [key: string]: any;
-}
-
-export interface V1RefreshTriggerState {
-  [key: string]: any;
-}
-
-export interface V1RefreshTrigger {
-  spec?: V1RefreshTriggerSpec;
-  state?: V1RefreshTriggerState;
 }
 
 export interface V1Resource {
@@ -917,6 +951,27 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1RenameFileResponse {
+  [key: string]: any;
+}
+
+export interface V1RefreshTriggerState {
+  [key: string]: any;
+}
+
+export interface V1RefreshTriggerSpec {
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
+}
+
+export interface V1RefreshTrigger {
+  spec?: V1RefreshTriggerSpec;
+  state?: V1RefreshTriggerState;
+}
+
 export interface V1RefreshModelTrigger {
   /** The model to refresh. */
   model?: string;
@@ -927,14 +982,6 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
-}
-
-export interface V1RefreshTriggerSpec {
-  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
-If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
-  resources?: V1ResourceName[];
-  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
-  models?: V1RefreshModelTrigger[];
 }
 
 export type V1ReconcileStatus =
@@ -1293,6 +1340,10 @@ export interface V1MetricsViewTimeSeriesRequest {
   filter?: V1MetricsViewFilter;
 }
 
+export interface V1MetricsViewTimeRangesResponse {
+  timeRanges?: V1TimeRange[];
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1339,6 +1390,10 @@ Deprecated: Now defined in the Explore resource. */
   /** Available time zones list preferred time zones using IANA location identifiers.
 Deprecated: Now defined in the Explore resource. */
   availableTimeZones?: string[];
+  /** Cache controls for the metrics view. */
+  cacheEnabled?: boolean;
+  cacheKeySql?: string;
+  cacheKeyTtlSeconds?: string;
 }
 
 export interface V1MetricsViewState {
@@ -1353,11 +1408,20 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
+}
+
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -1472,11 +1536,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1487,6 +1546,31 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -1536,31 +1620,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1617,11 +1676,20 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+/**
+ * Additional arbitrary attributes to include in the JWT.
+They take precedence if they collide with name, email, groups or admin.
+ */
+export type V1IssueDevJWTRequestAttributes = { [key: string]: any };
+
 export interface V1IssueDevJWTRequest {
   name?: string;
   email?: string;
   groups?: string[];
   admin?: boolean;
+  /** Additional arbitrary attributes to include in the JWT.
+They take precedence if they collide with name, email, groups or admin. */
+  attributes?: V1IssueDevJWTRequestAttributes;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1742,6 +1810,7 @@ export interface V1GenerateRendererResponse {
 }
 
 export interface V1GenerateMetricsViewFileResponse {
+  /** Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach. */
   aiSucceeded?: boolean;
 }
 
@@ -1833,6 +1902,11 @@ export const V1ExploreWebView = {
   EXPLORE_WEB_VIEW_CANVAS: "EXPLORE_WEB_VIEW_CANVAS",
 } as const;
 
+export interface V1ExploreTimeRange {
+  range?: string;
+  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
+}
+
 export interface V1ExploreSpec {
   displayName?: string;
   description?: string;
@@ -1883,11 +1957,6 @@ export interface V1ExploreComparisonTimeRange {
   /** ISO 8601 duration string for the duration of the comparison time range.
 If not specified, it should fallback to the range of the base time range. */
   range?: string;
-}
-
-export interface V1ExploreTimeRange {
-  range?: string;
-  comparisonTimeRanges?: V1ExploreComparisonTimeRange[];
 }
 
 export type V1ExploreComparisonMode =
@@ -2003,6 +2072,17 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
+export interface V1ConnectorSpec {
+  driver?: string;
+  properties?: V1ConnectorSpecProperties;
+  templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties. */
+  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
@@ -2017,17 +2097,6 @@ export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
 
 export type V1ConnectorSpecProperties = { [key: string]: string };
-
-export interface V1ConnectorSpec {
-  driver?: string;
-  properties?: V1ConnectorSpecProperties;
-  templatedProperties?: string[];
-  provision?: boolean;
-  provisionArgs?: V1ConnectorSpecProvisionArgs;
-  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties. */
-  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
 
 /**
  * ConnectorDriver represents a connector driver available in the runtime.
@@ -2081,19 +2150,13 @@ export interface V1ComponentVariable {
 
 export type V1ComponentSpecRendererProperties = { [key: string]: any };
 
-export type V1ComponentSpecResolverProperties = { [key: string]: any };
-
 export interface V1ComponentSpec {
   displayName?: string;
   description?: string;
-  resolver?: string;
-  resolverProperties?: V1ComponentSpecResolverProperties;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
-  /** Templated string that should evaluate to a boolean. */
-  show?: string;
   definedInCanvas?: boolean;
 }
 
@@ -2272,6 +2335,16 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1CanvasPreset {
+  /** Time range for the explore.
+It corresponds to the `range` property of the explore's `time_ranges`.
+If not found in `time_ranges`, it should be added to the list. */
+  timeRange?: string;
+  comparisonMode?: V1ExploreComparisonMode;
+  /** If comparison_mode is EXPLORE_COMPARISON_MODE_DIMENSION, this indicates the dimension to use. */
+  comparisonDimension?: string;
+}
+
 export interface V1CanvasItem {
   component?: string;
   definedInCanvas?: boolean;
@@ -2282,11 +2355,32 @@ export interface V1CanvasItem {
 }
 
 export interface V1CanvasSpec {
+  /** Display name for the canvas. */
   displayName?: string;
-  columns?: number;
-  gap?: number;
+  /** Max width in pixels of the canvas. */
+  maxWidth?: number;
+  /** Horizontal gap in pixels of the canvas. */
+  gapX?: number;
+  /** Vertical gap in pixels of the canvas. */
+  gapY?: number;
+  /** Name of the theme to use. Only one of theme and embedded_theme can be set. */
+  theme?: string;
+  embeddedTheme?: V1ThemeSpec;
+  /** List of selectable time ranges with comparison time ranges.
+If the list is empty, a default list should be shown.
+TODO: Once the canvas APIs have stabilized, rename ExploreTimeRange to a non-explore-specific name. */
+  timeRanges?: V1ExploreTimeRange[];
+  /** List of selectable time zones.
+If the list is empty, a default list should be shown.
+The values should be valid IANA location identifiers. */
+  timeZones?: string[];
+  /** Indicates if filters should be enabled for the canvas. */
+  filtersEnabled?: boolean;
+  defaultPreset?: V1CanvasPreset;
+  /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
 }
 
@@ -2474,6 +2568,8 @@ export interface V1APISpec {
   openapiSummary?: string;
   openapiParameters?: V1APISpecOpenapiParametersItem[];
   openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
+  securityRules?: V1SecurityRule[];
+  skipNestedSecurity?: boolean;
 }
 
 /**
@@ -2482,6 +2578,14 @@ export interface V1APISpec {
 export interface V1API {
   spec?: V1APISpec;
   state?: V1APIState;
+}
+
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
 }
 
 /**
@@ -2545,23 +2649,9 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 export interface TopKEntry {
   value?: unknown;
   count?: number;
-}
-
-export interface TimeRangeSummaryInterval {
-  months?: number;
-  days?: number;
-  micros?: string;
 }
 
 export interface StructTypeField {
@@ -2673,10 +2763,6 @@ export interface MetricsViewSpecAvailableTimeRange {
 export interface MetricsViewSearchResponseSearchResult {
   dimension?: string;
   value?: unknown;
-}
-
-export interface V1MetricsViewSearchResponse {
-  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface MetricsViewFilterCond {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import Avatar from "@rilldata/web-common/components/avatar/Avatar.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -43,6 +44,8 @@
   function handlePylon() {
     window.Pylon("show");
   }
+
+  let photoUrlErrored = false;
 </script>
 
 {#if ($user.isLoading || $metadata.isLoading) && !$user.error && !$metadata.error}
@@ -52,12 +55,11 @@
 {:else if $user.data && $metadata.data}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none w-7">
-      {#if loggedIn}
-        <img
+      {#if loggedIn && !photoUrlErrored}
+        <Avatar
           src={$user.data?.user?.photoUrl}
-          alt="avatar"
-          class="h-7 inline-flex items-center rounded-full"
-          referrerpolicy="no-referrer"
+          alt={$user.data?.user?.displayName || $user.data?.user?.email}
+          avatarSize="h-7 w-7"
         />
       {:else}
         <NoUser />

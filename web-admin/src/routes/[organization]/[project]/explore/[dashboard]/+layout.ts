@@ -15,7 +15,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export const load = async ({ params, depends, parent }) => {
-  const { project, runtime } = await parent();
+  const { user, project, runtime } = await parent();
 
   const { dashboard: exploreName } = params;
 
@@ -38,7 +38,8 @@ export const load = async ({ params, depends, parent }) => {
       bookmarks,
     ] = await Promise.all([
       fetchExploreSpec(runtime?.instanceId, exploreName),
-      fetchBookmarks(project.id, exploreName),
+      // public projects might not have a logged-in user. bookmarks are not available in this case
+      user ? fetchBookmarks(project.id, exploreName) : Promise.resolve([]),
     ]);
   } catch {
     // error handled in +page.svelte for now

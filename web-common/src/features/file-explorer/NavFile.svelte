@@ -43,11 +43,6 @@
   export let onRename: (filePath: string, isDir: boolean) => void;
   export let onDuplicate: (filePath: string, isDir: boolean) => void;
   export let onDelete: (filePath: string, isDir: boolean) => void;
-  export let onGenerateChart: (data: {
-    table?: string;
-    connector?: string;
-    metricsView?: string;
-  }) => void;
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
@@ -153,28 +148,19 @@
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         align="start"
-        class="border-none bg-gray-800 text-white min-w-60"
+        class="min-w-60"
         side="right"
         sideOffset={16}
       >
         {#if resourceKind}
           {#if resourceKind === ResourceKind.Source}
-            <SourceMenuItems
-              {filePath}
-              on:generate-chart={({ detail }) => onGenerateChart(detail)}
-            />
+            <SourceMenuItems {filePath} />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.Model}
-            <ModelMenuItems
-              {filePath}
-              on:generate-chart={({ detail }) => onGenerateChart(detail)}
-            />
+            <ModelMenuItems {filePath} />
             <NavigationMenuSeparator />
           {:else if resourceKind === ResourceKind.MetricsView}
-            <MetricsViewMenuItems
-              {filePath}
-              on:generate-chart={({ detail }) => onGenerateChart(detail)}
-            />
+            <MetricsViewMenuItems {filePath} />
             <NavigationMenuSeparator />
           {/if}
         {/if}

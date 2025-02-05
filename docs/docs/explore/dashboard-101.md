@@ -12,7 +12,7 @@ sidebar_position: 00
 Depending on whether you are opening Rill Developer or logging into Rill Cloud, you will either the default "Getting started" landing page or a list of all projects available to your user. For the purposes of this article, we will assume that your project has already been [deployed to Rill Cloud](../deploy/deploy-dashboard/) and that you are looking to consume your dashboards in a production capacity.
 
 
-After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/project-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
+After logging into [Rill Cloud](https://ui.rilldata.com), you should see all projects within your [organization](/manage/organization-management#organization) that is available and/or has been granted permissions to your user profile. Within each project, you'll then be able to access the corresponding individual dashboards that belong to a particular Rill project. 
 
 ![Rill Cloud landing page](../../static/img/explore/dashboard101/rill-cloud-landing-page.png)
 

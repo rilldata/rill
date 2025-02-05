@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -387,8 +386,11 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		if f, ok := opts.InputHandle.AsFileStore(); ok && opts.InputConnector == "local_file" {
 			return &localFileToSelfExecutor{c, f}, true
 		}
-		if opts.InputHandle.Driver() == "mysql" || opts.InputHandle.Driver() == "postgres" {
+		switch opts.InputHandle.Driver() {
+		case "mysql", "postgres":
 			return &sqlStoreToSelfExecutor{c}, true
+		case "https":
+			return &httpsToSelfExecutor{c}, true
 		}
 		if _, ok := opts.InputHandle.AsObjectStore(); ok {
 			return &objectStoreToSelfExecutor{c}, true
@@ -418,15 +420,15 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
-			return newDuckDBToDuckDB(c, "duckdb", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		}
 		switch from.Driver() {
 		case "motherduck":
-			return newMotherduckToDuckDB(from, olap, c.logger), true
+			return newMotherduckToDuckDB(from, c, c.logger), true
 		case "postgres":
-			return newDuckDBToDuckDB(c, "postgres", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		case "mysql":
-			return newDuckDBToDuckDB(c, "mysql", c.logger), true
+			return newDuckDBToDuckDB(from, c, c.logger), true
 		}
 		if store, ok := from.AsWarehouse(); ok {
 			return NewWarehouseToDuckDB(store, olap, c.logger), true
@@ -488,7 +490,8 @@ func (c *connection) reopenDB(ctx context.Context) error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-		"SET old_implicit_casting = true", // Implicit Cast to VARCHAR
+		"SET old_implicit_casting = true",        // Implicit Cast to VARCHAR
+		"SET allow_community_extensions = false", // This locks the configuration, so it can't later be enabled.
 	)
 
 	dataDir, err := c.storage.DataDir()
@@ -499,10 +502,7 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
-		bootQueries = append(bootQueries,
-			"SET preserve_insertion_order TO false",
-			fmt.Sprintf("SET secret_directory = %s", safeSQLString(filepath.Join(dataDir, ".duckdb", "secrets"))),
-		)
+		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
 	}
 
 	// Add init SQL if provided
@@ -517,6 +517,9 @@ func (c *connection) reopenDB(ctx context.Context) error {
 	c.db, err = rduckdb.NewDB(ctx, &rduckdb.DBOptions{
 		LocalPath:      dataDir,
 		Remote:         c.remote,
+		CPU:            c.config.CPU,
+		MemoryLimitGB:  c.config.MemoryLimitGB,
+		ReadWriteRatio: c.config.ReadWriteRatio,
 		ReadSettings:   c.config.readSettings(),
 		WriteSettings:  c.config.writeSettings(),
 		InitQueries:    bootQueries,

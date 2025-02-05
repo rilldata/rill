@@ -8,21 +8,36 @@ export const allDimensions = ({
   DashboardDataSources,
   "validMetricsView" | "validExplore"
 >): MetricsViewSpecDimensionV2[] => {
+  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+
   return (
-    validMetricsView?.dimensions?.filter((d) =>
-      validExplore?.dimensions?.includes(d.name ?? ""),
-    ) ?? []
+    validMetricsView.dimensions
+      .filter((d) => validExplore.dimensions!.includes(d.name!))
+      // Sort the filtered dimensions based on their order in validExplore.dimensions
+      .sort(
+        (a, b) =>
+          validExplore.dimensions!.indexOf(a.name!) -
+          validExplore.dimensions!.indexOf(b.name!),
+      )
   );
 };
 
 export const visibleDimensions = ({
   validMetricsView,
+  validExplore,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
+  if (!validMetricsView?.dimensions || !validExplore?.dimensions) return [];
+
   return (
-    validMetricsView?.dimensions?.filter(
-      (d) => d.name && dashboard.visibleDimensionKeys.has(d.name),
-    ) ?? []
+    validMetricsView.dimensions
+      .filter((d) => dashboard.visibleDimensionKeys.has(d.name!))
+      // Sort the filtered dimensions based on their order in validExplore.dimensions
+      .sort(
+        (a, b) =>
+          validExplore.dimensions!.indexOf(a.name!) -
+          validExplore.dimensions!.indexOf(b.name!),
+      )
   );
 };
 

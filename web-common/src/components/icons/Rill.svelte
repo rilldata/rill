@@ -1,6 +1,11 @@
+<script lang="ts">
+  export let width = "27";
+  export let height = "16";
+</script>
+
 <svg
-  width="27"
-  height="16"
+  {width}
+  {height}
   viewBox="0 0 27 16"
   class="mb-[1px] flex-none"
   fill="none"

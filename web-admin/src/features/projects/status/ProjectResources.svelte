@@ -2,105 +2,143 @@
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import {
     createRuntimeServiceCreateTrigger,
-    createRuntimeServiceListResources,
     getRuntimeServiceListResourcesQueryKey,
     V1ReconcileStatus,
+    type V1Resource,
+    type V1ListResourcesResponse,
+    createRuntimeServiceListResources,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Button from "web-common/src/components/button/Button.svelte";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
-  import RefreshConfirmDialog from "./RefreshConfirmDialog.svelte";
+  import RefreshAllSourcesAndModelsConfirmDialog from "./RefreshAllSourcesAndModelsConfirmDialog.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 
   const queryClient = useQueryClient();
   const createTrigger = createRuntimeServiceCreateTrigger();
 
+  let isConfirmDialogOpen = false;
   let isReconciling = false;
-  let isRefreshConfirmDialogOpen = false;
+
+  const INITIAL_REFETCH_INTERVAL = 200; // Start at 200ms for immediate feedback
+  const MAX_REFETCH_INTERVAL = 2_000; // Cap at 2s
+  const BACKOFF_FACTOR = 1.5;
+  let currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
 
   $: ({ instanceId } = $runtime);
 
-  $: resources = createRuntimeServiceListResources(
-    instanceId,
-    // All resource "kinds"
-    undefined,
-    {
-      query: {
-        select: (data) => {
-          // Filter out the "ProjectParser" resource
-          return data.resources.filter(
-            (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
-          );
-        },
-        refetchOnMount: true,
-        refetchOnWindowFocus: true,
-        refetchInterval: isReconciling ? 500 : false,
-      },
-    },
-  );
+  function isResourceErrored(resource: V1Resource) {
+    return !!resource.meta.reconcileError;
+  }
 
-  $: isAnySourceOrModelReconciling = $resources?.data?.some(
-    (resource) =>
+  function isResourceReconciling(resource: V1Resource) {
+    return (
       resource.meta.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
       resource.meta.reconcileStatus ===
-        V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
-  );
-
-  function refreshAllSourcesAndModels() {
-    isReconciling = true;
-
-    void $createTrigger.mutateAsync({
-      instanceId,
-      data: {
-        allSourcesModels: true,
-      },
-    });
-
-    void queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey(
-        instanceId,
-        // All resource "kinds"
-        undefined,
-      ),
+        V1ReconcileStatus.RECONCILE_STATUS_RUNNING
     );
   }
 
-  $: if (!isAnySourceOrModelReconciling) {
+  function calculateRefetchInterval(
+    currentInterval: number,
+    data: V1ListResourcesResponse | undefined,
+  ): number | false {
+    if (!data?.resources) {
+      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+      return INITIAL_REFETCH_INTERVAL;
+    }
+
+    const hasErrors = data.resources.some(isResourceErrored);
+    const hasReconcilingResources = data.resources.some(isResourceReconciling);
+
+    if (hasErrors || !hasReconcilingResources) {
+      currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+      return false;
+    }
+
+    currentRefetchInterval = Math.min(
+      currentInterval * BACKOFF_FACTOR,
+      MAX_REFETCH_INTERVAL,
+    );
+    return currentRefetchInterval;
+  }
+
+  $: resources = createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data: V1ListResourcesResponse) => ({
+        ...data,
+        // Filter out project parser and refresh triggers
+        resources: data?.resources?.filter(
+          (resource: V1Resource) =>
+            resource.meta.name.kind !== ResourceKind.ProjectParser &&
+            resource.meta.name.kind !== ResourceKind.RefreshTrigger,
+        ),
+      }),
+      refetchInterval: (data) =>
+        calculateRefetchInterval(
+          $resources?.data ? currentRefetchInterval : INITIAL_REFETCH_INTERVAL,
+          data,
+        ),
+    },
+  });
+
+  $: hasReconcilingResources = $resources.data?.resources?.some(
+    isResourceReconciling,
+  );
+
+  $: isReconciling = Boolean(hasReconcilingResources);
+
+  $: isRefreshButtonDisabled = hasReconcilingResources;
+
+  function refreshAllSourcesAndModels() {
     isReconciling = false;
+
+    void $createTrigger
+      .mutateAsync({
+        instanceId,
+        data: { allSourcesModels: true },
+      })
+      .then(() => {
+        currentRefetchInterval = INITIAL_REFETCH_INTERVAL;
+        void queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+        );
+      });
   }
 </script>
 
-<section class="flex flex-col gap-y-4">
+<section class="flex flex-col gap-y-4 size-full">
   <div class="flex items-center justify-between">
     <h2 class="text-lg font-medium">Resources</h2>
     <Button
       type="secondary"
       on:click={() => {
-        isRefreshConfirmDialogOpen = true;
+        isConfirmDialogOpen = true;
       }}
-      disabled={isReconciling}
+      disabled={isRefreshButtonDisabled}
     >
-      {#if isReconciling}
+      {#if isRefreshButtonDisabled}
         Refreshing...
       {:else}
         Refresh all sources and models
       {/if}
     </Button>
   </div>
+
   {#if $resources.isLoading}
     <DelayedSpinner isLoading={$resources.isLoading} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
       Error loading resources: {$resources.error?.message}
     </div>
-  {:else if $resources.isSuccess}
-    <ProjectResourcesTable data={$resources.data} />
+  {:else if $resources.data}
+    <ProjectResourcesTable data={$resources?.data?.resources} {isReconciling} />
   {/if}
 </section>
 
-<RefreshConfirmDialog
-  bind:open={isRefreshConfirmDialogOpen}
+<RefreshAllSourcesAndModelsConfirmDialog
+  bind:open={isConfirmDialogOpen}
   onRefresh={refreshAllSourcesAndModels}
 />

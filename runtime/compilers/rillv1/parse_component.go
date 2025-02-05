@@ -3,7 +3,6 @@ package rillv1
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -25,9 +24,6 @@ type ComponentYAML struct {
 	Subtitle    string                    `yaml:"subtitle"` // Deprecated: use description
 	Input       []*ComponentVariableYAML  `yaml:"input"`
 	Output      *ComponentVariableYAML    `yaml:"output"`
-	Data        *DataYAML                 `yaml:"data"`
-	Show        string                    `yaml:"show"`
-	VegaLite    *string                   `yaml:"vega_lite"`
 	Other       map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
@@ -82,28 +78,10 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		tmp.Description = tmp.Subtitle
 	}
 
-	// Parse the data YAML
-	var refs []ResourceName
-	var resolver string
-	var resolverProps *structpb.Struct
-	if tmp.Data != nil {
-		var err error
-		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data, "")
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
 	// Discover and validate the renderer
 	n := 0
 	var renderer string
 	var rendererProps *structpb.Struct
-	if tmp.VegaLite != nil {
-		n++
-
-		renderer = "vega_lite"
-		rendererProps = must(structpb.NewStruct(map[string]any{"spec": strings.TrimSpace(*tmp.VegaLite)}))
-	}
 	if len(tmp.Other) == 1 {
 		n++
 		var props map[string]any
@@ -111,8 +89,9 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 			break
 		}
 
+		// nolint // TODO: Activate validation later when in production
 		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
+			// return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
 		}
 
 		propsPB, err := structpb.NewStruct(props)
@@ -131,6 +110,21 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 	if n > 1 {
 		return nil, nil, errors.New(`multiple renderers are not allowed`)
+	}
+
+	// We generally treat the renderer props as untyped, but since "metrics_view" is a very common field,
+	// and adding it to refs generally makes for nicer error messages, we specifically search for and link it here.
+	var refs []ResourceName
+	if rendererProps != nil {
+		for k, v := range rendererProps.Fields {
+			if k == "metrics_view" {
+				name := v.GetStringValue()
+				if name != "" {
+					refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+				}
+				break
+			}
+		}
 	}
 
 	// Parse input variables
@@ -160,13 +154,10 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	spec := &runtimev1.ComponentSpec{
 		DisplayName:        tmp.DisplayName,
 		Description:        tmp.Description,
-		Resolver:           resolver,
-		ResolverProperties: resolverProps,
 		Renderer:           renderer,
 		RendererProperties: rendererProps,
 		Input:              input,
 		Output:             output,
-		Show:               tmp.Show,
 	}
 
 	return spec, refs, nil
@@ -191,11 +182,4 @@ func (y *ComponentVariableYAML) Proto() (*runtimev1.ComponentVariable, error) {
 		Type:         y.Type,
 		DefaultValue: val,
 	}, nil
-}
-
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
 }

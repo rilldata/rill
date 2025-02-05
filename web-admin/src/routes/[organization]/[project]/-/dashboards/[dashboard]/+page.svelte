@@ -14,11 +14,10 @@
 
   $: canvas = $canvasQuery.data?.canvas.spec;
 
-  $: ({
-    items = [],
-    columns,
-    gap,
-  } = canvas || { items: [], columns: 24, gap: 2 });
+  $: ({ items = [], filtersEnabled } = canvas || {
+    items: [],
+    filtersEnabled: true,
+  });
 </script>
 
-<CanvasDashboardEmbed {canvasName} {columns} {items} {gap} />
+<CanvasDashboardEmbed {items} showFilterBar={filtersEnabled} spec={canvas} />

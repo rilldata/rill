@@ -29,9 +29,11 @@ import {
   AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SET_PREVIOUS_WEEK_COMPARE_TIME_RANGE_FILTER,
   AD_BIDS_SORT_ASC_BY_BID_PRICE,
+  AD_BIDS_SORT_ASC_BY_IMPRESSIONS,
   AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
   AD_BIDS_SORT_BY_PERCENT_VALUE,
   AD_BIDS_SORT_BY_VALUE,
+  AD_BIDS_SORT_DESC_BY_BID_PRICE,
   AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
   AD_BIDS_SORT_PIVOT_BY_IMPRESSIONS_DESC,
   AD_BIDS_SORT_PIVOT_BY_TIME_DAY_ASC,
@@ -198,7 +200,7 @@ const TestCases: {
   {
     title:
       "Leaderboard configs with preset and leaderboard sort measure in state same as preset",
-    mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_BID_PRICE],
+    mutations: [AD_BIDS_SORT_BY_PERCENT_VALUE, AD_BIDS_SORT_ASC_BY_IMPRESSIONS],
     preset: AD_BIDS_PRESET,
     expectedUrl: "http://localhost/",
   },
@@ -207,11 +209,11 @@ const TestCases: {
       "Leaderboard configs with preset and leaderboard sort measure in state different than preset",
     mutations: [
       AD_BIDS_SORT_BY_DELTA_ABS_VALUE,
-      AD_BIDS_SORT_DESC_BY_IMPRESSIONS,
+      AD_BIDS_SORT_DESC_BY_BID_PRICE,
     ],
     preset: AD_BIDS_PRESET,
     expectedUrl:
-      "http://localhost/?sort_by=impressions&sort_type=delta_abs&sort_dir=DESC",
+      "http://localhost/?sort_by=bid_price&sort_type=delta_abs&sort_dir=DESC",
   },
 
   {

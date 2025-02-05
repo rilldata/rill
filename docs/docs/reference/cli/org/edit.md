@@ -14,6 +14,7 @@ rill org edit [<org-name>] [flags]
 
 ```
       --org string             Organization name
+      --display-name string    Display name
       --description string     Description
       --billing-email string   Billing email
 ```

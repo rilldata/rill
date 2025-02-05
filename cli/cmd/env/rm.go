@@ -13,11 +13,15 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, environment string
 
 	rmCmd := &cobra.Command{
-		Use:   "rm <key>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "rm [<project-name>] [<key>]",
+		Args:  cobra.ExactArgs(2),
 		Short: "Remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			key := args[0]
+			if len(args) > 0 {
+				projectName = args[0]
+			}
+
+			key := args[1]
 			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {

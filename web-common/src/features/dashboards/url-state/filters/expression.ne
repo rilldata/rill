@@ -11,6 +11,7 @@
     inPostprocessor,
     havingPostprocessor,
     andOrPostprocessor,
+    objectPostprocessor
   } from "./post-processors.ts";
 %}
 
@@ -46,13 +47,18 @@ compare_operator => "eq"i     {% id %}
                   | "lt"i     {% id %}
                   | "lte"i    {% id %}
 
-column     => dqstring                 {% id %}
-            | [a-zA-Z] [a-zA-Z0-9_]:*  {% ([fst, rest]) => [fst, ...rest].join("") %}
-value      => sqstring                 {% id %}
-            | int                      {% id %}
-            | decimal                  {% id %}
-            | "true"i                  {% () => true %}
-            | "false"i                 {% () => false %}
-            | "null"i                  {% () => null %}
+column     => dqstring                {% id %}
+            | [a-zA-Z] [a-zA-Z0-9_]:* {% ([fst, rest]) => [fst, ...rest].join("") %}
+
+value      => sqstring                                    {% id %}
+            | int                                         {% id %}
+            | decimal                                     {% id %}
+            | "true"i                                     {% () => true %}
+            | "false"i                                    {% () => false %}
+            | "null"i                                     {% () => null %}
+            | "[" _ value_list _ "]"                      {% ([_1, _2, list]) => list %}
+            | "{" _ key_value (_ "," _ key_value):* _ "}" {% objectPostprocessor %}
+
+key_value => sqstring _ ":" _ value    {% ([key, _1, _2, _3, value]) => ({ [key]: value }) %}
 value_list => value_list _ "," _ value {% ([list, _1, _2, _3, value]) => [...list, value] %}
             | value                    {% ([v]) => [v] %}

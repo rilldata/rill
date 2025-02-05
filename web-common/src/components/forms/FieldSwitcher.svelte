@@ -2,9 +2,11 @@
   export let fields: string[];
   export let selected: number = -1;
   export let onClick: (i: number, value: string) => void = () => {};
+  export let small = false;
+  export let expand = false;
 </script>
 
-<div class="option-wrapper">
+<div class:small class:expand class="option-wrapper">
   {#each fields as field, i (field)}
     <button
       on:click={() => onClick(i, field)}
@@ -27,6 +29,17 @@
 
   .option-wrapper {
     @apply flex h-6 text-sm w-fit mb-1 rounded-[2px];
+  }
+
+  .option-wrapper.small {
+    @apply h-6 text-xs;
+  }
+
+  .expand {
+    @apply w-full;
+  }
+  .expand button {
+    @apply flex-1;
   }
 
   .option-wrapper > .selected {

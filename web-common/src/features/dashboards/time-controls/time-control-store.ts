@@ -19,8 +19,8 @@ import {
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
+  type DashboardTimeControls,
   TimeComparisonOption,
   type TimeRange,
   TimeRangePreset,
@@ -214,14 +214,15 @@ function calculateTimeRangePartial(
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
   const selectedTimeRange = getTimeRange(
-    metricsExplorer,
+    metricsExplorer.selectedTimeRange,
+    metricsExplorer.selectedTimezone,
     allTimeRange,
     defaultTimeRange,
   );
   if (!selectedTimeRange) return undefined;
 
   selectedTimeRange.interval = getTimeGrain(
-    metricsExplorer,
+    metricsExplorer.selectedTimeRange,
     selectedTimeRange,
     minTimeGrain,
   );
@@ -316,37 +317,38 @@ function calculateComparisonTimeRangePartial(
   };
 }
 
-function getTimeRange(
-  metricsExplorer: MetricsExplorerEntity,
+export function getTimeRange(
+  selectedTimeRange: DashboardTimeControls | undefined,
+  selectedTimezone: string,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
 ) {
-  if (!metricsExplorer.selectedTimeRange) return undefined;
+  if (!selectedTimeRange) return undefined;
 
   let timeRange: DashboardTimeControls;
 
-  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
+  if (selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
     /** set the time range to the fixed custom time range */
     timeRange = {
       name: TimeRangePreset.CUSTOM,
-      start: new Date(metricsExplorer.selectedTimeRange.start),
-      end: new Date(metricsExplorer.selectedTimeRange.end),
+      start: new Date(selectedTimeRange.start),
+      end: new Date(selectedTimeRange.end),
     };
-  } else if (metricsExplorer.selectedTimeRange?.name) {
-    if (metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+  } else if (selectedTimeRange?.name) {
+    if (selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
       /** rebuild off of relative time range */
       timeRange = convertTimeRangePreset(
-        metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
+        selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
-        metricsExplorer.selectedTimezone,
+        selectedTimezone,
       );
     } else {
       timeRange = isoDurationToFullTimeRange(
-        metricsExplorer.selectedTimeRange?.name,
+        selectedTimeRange?.name,
         allTimeRange.start,
         allTimeRange.end,
-        metricsExplorer.selectedTimezone,
+        selectedTimezone,
       );
     }
   } else {
@@ -361,21 +363,21 @@ function getTimeRange(
   return timeRange;
 }
 
-function getTimeGrain(
-  metricsExplorer: MetricsExplorerEntity,
+export function getTimeGrain(
+  selectedTimeRange: DashboardTimeControls | undefined,
   timeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ) {
   const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
   const isValidTimeGrain = checkValidTimeGrain(
-    metricsExplorer.selectedTimeRange?.interval,
+    selectedTimeRange?.interval,
     timeGrainOptions,
     minTimeGrain,
   );
 
   let timeGrain: V1TimeGrain | undefined;
   if (isValidTimeGrain) {
-    timeGrain = metricsExplorer.selectedTimeRange?.interval;
+    timeGrain = selectedTimeRange?.interval;
   } else {
     const defaultTimeGrain = getDefaultTimeGrain(
       timeRange.start,
@@ -419,7 +421,12 @@ function getComparisonTimeRange(
         name: comparisonOption,
       };
     }
-  } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+  } else if (
+    comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
+    // 1st step towards using a single `Custom` variable
+    // TODO: replace the usage of TimeComparisonOption.CUSTOM with TimeRangePreset.CUSTOM
+    comparisonTimeRange.name === TimeRangePreset.CUSTOM
+  ) {
     return comparisonTimeRange;
   } else {
     // variable time range of some kind.
@@ -470,5 +477,10 @@ export function selectedTimeRangeSelector([
     explorer.selectedTimezone,
   );
 
-  return getTimeRange(explorer, allTimeRange, defaultTimeRange);
+  return getTimeRange(
+    explorer.selectedTimeRange,
+    explorer.selectedTimezone,
+    allTimeRange,
+    defaultTimeRange,
+  );
 }

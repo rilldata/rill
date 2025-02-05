@@ -104,9 +104,11 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	if opts.MetricsProjectOrg != "" && opts.MetricsProjectName != "" {
 		proj, err := db.FindProjectByName(ctx, opts.MetricsProjectOrg, opts.MetricsProjectName)
 		if err != nil {
-			return nil, fmt.Errorf("error looking up metrics project: %w", err)
+			logger.Error("error looking up metrics project", zap.Error(err))
+			// Not returning the error since that causes a circular dependency. Remember that evening in Amsterdam?
+		} else {
+			metricsProjectID = proj.ID
 		}
-		metricsProjectID = proj.ID
 	}
 
 	return &Service{

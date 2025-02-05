@@ -9,9 +9,9 @@ import Video from '@site/src/components/Video';
 
 ## Quickstart
 
-Run the following from the CLI to start Rill. Select a project from the UI or add your own data.
-
+Run the following from the CLI to install and start Rill. Select a sample project from the UI or add your own data.
 ```
+curl https://rill.sh | sh
 rill start my-rill-project
 ```
 

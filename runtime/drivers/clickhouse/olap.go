@@ -113,10 +113,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	if c.config.SettingsOverride != "" {
 		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
 	} else {
-		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1"
-		if c.config.EnableCache {
-			stmt.Query += ", use_query_cache = 1"
-		}
+		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC', prefer_global_in_and_join = 1, insert_distributed_sync = 1"
 	}
 
 	// Gather metrics only for actual queries
@@ -607,12 +604,12 @@ func (c *connection) createTable(ctx context.Context, name, sql string, outputPr
 	}
 	// create the distributed table
 	var distributed strings.Builder
-	database := c.config.Database
-	if c.config.Database == "" {
-		database = "currentDatabase()"
+	database := "currentDatabase()"
+	if c.config.Database != "" {
+		database = safeSQLString(c.config.Database)
 	}
 	fmt.Fprintf(&distributed, "CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(name), onClusterClause, safelocalTableName(name))
-	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLName(c.config.Cluster), database, safelocalTableName(name))
+	fmt.Fprintf(&distributed, " ENGINE = Distributed(%s, %s, %s", safeSQLString(c.config.Cluster), database, safeSQLString(localTableName(name)))
 	if outputProps.DistributedShardingKey != "" {
 		fmt.Fprintf(&distributed, ", %s", outputProps.DistributedShardingKey)
 	} else {
@@ -778,7 +775,9 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		return nil, nil, err
 	}
 
+	c.used()
 	release := func() error {
+		c.used()
 		return conn.Close()
 	}
 	return conn, release, nil
@@ -1192,4 +1191,8 @@ func localTableName(name string) string {
 
 func tempTableForDictionary(name string) string {
 	return name + "_dict_temp_"
+}
+
+func safeSQLString(name string) string {
+	return drivers.DialectClickHouse.EscapeStringValue(name)
 }

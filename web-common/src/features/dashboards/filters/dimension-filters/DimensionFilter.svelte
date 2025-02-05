@@ -1,81 +1,52 @@
 <script lang="ts">
-  import { getStateManagers } from "../../state-managers/state-managers";
-  import { fly } from "svelte/transition";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useTimeControlStore } from "../../time-controls/time-control-store";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import RemovableListBody from "@rilldata/web-common/components/chip/removable-list-chip/RemovableListBody.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import SearchableMenuContent from "@rilldata/web-common/components/searchable-filter-menu/SearchableMenuContent.svelte";
-  import {
-    createInExpression,
-    createLikeExpression,
-  } from "../../stores/filter-utils";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { fly } from "svelte/transition";
+  import { useDimensionSearch } from "./dimensionFilterValues";
 
   export let name: string;
+  export let metricsViewNames: string[];
   export let label: string;
   export let selectedValues: string[];
   export let excludeMode: boolean;
   export let openOnMount: boolean = true;
   export let readOnly: boolean = false;
+  export let timeStart: string | undefined;
+  export let timeEnd: string | undefined;
+  export let timeControlsReady: boolean | undefined;
+  export let smallChip = false;
   export let onRemove: () => void;
   export let onSelect: (value: string) => void;
   export let onToggleFilterMode: () => void;
 
-  const StateManagers = getStateManagers();
-  const timeControls = useTimeControlStore(StateManagers);
-
   let open = openOnMount && !selectedValues.length;
   let searchText = "";
-  let allValues: string[] = [];
-
-  $: ({ metricsViewName } = StateManagers);
 
   $: ({ instanceId } = $runtime);
 
-  $: ({ timeStart, timeEnd, ready: timeControlsReady } = $timeControls);
-
-  $: addNull = searchText.length !== 0 && "null".includes(searchText);
-
-  $: searchQuery = createQueryServiceMetricsViewAggregation(
+  $: searchValues = useDimensionSearch(
     instanceId,
-    $metricsViewName,
-    {
-      dimensions: [{ name }],
-
-      timeRange: {
-        start: timeStart,
-        end: timeEnd,
-      },
-      limit: "100",
-      offset: "0",
-      sort: [{ name }],
-      where: addNull
-        ? createInExpression(name, [null])
-        : createLikeExpression(name, `%${searchText}%`),
-    },
-    {
-      query: {
-        enabled: Boolean(timeControlsReady && open),
-      },
-    },
+    metricsViewNames,
+    name,
+    searchText,
+    timeStart,
+    timeEnd,
+    Boolean(timeControlsReady && open),
   );
 
-  $: allValues =
-    $searchQuery?.data?.data?.map((datum) => datum[name] as string) ??
-    allValues;
-
   $: allSelected = Boolean(
-    selectedValues.length && allValues?.length === selectedValues.length,
+    selectedValues.length && $searchValues?.length === selectedValues.length,
   );
 
   function onToggleSelectAll() {
-    allValues?.forEach((dimensionValue) => {
+    $searchValues?.forEach((dimensionValue) => {
       if (!allSelected && selectedValues.includes(dimensionValue)) return;
 
       onSelect(dimensionValue);
@@ -126,6 +97,7 @@
           slot="body"
           label={excludeMode ? `Exclude ${label}` : label}
           show={1}
+          {smallChip}
           values={selectedValues}
         />
       </Chip>
@@ -151,7 +123,7 @@
     selectableGroups={[
       {
         name: "DIMENSIONS",
-        items: allValues.map((dimensionValue) => ({
+        items: $searchValues.map((dimensionValue) => ({
           name: dimensionValue,
           label: dimensionValue,
         })),

@@ -632,7 +632,7 @@ func (h *Handle) download() error {
 		return fmt.Errorf("download: %w", err)
 	}
 
-	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true)
+	err = archive.Download(ctx, h.downloadURL, downloadDst, h.projPath, true, false)
 	if err != nil {
 		return err
 	}

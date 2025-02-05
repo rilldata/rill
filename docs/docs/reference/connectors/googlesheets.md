@@ -8,7 +8,7 @@ sidebar_position: 13
 
 ### Google Sheets
 
-Rill has the ability to read from any http(s) URL endpoint that produces a valid data file in a supported format. For example, to bring in data from [Google Sheets](https://www.google.com/sheets/about/) as a CSV file directly into Rill as a source ([leveraging the direct download link syntax](https://www.highviewapps.com/blog/how-to-create-a-csv-or-excel-direct-download-link-in-google-sheets/)), you can create a `source_name.yaml` file in the `sources` directory of your Rill project directory with the following content:
+Rill has the ability to read from any http(s) URL endpoint that produces a valid data file in a supported format. For example, to bring in data from [Google Sheets](https://www.google.com/sheets/about/) as a CSV file directly into Rill as a source ([leveraging the direct download link syntax](https://www.highviewapps.com/blog/how-to-create-a-csv-or-excel-direct-download-link-in-google-sheets/)), you can create a `source_name.yaml` file in the `sources` directory of your Rill project directory with the following content, don't forget to set the sheet to `Anyone with the link`:
 
 ```yaml
 type: source
@@ -24,5 +24,6 @@ Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreads
 
 ![Connecting to Google Sheets](/img/reference/connectors/googlesheets/googlesheets.png)
 
-<img src = '/img/reference/connectors/bigquery/bigquery.png' class='rounded-png' />
-<br />
+:::note gsheets DuckDB Community Extension
+In cases where setting the Google Sheet to `Anyone with the link` is not allowed, DuckDB has an extension that allows you to share the sheet to a Google service account. However, we have not yet implemented the DuckDB community extension in our deployment of DuckDB. Please contact us if you are interested in using this feature.
+:::

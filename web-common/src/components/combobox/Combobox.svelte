@@ -46,7 +46,7 @@
 
     <!-- NOTE: 52px * 4 for 208px to show scroller -->
     <Combobox.Content
-      class="w-full rounded-sm border border-muted bg-background p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
+      class="w-full rounded-sm border border-muted bg-surface p-[6px] shadow-md outline-none max-h-[208px] overflow-y-auto"
       sideOffset={8}
     >
       {#each filteredItems as item (item.value)}

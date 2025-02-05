@@ -48,11 +48,12 @@
     <NoAlertRunsYet />
   {:else}
     <Table
+      kind="alert"
       {columns}
       data={$alertQuery.data?.resource.alert.state.executionHistory}
-      maxWidthOverride="max-w-[960px]"
+      toolbar={false}
     >
-      <AlertHistoryTableHeader slot="header" maxWidthOverride="max-w-[960px]" />
+      <AlertHistoryTableHeader slot="header" />
     </Table>
   {/if}
 </div>

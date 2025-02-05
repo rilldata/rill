@@ -247,20 +247,6 @@ vega_lite: |
     case ResourceKind.Canvas:
       return `type: canvas
 title: "Canvas Dashboard"
-columns: 24
-gap: 2
-
-items:
-  - component:
-      markdown:
-        content: "First Component"
-        css:
-          font-size: "40px"
-          background-color: "#fff"
-    width: 4
-    height: 3
-    x: 2
-    y: 1
 `;
     case ResourceKind.Theme:
       return `# Theme YAML

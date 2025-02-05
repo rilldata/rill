@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
 )
 
@@ -83,7 +84,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		context.AfterFunc(ctx, func() {
 			tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, c.dsn+"/"+dr.Context.SQLQueryID, http.NoBody)
+			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, urlutil.MustJoinURL(c.dsn, dr.Context.SQLQueryID), http.NoBody)
 			if err != nil {
 				return
 			}

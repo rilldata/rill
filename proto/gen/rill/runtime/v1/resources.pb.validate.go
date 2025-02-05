@@ -3204,6 +3204,14 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for CacheKeySql
+
+	// no validation rules for CacheKeyTtlSeconds
+
+	if m.CacheEnabled != nil {
+		// no validation rules for CacheEnabled
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}
@@ -9603,37 +9611,6 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Resolver
-
-	if all {
-		switch v := interface{}(m.GetResolverProperties()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ComponentSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ComponentSpecValidationError{
-				field:  "ResolverProperties",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	// no validation rules for Renderer
 
 	if all {
@@ -9727,8 +9704,6 @@ func (m *ComponentSpec) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Show
 
 	// no validation rules for DefinedInCanvas
 
@@ -10254,9 +10229,107 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
-	// no validation rules for Columns
+	// no validation rules for MaxWidth
 
-	// no validation rules for Gap
+	// no validation rules for GapX
+
+	// no validation rules for GapY
+
+	// no validation rules for Theme
+
+	if all {
+		switch v := interface{}(m.GetEmbeddedTheme()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "EmbeddedTheme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEmbeddedTheme()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasSpecValidationError{
+				field:  "EmbeddedTheme",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetTimeRanges() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("TimeRanges[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasSpecValidationError{
+					field:  fmt.Sprintf("TimeRanges[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for FiltersEnabled
+
+	if all {
+		switch v := interface{}(m.GetDefaultPreset()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "DefaultPreset",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasSpecValidationError{
+					field:  "DefaultPreset",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDefaultPreset()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasSpecValidationError{
+				field:  "DefaultPreset",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	for idx, item := range m.GetVariables() {
 		_, _ = idx, item
@@ -10684,6 +10757,115 @@ var _ interface {
 	ErrorName() string
 } = CanvasItemValidationError{}
 
+// Validate checks the field values on CanvasPreset with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *CanvasPreset) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CanvasPreset with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CanvasPresetMultiError, or
+// nil if none found.
+func (m *CanvasPreset) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CanvasPreset) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ComparisonMode
+
+	if m.TimeRange != nil {
+		// no validation rules for TimeRange
+	}
+
+	if m.ComparisonDimension != nil {
+		// no validation rules for ComparisonDimension
+	}
+
+	if len(errors) > 0 {
+		return CanvasPresetMultiError(errors)
+	}
+
+	return nil
+}
+
+// CanvasPresetMultiError is an error wrapping multiple validation errors
+// returned by CanvasPreset.ValidateAll() if the designated constraints aren't met.
+type CanvasPresetMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CanvasPresetMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CanvasPresetMultiError) AllErrors() []error { return m }
+
+// CanvasPresetValidationError is the validation error returned by
+// CanvasPreset.Validate if the designated constraints aren't met.
+type CanvasPresetValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CanvasPresetValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CanvasPresetValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CanvasPresetValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CanvasPresetValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CanvasPresetValidationError) ErrorName() string { return "CanvasPresetValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CanvasPresetValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCanvasPreset.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CanvasPresetValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CanvasPresetValidationError{}
+
 // Validate checks the field values on API with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.
@@ -10956,6 +11138,42 @@ func (m *APISpec) validate(all bool) error {
 			}
 		}
 	}
+
+	for idx, item := range m.GetSecurityRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return APISpecValidationError{
+					field:  fmt.Sprintf("SecurityRules[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for SkipNestedSecurity
 
 	if len(errors) > 0 {
 		return APISpecMultiError(errors)

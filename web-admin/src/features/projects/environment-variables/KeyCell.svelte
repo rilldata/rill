@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { EnvironmentType } from "./types";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let environment: string;
   export let name: string;
@@ -19,9 +22,38 @@
   }
 
   $: environmentLabel = getEnvironmentType(environment);
+
+  let copied = false;
+  function onCopy() {
+    copyToClipboard(name, undefined, false);
+    copied = true;
+
+    setTimeout(() => {
+      copied = false;
+    }, 2_000);
+  }
 </script>
 
-<div class="flex flex-col">
-  <code class="text-sm text-gray-800 font-medium">{name}</code>
-  <span class="text-xs text-gray-500 font-normal">{environmentLabel}</span>
+<div class="truncate flex flex-col">
+  <Tooltip distance={6} location="top">
+    <button on:click={onCopy} class="truncate text-start" title={name}>
+      <span class="source-code text-sm text-gray-800 font-medium truncate">
+        {name}
+      </span>
+    </button>
+
+    <TooltipContent slot="tooltip-content">
+      {copied ? "Copied!" : "Click to copy"}
+    </TooltipContent>
+  </Tooltip>
+
+  <span class="text-xs text-gray-500 font-normal truncate">
+    {environmentLabel}
+  </span>
 </div>
+
+<style lang="postcss">
+  .source-code {
+    font-family: "Source Code Variable", monospace;
+  }
+</style>

@@ -17,7 +17,7 @@ Manage user groups
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill usergroup add](add.md)	 - Add a group to a project or organization
 * [rill usergroup create](create.md)	 - Create a group
 * [rill usergroup delete](delete.md)	 - Delete a group

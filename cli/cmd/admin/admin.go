@@ -7,10 +7,12 @@ import (
 
 // AdminCmd represents the admin command
 func AdminCmd(ch *cmdutil.Helper) *cobra.Command {
+	internalGroupID := ""
 	adminCmd := &cobra.Command{
-		Use:    "admin",
-		Hidden: !ch.IsDev(),
-		Short:  "Manage an admin server",
+		Use:     "admin",
+		Hidden:  !ch.IsDev(),
+		Short:   "Manage an admin server",
+		GroupID: internalGroupID,
 	}
 	adminCmd.AddCommand(PingCmd(ch))
 	adminCmd.AddCommand(StartCmd(ch))
