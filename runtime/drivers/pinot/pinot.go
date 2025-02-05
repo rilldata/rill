@@ -127,7 +127,19 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	var dsn string
 	if conf.DSN != "" {
 		dsn = conf.DSN
-	} else if conf.BrokerHost != "" {
+	} else if conf.ControllerHost != "" && conf.BrokerHost != "" {
+		var controllerURL url.URL
+		if conf.ControllerPort == 0 {
+			controllerURL.Host = conf.ControllerHost
+		} else {
+			controllerURL.Host = fmt.Sprintf("%v:%v", conf.ControllerHost, conf.ControllerPort)
+		}
+		if conf.SSL {
+			controllerURL.Scheme = "https"
+		} else {
+			controllerURL.Scheme = "http"
+		}
+
 		var dsnURL url.URL
 		dsnURL.Host = conf.BrokerHost
 		// set port
@@ -149,22 +161,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			dsnURL.User = url.User(conf.Username)
 		}
 
-		// set controller
-		var controllerURL url.URL
-		if conf.ControllerHost != "" {
-			if conf.ControllerPort == 0 {
-				controllerURL.Host = conf.ControllerHost
-			} else {
-				controllerURL.Host = fmt.Sprintf("%v:%v", conf.ControllerHost, conf.ControllerPort)
-			}
-			if conf.SSL {
-				controllerURL.Scheme = "https"
-			} else {
-				controllerURL.Scheme = "http"
-			}
-		}
-		dsnURL.RawQuery = url.Values{"controller": {controllerURL.String()}}.Encode()
-
+		dsnURL.RawQuery = "controller=" + controllerURL.String()
 		dsn = dsnURL.String()
 	} else {
 		return nil, fmt.Errorf("pinot connection parameters not set. Set `dsn` or individual properties")
@@ -194,11 +191,13 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	}
 
 	conn := &connection{
-		db:        dbx,
-		config:    config,
-		queryURL:  broker,
-		schemaURL: controller,
-		headers:   headers,
+		db:         dbx,
+		config:     config,
+		queryURL:   broker,
+		schemaURL:  controller,
+		headers:    headers,
+		logQueries: conf.LogQueries,
+		logger:     logger,
 	}
 	return conn, nil
 }
@@ -216,11 +215,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db        *sqlx.DB
-	config    map[string]any
-	queryURL  string
-	schemaURL string
-	headers   map[string]string
+	db         *sqlx.DB
+	config     map[string]any
+	queryURL   string
+	schemaURL  string
+	headers    map[string]string
+	logQueries bool
+	logger     *zap.Logger
 }
 
 // Ping implements drivers.Handle.
