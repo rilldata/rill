@@ -52,6 +52,8 @@ type Options struct {
 	OpenTimeout time.Duration
 	// CloseTimeout is the maximum amount of time to wait for a connection to close.
 	CloseTimeout time.Duration
+	// ErrTTL is the amount of time to cache connection errors before attempting to re-open.
+	ErrTTL time.Duration
 	// CheckHangingInterval is the interval at which to check for hanging open/close calls.
 	CheckHangingInterval time.Duration
 	// OpenFunc opens a connection.
@@ -170,11 +172,17 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 		case entryStatusOpening:
 			// Nothing to do until next retry
 		case entryStatusOpen:
-			if e.err != nil {
+			if e.err == nil {
+				// No error, return the open handle.
+				return e.handle, c.releaseFunc(k, e), nil
+			}
+			if time.Since(e.since) <= c.opts.ErrTTL {
+				// Fresh error, return it.
 				c.releaseEntry(k, e)
 				return nil, nil, e.err
 			}
-			return e.handle, c.releaseFunc(k, e), nil
+			// Stale error, try opening again.
+			c.beginOpen(k, e)
 		case entryStatusClosing:
 			// Nothing to do until next retry
 		case entryStatusClosed:
