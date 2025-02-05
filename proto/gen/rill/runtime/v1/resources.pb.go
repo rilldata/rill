@@ -5407,6 +5407,8 @@ type CanvasSpec struct {
 	Variables []*ComponentVariable `protobuf:"bytes,5,rep,name=variables,proto3" json:"variables,omitempty"`
 	// Items to render on the canvas
 	Items []*CanvasItem `protobuf:"bytes,4,rep,name=items,proto3" json:"items,omitempty"`
+	// Layout is an untyped object pending a formal definition.
+	Layout *structpb.Value `protobuf:"bytes,16,opt,name=layout,proto3" json:"layout,omitempty"`
 	// Security rules to apply for access to the canvas.
 	SecurityRules []*SecurityRule `protobuf:"bytes,6,rep,name=security_rules,json=securityRules,proto3" json:"security_rules,omitempty"`
 }
@@ -5523,6 +5525,13 @@ func (x *CanvasSpec) GetVariables() []*ComponentVariable {
 func (x *CanvasSpec) GetItems() []*CanvasItem {
 	if x != nil {
 		return x.Items
+	}
+	return nil
+}
+
+func (x *CanvasSpec) GetLayout() *structpb.Value {
+	if x != nil {
+		return x.Layout
 	}
 	return nil
 }

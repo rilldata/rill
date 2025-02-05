@@ -259,7 +259,7 @@
 />
 
 <div
-  class="h-full w-[320px] bg-background flex-none flex flex-col border select-none rounded-[2px]"
+  class="h-full w-[320px] bg-surface flex-none flex flex-col border select-none rounded-[2px]"
 >
   <h1 class="pt-6 px-5">{editing ? "Edit" : "Add"} {type.slice(0, -1)}</h1>
 
@@ -270,7 +270,7 @@
       {@const { hint, key, options, placeholder, boolean } = fields[selected]}
 
       {#if boolean}
-        <div class="flex gap-x-2 items-center h-full bg-white rounded-full">
+        <div class="flex gap-x-2 items-center h-full rounded-full">
           <Switch bind:checked={editingClone[key]} id="auto-save" medium />
           <Label class="font-medium text-sm" for="auto-save">{label}</Label>
           {#if hint}

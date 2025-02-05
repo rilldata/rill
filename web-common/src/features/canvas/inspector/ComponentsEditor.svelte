@@ -7,38 +7,29 @@
   import VegaConfigInput from "@rilldata/web-common/features/canvas/inspector/VegaConfigInput.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import {
-    ResourceKind,
-    useResourceV2,
-  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ComponentTabs from "./ComponentTabs.svelte";
-  import FiltersMapper from "./FiltersMapper.svelte";
+  import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
 
-  export let selectedComponentName: string;
+  export let selectedComponentIndex: number;
   export let fileArtifact: FileArtifact;
 
-  const ctx = getCanvasStateManagers();
+  const {
+    canvasEntity: {
+      spec: { getComponentFromIndex, getComponentNameFromIndex },
+    },
+  } = getCanvasStateManagers();
   let currentTab: string;
 
-  // TODO: Avoid resource query if possible
-  $: resourceQuery = useResourceV2(
-    $runtime.instanceId,
-    selectedComponentName,
-    ResourceKind.Component,
-  );
+  $: componentSpec = getComponentFromIndex(selectedComponentIndex);
+  $: componentName = getComponentNameFromIndex(selectedComponentIndex);
 
-  $: ({ data: componentResource } = $resourceQuery);
-
-  $: ({ renderer, rendererProperties } =
-    componentResource?.component?.spec ?? {});
+  $: ({ renderer, rendererProperties } = $componentSpec || {});
 
   $: componentType = isCanvasComponentType(renderer) ? renderer : null;
-
-  $: selectedIndexStore = ctx.canvasEntity?.selectedComponentIndex;
-  $: selectedComponentIndex = $selectedIndexStore ?? 0;
   $: path = ["items", selectedComponentIndex, "component", componentType || ""];
 
   $: component =
@@ -50,7 +41,7 @@
 <SidebarWrapper
   type="secondary"
   disableHorizontalPadding
-  title={getHeaderForComponent(renderer)}
+  title={getHeaderForComponent(componentType)}
 >
   <svelte:fragment slot="header">
     {#if componentType}
@@ -60,8 +51,8 @@
     {/if}
   </svelte:fragment>
 
-  {#if componentType && component && rendererProperties}
-    {#key selectedComponentIndex}
+  {#if componentType && $componentName && component && rendererProperties}
+    {#key $componentName}
       {#if currentTab === "options"}
         <ParamMapper
           {component}
@@ -69,14 +60,28 @@
           paramValues={rendererProperties}
         />
       {:else if currentTab === "filters"}
-        <FiltersMapper {component} paramValues={rendererProperties} />
+        <FiltersMapper
+          selectedComponentName={$componentName}
+          {component}
+          paramValues={rendererProperties}
+        />
       {:else if currentTab === "config"}
         <VegaConfigInput {component} paramValues={rendererProperties} />
       {/if}
     {/key}
+  {:else if !renderer}
+    <div class="inspector-center">
+      <Spinner status={EntityStatus.Running} size="16px" />
+    </div>
   {:else}
-    <div>
+    <div class="inspector-center">
       Unknown Component {renderer}
     </div>
   {/if}
 </SidebarWrapper>
+
+<style lang="postcss">
+  .inspector-center {
+    @apply flex items-center justify-center h-full w-full;
+  }
+</style>

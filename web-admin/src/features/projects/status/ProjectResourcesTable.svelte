@@ -1,6 +1,9 @@
 <script lang="ts">
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    prettyResourceKind,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
   import { getResourceKindTagColor } from "./display-utils";
@@ -9,8 +12,10 @@
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
   import RefreshCell from "./RefreshCell.svelte";
   import NameCell from "./NameCell.svelte";
+  import ActionsCell from "./ActionsCell.svelte";
 
   export let data: V1Resource[];
+  export let isReconciling: boolean;
 
   const columns: ColumnDef<V1Resource, any>[] = [
     {
@@ -62,11 +67,30 @@
           date: info.getValue() as string,
         }),
     },
+    {
+      accessorKey: "actions",
+      header: "",
+      cell: ({ row }) => {
+        if (!isReconciling) {
+          return flexRender(ActionsCell, {
+            resourceKind: row.original.meta.name.kind,
+            resourceName: row.original.meta.name.name,
+            canRefresh:
+              row.original.meta.name.kind === ResourceKind.Model ||
+              row.original.meta.name.kind === ResourceKind.Source,
+          });
+        }
+      },
+      enableSorting: false,
+      meta: {
+        widthPercent: 0,
+      },
+    },
   ];
 </script>
 
 <BasicTable
   {data}
   {columns}
-  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) "
+  columnLayout="minmax(95px, 108px) minmax(100px, 3fr) 48px minmax(80px, 2fr) minmax(100px, 2fr) 56px"
 />

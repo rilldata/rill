@@ -36,8 +36,8 @@ type ReportReconciler struct {
 	C *runtime.Controller
 }
 
-func newReportReconciler(c *runtime.Controller) runtime.Reconciler {
-	return &ReportReconciler{C: c}
+func newReportReconciler(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ReportReconciler{C: c}, nil
 }
 
 func (r *ReportReconciler) Close(ctx context.Context) error {

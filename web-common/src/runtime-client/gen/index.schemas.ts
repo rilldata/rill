@@ -607,6 +607,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -634,12 +640,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -857,26 +857,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  explore?: V1Explore;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  canvas?: V1Canvas;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: any;
 };
@@ -911,6 +891,13 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -939,16 +926,29 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  explore?: V1Explore;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  canvas?: V1Canvas;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export interface V1RenameFileResponse {
@@ -957,6 +957,14 @@ export interface V1RenameFileResponse {
 
 export interface V1RefreshTriggerState {
   [key: string]: any;
+}
+
+export interface V1RefreshTriggerSpec {
+  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
+If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
+  resources?: V1ResourceName[];
+  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
+  models?: V1RefreshModelTrigger[];
 }
 
 export interface V1RefreshTrigger {
@@ -974,14 +982,6 @@ For non-incremental models, this is equivalent to a normal refresh. */
   partitions?: string[];
   /** If true, it will refresh all partitions that errored on their last execution. */
   allErroredPartitions?: boolean;
-}
-
-export interface V1RefreshTriggerSpec {
-  /** Resources to refresh. The refreshable types are sources, models, alerts, reports, and the project parser.
-If a model is specified, a normal incremental refresh is triggered. Use the "models" field to trigger other kinds of model refreshes. */
-  resources?: V1ResourceName[];
-  /** Models to refresh. These are specified separately to enable more fine-grained configuration. */
-  models?: V1RefreshModelTrigger[];
 }
 
 export type V1ReconcileStatus =
@@ -1419,6 +1419,11 @@ export interface V1MetricsViewSchemaResponse {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -1532,11 +1537,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1547,6 +1547,31 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeURI {
@@ -1596,31 +1621,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
-  whereSql?: string;
-  having?: V1Expression;
-  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
-  havingSql?: string;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1677,11 +1677,20 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+/**
+ * Additional arbitrary attributes to include in the JWT.
+They take precedence if they collide with name, email, groups or admin.
+ */
+export type V1IssueDevJWTRequestAttributes = { [key: string]: any };
+
 export interface V1IssueDevJWTRequest {
   name?: string;
   email?: string;
   groups?: string[];
   admin?: boolean;
+  /** Additional arbitrary attributes to include in the JWT.
+They take precedence if they collide with name, email, groups or admin. */
+  attributes?: V1IssueDevJWTRequestAttributes;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -2064,6 +2073,17 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
+export interface V1ConnectorSpec {
+  driver?: string;
+  properties?: V1ConnectorSpecProperties;
+  templatedProperties?: string[];
+  provision?: boolean;
+  provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties. */
+  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
@@ -2078,17 +2098,6 @@ export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 export type V1ConnectorSpecProvisionArgs = { [key: string]: any };
 
 export type V1ConnectorSpecProperties = { [key: string]: string };
-
-export interface V1ConnectorSpec {
-  driver?: string;
-  properties?: V1ConnectorSpecProperties;
-  templatedProperties?: string[];
-  provision?: boolean;
-  provisionArgs?: V1ConnectorSpecProvisionArgs;
-  /** DEPRECATED: properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties. */
-  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
 
 /**
  * ConnectorDriver represents a connector driver available in the runtime.
@@ -2327,10 +2336,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1CanvasState {
-  validSpec?: V1CanvasSpec;
-}
-
 export interface V1CanvasPreset {
   /** Time range for the explore.
 It corresponds to the `range` property of the explore's `time_ranges`.
@@ -2376,8 +2381,14 @@ The values should be valid IANA location identifiers. */
   /** Variables that can be used in the canvas. */
   variables?: V1ComponentVariable[];
   items?: V1CanvasItem[];
+  /** Layout is an untyped object pending a formal definition. */
+  layout?: unknown;
   /** Security rules to apply for access to the canvas. */
   securityRules?: V1SecurityRule[];
+}
+
+export interface V1CanvasState {
+  validSpec?: V1CanvasSpec;
 }
 
 export interface V1Canvas {

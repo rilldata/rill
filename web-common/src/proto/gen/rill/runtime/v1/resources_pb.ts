@@ -4570,6 +4570,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
   items: CanvasItem[] = [];
 
   /**
+   * Layout is an untyped object pending a formal definition.
+   *
+   * @generated from field: google.protobuf.Value layout = 16;
+   */
+  layout?: Value;
+
+  /**
    * Security rules to apply for access to the canvas.
    *
    * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 6;
@@ -4596,6 +4603,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 15, name: "default_preset", kind: "message", T: CanvasPreset },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
     { no: 4, name: "items", kind: "message", T: CanvasItem, repeated: true },
+    { no: 16, name: "layout", kind: "message", T: Value },
     { no: 6, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
   ]);
 

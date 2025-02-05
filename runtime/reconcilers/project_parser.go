@@ -27,8 +27,8 @@ type ProjectParserReconciler struct {
 	C *runtime.Controller
 }
 
-func newProjectParser(c *runtime.Controller) runtime.Reconciler {
-	return &ProjectParserReconciler{C: c}
+func newProjectParser(ctx context.Context, c *runtime.Controller) (runtime.Reconciler, error) {
+	return &ProjectParserReconciler{C: c}, nil
 }
 
 func (r *ProjectParserReconciler) Close(ctx context.Context) error {

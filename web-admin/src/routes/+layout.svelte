@@ -25,7 +25,8 @@
 
   export let data;
 
-  $: ({ projectPermissions, organizationPermissions } = data);
+  $: ({ projectPermissions, organizationPermissions, organizationLogoUrl } =
+    data);
   $: ({
     params: { organization },
     url: { pathname },
@@ -79,7 +80,7 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col min-h-screen h-screen">
+    <main class="flex flex-col min-h-screen h-screen bg-surface">
       <BannerCenter />
       {#if !hideBillingManager}
         <BillingBannerManager {organization} {organizationPermissions} />
@@ -89,6 +90,7 @@
           manageOrganization={organizationPermissions?.manageOrg}
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
+          {organizationLogoUrl}
         />
 
         {#if withinOnlyOrg}
