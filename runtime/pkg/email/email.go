@@ -480,10 +480,11 @@ We’re sorry to see you go!
 <br /><br />
 You’ve successfully canceled the %s plan for <b>%s</b>. You’ll still have access to Rill Cloud until <b>%s</b>. After this date, your subscription will expire, and you will no longer have access.
 <br /><br />
-If you found that our service did not meet your needs, please contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a> and we'll do our best to address your feedback and concerns.
+If you change your mind, you can always reactivate your subscription!
 `, opts.PlanName, opts.ToName, opts.EndDate.Format(dateFormat))),
 		ButtonText: "Billing Settings",
 		ButtonLink: opts.BillingURL,
+		PostButton: `If you found that our service did not meet your needs, please contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a> and we'll do our best to address your feedback and concerns.`,
 		ShowFooter: false,
 	})
 }
@@ -503,11 +504,15 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		PreButton: template.HTML(fmt.Sprintf(`
 Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
-If you have any feedback about your experience or how we can improve, please feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+If you’d like to reactive your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),
 		ButtonText: "Billing Settings",
 		ButtonLink: opts.BillingURL,
-		PostButton: `Thank you for trying Rill Cloud. We hope to see you again in the future!`,
+		PostButton: `
+If you have any feedback about your experience or how we can improve, please feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+<br /><br />
+Thank you for trying Rill Cloud. We hope to see you again in the future!
+`,
 		ShowFooter: false,
 	})
 }
@@ -549,6 +554,8 @@ func (c *Client) SendTrialEndingSoon(opts *TrialEndingSoon) error {
 		Subject: fmt.Sprintf("Your Rill Cloud trial for %s is expiring in %d days", opts.OrgName, days),
 		PreButton: template.HTML(fmt.Sprintf(`
 Your trial for <b>%s</b> ends on <b>%s</b>.
+<br /><br />
+How's Rill working out for you? Have you checked out our newest features highlighted in our <a href="https://docs.rilldata.com/notes">Release Notes</a>? 
 <br /><br />
 Our team is here to help you in any way we can, so don't hesitate to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a> if you have a question, encounter an issue, or need guidance.
 <br /><br />
@@ -599,11 +606,15 @@ func (c *Client) SendTrialGracePeriodEnded(opts *TrialGracePeriodEnded) error {
 		PreButton: template.HTML(fmt.Sprintf(`
 <b>%s</b> and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>.
 <br /><br />
-We'd love to hear from you! If you have any feedback about your experience or how we can improve, please feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+Reactivate your org by upgrading to the Team Plan today!
 `, opts.OrgName)),
 		ButtonText: "Upgrade to Team Plan",
 		ButtonLink: opts.UpgradeURL,
-		PostButton: `Thank you for trying Rill Cloud. We hope to see you again in the future!`,
+		PostButton: `
+We'd love to hear from you! If you have any feedback about your experience or how we can improve, please feel free to contact us via <a href="mailto:support@rilldata.com" style="color:#4736F5">email</a>, or via chat on <a href="https://docs.rilldata.com/contact#in-app-chat" style="color:#4736F5">Rill Developer or Rill Cloud.</a>
+<br /><br />
+Thank you for trying Rill Cloud. We hope to see you again in the future!
+`,
 		ShowFooter: false,
 	})
 }
