@@ -82,14 +82,11 @@ export function mapTimeRange(
  * Maps selectedComparisonTimeRange to V1TimeRange if time comparison is enabled.
  */
 export function mapComparisonTimeRange(
-  dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined,
-  forceTimeComparison: boolean,
 ) {
   if (
     !timeRange ||
-    (!forceTimeComparison && dashboardState.selectedComparisonDimension) ||
     !timeControlState.showTimeComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {

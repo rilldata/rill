@@ -64,12 +64,7 @@
     $dashboardStore.selectedTimezone,
     {},
   );
-  const comparisonTimeRange = mapComparisonTimeRange(
-    $dashboardStore,
-    timeControls,
-    timeRange,
-    true,
-  );
+  const comparisonTimeRange = mapComparisonTimeRange(timeControls, timeRange);
 
   const formState = createForm<AlertFormValues>({
     initialValues: {

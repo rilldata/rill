@@ -45,10 +45,8 @@ export function getDimensionTableExportArgs(
       if (!timeRange) return undefined;
 
       const comparisonTimeRange = mapComparisonTimeRange(
-        dashboardState,
         timeControlState,
         timeRange,
-        false,
       );
 
       return getDimensionTableAggregationRequestForTime(

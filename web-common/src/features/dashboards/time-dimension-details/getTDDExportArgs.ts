@@ -65,10 +65,8 @@ export function getTDDAggregationRequest(
   if (!timeRange) return undefined;
 
   const comparisonTimeRange = mapComparisonTimeRange(
-    dashboardState,
     timeControlState,
     timeRange,
-    false,
   );
 
   const measures: V1MetricsViewAggregationMeasure[] = [
