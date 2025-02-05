@@ -7,13 +7,13 @@ title: rill env pull
 Pull cloud credentials into local .env file
 
 ```
-rill env pull [flags]
+rill env pull [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --environment string   Optional environment to resolve for (options: dev, prod)
+      --environment string   Environment to resolve for (options: dev, prod) (default "dev")
       --path string          Project directory (default ".")
       --project string       Cloud project name (will attempt to infer from Git remote if not provided)
 ```
@@ -25,6 +25,7 @@ rill env pull [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO
