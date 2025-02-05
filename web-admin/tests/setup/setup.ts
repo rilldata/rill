@@ -2,9 +2,9 @@ import { chromium, expect } from "@playwright/test";
 import axios from "axios";
 import { spawn } from "child_process";
 import dotenv from "dotenv";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { writeFileEnsuringDir } from "../utils/fs";
 import { execAsync, spawnAndMatch } from "../utils/spawn";
 import type { StorageState } from "../utils/storage-state";
 import { test as setup } from "./base";
@@ -66,7 +66,7 @@ setup(
     );
     // Write the pid to a file, so I can kill it later
     if (child.pid) {
-      fs.writeFileSync(
+      writeFileEnsuringDir(
         RILL_DEVTOOL_BACKGROUND_PROCESS_PID_FILE,
         child.pid.toString(),
       );
