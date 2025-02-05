@@ -229,7 +229,6 @@ export class CanvasResolvedSpec {
     return derived(
       [componentName, this.components],
       ([componentName, components]) => {
-        console.log(componentName, components);
         if (!componentName) return undefined;
         return components[componentName];
       },
