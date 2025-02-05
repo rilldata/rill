@@ -214,7 +214,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	unsupportedCols := make(map[string]string)
 	var schemaFields []*runtimev1.StructType_Field
 	for _, field := range schemaResponse.DateTimeFieldSpecs {
-		if field.DataType == "TIMESTAMP" {
+		if field.DataType != "TIMESTAMP" {
 			unsupportedCols[field.Name] = field.DataType + "_(DATE_TIME_FIELD)"
 			continue
 		}
