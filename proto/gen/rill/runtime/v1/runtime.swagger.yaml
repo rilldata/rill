@@ -5319,8 +5319,6 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
-      trigger:
-        type: boolean
   v1MetricsViewState:
     type: object
     properties:

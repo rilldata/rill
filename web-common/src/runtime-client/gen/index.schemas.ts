@@ -1394,7 +1394,6 @@ Deprecated: Now defined in the Explore resource. */
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
-  trigger?: boolean;
 }
 
 export interface V1MetricsViewState {

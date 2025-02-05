@@ -286,7 +286,6 @@ message MetricsViewSpec {
   optional bool cache_enabled = 25;
   string cache_key_sql = 26;
   int64 cache_key_ttl_seconds = 27;
-  bool trigger = 28;
 }
 
 message SecurityRule {
