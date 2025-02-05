@@ -284,3 +284,32 @@ export function compareLeaderboardValues(selected: string, value: any) {
       return selected === value;
   }
 }
+
+// uri template or "true" string literal or undefined
+export function makeHref(
+  uriTemplateOrBoolean: string | boolean | null,
+  dimensionValue: string,
+) {
+  if (!uriTemplateOrBoolean) {
+    return undefined;
+  }
+
+  // temporary fix where uriTemplateOrBoolean is coming in as 0/1 instead of false/true
+  if (typeof uriTemplateOrBoolean === "number") {
+    uriTemplateOrBoolean = Boolean(uriTemplateOrBoolean);
+  }
+
+  // TODO: what should the value be if uriTemplateOrBoolean=false?
+  let uri = dimensionValue;
+  if (typeof uriTemplateOrBoolean === "string") {
+    uri = uriTemplateOrBoolean.replace(/\s/g, "");
+  }
+
+  const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
+
+  if (!hasProtocol) {
+    return "https://" + uri;
+  } else {
+    return uri;
+  }
+}
