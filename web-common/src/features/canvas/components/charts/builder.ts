@@ -108,7 +108,7 @@ export function createOpacityEncoding(paramName: string) {
       { param: paramName, empty: false, value: 1 },
       {
         test: `length(data('${paramName}_store')) == 0`,
-        value: 0.7,
+        value: 0.8,
       },
     ],
     value: 0.2,
