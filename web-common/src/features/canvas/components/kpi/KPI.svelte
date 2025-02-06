@@ -27,7 +27,10 @@
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
   const ctx = getCanvasStateManagers();
-  const { spec } = ctx.canvasEntity;
+  const {
+    spec,
+    timeControls: { showTimeComparison },
+  } = ctx.canvasEntity;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -51,9 +54,9 @@
     kpiProperties,
     $schema.isValid,
   );
+  $: showComparison = $showTimeComparison || comparisonTimeRange;
 
   $: sparkline = useKPISparkline(ctx, kpiProperties, $schema.isValid);
-
   $: sparkData = $sparkline?.data || [];
   $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
@@ -84,7 +87,10 @@
 
   $: sparklineHeight =
     containerHeight -
-    (comparisonValue && $comparisonValue?.data === undefined ? 80 : 100);
+    (!showComparison ||
+    (comparisonValue && $comparisonValue?.data === undefined)
+      ? 80
+      : 104);
 
   function getFormattedDiff(comparisonValue) {
     if (!$measureValue.data) return "";
@@ -102,53 +108,45 @@
     >
       <div class="measure-label">{$measure?.displayName || measureName}</div>
       <div class="measure-value">{measureValueFormatted}</div>
-      <div class="flex items-center">
-        {#if $comparisonValue.data}
-          <div class="flex items-baseline gap-x-3 text-sm">
-            <div
-              role="complementary"
-              class="w-fit max-w-full overflow-hidden text-ellipsis text-gray-500"
-              class:font-semibold={$measureValue.data &&
-                $measureValue.data >= 0}
-            >
-              {#if $comparisonValue.data != null}
-                {getFormattedDiff($comparisonValue.data)}
-              {:else}
-                <span
-                  class="ui-copy-disabled-faint italic"
-                  style:font-size=".9em">no change</span
-                >
-              {/if}
-            </div>
-            {#if comparisonPercChange != null && !measureIsPercentage}
-              <div
-                role="complementary"
-                class="w-fit font-semibold ui-copy-inactive"
-                class:text-red-500={$measureValue.data &&
-                  $measureValue.data < 0}
+      {#if showComparison && $comparisonValue.data}
+        <div class="flex items-baseline gap-x-3 text-sm">
+          <div
+            role="complementary"
+            class="w-fit max-w-full overflow-hidden text-ellipsis text-gray-500"
+            class:font-semibold={$measureValue.data && $measureValue.data >= 0}
+          >
+            {#if $comparisonValue.data != null}
+              {getFormattedDiff($comparisonValue.data)}
+            {:else}
+              <span class="ui-copy-disabled-faint italic" style:font-size=".9em"
+                >no change</span
               >
-                <PercentageChange
-                  color="text-gray-500"
-                  showPosSign
-                  tabularNumber={false}
-                  value={formatMeasurePercentageDifference(
-                    comparisonPercChange,
-                  )}
-                />
-              </div>
-            {/if}
-            {#if comparisonTimeRange}
-              <span class="comparison-range">
-                vs last {humaniseISODuration(
-                  comparisonTimeRange?.toUpperCase(),
-                  false,
-                )}
-              </span>
             {/if}
           </div>
-        {/if}
-      </div>
-
+          {#if comparisonPercChange != null && !measureIsPercentage}
+            <div
+              role="complementary"
+              class="w-fit font-semibold ui-copy-inactive"
+              class:text-red-500={$measureValue.data && $measureValue.data < 0}
+            >
+              <PercentageChange
+                color="text-gray-500"
+                showPosSign
+                tabularNumber={false}
+                value={formatMeasurePercentageDifference(comparisonPercChange)}
+              />
+            </div>
+          {/if}
+          {#if comparisonTimeRange}
+            <span class="comparison-range">
+              vs last {humaniseISODuration(
+                comparisonTimeRange?.toUpperCase(),
+                false,
+              )}
+            </span>
+          {/if}
+        </div>
+      {/if}
       {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
         <SimpleDataGraphic
           height={sparklineHeight}

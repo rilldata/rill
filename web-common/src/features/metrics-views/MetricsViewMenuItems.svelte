@@ -28,7 +28,7 @@
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
-  const { customDashboards, ai } = featureFlags;
+  const { canvasDashboards, ai } = featureFlags;
 
   $: ({ instanceId } = $runtime);
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
@@ -77,7 +77,7 @@
     Generate dashboard
   </NavigationMenuItem>
 {/if}
-{#if $customDashboards}
+{#if $canvasDashboards}
   <NavigationMenuItem
     on:click={() => {
       dispatch("generate-chart", {

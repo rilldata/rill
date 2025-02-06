@@ -72,6 +72,8 @@
 
   $: type = secret && !showPassword ? "password" : inputType;
 
+  $: hasValue = inputType === "number" ? !!value || value === 0 : !!value;
+
   onMount(() => {
     if (claimFocusOnMount) {
       if (inputElement) {
@@ -228,7 +230,7 @@
     />
   {/if}
 
-  {#if errors && (alwaysShowError || (!focus && value))}
+  {#if errors && (alwaysShowError || (!focus && hasValue))}
     {#if typeof errors === "string"}
       <div in:slide={{ duration: 200 }} class="error">
         {errors}

@@ -44,7 +44,7 @@
   const createFolder = createRuntimeServiceCreateDirectory();
 
   $: ({ instanceId } = $runtime);
-  const { customDashboards } = featureFlags;
+  const { canvasDashboards } = featureFlags;
 
   $: currentFile = $page.params.file;
   $: currentDirectory = currentFile
@@ -231,7 +231,7 @@
         />
         Explore dashboard
       </DropdownMenu.Item>
-      {#if $customDashboards}
+      {#if $canvasDashboards}
         <DropdownMenu.Item
           class="flex items-center justify-between gap-x-2"
           on:click={async () => {

@@ -3,6 +3,7 @@ import type {
   ChartConfig,
   TooltipValue,
 } from "@rilldata/web-common/features/canvas/components/charts/types";
+import { sanitizeValueForVega } from "@rilldata/web-common/features/templates/charts/utils";
 import type { VisualizationSpec } from "svelte-vega";
 import type {
   ColorDef,
@@ -10,6 +11,7 @@ import type {
   PositionDef,
 } from "vega-lite/build/src/channeldef";
 import type { Encoding } from "vega-lite/build/src/encoding";
+import type { TopLevelParameter } from "vega-lite/build/src/spec/toplevel";
 import type { TopLevelUnitSpec } from "vega-lite/build/src/spec/unit";
 
 export function createMultiLayerBaseSpec() {
@@ -43,7 +45,7 @@ export function createXEncoding(
   if (!config.x) return {};
   const metaData = data.fields[config.x.field];
   return {
-    field: config.x.field,
+    field: sanitizeValueForVega(config.x.field),
     title: metaData?.displayName || config.x.field,
     type: config.x.type,
     ...(metaData && "timeUnit" in metaData && { timeUnit: metaData.timeUnit }),
@@ -64,7 +66,7 @@ export function createYEncoding(
   if (!config.y) return {};
   const metaData = data.fields[config.y.field];
   return {
-    field: config.y.field,
+    field: sanitizeValueForVega(config.y.field),
     title: metaData?.displayName || config.y.field,
     type: config.y.type,
     axis: {
@@ -87,7 +89,7 @@ export function createColorEncoding(
     const metaData = data.fields[config.color.field];
 
     return {
-      field: config.color.field,
+      field: sanitizeValueForVega(config.color.field),
       title: metaData?.displayName || config.color.field,
       type: config.color.type,
       ...(metaData &&
@@ -100,6 +102,33 @@ export function createColorEncoding(
   return {};
 }
 
+export function createOpacityEncoding(paramName: string) {
+  return {
+    condition: [
+      { param: paramName, empty: false, value: 1 },
+      {
+        test: `length(data('${paramName}_store')) == 0`,
+        value: 0.7,
+      },
+    ],
+    value: 0.2,
+  };
+}
+
+export function createLegendParam(
+  paramName: string,
+  field: string,
+): TopLevelParameter {
+  return {
+    name: paramName,
+    select: {
+      type: "point",
+      fields: [sanitizeValueForVega(field)],
+    },
+    bind: "legend",
+  };
+}
+
 export function createDefaultTooltipEncoding(
   config: ChartConfig,
   data: ChartDataResult,
@@ -108,7 +137,7 @@ export function createDefaultTooltipEncoding(
 
   if (config.x) {
     tooltip.push({
-      field: config.x.field,
+      field: sanitizeValueForVega(config.x.field),
       title: data.fields[config.x.field]?.displayName || config.x.field,
       type: config.x.type,
       ...(config.x.type === "quantitative" && {
@@ -119,7 +148,7 @@ export function createDefaultTooltipEncoding(
   }
   if (config.y) {
     tooltip.push({
-      field: config.y.field,
+      field: sanitizeValueForVega(config.y.field),
       title: data.fields[config.y.field]?.displayName || config.y.field,
       type: config.y.type,
       ...(config.y.type === "quantitative" && {
@@ -130,7 +159,7 @@ export function createDefaultTooltipEncoding(
   }
   if (typeof config.color === "object" && config.color.field) {
     tooltip.push({
-      field: config.color.field,
+      field: sanitizeValueForVega(config.color.field),
       title: data.fields[config.color.field]?.displayName || config.color.field,
       type: config.color.type,
     });

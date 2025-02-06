@@ -23,7 +23,7 @@
   $: timeDimension = getTimeDimensionForMetricView(metricsView);
 
   function updateFieldConfig(fieldName: string) {
-    const isTime = fieldName === "__time";
+    const isTime = $timeDimension && fieldName === $timeDimension;
 
     let updatedConfig: FieldConfig;
     if (isTime && $timeDimension) {

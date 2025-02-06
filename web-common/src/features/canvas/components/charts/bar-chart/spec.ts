@@ -1,6 +1,11 @@
 import type { ChartConfig } from "@rilldata/web-common/features/canvas/components/charts/types";
 import type { VisualizationSpec } from "svelte-vega";
-import { createEncoding, createSingleLayerBaseSpec } from "../builder";
+import {
+  createEncoding,
+  createLegendParam,
+  createOpacityEncoding,
+  createSingleLayerBaseSpec,
+} from "../builder";
 import type { ChartDataResult } from "../selector";
 
 export function generateVLBarChartSpec(
@@ -11,12 +16,15 @@ export function generateVLBarChartSpec(
   const baseEncoding = createEncoding(config, data);
 
   if (config.color && typeof config.color === "object" && config.x) {
+    baseEncoding.opacity = createOpacityEncoding("legend");
+    spec.params = [createLegendParam("legend", config.color.field)];
+
     baseEncoding.xOffset = {
       field: config.color.field,
       title: data.fields[config.color.field]?.displayName || config.color.field,
     };
   }
-
   spec.encoding = baseEncoding;
+
   return spec;
 }

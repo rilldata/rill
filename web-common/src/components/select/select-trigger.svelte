@@ -7,6 +7,7 @@
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   type $$Props = SelectPrimitive.TriggerProps & {
+    disabled?: boolean;
     lockable?: boolean;
     lockTooltip?: string;
     // See: https://www.bits-ui.com/docs/components/select#selecttrigger
@@ -18,6 +19,7 @@
   let className: $$Props["class"] = undefined;
 
   export let el: HTMLButtonElement | undefined = undefined;
+  export let disabled = false;
   export let lockable = false;
   export let lockTooltip = "";
   export { className as class };
@@ -27,7 +29,7 @@
 
 <SelectPrimitive.Trigger
   bind:el
-  disabled={locked}
+  disabled={locked || disabled}
   class={cn(
     "flex h-8 w-full items-center relative justify-between rounded-[2px] border border-gray-300 bg-transparent px-2 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 [&>span]:line-clamp-1",
     className,
