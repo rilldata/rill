@@ -125,7 +125,7 @@
 
     try {
       const response = await fetch(
-        `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
+        `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}&fields=email`,
         {
           method: "GET",
           headers: {
@@ -150,7 +150,7 @@
     } catch (error) {
       console.error("Error checking user existence:", error);
       errorText = "Unable to verify user existence. Please try again.";
-      step = AuthStep.Base; // Reset to allow retry
+      step = AuthStep.Base;
     }
   }
 
@@ -161,8 +161,8 @@
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
 
     step = AuthStep.Loading;
-    headingText = getHeadingText(step, isExistingUser, email); // Temporary loading heading
-    subheadingText = getSubheadingText(step, email); // No subheading during loading
+    headingText = getHeadingText(step, isExistingUser, email);
+    subheadingText = getSubheadingText(step, email);
 
     if (connectionName) {
       authorizeSSO(email, connectionName);
@@ -198,8 +198,6 @@
           : `Sign up with <span class="font-medium">${email}</span>`;
       case AuthStep.Loading:
         return "Checking...";
-      // case AuthStep.Thanks:
-      //   return "Thanks for signing up!";
       default:
         return "";
     }
