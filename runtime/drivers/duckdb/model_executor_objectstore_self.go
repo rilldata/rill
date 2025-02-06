@@ -16,7 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
-var errObjectStoreUsesNativeCreds = errors.New("Uses native credentials")
+var errGCSUsesNativeCreds = errors.New("GCS uses native credentials")
 
 type objectStoreInputProps struct {
 	Path   string             `mapstructure:"path"`
@@ -49,7 +49,7 @@ func (e *objectStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.M
 	clone := *opts
 	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, opts.InputProperties)
 	if err != nil {
-		if errors.Is(err, errObjectStoreUsesNativeCreds) {
+		if errors.Is(err, errGCSUsesNativeCreds) {
 			e := &objectStoreToSelfExecutorNonNative{c: e.c}
 			return e.Execute(ctx, opts)
 		}
@@ -124,7 +124,7 @@ func (e *objectStoreToSelfExecutor) modelInputProperties(model, inputConnector s
 		}
 		// If no credentials are provided we assume that the user wants to use the native credentials
 		if gcsConfig.SecretJSON != "" || (gcsConfig.KeyID == "" && gcsConfig.Secret == "" && gcsConfig.SecretJSON == "") {
-			return nil, errObjectStoreUsesNativeCreds
+			return nil, errGCSUsesNativeCreds
 		}
 		var sb strings.Builder
 		sb.WriteString("CREATE OR REPLACE TEMPORARY SECRET ")
