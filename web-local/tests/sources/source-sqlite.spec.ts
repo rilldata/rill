@@ -14,12 +14,12 @@ export const DataPath = path.join(__dirname, "../data");
 
 let db;
 
-async function readCSV(filePath) {
-  const rows = [];
+async function readCSV<T = any>(filePath: string): Promise<T[]> {
+  const rows: T[] = []; // Explicitly type the array
   return new Promise((resolve, reject) => {
     fs.createReadStream(filePath)
       .pipe(csv())
-      .on("data", (row) => {
+      .on("data", (row: T) => {
         rows.push(row);
       })
       .on("end", () => {

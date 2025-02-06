@@ -49,7 +49,7 @@ test.describe("Read DuckDB Table, then read into Rill", () => {
     ];
     console.log(`Running DuckDB commands against: ${dbPath}`);
 
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const cli = spawn("duckdb", [], { shell: true });
 
       let output = "";
