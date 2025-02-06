@@ -79,7 +79,7 @@
   // Display a dashboard banner
   $: if ($explore.data?.explore?.explore?.state?.validSpec?.banner) {
     eventBus.emit("banner", {
-      type: "warning",
+      type: "default",
       message: $explore.data?.explore?.explore?.state?.validSpec?.banner,
       iconType: "alert",
     });
