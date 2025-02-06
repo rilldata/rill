@@ -27,7 +27,8 @@ var (
 		{"TimeZone", `{.+?}`},
 		{"AbsoluteTime", `\d{4}-\d{2}-\d{2} \d{2}:\d{2}`},
 		{"AbsoluteDate", `\d{4}-\d{2}-\d{2}`},
-		{"Number", `[-+]?\d+`},
+		{"Sign", `[+-]`},
+		{"Number", `\d+`},
 		// needed for misc. direct character references used
 		{"Punct", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
 		{"Whitespace", `[ \t\n\r]+`},
@@ -105,8 +106,9 @@ type Modifiers struct {
 }
 
 type Grain struct {
-	Num   *int   `parser:"@Number?"`
-	Grain string `parser:"@Grain"`
+	Sign  *string `parser:"@Sign?"`
+	Num   *int    `parser:"@Number?"`
+	Grain string  `parser:"@Grain"`
 }
 
 type AtModifiers struct {
@@ -383,6 +385,10 @@ func (g *Grain) offset(tm time.Time) time.Time {
 	n := 0
 	if g.Num != nil {
 		n = *g.Num
+
+		if g.Sign != nil && *g.Sign == "-" {
+			n = -n
+		}
 	}
 
 	switch g.Grain {
