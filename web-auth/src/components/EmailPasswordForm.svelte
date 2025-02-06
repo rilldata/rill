@@ -7,6 +7,7 @@
   import { WebAuth } from "auth0-js";
   import { DATABASE_CONNECTION } from "../constants";
   import type { Auth0Error } from "auth0-js";
+  import { AuthStep } from "../types";
 
   const dispatch = createEventDispatcher();
 
@@ -14,6 +15,7 @@
   export let email = "";
   export let isDomainDisabled = false;
   export let webAuth: WebAuth;
+  export let step: AuthStep;
 
   let showForgetPassword = false;
   let password = "";
@@ -94,42 +96,39 @@
     showForgetPassword = false;
 
     try {
-      // Attempt to sign up and login the user
-      webAuth.redirect.signupAndLogin(
-        {
-          connection: DATABASE_CONNECTION,
-          email: email,
-          password: password,
-        },
-        (err) => {
-          if (err) {
-            // Check if the error is about user already existing
-            if (err.description && err.description.includes("User exists.")) {
-              // If user exists, try logging them in
-              webAuth.login(
-                {
-                  realm: DATABASE_CONNECTION,
-                  username: email,
-                  password: password,
-                },
-                (loginErr) => {
-                  if (loginErr) {
-                    displayError({ message: loginErr?.description });
-                    showForgetPassword = true;
-                  } else {
-                    disabled = false;
-                  }
-                },
-              );
+      if (step === AuthStep.Login) {
+        webAuth.login(
+          {
+            realm: DATABASE_CONNECTION,
+            username: email,
+            password: password,
+          },
+          (loginErr) => {
+            if (loginErr) {
+              displayError({ message: loginErr?.description });
+              showForgetPassword = true;
             } else {
+              disabled = false;
+            }
+          },
+        );
+      } else {
+        webAuth.redirect.signupAndLogin(
+          {
+            connection: DATABASE_CONNECTION,
+            email: email,
+            password: password,
+          },
+          (err) => {
+            if (err) {
               handleAuthError(err);
               showForgetPassword = true;
+            } else {
+              disabled = false;
             }
-          } else {
-            disabled = false;
-          }
-        },
-      );
+          },
+        );
+      }
     } catch (err) {
       handleAuthError(err);
       showForgetPassword = true;

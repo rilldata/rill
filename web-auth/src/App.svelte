@@ -5,6 +5,8 @@
   const cloudClientIDs = import.meta.env.VITE_RILL_CLOUD_AUTH0_CLIENT_IDS;
   const disableForgotPassDomains = import.meta.env
     .VITE_DISABLE_FORGOT_PASS_DOMAINS;
+  const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN;
+  const auth0BearerToken = import.meta.env.VITE_AUTH0_BEARER_TOKEN;
 
   // This gets populated by Auth0 runtime
   const configParams = "@@config@@";
@@ -33,5 +35,7 @@
     {cloudClientIDs}
     {disableForgotPassDomains}
     {connectionMap}
+    {auth0Domain}
+    {auth0BearerToken}
   />
 </main>

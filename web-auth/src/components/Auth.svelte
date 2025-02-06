@@ -19,19 +19,25 @@
   export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
+  export let auth0Domain = "";
+  export let auth0BearerToken = "";
 
   const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
+  const AUTH0_DOMAIN = auth0Domain;
+  const AUTH0_MANAGEMENT_API_TOKEN = auth0BearerToken;
+
   let email = "";
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
+  let isExistingUser = false;
 
   $: errorText = "";
   $: isAllowedClient = false;
   $: domainDisabled = isDomainDisabled(email);
-  $: headingText = getHeadingText(step);
+  $: headingText = getHeadingText(step, isExistingUser, email);
   $: subheadingText = getSubheadingText(step, email);
 
   function isDomainDisabled(email: string): boolean {
@@ -50,6 +56,8 @@
       );
       errorText = "Authentication is not configured in development mode";
       isAllowedClient = true;
+
+      step = AuthStep.Base;
       return;
     }
   }
@@ -109,26 +117,87 @@
     });
   }
 
+  async function checkUserExists(email: string) {
+    if (import.meta.env.DEV) {
+      errorText = "User existence check is not available in development mode";
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${AUTH0_MANAGEMENT_API_TOKEN}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to check user existence: ${response.statusText}`,
+        );
+      }
+
+      const users = await response.json();
+      isExistingUser = users.length > 0;
+
+      console.log("User existence check:", { isExistingUser });
+
+      step = isExistingUser ? AuthStep.Login : AuthStep.SignUp;
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      errorText = "Unable to verify user existence. Please try again.";
+      step = AuthStep.Base; // Reset to allow retry
+    }
+  }
+
   async function processEmailSubmission(event) {
     errorText = "";
+    isExistingUser = false;
     email = event.detail.email;
     const connectionName = getConnectionFromEmail(email, connectionMapObj);
+
+    step = AuthStep.Loading;
+    headingText = getHeadingText(step, isExistingUser, email); // Temporary loading heading
+    subheadingText = getSubheadingText(step, email); // No subheading during loading
 
     if (connectionName) {
       authorizeSSO(email, connectionName);
     } else {
-      step = AuthStep.SignUp;
+      await checkUserExists(email);
+
+      console.log("after checking: ", email, isExistingUser);
+
+      if (isExistingUser) {
+        step = AuthStep.Login;
+      } else {
+        step = AuthStep.SignUp;
+      }
+
+      headingText = getHeadingText(step, isExistingUser, email);
+      subheadingText = getSubheadingText(step, email);
     }
   }
 
-  function getHeadingText(step: AuthStep): string {
+  function getHeadingText(
+    step: AuthStep,
+    isExisting: boolean,
+    email: string,
+  ): string {
     switch (step) {
       case AuthStep.Base:
-        return "Log in or sign up";
+        return "Continue to Rill";
       case AuthStep.Login:
         return "Log in with email";
       case AuthStep.SignUp:
-        return `Log in or sign up with <span class="font-medium">${email}</span>`;
+        return isExisting
+          ? `Welcome back to Rill`
+          : `Sign up with <span class="font-medium">${email}</span>`;
+      case AuthStep.Loading:
+        return "Checking...";
       case AuthStep.Thanks:
         return "Thanks for signing up!";
       default:
@@ -140,6 +209,8 @@
     switch (step) {
       case AuthStep.Login:
         return `Log in using <span class="font-medium">${email}</span>`;
+      case AuthStep.Loading:
+        return "";
       default:
         return "";
     }
@@ -148,6 +219,7 @@
   function backToBaseStep() {
     step = AuthStep.Base;
     errorText = "";
+    isExistingUser = false;
   }
 
   onMount(() => {
@@ -208,6 +280,7 @@
     {#if step === AuthStep.Login || step === AuthStep.SignUp}
       <EmailPasswordForm
         {email}
+        {step}
         isDomainDisabled={domainDisabled}
         {webAuth}
         on:back={backToBaseStep}
