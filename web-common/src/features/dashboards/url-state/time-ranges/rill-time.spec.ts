@@ -158,6 +158,12 @@ describe("rill time", () => {
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
       ],
       [
+        "-7W + 2d",
+        "-7W + 2d",
+        V1TimeGrain.TIME_GRAIN_DAY,
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      ],
+      [
         "2024-01-01-1W,2024-01-01",
         "2024-01-01-1W,2024-01-01",
         V1TimeGrain.TIME_GRAIN_WEEK,

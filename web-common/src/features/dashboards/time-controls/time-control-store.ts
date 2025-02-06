@@ -372,6 +372,13 @@ export function getTimeRange(
         end: selectedTimeRange.end,
         interval: selectedTimeRange.interval,
       };
+    } else {
+      timeRange = isoDurationToFullTimeRange(
+        selectedTimeRange?.name,
+        allTimeRange.start,
+        allTimeRange.end,
+        selectedTimezone,
+      );
     }
   } else {
     /** set the time range to the fixed custom time range */
