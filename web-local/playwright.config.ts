@@ -9,7 +9,7 @@ export default defineConfig({
     "**/source-duckdb.spec.ts",
     "**/source-mysql.spec.ts",
     "**/clickhouse/olap-clickhouse-cloud.spec.ts",
-    "**/clickhouse/olap-managed-clickhouse.spec.ts",=
+    "**/clickhouse/olap-managed-clickhouse.spec.ts",
   ],
   // testMatch: "",
   /* Don't run tests in files in parallel in CI*/
