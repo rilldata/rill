@@ -1,12 +1,12 @@
 @preprocessor esmodule
 @builtin "whitespace.ne"
-@builtin "number.ne"
 @builtin "string.ne"
 
 @{%
   import {
     RillTimeAnchor,
     RillTime,
+    newSignedRillTimeGrain,
   } from "./RillTime.ts"
 %}
 
@@ -39,12 +39,18 @@ at_modifiers => time_anchor_offset                     {% ([grain]) => ({ at: gr
               | timezone_modifier                      {% ([timeZone]) => ({ timeZone }) %}
               | time_anchor_offset _ timezone_modifier {% ([grain, , timeZone]) => ({ at: grain, timeZone }) %}
 
-grain_modifier => grain     {% ([grain]) => ({ count: 0, grain }) %}
-                | int grain {% ([count, grain]) => ({ count, grain }) %}
+grain_modifier => grain            {% ([grain]) => ({ count: 0, grain }) %}
+                | sign _ grain     {% ([sign, , grain]) => newSignedRillTimeGrain(grain, sign, 0) %}
+                | num grain        {% ([count, grain]) => ({ count, grain }) %}
+                | sign _ num grain {% ([sign, , count, grain]) => newSignedRillTimeGrain(grain, sign, count) %}
 
 abs_time => [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] _ [\d] [\d] [:] [\d] [\d] {% (args) => args.join("") %}
           | [\d] [\d] [\d] [\d] [\-] [\d] [\d] [\-] [\d] [\d] {% (args) => args.join("") %}
 
 timezone_modifier => "{" _ [^}]:+ _ "}" {% ([, , tz]) => tz.join("") %}
+
+sign => [+-] {% id %}
+
+num => [0-9]:+ {% (args) => Number(args.join("")) %}
 
 grain => [sSmhHdDwWqQMyY] {% id %}
