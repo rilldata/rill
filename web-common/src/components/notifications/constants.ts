@@ -1,0 +1,1 @@
+export const NOTIFICATION_TIMEOUT = 3_500;

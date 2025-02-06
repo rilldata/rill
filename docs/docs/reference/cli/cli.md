@@ -5,7 +5,11 @@ sidebar_position: 15
 ---
 ## rill
 
-Rill CLI
+A CLI for Rill
+
+### Synopsis
+
+Work with Rill projects directly from the command line.
 
 ### Flags
 

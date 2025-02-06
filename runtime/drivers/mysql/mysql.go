@@ -42,7 +42,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DocsURL:     "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
-			Hint:        "Either set this or pass --env connector.mysql.dsn=... to rill start",
+			Hint:        "Can be configured here or by setting the 'connector.mysql.dsn' environment variable (using '.env' or '--env')",
 		},
 		{
 			Key:         "name",
@@ -57,6 +57,10 @@ var spec = drivers.Spec{
 }
 
 type driver struct{}
+
+type ConfigProperties struct {
+	DSN string `mapstructure:"dsn"`
+}
 
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {

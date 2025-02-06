@@ -84,7 +84,9 @@ func SetDefaultOrg(ctx context.Context, ch *cmdutil.Helper) error {
 		return err
 	}
 
-	res, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	res, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{
+		PageSize: 1000,
+	})
 	if err != nil {
 		return fmt.Errorf("listing orgs failed: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 )
 
 func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
+	internalGroupID := ""
 	devtoolCmd := &cobra.Command{
 		Use:   "devtool",
 		Short: "Utilities for developing Rill",
@@ -18,7 +19,8 @@ func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
   rill devtool start local --reset
   rill devtool switch-env stage
   rill devtool dotenv upload cloud`,
-		Hidden: true,
+		Hidden:  true,
+		GroupID: internalGroupID,
 	}
 
 	devtoolCmd.AddCommand(StartCmd(ch))

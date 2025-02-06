@@ -83,9 +83,15 @@ type InstanceConfig struct {
 	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
+	// ModelConcurrentExecutionLimit sets the maximum number of concurrent model executions.
+	ModelConcurrentExecutionLimit uint32 `mapstructure:"rill.models.concurrent_execution_limit"`
 	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
 	// Approximated comparison queries are faster but may not return comparison data points for all values.
 	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
+	// MetricsApproximateComparisonsCTE indicates whether to rewrite metrics comparison queries to use a CTE for base query.
+	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
+	// MetricsApproxComparisonTwoPhaseLimit if query limit is less than this then rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
+	MetricsApproxComparisonTwoPhaseLimit int64 `mapstructure:"rill.metrics.approximate_comparisons_two_phase_limit"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
@@ -130,14 +136,17 @@ func (i *Instance) ResolveVariables(withLowerKeys bool) map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		DownloadLimitBytes:                int64(datasize.MB * 128),
-		InteractiveSQLRowLimit:            10_000,
-		StageChanges:                      true,
-		ModelDefaultMaterialize:           false,
-		ModelMaterializeDelaySeconds:      0,
-		MetricsApproximateComparisons:     true,
-		MetricsExactifyDruidTopN:          false,
-		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
+		DownloadLimitBytes:                   int64(datasize.MB * 128),
+		InteractiveSQLRowLimit:               10_000,
+		StageChanges:                         true,
+		ModelDefaultMaterialize:              false,
+		ModelMaterializeDelaySeconds:         0,
+		ModelConcurrentExecutionLimit:        1,
+		MetricsApproximateComparisons:        true,
+		MetricsApproximateComparisonsCTE:     false,
+		MetricsApproxComparisonTwoPhaseLimit: 250,
+		MetricsExactifyDruidTopN:             false,
+		AlertsDefaultStreamingRefreshCron:    "*/10 * * * *", // Every 10 minutes
 	}
 
 	// Resolve variables

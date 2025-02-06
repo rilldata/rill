@@ -30,12 +30,19 @@
       `flex h-full w-full items-center justify-center overflow-hidden rounded-full border`,
       {
         "border-dashed bg-transparent border-slate-400": !src && !alt,
-        [`border-transparent ${bgColor}`]: !src && alt,
+        [`border-transparent ${bgColor}`]:
+          (!src && alt) || (loadingStatus === "error" && alt),
       },
     )}
   >
     {#if src}
       <Avatar.Image {src} {alt} />
+      {#if alt}
+        <!-- Show a fallback if the image fails to load -->
+        <Avatar.Fallback class={cn(fontSize, "text-white")}>
+          {getInitials(alt ?? "")}
+        </Avatar.Fallback>
+      {/if}
     {:else if alt}
       <Avatar.Fallback class={cn(fontSize, "text-white")}>
         {getInitials(alt)}

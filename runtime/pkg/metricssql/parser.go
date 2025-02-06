@@ -50,11 +50,13 @@ type query struct {
 	q *metricsview.Query
 
 	controller *runtime.Controller
+	claims     *runtime.SecurityClaims
 	instanceID string
 	priority   int
 
 	// fields available after parsing FROM clause
 	metricsViewSpec *runtimev1.MetricsViewSpec
+	executor        *metricsview.Executor
 	dims            map[string]any
 	measures        map[string]any
 }
@@ -82,6 +84,7 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	q := &query{
 		q:          &metricsview.Query{},
 		controller: c.controller,
+		claims:     c.claims,
 		instanceID: c.instanceID,
 		priority:   c.priority,
 	}
@@ -89,6 +92,9 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 	// parse from clause
 	if err := q.parseFrom(ctx, stmt.From); err != nil {
 		return nil, err
+	}
+	if q.executor != nil {
+		defer q.executor.Close()
 	}
 
 	// parse select fields
@@ -160,6 +166,17 @@ func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error 
 		return fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
 	q.metricsViewSpec = spec
+	security, err := q.controller.Runtime.ResolveSecurity(q.instanceID, q.claims, mv)
+	if err != nil {
+		return fmt.Errorf("metrics sql: failed to resolve security: %w", err)
+	}
+
+	ex, err := metricsview.NewExecutor(ctx, q.controller.Runtime, q.instanceID, q.metricsViewSpec, false, security, q.priority)
+	if err != nil {
+		return fmt.Errorf("metrics sql: failed to create executor: %w", err)
+	}
+	q.executor = ex
+
 	q.measures = make(map[string]any, len(spec.Measures))
 	for _, measure := range spec.Measures {
 		q.measures[measure.Name] = nil

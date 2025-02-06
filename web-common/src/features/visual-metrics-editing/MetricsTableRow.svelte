@@ -42,7 +42,7 @@
 
   $: ({ name, display_name, expression, description } = item);
 
-  $: id = name ?? display_name ?? "";
+  $: id = name || display_name || "";
 
   $: finalSelected = selected && !sidebarOpen;
 
@@ -61,6 +61,7 @@
   style:transform="translateY({translate}px)"
   class="relative text-sm"
   style:height="{rowHeight}px"
+  aria-label="{type.slice(0, -1)} {display_name || name}"
   class:editing
   class:dragging
   class:ghost
@@ -138,6 +139,8 @@
       class:selected={finalSelected}
     >
       <EditControls
+        itemType={type}
+        name={item.display_name || item.name}
         selected={finalSelected}
         first={i === 0}
         last={i === length - 1}
@@ -169,7 +172,7 @@
   }
 
   tr {
-    @apply bg-background;
+    @apply bg-surface;
   }
 
   .dragging {

@@ -50,6 +50,8 @@ type rillYAML struct {
 	DisplayName string `yaml:"display_name"`
 	// Title of the project
 	Title string `yaml:"title"` // Deprecated: use display_name
+	// Title of the project
+	Name string `yaml:"name"` // Deprecated: use display_name
 	// Description of the project
 	Description string `yaml:"description"`
 	// The project's default OLAP connector to use (can be overridden in the individual resources)
@@ -94,10 +96,11 @@ type rillYAML struct {
 	// A list of mock users to test against dashboard security policies.
 	// This is ignored in this parser because it's consumed directly by the local application.
 	MockUsers []struct {
-		Email  string   `yaml:"email"`
-		Name   string   `yaml:"name"`
-		Admin  bool     `yaml:"admin"`
-		Groups []string `yaml:"groups"`
+		Email      string         `yaml:"email"`
+		Name       string         `yaml:"name"`
+		Admin      bool           `yaml:"admin"`
+		Groups     []string       `yaml:"groups"`
+		Attributes map[string]any `yaml:",inline"`
 	} `yaml:"mock_users"`
 }
 
@@ -164,6 +167,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	// Display name backwards compatibility
 	if tmp.Title != "" && tmp.DisplayName == "" {
 		tmp.DisplayName = tmp.Title
+	}
+	if tmp.Name != "" && tmp.DisplayName == "" {
+		tmp.DisplayName = tmp.Name
 	}
 
 	// Parse environment variables from the "env:" (current) and "vars:" (deprecated) keys.

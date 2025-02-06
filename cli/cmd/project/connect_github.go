@@ -38,9 +38,12 @@ func GitPushCmd(ch *cmdutil.Helper) *cobra.Command {
 	opts := &DeployOpts{}
 
 	deployCmd := &cobra.Command{
-		Use:   "connect-github",
+		Use:   "connect-github [<path>]",
 		Short: "Deploy project to Rill Cloud by pulling project files from a git repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				opts.GitPath = args[0]
+			}
 			return ConnectGithubFlow(cmd.Context(), ch, opts)
 		},
 	}
@@ -91,13 +94,18 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 		}
 	}
 
-	// If the Git path is local, we'll do some extra steps to infer the githubURL.
-	localGitPath, localProjectPath, err := ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
-	if err != nil {
-		if errors.Is(err, ErrInvalidProject) {
-			return nil
+	var localGitPath string
+	var localProjectPath string
+	var err error
+	if isLocalGitPath {
+		// If the Git path is local, we'll do some extra steps to infer the githubURL.
+		localGitPath, localProjectPath, err = ValidateLocalProject(ch, opts.GitPath, opts.SubPath)
+		if err != nil {
+			if errors.Is(err, ErrInvalidProject) {
+				return nil
+			}
+			return err
 		}
-		return err
 	}
 
 	if ch.Org != "" {
@@ -259,9 +267,25 @@ func ConnectGithubFlow(ctx context.Context, ch *cmdutil.Helper, opts *DeployOpts
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
-	// If the Git path is local, we can parse the project and check if credentials are available for the connectors used by the project.
+	// Upload .env
 	if isLocalGitPath {
-		variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
+		vars, err := local.ParseDotenv(ctx, localProjectPath)
+		if err != nil {
+			ch.PrintfWarn("Failed to parse .env: %v\n", err)
+		} else if len(vars) > 0 {
+			c, err := ch.Client()
+			if err != nil {
+				return err
+			}
+			_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				Organization: ch.Org,
+				Project:      opts.Name,
+				Variables:    vars,
+			})
+			if err != nil {
+				ch.PrintfWarn("Failed to upload .env: %v\n", err)
+			}
+		}
 	}
 
 	// Open browser

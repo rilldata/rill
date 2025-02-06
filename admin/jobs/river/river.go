@@ -392,9 +392,11 @@ type ErrorHandler struct {
 }
 
 func (h *ErrorHandler) HandleError(ctx context.Context, job *rivertype.JobRow, err error) *river.ErrorHandlerResult {
-	var args string
-	_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
-	h.logger.Error("Job errored", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+	if job.Attempt >= job.MaxAttempts {
+		var args string
+		_ = json.Unmarshal(job.EncodedArgs, &args) // ignore parse errors
+		h.logger.Error("Job failed, max attempts reached", zap.Int64("job_id", job.ID), zap.Int("num_attempt", job.Attempt), zap.Int("max_attempts", job.MaxAttempts), zap.String("kind", job.Kind), zap.String("args", args), zap.Error(err))
+	}
 	return nil
 }
 

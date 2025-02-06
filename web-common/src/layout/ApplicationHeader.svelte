@@ -122,7 +122,7 @@
 
 <style lang="postcss">
   header {
-    @apply w-full bg-background box-border;
+    @apply w-full bg-surface box-border;
     @apply flex gap-x-2 items-center px-4 border-b flex-none;
     @apply h-11;
   }

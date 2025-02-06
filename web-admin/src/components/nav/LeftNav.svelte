@@ -8,7 +8,7 @@
     label: string;
     route: string;
   }[];
-  export let minWidth: string = "150px";
+  export let minWidth: string = "180px";
 </script>
 
 <div class="nav-items" style:min-width={minWidth}>

@@ -35,17 +35,22 @@
         toggleDimensionFilterMode,
       },
       measuresFilter: { setMeasureFilter, removeMeasureFilter },
-      filters: { clearAllFilters },
+      filters: { setTemporaryFilterName, clearAllFilters },
     },
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: {
+        dimensionHasFilter,
         getDimensionFilterItems,
         getAllDimensionFilterItems,
         isFilterExcludeMode,
       },
-      measures: { allMeasures },
-      measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
+      measures: { allMeasures, filteredSimpleMeasures },
+      measureFilters: {
+        getMeasureFilterItems,
+        getAllMeasureFilterItems,
+        measureHasFilter,
+      },
       pivot: { showPivot },
     },
     dashboardStore,
@@ -59,6 +64,9 @@
     showTimeComparison,
     selectedComparisonTimeRange,
     minTimeGrain,
+    timeStart,
+    timeEnd,
+    ready: timeControlsReady,
   } = $timeControlsStore);
 
   $: ({ instanceId } = $runtime);
@@ -148,10 +156,14 @@
           <div animate:flip={{ duration: 200 }}>
             {#if dimensionName}
               <DimensionFilter
+                metricsViewNames={[$metricsViewName]}
                 {readOnly}
                 {name}
                 {label}
                 {selectedValues}
+                {timeStart}
+                {timeEnd}
+                {timeControlsReady}
                 excludeMode={$isFilterExcludeMode(name)}
                 onRemove={() => removeDimensionFilter(name)}
                 onToggleFilterMode={() => toggleDimensionFilterMode(name)}
@@ -178,7 +190,13 @@
       {/if}
 
       {#if !readOnly}
-        <FilterButton />
+        <FilterButton
+          allDimensions={dimensions}
+          filteredSimpleMeasures={$filteredSimpleMeasures()}
+          dimensionHasFilter={$dimensionHasFilter}
+          measureHasFilter={$measureHasFilter}
+          {setTemporaryFilterName}
+        />
         <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
         {#if hasFilters}

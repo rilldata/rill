@@ -90,11 +90,13 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 		// hibernate projects
 		limit := 10
 		afterProjectName := ""
+		projectCount := 0
 		for {
 			projs, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
 			if err != nil {
 				return err
 			}
+			projectCount += len(projs)
 
 			for _, proj := range projs {
 				_, err = w.admin.HibernateProject(ctx, proj)
@@ -119,7 +121,12 @@ func (w *SubscriptionCancellationCheckWorker) subscriptionCancellationCheck(ctx 
 			w.logger.Error("failed to send subscription ended email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_email", org.BillingEmail), zap.Error(err))
 		}
 
-		w.logger.Warn("projects hibernated due to subscription cancellation", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
+		w.logger.Warn("projects hibernated due to subscription cancellation",
+			zap.String("org_id", org.ID),
+			zap.String("org_name", org.Name),
+			zap.Int("count_of_projects", projectCount),
+			zap.String("user_email", org.BillingEmail),
+		)
 
 		// mark the billing issue as processed
 		err = w.admin.DB.UpdateBillingIssueOverdueAsProcessed(ctx, issue.ID)

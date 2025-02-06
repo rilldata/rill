@@ -23,23 +23,31 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, na
 		return "", err
 	}
 
-	// generate a upload URL
-	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
-		OrganizationName: org,
-		Type:             "deploy",
-		Name:             name,
-		Extension:        "tar.gz",
-	})
-	if err != nil {
-		return "", err
-	}
-
 	rootPath, err := repo.Root(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get root path: %w", err)
 	}
 
-	err = archive.Create(ctx, entries, rootPath, asset.SignedUrl, asset.SigningHeaders)
+	b, err := archive.Create(ctx, entries, rootPath)
+	if err != nil {
+		return "", err
+	}
+
+	estimatedSizeBytes := int64(b.Len())
+
+	// generate a upload URL
+	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
+		OrganizationName:   org,
+		Type:               "deploy",
+		Name:               name,
+		Extension:          "tar.gz",
+		EstimatedSizeBytes: estimatedSizeBytes,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	err = archive.Upload(ctx, asset.SignedUrl, b, asset.SigningHeaders)
 	if err != nil {
 		return "", err
 	}

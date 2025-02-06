@@ -7,7 +7,7 @@ hide_table_of_contents: true
 
 # Welcome to Rill Tutorials!
 
-### Hi! We're excited to have you here!
+### Hey there! We're thrilled you've joined us on this Rill journey!
 
 These tutorials were built to help you get started with Rill and empower you to build your own projects. The journey from data import, SQL transformations, dashboard creation and finally deployment to Cloud. From there, looking at Rill Cloud specific features, pushing local changes to Rill Cloud, then finally developing custom features.
 
@@ -19,7 +19,7 @@ Here at Rill, we believe in business-speed visual analytics. Gone are the days o
 ---
 Follow along, refer to the in-line linked documentation, and explore to make the most out of these tutorials! Please reach out to ask any question or provide feedback on our Community Slack or Discord!
 
-- **5 steps to Rill Cloud:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
+- **6 steps to Rill Cloud:** Learn the basics and understand the core concepts of Rill and deploy to Cloud!
 - **Rill Cloud Features Explained:** Dive deeper into Rill Cloud and how the development cycles works!
 - **Rill's Advanced features:** Master advanced features and become an expert in Rill.
 - **Rill's Administrative features:** Deep dive into Rill as an administrator, tasks you will need to perform and how to do so.

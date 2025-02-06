@@ -6,6 +6,12 @@ title: rill env
 
 Manage variables for a project
 
+### Flags
+
+```
+      --org string   Organization Name
+```
+
 ### Global flags
 
 ```
@@ -17,7 +23,7 @@ Manage variables for a project
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - A CLI for Rill
 * [rill env configure](configure.md)	 - Configures connector variables for all sources
 * [rill env pull](pull.md)	 - Pull cloud credentials into local .env file
 * [rill env push](push.md)	 - Push local .env contents to cloud

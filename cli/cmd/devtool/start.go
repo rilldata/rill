@@ -30,7 +30,6 @@ import (
 const (
 	minGoVersion   = "1.23"
 	minNodeVersion = "18"
-	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
 	rillGithubURL  = "https://github.com/rilldata/rill"
 )
@@ -225,19 +224,6 @@ func (s *servicesCfg) parse() error {
 type cloud struct{}
 
 func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, preset string, services *servicesCfg) error {
-	if reset {
-		err := s.resetState(ctx)
-		if err != nil {
-			return fmt.Errorf("reset cloud deps: %w", err)
-		}
-		logInfo.Printf("Reset cloud dependencies\n")
-	}
-
-	err := os.MkdirAll(stateDirCloud, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create state dir %q: %w", stateDirCloud, err)
-	}
-
 	if refreshDotenv {
 		err := downloadDotenv(ctx, preset)
 		if err != nil {
@@ -247,7 +233,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	// Validate the .env file is well-formed.
-	err = checkDotenv()
+	err := checkDotenv()
 	if err != nil {
 		return err
 	}
@@ -256,7 +242,21 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		return fmt.Errorf("error parsing .env: %w", err)
 	}
 
+	if reset {
+		err := s.resetState(ctx)
+		if err != nil {
+			return fmt.Errorf("reset cloud deps: %w", err)
+		}
+		logInfo.Printf("Reset cloud dependencies\n")
+	}
+
 	g, ctx := errgroup.WithContext(ctx)
+
+	err = os.MkdirAll(stateDirectory(), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create state dir %q: %w", stateDirectory(), err)
+	}
+	logInfo.Printf("State directory is %q\n", stateDirectory())
 
 	if services.deps {
 		g.Go(func() error { return s.runDeps(ctx, verbose) })
@@ -384,13 +384,14 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 		}
 	}()
 
-	_ = os.RemoveAll(stateDirCloud)
-	return newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
+	_ = os.RemoveAll(stateDirectory())
+
+	return newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
 }
 
 func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	composeFile := "cli/cmd/devtool/data/cloud-deps.docker-compose.yml"
-	logInfo.Printf("Starting dependencies: docker compose -f %s up\n", composeFile)
+	logInfo.Printf("Starting dependencies: docker compose --env-file .env -f %s up\n", composeFile)
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	err := prepareStripeConfig()
@@ -398,7 +399,7 @@ func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 		return fmt.Errorf("failed to prepare stripe config: %w", err)
 	}
 
-	cmd := newCmd(ctx, "docker", "compose", "-f", composeFile, "up")
+	cmd := newCmd(ctx, "docker", "compose", "--env-file", ".env", "-f", composeFile, "up")
 	if verbose {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stdout
@@ -722,7 +723,7 @@ func (s local) awaitUI(ctx context.Context) error {
 
 func prepareStripeConfig() error {
 	templateFile := "cli/cmd/devtool/data/stripe-config.template"
-	outputFile := filepath.Join(stateDirCloud, "stripe-config.toml")
+	outputFile := filepath.Join(stateDirectory(), "stripe-config.toml")
 
 	apiKey := lookupDotenv("RILL_DEVTOOL_STRIPE_CLI_API_KEY")
 	if apiKey == "" {
@@ -781,4 +782,14 @@ func lookupDotenv(key string) string {
 		return ""
 	}
 	return env[key]
+}
+
+// stateDirectory returns the directory where the devtool's state is stored.
+// Deleting this directory will reset the state of the local development environment.
+func stateDirectory() string {
+	dir := lookupDotenv("RILL_DEVTOOL_STATE_DIRECTORY")
+	if dir == "" {
+		dir = "dev-cloud-state"
+	}
+	return dir
 }

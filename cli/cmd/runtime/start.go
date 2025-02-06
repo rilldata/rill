@@ -185,6 +185,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
 				activityClient = activity.NewClient(sink, logger)
+			case "console":
+				sink := activity.NewLoggerSink(logger, zapcore.InfoLevel)
+				activityClient = activity.NewClient(sink, logger)
 			default:
 				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}
@@ -200,9 +203,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// storage client
-			bucketConfig := map[string]interface{}{
-				"bucket":                              conf.DataBucket,
-				"google_application_credentials_json": conf.DataBucketCredentialsJSON,
+			var bucketConfig map[string]interface{}
+			if conf.DataBucket != "" {
+				bucketConfig = map[string]interface{}{
+					"bucket":                              conf.DataBucket,
+					"google_application_credentials_json": conf.DataBucketCredentialsJSON,
+				}
 			}
 			storage, err := storage.New(conf.DataDir, bucketConfig)
 			if err != nil {

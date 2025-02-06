@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/XSAM/otelsql"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -90,12 +92,13 @@ var spec = drivers.Spec{
 	ImplementsOLAP: true,
 }
 
-var maxOpenConnections = 20
-
 type driver struct{}
 
 type configProperties struct {
-	// Provision is set on local if `managed: true` is set for the connector.
+	// Managed is set internally if the connector has `managed: true`.
+	Managed bool `mapstructure:"managed"`
+	// Provision is set when Managed is true and provisioning should be handled by this driver.
+	// (In practice, this gets set on local and means we should start an embedded Clickhouse server).
 	Provision bool `mapstructure:"provision"`
 	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
 	DSN      string `mapstructure:"dsn"`
@@ -109,8 +112,6 @@ type configProperties struct {
 	SSL bool `mapstructure:"ssl"`
 	// Cluster name. Required for running distributed queries.
 	Cluster string `mapstructure:"cluster"`
-	// EnableCache controls whether to enable cache for Clickhouse queries.
-	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
@@ -118,6 +119,17 @@ type configProperties struct {
 	// EmbedPort is the port to run Clickhouse locally (0 is random port).
 	EmbedPort      int  `mapstructure:"embed_port"`
 	CanScaleToZero bool `mapstructure:"can_scale_to_zero"`
+	// MaxOpenConns is the maximum number of open connections to the database.
+	// https://github.com/ClickHouse/clickhouse-go/blob/main/clickhouse_options.go
+	MaxOpenConns int `mapstructure:"max_open_conns"`
+	// MaxIdleConns is the maximum number of connections in the idle connection pool. Default is 5s.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+	// DialTimeout is the timeout for dialing the Clickhouse server. Defaults to 60s.
+	DialTimeout string `mapstructure:"dial_timeout"`
+	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
+	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
+	// ReadTimeout is the maximum amount of time a connection may be reused. Default is 300s.
+	ReadTimeout string `mapstructure:"read_timeout"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -138,6 +150,7 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	// build clickhouse options
 	var opts *clickhouse.Options
 	var embed *embedClickHouse
+	maxOpenConnections := 20 // Very roughly approximating the number of queries required for a typical page load.
 	if conf.DSN != "" {
 		opts, err = clickhouse.ParseDSN(conf.DSN)
 		if err != nil {
@@ -153,6 +166,9 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		}
 		opts.Addr = []string{host}
 		opts.Protocol = clickhouse.Native
+		if conf.Port == 8123 || conf.Port == 8443 { // Default HTTP ports
+			opts.Protocol = clickhouse.HTTP
+		}
 		if conf.SSL {
 			opts.TLS = &tls.Config{
 				MinVersion: tls.VersionTLS12,
@@ -171,6 +187,43 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		if conf.Database != "" {
 			opts.Auth.Database = conf.Database
 		}
+
+		// max_open_conns
+		if conf.MaxOpenConns != 0 {
+			maxOpenConnections = conf.MaxOpenConns
+		}
+
+		// max_idle_conns
+		if conf.MaxIdleConns != 0 {
+			opts.MaxIdleConns = conf.MaxIdleConns
+		}
+
+		// dial_timeout
+		if conf.DialTimeout != "" {
+			d, err := time.ParseDuration(conf.DialTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse dial_timeout: %w", err)
+			}
+			opts.DialTimeout = d
+		}
+
+		// conn_max_lifetime
+		if conf.ConnMaxLifetime != "" {
+			d, err := time.ParseDuration(conf.ConnMaxLifetime)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse conn_max_lifetime: %w", err)
+			}
+			opts.ConnMaxLifetime = d
+		}
+
+		// read_timeout
+		if conf.ReadTimeout != "" {
+			d, err := time.ParseDuration(conf.ReadTimeout)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse read_timeout: %w", err)
+			}
+			opts.ReadTimeout = d
+		}
 	} else if conf.Provision {
 		// run clickhouse locally
 		dataDir, err := st.DataDir(instanceID)
@@ -182,13 +235,28 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 			return nil, err
 		}
 
-		embed = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		embed, err = newEmbedClickHouse(conf.EmbedPort, dataDir, tempDir, logger)
+		if err != nil {
+			return nil, err
+		}
 		opts, err = embed.start()
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		return nil, errors.New("no clickhouse connection configured: 'dsn', 'host' or 'managed: true' must be set")
+	}
+
+	// Apply our own defaults for the options.
+	// We increase timeouts to decrease the chance of dropped connections with scaled-to-zero ClickHouse.
+	if opts.DialTimeout == 0 {
+		opts.DialTimeout = time.Second * 60
+	}
+	if opts.ReadTimeout == 0 {
+		opts.ReadTimeout = time.Second * 300
+	}
+	if opts.ConnMaxLifetime == 0 {
+		opts.ConnMaxLifetime = time.Hour
 	}
 
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
@@ -210,8 +278,6 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		// connection with http protocol is successful
 		logger.Warn("clickHouse connection is established with HTTP protocol. Use native port for better performance")
 	}
-	// very roughly approximating num queries required for a typical page load
-	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
 
 	err = otelsql.RegisterDBStatsMetrics(db.DB, otelsql.WithAttributes(semconv.DBSystemClickhouse, attribute.String("instance_id", instanceID)))
@@ -235,16 +301,25 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
 	}
 
-	conn := &connection{
-		db:      db,
-		config:  conf,
-		logger:  logger,
-		metaSem: semaphore.NewWeighted(1),
-		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
-		opts:    opts,
-		embed:   embed,
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &connection{
+		db:         db,
+		config:     conf,
+		logger:     logger,
+		activity:   ac,
+		instanceID: instanceID,
+		ctx:        ctx,
+		cancel:     cancel,
+		metaSem:    semaphore.NewWeighted(1),
+		olapSem:    priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		opts:       opts,
+		embed:      embed,
 	}
-	return conn, nil
+
+	c.used()
+	go c.periodicallyEmitStats(time.Minute)
+
+	return c, nil
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -266,6 +341,14 @@ type connection struct {
 	activity   *activity.Client
 	instanceID string
 
+	// context that is cancelled when the connection is closed
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	// lastUsedUnixTime stores the time we last queried the connection.
+	// This is used to guess if the DB may currently be scaled to zero.
+	lastUsedUnixTime atomic.Int64
+
 	// logic around this copied from duckDB driver
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
@@ -284,7 +367,9 @@ type connection struct {
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	return c.db.PingContext(ctx)
+	err := c.db.PingContext(ctx)
+	c.used()
+	return err
 }
 
 // Driver implements drivers.Connection.
@@ -301,6 +386,8 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
+
 	errDB := c.db.Close()
 
 	var errEmbed error
@@ -401,4 +488,65 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+// used should be called after a query to the database completes.
+// It bumps the result of lastUsedOn(), which can be used to guess if the DB may currently be scaled to zero.
+//
+// Periodic background jobs that rely on lastUsedOn should not call this function since it will lead to the database never scaling to zero.
+func (c *connection) used() {
+	c.lastUsedUnixTime.Store(time.Now().Unix())
+}
+
+// lastUsedOn returns the time we last queried the connection.
+// This can be used to guess if the DB may currently be scaled to zero.
+func (c *connection) lastUsedOn() time.Time {
+	return time.Unix(c.lastUsedUnixTime.Load(), 0)
+}
+
+// Periodically collects stats about the database and emit them as activity events.
+func (c *connection) periodicallyEmitStats(d time.Duration) {
+	if c.activity == nil {
+		// Activity client isn't set, there is no need to report stats
+		return
+	}
+
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Skip if it hasn't been used recently and may be scaled to zero.
+			if c.config.CanScaleToZero && time.Since(c.lastUsedOn()) > 2*d {
+				continue
+			}
+
+			// Emit the estimated size of the database.
+			size, err := c.estimateSize(c.ctx)
+			if err == nil {
+				c.activity.RecordMetric(c.ctx, "clickhouse_estimated_size_bytes", float64(size))
+			} else if !errors.Is(err, c.ctx.Err()) {
+				lvl := zap.WarnLevel
+				if c.config.Managed {
+					lvl = zap.ErrorLevel
+				}
+
+				c.logger.Log(lvl, "failed to estimate clickhouse size", zap.Error(err), zap.Bool("managed", c.config.Managed))
+			}
+		case <-c.ctx.Done():
+			return
+		}
+	}
+}
+
+// estimateSize returns the estimated combined disk size of all resources in the database in bytes.
+func (c *connection) estimateSize(ctx context.Context) (int64, error) {
+	var size int64
+	err := c.db.QueryRowxContext(ctx, `SELECT sum(bytes_on_disk) AS size FROM system.parts WHERE (active = 1) AND lower(database) NOT IN ('information_schema', 'system')`).Scan(&size)
+	if err != nil {
+		return 0, err
+	}
+
+	return size, nil
 }

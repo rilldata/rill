@@ -1,71 +1,46 @@
 <script lang="ts">
   import {
     type V1CanvasItem,
-    type V1ComponentVariable,
+    type V1CanvasSpec,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { setContext } from "svelte";
-  import Component from "./Component.svelte";
-  import * as defaults from "./constants";
-  import DashboardWrapper from "./DashboardWrapper.svelte";
-  import { canvasVariablesStore } from "./variables-store";
+  import CanvasComponent from "./CanvasComponent.svelte";
+  import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
+  import SvelteGridStack from "./SvelteGridStack.svelte";
+  import type { GridStack } from "gridstack";
+  import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
 
-  export let canvasName: string;
-  export let columns = 20;
   export let items: V1CanvasItem[];
-  export let gap = 4;
-  export let chartView = false;
-  export let variables: V1ComponentVariable[] = [];
+  export let showFilterBar = true;
+  export let spec: V1CanvasSpec;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
-  setContext("rill::canvas:name", canvasName);
+  let grid: GridStack;
 
-  $: ({ instanceId } = $runtime);
-
-  const dashboardWidth = chartView
-    ? defaults.DASHBOARD_WIDTH / 2
-    : defaults.DASHBOARD_WIDTH;
-
-  $: gridWidth = contentRect.width;
-  $: scale = gridWidth / dashboardWidth;
-  $: gapSize = dashboardWidth * (gap / 1000);
-  $: gridCell = dashboardWidth / columns;
-  $: radius = gridCell * defaults.COMPONENT_RADIUS;
+  $: instanceId = $runtime.instanceId;
 
   $: maxBottom = items.reduce((max, el) => {
     const bottom = Number(el.height) + Number(el.y);
     return Math.max(max, bottom);
   }, 0);
-
-  $: if (variables.length && canvasName) {
-    canvasVariablesStore.init(canvasName, variables);
-  }
 </script>
 
-<DashboardWrapper
-  bind:contentRect
-  {scale}
-  height={maxBottom * gridCell * scale}
-  width={dashboardWidth}
->
-  {#each items as component, i (i)}
-    {@const componentName = component.component}
-    {#if componentName}
-      <Component
-        embed
-        {i}
-        {instanceId}
-        {componentName}
-        {chartView}
-        {scale}
-        {radius}
-        padding={gapSize}
-        width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
-        height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
-          gridCell}
-        left={Number(component.x) * gridCell}
-        top={Number(component.y) * gridCell}
-      />
-    {/if}
+{#if showFilterBar}
+  <div
+    id="header"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
+  >
+    <CanvasFilters />
+  </div>
+{/if}
+
+<CanvasDashboardWrapper bind:contentRect height={maxBottom}>
+  {#each items as _, i (i)}
+    <SvelteGridStack bind:grid {items} {spec} let:index let:item embed>
+      {@const componentName = item.component}
+      {#if componentName}
+        <CanvasComponent embed i={index} {instanceId} {componentName} />
+      {/if}
+    </SvelteGridStack>
   {/each}
-</DashboardWrapper>
+</CanvasDashboardWrapper>

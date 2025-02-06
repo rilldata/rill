@@ -280,7 +280,7 @@ func (s *Server) UploadProjectAssets(ctx context.Context, req *adminv1.UploadPro
 	if proj.Subpath != "" {
 		archivePath = filepath.Join(archivePath, proj.Subpath)
 	}
-	err = archive.Create(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
+	err = archive.CreateAndUpload(ctx, files, archivePath, assetResp.SignedUrl, assetResp.SigningHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func gitToFilesList(gitPath, repo, branch, subpath, token string) ([]drivers.Dir
 	var entries []drivers.DirEntry
 	err = doublestar.GlobWalk(srcProjDir, "**", func(p string, d fs.DirEntry) error {
 		// Ignore unnecessary paths
-		if drivers.IsIgnored(p, nil) {
+		if drivers.IsIgnored(path.Join(string(filepath.Separator), p), nil) {
 			return nil
 		}
 
