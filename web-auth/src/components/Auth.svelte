@@ -20,19 +20,22 @@
   export let disableForgotPassDomains = "";
   export let connectionMap = "{}";
   export let auth0Domain = "";
-  export let auth0BearerToken = "";
+  export let auth0ClientID = "";
+  export let auth0ClientSecret = "";
 
   const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
-
   const AUTH0_DOMAIN = auth0Domain;
-  const AUTH0_MANAGEMENT_API_TOKEN = auth0BearerToken;
+  const AUTH0_CLIENT_ID = auth0ClientID;
+  const AUTH0_CLIENT_SECRET = auth0ClientSecret;
 
   let email = "";
   let step: AuthStep = AuthStep.Base;
   let webAuth: WebAuth;
   let isExistingUser = false;
+  let tokenExpiry = 0;
+  let managementApiToken = null;
 
   $: errorText = "";
   $: isAllowedClient = false;
@@ -117,6 +120,52 @@
     });
   }
 
+  // TODO: Serverless function
+  async function getManagementApiToken() {
+    const now = Math.floor(Date.now() / 1000);
+
+    if (managementApiToken && now < tokenExpiry) {
+      return managementApiToken;
+    }
+
+    try {
+      const response = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+        body: JSON.stringify({
+          client_id: AUTH0_CLIENT_ID,
+          client_secret: AUTH0_CLIENT_SECRET,
+          audience: `https://${AUTH0_DOMAIN}/api/v2/`,
+          grant_type: "client_credentials",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to obtain management API token: ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      managementApiToken = data.access_token;
+      tokenExpiry = now + data.expires_in;
+
+      return managementApiToken;
+    } catch (error) {
+      console.error("Error obtaining management API token:", error);
+      step = AuthStep.Base;
+      errorText = "Unable to verify user existence. Please try again.";
+      throw error;
+    }
+  }
+
+  // TODO: Serverless function
   async function checkUserExists(email: string) {
     if (import.meta.env.DEV) {
       errorText = "User existence check is not available in development mode";
@@ -124,13 +173,15 @@
     }
 
     try {
+      const token = await getManagementApiToken();
+      // TODO: use our own API
       const response = await fetch(
         `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}&fields=email`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${AUTH0_MANAGEMENT_API_TOKEN}`,
+            Authorization: `Bearer ${token}`,
           },
         },
       );
@@ -143,7 +194,6 @@
 
       const users = await response.json();
       isExistingUser = users.length > 0;
-
       console.log("User existence check:", { isExistingUser });
 
       step = isExistingUser ? AuthStep.Login : AuthStep.SignUp;

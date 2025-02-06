@@ -6,7 +6,8 @@
   const disableForgotPassDomains = import.meta.env
     .VITE_DISABLE_FORGOT_PASS_DOMAINS;
   const auth0Domain = import.meta.env.VITE_AUTH0_DOMAIN;
-  const auth0BearerToken = import.meta.env.VITE_AUTH0_BEARER_TOKEN;
+  const auth0ClientID = import.meta.env.VITE_AUTH0_CLIENT_ID;
+  const auth0ClientSecret = import.meta.env.VITE_AUTH0_CLIENT_SECRET;
 
   // This gets populated by Auth0 runtime
   const configParams = "@@config@@";
@@ -36,6 +37,7 @@
     {disableForgotPassDomains}
     {connectionMap}
     {auth0Domain}
-    {auth0BearerToken}
+    {auth0ClientID}
+    {auth0ClientSecret}
   />
 </main>
