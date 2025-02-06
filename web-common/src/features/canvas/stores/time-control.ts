@@ -29,6 +29,7 @@ import {
   get,
   writable,
   type Readable,
+  type Unsubscriber,
   type Writable,
 } from "svelte/store";
 
@@ -54,6 +55,9 @@ export class TimeControls {
   hasTimeSeries: Readable<boolean>;
   timeRangeStateStore: Readable<TimeRangeState | undefined>;
   comparisonRangeStateStore: Readable<ComparisonTimeRangeState | undefined>;
+
+  private isInitialStateSet: boolean = false;
+  private initialStateSubscriber: Unsubscriber | undefined;
 
   constructor(specStore: CanvasSpecResponseStore) {
     this.allTimeRange = this.combinedTimeRangeSummaryStore(runtime, specStore);
@@ -163,16 +167,19 @@ export class TimeControls {
     this.setInitialState(specStore);
   }
 
-  setInitialState(validSpecStore: CanvasSpecResponseStore) {
-    const selectedTimezone = get(this.selectedTimezone);
-    const comparisonTimeRange = get(this.selectedComparisonTimeRange);
+  setInitialState = (specStore: CanvasSpecResponseStore) => {
+    const defaultStore = derived(
+      [this.allTimeRange, specStore],
+      ([allTimeRange, spec]) => {
+        if (!spec?.data || allTimeRange.isFetching || this.isInitialStateSet) {
+          return;
+        }
 
-    const store = derived(
-      [this.allTimeRange, validSpecStore],
-      ([allTimeRange, validSpec]) => {
-        if (allTimeRange.isFetching) return;
-        const { defaultPreset } = validSpec.data?.canvas || {};
-        const timeRanges = validSpec?.data?.canvas?.timeRanges;
+        const selectedTimezone = get(this.selectedTimezone);
+        const comparisonTimeRange = get(this.selectedComparisonTimeRange);
+
+        const { defaultPreset } = spec.data?.canvas || {};
+        const timeRanges = spec?.data?.canvas?.timeRanges;
 
         const defaultTimeRange = isoDurationToFullTimeRange(
           defaultPreset?.timeRange,
@@ -208,12 +215,17 @@ export class TimeControls {
         }
 
         this.selectedTimeRange.set(newTimeRange);
+        this.isInitialStateSet = true;
       },
     );
 
     // Subscribe to ensure the derived code runs
-    store.subscribe(() => {});
-  }
+    this.initialStateSubscriber = defaultStore.subscribe(() => {});
+  };
+
+  destroy = () => {
+    this.initialStateSubscriber?.();
+  };
 
   combinedTimeRangeSummaryStore = (
     runtime: Writable<Runtime>,

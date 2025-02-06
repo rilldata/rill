@@ -11,6 +11,7 @@
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+  import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -46,6 +47,7 @@
         timeRangeStateStore,
         comparisonRangeStateStore,
         selectedTimezone,
+        destroy,
       },
     },
   } = getCanvasStateManagers();
@@ -94,6 +96,8 @@
     }
     setMeasureFilter(dimension, filter);
   }
+
+  onDestroy(destroy);
 </script>
 
 <div class="flex flex-col gap-y-2 w-full h-20 justify-center">
