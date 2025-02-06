@@ -136,7 +136,7 @@ test.describe("PostgreSQL Test with Docker, then read into Rill", () => {
     await page.evaluate(() => {
       // Ensure the parent textbox is focused for typing
       const parentTextbox = document.querySelector('div[role="textbox"]');
-      if (parentTextbox) {
+      if (parentTextbox instanceof HTMLElement) {
         parentTextbox.focus();
       } else {
         console.error("Parent textbox not found!");

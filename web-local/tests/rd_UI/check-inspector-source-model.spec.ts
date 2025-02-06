@@ -71,7 +71,9 @@ test.describe("Checking the Inspector Panel for Source and Model. Check if value
 
     await page.evaluate(() => {
       // Ensure the parent textbox is focused for typing
-      const parentTextbox = document.querySelector('div[role="textbox"]');
+      const parentTextbox = document.querySelector(
+        'div[role="textbox"]',
+      ) as HTMLElement;
       if (parentTextbox) {
         parentTextbox.focus();
       } else {

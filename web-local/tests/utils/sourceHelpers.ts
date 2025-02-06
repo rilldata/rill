@@ -390,7 +390,7 @@ export async function MotherDuck(
   // input the needed details for mysql
   // Locate the  SQL text box and modify
   const currentDir = process.cwd(); // Returns the directory where the script is executed
-  const dbPath = path.resolve(currentDir, "tests/data/playwright.db"); //need to fix this when ready to deploy
+  const dbPath = path.resolve(currentDir, "tests/data/playwright.db");
 
   const inputField = page.locator("input#dsn");
 
