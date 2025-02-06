@@ -300,43 +300,6 @@ func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest)
 		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
 	}
 
-	adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find admin role: %v", err)
-	}
-
-	orgs, err := s.admin.DB.FindOrganizationsByMember(ctx, user.ID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find user's organizations: %v", err)
-	}
-
-	for _, org := range orgs {
-		adminUsers, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, adminRole.ID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find organization admin users: %v", err)
-		}
-
-		isLastAdmin := len(adminUsers) == 1 && adminUsers[0].ID == user.ID
-
-		memberCount, err := s.admin.DB.CountMembersByOrganization(ctx, org.ID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to count organization members: %v", err)
-		}
-
-		if isLastAdmin {
-			if memberCount > 1 {
-				return nil, status.Errorf(codes.FailedPrecondition, "user is the last admin of organization %s which has other members - please add another admin first", org.Name)
-			}
-
-			if memberCount == 1 {
-				err = s.admin.DB.DeleteOrganization(ctx, org.ID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to delete organization: %v", err)
-				}
-			}
-		}
-	}
-
 	err = s.admin.DB.DeleteUser(ctx, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
