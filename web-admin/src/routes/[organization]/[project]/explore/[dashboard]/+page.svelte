@@ -76,11 +76,25 @@
     });
   }
 
+  // Display a dashboard banner
+  $: if ($explore.data?.explore?.explore?.state?.validSpec?.banner) {
+    eventBus.emit("banner", {
+      type: "default",
+      message: $explore.data?.explore?.explore?.state?.validSpec?.banner,
+      iconType: "alert",
+    });
+  }
+
   onNavigate(() => {
     // Temporary: clear the mocked user when navigating away.
     // In the future, we should be able to handle the mocked user on all project pages.
     viewAsUserStore.set(null);
     errorStore.reset();
+
+    // Clear out any dashboard banners
+    if ($explore.data?.explore?.explore?.state?.validSpec?.banner) {
+      eventBus.emit("banner", null);
+    }
   });
 
   /**
