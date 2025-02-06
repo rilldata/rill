@@ -43,7 +43,7 @@ export function getTableConfig(
       );
 
       const config: PivotDataStoreConfig = {
-        measureNames: tableSpec.measures.flatMap((name) => {
+        measureNames: (tableSpec.measures || []).flatMap((name) => {
           const group = [name];
           if (enableComparison) {
             group.push(
@@ -89,7 +89,7 @@ export function validateTableSchema(
   return derived(
     ctx.canvasEntity.spec.getMetricsViewFromName(metrics_view),
     (metricsView) => {
-      const measures = tableSpec.measures;
+      const measures = tableSpec.measures || [];
       const rowDimensions = tableSpec.row_dimensions || [];
       const colDimensions = tableSpec.col_dimensions || [];
 

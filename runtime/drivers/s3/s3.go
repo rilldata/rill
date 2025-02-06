@@ -92,6 +92,8 @@ type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
+	Endpoint        string `mapstructure:"endpoint"`
+	Region          string `mapstructure:"region"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 	RetainFiles     bool   `mapstructure:"retain_files"`
 }

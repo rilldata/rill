@@ -1957,11 +1957,12 @@ func (c *connection) InsertAsset(ctx context.Context, id, organizationID, path, 
 
 func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*database.Asset, error) {
 	var res []*database.Asset
-	// We skip unused assets created in last 6 hours to prevent race condition
-	// where somebody just created an asset but is yet to use it
+	// find assets that are not associated with any project or org
+	// skip assets that are less than 7 days old to avoid deleting assets for projects
+	// that were accidentally deleted and may need to be restored
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT a.* FROM assets a
-		WHERE a.created_on < now() - INTERVAL '6 hours'
+		SELECT a.* FROM assets a 
+		WHERE a.created_on < now() - INTERVAL '7 DAYS'
 		AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		AND NOT EXISTS (SELECT 1 FROM orgs o WHERE o.logo_asset_id = a.id)
 		ORDER BY a.created_on DESC LIMIT $1

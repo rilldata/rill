@@ -70,14 +70,16 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
-	// As a special case, triggers for the global project parser should actually be handled just by triggering a reconcile on it.
-	// We do this here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
+	// For some resource types, it is sufficient to call r.C.Reconcile without updating the spec.
+	// This applies for resources that run a full reconcile on every invocation (i.e. doesn't cache state).
+	// We handle these resources here instead of in the loop below since calling r.C.Reconcile directly must be done outside of a catalog lock.
 	for i, rn := range trigger.Spec.Resources {
-		if !equalResourceName(rn, runtime.GlobalProjectParserName) {
+		// Apply only to project parsers and metrics views.
+		if rn.Kind != runtime.ResourceKindProjectParser && rn.Kind != runtime.ResourceKindMetricsView {
 			continue
 		}
 
-		err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
+		err = r.C.Reconcile(ctx, rn)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}

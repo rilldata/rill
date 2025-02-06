@@ -32,7 +32,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     const defaultSpec: KPISpec = {
       metrics_view: "",
       measure: "",
-      time_range: "PT24H",
       sparkline: true,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
@@ -60,7 +59,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     return {
       metrics_view,
       measure,
-      time_range: "PT24H",
       sparkline: true,
     };
   }

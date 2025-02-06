@@ -19,8 +19,11 @@
   let searchValue = "";
 
   const ctx = getCanvasStateManagers();
+  const { getTimeDimensionForMetricView } = ctx.canvasEntity.spec;
 
-  $: isTimeSelected = selectedItem === "__time";
+  $: timeDimension = getTimeDimensionForMetricView(metricName);
+
+  $: isTimeSelected = $timeDimension && selectedItem === $timeDimension;
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,
@@ -62,11 +65,11 @@
         <Search bind:value={searchValue} autofocus={false} />
       </div>
       <div class="max-h-64 overflow-y-auto">
-        {#if type == "dimension" && includeTime}
+        {#if type == "dimension" && includeTime && $timeDimension}
           <DropdownMenu.Item
             class="pl-8 mx-1"
             on:click={() => {
-              onSelect("__time", "Time");
+              onSelect($timeDimension, "Time");
               open = false;
             }}
           >
