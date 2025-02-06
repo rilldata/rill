@@ -1410,28 +1410,6 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, aft
 	return res, nil
 }
 
-func (c *connection) CountMembersByOrganization(ctx context.Context, orgID string) (int, error) {
-	var count int
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM users_orgs_roles WHERE org_id=$1`, orgID).Scan(&count)
-	if err != nil {
-		return 0, parseErr("org members count", err)
-	}
-	return count, nil
-}
-
-func (c *connection) FindOrganizationsByMember(ctx context.Context, userID string) ([]*database.Organization, error) {
-	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT o.* FROM orgs o
-		JOIN users_orgs_roles uor ON o.id = uor.org_id
-		WHERE uor.user_id = $1
-	`, userID)
-	if err != nil {
-		return nil, parseErr("orgs by member", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(
