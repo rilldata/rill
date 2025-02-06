@@ -17,7 +17,7 @@ type ExploreYAML struct {
 	DisplayName string                 `yaml:"display_name"`
 	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
-	Banner		string				   `yaml:"banner"`
+	Banner      string                 `yaml:"banner"`
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
