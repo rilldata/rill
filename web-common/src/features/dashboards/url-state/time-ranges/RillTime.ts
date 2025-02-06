@@ -266,6 +266,20 @@ export type RillTimeGrain = {
   count: number;
 };
 
+export function newSignedRillTimeGrain(
+  grain: string,
+  sign: "+" | "-",
+  count: number,
+) {
+  if (sign === "-") {
+    count = -count;
+  }
+  return <RillTimeGrain>{
+    grain,
+    count,
+  };
+}
+
 function grainToString(grain: RillTimeGrain, includeZero: boolean) {
   let grainPart = grain.grain;
   if (grainPart !== "m" && grainPart !== "M") {
