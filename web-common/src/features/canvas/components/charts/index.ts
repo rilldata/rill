@@ -30,7 +30,6 @@ export class ChartComponent extends BaseCanvasComponent<ChartSpec> {
       metrics_view: "",
       title: "",
       description: "",
-      time_range: "P1D",
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }

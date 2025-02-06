@@ -1,16 +1,14 @@
 import { get } from "svelte/store";
-import { CanvasFilters } from "./canvas-filters";
-import type { CanvasResolvedSpec } from "./canvas-spec";
+import { Filters } from "./filters";
+import type { CanvasResolvedSpec } from "./spec";
 
 export class CanvasComponentState {
   name: string;
-  filters: CanvasFilters;
-  private spec: CanvasResolvedSpec;
+  filters: Filters;
 
   constructor(name: string, spec: CanvasResolvedSpec) {
     this.name = name;
-    this.filters = new CanvasFilters(spec);
-    this.spec = spec;
+    this.filters = new Filters(spec);
 
     const componentResourceStore = spec.getComponentResourceFromName(name);
     const componentResource = get(componentResourceStore);
