@@ -61,9 +61,6 @@ type Biller interface {
 
 	// WebhookHandlerFunc returns a http.HandlerFunc that can be used to handle incoming webhooks from the payment provider. Return nil if you don't want to register any webhook handlers. jobs is used to enqueue jobs for processing the webhook events.
 	WebhookHandlerFunc(ctx context.Context, jobs jobs.Client) httputil.Handler
-
-	// GetCurrentPlanDisplayName this is specifically added for the UI to show the current plan name
-	GetCurrentPlanDisplayName(ctx context.Context, customerID string) (string, error)
 }
 
 type PlanType int

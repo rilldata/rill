@@ -709,8 +709,6 @@ func (m *GetOrganizationResponse) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for PlanDisplayName
-
 	if len(errors) > 0 {
 		return GetOrganizationResponseMultiError(errors)
 	}
@@ -32963,6 +32961,10 @@ func (m *Organization) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	if m.CachedPlanDisplayName != nil {
+		// no validation rules for CachedPlanDisplayName
 	}
 
 	if len(errors) > 0 {

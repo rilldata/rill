@@ -383,6 +383,7 @@ func (s *Server) RenewBillingSubscription(ctx context.Context, req *adminv1.Rene
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -498,6 +499,7 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	}
 
 	var sub *billing.Subscription
@@ -871,6 +873,7 @@ func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *da
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err

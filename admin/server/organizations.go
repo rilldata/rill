@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/admin/billing"
 	"math"
 	"strconv"
 	"strings"
@@ -74,15 +75,39 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		perms.ReadProjects = true
 	}
 
-	planDisplayName, err := s.admin.Biller.GetCurrentPlanDisplayName(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, err
+	if org.CachedPlanDisplayName == nil {
+		sub, err := s.admin.Biller.GetActiveSubscription(ctx, org.BillingCustomerID)
+		if err != nil {
+			if !errors.Is(err, billing.ErrNotFound) {
+				return nil, err
+			}
+		}
+		if sub != nil {
+			org.CachedPlanDisplayName = &sub.Plan.DisplayName
+			_, _ = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+				Name:                                org.Name,
+				DisplayName:                         org.DisplayName,
+				Description:                         org.Description,
+				LogoAssetID:                         org.LogoAssetID,
+				CustomDomain:                        org.CustomDomain,
+				QuotaProjects:                       org.QuotaProjects,
+				QuotaDeployments:                    org.QuotaDeployments,
+				QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+				QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+				QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+				QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+				BillingCustomerID:                   org.BillingCustomerID,
+				PaymentCustomerID:                   org.PaymentCustomerID,
+				BillingEmail:                        org.BillingEmail,
+				CreatedByUserID:                     org.CreatedByUserID,
+				CachedPlanDisplayName:               org.CachedPlanDisplayName,
+			})
+		}
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization:    s.organizationToDTO(org, perms.ManageOrg),
-		Permissions:     perms,
-		PlanDisplayName: planDisplayName,
+		Organization: s.organizationToDTO(org, perms.ManageOrg),
+		Permissions:  perms,
 	}, nil
 }
 
@@ -209,6 +234,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -892,6 +918,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -936,6 +963,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		PaymentCustomerID:                   org.PaymentCustomerID,
 		BillingEmail:                        org.BillingEmail,
 		CreatedByUserID:                     org.CreatedByUserID,
+		CachedPlanDisplayName:               org.CachedPlanDisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -975,6 +1003,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail
+		res.CachedPlanDisplayName = o.CachedPlanDisplayName
 	}
 
 	return res

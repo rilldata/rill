@@ -4249,8 +4249,6 @@ definitions:
         $ref: '#/definitions/v1Organization'
       permissions:
         $ref: '#/definitions/v1OrganizationPermissions'
-      planDisplayName:
-        type: string
   v1GetPaymentsPortalURLResponse:
     type: object
     properties:
@@ -4650,6 +4648,8 @@ definitions:
       paymentCustomerId:
         type: string
       billingEmail:
+        type: string
+      cachedPlanDisplayName:
         type: string
       createdOn:
         type: string

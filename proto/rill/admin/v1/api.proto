@@ -874,7 +874,6 @@ message GetOrganizationRequest {
 message GetOrganizationResponse {
   Organization organization = 1;
   OrganizationPermissions permissions = 2;
-  string plan_display_name = 3;
 }
 
 message GetOrganizationNameForDomainRequest {
@@ -2231,6 +2230,7 @@ message Organization {
   string billing_customer_id = 7;
   string payment_customer_id = 8;
   string billing_email = 9;
+  optional string cached_plan_display_name = 13;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

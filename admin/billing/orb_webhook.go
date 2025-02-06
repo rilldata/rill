@@ -92,21 +92,21 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.handleSubscriptionStarted(se) // as of now we are just using this to update plan cache
+		o.updatePlan(se) // as of now we are just using this to update plan cache
 	case "subscription.ended":
 		var se subscriptionEvent
 		err = json.Unmarshal(payload, &se)
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.handleSubscriptionEnded(se) // as of now we are just using this to update plan cache
+		o.updatePlan(se) // as of now we are just using this to update plan cache
 	case "subscription.plan_changed":
 		var se subscriptionEvent
 		err = json.Unmarshal(payload, &se)
 		if err != nil {
 			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
 		}
-		o.handleSubscriptionPlanChanged(se) // as of now we are just using this to update plan cache
+		o.updatePlan(se) // as of now we are just using this to update plan cache
 	default:
 		// do nothing
 	}
@@ -146,42 +146,14 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 	return nil
 }
 
-func (o *orbWebhook) handleSubscriptionStarted(se subscriptionEvent) {
+func (o *orbWebhook) updatePlan(se subscriptionEvent) {
 	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
 		return
 	}
-	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
-		return
-	}
-	planCache[se.OrbSubscription.Customer.ExternalCustomerID] = planCacheEntry{
-		planDisplayName: getPlanDisplayName(se.OrbSubscription.Plan.ExternalPlanID),
-		lastUpdated:     se.CreatedAt,
-	}
-}
 
-func (o *orbWebhook) handleSubscriptionEnded(se subscriptionEvent) {
-	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
-		return
-	}
-	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
-		return
-	}
-	delete(planCache, se.OrbSubscription.Customer.ExternalCustomerID)
-}
-
-func (o *orbWebhook) handleSubscriptionPlanChanged(se subscriptionEvent) {
-	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
-		return
-	}
-	if pe, ok := planCache[se.OrbSubscription.Customer.ExternalCustomerID]; !ok || pe.lastUpdated.After(se.CreatedAt) {
-		// don't have plan cached for this customer, ignore as we are not handling this event in persistent job
-		return
-	}
-	planCache[se.OrbSubscription.Customer.ExternalCustomerID] = planCacheEntry{
-		planDisplayName: getPlanDisplayName(se.OrbSubscription.Plan.ExternalPlanID),
-		lastUpdated:     se.CreatedAt,
+	_, err := o.jobs.PlanCacheUpdate(context.Background(), se.OrbSubscription.Customer.ExternalCustomerID)
+	if err != nil {
+		o.orb.logger.Error("error updating plan cache", zap.Error(err))
 	}
 }
 

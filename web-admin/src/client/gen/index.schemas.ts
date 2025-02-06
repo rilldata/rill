@@ -863,6 +863,7 @@ export interface V1Organization {
   billingCustomerId?: string;
   paymentCustomerId?: string;
   billingEmail?: string;
+  cachedPlanDisplayName?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1109,7 +1110,6 @@ export interface V1GetPaymentsPortalURLResponse {
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
-  planDisplayName?: string;
 }
 
 export interface V1GetOrganizationNameForDomainResponse {

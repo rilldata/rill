@@ -397,11 +397,6 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
    */
   permissions?: OrganizationPermissions;
 
-  /**
-   * @generated from field: string plan_display_name = 3;
-   */
-  planDisplayName = "";
-
   constructor(data?: PartialMessage<GetOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -412,7 +407,6 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
     { no: 2, name: "permissions", kind: "message", T: OrganizationPermissions },
-    { no: 3, name: "plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationResponse {
@@ -11856,6 +11850,11 @@ export class Organization extends Message<Organization> {
   billingEmail = "";
 
   /**
+   * @generated from field: optional string cached_plan_display_name = 13;
+   */
+  cachedPlanDisplayName?: string;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -11883,6 +11882,7 @@ export class Organization extends Message<Organization> {
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "cached_plan_display_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);

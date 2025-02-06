@@ -116,7 +116,3 @@ func (n noop) GetReportingWorkerCron() string {
 func (n noop) WebhookHandlerFunc(ctx context.Context, jc jobs.Client) httputil.Handler {
 	return nil
 }
-
-func (n noop) GetCurrentPlanDisplayName(ctx context.Context, customerID string) (string, error) {
-	return "", nil
-}

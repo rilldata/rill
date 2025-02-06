@@ -373,6 +373,20 @@ func (c *Client) PurgeOrg(ctx context.Context, orgID string) (*jobs.InsertResult
 	}, nil
 }
 
+func (c *Client) PlanCacheUpdate(ctx context.Context, billingCustomerID string) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, PlanCacheUpdateArgs{
+		BillingCustomerID: billingCustomerID,
+	}, &river.InsertOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
 type ErrorHandler struct {
 	logger *zap.Logger
 }
