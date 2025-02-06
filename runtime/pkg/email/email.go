@@ -504,7 +504,7 @@ func (c *Client) SendSubscriptionEnded(opts *SubscriptionEnded) error {
 		PreButton: template.HTML(fmt.Sprintf(`
 Your cancelled subscription for <b>%s</b> has ended and its projects are now <a href="https://docs.rilldata.com/home/FAQ#what-is-project-hibernation">hibernating</a>. We hope you enjoyed using Rill Cloud during your time with us.
 <br /><br />
-If you’d like to reactive your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
+If you’d like to reactivate your subscription and regain access, you can easily do so at any time by renewing your subscription from here:
 `, opts.OrgName)),
 		ButtonText: "Billing Settings",
 		ButtonLink: opts.BillingURL,
