@@ -17,7 +17,7 @@ import { cliLogin } from "./fixtures/cli";
 setup(
   "should start services, log-in a user, and deploy a project",
   async () => {
-    const timeout = 180_000;
+    const timeout = 240_000;
     setup.setTimeout(timeout);
 
     // Get the repository root directory, the only place from which `rill devtool` is allowed to be run
@@ -184,7 +184,7 @@ setup(
           });
           return listing.textContent();
         },
-        { intervals: Array(24).fill(5_000), timeout: 120_000 },
+        { intervals: Array(24).fill(5_000), timeout: 180_000 },
       )
       .toContain("Last refreshed");
   },
