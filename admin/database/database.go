@@ -664,8 +664,8 @@ type MagicAuthToken struct {
 }
 
 type ResourceName struct {
-	Type string
-	Name string
+	Type string `json:"type"`
+	Name string `json:"name"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -683,12 +683,12 @@ type InsertMagicAuthTokenOptions struct {
 	ExpiresOn       *time.Time
 	CreatedByUserID *string
 	Attributes      map[string]any
+	Resources       []ResourceName
 	FilterJSON      string
 	Fields          []string
 	State           string
 	DisplayName     string
 	Internal        bool
-	Resources       []ResourceName
 }
 
 type ReportToken struct {

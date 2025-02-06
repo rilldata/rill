@@ -47,6 +47,22 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a magic auth token")
 	}
 
+	if req.ResourceName != "" && req.ResourceType != "" { // nolint:staticcheck // for backwards compatibility
+		addResource := true
+		for _, r := range req.Resources {
+			if r.Type == req.ResourceType && r.Name == req.ResourceName { // nolint:staticcheck // for backwards compatibility
+				addResource = false
+				break
+			}
+		}
+		if addResource {
+			req.Resources = append(req.Resources, &adminv1.ResourceName{
+				Type: req.ResourceType, // nolint:staticcheck // for backwards compatibility
+				Name: req.ResourceName, // nolint:staticcheck // for backwards compatibility
+			})
+		}
+	}
+
 	resources := make([]database.ResourceName, len(req.Resources))
 	for i, r := range req.Resources {
 		resources[i] = database.ResourceName{
@@ -296,11 +312,11 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		CreatedByUserId:    safeStr(tkn.CreatedByUserID),
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
 		Attributes:         attrs,
+		Resources:          rs,
 		Filter:             filter,
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,
-		Resources:          rs,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
