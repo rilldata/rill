@@ -124,7 +124,8 @@ export class TimeControls {
           defaultTimeRange,
           minTimeGrain,
         );
-        if (timeRangeState) return { ...timeRangeState };
+        if (!timeRangeState) return undefined;
+        return { ...timeRangeState };
       },
     );
 
