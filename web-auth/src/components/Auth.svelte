@@ -198,8 +198,8 @@
           : `Sign up with <span class="font-medium">${email}</span>`;
       case AuthStep.Loading:
         return "Checking...";
-      case AuthStep.Thanks:
-        return "Thanks for signing up!";
+      // case AuthStep.Thanks:
+      //   return "Thanks for signing up!";
       default:
         return "";
     }
