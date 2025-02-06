@@ -4,7 +4,7 @@ import {
   getFrequencyFromCronExpression,
   ReportFrequency,
 } from "@rilldata/web-common/features/scheduled-reports/time-utils";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("Reports metadata", () => {
   describe("formatRefreshSchedule", () => {
