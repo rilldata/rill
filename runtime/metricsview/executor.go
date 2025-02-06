@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
+	"go.uber.org/zap"
 )
 
 const (
@@ -49,6 +50,8 @@ type TimestampsResult struct {
 func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, streaming bool, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
+		// TODO: Drop this log once we have a better way to handle this.
+		rt.Logger.Error("failed to acquire connector for metrics view", zap.String("instance_id", instanceID), zap.Error(err))
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
 	}
 
