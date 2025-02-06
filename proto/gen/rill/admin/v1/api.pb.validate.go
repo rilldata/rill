@@ -26265,6 +26265,8 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for WebOpenMode
+
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
 	}
@@ -35415,6 +35417,40 @@ func (m *MagicAuthToken) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MagicAuthTokenValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MagicAuthTokenValidationError{
+						field:  fmt.Sprintf("Resources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MagicAuthTokenValidationError{
+					field:  fmt.Sprintf("Resources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for ResourceType
 
 	// no validation rules for ResourceName
@@ -35451,40 +35487,6 @@ func (m *MagicAuthToken) validate(all bool) error {
 	// no validation rules for State
 
 	// no validation rules for DisplayName
-
-	for idx, item := range m.GetResources() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MagicAuthTokenValidationError{
-						field:  fmt.Sprintf("Resources[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MagicAuthTokenValidationError{
-						field:  fmt.Sprintf("Resources[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MagicAuthTokenValidationError{
-					field:  fmt.Sprintf("Resources[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
 
 	if len(errors) > 0 {
 		return MagicAuthTokenMultiError(errors)
@@ -35743,6 +35745,8 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for Explore
 
 	// no validation rules for Canvas
+
+	// no validation rules for WebOpenMode
 
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)

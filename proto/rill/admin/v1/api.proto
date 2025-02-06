@@ -1956,6 +1956,7 @@ message GetReportMetaRequest {
   repeated string email_recipients = 7;
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
+  string web_open_mode = 10;
   reserved 4;
 }
 
@@ -2409,13 +2410,13 @@ message MagicAuthToken {
   string created_by_user_id = 6;
   string created_by_user_email = 7;
   google.protobuf.Struct attributes = 8;
+  repeated ResourceName resources = 17;
   string resource_type = 15 [deprecated = true];
   string resource_name = 9 [deprecated = true];
   rill.runtime.v1.Expression filter = 10;
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;
-  repeated ResourceName resources = 17;
 }
 
 message VirtualFile {
@@ -2442,6 +2443,12 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
+  enum open_mode {
+    OPEN_MODE_UNSPECIFIED = 0;
+    OPEN_MODE_NONE = 1;
+    OPEN_MODE_FULL = 2;
+  }
+  open_mode web_open_mode = 18;
 }
 
 message AlertOptions {

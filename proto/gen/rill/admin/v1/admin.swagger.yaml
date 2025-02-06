@@ -3057,6 +3057,8 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
+              webOpenMode:
+                type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
@@ -3664,6 +3666,13 @@ definitions:
         type: string
       defaultBranch:
         type: string
+  ReportOptionsopen_mode:
+    type: string
+    enum:
+      - OPEN_MODE_UNSPECIFIED
+      - OPEN_MODE_NONE
+      - OPEN_MODE_FULL
+    default: OPEN_MODE_UNSPECIFIED
   protobufAny:
     type: object
     properties:
@@ -4578,6 +4587,11 @@ definitions:
         type: string
       attributes:
         type: object
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
       resourceType:
         type: string
       resourceName:
@@ -4592,11 +4606,6 @@ definitions:
         type: string
       displayName:
         type: string
-      resources:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ResourceName'
   v1MemberUser:
     type: object
     properties:
@@ -4978,6 +4987,8 @@ definitions:
         title: either canvas or explore should be set
       canvas:
         type: string
+      webOpenMode:
+        $ref: '#/definitions/ReportOptionsopen_mode'
   v1RequestProjectAccessResponse:
     type: object
   v1ResourceName:

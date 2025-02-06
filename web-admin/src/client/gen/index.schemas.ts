@@ -41,6 +41,7 @@ export type AdminServiceGetReportMetaBody = {
   emailRecipients?: string[];
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
+  webOpenMode?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -445,6 +446,16 @@ export interface V1UpdateBookmarkRequest {
   shared?: boolean;
 }
 
+export interface V1Subscription {
+  id?: string;
+  plan?: V1BillingPlan;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
 export interface V1UpdateBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
@@ -575,16 +586,6 @@ export interface V1SudoDeleteOrganizationBillingIssueResponse {
   [key: string]: any;
 }
 
-export interface V1Subscription {
-  id?: string;
-  plan?: V1BillingPlan;
-  startDate?: string;
-  endDate?: string;
-  currentBillingCycleStartDate?: string;
-  currentBillingCycleEndDate?: string;
-  trialEndDate?: string;
-}
-
 export interface V1Subquery {
   dimension?: string;
   measures?: string[];
@@ -687,6 +688,7 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
+  webOpenMode?: ReportOptionsopenMode;
 }
 
 export interface V1RenewBillingSubscriptionResponse {
@@ -933,13 +935,13 @@ export interface V1MagicAuthToken {
   createdByUserId?: string;
   createdByUserEmail?: string;
   attributes?: V1MagicAuthTokenAttributes;
+  resources?: V1ResourceName[];
   resourceType?: string;
   resourceName?: string;
   filter?: V1Expression;
   fields?: string[];
   state?: string;
   displayName?: string;
-  resources?: V1ResourceName[];
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -1226,6 +1228,11 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
+}
+
 export interface V1Expression {
   ident?: string;
   val?: unknown;
@@ -1369,11 +1376,6 @@ export interface V1CreateAlertResponse {
 
 export interface V1ConnectProjectToGithubResponse {
   [key: string]: any;
-}
-
-export interface V1Condition {
-  op?: V1Operation;
-  exprs?: V1Expression[];
 }
 
 export interface V1CompletionMessage {
@@ -1593,6 +1595,16 @@ export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
 }
+
+export type ReportOptionsopenMode =
+  (typeof ReportOptionsopenMode)[keyof typeof ReportOptionsopenMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReportOptionsopenMode = {
+  OPEN_MODE_UNSPECIFIED: "OPEN_MODE_UNSPECIFIED",
+  OPEN_MODE_NONE: "OPEN_MODE_NONE",
+  OPEN_MODE_FULL: "OPEN_MODE_FULL",
+} as const;
 
 export interface ListGithubUserReposResponseRepo {
   name?: string;

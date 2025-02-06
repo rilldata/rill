@@ -9438,6 +9438,11 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   resources: ResourceName[] = [];
 
+  /**
+   * @generated from field: string web_open_mode = 10;
+   */
+  webOpenMode = "";
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9454,6 +9459,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 7, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
@@ -13073,6 +13079,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   attributes?: Struct;
 
   /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 17;
+   */
+  resources: ResourceName[] = [];
+
+  /**
    * @generated from field: string resource_type = 15 [deprecated = true];
    * @deprecated
    */
@@ -13104,11 +13115,6 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   displayName = "";
 
-  /**
-   * @generated from field: repeated rill.admin.v1.ResourceName resources = 17;
-   */
-  resources: ResourceName[] = [];
-
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13127,13 +13133,13 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "attributes", kind: "message", T: Struct },
+    { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 15, name: "resource_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "filter", kind: "message", T: Expression },
     { no: 11, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 17, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
@@ -13298,6 +13304,11 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   canvas = "";
 
+  /**
+   * @generated from field: rill.admin.v1.ReportOptions.open_mode web_open_mode = 18;
+   */
+  webOpenMode = ReportOptions_open_mode.UNSPECIFIED;
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13322,6 +13333,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "web_open_mode", kind: "enum", T: proto3.getEnumType(ReportOptions_open_mode) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -13340,6 +13352,32 @@ export class ReportOptions extends Message<ReportOptions> {
     return proto3.util.equals(ReportOptions, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.admin.v1.ReportOptions.open_mode
+ */
+export enum ReportOptions_open_mode {
+  /**
+   * @generated from enum value: OPEN_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: OPEN_MODE_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * @generated from enum value: OPEN_MODE_FULL = 2;
+   */
+  FULL = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ReportOptions_open_mode)
+proto3.util.setEnumType(ReportOptions_open_mode, "rill.admin.v1.ReportOptions.open_mode", [
+  { no: 0, name: "OPEN_MODE_UNSPECIFIED" },
+  { no: 1, name: "OPEN_MODE_NONE" },
+  { no: 2, name: "OPEN_MODE_FULL" },
+]);
 
 /**
  * @generated from message rill.admin.v1.AlertOptions

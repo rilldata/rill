@@ -71,20 +71,30 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
+	addOpenUrl := false
+	if req.WebOpenMode == "full" { // TODO check backwards compatibility here
+		addOpenUrl = true
+	}
+
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
 			urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				EditUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
 			}
+
+			if addOpenUrl {
+				urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
+			}
 			continue
 		}
 		urls[recipient] = &adminv1.GetReportMetaResponse_URLs{
-			OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 			ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 			UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+		}
+		if addOpenUrl {
+			urls[recipient].OpenUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime())
 		}
 	}
 
@@ -487,6 +497,16 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
+	switch opts.WebOpenMode {
+	case adminv1.ReportOptions_OPEN_MODE_FULL:
+		res.Annotations.WebOpenMode = "full"
+	case adminv1.ReportOptions_OPEN_MODE_NONE:
+		res.Annotations.WebOpenMode = "none"
+	case adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED:
+		res.Annotations.WebOpenMode = "unspecified"
+	default:
+		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
+	}
 	if opts.Explore != "" && opts.Canvas != "" {
 		return nil, fmt.Errorf("cannot set both explore and canvas")
 	}
@@ -535,6 +555,16 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
+	switch opts.WebOpenMode {
+	case adminv1.ReportOptions_OPEN_MODE_FULL:
+		res.Annotations.WebOpenMode = "full"
+	case adminv1.ReportOptions_OPEN_MODE_NONE:
+		res.Annotations.WebOpenMode = "none"
+	case adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED:
+		res.Annotations.WebOpenMode = "unspecified"
+	default:
+		return nil, fmt.Errorf("unknown open mode: %v", opts.WebOpenMode)
+	}
 	return yaml.Marshal(res)
 }
 
@@ -705,6 +735,16 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	}
 	opts.WebOpenPath = annotations.WebOpenPath
 	opts.WebOpenState = annotations.WebOpenState
+	switch annotations.WebOpenMode {
+	case WebOpenModeFull:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_FULL
+	case WebOpenModeNone:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_NONE
+	case WebOpenModeUnspecified:
+		opts.WebOpenMode = adminv1.ReportOptions_OPEN_MODE_UNSPECIFIED
+	default:
+		return nil, fmt.Errorf("unknown web open mode: %s", annotations.WebOpenMode)
+	}
 	return opts, nil
 }
 
@@ -744,14 +784,23 @@ type reportYAML struct {
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
-	AdminManaged     bool   `yaml:"admin_managed"`
-	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenPath      string `yaml:"web_open_path"`
-	WebOpenState     string `yaml:"web_open_state"`
-	Explore          string `yaml:"explore,omitempty"`
-	Canvas           string `yaml:"canvas,omitempty"`
+	AdminOwnerUserID string      `yaml:"admin_owner_user_id"`
+	AdminManaged     bool        `yaml:"admin_managed"`
+	AdminNonce       string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenPath      string      `yaml:"web_open_path"`
+	WebOpenState     string      `yaml:"web_open_state"`
+	WebOpenMode      WebOpenMode `yaml:"web_open_mode,omitempty"`
+	Explore          string      `yaml:"explore,omitempty"`
+	Canvas           string      `yaml:"canvas,omitempty"`
 }
+
+type WebOpenMode string
+
+const (
+	WebOpenModeFull        WebOpenMode = "full"
+	WebOpenModeNone        WebOpenMode = "none"
+	WebOpenModeUnspecified WebOpenMode = "unspecified"
+)
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	if annotations == nil {
@@ -766,6 +815,16 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.WebOpenState = annotations["web_open_state"]
 	res.Explore = annotations["explore"]
 	res.Canvas = annotations["canvas"]
+	switch annotations["web_open_mode"] {
+	case "full":
+		res.WebOpenMode = WebOpenModeFull
+	case "none":
+		res.WebOpenMode = WebOpenModeNone
+	case "unspecified":
+		res.WebOpenMode = WebOpenModeUnspecified
+	case "": // backwards compatibility
+		res.WebOpenMode = WebOpenModeUnspecified
+	}
 
 	return res
 }

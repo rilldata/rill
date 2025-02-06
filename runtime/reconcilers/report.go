@@ -393,7 +393,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	var ownerID, explore, canvas string
+	var ownerID, explore, canvas, webOpenMode string
 	if id, ok := rep.Spec.Annotations["admin_owner_user_id"]; ok {
 		ownerID = id
 	}
@@ -402,6 +402,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	if c, ok := rep.Spec.Annotations["canvas"]; ok {
 		canvas = c
+	}
+	if w, ok := rep.Spec.Annotations["web_open_mode"]; ok {
+		webOpenMode = w
 	}
 
 	anonRecipients := false
@@ -414,7 +417,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, explore, canvas, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
