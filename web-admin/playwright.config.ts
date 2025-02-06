@@ -16,6 +16,7 @@ const config: PlaywrightTestConfig = {
     trace: "retain-on-failure",
     video: "retain-on-failure",
   },
+  testDir: "tests",
   projects: [
     ...(process.env.CI
       ? [] // skip in CI
