@@ -97,14 +97,14 @@ service AdminService {
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/variables"};
   }
-  
+
   // UpdateProjectVariables updates variables for a project.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{project}/variables",
       body: "*"
     };
-  }  
+  }
 
   // CreateAsset returns a one time signed URL using which any asset can be uploaded.
   rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
@@ -340,6 +340,11 @@ service AdminService {
     option (google.api.http) = {
       get: "/v1/users/current"
     };
+  }
+
+  // DeleteUser deletes the user from the organization by email
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{email}"};
   }
 
   // IssueRepresentativeAuthToken returns the temporary token for given email
@@ -1638,6 +1643,12 @@ message UpdateUserPreferencesRequest {
 message UpdateUserPreferencesResponse {
   UserPreferences preferences = 1;
 }
+
+message DeleteUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message DeleteUserResponse {}
 
 message ListBookmarksRequest {
   string project_id = 1;

@@ -1275,6 +1275,10 @@ export interface V1DeleteUsergroupResponse {
   [key: string]: any;
 }
 
+export interface V1DeleteUserResponse {
+  [key: string]: any;
+}
+
 export interface V1DeleteServiceResponse {
   service?: V1Service;
 }

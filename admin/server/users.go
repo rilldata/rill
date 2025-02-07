@@ -284,6 +284,30 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
+func (s *Server) DeleteUser(ctx context.Context, req *adminv1.DeleteUserRequest) (*adminv1.DeleteUserResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find user by email: %v", err)
+	}
+
+	claims := auth.GetClaims(ctx)
+	isCurrentUser := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	isSuperuser := claims.Superuser(ctx)
+
+	if !isCurrentUser && !isSuperuser {
+		return nil, status.Error(codes.PermissionDenied, "you can only delete your own user unless you are a superuser")
+	}
+
+	err = s.admin.DB.DeleteUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+	}
+
+	return &adminv1.DeleteUserResponse{}, nil
+}
+
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
 	if req.SingleuserOrgs != nil {
