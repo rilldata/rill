@@ -11,10 +11,11 @@
   export let columnWidth: number | undefined = undefined;
   export let activelyResizing: boolean;
   export let hoveringOnDropZone: boolean;
-  export let addItem: (
-    rowIndex: number,
-    addIndex: number,
-    type: string,
+  export let addItems: (
+    item: {
+      position: { row: number; order: number };
+      type: CanvasComponentType;
+    }[],
   ) => void;
   export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
   export let spreadEvenly: (rowIndex: number) => void;
@@ -29,13 +30,15 @@
     hovered = false;
 
     if (type) {
-      addItem(rowIndex, addIndex, type);
+      addItems([{ position: { row: rowIndex, order: addIndex }, type }]);
     }
   }
 
   function clearHoverTimeout() {
     if (timeout) clearTimeout(timeout);
   }
+
+  //   $: console.log($$props);
 </script>
 
 <button
