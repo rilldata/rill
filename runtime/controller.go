@@ -1264,16 +1264,14 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	c.invocations[nameStr(n)] = inv
 
 	// Log invocation
-	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
-		if inv.isDelete {
-			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
-		}
-		if inv.isRename {
-			logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
-		}
-		c.Logger.Info("Reconciling resource", logArgs...)
+	logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", PrettifyResourceKind(n.Kind))}
+	if inv.isDelete {
+		logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 	}
+	if inv.isRename {
+		logArgs = append(logArgs, zap.String("renamed_from", r.Meta.RenamedFrom.Name))
+	}
+	c.Logger.Info("Reconciling resource", logArgs...)
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
@@ -1353,7 +1351,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	}
 	if errorLevel {
 		c.Logger.Warn("Reconcile failed", logArgs...)
-	} else if !inv.isHidden {
+	} else {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 

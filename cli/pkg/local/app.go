@@ -544,7 +544,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 
-	// if it's not verbose, skip instance_id field
+	// If it's not verbose, skip the instance_id field.
 	if !isVerbose {
 		consoleEncoder = skipFieldZapEncoder{
 			Encoder: consoleEncoder,
@@ -552,9 +552,43 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		}
 	}
 
+	consoleCore := zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel)
+
+	// For the local console output, apply some filters that are usually not informative for the user.
+	if !isVerbose {
+		consoleCore = &filterZapCore{
+			next: consoleCore,
+			filter: func(entry zapcore.Entry, fields []zapcore.Field) bool {
+				// Always log warn and error logs
+				if entry.Level > zapcore.InfoLevel {
+					return true
+				}
+
+				// Filter out reconciling logs for internal resources
+				switch entry.Message {
+				case "Reconciling resource", "Reconciled resource":
+					for _, field := range fields {
+						if field.Key != "type" {
+							continue
+						}
+
+						switch field.String {
+						case "ProjectParser", "RefreshTrigger":
+							return false
+						}
+
+						break
+					}
+				}
+
+				return true
+			},
+		}
+	}
+
 	core := zapcore.NewTee(
 		fileCore,
-		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
+		consoleCore,
 	)
 
 	return zap.New(core, opts...), func() {
@@ -604,4 +638,38 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 	if !skip {
 		s.Encoder.AddString(key, val)
 	}
+}
+
+type filterZapCore struct {
+	next   zapcore.Core
+	filter func(zapcore.Entry, []zapcore.Field) bool
+}
+
+func (c *filterZapCore) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if c.filter(entry, nil) {
+		ce = ce.AddCore(entry, c)
+	}
+	return ce
+}
+
+func (c *filterZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	if !c.filter(entry, fields) {
+		return nil
+	}
+	return c.next.Write(entry, fields)
+}
+
+func (c *filterZapCore) With(fields []zapcore.Field) zapcore.Core {
+	return &filterZapCore{
+		next:   c.next.With(fields),
+		filter: c.filter,
+	}
+}
+
+func (c *filterZapCore) Enabled(level zapcore.Level) bool {
+	return c.next.Enabled(level)
+}
+
+func (c *filterZapCore) Sync() error {
+	return c.next.Sync()
 }
