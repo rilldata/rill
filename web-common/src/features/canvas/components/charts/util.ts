@@ -58,15 +58,22 @@ export function mergedVlConfig(config: string): Config {
 }
 
 export function getChartTitle(config: ChartConfig, data: ChartDataResult) {
-  let xLabel = "";
-  if (config.x?.field) {
-    xLabel = data.fields[config.x.field]?.displayName || config.x.field;
-  }
-  let yLabel = "";
-  if (config.y?.field) {
-    yLabel = data.fields[config.y.field]?.displayName || config.y.field;
-  }
-  return `${yLabel} vs ${xLabel}`;
+  const xLabel = config.x?.field
+    ? data.fields[config.x.field]?.displayName || config.x.field
+    : "";
+
+  const yLabel = config.y?.field
+    ? data.fields[config.y.field]?.displayName || config.y.field
+    : "";
+
+  const colorLabel =
+    typeof config.color === "object" && config.color?.field
+      ? data.fields[config.color.field]?.displayName || config.color.field
+      : "";
+
+  return colorLabel
+    ? `${yLabel} per ${xLabel} split by ${colorLabel}`
+    : `${yLabel} per ${xLabel}`;
 }
 
 export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, string> = {
