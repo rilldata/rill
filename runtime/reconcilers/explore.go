@@ -77,11 +77,12 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 
 	// If spec validation failed and StageChanges is enabled, we will keep the old valid spec if its parent metrics view is still valid.
 	// This is not perfect, but increases the chance of keeping the dashboard working in many cases.
-	if cfg.StageChanges && validSpec == nil && e.State.ValidSpec != nil {
+	if validSpec == nil && cfg.StageChanges && e.State.ValidSpec != nil {
 		// Get the metrics view referenced by the old valid spec.
 		mvn := &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: e.State.ValidSpec.MetricsView}
 		mv, err := r.C.Get(ctx, mvn, false)
 		if err == nil && mv.GetMetricsView().State.ValidSpec != nil {
+			// Keep the old valid spec
 			validSpec = e.State.ValidSpec
 		}
 	}
