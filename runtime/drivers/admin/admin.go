@@ -124,7 +124,9 @@ type Handle struct {
 	gitURLExpiresOn time.Time
 
 	// downloadURL is set when using one-time uploads
-	downloadURL string
+	downloadURL      string
+	ArchiveID        string
+	ArchiveCreatedOn time.Time
 }
 
 var _ drivers.Handle = &Handle{}
@@ -403,6 +405,14 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = h.repoPath
 	} else {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
+	}
+
+	if meta.ArchiveId != "" {
+		h.ArchiveID = meta.ArchiveId
+	}
+
+	if meta.ArchiveCreatedOn != nil {
+		h.ArchiveCreatedOn = meta.ArchiveCreatedOn.AsTime()
 	}
 
 	if meta.ArchiveDownloadUrl != "" {
