@@ -12,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestServer_TestSimpleSQLQueryResolver(t *testing.T) {
@@ -44,14 +46,24 @@ driver: duckdb
 	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
+	// resolverProperties map[string]interface{} // Resolver properties
+	// resolverArgs       map[string]interface{} // Resolver arguments
 	tt := []struct {
-		name               string                 // Test case name
-		resolver           string                 // Resolver name
-		resolverProperties map[string]interface{} // Resolver properties
-		resolverArgs       map[string]interface{} // Resolver arguments
-		contains           []string               // Expected strings in the output
-		expectError        bool                   // Expect an error
-	}{}
+		name               string           // Test case name
+		resolver           string           // Resolver name (e.g. ad_bids.sql - ad_bids)
+		resolverProperties *structpb.Struct // Resolver properties
+		resolverArgs       *structpb.Struct // Resolver arguments
+		contains           []string         // Expected strings in the output
+		expectError        bool             // Expect an error
+		code               codes.Code       // Expected gRPC error code
+	}{
+		{
+			name:        "should fail with invalid resolver",
+			resolver:    "invalid_resolver",
+			expectError: true,
+			code:        codes.Internal,
+		},
+	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -59,7 +71,10 @@ driver: duckdb
 			defer cancel()
 
 			req := &runtimev1.QueryResolverRequest{
-				InstanceId: instanceID,
+				InstanceId:         instanceID,
+				Resolver:           tc.resolver,
+				ResolverProperties: tc.resolverProperties,
+				ResolverArgs:       tc.resolverArgs,
 			}
 			res, err := server.QueryResolver(ctx, req)
 			if tc.expectError {
