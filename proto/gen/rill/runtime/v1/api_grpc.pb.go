@@ -106,6 +106,7 @@ type RuntimeServiceClient interface {
 	GenerateResolver(ctx context.Context, in *GenerateResolverRequest, opts ...grpc.CallOption) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
 	GenerateRenderer(ctx context.Context, in *GenerateRendererRequest, opts ...grpc.CallOption) (*GenerateRendererResponse, error)
+	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(ctx context.Context, in *QueryResolverRequest, opts ...grpc.CallOption) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
@@ -573,6 +574,7 @@ type RuntimeServiceServer interface {
 	GenerateResolver(context.Context, *GenerateResolverRequest) (*GenerateResolverResponse, error)
 	// GenerateRenderer generates a component renderer and renderer properties from a resolver and resolver properties
 	GenerateRenderer(context.Context, *GenerateRendererRequest) (*GenerateRendererResponse, error)
+	// QueryResolver queries a resolver with the given properties and arguments
 	QueryResolver(context.Context, *QueryResolverRequest) (*QueryResolverResponse, error)
 	// GetLogs returns recent logs from a controller
 	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)

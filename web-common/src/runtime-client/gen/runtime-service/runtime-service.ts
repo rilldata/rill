@@ -1792,6 +1792,9 @@ export const createRuntimeServiceGetModelPartitions = <
   return query;
 };
 
+/**
+ * @summary QueryResolver queries a resolver with the given properties and arguments
+ */
 export const runtimeServiceQueryResolver = (
   instanceId: string,
   runtimeServiceQueryResolverBody: RuntimeServiceQueryResolverBody,

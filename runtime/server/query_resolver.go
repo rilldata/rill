@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -19,7 +20,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		return nil, status.Error(codes.PermissionDenied, "must be an admin of the project to query a resolver")
 	}
 
-	// Validate the resolver exists
+	// Resolver should exist
 	initializer, ok := runtime.ResolverInitializers[req.Resolver]
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "no resolver found of type %q", req.Resolver)
@@ -46,11 +47,26 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	}
 	defer res.Close()
 
-	var data []*structpb.Struct
-
-	// TODO: Read the resolver's output and return it as a response
+	// Convert the results to a proto response
+	schema := res.Schema()
+	data := make([]*structpb.Struct, 0)
+	for {
+		raw, err := res.Next()
+		if err != nil {
+			return nil, err
+		}
+		if raw == nil {
+			break
+		}
+		row, err := structpb.NewStruct(raw)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert row to proto: %w", err)
+		}
+		data = append(data, row)
+	}
 
 	return &runtimev1.QueryResolverResponse{
-		Data: data,
+		Schema: schema,
+		Data:   data,
 	}, nil
 }

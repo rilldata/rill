@@ -154,6 +154,7 @@ service RuntimeService {
     };
   }
 
+  // QueryResolver queries a resolver with the given properties and arguments
   rpc QueryResolver(QueryResolverRequest) returns (QueryResolverResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query/resolver",

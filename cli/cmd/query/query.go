@@ -30,12 +30,16 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// TODO: Validate flag combinations
+
 			// Connect to the runtime
 			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
 			if err != nil {
 				return err
 			}
+			defer rt.Close()
 
+			// Execute the query
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
 				InstanceId: instanceID,
 				Resolver:   resolver,
@@ -44,7 +48,8 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Print(res)
+			// Print the data in the requested format (default: human)
+			ch.PrintData(res.Data)
 
 			return nil
 		},

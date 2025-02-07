@@ -2480,6 +2480,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/query/resolver:
     post:
+      summary: QueryResolver queries a resolver with the given properties and arguments
       operationId: RuntimeService_QueryResolver
       responses:
         "200":
