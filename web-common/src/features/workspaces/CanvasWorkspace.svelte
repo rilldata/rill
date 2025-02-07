@@ -30,6 +30,8 @@
   import { parseDocument } from "yaml";
   import { findNextAvailablePosition } from "../canvas/util";
   import AddComponentMenu from "../canvas/components/AddComponentMenu.svelte";
+  import RowBasedCanvas from "../canvas/RowBasedCanvas.svelte";
+  // import { Canvas } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 
   export let fileArtifact: FileArtifact;
 
@@ -187,7 +189,8 @@
                 statusCode={404}
               />
             {:else if canvasResource}
-              <Canvas {fileArtifact} />
+              <!-- <Canvas {fileArtifact} /> -->
+              <RowBasedCanvas {fileArtifact} />
             {/if}
           {/if}
         </WorkspaceEditorContainer>
