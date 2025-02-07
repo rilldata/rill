@@ -28,7 +28,7 @@
   }
   .title {
     font-size: 15px;
-    @apply font-medium text-gray-800;
+    @apply font-medium text-slate-700 truncate;
   }
 
   .title.faint {
@@ -37,6 +37,6 @@
 
   .description {
     font-size: 13px;
-    @apply text-gray-600 leading-none pt-0.5;
+    @apply text-slate-600 leading-none;
   }
 </style>

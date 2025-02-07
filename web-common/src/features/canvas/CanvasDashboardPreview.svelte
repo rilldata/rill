@@ -1,12 +1,10 @@
 <script lang="ts">
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
   import type {
     V1CanvasItem,
     V1CanvasSpec,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import PreviewElement from "./PreviewElement.svelte";
-  import SvelteGridStack from "./SvelteGridStack.svelte";
   import type {
     GridItemHTMLElement,
     GridStack,
@@ -14,7 +12,8 @@
   } from "gridstack";
   import { createEventDispatcher } from "svelte";
   import CanvasDashboardWrapper from "./CanvasDashboardWrapper.svelte";
-  import { clickOutside } from "@rilldata/web-common/lib/actions/click-outside";
+  import PreviewElement from "./PreviewElement.svelte";
+  import SvelteGridStack from "./SvelteGridStack.svelte";
 
   export let items: V1CanvasItem[];
   export let activeIndex: number | null = null;
@@ -26,8 +25,6 @@
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let grid: GridStack;
   let gridContainer: HTMLElement;
-
-  $: instanceId = $runtime.instanceId;
 
   $: if (grid) {
     canvasEntity.setGridstack(grid);
@@ -140,7 +137,6 @@
     >
       {@const selected = index === activeIndex}
       <PreviewElement
-        {instanceId}
         i={index}
         {selected}
         component={item}
