@@ -332,6 +332,7 @@ type Organization struct {
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
 	BillingEmail                        string    `db:"billing_email"`
 	CreatedByUserID                     *string   `db:"created_by_user_id"`
+	CachedPlanDisplayName               *string   `db:"cached_plan_display_name"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -370,6 +371,7 @@ type UpdateOrganizationOptions struct {
 	PaymentCustomerID                   string
 	BillingEmail                        string
 	CreatedByUserID                     *string
+	CachedPlanDisplayName               *string
 }
 
 // Project represents one Git connection.

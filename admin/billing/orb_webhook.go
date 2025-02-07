@@ -25,7 +25,7 @@ const (
 	maxBodyBytes                 = int64(65536)
 )
 
-var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed"}
+var interestingEvents = []string{"invoice.payment_succeeded", "invoice.payment_failed", "invoice.issue_failed", "subscription.started", "subscription.ended", "subscription.plan_changed"}
 
 type orbWebhook struct {
 	orb  *Orb
@@ -86,6 +86,27 @@ func (o *orbWebhook) handleWebhook(w http.ResponseWriter, r *http.Request) error
 		}
 		// inefficient one time conversion to named logger as its rare event and no need to log every thing else with named logger
 		o.orb.logger.Named("billing").Warn("invoice issue failed", zap.String("customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.String("invoice_id", ie.OrbInvoice.ID), zap.String("props", fmt.Sprintf("%v", ie.Properties)))
+	case "subscription.started":
+		var se subscriptionEvent
+		err = json.Unmarshal(payload, &se)
+		if err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
+		}
+		o.updatePlan(se) // as of now we are just using this to update plan cache
+	case "subscription.ended":
+		var se subscriptionEvent
+		err = json.Unmarshal(payload, &se)
+		if err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
+		}
+		o.updatePlan(se) // as of now we are just using this to update plan cache
+	case "subscription.plan_changed":
+		var se subscriptionEvent
+		err = json.Unmarshal(payload, &se)
+		if err != nil {
+			return httputil.Errorf(http.StatusBadRequest, "error parsing event data: %w", err)
+		}
+		o.updatePlan(se) // as of now we are just using this to update plan cache
 	default:
 		// do nothing
 	}
@@ -123,6 +144,17 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 		o.orb.logger.Debug("duplicate invoice payment failed event", zap.String("event_id", ie.ID))
 	}
 	return nil
+}
+
+func (o *orbWebhook) updatePlan(se subscriptionEvent) {
+	if se.OrbSubscription.Customer.ExternalCustomerID == "" {
+		return
+	}
+
+	_, err := o.jobs.PlanCacheUpdate(context.Background(), se.OrbSubscription.Customer.ExternalCustomerID)
+	if err != nil {
+		o.orb.logger.Error("error updating plan cache", zap.Error(err))
+	}
 }
 
 // Validates whether or not the webhook payload was sent by Orb.
@@ -191,4 +223,12 @@ type invoiceEvent struct {
 	Type       string      `json:"type"`
 	Properties interface{} `json:"properties"`
 	OrbInvoice orb.Invoice `json:"invoice"`
+}
+
+type subscriptionEvent struct {
+	ID              string           `json:"id"`
+	CreatedAt       time.Time        `json:"created_at"`
+	Type            string           `json:"type"`
+	Properties      interface{}      `json:"properties"`
+	OrbSubscription orb.Subscription `json:"subscription"`
 }

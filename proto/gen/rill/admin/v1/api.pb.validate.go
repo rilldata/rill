@@ -32965,6 +32965,10 @@ func (m *Organization) validate(all bool) error {
 		}
 	}
 
+	if m.CachedPlanDisplayName != nil {
+		// no validation rules for CachedPlanDisplayName
+	}
+
 	if len(errors) > 0 {
 		return OrganizationMultiError(errors)
 	}
