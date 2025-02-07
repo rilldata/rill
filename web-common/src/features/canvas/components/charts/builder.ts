@@ -69,9 +69,11 @@ export function createYEncoding(
     field: sanitizeValueForVega(config.y.field),
     title: metaData?.displayName || config.y.field,
     type: config.y.type,
-    scale: {
-      zero: false,
-    },
+    ...(config.y.zeroBasedOrigin !== true && {
+      scale: {
+        zero: false,
+      },
+    }),
     axis: {
       ...(config.y.type === "quantitative" && {
         formatType: config.y.field,
