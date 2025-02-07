@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
