@@ -1341,7 +1341,9 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.result.Retrigger.IsZero() {
 		logArgs = append(logArgs, zap.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	if !inv.cancelledOn.IsZero() {
+	if inv.deletedSelf {
+		logArgs = append(logArgs, zap.Bool("deleted", true))
+	} else if !inv.cancelledOn.IsZero() {
 		logArgs = append(logArgs, zap.Bool("cancelled", true))
 	}
 	errorLevel := false
@@ -1368,7 +1370,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		commonDims = append(commonDims, attribute.String("reconcile_operation", "normal"))
 	}
 
-	if !inv.cancelledOn.IsZero() {
+	if !inv.cancelledOn.IsZero() && !inv.deletedSelf {
 		commonDims = append(commonDims, attribute.String("reconcile_result", "canceled"))
 	} else if inv.result.Err != nil {
 		if errors.Is(inv.result.Err, context.Canceled) {
