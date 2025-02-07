@@ -35,7 +35,6 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 	q := fmt.Sprintf(`
 		select
 			coalesce(t.table_catalog, current_database()) as "database",
-			t.table_schema as "schema",
 			t.table_name as "name",
 			t.table_type as "type", 
 			array_agg(c.column_name order by c.ordinal_position) as "column_names",
@@ -45,8 +44,8 @@ func (i informationSchema) All(ctx context.Context, like string) ([]*drivers.Tab
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
 		where database = current_database() and t.table_schema = current_schema()
 		%s
-		group by 1, 2, 3, 4
-		order by 1, 2, 3, 4
+		group by 1, 2, 3
+		order by 1, 2, 3
 	`, likeClause)
 
 	rows, err := conn.QueryxContext(ctx, q, args...)
@@ -73,7 +72,6 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	q := `
 		select
 			coalesce(t.table_catalog, current_database()) as "database",
-			t.table_schema as "schema",
 			t.table_name as "name",
 			t.table_type as "type", 
 			array_agg(c.column_name order by c.ordinal_position) as "column_names",
@@ -82,8 +80,8 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		from information_schema.tables t
 		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
 		where database = current_database() and t.table_schema = current_schema() and lower(t.table_name) = lower(?)
-		group by 1, 2, 3, 4
-		order by 1, 2, 3, 4
+		group by 1, 2, 3
+		order by 1, 2, 3
 	`
 
 	rows, err := conn.QueryxContext(ctx, q, name)
@@ -109,21 +107,23 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 
 	for rows.Next() {
 		var database string
-		var schema string
 		var name string
 		var tableType string
 		var columnNames []any
 		var columnTypes []any
 		var columnNullable []any
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnNames, &columnTypes, &columnNullable)
+		err := rows.Scan(&database, &name, &tableType, &columnNames, &columnTypes, &columnNullable)
 		if err != nil {
 			return nil, i.c.checkErr(err)
 		}
 
 		t := &drivers.Table{
-			Database:                database,
-			DatabaseSchema:          schema,
+			Database: database,
+			// the database schema changes with every ingestion in duckdb(Refer rduckdb pkg for more info)
+			// we pin the read connection to the latest schema and set schema as `main` to give impression that everything is in the same schema
+			// This also means that fully qualified names should not be used anywhere
+			DatabaseSchema:          "main",
 			IsDefaultDatabase:       true,
 			IsDefaultDatabaseSchema: true,
 			Name:                    name,
