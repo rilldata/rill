@@ -81,8 +81,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		OLAPDSN:     proj.ProdOLAPDSN,
 	})
 	if err != nil {
-		err2 := s.DB.DeleteProject(ctx, proj.ID)
-		return nil, multierr.Combine(err, err2)
+		return nil, err
 	}
 
 	// Update prod deployment on project
@@ -103,9 +102,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
-		err2 := s.TeardownDeployment(ctx, depl)
-		err3 := s.DB.DeleteProject(ctx, proj.ID)
-		return nil, multierr.Combine(err, err2, err3)
+		return nil, err
 	}
 
 	var createdByID, createdByEmail string
