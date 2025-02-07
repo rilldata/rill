@@ -94,7 +94,8 @@
     if (!exploreResponse) return undefined;
     return (
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !exploreResponse.metricsView?.meta?.reconcileError
+      !exploreResponse.metricsView?.meta?.reconcileError &&
+      !exploreResponse.explore?.meta?.reconcileError
     );
   }
 
@@ -105,7 +106,8 @@
     // so the user does not see an error state.
     return (
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !!exploreResponse.metricsView?.meta?.reconcileError
+      (!!exploreResponse.metricsView?.meta?.reconcileError ||
+        !!exploreResponse.explore?.meta?.reconcileError)
     );
   }
 </script>
