@@ -9,7 +9,6 @@ import (
 	goruntime "runtime"
 	"testing"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
@@ -99,7 +98,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 	"postgres": func(t TestingT) map[string]string {
 		_, currentFile, _, _ := goruntime.Caller(0)
 		testdataPath := filepath.Join(currentFile, "..", "testdata")
-		postgres_init_data := filepath.Join(testdataPath, "init_data", "postgres_init_data.sql")
+		postgresInitData := filepath.Join(testdataPath, "init_data", "postgres_init_data.sql")
 
 		pgc := pgtestcontainer.New(t.(*testing.T))
 		t.Cleanup(func() {
@@ -109,7 +108,7 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		db, err := sql.Open("pgx", pgc.DatabaseURL)
 		require.NoError(t, err)
 		defer db.Close()
-		sqlFile, err := os.ReadFile(postgres_init_data)
+		sqlFile, err := os.ReadFile(postgresInitData)
 		require.NoError(t, err)
 		_, err = db.Exec(string(sqlFile))
 		require.NoError(t, err)
