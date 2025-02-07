@@ -117,6 +117,7 @@ func TestUser(t *testing.T) {
 	viewer2AuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, viewer2AuthToken)
+	viewer2Token := viewer2AuthToken.Token().String()
 
 	authenticator, err := auth.NewAuthenticator(logger, service, cookies.New(logger, nil), &auth.AuthenticatorOptions{
 		AuthDomain: "gorillio-stage.auth0.com",
@@ -169,7 +170,7 @@ func TestUser(t *testing.T) {
 
 	viewer2Conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(newBearerTokenCredential(viewerToken)))
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(newBearerTokenCredential(viewer2Token)))
 	require.NoError(t, err)
 	defer viewer2Conn.Close()
 	viewer2Client := adminv1.NewAdminServiceClient(viewer2Conn)
@@ -233,7 +234,7 @@ func TestUser(t *testing.T) {
 			adminUserClient,
 			viewer2User.Email,
 			true,
-			codes.NotFound,
+			codes.Unauthenticated,
 		},
 	}
 
@@ -242,9 +243,9 @@ func TestUser(t *testing.T) {
 			_, err := tt.client.DeleteUser(ctx, &adminv1.DeleteUserRequest{
 				Email: tt.userToDelete,
 			})
-			t.Logf("err: %v", err)
 			if tt.wantErr {
 				require.Error(t, err)
+				require.Equal(t, tt.errCode, grpc.Code(err))
 			} else {
 				require.NoError(t, err)
 			}
