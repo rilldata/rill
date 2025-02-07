@@ -90,7 +90,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-y-2 w-full h-20 justify-center">
+<div class="flex flex-col gap-y-2 size-full">
   <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center ml-2">
     <Calendar size="16px" />
     <CanvasSuperPill

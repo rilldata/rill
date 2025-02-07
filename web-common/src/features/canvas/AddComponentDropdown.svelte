@@ -45,7 +45,7 @@
       <button
         {disabled}
         use:builder.action
-        class="h-7 px-2 grid place-content-center z-50 border-r
+        class="h-7 px-2 grid place-content-center z-50
         hover:bg-gray-100 text-slate-500 disabled:opacity-50"
       >
         <PlusCircle size="15px" />

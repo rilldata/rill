@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { parseDocument, Scalar, YAMLMap, YAMLSeq } from "yaml";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import ElementDivider from "./ElementDivider.svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
@@ -13,6 +13,8 @@
   import { findNextAvailablePosition } from "./util";
   import { useDefaultMetrics } from "./selector";
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
+  import CanvasFilters from "./filters/CanvasFilters.svelte";
+  import DropZone from "./components/DropZone.svelte";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
@@ -30,11 +32,9 @@
   }
 
   const COLUMN_COUNT = 12;
-
   const MIN_HEIGHT = 160;
-
   const MIN_WIDTH = 3;
-  const MINIMUM_MOVEMENT = 18;
+  const MINIMUM_MOVEMENT = 12;
   const baseLayoutArrays = [
     [],
     [COLUMN_COUNT],
@@ -49,8 +49,8 @@
 
   const {
     canvasEntity: {
-      selectedComponentIndex: selectedIndex,
-      spec: { canvasSpec, isLoading },
+      setSelectedComponentIndex,
+      spec: { canvasSpec },
     },
   } = ctx;
 
@@ -108,7 +108,7 @@
 
   $: spec = structuredClone($canvasSpec ?? spec);
 
-  $: ({ items: canvasItems = [] } = spec);
+  $: ({ items: canvasItems = [], filtersEnabled } = spec);
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
 
@@ -124,8 +124,6 @@
   $: rowMaps = mapGuard(yamlRows.items);
 
   $: components = rawYamlItems?.items ?? [];
-
-  $: noLayoutComponents = rowMaps.length === 0;
 
   $: columnWidth = clientWidth / 12;
 
@@ -143,7 +141,7 @@
     );
   }
 
-  function rowsGuard(value: any): YAMLSeq {
+  function rowsGuard(value: unknown): YAMLSeq {
     if (!value || !(value instanceof YAMLSeq)) {
       return new YAMLSeq();
     } else {
@@ -307,6 +305,7 @@
     window.removeEventListener("mouseup", onDragEnd);
     clone.remove();
     dragItemInfo = null;
+    rowHover = null;
   }
 
   function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
@@ -607,6 +606,22 @@
   }
 
   let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  function resetDropZone() {
+    hoveredDropZone = null;
+  }
+
+  function setDropZone(id: string) {
+    hoveredDropZone = id;
+  }
+
+  function onDrop(row: number, column: number) {
+    if (!passedThreshold) return;
+    if (dragItemInfo) {
+      dropItemsInExistingRow([dragItemInfo], row, column);
+      dragItemInfo = null;
+    }
+  }
 </script>
 
 <svelte:window
@@ -628,32 +643,22 @@
   }}
 />
 
-<div
-  class="size-full overflow-hidden overflow-y-auto pb-48 pt-8 px-8 bg-white select-none"
->
-  {#if noLayoutComponents}
-    <AddComponentDropdown
-      componentForm
-      onMouseEnter={() => {
-        if (timeout) clearTimeout(timeout);
-      }}
-      onItemClick={(type) => {
-        initializeRow(0, [
-          {
-            name: canvasItems.length,
-            type,
-          },
-        ]);
-      }}
-    />
-  {/if}
+{#if filtersEnabled}
+  <header class="bg-background border-b py-4 px-2 w-full">
+    <CanvasFilters />
+  </header>
+{/if}
 
+<div
+  class="size-full overflow-hidden overflow-y-auto pb-48 pt-8 px-8 flex flex-col items-center bg-white select-none"
+>
   <div
-    class="w-full h-fit flex flex-col row-container max-w-[{maxWidth}px] relative"
+    style:max-width="{maxWidth}px"
+    class="w-full h-fit flex flex-col items-center row-container relative"
     bind:clientWidth
   >
     {#each rowMaps as { items, height, layout }, rowIndex (rowIndex)}
-      <div
+      <section
         role="presentation"
         class="size-full grid min-h-fit row relative"
         style:z-index={50 - rowIndex * 2}
@@ -669,90 +674,46 @@
             style:min-height="{height}px"
             style:height="{height}px"
           >
-            <div
-              style:height="calc(100% - 16px)"
-              class="absolute top-2 right-0 w-full z-20 pointer-events-none flex items-center justify-center"
-            >
-              {#if columnIndex === 0}
-                <ElementDivider
-                  left
-                  activelyResizing={false}
-                  hoveringOnDropZone={passedThreshold &&
-                    hoveredDropZone === `${rowIndex}-${columnIndex}`}
-                  {rowIndex}
-                  resizeIndex={-1}
-                  addIndex={columnIndex}
-                  rowLength={items.length}
-                  {spreadEvenly}
-                  {addItems}
-                />
-              {/if}
-
+            {#if columnIndex === 0}
               <ElementDivider
-                onMouseDown={onColumResizeStart}
-                activelyResizing={resizeInfo?.row === rowIndex &&
-                  resizeInfo?.column === columnIndex}
+                left
+                activelyResizing={false}
                 hoveringOnDropZone={passedThreshold &&
-                  hoveredDropZone === `${rowIndex}-${columnIndex + 1}`}
-                columnWidth={layout[columnIndex]}
+                  hoveredDropZone === `${rowIndex}-${columnIndex}`}
                 {rowIndex}
-                resizeIndex={columnIndex}
-                addIndex={columnIndex + 1}
+                resizeIndex={-1}
+                addIndex={columnIndex}
                 rowLength={items.length}
                 {spreadEvenly}
                 {addItems}
               />
+            {/if}
 
-              <div
-                class:pointer-events-auto={dragItemInfo}
-                style:height="calc(100% - 80px)"
-                class="w-1/2"
-                role="presentation"
-                on:mouseenter={() => {
-                  hoveredDropZone = `${rowIndex}-${columnIndex}`;
-                }}
-                on:mouseleave={() => {
-                  hoveredDropZone = null;
-                }}
-                on:mouseup={() => {
-                  if (!passedThreshold) return;
-                  if (dragItemInfo) {
-                    dropItemsInExistingRow(
-                      [dragItemInfo],
-                      rowIndex,
-                      columnIndex,
-                    );
-                    dragItemInfo = null;
-                  }
-                }}
-              />
+            <ElementDivider
+              onMouseDown={onColumResizeStart}
+              activelyResizing={resizeInfo?.row === rowIndex &&
+                resizeInfo?.column === columnIndex}
+              hoveringOnDropZone={passedThreshold &&
+                hoveredDropZone === `${rowIndex}-${columnIndex + 1}`}
+              columnWidth={layout[columnIndex]}
+              {rowIndex}
+              resizeIndex={columnIndex}
+              addIndex={columnIndex + 1}
+              rowLength={items.length}
+              {spreadEvenly}
+              {addItems}
+            />
 
-              <div
-                class:pointer-events-auto={dragItemInfo}
-                style:height="calc(100% - 80px)"
-                class="h-full w-1/2"
-                role="presentation"
-                on:mouseenter={() => {
-                  hoveredDropZone = `${rowIndex}-${columnIndex + 1}`;
-                }}
-                on:mouseleave={() => {
-                  hoveredDropZone = null;
-                }}
-                on:mouseup={() => {
-                  if (!passedThreshold) return;
-                  if (dragItemInfo) {
-                    dropItemsInExistingRow(
-                      [dragItemInfo],
-                      rowIndex,
-                      columnIndex + 1,
-                    );
-                    dragItemInfo = null;
-                  }
-                }}
-              />
-            </div>
+            <DropZone
+              column={columnIndex}
+              row={rowIndex}
+              allowDrop={!!dragItemInfo && passedThreshold}
+              onHover={setDropZone}
+              onMouseLeave={resetDropZone}
+              {onDrop}
+            />
 
-            <div
+            <article
               role="presentation"
               {id}
               class:selected={selected.has(id)}
@@ -765,8 +726,10 @@
                 if (e.shiftKey) {
                   selected.add(id);
                   selected = selected;
+
                   return;
                 }
+                setSelectedComponentIndex(Number(itemIndex));
 
                 selected = new Set([id]);
 
@@ -803,14 +766,14 @@
                 <!-- {:else}
                 <FileWarning size="24px" /> -->
               {/if}
-            </div>
+            </article>
           </div>
         {/each}
 
         <div
           role="presentation"
           class:pointer-events-none={!dragItemInfo}
-          class="absolute bottom-0 w-full z-10left-0 h-20 translate-y-1/2 flex items-center justify-center px-2"
+          class="absolute bottom-0 w-full z-10 left-0 h-20 translate-y-1/2 flex items-center justify-center px-2"
           on:mouseenter={() => {
             rowHover = rowIndex;
           }}
@@ -863,7 +826,22 @@
             />
           </button>
         </div>
-      </div>
+      </section>
+    {:else}
+      <AddComponentDropdown
+        componentForm
+        onMouseEnter={() => {
+          if (timeout) clearTimeout(timeout);
+        }}
+        onItemClick={(type) => {
+          initializeRow(0, [
+            {
+              name: canvasItems.length,
+              type,
+            },
+          ]);
+        }}
+      />
     {/each}
   </div>
 </div>
