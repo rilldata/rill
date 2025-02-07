@@ -17,6 +17,7 @@ type ExploreYAML struct {
 	DisplayName string                 `yaml:"display_name"`
 	Title       string                 `yaml:"title"` // Deprecated: use display_name
 	Description string                 `yaml:"description"`
+	Banner      string                 `yaml:"banner"`
 	MetricsView string                 `yaml:"metrics_view"`
 	Dimensions  *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures    *FieldSelectorYAML     `yaml:"measures"`
@@ -268,6 +269,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
+	r.ExploreSpec.Banner = tmp.Banner
 	r.ExploreSpec.Dimensions = dimensions
 	r.ExploreSpec.DimensionsSelector = dimensionsSelector
 	r.ExploreSpec.Measures = measures
