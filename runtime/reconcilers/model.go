@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	_modelDefaultTimeout = 60 * time.Minute
+	_modelDefaultTimeout = 3 * time.Hour
 
 	_modelSyncPartitionsBatchSize    = 1000
 	_modelPendingPartitionsBatchSize = 1000

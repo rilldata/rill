@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultIngestTimeout = 60 * time.Minute
+const _defaultIngestTimeout = 3 * time.Hour
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindSource, newSourceReconciler)
