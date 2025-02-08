@@ -92,7 +92,7 @@
       ? 80
       : 104);
 
-  function getFormattedDiff(comparisonValue) {
+  function getFormattedDiff(comparisonValue: number) {
     if (!$measureValue.data) return "";
     const delta = $measureValue.data - comparisonValue;
     return `${delta >= 0 ? "+" : ""}${measureValueFormatter(delta)}`;
@@ -116,7 +116,11 @@
             class:font-semibold={$measureValue.data && $measureValue.data >= 0}
           >
             {#if $comparisonValue.data != null}
-              {getFormattedDiff($comparisonValue.data)}
+              <span
+                class:text-red-500={$measureValue.data &&
+                  $measureValue.data - $comparisonValue.data < 0}
+                >{getFormattedDiff($comparisonValue.data)}</span
+              >
             {:else}
               <span class="ui-copy-disabled-faint italic" style:font-size=".9em"
                 >no change</span
