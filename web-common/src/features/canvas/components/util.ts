@@ -4,12 +4,17 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
 import { ChartComponent } from "./charts";
 import { ImageComponent } from "./image";
 import { KPIComponent } from "./kpi";
 import { MarkdownCanvasComponent } from "./markdown";
 import { TableCanvasComponent } from "./table";
-import type { CanvasComponentType, ComponentCommonProperties } from "./types";
+import type {
+  CanvasComponentType,
+  ComponentCommonProperties,
+  ComponentFilterProperties,
+} from "./types";
 
 export const commonOptions: Record<
   keyof ComponentCommonProperties,
@@ -90,6 +95,20 @@ export function isChartComponentType(
   return ["line_chart", "bar_chart", "stacked_bar", "area_chart"].includes(
     value as CanvasComponentType,
   );
+}
+
+export function getComponentFilterProperties(
+  rendererProperties: V1ComponentSpecRendererProperties | undefined,
+): ComponentFilterProperties {
+  return {
+    dimension_filters: rendererProperties?.dimension_filters as
+      | string
+      | undefined,
+    time_range: rendererProperties?.time_range as string | undefined,
+    comparison_range: rendererProperties?.comparison_range as
+      | string
+      | undefined,
+  };
 }
 
 export function getComponentRegistry(): Record<

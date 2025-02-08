@@ -1,7 +1,10 @@
 <script lang="ts" context="module">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
-  import { isChartComponentType } from "@rilldata/web-common/features/canvas/components/util";
+  import {
+    getComponentFilterProperties,
+    isChartComponentType,
+  } from "@rilldata/web-common/features/canvas/components/util";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
 </script>
@@ -28,6 +31,7 @@
 
   $: title = rendererProperties?.title;
   $: description = rendererProperties?.description;
+  $: componentFilters = getComponentFilterProperties(rendererProperties);
 
   function handleMouseEnter() {
     if (embed) return;
@@ -58,9 +62,11 @@
 >
   <div class="size-full relative">
     <div class="size-full overflow-hidden flex flex-col flex-none">
-      <div class="size-full overflow-hidden flex flex-col gap-y-1 flex-none">
+      <div
+        class="size-full overflow-hidden flex flex-col gap-y-1 flex-none relative"
+      >
         {#if !isChartType}
-          <ComponentHeader {title} {description} />
+          <ComponentHeader {title} {description} filters={componentFilters} />
         {/if}
         {#if renderer && rendererProperties}
           <ComponentRenderer {renderer} {componentName} />
