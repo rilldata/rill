@@ -1,16 +1,6 @@
 <script lang="ts">
-  import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
-  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
-  import WithRoundToTimegrain from "@rilldata/web-common/components/data-graphic/functional-components/WithRoundToTimegrain.svelte";
-  import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import {
-    AreaMutedColorGradientLight,
-    MainAreaColorGradientDark,
-    MainLineColor,
-  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import MeasureValueMouseover from "@rilldata/web-common/features/dashboards/time-series/MeasureValueMouseover.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -22,13 +12,9 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-  import { TimeRoundingStrategy } from "@rilldata/web-common/lib/time/types";
-  import {
-    V1TimeGrain,
-    type V1ComponentSpecRendererProperties,
-  } from "@rilldata/web-common/runtime-client";
-  import { extent } from "d3-array";
+  import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import type { KPISpec } from ".";
+  import KPISparkline from "./KPISparkline.svelte";
   import {
     useKPIComparisonTotal,
     useKPISparkline,
@@ -48,15 +34,8 @@
     },
   } = ctx.canvasEntity;
 
-  const focusedAreaGradient: [string, string] = [
-    MainAreaColorGradientDark,
-    AreaMutedColorGradientLight,
-  ];
-
   let containerWidth: number;
   let containerHeight: number;
-  let mouseoverValue: { x: Date; y: number } | undefined = undefined;
-  let hovered = false;
 
   $: kpiProperties = rendererProperties as KPISpec;
 
@@ -91,16 +70,12 @@
   $: isSparkRight = sparkLineOrientation === "right";
   $: sparkline = useKPISparkline(ctx, kpiProperties, $schema.isValid);
   $: sparkData = $sparkline?.data || [];
-  $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
   $: sparklineHeight = isSparkRight
     ? containerHeight
     : containerHeight -
       (showComparison && $comparisonValue?.data != null ? 112 : 72);
   $: sparklineWidth = isSparkRight ? containerWidth - 136 : containerWidth - 10;
-
-  $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
-  $: [xMin, xMax] = extent(sparkData, (d) => d["ts_position"]);
 
   $: measureValueFormatter = $measure
     ? createMeasureValueFormatter<null>($measure, "big-number")
@@ -111,7 +86,6 @@
     : "no data";
 
   $: numberKind = $measure ? numberKindForMeasure($measure) : NumberKind.ANY;
-  $: hoveredTime = mouseoverValue?.x instanceof Date && mouseoverValue?.x;
 
   function getFormattedDiff(comparisonValue: number) {
     if (!$measureValue.data) return "";
@@ -185,59 +159,17 @@
           {/if}
         {/if}
       </div>
-      {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
-        <div class={isSparkRight ? "h-full" : "w-full"}>
-          <SimpleDataGraphic
-            bind:hovered
-            bind:mouseoverValue
-            height={sparklineHeight}
-            width={sparklineWidth}
-            overflowHidden={false}
-            top={5}
-            bottom={0}
-            right={0}
-            left={16}
-            {xMin}
-            {xMax}
-            {yMin}
-            {yMax}
-          >
-            <ChunkedLine
-              lineOpacity={0.75}
-              areaEndOffset="75%"
-              lineColor={MainLineColor}
-              areaGradientColors={focusedAreaGradient}
-              data={sparkData}
-              xAccessor="ts"
-              yAccessor={measureName}
-            />
-            {#if hoveredTime && mouseoverValue}
-              <WithRoundToTimegrain
-                strategy={TimeRoundingStrategy.PREVIOUS}
-                value={hoveredTime}
-                timeGrain={$selectedTimeRange?.interval ||
-                  V1TimeGrain.TIME_GRAIN_HOUR}
-                let:roundedValue
-              >
-                <WithBisector
-                  data={sparkData}
-                  callback={(d) => d["ts"]}
-                  value={roundedValue}
-                  let:point
-                >
-                  <MeasureValueMouseover
-                    {point}
-                    xAccessor="ts"
-                    yAccessor={measureName}
-                    showComparison={false}
-                    mouseoverFormat={measureValueFormatter}
-                    {numberKind}
-                  />
-                </WithBisector>
-              </WithRoundToTimegrain>
-            {/if}
-          </SimpleDataGraphic>
-        </div>
+      {#if containerHeight && containerWidth && showSparkline && sparkData.length && $selectedTimeRange?.interval}
+        <KPISparkline
+          {sparkData}
+          {measureName}
+          {sparklineHeight}
+          {sparklineWidth}
+          {isSparkRight}
+          timeGrain={$selectedTimeRange.interval}
+          {measureValueFormatter}
+          {numberKind}
+        />
       {/if}
     </div>
   {:else}
