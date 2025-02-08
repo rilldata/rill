@@ -17,6 +17,7 @@ export interface KPISpec
     ComponentFilterProperties {
   metrics_view: string;
   measure: string;
+  sparkline_orientation?: "bottom" | "right"; // defaults to bottom
   sparkline?: boolean;
 }
 
