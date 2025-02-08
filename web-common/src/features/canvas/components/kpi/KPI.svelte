@@ -13,6 +13,7 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import type { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
@@ -29,7 +30,7 @@
   const ctx = getCanvasStateManagers();
   const {
     spec,
-    timeControls: { showTimeComparison },
+    timeControls: { showTimeComparison, selectedComparisonTimeRange },
   } = ctx.canvasEntity;
 
   let containerWidth: number;
@@ -60,6 +61,10 @@
   $: sparkData = $sparkline?.data || [];
   $: isEmptySparkline = sparkData.every((y) => y[measureName] === null);
 
+  $: globalComparisonLabel =
+    $selectedComparisonTimeRange?.name &&
+    TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
+
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
@@ -89,8 +94,8 @@
     containerHeight -
     (!showComparison ||
     (comparisonValue && $comparisonValue?.data === undefined)
-      ? 80
-      : 104);
+      ? 72
+      : 112);
 
   function getFormattedDiff(comparisonValue: number) {
     if (!$measureValue.data) return "";
@@ -104,7 +109,7 @@
     <div
       bind:clientWidth={containerWidth}
       bind:clientHeight={containerHeight}
-      class="flex flex-col h-full w-full bg-white pt-4 items-center gap-y-1"
+      class="flex flex-col h-full w-full bg-white pt-4 items-center"
     >
       <div class="measure-label">{$measure?.displayName || measureName}</div>
       <div class="measure-value">{measureValueFormatted}</div>
@@ -141,15 +146,14 @@
               />
             </div>
           {/if}
-          {#if comparisonTimeRange}
-            <span class="comparison-range">
-              vs last {humaniseISODuration(
-                comparisonTimeRange?.toUpperCase(),
-                false,
-              )}
-            </span>
-          {/if}
         </div>
+        {#if comparisonTimeRange || globalComparisonLabel}
+          <div class="comparison-range">
+            vs {comparisonTimeRange
+              ? `last ${humaniseISODuration(comparisonTimeRange?.toUpperCase(), false)}`
+              : globalComparisonLabel?.toLowerCase()}
+          </div>
+        {/if}
       {/if}
       {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
         <SimpleDataGraphic
