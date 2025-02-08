@@ -4,8 +4,8 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import {
+    AreaMutedColorGradientLight,
     MainAreaColorGradientDark,
-    MainAreaColorGradientLight,
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -67,7 +67,7 @@
 
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
-    MainAreaColorGradientLight,
+    AreaMutedColorGradientLight,
   ];
 
   $: [yMin, yMax] = extent(sparkData, (d) => d[measureName]);
@@ -92,10 +92,7 @@
 
   $: sparklineHeight =
     containerHeight -
-    (!showComparison ||
-    (comparisonValue && $comparisonValue?.data === undefined)
-      ? 72
-      : 112);
+    (showComparison && $comparisonValue?.data != null ? 112 : 72);
 
   function getFormattedDiff(comparisonValue: number) {
     if (!$measureValue.data) return "";
@@ -158,7 +155,7 @@
       {#if containerHeight && containerWidth && showSparkline && sparkData.length && !isEmptySparkline}
         <SimpleDataGraphic
           height={sparklineHeight}
-          width={containerWidth + 10}
+          width={containerWidth - 20}
           overflowHidden={false}
           top={5}
           bottom={0}
@@ -170,8 +167,8 @@
           {yMax}
         >
           <ChunkedLine
-            lineOpacity={0.6}
-            stopOpacity={0.2}
+            lineOpacity={0.75}
+            areaEndOffset="75%"
             lineColor={MainLineColor}
             areaGradientColors={focusedAreaGradient}
             data={sparkData}
