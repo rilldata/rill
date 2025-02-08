@@ -7,28 +7,13 @@
   export let i: number;
   export let component: V1CanvasItem;
   export let selected: boolean;
-  export let instanceId: string;
 
   $: componentName = component?.component;
   $: inlineComponent = component?.definedInCanvas;
 </script>
 
 {#if componentName && !inlineComponent}
-  <CanvasComponent
-    {instanceId}
-    {i}
-    {componentName}
-    {selected}
-    on:change
-    on:contextmenu
-  />
+  <CanvasComponent {i} {componentName} {selected} on:change on:contextmenu />
 {:else if componentName}
-  <CanvasComponent
-    {instanceId}
-    {i}
-    {componentName}
-    {selected}
-    on:change
-    on:contextmenu
-  />
+  <CanvasComponent {i} {componentName} {selected} on:change on:contextmenu />
 {/if}
