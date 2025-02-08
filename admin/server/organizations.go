@@ -185,6 +185,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		}
 	}
 
+	faviconAssetID := org.FaviconAssetID
+	if req.FaviconAssetId != nil { // Means it should be updated
+		if *req.FaviconAssetId == "" { // Means it should be cleared
+			faviconAssetID = nil
+		} else {
+			faviconAssetID = req.FaviconAssetId
+		}
+	}
+
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
@@ -192,6 +201,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		DisplayName:                         valOrDefault(req.DisplayName, org.DisplayName),
 		Description:                         valOrDefault(req.Description, org.Description),
 		LogoAssetID:                         logoAssetID,
+		FaviconAssetID:                      faviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -875,6 +885,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        org.CustomDomain,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
@@ -919,6 +930,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		DisplayName:                         org.DisplayName,
 		Description:                         org.Description,
 		LogoAssetID:                         org.LogoAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
 		CustomDomain:                        req.CustomDomain,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
@@ -946,12 +958,18 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 		logoURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.LogoAssetID)
 	}
 
+	var faviconURL string
+	if o.FaviconAssetID != nil {
+		faviconURL = s.admin.URLs.WithCustomDomain(o.CustomDomain).Asset(*o.FaviconAssetID)
+	}
+
 	res := &adminv1.Organization{
 		Id:           o.ID,
 		Name:         o.Name,
 		DisplayName:  o.DisplayName,
 		Description:  o.Description,
 		LogoUrl:      logoURL,
+		FaviconUrl:   faviconURL,
 		CustomDomain: o.CustomDomain,
 		Quotas: &adminv1.OrganizationQuotas{
 			Projects:                       int32(o.QuotaProjects),

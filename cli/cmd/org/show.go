@@ -36,6 +36,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.Printf("Display Name: %s\n", org.DisplayName)
 			ch.Printf("Description: %s\n", org.Description)
 			ch.Printf("Custom Logo: %s\n", org.LogoUrl)
+			ch.Printf("Custom Favicon: %s\n", org.FaviconUrl)
 			ch.Printf("Custom Domain: %s\n", org.CustomDomain)
 			ch.Printf("Billing Email: %s\n", org.BillingEmail)
 			ch.Printf("Created On: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
