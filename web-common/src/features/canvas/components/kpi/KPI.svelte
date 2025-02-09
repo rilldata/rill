@@ -74,7 +74,7 @@
   $: sparklineHeight = isSparkRight
     ? containerHeight
     : containerHeight -
-      (showComparison && $comparisonValue?.data != null ? 112 : 72);
+      (showComparison && $comparisonValue?.data != null ? 116 : 76);
   $: sparklineWidth = isSparkRight ? containerWidth - 136 : containerWidth - 10;
 
   $: measureValueFormatter = $measure
@@ -106,10 +106,10 @@
     <div
       bind:clientWidth={containerWidth}
       bind:clientHeight={containerHeight}
-      class="flex h-full w-full bg-white items-center"
-      class:flex-col={!isSparkRight}
+      class="flex h-full w-full bg-white items-center {isSparkRight
+        ? 'flex-row'
+        : 'flex-col'}"
       class:pt-4={!isSparkRight && showSparkline}
-      class:flex-row={isSparkRight}
       class:justify-center={!showSparkline || !sparkData.length}
     >
       <div
@@ -201,7 +201,7 @@
     @apply pr-2 text-gray-700;
   }
   .measure-value {
-    @apply text-3xl font-medium text-gray-700;
+    @apply text-3xl font-medium text-gray-700 pb-1;
   }
   .comparison-range {
     @apply text-sm text-gray-500;
