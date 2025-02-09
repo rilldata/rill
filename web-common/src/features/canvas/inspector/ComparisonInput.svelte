@@ -30,7 +30,7 @@
     <Switch
       checked={!!options?.length}
       on:click={() => {
-        onChange(!!options?.length ? [] : defaultComparisonOptions);
+        onChange(options?.length ? [] : defaultComparisonOptions);
       }}
       small
     />
