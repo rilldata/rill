@@ -101,13 +101,14 @@
       bind:clientHeight={containerHeight}
       class="flex h-full w-full bg-white items-center"
       class:flex-col={!isSparkRight}
-      class:pt-4={!isSparkRight}
+      class:pt-4={!isSparkRight && showSparkline}
       class:flex-row={isSparkRight}
+      class:justify-center={!showSparkline || !sparkData.length}
     >
       <div
         class="flex flex-col {isSparkRight
           ? 'w-36 justify-center items-start pl-4'
-          : 'w-full items-center'}"
+          : 'w-full'} {!showSparkline || !isSparkRight ? 'items-center' : ''}"
       >
         <div class="measure-label">{$measure?.displayName || measureName}</div>
         <div class="measure-value">{measureValueFormatted}</div>
