@@ -43,6 +43,7 @@
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
+    comparison: comparisonOptions,
     comparison_range: comparisonTimeRange,
   } = kpiProperties);
 
@@ -55,6 +56,8 @@
   $: showSparkline = sparkline !== "none";
   $: isSparkRight = sparkline === "right";
 
+  $: showComparison =
+    ($showTimeComparison || comparisonTimeRange) && comparisonOptions;
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
     kpiProperties,
@@ -64,7 +67,6 @@
     $measureValue.data != null && $comparisonValue.data
       ? ($measureValue.data - $comparisonValue.data) / $comparisonValue.data
       : undefined;
-  $: showComparison = $showTimeComparison || comparisonTimeRange;
   $: globalComparisonLabel =
     $selectedComparisonTimeRange?.name &&
     TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
@@ -85,7 +87,11 @@
 
   $: numberKind = $measure ? numberKindForMeasure($measure) : NumberKind.ANY;
 
-  $: sparklineData = useKPISparkline(ctx, kpiProperties, $schema.isValid);
+  $: sparklineData = useKPISparkline(
+    ctx,
+    kpiProperties,
+    $schema.isValid && showSparkline,
+  );
   $: sparkData = $sparklineData?.data || [];
 
   function getFormattedDiff(comparisonValue: number) {
@@ -96,7 +102,7 @@
 </script>
 
 {#if $schema.isValid}
-  {#if measure}
+  {#if measure && !$measureValue.isFetching}
     <div
       bind:clientWidth={containerWidth}
       bind:clientHeight={containerHeight}
@@ -115,26 +121,28 @@
         <div class="measure-value">{measureValueFormatted}</div>
         {#if showComparison && $comparisonValue.data}
           <div class="flex items-baseline gap-x-3 text-sm">
-            <div
-              role="complementary"
-              class="w-fit max-w-full overflow-hidden text-ellipsis text-gray-500"
-              class:font-semibold={$measureValue.data &&
-                $measureValue.data >= 0}
-            >
-              {#if $comparisonValue.data != null}
-                <span
-                  class:text-red-500={$measureValue.data &&
-                    $measureValue.data - $comparisonValue.data < 0}
-                  >{getFormattedDiff($comparisonValue.data)}</span
-                >
-              {:else}
-                <span
-                  class="ui-copy-disabled-faint italic"
-                  style:font-size=".9em">no change</span
-                >
-              {/if}
-            </div>
-            {#if comparisonPercChange != null && !measureIsPercentage}
+            {#if comparisonOptions?.includes("previous") && $comparisonValue.data != null}
+              <div role="complementary" class="comparison-value">
+                {measureValueFormatter($comparisonValue.data)}
+              </div>
+            {/if}
+            {#if comparisonOptions?.includes("delta")}
+              <div role="complementary" class="comparison-value">
+                {#if $comparisonValue.data != null}
+                  <span
+                    class:text-red-500={$measureValue.data &&
+                      $measureValue.data - $comparisonValue.data < 0}
+                    >{getFormattedDiff($comparisonValue.data)}</span
+                  >
+                {:else}
+                  <span
+                    class="ui-copy-disabled-faint italic"
+                    style:font-size=".9em">no change</span
+                  >
+                {/if}
+              </div>
+            {/if}
+            {#if comparisonOptions?.includes("percent_change") && comparisonPercChange != null && !measureIsPercentage}
               <div
                 role="complementary"
                 class="w-fit font-semibold ui-copy-inactive"
@@ -175,7 +183,7 @@
       {/if}
     </div>
   {:else}
-    <div class="flex items-center justify-center w-24">
+    <div class="flex items-center justify-center w-full h-full">
       <Spinner status={EntityStatus.Running} />
     </div>
   {/if}
@@ -197,5 +205,10 @@
   }
   .comparison-range {
     @apply text-sm text-gray-500;
+  }
+
+  .comparison-value {
+    @apply w-fit max-w-full overflow-hidden;
+    @apply font-semibold text-ellipsis text-gray-500;
   }
 </style>

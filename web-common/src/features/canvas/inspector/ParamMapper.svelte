@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/features/canvas/components/util";
   import AlignmentInput from "@rilldata/web-common/features/canvas/inspector/AlignmentInput.svelte";
   import ChartTypeSelector from "@rilldata/web-common/features/canvas/inspector/ChartTypeSelector.svelte";
+  import ComparisonInput from "@rilldata/web-common/features/canvas/inspector/ComparisonInput.svelte";
   import MarkSelector from "@rilldata/web-common/features/canvas/inspector/MarkSelector.svelte";
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
   import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
@@ -146,6 +147,19 @@
               component.updateProperty(key, updatedSparkline);
             }}
           />
+
+          <!-- KPI SPARKLINE INPUT -->
+        {:else if config.type === "comparison_options"}
+          <ComparisonInput
+            {key}
+            label={config.label ?? key}
+            options={localParamValues[key]}
+            onChange={(options) => {
+              localParamValues[key] = options;
+              component.updateProperty(key, options);
+            }}
+          />
+
           <!-- COMPONENT CONTENTS ALIGNMENT -->
         {:else if config.type === "alignment"}
           <AlignmentInput
