@@ -42,9 +42,8 @@
   $: ({
     metrics_view: metricsViewName,
     measure: measureName,
-    sparkline: showSparkline,
+    sparkline,
     comparison_range: comparisonTimeRange,
-    sparkline_orientation: sparkLineOrientation,
   } = kpiProperties);
 
   $: schema = validateKPISchema(ctx, kpiProperties);
@@ -52,6 +51,9 @@
   $: measure = spec.getMeasureForMetricView(measureName, metricsViewName);
   $: measureValue = useKPITotals(ctx, kpiProperties, $schema.isValid);
   $: measureIsPercentage = $measure?.formatPreset === FormatPreset.PERCENTAGE;
+
+  $: showSparkline = sparkline !== "none";
+  $: isSparkRight = sparkline === "right";
 
   $: comparisonValue = useKPIComparisonTotal(
     ctx,
@@ -66,10 +68,6 @@
   $: globalComparisonLabel =
     $selectedComparisonTimeRange?.name &&
     TIME_COMPARISON[$selectedComparisonTimeRange?.name]?.label;
-
-  $: isSparkRight = sparkLineOrientation === "right";
-  $: sparkline = useKPISparkline(ctx, kpiProperties, $schema.isValid);
-  $: sparkData = $sparkline?.data || [];
 
   $: sparklineHeight = isSparkRight
     ? containerHeight
@@ -86,6 +84,9 @@
     : "no data";
 
   $: numberKind = $measure ? numberKindForMeasure($measure) : NumberKind.ANY;
+
+  $: sparklineData = useKPISparkline(ctx, kpiProperties, $schema.isValid);
+  $: sparkData = $sparklineData?.data || [];
 
   function getFormattedDiff(comparisonValue: number) {
     if (!$measureValue.data) return "";

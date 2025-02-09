@@ -6,7 +6,7 @@ type SemanticInputTypes =
   | "multi_measures"
   | "multi_dimensions";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
-type CustomInputTypes = "rill_time";
+type CustomInputTypes = "rill_time" | "sparkline";
 type PositionalInputTypes = "alignment";
 
 export type InputType =

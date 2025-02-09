@@ -17,8 +17,7 @@ export interface KPISpec
     ComponentFilterProperties {
   metrics_view: string;
   measure: string;
-  sparkline_orientation?: "bottom" | "right"; // defaults to bottom
-  sparkline?: boolean;
+  sparkline?: "none" | "bottom" | "right"; // defaults to "bottom"
 }
 
 export class KPIComponent extends BaseCanvasComponent<KPISpec> {
@@ -33,7 +32,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     const defaultSpec: KPISpec = {
       metrics_view: "",
       measure: "",
-      sparkline: true,
     };
     super(fileArtifact, path, defaultSpec, initialSpec);
   }
@@ -49,7 +47,7 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
         measure: { type: "measure", label: "Measure" },
-        sparkline: { type: "boolean", optional: true, label: "Sparkline" },
+        sparkline: { type: "sparkline", optional: true, label: "Sparkline" },
         ...commonOptions,
       },
       filter: getFilterOptions(),
@@ -60,7 +58,6 @@ export class KPIComponent extends BaseCanvasComponent<KPISpec> {
     return {
       metrics_view,
       measure,
-      sparkline: true,
     };
   }
 }

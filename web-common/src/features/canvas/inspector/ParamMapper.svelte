@@ -12,6 +12,7 @@
   import MetricSelectorDropdown from "@rilldata/web-common/features/canvas/inspector/MetricSelectorDropdown.svelte";
   import MultiFieldInput from "@rilldata/web-common/features/canvas/inspector/MultiFieldInput.svelte";
   import SingleFieldInput from "@rilldata/web-common/features/canvas/inspector/SingleFieldInput.svelte";
+  import SparklineInput from "@rilldata/web-common/features/canvas/inspector/SparklineInput.svelte";
   import { type V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import type { CanvasComponentType } from "../components/types";
@@ -99,7 +100,12 @@
           <!-- BOOLEAN SWITCH -->
         {:else if config.type === "boolean"}
           <div class="flex items-center justify-between py-2">
-            <InputLabel small label={config.label ?? key} id={key} />
+            <InputLabel
+              small
+              label={config.label ?? key}
+              id={key}
+              faint={!localParamValues[key]}
+            />
             <Switch
               bind:checked={localParamValues[key]}
               on:click={async () => {
@@ -129,7 +135,18 @@
             />
           </div>
 
-          <!-- TEXT AREA -->
+          <!-- KPI SPARKLINE INPUT -->
+        {:else if config.type === "sparkline"}
+          <SparklineInput
+            {key}
+            label={config.label ?? key}
+            value={localParamValues[key]}
+            onChange={(updatedSparkline) => {
+              localParamValues[key] = updatedSparkline;
+              component.updateProperty(key, updatedSparkline);
+            }}
+          />
+          <!-- COMPONENT CONTENTS ALIGNMENT -->
         {:else if config.type === "alignment"}
           <AlignmentInput
             {key}
