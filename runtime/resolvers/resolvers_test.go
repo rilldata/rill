@@ -12,13 +12,14 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // TestFileYAML is the structure of a test file.
