@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -53,7 +54,7 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		// Next returns the next row of data. It returns io.EOF when there are no more rows.
 		row, err := res.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return nil, status.Error(codes.Internal, err.Error())
