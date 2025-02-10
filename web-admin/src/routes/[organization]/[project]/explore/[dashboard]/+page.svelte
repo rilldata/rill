@@ -94,18 +94,29 @@
     exploreResponse: V1GetExploreResponse,
   ) {
     if (!exploreResponse) return undefined;
-    return (
+    const isMetricsViewReconcilingForFirstTime =
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !exploreResponse.metricsView?.meta?.reconcileError
+      !exploreResponse.metricsView?.meta?.reconcileError;
+    const isExploreReconcilingForFirstTime =
+      !exploreResponse.explore?.explore?.state?.validSpec &&
+      !exploreResponse.explore?.meta?.reconcileError;
+    return (
+      isMetricsViewReconcilingForFirstTime || isExploreReconcilingForFirstTime
     );
   }
 
   function isDashboardErrored(exploreResponse: V1GetExploreResponse) {
     if (!exploreResponse) return undefined;
-    return (
+    // We only consider a dashboard errored (from the end-user perspective) when BOTH a reconcile error exists AND a validSpec does not exist.
+    // If there's any validSpec (which can persist from a previous, non-current spec), then we serve that version of the dashboard to the user,
+    // so the user does not see an error state.
+    const isMetricsViewErrored =
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !!exploreResponse.metricsView?.meta?.reconcileError
-    );
+      !!exploreResponse.metricsView?.meta?.reconcileError;
+    const isExploreErrored =
+      !exploreResponse.explore?.explore?.state?.validSpec &&
+      !!exploreResponse.explore?.meta?.reconcileError;
+    return isMetricsViewErrored || isExploreErrored;
   }
 </script>
 

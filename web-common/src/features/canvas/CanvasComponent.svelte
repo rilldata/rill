@@ -1,10 +1,10 @@
 <script lang="ts" context="module">
+  import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
-  import ComponentRenderer from "@rilldata/web-common/features/canvas/components/ComponentRenderer.svelte";
 </script>
 
 <script lang="ts">
@@ -63,7 +63,7 @@
         {#if title || description}
           <div class="w-full h-fit flex flex-col border-b bg-white p-2">
             {#if title}
-              <h1 class="text-slate-700">{title}</h1>
+              <h1 class="text-slate-700 truncate">{title}</h1>
             {/if}
             {#if description}
               <h2 class="text-slate-600 leading-none">{description}</h2>

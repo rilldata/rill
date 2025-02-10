@@ -119,11 +119,7 @@
       }}
       disabled={isRefreshButtonDisabled}
     >
-      {#if isRefreshButtonDisabled}
-        Refreshing...
-      {:else}
-        Refresh all sources and models
-      {/if}
+      Refresh all sources and models
     </Button>
   </div>
 
