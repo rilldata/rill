@@ -3,7 +3,6 @@
   import { page } from "$app/stores";
   import DashboardBuilding from "@rilldata/web-admin/features/dashboards/DashboardBuilding.svelte";
   import DashboardErrored from "@rilldata/web-admin/features/dashboards/DashboardErrored.svelte";
-  import { errorStore } from "@rilldata/web-admin/features/errors/error-store";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -61,26 +60,12 @@
   $: exploreTitle =
     $explore.data?.explore?.explore?.state?.validSpec?.displayName;
 
-  $: isDashboardNotFound =
-    !$explore.data &&
-    $explore.isError &&
-    $explore.error?.response?.status === 404;
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
-
-  // If no dashboard is found, show a 404 page
-  $: if (isDashboardNotFound) {
-    errorStore.set({
-      statusCode: 404,
-      header: "Dashboard not found",
-      body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
-    });
-  }
 
   onNavigate(() => {
     // Temporary: clear the mocked user when navigating away.
     // In the future, we should be able to handle the mocked user on all project pages.
     viewAsUserStore.set(null);
-    errorStore.reset();
   });
 
   /**

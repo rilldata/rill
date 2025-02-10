@@ -20,6 +20,13 @@ export function createUserFacingError(
       header: "Project deployment not found",
       body: "This is potentially a temporary state if the project has just been reset.",
     };
+  } else if (status === 401 && message === "auth token is expired") {
+    return {
+      statusCode: 401,
+      header: "Oops! This link has expired",
+      body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+      fatal: true,
+    };
   } else if (status === 403) {
     return {
       statusCode: status,
