@@ -174,25 +174,27 @@ security:
         - profit
 ```
 
-### Advanced Example: Custom attributes
+
+### Advanced Example: Mapping Dimensions and Attributes
 
 For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
 
-To support this, we can ingest a separate data [source](/build/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter.
+To support this, ingest a separate data [source](/build/connect) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter. This can be a locally created csv file or any hosted data source.
 
-For example, if we have a `mappings.csv` file in the `data` directory of our Rill project with the following contents:
+For example, a locally created `mappings.csv` file in the `data` directory of our Rill project with the following contents:
 ```csv
 email,tenant_id
 john.doe@example.com,1
 jane.doe@example.com,2
 ```
-we can ingest it as a regular data source in Rill:
+
+This requires to be ingested as a source in Rill like any other data source:
 ```yaml
 # sources/mappings.yaml
 type: local_file
 path: data/mappings.csv
 ```
-(In practice, you would probably ingest the data from a regularly updated export in S3.)
+(In practice, you would probably ingest the data from a regularly updated export in S3 with a source refresh.)
 
 We can now refer to the mappings data using a SQL sub-query as follows:
 ```yaml
@@ -200,3 +202,22 @@ security:
   access: true
   row_filter: "tenant_id IN (SELECT tenant_id FROM mappings WHERE email = '{{ .user.email }}')"
 ```
+
+
+### Advanced Example: Custom attributes (Embed Dashboards)
+
+Another use case for row access policies is to ensure that your embed dashboards is providing a specific view for your end users. During the [embed dashboard request](/integrate/embedding), you can pass custom attributes (other than the ones provided OOB) that maps directly to a value within your Rill explore dashboard.
+
+```yaml
+row_filter: >
+      dimension_1 = '{{ .user.custom_variable_1 }}' AND
+      dimension_2 = '{{ .user.custom_variable_2 }}' 
+```
+
+In order to test the view of your embed dashboard, you can add the same custom variables to [your mock users](#testing-your-policies) as seen below:
+```yaml
+- email: embed@rilldata.com
+  name: embed
+  custom_variable_1: Value_1
+  custom_variable_2: Value_2
+  ```
