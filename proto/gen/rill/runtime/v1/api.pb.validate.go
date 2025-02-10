@@ -7107,6 +7107,8 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for Path
 
+	// no validation rules for SkipSecurityChecks
+
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
 	}
@@ -7647,6 +7649,8 @@ func (m *GetResourceRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for SkipSecurityChecks
 
 	if len(errors) > 0 {
 		return GetResourceRequestMultiError(errors)

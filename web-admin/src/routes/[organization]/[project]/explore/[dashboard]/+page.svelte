@@ -17,7 +17,6 @@
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
-  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
   $: ({
@@ -29,43 +28,39 @@
     errors,
     exploreName,
   } = data);
+
   $: if (errors?.length) {
     const _errs = errors;
     setTimeout(() => {
       eventBus.emit("notification", {
         type: "error",
         message: _errs[0].message,
-        options: {
-          persisted: true,
-        },
+        options: { persisted: true },
       });
     }, 100);
   }
-  $: ({ instanceId } = $runtime);
 
+  $: ({ instanceId } = $runtime);
   $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: (data) => {
-      if (!data) {
-        return false;
-      } else if (isDashboardReconcilingForFirstTime(data)) {
+      if (!data) return false;
+      if (isDashboardReconcilingForFirstTime(data))
         return PollIntervalWhenDashboardFirstReconciling;
-      } else if (isDashboardErrored(data)) {
-        return PollIntervalWhenDashboardErrored;
-      } else {
-        return false;
-      }
+      if (isDashboardErrored(data)) return PollIntervalWhenDashboardErrored;
+      return false;
     },
   });
+
   $: exploreTitle =
     $explore.data?.explore?.explore?.state?.validSpec?.displayName;
-
   $: isDashboardNotFound =
     !$explore.data &&
     $explore.isError &&
     $explore.error?.response?.status === 404;
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
+  $: hasBanner = !!$explore.data?.explore?.explore?.state?.validSpec?.banner;
 
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
@@ -76,25 +71,37 @@
     });
   }
 
+  // Display a dashboard banner
+  $: if (hasBanner) {
+    eventBus.emit("banner", {
+      type: "default",
+      message: $explore.data.explore.explore.state.validSpec.banner,
+      iconType: "alert",
+    });
+  }
+
   onNavigate(() => {
-    // Temporary: clear the mocked user when navigating away.
-    // In the future, we should be able to handle the mocked user on all project pages.
     viewAsUserStore.set(null);
     errorStore.reset();
+
+    // Clear out any dashboard banners
+    if (hasBanner) {
+      eventBus.emit("banner", null);
+    }
   });
 
-  /**
-   * The `isDashboardReconcilingForFirstTime` and `isDashboardErrored` helper functions are intentionally used instead of similarly-named variables.
-   * Using variables instead of functions would create a circular dependency that chokes Svelte's reactivity, as the values inside the `useExplore` hook would
-   * themselves be derived from the output of the `useExplore` hook.
-   */
   function isDashboardReconcilingForFirstTime(
     exploreResponse: V1GetExploreResponse,
   ) {
     if (!exploreResponse) return undefined;
-    return (
+    const isMetricsViewReconcilingForFirstTime =
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !exploreResponse.metricsView?.meta?.reconcileError
+      !exploreResponse.metricsView?.meta?.reconcileError;
+    const isExploreReconcilingForFirstTime =
+      !exploreResponse.explore?.explore?.state?.validSpec &&
+      !exploreResponse.explore?.meta?.reconcileError;
+    return (
+      isMetricsViewReconcilingForFirstTime || isExploreReconcilingForFirstTime
     );
   }
 
@@ -103,10 +110,13 @@
     // We only consider a dashboard errored (from the end-user perspective) when BOTH a reconcile error exists AND a validSpec does not exist.
     // If there's any validSpec (which can persist from a previous, non-current spec), then we serve that version of the dashboard to the user,
     // so the user does not see an error state.
-    return (
+    const isMetricsViewErrored =
       !exploreResponse.metricsView?.metricsView?.state?.validSpec &&
-      !!exploreResponse.metricsView?.meta?.reconcileError
-    );
+      !!exploreResponse.metricsView?.meta?.reconcileError;
+    const isExploreErrored =
+      !exploreResponse.explore?.explore?.state?.validSpec &&
+      !!exploreResponse.explore?.meta?.reconcileError;
+    return isMetricsViewErrored || isExploreErrored;
   }
 </script>
 

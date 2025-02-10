@@ -3705,6 +3705,8 @@ type ListResourcesRequest struct {
 	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
 	// Filter by resource path (optional).
 	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+	// Skip security checks
+	SkipSecurityChecks bool `protobuf:"varint,4,opt,name=skip_security_checks,json=skipSecurityChecks,proto3" json:"skip_security_checks,omitempty"`
 }
 
 func (x *ListResourcesRequest) Reset() {
@@ -3758,6 +3760,13 @@ func (x *ListResourcesRequest) GetPath() string {
 		return x.Path
 	}
 	return ""
+}
+
+func (x *ListResourcesRequest) GetSkipSecurityChecks() bool {
+	if x != nil {
+		return x.SkipSecurityChecks
+	}
+	return false
 }
 
 type ListResourcesResponse struct {
@@ -3946,8 +3955,9 @@ type GetResourceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InstanceId string        `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	Name       *ResourceName `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	InstanceId         string        `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	Name               *ResourceName `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	SkipSecurityChecks bool          `protobuf:"varint,3,opt,name=skip_security_checks,json=skipSecurityChecks,proto3" json:"skip_security_checks,omitempty"`
 }
 
 func (x *GetResourceRequest) Reset() {
@@ -3994,6 +4004,13 @@ func (x *GetResourceRequest) GetName() *ResourceName {
 		return x.Name
 	}
 	return nil
+}
+
+func (x *GetResourceRequest) GetSkipSecurityChecks() bool {
+	if x != nil {
+		return x.SkipSecurityChecks
+	}
+	return false
 }
 
 type GetResourceResponse struct {

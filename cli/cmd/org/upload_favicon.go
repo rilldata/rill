@@ -13,14 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
+func UploadFaviconCmd(ch *cmdutil.Helper) *cobra.Command {
 	var path string
 	var remove bool
 
 	cmd := &cobra.Command{
-		Use:   "upload-logo [<org-name> [<path-to-image>]]",
+		Use:   "upload-favicon [<org-name> [<path-to-image>]]",
 		Args:  cobra.MaximumNArgs(2),
-		Short: "Upload a custom logo",
+		Short: "Upload a custom favicon",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {
@@ -45,29 +45,29 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				// Confirmation prompt
-				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom logo for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+				if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are removing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
 					return err
 				}
 
 				empty := ""
 				_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-					Name:        ch.Org,
-					LogoAssetId: &empty,
+					Name:           ch.Org,
+					FaviconAssetId: &empty,
 				})
 				if err != nil {
 					return err
 				}
 
-				ch.PrintfSuccess("Removed logo from organization %q\n", ch.Org)
+				ch.PrintfSuccess("Removed favicon from organization %q\n", ch.Org)
 				return nil
 			}
 
 			// Check the file is an image
 			ext := strings.TrimPrefix(filepath.Ext(path), ".")
 			switch ext {
-			case "png", "jpg", "jpeg", "gif", "svg", "ico":
+			case "png", "ico":
 			default:
-				return fmt.Errorf("invalid file type %q (expected PNG, JPG, GIF, SVG)", ext)
+				return fmt.Errorf("invalid file type %q (expected PNG or JPG)", ext)
 			}
 
 			// Validate and open the path
@@ -88,7 +88,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			defer f.Close()
 
 			// Confirmation prompt
-			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom logo for %q. Continue?", ch.Org), "", false); err != nil || !ok {
+			if ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("You are changing the custom favicon for %q. Continue?", ch.Org), "", false); err != nil || !ok {
 				return err
 			}
 
@@ -96,7 +96,7 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 			asset, err := client.CreateAsset(cmd.Context(), &adminv1.CreateAssetRequest{
 				OrganizationName:   ch.Org,
 				Type:               "image",
-				Name:               "logo",
+				Name:               "favicon",
 				Extension:          ext,
 				Cacheable:          true,
 				EstimatedSizeBytes: fi.Size(),
@@ -123,24 +123,24 @@ func UploadLogoCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to upload: status=%d, error=%s", resp.StatusCode, string(body))
 			}
 
-			// Update the logo
+			// Update the favicon
 			_, err = client.UpdateOrganization(cmd.Context(), &adminv1.UpdateOrganizationRequest{
-				Name:        ch.Org,
-				LogoAssetId: &asset.AssetId,
+				Name:           ch.Org,
+				FaviconAssetId: &asset.AssetId,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to update: %w", err)
 			}
 
 			// Print confirmation message
-			ch.PrintfSuccess("Updated the logo for %q\n", ch.Org)
+			ch.PrintfSuccess("Updated the favicon for %q\n", ch.Org)
 			return nil
 		},
 	}
 	cmd.Flags().SortFlags = false
 	cmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization name")
 	cmd.Flags().StringVar(&path, "path", "", "Path to image file (PNG or JPEG)")
-	cmd.Flags().BoolVar(&remove, "remove", false, "Remove the current logo")
+	cmd.Flags().BoolVar(&remove, "remove", false, "Remove the current favicon")
 
 	return cmd
 }

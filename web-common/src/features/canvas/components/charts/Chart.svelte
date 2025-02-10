@@ -33,6 +33,8 @@
   $: schema = validateChartSchema(ctx, chartConfig);
 
   $: data = getChartData(ctx, chartConfig);
+  $: hasNoData = !$data.isFetching && $data.data.length === 0;
+
   $: spec = generateSpec(chartType, chartConfig, $data);
 
   $: measure = getMeasureForMetricView(
@@ -64,16 +66,24 @@
     {#if !chartConfig.title && !chartConfig.description}
       <ComponentTitle faint {title} />
     {/if}
-    <VegaLiteRenderer
-      bind:viewVL
-      canvasDashboard
-      data={{ "metrics-view": $data.data }}
-      {spec}
-      expressionFunctions={{
-        [measureName]: { fn: (val) => measureFormatter(val) },
-      }}
-      {config}
-    />
+    {#if hasNoData}
+      <div
+        class="flex w-full h-full p-2 text-xl ui-copy-disabled items-center justify-center"
+      >
+        No Data to Display
+      </div>
+    {:else}
+      <VegaLiteRenderer
+        bind:viewVL
+        canvasDashboard
+        data={{ "metrics-view": $data.data }}
+        {spec}
+        expressionFunctions={{
+          [measureName]: { fn: (val) => measureFormatter(val) },
+        }}
+        {config}
+      />
+    {/if}
   {/if}
 {:else}
   <div

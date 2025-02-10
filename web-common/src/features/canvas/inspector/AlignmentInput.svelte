@@ -55,13 +55,7 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <InputLabel
-    hint="View documentation"
-    link="https://www.markdown.org"
-    small
-    {label}
-    id={key}
-  />
+  <InputLabel small {label} id={key} />
 
   <IconSwitcher
     small
