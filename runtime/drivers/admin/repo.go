@@ -32,7 +32,6 @@ func (h *Handle) CommitTimestamp(ctx context.Context) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	defer h.repoMu.RUnlock()
 
 	if h.archiveDownloadURL != "" {
