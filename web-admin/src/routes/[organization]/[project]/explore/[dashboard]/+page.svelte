@@ -16,7 +16,6 @@
 
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
-  // const PollIntervalWhenDashboardOk = 60000; // This triggers a layout shift, so removing for now
 
   export let data: PageData;
   $: ({
@@ -28,51 +27,54 @@
     errors,
     exploreName,
   } = data);
+
   $: if (errors?.length) {
     const _errs = errors;
     setTimeout(() => {
       eventBus.emit("notification", {
         type: "error",
         message: _errs[0].message,
-        options: {
-          persisted: true,
-        },
+        options: { persisted: true },
       });
     }, 100);
   }
-  $: ({ instanceId } = $runtime);
 
+  $: ({ instanceId } = $runtime);
   $: ({ organization: orgName, project: projectName } = $page.params);
 
   $: explore = useExplore(instanceId, exploreName, {
     refetchInterval: (data) => {
-      if (!data) {
-        return false;
-      } else if (isDashboardReconcilingForFirstTime(data)) {
+      if (!data) return false;
+      if (isDashboardReconcilingForFirstTime(data))
         return PollIntervalWhenDashboardFirstReconciling;
-      } else if (isDashboardErrored(data)) {
-        return PollIntervalWhenDashboardErrored;
-      } else {
-        return false;
-      }
+      if (isDashboardErrored(data)) return PollIntervalWhenDashboardErrored;
+      return false;
     },
   });
+
   $: exploreTitle =
     $explore.data?.explore?.explore?.state?.validSpec?.displayName;
-
   $: metricsViewName = $explore.data?.metricsView?.meta?.name?.name;
+  $: hasBanner = !!$explore.data?.explore?.explore?.state?.validSpec?.banner;
+
+  // Display a dashboard banner
+  $: if (hasBanner) {
+    eventBus.emit("banner", {
+      type: "default",
+      message: $explore.data.explore.explore.state.validSpec.banner,
+      iconType: "alert",
+    });
+  }
 
   onNavigate(() => {
-    // Temporary: clear the mocked user when navigating away.
-    // In the future, we should be able to handle the mocked user on all project pages.
     viewAsUserStore.set(null);
+
+    // Clear out any dashboard banners
+    if (hasBanner) {
+      eventBus.emit("banner", null);
+    }
   });
 
-  /**
-   * The `isDashboardReconcilingForFirstTime` and `isDashboardErrored` helper functions are intentionally used instead of similarly-named variables.
-   * Using variables instead of functions would create a circular dependency that chokes Svelte's reactivity, as the values inside the `useExplore` hook would
-   * themselves be derived from the output of the `useExplore` hook.
-   */
   function isDashboardReconcilingForFirstTime(
     exploreResponse: V1GetExploreResponse,
   ) {
