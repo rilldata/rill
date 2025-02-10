@@ -9202,6 +9202,8 @@ export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
  */
 export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   /**
+   * If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+   *
    * @generated from field: string git_url = 1;
    */
   gitUrl = "";
@@ -9217,12 +9219,19 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitSubpath = "";
 
   /**
-   * archive_download_url is set when repo is managed by Rill
-   * either archive_download_url or git related details will be set
-   *
    * @generated from field: string archive_download_url = 4;
    */
   archiveDownloadUrl = "";
+
+  /**
+   * @generated from field: string archive_id = 5;
+   */
+  archiveId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp archive_created_on = 6;
+   */
+  archiveCreatedOn?: Timestamp;
 
   constructor(data?: PartialMessage<GetRepoMetaResponse>) {
     super();
@@ -9236,6 +9245,8 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "archive_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "archive_created_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {

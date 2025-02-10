@@ -5803,6 +5803,9 @@ definitions:
           $ref: '#/definitions/v1ParseError'
       currentCommitSha:
         type: string
+      currentCommitOn:
+        type: string
+        format: date-time
       watching:
         type: boolean
   v1PullTrigger:
