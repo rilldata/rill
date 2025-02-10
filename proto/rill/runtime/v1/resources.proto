@@ -360,6 +360,8 @@ message ExploreSpec {
   // Security for the explore dashboard.
   // These are not currently parsed from YAML, but will be derived from the parent metrics view.
   repeated SecurityRule security_rules = 12;
+  // Banner text that can be displayed in Rill Cloud.
+  string banner = 18; 
 }
 
 message ExploreState {
@@ -731,6 +733,8 @@ message CanvasSpec {
   google.protobuf.Value layout = 16;
   // Security rules to apply for access to the canvas.
   repeated SecurityRule security_rules = 6;
+  // Banner text that can be displayed in Rill Cloud.
+  string banner = 17; 
 }
 
 message CanvasState {

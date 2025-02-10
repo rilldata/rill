@@ -651,6 +651,8 @@ message ListResourcesRequest {
   string kind = 2;
   // Filter by resource path (optional).
   string path = 3;
+  // Skip security checks
+  bool skip_security_checks = 4;
 }
 
 message ListResourcesResponse {
@@ -673,6 +675,7 @@ message WatchResourcesResponse {
 message GetResourceRequest {
   string instance_id = 1;
   ResourceName name = 2;
+  bool skip_security_checks = 3;
 }
 
 message GetResourceResponse {

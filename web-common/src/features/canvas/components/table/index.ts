@@ -33,8 +33,6 @@ export class TableCanvasComponent extends BaseCanvasComponent<TableSpec> {
     const defaultSpec: TableSpec = {
       metrics_view: "",
       measures: [],
-      time_range: "",
-      comparison_range: "",
       row_dimensions: [],
       col_dimensions: [],
     };

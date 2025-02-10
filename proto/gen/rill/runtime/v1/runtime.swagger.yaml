@@ -2542,6 +2542,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipSecurityChecks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources:
@@ -2573,6 +2577,11 @@ paths:
           in: query
           required: false
           type: string
+        - name: skipSecurityChecks
+          description: Skip security checks
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/resources/-/watch:
@@ -3643,6 +3652,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1SecurityRule'
         description: Security rules to apply for access to the canvas.
+      banner:
+        type: string
+        description: Banner text that can be displayed in Rill Cloud.
   v1CanvasState:
     type: object
     properties:
@@ -4369,6 +4381,9 @@ definitions:
         description: |-
           Security for the explore dashboard.
           These are not currently parsed from YAML, but will be derived from the parent metrics view.
+      banner:
+        type: string
+        description: Banner text that can be displayed in Rill Cloud.
   v1ExploreState:
     type: object
     properties:
