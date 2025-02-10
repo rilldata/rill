@@ -71,7 +71,7 @@
   let selected: Set<string> = new Set();
   let clone: HTMLElement;
   let offset = { x: 0, y: 0 };
-  // let resizeRow = -1;
+  let resizeRow = -1;
   let initialHeight = 0;
   // {row}-{order}
   let hoveredDropZone: string | null = null;
@@ -138,8 +138,6 @@
     ? calculateMouseDelta(initialMousePosition, mousePosition)
     : 0;
   $: passedThreshold = mouseDelta > MINIMUM_MOVEMENT;
-
-  let resizeRow = -1;
 
   $: if (resizeRow !== -1 && initialMousePosition) {
     const diff = mousePosition.y - initialMousePosition.y;
