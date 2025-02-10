@@ -1,0 +1,57 @@
+connectors:
+  - clickhouse
+  - postgres
+project_files:
+  all_datatypes_source.yaml:
+    type: model
+    connector: clickhouse
+    materialize: true
+    sql: "SELECT * FROM postgresql('{{.env.connector.postgres.ip}}:5432', 'postgres', 'all_datatypes', 'postgres', 'postgres')"
+tests:
+  - name: query_all_result
+    resolver: sql
+    properties:
+      sql: "select * from all_datatypes_source order by id"
+      connector: clickhouse
+    result_csv: |
+      id,uuid,name,age,is_married,date_of_birth,time_of_day,created_at,personal_info,personal_info2,is_alive,binary_data,gender,gender_full,nickname,num_of_dependents,biography,last_login,weight,height,sibling_rank,credit_score,net_worth,salary_history,login_history,emp_salary,country
+      1,8a25ac46-8ad6-4415-9a2e-12aa3962c144,John Doe,30,1,1983-03-08,12:35:00,2023-09-12T12:46:55Z,"{""hobbies"": ""Travel, Tech""}","{""job"": ""Software Engineer""}",1,10101010,M,Male,abcd      ,2,John is a software engineer who loves to travel and explore new places.,2023-09-12T07:16:55Z,75.4000015258789,180.5,1,720,1234567,"[1234567,7654312]","[""2023-09-12T12:46:55Z"",""2023-10-12T12:46:55Z""]",385000.71,IND
+      2,ec773cd0-8edc-419a-9d57-1815aaee2f01,Alice Smith,25,0,1998-07-15,08:20:00,2023-08-10T10:20:30Z,"{""hobbies"": ""Reading, AI""}","{""job"": ""Data Analyst""}",0,11110000,F,Female,wxyz      ,0,Alice is a data analyst with a passion for AI and machine learning.,2023-08-10T04:50:30Z,62.29999923706055,167.2,2,680,8765432,"[8765432,2345678]",[],550000.12,AUS
+      3,ddb115ff-8da4-4b36-b1b5-1f58123c1552,Bob Brown,40,,1982-01-22,14:45:00,2023-07-15T15:45:20Z,"{""hobbies"": ""Cycling, Management""}","{""job"": ""Project Manager""}",,11001100,M,Male,mnop      ,3,Bob is a project manager with 15 years of experience.,2023-07-15T10:15:20Z,85.19999694824219,175,3,710,6543210,[],"[""2023-07-15T15:45:20Z""]",,NZ
+      4,5cf3d245-3d9b-4baf-b0f3-9c2f29150c57,Sophia Davis,35,1,1987-11-30,09:30:00,2023-06-20T20:10:05Z,"{""hobbies"": ""Design, Art""}","{""job"": ""Designer""}",1,,F,Female,qrst      ,1,Sophia is a designer who enjoys creating user-friendly experiences.,2023-06-20T14:40:05Z,58.900001525878906,160,4,750,9876543,"[9999,8888]",[],6500000.65,SA
+      5,c13da985-454a-48f1-9c35-e4281f918a77,Emma White,28,0,1995-02-14,10:05:00,2023-05-25T09:55:10Z,"{""hobbies"": ""Research, Science""}","{""job"": ""Researcher""}",0,10101010,F,Female,uvwx      ,0,Emma is a researcher focused on environmental science.,2023-05-25T04:25:10Z,65,170.8,5,690,7890123,"[7890123,2109876]","[""2023-05-25T09:55:10Z""]",4800000.98,IND
+  - name: query_all_data_type
+    resolver: sql
+    properties:
+      sql: |
+        select name, type from system.columns where `table` = 'all_datatypes_source'
+      connector: clickhouse
+    result_csv: |
+      name,type
+      id,Int32
+      uuid,Nullable(UUID)
+      name,Nullable(String)
+      age,Nullable(Int32)
+      is_married,Nullable(UInt8)
+      date_of_birth,Nullable(Date)
+      time_of_day,Nullable(String)
+      created_at,Nullable(DateTime64(6))
+      personal_info,Nullable(String)
+      personal_info2,Nullable(String)
+      is_alive,Nullable(String)
+      binary_data,Nullable(String)
+      gender,Nullable(String)
+      gender_full,Nullable(String)
+      nickname,Nullable(String)
+      num_of_dependents,Nullable(Int16)
+      biography,Nullable(String)
+      last_login,Nullable(DateTime64(6))
+      weight,Nullable(Float32)
+      height,Nullable(Float64)
+      sibling_rank,Nullable(Int16)
+      credit_score,Nullable(Int32)
+      net_worth,Nullable(Int64)
+      salary_history,Array(Nullable(Int64))
+      login_history,Array(Nullable(DateTime64(6)))
+      emp_salary,"Nullable(Decimal(38, 19))"
+      country,Nullable(String)

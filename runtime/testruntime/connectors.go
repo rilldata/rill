@@ -113,6 +113,12 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		_, err = db.Exec(string(sqlFile))
 		require.NoError(t, err)
 
-		return map[string]string{"dsn": pgc.DatabaseURL}
+		ip, err := pgc.Container.ContainerIP(context.Background())
+		require.NoError(t, err)
+
+		return map[string]string{
+			"dsn": pgc.DatabaseURL,
+			"ip":  ip,
+		}
 	},
 }
