@@ -104,7 +104,7 @@ export function validateTableSchema(
         const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
         return {
           isValid: false,
-          error: `Invalid measure(s) ${invalidMeasures} selected for the table`,
+          error: `Invalid measure(s) "${invalidMeasures}" selected for the table`,
         };
       }
 
@@ -119,7 +119,7 @@ export function validateTableSchema(
 
         return {
           isValid: false,
-          error: `Invalid dimension(s) ${invalidDimensions} selected for the table`,
+          error: `Invalid dimension(s) "${invalidDimensions}" selected for the table`,
         };
       }
       return {
