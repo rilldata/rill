@@ -1,7 +1,7 @@
 import { type UserFacingError } from "./error-store";
 
 export function createUserFacingError(
-  status: number,
+  status: number | null,
   message: string,
 ): UserFacingError {
   // Handle network errors

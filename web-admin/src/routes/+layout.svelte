@@ -1,5 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+  import { errorStore } from "@rilldata/web-admin/components/errors/error-store";
+  import { createUserFacingError } from "@rilldata/web-admin/components/errors/user-facing-errors";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
@@ -32,7 +35,6 @@
     url: { pathname },
   } = $page);
 
-  // Add TanStack Query errors to telemetry
   // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
@@ -40,7 +42,15 @@
     error: AxiosError,
     query: Query,
   ) => {
+    // Add TanStack Query errors to telemetry
     errorEventHandler?.requestErrorEventHandler(error, query);
+
+    // Handle network errors
+    // Note: ideally, we'd throw this in the root `+layout.ts` file, but we're blocked by
+    // https://github.com/sveltejs/kit/issues/10201
+    if (isAdminServerQuery(query) && error.message === "Network Error") {
+      errorStore.set(createUserFacingError(null, error.message));
+    }
   };
 
   // The admin server enables some dashboard features like scheduled reports and alerts
