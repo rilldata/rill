@@ -103,7 +103,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Print the data in the requested format (default: human)
-			ch.PrintData(res.Data)
+			ch.PrintQueryResponse(res)
 
 			return nil
 		},
