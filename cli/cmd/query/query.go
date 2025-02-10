@@ -6,7 +6,22 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/structpb"
 )
+
+// Command Long Description
+var long = `Query a resolver within a project.
+
+You can query a resolver by providing a SQL query, a resolver name, or a connector name.
+
+Example Usage:
+
+Query a resolver by providing a SQL query:
+rill query my-project --sql "SELECT * FROM my-table"
+
+Querying a different connector:
+rill query my-project --connector "postgres" --sql "SELECT * FROM my-table" --limit 10
+`
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	var sql, connector, resolver, project, path string
@@ -17,12 +32,29 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	queryCmd := &cobra.Command{
 		Use:   "query [<project>]",
 		Short: "Query a resolver within a project",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Determine project name
-			if len(args) > 0 {
-				project = args[0]
+		Long:  long,
+		RunE: func(cmd *cobra.Command, cmdArgs []string) error {
+			// Initialize maps early if nil
+			if properties == nil {
+				properties = make(map[string]string)
 			}
-			if !local && !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+			if args == nil {
+				args = make(map[string]string)
+			}
+
+			// Validate all inputs
+			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
+				return err
+			}
+			if limit < 0 {
+				return fmt.Errorf("limit must be non-negative, got %d", limit)
+			}
+
+			// Determine project
+			if len(cmdArgs) > 0 {
+				project = cmdArgs[0]
+			}
+			if !local && !cmd.Flags().Changed("project") && len(cmdArgs) == 0 && ch.Interactive {
 				var err error
 				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
@@ -30,7 +62,28 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			// TODO: Validate flag combinations
+			// Set properties
+			if sql != "" {
+				properties["sql"] = sql
+			}
+			if connector != "" {
+				properties["connector"] = connector
+			}
+			if limit > 0 {
+				args["limit"] = fmt.Sprintf("%d", limit)
+			}
+
+			// Build the properties and args if provided
+			resolverProperties, err := buildStruct(properties)
+			if err != nil {
+				return err
+			}
+
+			// Convert args to a structpb.Struct
+			resolverArgs, err := buildStruct(args)
+			if err != nil {
+				return err
+			}
 
 			// Connect to the runtime
 			rt, instanceID, err := ch.OpenRuntimeClient(cmd.Context(), ch.Org, project, local)
@@ -41,8 +94,10 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Execute the query
 			res, err := rt.RuntimeServiceClient.QueryResolver(cmd.Context(), &runtimev1.QueryResolverRequest{
-				InstanceId: instanceID,
-				Resolver:   resolver,
+				InstanceId:         instanceID,         // The instance ID to query
+				Resolver:           resolver,           // This is the type of resolver to use (e.g. sql, metrics_view, etc.)
+				ResolverProperties: resolverProperties, // These are resolver-specific properties
+				ResolverArgs:       resolverArgs,       // These are resolver-specific arguments
 			})
 			if err != nil {
 				return err
@@ -57,14 +112,47 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	queryCmd.Flags().StringVar(&project, "project", "", "Project name")
 	queryCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	queryCmd.Flags().BoolVar(&local, "local", false, "Target localhost instead of Rill Cloud")
 
+	// Query flags
 	queryCmd.Flags().StringVar(&sql, "sql", "", "A SELECT query to execute")
-	queryCmd.Flags().StringVar(&connector, "connector", "", "Connector to execute against. Defaults to the OLAP.")
+	queryCmd.Flags().StringVar(&connector, "connector", "OLAP", "Connector to execute against. Defaults to the OLAP connector.")
 	queryCmd.Flags().StringVar(&resolver, "resolver", "", "Explicit resolver (cannot be combined with --sql)")
 	queryCmd.Flags().StringToStringVar(&properties, "properties", nil, "Explicit resolver properties (only with --resolver)")
 	queryCmd.Flags().StringToStringVar(&args, "args", nil, "Explicit resolver args (only with --resolver)")
-	queryCmd.Flags().BoolVar(&local, "local", false, "Target localhost instead of Rill Cloud")
 	queryCmd.Flags().IntVar(&limit, "limit", 100, "The maximum number of rows to print (default: 100)")
 
 	return queryCmd
+}
+
+func validateQueryFlags(resolver, sql string, properties, args map[string]string) error {
+	if resolver != "" && sql != "" {
+		return fmt.Errorf("cannot combine --resolver and --sql")
+	}
+
+	if resolver != "" && (properties != nil || args != nil) {
+		return fmt.Errorf("cannot combine --resolver with --properties or --args")
+	}
+
+	if sql != "" && (properties != nil || args != nil) {
+		return fmt.Errorf("cannot combine --sql with --properties or --args")
+	}
+
+	if resolver == "" && sql == "" {
+		return fmt.Errorf("must provide either --resolver or --sql")
+	}
+
+	return nil
+}
+
+func buildStruct(m map[string]string) (*structpb.Struct, error) {
+	if m == nil {
+		return nil, nil
+	}
+
+	anyMap := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		anyMap[k] = v
+	}
+	return structpb.NewStruct(anyMap)
 }
