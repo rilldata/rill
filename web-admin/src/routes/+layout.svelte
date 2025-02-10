@@ -17,10 +17,10 @@
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import { QueryClientProvider } from "@tanstack/svelte-query";
+  import { Query, QueryClientProvider } from "@tanstack/svelte-query";
+  import type { AxiosError } from "axios";
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
-  import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;
@@ -32,11 +32,16 @@
     url: { pathname },
   } = $page);
 
-  // Motivation:
+  // Add TanStack Query errors to telemetry
+  // Remember:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
-  queryClient.getQueryCache().config.onError =
-    createGlobalErrorCallback(queryClient);
+  queryClient.getQueryCache().config.onError = (
+    error: AxiosError,
+    query: Query,
+  ) => {
+    errorEventHandler?.requestErrorEventHandler(error, query);
+  };
 
   // The admin server enables some dashboard features like scheduled reports and alerts
   // Set read-only mode so that the user can't edit the dashboard
