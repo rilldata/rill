@@ -6,7 +6,7 @@
 
 <div class="component-error">
   <div class="error-icon">
-    <CrossIcon size="20px" />
+    <CrossIcon size="12px" />
   </div>
   <div class="error-message">
     {error ?? "Component Error"}
@@ -16,11 +16,11 @@
 <style lang="postcss">
   .component-error {
     @apply flex flex-col gap-y-3 w-full h-full items-center justify-center p-4;
-    @apply bg-red-50 text-red-600 rounded-lg border border-red-200;
+    @apply text-red-600 bg-red-50/50 rounded-lg border border-red-200;
   }
 
   .error-icon {
-    @apply p-3 bg-red-100 rounded-full;
+    @apply p-2 bg-red-100 rounded-full;
   }
 
   .error-message {
