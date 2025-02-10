@@ -395,6 +395,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              faviconAssetId:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -4642,6 +4644,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      faviconUrl:
         type: string
       customDomain:
         type: string
