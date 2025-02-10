@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { timeAgo } from "../../dashboards/listing/utils";
   import { Duration } from "luxon";
 
