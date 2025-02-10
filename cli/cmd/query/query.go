@@ -18,9 +18,7 @@ Example Usage:
 
 Query a resolver by providing a SQL query:
 rill query my-project --sql "SELECT * FROM my-table"
-
-Querying a different connector:
-rill query my-project --connector "postgres" --sql "SELECT * FROM my-table" --limit 10
+rill query --sql "SELECT * FROM my-table" --limit 10
 `
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -34,7 +32,22 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Query a resolver within a project",
 		Long:  long,
 		RunE: func(cmd *cobra.Command, cmdArgs []string) error {
-			// Initialize maps early if nil
+			// Validate all inputs
+			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
+				return err
+			}
+			// If the limit is negative, use the default limit and print a warning
+			if limit < 0 {
+				limit = 100
+				fmt.Printf("WARNING: limit is negative, using default limit of 100\n")
+			}
+
+			// If the resolver is not provided, use the sql
+			if resolver == "" {
+				resolver = "sql"
+			}
+
+			// Initialize if nil
 			if properties == nil {
 				properties = make(map[string]string)
 			}
@@ -42,15 +55,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				args = make(map[string]string)
 			}
 
-			// Validate all inputs
-			if err := validateQueryFlags(resolver, sql, properties, args); err != nil {
-				return err
-			}
-			if limit < 0 {
-				return fmt.Errorf("limit must be non-negative, got %d", limit)
-			}
-
-			// Determine project
+			// Determine project name
 			if len(cmdArgs) > 0 {
 				project = cmdArgs[0]
 			}
@@ -73,14 +78,8 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				args["limit"] = fmt.Sprintf("%d", limit)
 			}
 
-			// Build the properties and args if provided
-			resolverProperties, err := buildStruct(properties)
-			if err != nil {
-				return err
-			}
-
-			// Convert args to a structpb.Struct
-			resolverArgs, err := buildStruct(args)
+			// Build the properties and args
+			resolverProperties, resolverArgs, err := buildStructs(properties, args)
 			if err != nil {
 				return err
 			}
@@ -112,11 +111,11 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	queryCmd.Flags().StringVar(&project, "project", "", "Project name")
 	queryCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	queryCmd.Flags().BoolVar(&local, "local", false, "Target localhost instead of Rill Cloud")
+	queryCmd.Flags().BoolVar(&local, "local", false, "Target local runtime instead of Rill Cloud")
 
 	// Query flags
 	queryCmd.Flags().StringVar(&sql, "sql", "", "A SELECT query to execute")
-	queryCmd.Flags().StringVar(&connector, "connector", "OLAP", "Connector to execute against. Defaults to the OLAP connector.")
+	queryCmd.Flags().StringVar(&connector, "connector", "", "Connector to execute against. Defaults to the OLAP connector.")
 	queryCmd.Flags().StringVar(&resolver, "resolver", "", "Explicit resolver (cannot be combined with --sql)")
 	queryCmd.Flags().StringToStringVar(&properties, "properties", nil, "Explicit resolver properties (only with --resolver)")
 	queryCmd.Flags().StringToStringVar(&args, "args", nil, "Explicit resolver args (only with --resolver)")
@@ -126,20 +125,14 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func validateQueryFlags(resolver, sql string, properties, args map[string]string) error {
+	// If the users provides a resolver via a flag, they cannot provide a sql
 	if resolver != "" && sql != "" {
 		return fmt.Errorf("cannot combine --resolver and --sql")
 	}
 
-	if resolver != "" && (properties != nil || args != nil) {
-		return fmt.Errorf("cannot combine --resolver with --properties or --args")
-	}
-
-	if sql != "" && (properties != nil || args != nil) {
-		return fmt.Errorf("cannot combine --sql with --properties or --args")
-	}
-
-	if resolver == "" && sql == "" {
-		return fmt.Errorf("must provide either --resolver or --sql")
+	// If the user provides args or properties, they must provide a resolver
+	if (len(args) > 0 || len(properties) > 0) && resolver == "" {
+		return fmt.Errorf("must provide --resolver when using --args or --properties")
 	}
 
 	return nil
@@ -155,4 +148,19 @@ func buildStruct(m map[string]string) (*structpb.Struct, error) {
 		anyMap[k] = v
 	}
 	return structpb.NewStruct(anyMap)
+}
+
+// returns both the properties and args as structs
+func buildStructs(properties, args map[string]string) (*structpb.Struct, *structpb.Struct, error) {
+	propertiesStruct, err := buildStruct(properties)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	argsStruct, err := buildStruct(args)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return propertiesStruct, argsStruct, nil
 }
