@@ -17,10 +17,10 @@
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
-  import { Query, QueryClientProvider } from "@tanstack/svelte-query";
+  import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
   import type { AxiosError } from "axios";
   import { onMount } from "svelte";
-  import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
+  import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
   export let data;
