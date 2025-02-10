@@ -9,7 +9,7 @@ export function timeAgo(date: Date): string {
   const then = DateTime.fromJSDate(date);
   const diff = Duration.fromMillis(now.diff(then).milliseconds);
 
-  if (diff.as("minutes") < 1) return "just now";
+  if (diff.as("minutes") < 1) return "Just now";
 
   const minutes = Math.round(diff.as("minutes"));
   if (diff.as("hours") < 1) return formatUnit(minutes, "minute");

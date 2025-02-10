@@ -24,8 +24,7 @@
     return INTERVALS.HOUR;
   }
 
-  function updateTimeAgo() {
-    const date = new Date(datetime);
+  function updateTimeAgo(date: Date) {
     formattedTime = timeAgo(date);
 
     const newInterval = getInterval(date);
@@ -37,13 +36,16 @@
 
   function resetInterval(newInterval: number) {
     if (interval) clearInterval(interval);
-    interval = setInterval(updateTimeAgo, newInterval);
+    interval = setInterval(
+      () => updateTimeAgo(new Date(datetime)),
+      newInterval,
+    );
   }
 
-  // Reactively update whenever `datetime` changes
-  $: updateTimeAgo();
-
-  onMount(updateTimeAgo);
+  $: {
+    const date = new Date(datetime);
+    updateTimeAgo(date);
+  }
 
   onDestroy(() => {
     if (interval) clearInterval(interval);
