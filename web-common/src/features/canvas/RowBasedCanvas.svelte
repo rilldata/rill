@@ -15,6 +15,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import DropZone from "./components/DropZone.svelte";
+  import RowDropZone from "./RowDropZone.svelte";
 
   const initialHeights: Record<CanvasComponentType, number> = {
     line_chart: 350,
@@ -54,14 +55,14 @@
     },
   } = ctx;
 
-  const { canvasEntity } = getCanvasStateManagers();
+  // const { canvasEntity } = getCanvasStateManagers();
 
   let spec: V1CanvasSpec = {
     items: [],
     filtersEnabled: true,
+    maxWidth: 1200,
   };
 
-  export let maxWidth: number = 1200;
   export let fileArtifact: FileArtifact;
 
   let mousePosition = { x: 0, y: 0 };
@@ -70,11 +71,11 @@
   let selected: Set<string> = new Set();
   let clone: HTMLElement;
   let offset = { x: 0, y: 0 };
-  let resizeRow = -1;
+  // let resizeRow = -1;
   let initialHeight = 0;
   // {row}-{order}
   let hoveredDropZone: string | null = null;
-  let rowHover: number | null = null;
+  // let rowHover: number | null = null;
   let dragItemInfo: DragItem | null = null;
   let resizeInfo: {
     width: number;
@@ -108,7 +109,13 @@
 
   $: spec = structuredClone($canvasSpec ?? spec);
 
-  $: ({ items: canvasItems = [], filtersEnabled } = spec);
+  $: ({
+    items: canvasItems = [],
+    filtersEnabled,
+    maxWidth: canvasMaxWidth,
+  } = spec);
+
+  $: maxWidth = canvasMaxWidth || 1200;
 
   $: ({ editorContent, updateEditorContent } = fileArtifact);
 
@@ -131,6 +138,8 @@
     ? calculateMouseDelta(initialMousePosition, mousePosition)
     : 0;
   $: passedThreshold = mouseDelta > MINIMUM_MOVEMENT;
+
+  let resizeRow = -1;
 
   $: if (resizeRow !== -1 && initialMousePosition) {
     const diff = mousePosition.y - initialMousePosition.y;
@@ -289,23 +298,16 @@
     clone.style.pointerEvents = "none";
     clone.style.zIndex = "1000";
     clone.classList.add("shadow-md");
-
-    window.addEventListener("mousemove", onDrag);
-    window.addEventListener("mouseup", onDragEnd);
   }
 
-  function onDrag(e: MouseEvent) {
-    clone.style.top = e.clientY + offset.y + "px";
-    clone.style.left = e.clientX + offset.x + "px";
+  $: if (dragItemInfo) {
+    clone.style.top = mousePosition.y + offset.y + "px";
+    clone.style.left = mousePosition.x + offset.x + "px";
   }
 
   function onDragEnd() {
-    // selected = new Set();
-    window.removeEventListener("mousemove", onDrag);
-    window.removeEventListener("mouseup", onDragEnd);
     clone.remove();
     dragItemInfo = null;
-    rowHover = null;
   }
 
   function onRowResizeStart(e: MouseEvent & { currentTarget: HTMLElement }) {
@@ -317,6 +319,10 @@
   function reset() {
     if (resizeRow !== -1) {
       onRowResizeEnd();
+    }
+
+    if (dragItemInfo) {
+      onDragEnd();
     }
   }
 
@@ -615,11 +621,14 @@
     hoveredDropZone = id;
   }
 
-  function onDrop(row: number, column: number) {
+  function onDrop(row: number, column: number | null) {
     if (!passedThreshold) return;
     if (dragItemInfo) {
-      dropItemsInExistingRow([dragItemInfo], row, column);
-      dragItemInfo = null;
+      if (column === null) {
+        moveToNewRow([dragItemInfo], row);
+      } else {
+        dropItemsInExistingRow([dragItemInfo], row, column);
+      }
     }
   }
 </script>
@@ -630,7 +639,6 @@
     mousePosition = { x: e.clientX, y: e.clientY };
   }}
   on:keydown={(e) => {
-    console.log(e);
     if (e.key === "Backspace" && selected) {
       e.preventDefault();
       removeItems(
@@ -650,10 +658,9 @@
 {/if}
 
 <div
-  class="size-full overflow-hidden overflow-y-auto pb-48 pt-8 px-8 flex flex-col items-center bg-white select-none"
+  class="size-full overflow-hidden overflow-y-auto pb-48 pt-2 px-2 flex flex-col items-center bg-white select-none"
 >
   <div
-    style:max-width="{maxWidth}px"
     class="w-full h-fit flex flex-col items-center row-container relative"
     bind:clientWidth
   >
@@ -663,6 +670,7 @@
         class="size-full grid min-h-fit row relative"
         style:z-index={50 - rowIndex * 2}
         style:--row-height="{height}px"
+        style:max-width="{maxWidth}px"
         style:grid-template-columns={layout.map((el) => `${el}fr`).join(" ")}
       >
         {#each items as itemIndex, columnIndex (columnIndex)}
@@ -707,6 +715,7 @@
             <DropZone
               column={columnIndex}
               row={rowIndex}
+              maxColumns={items.length}
               allowDrop={!!dragItemInfo && passedThreshold}
               onHover={setDropZone}
               onMouseLeave={resetDropZone}
@@ -770,62 +779,41 @@
           </div>
         {/each}
 
-        <div
-          role="presentation"
-          class:pointer-events-none={!dragItemInfo}
-          class="absolute bottom-0 w-full z-10 left-0 h-20 translate-y-1/2 flex items-center justify-center px-2"
-          on:mouseenter={() => {
-            rowHover = rowIndex;
+        <RowDropZone
+          allowDrop={!!dragItemInfo}
+          resizeIndex={rowIndex}
+          dropIndex={rowIndex + 1}
+          {passedThreshold}
+          {onRowResizeStart}
+          {onDrop}
+          activelyResizing={resizeRow === rowIndex}
+          addItem={(type) => {
+            initializeRow(rowIndex + 1, [
+              {
+                name: canvasItems.length,
+                type,
+              },
+            ]);
           }}
-          on:mouseleave={() => {
-            timeout = setTimeout(() => (rowHover = null), 150);
-          }}
-          on:mouseup={() => {
-            if (!passedThreshold) return;
-            if (dragItemInfo) {
-              moveToNewRow([dragItemInfo], rowIndex + 1);
-
-              dragItemInfo = null;
-            }
-          }}
-        >
-          <div
-            class:!flex={resizeRow === -1 &&
-              !dragItemInfo &&
-              rowHover === rowIndex}
-            class="hidden pointer-events-auto shadow-sm absolute right-2 w-fit z-[50] bg-white translate-x-full border rounded-sm"
-          >
-            <AddComponentDropdown
-              onMouseEnter={() => {
-                if (timeout) clearTimeout(timeout);
-                rowHover = rowIndex;
-              }}
-              onItemClick={(type) => {
-                rowHover = null;
-
-                initializeRow(rowIndex + 1, [
-                  {
-                    name: canvasItems.length,
-                    type,
-                  },
-                ]);
-              }}
-            />
-          </div>
-
-          <button
-            data-row={rowIndex}
-            class:cursor-row-resize={!dragItemInfo}
-            class="w-full h-3 group z-50 flex items-center justify-center pointer-events-auto"
-            on:mousedown={onRowResizeStart}
-          >
-            <span
-              class:bg-primary-300={rowHover === rowIndex &&
-                (!dragItemInfo || passedThreshold)}
-              class="w-full h-[3px] group-hover:bg-primary-300"
-            />
-          </button>
-        </div>
+        />
+        {#if rowIndex === 0}
+          <RowDropZone
+            allowDrop={!!dragItemInfo}
+            dropIndex={0}
+            {passedThreshold}
+            {onRowResizeStart}
+            {onDrop}
+            activelyResizing={false}
+            addItem={(type) => {
+              initializeRow(rowIndex, [
+                {
+                  name: canvasItems.length,
+                  type,
+                },
+              ]);
+            }}
+          />
+        {/if}
       </section>
     {:else}
       <AddComponentDropdown

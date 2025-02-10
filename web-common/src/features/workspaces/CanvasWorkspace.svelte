@@ -159,7 +159,7 @@
               reconciling={resourceIsReconciling}
             />
 
-            <AddComponentMenu {addComponent} />
+            <!-- <AddComponentMenu {addComponent} /> -->
             <ViewSelector
               allowSplit={false}
               bind:selectedView={$selectedViewStore}

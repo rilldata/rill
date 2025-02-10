@@ -19,6 +19,7 @@
   ) => void;
   export let onMouseDown: ((e: MouseEvent) => void) | undefined = undefined;
   export let spreadEvenly: (rowIndex: number) => void;
+  export let onMouseEnter = () => {};
 
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let hovered = false;
@@ -50,10 +51,14 @@
   class:right={!left}
   class:pointer-events-none={hoveringOnDropZone}
   class:pointer-events-auto={!hoveringOnDropZone}
-  class="absolute top-0 h-full flex items-center justify-center w-3 disabled:opacity-60 z-10 disabled:cursor-not-allowed cursor-col-resize"
+  style:height="calc(100% - 16px)"
+  class="absolute top-2 flex items-center justify-center w-3 disabled:opacity-60 z-10 disabled:cursor-not-allowed cursor-col-resize"
   on:mousedown={onMouseDown}
   on:mouseenter={() => {
+    onMouseEnter();
+    if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => (hovered = true), 75);
+    hovered = true;
   }}
   on:mouseleave={() => {
     if (timeout) clearTimeout(timeout);
@@ -71,7 +76,7 @@
     role="presentation"
     class:left
     class:right={!left}
-    class="flex pointer-events-auto shadow-sm absolute bottom-0 w-fit z-[50] bg-white translate-y-full border rounded-sm"
+    class="flex pointer-events-auto shadow-sm absolute top-1/2 w-fit z-[50] bg-white -translate-y-1/2 border rounded-sm"
     on:mouseleave={() => {
       timeout = setTimeout(() => (hovered = false), 150);
     }}
@@ -83,7 +88,7 @@
       disabled={rowLength >= 4}
     />
     <button
-      class="h-7 px-2 grid place-content-center z-50 hover:bg-gray-100 text-slate-500"
+      class="h-7 px-2 grid place-content-center z-50 border-l hover:bg-gray-100 text-slate-500"
       on:click={(e) => {
         e.stopPropagation();
         e.preventDefault();
