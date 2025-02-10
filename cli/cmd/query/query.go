@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -22,10 +23,9 @@ rill query --sql "SELECT * FROM my-table" --limit 10
 `
 
 func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
-	var sql, connector, resolver, project, path string
-	var local bool
-	var limit int
+	var sql, connector, resolver, limit, project, path string
 	var properties, args map[string]string
+	var local bool
 
 	queryCmd := &cobra.Command{
 		Use:   "query [<project>]",
@@ -37,9 +37,15 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			// If the limit is negative, use the default limit and print a warning
-			if limit < 0 {
-				limit = 100
-				fmt.Printf("WARNING: limit is negative, using default limit of 100\n")
+			if limit != "" {
+				limitInt, err := strconv.Atoi(limit)
+				if err != nil {
+					return fmt.Errorf("invalid limit: %w", err)
+				}
+				if limitInt < 0 {
+					limit = "100"
+					fmt.Printf("WARNING: limit is negative, using default limit of 100\n")
+				}
 			}
 
 			// If the resolver is not provided, use the sql
@@ -74,12 +80,22 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 			if connector != "" {
 				properties["connector"] = connector
 			}
-			if limit > 0 {
-				args["limit"] = fmt.Sprintf("%d", limit)
+			if limit != "" {
+				properties["limit"] = limit
+			}
+
+			// Before passing to QueryResolver, convert the string maps to any maps
+			propsMap := make(map[string]any)
+			for k, v := range properties {
+				propsMap[k] = v
+			}
+			argsMap := make(map[string]any)
+			for k, v := range args {
+				argsMap[k] = v
 			}
 
 			// Build the properties and args
-			resolverProperties, resolverArgs, err := buildStructs(properties, args)
+			resolverProperties, resolverArgs, err := buildStructs(propsMap, argsMap)
 			if err != nil {
 				return err
 			}
@@ -119,7 +135,7 @@ func QueryCmd(ch *cmdutil.Helper) *cobra.Command {
 	queryCmd.Flags().StringVar(&resolver, "resolver", "", "Explicit resolver (cannot be combined with --sql)")
 	queryCmd.Flags().StringToStringVar(&properties, "properties", nil, "Explicit resolver properties (only with --resolver)")
 	queryCmd.Flags().StringToStringVar(&args, "args", nil, "Explicit resolver args (only with --resolver)")
-	queryCmd.Flags().IntVar(&limit, "limit", 100, "The maximum number of rows to print (default: 100)")
+	queryCmd.Flags().StringVar(&limit, "limit", "100", "The maximum number of rows to print (default: 100)")
 
 	return queryCmd
 }
@@ -138,7 +154,7 @@ func validateQueryFlags(resolver, sql string, properties, args map[string]string
 	return nil
 }
 
-func buildStruct(m map[string]string) (*structpb.Struct, error) {
+func buildStruct(m map[string]any) (*structpb.Struct, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -151,7 +167,7 @@ func buildStruct(m map[string]string) (*structpb.Struct, error) {
 }
 
 // returns both the properties and args as structs
-func buildStructs(properties, args map[string]string) (*structpb.Struct, *structpb.Struct, error) {
+func buildStructs(properties, args map[string]any) (*structpb.Struct, *structpb.Struct, error) {
 	propertiesStruct, err := buildStruct(properties)
 	if err != nil {
 		return nil, nil, err

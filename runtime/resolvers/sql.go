@@ -33,19 +33,17 @@ type sqlResolver struct {
 type sqlProps struct {
 	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
+	Limit     string `mapstructure:"limit"`
 }
 
 type sqlArgs struct {
 	Priority int `mapstructure:"priority"`
 	// NOTE: Not exhaustive. Any other args are passed to the "args" property when resolving the SQL template.
-	Limit string `mapstructure:"limit"`
 }
 
 // newSQL creates a resolver that executes a SQL query.
 // It supports the use of templating in the SQL string to inject user attributes and args into the SQL query.
 func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	var limit int64
-	var err error
 	props := &sqlProps{}
 	if err := mapstructure.Decode(opts.Properties, props); err != nil {
 		return nil, err
@@ -54,14 +52,6 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	args := &sqlArgs{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
-	}
-
-	// If args.Limit is set, use that limit.
-	if args.Limit != "" {
-		limit, err = strconv.ParseInt(args.Limit, 10, 64)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
@@ -74,10 +64,14 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	if limit == 0 {
-		limit = cfg.InteractiveSQLRowLimit
+	// If there is a limit, convert it to an int
+	interactiveRowLimit := cfg.InteractiveSQLRowLimit
+	if props.Limit != "" {
+		interactiveRowLimit, err = strconv.ParseInt(props.Limit, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, props.Connector)
 	if err != nil {
 		return nil, err
@@ -93,7 +87,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		refs:                refs,
 		olap:                olap,
 		olapRelease:         release,
-		interactiveRowLimit: limit,
+		interactiveRowLimit: interactiveRowLimit,
 		priority:            args.Priority,
 	}, nil
 }
