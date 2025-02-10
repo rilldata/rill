@@ -296,6 +296,7 @@ export type AdminServiceUpdateOrganizationBody = {
   newName?: string;
   displayName?: string;
   logoAssetId?: string;
+  faviconAssetId?: string;
   billingEmail?: string;
 };
 
@@ -862,6 +863,7 @@ export interface V1Organization {
   displayName?: string;
   description?: string;
   logoUrl?: string;
+  faviconUrl?: string;
   customDomain?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;

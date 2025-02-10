@@ -1513,6 +1513,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for LogoAssetId
 	}
 
+	if m.FaviconAssetId != nil {
+		// no validation rules for FaviconAssetId
+	}
+
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
@@ -32900,6 +32904,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for LogoUrl
+
+	// no validation rules for FaviconUrl
 
 	// no validation rules for CustomDomain
 

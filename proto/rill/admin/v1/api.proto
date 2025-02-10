@@ -905,6 +905,7 @@ message UpdateOrganizationRequest {
   optional string new_name = 3;
   optional string display_name = 5;
   optional string logo_asset_id = 6;
+  optional string favicon_asset_id = 7;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -2227,6 +2228,7 @@ message Organization {
   string display_name = 11;
   string description = 3;
   string logo_url = 12;
+  string favicon_url = 13;
   string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
