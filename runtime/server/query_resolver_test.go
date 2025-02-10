@@ -22,9 +22,9 @@ func TestServer_TestSimpleSQLQueryResolver(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": ``,
-			// Normal model
-			"ad_bids.sql": `SELECT now() AS time, 'DA' AS country, 3.141 as price`,
-			// Create a non-default duckdb connector
+			// Model
+			"ad_bids.sql": `SELECT now() AS time, 'DA' AS country, 3 as price`,
+			// Duckdb connector
 			"custom_duckdb.yaml": `
 type: connector
 driver: duckdb
@@ -46,22 +46,83 @@ driver: duckdb
 	server, err := server.NewServer(ctx, &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	// resolverProperties map[string]interface{} // Resolver properties
-	// resolverArgs       map[string]interface{} // Resolver arguments
 	tt := []struct {
-		name               string           // Test case name
-		resolver           string           // Resolver name (e.g. ad_bids.sql - ad_bids)
-		resolverProperties *structpb.Struct // Resolver properties
-		resolverArgs       *structpb.Struct // Resolver arguments
-		contains           []string         // Expected strings in the output
-		expectError        bool             // Expect an error
-		code               codes.Code       // Expected gRPC error code
+		name               string             // Test case name
+		resolver           string             // Resolver name (e.g. ad_bids.sql - ad_bids)
+		resolverProperties *structpb.Struct   // Resolver properties
+		resolverArgs       *structpb.Struct   // Resolver arguments
+		schema             []string           // Expected schema
+		data               []*structpb.Struct // Expected data
+		expectError        bool               // Expect an error
+		code               codes.Code         // Expected gRPC error code
 	}{
 		{
 			name:        "should fail with invalid resolver",
 			resolver:    "invalid_resolver",
 			expectError: true,
 			code:        codes.Internal,
+		},
+		{
+			name:        "should fail with missing sql query",
+			resolver:    "sql",
+			expectError: true,
+			code:        codes.Internal, // Update the expected error code
+		},
+		{
+			name:     "should succeed with a simple SQL query",
+			resolver: "sql",
+			resolverProperties: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"sql": structpb.NewStringValue("SELECT country FROM foo limit 1"),
+				},
+			},
+			resolverArgs: &structpb.Struct{},
+			schema:       []string{"country"},
+			data: []*structpb.Struct{
+				{
+					Fields: map[string]*structpb.Value{
+						"country": structpb.NewStringValue("DA"),
+					},
+				},
+			},
+		},
+		// Test multiple columns
+		{
+			name:     "should succeed with multiple columns",
+			resolver: "sql",
+			resolverProperties: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"sql": structpb.NewStringValue("SELECT country, price FROM foo limit 1"),
+				},
+			},
+			resolverArgs: &structpb.Struct{},
+			schema:       []string{"country", "price"},
+			data: []*structpb.Struct{
+				{
+					Fields: map[string]*structpb.Value{
+						"country": structpb.NewStringValue("DA"),
+						"price":   structpb.NewNumberValue(3.141),
+					},
+				},
+			},
+		},
+		{
+			name:     "should succeed with a simple SQL query with a WHERE clause",
+			resolver: "sql",
+			resolverProperties: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"sql": structpb.NewStringValue("SELECT country FROM foo WHERE country = 'DA'"),
+				},
+			},
+			resolverArgs: &structpb.Struct{},
+			schema:       []string{"country"},
+			data: []*structpb.Struct{
+				{
+					Fields: map[string]*structpb.Value{
+						"country": structpb.NewStringValue("DA"),
+					},
+				},
+			},
 		},
 	}
 
@@ -83,8 +144,19 @@ driver: duckdb
 			}
 			require.NoError(t, err)
 
-			for _, s := range tc.contains {
-				require.Contains(t, res.Data, s)
+			data := res.GetData()
+			schema := res.GetSchema()
+
+			// Check expected schema
+			require.Equal(t, len(schema.Fields), len(tc.schema))
+			for i, s := range tc.schema {
+				require.Equal(t, schema.Fields[i].Name, s)
+			}
+
+			// Check expected data
+			require.Equal(t, len(data), len(tc.data))
+			for i, d := range data {
+				require.Equal(t, d, tc.data[i])
 			}
 		})
 	}

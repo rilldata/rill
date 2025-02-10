@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,26 +48,26 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 	}
 	defer res.Close()
 
-	// Convert the results to a proto response
-	schema := res.Schema()
 	data := make([]*structpb.Struct, 0)
 	for {
-		raw, err := res.Next()
+		// Next returns the next row of data. It returns io.EOF when there are no more rows.
+		row, err := res.Next()
 		if err != nil {
-			return nil, err
+			if err == io.EOF {
+				break
+			}
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if raw == nil {
-			break
-		}
-		row, err := structpb.NewStruct(raw)
+		rowStruct, err := pbutil.ToStruct(row, res.Schema())
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert row to proto: %w", err)
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		data = append(data, row)
+		data = append(data, rowStruct)
 	}
 
+	// Return the response
 	return &runtimev1.QueryResolverResponse{
-		Schema: schema,
+		Schema: res.Schema(),
 		Data:   data,
 	}, nil
 }
