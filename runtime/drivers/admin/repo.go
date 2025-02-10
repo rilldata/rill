@@ -35,8 +35,8 @@ func (h *Handle) CommitTimestamp(ctx context.Context) (time.Time, error) {
 
 	defer h.repoMu.RUnlock()
 
-	if h.downloadURL != "" {
-		return h.ArchiveCreatedOn, nil
+	if h.archiveDownloadURL != "" {
+		return h.archiveCreatedOn, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)
@@ -64,8 +64,8 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
-	if h.downloadURL != "" {
-		return h.ArchiveID, nil
+	if h.archiveDownloadURL != "" {
+		return h.archiveID, nil
 	}
 
 	repo, err := git.PlainOpen(h.repoPath)
