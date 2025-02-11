@@ -910,6 +910,7 @@ message UpdateOrganizationRequest {
   optional string new_name = 3;
   optional string display_name = 5;
   optional string logo_asset_id = 6;
+  optional string favicon_asset_id = 7;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1188,7 +1189,7 @@ message CreateAssetRequest {
   string type = 2 [(validate.rules).string = {in: ["deploy", "image"]}];
   string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
   string extension = 4; // Eg. ".tar.gz"
-  bool cacheable = 5;
+  bool public = 5;
   int64 estimated_size_bytes = 6;
 }
 
@@ -1932,12 +1933,13 @@ message GetRepoMetaRequest {
 }
 
 message GetRepoMetaResponse {
-  string git_url = 1;
-  google.protobuf.Timestamp git_url_expires_on = 2;
-  string git_subpath = 3;
-  // archive_download_url is set when repo is managed by Rill
-  // either archive_download_url or git related details will be set
-  string archive_download_url = 4;
+    // If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
+    string git_url = 1;
+    google.protobuf.Timestamp git_url_expires_on = 2;
+    string git_subpath = 3;
+    string archive_download_url = 4;
+    string archive_id = 5;
+    google.protobuf.Timestamp archive_created_on = 6;
 }
 
 message PullVirtualRepoRequest {
@@ -2237,6 +2239,7 @@ message Organization {
   string display_name = 11;
   string description = 3;
   string logo_url = 12;
+  string favicon_url = 13;
   string custom_domain = 10;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;

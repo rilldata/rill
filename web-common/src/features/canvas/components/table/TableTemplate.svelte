@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ComponentError from "@rilldata/web-common/features/canvas/components/ComponentError.svelte";
   import type { TableSpec } from "@rilldata/web-common/features/canvas/components/table";
   import { getCanvasStateManagers } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
@@ -20,6 +21,7 @@
 
   $: tableSpec = rendererProperties as TableSpec;
 
+  $: measures = tableSpec.measures || [];
   $: colDimensions = tableSpec.col_dimensions || [];
   $: rowDimensions = tableSpec.row_dimensions || [];
 
@@ -29,7 +31,7 @@
   $: pivotState = writable<PivotState>({
     active: true,
     columns: {
-      measure: tableSpec.measures.map((measure) => ({
+      measure: measures.map((measure) => ({
         id: measure,
         title: measure,
         type: PivotChipType.Measure,
@@ -73,11 +75,7 @@
 
 <div class="overflow-y-auto h-full">
   {#if !$schema.isValid}
-    <div
-      class="flex w-full h-full p-2 text-xl bg-white items-center justify-center text-red-500"
-    >
-      {$schema.error}
-    </div>
+    <ComponentError error={$schema.error} />
   {:else if pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
       {pivotDataStore}

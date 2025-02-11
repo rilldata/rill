@@ -12,7 +12,6 @@ import (
 	"math/big"
 	"net/url"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/startreedata/pinot-client-go/pinot"
@@ -21,22 +20,19 @@ import (
 type pinotDriver struct{}
 
 func (d *pinotDriver) Open(dsn string) (sqlDriver.Conn, error) {
-	address, headers, err := ParseDSN(dsn)
+	broker, _, headers, err := ParseDSN(dsn)
 	if err != nil {
 		return nil, err
 	}
 	pinotConn, err := pinot.NewWithConfig(&pinot.ClientConfig{
-		ExtraHTTPHeader: headers,
-		ControllerConfig: &pinot.ControllerConfig{
-			ExtraControllerAPIHeaders: headers,
-			ControllerAddress:         address,
-		},
+		ExtraHTTPHeader:     headers,
+		BrokerList:          []string{broker},
+		UseMultistageEngine: true, // We have joins and nested queries which are supported by multistage engine
 	})
 	if err != nil {
 		return nil, err
 	}
-	// We have joins and nested queries which are supported by multistage engine
-	pinotConn.UseMultistageEngine(true)
+
 	return &conn{pinotConn: pinotConn}, nil
 }
 
@@ -61,15 +57,18 @@ func (c *conn) Begin() (sqlDriver.Tx, error) {
 }
 
 func (c *conn) QueryContext(ctx context.Context, query string, args []sqlDriver.NamedValue) (sqlDriver.Rows, error) {
+	var resp *pinot.BrokerResponse
+	var err error
 	if len(args) > 0 {
-		q, err := completeQuery(query, args)
-		if err != nil {
-			return nil, err
+		var params []interface{}
+		for _, arg := range args {
+			params = append(params, arg.Value)
 		}
-		query = q
+		// TODO: cancel the query if ctx is done
+		resp, err = c.pinotConn.ExecuteSQLWithParams("", query, params)
+	} else {
+		resp, err = c.pinotConn.ExecuteSQL("", query)
 	}
-	// TODO: cancel the query if ctx is done
-	resp, err := c.pinotConn.ExecuteSQL("", query)
 	if err != nil {
 		return nil, err
 	}
@@ -227,11 +226,12 @@ func (r *rows) goValue(rowIdx, coldIdx int, pinotType string) interface{} {
 }
 
 // ParseDSN parses the DSN string to extract the controller address and basic auth credentials
-func ParseDSN(dsn string) (string, map[string]string, error) {
+func ParseDSN(dsn string) (string, string, map[string]string, error) {
+	// DSN format: http(s)://username:password@broker:port?controller=http(s)://controller:port
 	// validate dsn - it should be a valid URL, may contain basic auth credentials
 	u, err := url.Parse(dsn)
 	if err != nil {
-		return "", nil, fmt.Errorf("invalid DSN: %w", err)
+		return "", "", nil, fmt.Errorf("invalid DSN: %w", err)
 	}
 
 	var authHeader map[string]string
@@ -239,7 +239,7 @@ func ParseDSN(dsn string) (string, map[string]string, error) {
 		uname := u.User.Username()
 		pwd, passwordSet := u.User.Password()
 		if uname == "" || !passwordSet {
-			return "", nil, fmt.Errorf("DSN should contain valid basic auth credentials")
+			return "", "", nil, fmt.Errorf("DSN should contain valid basic auth credentials")
 		}
 		// clear user info from URL so that u.String() doesn't include it
 		u.User = nil
@@ -248,51 +248,12 @@ func ParseDSN(dsn string) (string, map[string]string, error) {
 			"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(authString))),
 		}
 	}
-	return u.String(), authHeader, nil
-}
 
-func completeQuery(query string, args []sqlDriver.NamedValue) (string, error) {
-	parts := strings.Split(query, "?")
-	if len(parts)-1 != len(args) {
-		return "", fmt.Errorf("mismatch in the number of placeholders and arguments")
+	controllerURL := u.Query().Get("controller")
+	if controllerURL == "" {
+		return "", "", nil, fmt.Errorf("controller URL not provided, dsn is form http(s)://username:password@broker:port?controller=http(s)://controller:port")
 	}
 
-	var sb strings.Builder
-	for i, part := range parts {
-		sb.WriteString(part)
-		if i < len(args) {
-			argStr, err := formatArg(args[i].Value)
-			if err != nil {
-				return "", err
-			}
-			sb.WriteString(argStr)
-		}
-	}
-
-	return sb.String(), nil
-}
-
-func formatArg(value sqlDriver.Value) (string, error) {
-	switch v := value.(type) {
-	case string:
-		// Escape any single quotes in the string
-		escaped := strings.ReplaceAll(v, "'", "''")
-		return fmt.Sprintf("'%s'", escaped), nil
-	case *big.Int, *big.Float:
-		// For pinot types - BIG_INT and BIG_DECIMAL - enclose in single quotes
-		return fmt.Sprintf("'%v'", v), nil
-	case []byte:
-		// For pinot type - BYTES - convert to Hex string and enclose in single quotes
-		hexString := fmt.Sprintf("%x", v)
-		return fmt.Sprintf("'%s'", hexString), nil
-	case time.Time:
-		// For pinot type - TIMESTAMP - convert to below ISO8601 format that it expects and enclose in single quotes
-		return fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05.000Z")), nil
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
-		// For types - INT, LONG, FLOAT, DOUBLE and BOOLEAN use as-is
-		return fmt.Sprintf("%v", v), nil
-	default:
-		// Throw error for unsupported types
-		return "", fmt.Errorf("unsupported type: %T", v)
-	}
+	u.RawQuery = ""
+	return u.String(), controllerURL, authHeader, nil
 }

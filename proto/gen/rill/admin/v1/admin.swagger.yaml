@@ -395,6 +395,8 @@ paths:
                 type: string
               logoAssetId:
                 type: string
+              faviconAssetId:
+                type: string
               billingEmail:
                 type: string
       tags:
@@ -2434,7 +2436,7 @@ paths:
               extension:
                 type: string
                 title: Eg. ".tar.gz"
-              cacheable:
+              public:
                 type: boolean
               estimatedSizeBytes:
                 type: string
@@ -4321,6 +4323,7 @@ definitions:
     properties:
       gitUrl:
         type: string
+        description: If the Git-related fields are set, the archive-related fields will not be set (and vice versa).
       gitUrlExpiresOn:
         type: string
         format: date-time
@@ -4328,9 +4331,11 @@ definitions:
         type: string
       archiveDownloadUrl:
         type: string
-        title: |-
-          archive_download_url is set when repo is managed by Rill
-          either archive_download_url or git related details will be set
+      archiveId:
+        type: string
+      archiveCreatedOn:
+        type: string
+        format: date-time
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -4664,6 +4669,8 @@ definitions:
       description:
         type: string
       logoUrl:
+        type: string
+      faviconUrl:
         type: string
       customDomain:
         type: string

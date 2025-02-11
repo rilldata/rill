@@ -39,7 +39,7 @@
         type: "image",
         name: "logo",
         extension: ext,
-        cacheable: true,
+        public: true,
         estimatedSizeBytes: file.size.toString(),
       },
     });
