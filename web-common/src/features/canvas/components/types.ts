@@ -24,6 +24,11 @@ export interface ComponentAlignment {
   horizontal: HoritzontalAlignment;
 }
 
+export type ComponentComparisonOptions =
+  | "previous"
+  | "delta"
+  | "percent_change";
+
 export interface ComponentFilterProperties {
   time_range?: string;
   comparison_range?: string;
