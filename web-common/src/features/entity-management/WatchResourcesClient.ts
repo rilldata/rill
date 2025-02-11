@@ -322,7 +322,6 @@ export class WatchResourcesClient {
   }
 
   private invalidateAllRuntimeQueries() {
-    console.log("invalidateAllRuntimeQueries");
     return queryClient.invalidateQueries({
       predicate: (query) =>
         query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
