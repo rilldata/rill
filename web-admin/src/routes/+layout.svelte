@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import BillingBannerManager from "@rilldata/web-admin/features/billing/banner/BillingBannerManager.svelte";
   import {
     isBillingUpgradePage,
@@ -25,8 +26,12 @@
 
   export let data;
 
-  $: ({ projectPermissions, organizationPermissions, organizationLogoUrl } =
-    data);
+  $: ({
+    projectPermissions,
+    organizationPermissions,
+    organizationLogoUrl,
+    organizationFaviconUrl,
+  } = data);
   $: ({
     params: { organization },
     url: { pathname },
@@ -76,6 +81,11 @@
 
 <svelte:head>
   <meta content="Rill Cloud" name="description" />
+  {#if organizationFaviconUrl}
+    <link rel="icon" href={organizationFaviconUrl} />
+  {:else}
+    <link rel="icon" href="/favicon.png" />
+  {/if}
 </svelte:head>
 
 <RillTheme>
