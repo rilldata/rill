@@ -56,8 +56,8 @@ export function createUserFacingError(
   // Fallback for all other errors (including 5xx errors)
   return {
     statusCode: status,
-    header: "Sorry, unexpected error!",
-    body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    header: "Sorry, something went wrong!",
+    body: "Try refreshing the page, and reach out to us if the problem persists.",
     detail: message,
   };
 }
