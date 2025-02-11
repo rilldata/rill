@@ -31,16 +31,17 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Dump resources for projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
 			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			pattern := "%"
+			var pattern string
 			// If args is not empty, use the first element as the pattern
 			if len(args) > 0 {
 				pattern = args[0]
+			} else {
+				pattern = "%"
 			}
 
 			res, err := client.SearchProjectNames(ctx, &adminv1.SearchProjectNamesRequest{
@@ -58,21 +59,21 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			failedProjects := make([]string, len(res.Names))
-			errors := make([]error, len(res.Names))
-
 			var m sync.Mutex
+			failedProjects := map[string]error{}
 			resources := map[string]map[string]json.RawMessage{}
+
 			grp, ctx := errgroup.WithContext(ctx)
-			for idx, name := range res.Names {
+			for _, name := range res.Names {
 				org := strings.Split(name, "/")[0]
 				project := strings.Split(name, "/")[1]
 
 				grp.Go(func() error {
 					row, err := dumpResourcesForProject(ctx, client, org, project, typ)
 					if err != nil {
-						failedProjects[idx] = name
-						errors[idx] = err
+						m.Lock()
+						failedProjects[name] = err
+						m.Unlock()
 						return nil
 					}
 					m.Lock()
@@ -92,16 +93,15 @@ func DumpResources(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to marshal resources: %w", err)
 			}
-			fmt.Println(string(jsonData))
+			ch.Println(string(jsonData))
 
-			for idx, failed := range failedProjects {
-				if failed != "" {
-					ch.PrintfWarn("Failed to dump resources for project %v: %s\n", failed, errors[idx])
-				}
+			for name, err := range failedProjects {
+				ch.Println()
+				ch.PrintfWarn("Failed to dump resources for project %v: %s\n", name, err)
 			}
 			if res.NextPageToken != "" {
-				cmd.Println()
-				cmd.Printf("Next page token: %s\n", res.NextPageToken)
+				ch.Println()
+				ch.Printf("Next page token: %s\n", res.NextPageToken)
 			}
 
 			return nil
