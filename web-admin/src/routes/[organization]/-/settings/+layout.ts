@@ -29,7 +29,7 @@ export const load: PageLoad = async ({ parent, params }) => {
       neverSubscribed,
     };
   } catch (e) {
-    if (!isAxiosError<RpcStatus>(e)) {
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
       throw error(500, "Failed to fetch billing subscription");
     }
 

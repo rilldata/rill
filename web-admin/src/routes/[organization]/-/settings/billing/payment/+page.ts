@@ -12,7 +12,7 @@ export const load: PageLoad = async ({ params: { organization }, url }) => {
       `${url.protocol}//${url.host}/${organization}`,
     );
   } catch (e) {
-    if (!isAxiosError<RpcStatus>(e)) {
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
       throw error(500, "Error redirecting to payment portal");
     }
 

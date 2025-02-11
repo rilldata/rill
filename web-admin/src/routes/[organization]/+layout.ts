@@ -13,7 +13,7 @@ export const load = async ({ params: { organization }, parent }) => {
     try {
       issues = await fetchOrganizationBillingIssues(organization);
     } catch (e) {
-      if (!isAxiosError<RpcStatus>(e)) {
+      if (!isAxiosError<RpcStatus>(e) || !e.response) {
         throw error(500, "Error fetching billing issues");
       }
 

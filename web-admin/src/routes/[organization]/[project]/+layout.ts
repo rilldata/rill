@@ -13,7 +13,7 @@ export const load = async ({ params: { organization }, parent }) => {
   try {
     projectHibernating = await fetchAllProjectsHibernating(organization);
   } catch (e) {
-    if (!isAxiosError<RpcStatus>(e)) {
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
       throw error(500, "Error fetching projects for the organization");
     }
 

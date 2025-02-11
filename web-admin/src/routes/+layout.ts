@@ -86,7 +86,7 @@ export const load = async ({ params, url, route }) => {
       organizationPermissions = organizationResp.permissions ?? {};
       organizationLogoUrl = organizationResp.organization?.logoUrl;
     } catch (e: unknown) {
-      if (!isAxiosError<RpcStatus>(e)) {
+      if (!isAxiosError<RpcStatus>(e) || !e.response) {
         throw error(500, "Error fetching organization");
       }
 
@@ -134,7 +134,9 @@ export const load = async ({ params, url, route }) => {
       runtime: runtimeData,
     };
   } catch (e) {
-    if (!isAxiosError<RpcStatus>(e)) throw error(500, "Error fetching project");
+    if (!isAxiosError<RpcStatus>(e) || !e.response) {
+      throw error(500, "Error fetching project");
+    }
 
     const shouldRedirectToRequestAccess =
       e.response.status === 403 && !!project;
