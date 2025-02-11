@@ -2625,9 +2625,9 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
   extension = "";
 
   /**
-   * @generated from field: bool cacheable = 5;
+   * @generated from field: bool public = 5;
    */
-  cacheable = false;
+  public = false;
 
   /**
    * @generated from field: int64 estimated_size_bytes = 6;
@@ -2646,7 +2646,7 @@ export class CreateAssetRequest extends Message<CreateAssetRequest> {
     { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "cacheable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "estimated_size_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
