@@ -10,8 +10,16 @@
   export let onChange: (updatedSparkline: string) => void;
 
   const horizontalOptions = [
-    { id: "bottom", Icon: ArrowDown },
-    { id: "right", Icon: ArrowRight },
+    {
+      id: "bottom",
+      Icon: ArrowDown,
+      tooltip: "Show sparkline below the value",
+    },
+    {
+      id: "right",
+      Icon: ArrowRight,
+      tooltip: "Show sparkline to the right of the value",
+    },
   ];
 
   $: showSparkline = value !== "none";

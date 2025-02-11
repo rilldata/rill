@@ -17,10 +17,23 @@
   const comparisonOptions: {
     id: ComponentComparisonOptions;
     Icon: ComponentType<SvelteComponent>;
+    tooltip: string;
   }[] = [
-    { id: "delta", Icon: Delta },
-    { id: "percent_change", Icon: DeltaPercentage },
-    { id: "previous", Icon: CounterClockWiseClock },
+    {
+      id: "delta",
+      Icon: Delta,
+      tooltip: "Show absolute change",
+    },
+    {
+      id: "percent_change",
+      Icon: DeltaPercentage,
+      tooltip: "Show percentage change",
+    },
+    {
+      id: "previous",
+      Icon: CounterClockWiseClock,
+      tooltip: "Show previous value",
+    },
   ];
 </script>
 
@@ -42,7 +55,7 @@
       expand
       fields={comparisonOptions}
       selected={options || defaultComparisonOptions}
-      onChange={(option) => onChange(option)}
+      onChange={(options) => onChange(options)}
     />
   {/if}
 </div>
